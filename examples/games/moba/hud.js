@@ -1,4 +1,4 @@
-import {byId, typeText} from "../../../src/engine/utils.js";
+import {byId, isMobile, typeText} from "../../../src/engine/utils.js";
 
 function startCooldownOverlay(slot, spellIndex) {
   const cdMs = app.localHero.heroProps.getEffectiveCooldown(spellIndex);
@@ -66,6 +66,7 @@ export class HUD {
     hud.id = "hud-menu";
     Object.assign(hud.style, {
       position: "absolute",
+      webkitTextStrokeWidth: "0.5px",
       bottom: "0",
       left: "0",
       width: "100%",
@@ -77,15 +78,16 @@ export class HUD {
       color: "white",
       fontFamily: "'Orbitron', sans-serif",
       zIndex: "15",
-      padding: "10px",
+      padding: isMobile() == true ? "0px" : "10px",
       boxSizing: "border-box"
     });
 
+    hud.style["-webkit-text-stroke-width"] = "0.1px !important";
+
     const hudLeftBox = document.createElement("div");
     hudLeftBox.id = "hudLeftBox";
-
     Object.assign(hudLeftBox.style, {
-      width: "30%",
+      width: isMobile() == true ? "53%" : "30%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
       border: "1px solid #353535",
@@ -99,16 +101,17 @@ export class HUD {
       overflow: 'hidden'
     });
 
+    if (isMobile() == true) hudLeftBox.style.display = "flex";
+
     hud.appendChild(hudLeftBox);
 
     // - Stats
     const statsDom = document.createElement("div");
     statsDom.id = "statsDom";
-
     Object.assign(statsDom.style, {
       display: "flex",
       flexDirection: "column",
-      width: "12%",
+      width: isMobile() == true ? "58%" : "12%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
       alignItems: "center",
@@ -122,16 +125,18 @@ export class HUD {
       overflow: 'hidden',
       fontSize: '10px',
     });
-
-    hud.appendChild(statsDom);
+    if (isMobile() == true) { 
+    hudLeftBox.appendChild(statsDom);
+    } else {
+      hud.appendChild(statsDom);
+    }
 
     const statsDomValue = document.createElement("div");
     statsDomValue.id = "statsDomValue";
-
     Object.assign(statsDomValue.style, {
       display: "flex",
       flexDirection: "column",
-      width: "12%",
+      width: isMobile() === true ? "33%" : "12%",
       height: "100%",
       background: "rgba(0,0,0,0.5)",
       alignItems: "center",
@@ -146,7 +151,11 @@ export class HUD {
       fontSize: '10px',
     });
 
-    hud.appendChild(statsDomValue);
+    if (isMobile() == true) { 
+    hudLeftBox.appendChild(statsDomValue);
+    } else {
+      hud.appendChild(statsDomValue);
+    }
 
     let props = [
       "currentLevel",
@@ -174,7 +183,7 @@ export class HUD {
       statsDomItem.innerHTML = props[x] + ":";
       Object.assign(statsDomItem.style, {
         background: "rgba(0,0,0,0.5)",
-        border: "1px solid #353535",
+        border: isMobile() == true ? "none" : "1px solid #353535",
         alignItems: "center",
         justifyContent: "space-around",
         color: "white",
@@ -212,7 +221,7 @@ export class HUD {
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
       flexDirection: "column",
-      border: "1px solid #353535",
+      border: isMobile() == true ? 'none' : "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -232,7 +241,7 @@ export class HUD {
       backgroundColor: "rgba(0, 0, 0, 0.4)",
       display: "grid",
       gridTemplateColumns: "repeat(4, 1fr)",
-      gap: "12px",
+      gap: isMobile() == true ? '0px' : "12px",
       border: "1px solid #353535",
       borderRadius: "10px",
       padding: "2px",
@@ -301,7 +310,7 @@ export class HUD {
     const hudHP = document.createElement("div");
     hudHP.id = "hudHP";
     Object.assign(hudHP.style, {
-      width: "40%",
+      width: isMobile() == true ? "100%" : "40%",
       height: "10%",
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
@@ -350,9 +359,8 @@ export class HUD {
     // MANA
     const hudMANA = document.createElement("div");
     hudMANA.id = "hudMANA";
-
     Object.assign(hudMANA.style, {
-      width: "40%",
+      width: isMobile() == true ? "100%" : "40%",
       height: "10%",
       backgroundColor: "rgba(0,0,0,0.5)",
       display: "flex",
@@ -399,21 +407,21 @@ export class HUD {
       hpBar.style.width = clamped + "%";
       hpText.textContent = `MANA: ${clamped}%`;
     });
-
     hud.appendChild(hudCenter);
-    // left box
-    const selectedCharacters = document.createElement("span");
-    selectedCharacters.textContent = "HERO";
-    hudLeftBox.appendChild(selectedCharacters);
-    hud.addEventListener("onSelectCharacter", (e) => {
-      console.log('onSelectCharacter : ', e)
-      let n = '';
-      if(e.detail.indexOf('_') != -1) {
-        n = e.detail.split('_')[0];
-      }
-      selectedCharacters.textContent = `${n}`;
-    });
-
+    if(isMobile() == false) {
+      // left box
+      const selectedCharacters = document.createElement("span");
+      selectedCharacters.textContent = "HERO";
+      hudLeftBox.appendChild(selectedCharacters);
+      hud.addEventListener("onSelectCharacter", (e) => {
+        console.log('onSelectCharacter : ', e.data)
+        let n = '';
+        if(e.detail.data.indexOf('_') != -1) {
+          n = e.detail.data.split('_')[0];
+        }
+        selectedCharacters.textContent = `${n}`;
+      });
+    }
     const hudDesription = document.createElement("div");
     hudDesription.id = "hudDesription";
     Object.assign(hudDesription.style, {
@@ -456,6 +464,9 @@ export class HUD {
     });
 
     hudDesription.appendChild(hudDesriptionText);
+
+    if(isMobile() == true) hudDesription.style.display = 'none';
+
     hud.appendChild(hudDesription);
     // right
     const hudItems = document.createElement("div");
@@ -468,7 +479,7 @@ export class HUD {
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'auto',
       display: "flex",
-      border: "1px solid #353535",
+      border: isMobile() == true ? "none" : "1px solid #353535",
       alignItems: "center",
       justifyContent: "space-around",
       color: "white",
@@ -482,12 +493,11 @@ export class HUD {
     inventoryGrid.id = "inventoryGrid";
     Object.assign(inventoryGrid.style, {
       display: "grid",
-      gridTemplateColumns: "repeat(3, 1fr)",
-      gridTemplateRows: "repeat(2, 1fr)",
-      // gap: "10px",
+      gridTemplateColumns: isMobile() == true ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
+      gridTemplateRows: isMobile() == true ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
       width: "100%",
       height: "100%",
-      padding: "5px",
+      padding: isMobile() == true ? "0" : "5px",
       boxSizing: "border-box",
     });
 

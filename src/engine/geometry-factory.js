@@ -2,7 +2,7 @@
 /**
  * @description
  * GeometryFactory - can be reused for any level of pipeline integration.
- * It is already integrated with level of 'me effects'.
+ * It is already integrated with level of 'mewgpu effects subsystem'.
  */
 export class GeometryFactory {
   static create(type, size = 1, segments = 16, options = {}) {
@@ -15,14 +15,12 @@ export class GeometryFactory {
       case "circle": return GeometryFactory.circle(size, segments);
       case "circle2": return GeometryFactory.circle2(size, segments);
       case "diamond": return GeometryFactory.diamond(size);
-
       case "meteor": return GeometryFactory.meteor(size, options.detail || 6);
       case "rock": return GeometryFactory.rock(size, options.detail || 3);
       case "thunder": return GeometryFactory.thunder(size);
       case "shard": return GeometryFactory.shard(size);
       case "circlePlane": return GeometryFactory.circlePlane(size, segments);
       case "ring": return GeometryFactory.ring(size, options.innerRatio || 0.7, segments, options.height || 0.05);
-
       case "icosahedron": return GeometryFactory.icosahedron(size);
       case "dodecahedron": return GeometryFactory.dodecahedron(size);
       case "torusKnot": return GeometryFactory.torusKnot(size, options.tube || 0.2, options.p || 2, options.q || 3, segments, options.tubularSeg || 16);
@@ -31,14 +29,19 @@ export class GeometryFactory {
       case "starPrism": return GeometryFactory.starPrism(size, options.height || 1);
       case "crescent": return GeometryFactory.crescent(size, options.innerRatio || 0.5, segments);
       case "pyramidFractal": return GeometryFactory.pyramidFractal(size, options.levels || 2);
+      // DESTRUCTION
+      case "shatter": return GeometryFactory.shatter(size, options.pieces || 8);
+      case "crumble": return GeometryFactory.crumble(size, options.detail || 4);
+      case "splinter": return GeometryFactory.splinter(size, options.count || 12);
+      case "implode": return GeometryFactory.implode(size, options.scale || 0.1);
+      case "scatter": return GeometryFactory.scatter(size, options.spread || 0.3);
       default: throw new Error(`Unknown geometry: ${type}`);
     }
   }
 
-    // --- Flat normals for faceted shapes ---
   static computeFlatNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
-    for (let i = 0; i < indices.length; i += 3) {
+    for(let i = 0;i < indices.length;i += 3) {
       const a = indices[i] * 3;
       const b = indices[i + 1] * 3;
       const c = indices[i + 2] * 3;
@@ -65,43 +68,34 @@ export class GeometryFactory {
     return normals;
   }
 
-  // --- Smooth normals for rounded shapes ---
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     const counts = new Uint16Array(positions.length / 3);
-
-    for (let i = 0; i < indices.length; i += 3) {
+    for(let i = 0;i < indices.length;i += 3) {
       const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
-
       const ax = positions[ia * 3], ay = positions[ia * 3 + 1], az = positions[ia * 3 + 2];
       const bx = positions[ib * 3], by = positions[ib * 3 + 1], bz = positions[ib * 3 + 2];
       const cx = positions[ic * 3], cy = positions[ic * 3 + 1], cz = positions[ic * 3 + 2];
-
       const ux = bx - ax, uy = by - ay, uz = bz - az;
       const vx = cx - ax, vy = cy - ay, vz = cz - az;
-
       let nx = uy * vz - uz * vy;
       let ny = uz * vx - ux * vz;
       let nz = ux * vy - uy * vx;
-
       const len = Math.hypot(nx, ny, nz) || 1;
       nx /= len; ny /= len; nz /= len;
-
-      for (const idx of [ia, ib, ic]) {
+      for(const idx of [ia, ib, ic]) {
         normals[idx * 3] += nx;
         normals[idx * 3 + 1] += ny;
         normals[idx * 3 + 2] += nz;
         counts[idx]++;
       }
     }
-
-    for (let i = 0; i < counts.length; i++) {
+    for(let i = 0;i < counts.length;i++) {
       const len = Math.hypot(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]) || 1;
       normals[i * 3] /= len;
       normals[i * 3 + 1] /= len;
       normals[i * 3 + 2] /= len;
     }
-
     return normals;
   }
 
@@ -201,19 +195,13 @@ export class GeometryFactory {
   }
 
   static pyramidFractal(S = 1, levels = 2) {
-    // ✅ Use arrays that get properly filled, not mutated references
     const positions = [];
     const uvs = [];
     const indices = [];
-
-    let vertexIndex = 0; // Track current vertex count
-
+    let vertexIndex = 0;
     const generate = (x = 0, y = 0, z = 0, s = S, level = levels) => {
       if(level <= 0) return;
-
       const halfS = s / 2;
-
-      // 5 vertices: 4 base corners + 1 apex
       const verts = [
         x - halfS, y, z - halfS,  // 0: bottom-left
         x + halfS, y, z - halfS,  // 1: bottom-right
@@ -221,8 +209,6 @@ export class GeometryFactory {
         x - halfS, y, z + halfS,  // 3: top-left
         x, y + s, z               // 4: apex
       ];
-
-      // ✅ Proper UVs for each vertex (not just one pair!)
       const vertUVs = [
         0, 0,     // 0: bottom-left corner
         1, 0,     // 1: bottom-right corner
@@ -230,8 +216,6 @@ export class GeometryFactory {
         0, 1,     // 3: top-left corner
         0.5, 0.5  // 4: apex (center)
       ];
-
-      // Triangle indices (relative to current base)
       const baseIdx = vertexIndex;
       const tris = [
         baseIdx + 0, baseIdx + 1, baseIdx + 4,  // Front face
@@ -239,22 +223,15 @@ export class GeometryFactory {
         baseIdx + 2, baseIdx + 3, baseIdx + 4,  // Back face
         baseIdx + 3, baseIdx + 0, baseIdx + 4,  // Left face
       ];
-
-      // ✅ Push to arrays (not mutate references)
       positions.push(...verts);
       uvs.push(...vertUVs);
       indices.push(...tris);
-
-      vertexIndex += 5; // 5 vertices added
-
-      // Recurse: smaller pyramid on top
+      vertexIndex += 5;
       if(level > 1) {
         generate(x, y + s, z, halfS, level - 1);
       }
     };
-
     generate();
-
     return {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
@@ -266,14 +243,10 @@ export class GeometryFactory {
     const positions = [];
     const uvs = [];
     const indices = [];
-
     let vertexIndex = 0;
-
     const generate = (x = 0, y = 0, z = 0, s = S, level = levels) => {
       if(level <= 0) {
-        // Base case: draw a single pyramid
         const halfS = s / 2;
-
         const verts = [
           x - halfS, y, z - halfS,
           x + halfS, y, z - halfS,
@@ -281,11 +254,7 @@ export class GeometryFactory {
           x - halfS, y, z + halfS,
           x, y + s, z
         ];
-
-        const vertUVs = [
-          0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0.5
-        ];
-
+        const vertUVs = [0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0.5];
         const baseIdx = vertexIndex;
         const tris = [
           baseIdx + 0, baseIdx + 1, baseIdx + 4,
@@ -296,31 +265,23 @@ export class GeometryFactory {
           baseIdx + 0, baseIdx + 2, baseIdx + 1,
           baseIdx + 0, baseIdx + 3, baseIdx + 2,
         ];
-
         positions.push(...verts);
         uvs.push(...vertUVs);
         indices.push(...tris);
-
         vertexIndex += 5;
         return;
       }
-
-      // Recursive case: 4 smaller pyramids (Sierpiński pattern)
       const halfS = s / 2;
       const quarterS = s / 4;
-
-      // Bottom 4 corners
+      // Bottom 4
       generate(x - quarterS, y, z - quarterS, halfS, level - 1); // Front-left
       generate(x + quarterS, y, z - quarterS, halfS, level - 1); // Front-right
       generate(x + quarterS, y, z + quarterS, halfS, level - 1); // Back-right
       generate(x - quarterS, y, z + quarterS, halfS, level - 1); // Back-left
-
-      // Top pyramid
+      // Top
       generate(x, y + halfS, z, halfS, level - 1);
     };
-
     generate();
-
     return {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
@@ -330,24 +291,19 @@ export class GeometryFactory {
 
   static dodecahedronFlat(R = 1) {
     const geo = GeometryFactory.dodecahedron(R);
-
-    // Duplicate vertices so each triangle has its own (for flat shading)
     const positions = [];
     const uvs = [];
     const indices = [];
-
     for(let i = 0;i < geo.indices.length;i += 3) {
       const i0 = geo.indices[i] * 3;
       const i1 = geo.indices[i + 1] * 3;
       const i2 = geo.indices[i + 2] * 3;
-
       // Add 3 vertices for this triangle
       positions.push(
         geo.positions[i0], geo.positions[i0 + 1], geo.positions[i0 + 2],
         geo.positions[i1], geo.positions[i1 + 1], geo.positions[i1 + 2],
         geo.positions[i2], geo.positions[i2 + 1], geo.positions[i2 + 2]
       );
-
       // Add UVs
       const u0 = geo.uvs[(geo.indices[i]) * 2];
       const v0 = geo.uvs[(geo.indices[i]) * 2 + 1];
@@ -355,14 +311,10 @@ export class GeometryFactory {
       const v1 = geo.uvs[(geo.indices[i + 1]) * 2 + 1];
       const u2 = geo.uvs[(geo.indices[i + 2]) * 2];
       const v2 = geo.uvs[(geo.indices[i + 2]) * 2 + 1];
-
       uvs.push(u0, v0, u1, v1, u2, v2);
-
-      // New indices (each triangle is independent)
       const baseIdx = (i / 3) * 3;
       indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
     }
-
     return {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
@@ -371,10 +323,9 @@ export class GeometryFactory {
   }
 
   static cone(radius = 1, height = 2, segments = 32) {
-    const positions = [0, height, 0]; // top
+    const positions = [0, height, 0];
     const uvs = [0.5, 1];
     const indices = [];
-
     for(let i = 0;i <= segments;i++) {
       const angle = (i / segments) * Math.PI * 2;
       const x = Math.cos(angle) * radius;
@@ -382,27 +333,22 @@ export class GeometryFactory {
       positions.push(x, 0, z);
       uvs.push((x / radius + 1) / 2, (z / radius + 1) / 2);
     }
-
     for(let i = 1;i <= segments;i++) {
       indices.push(0, i, i + 1 <= segments ? i + 1 : 1); // triangles to top
     }
-
-    // Base
     const baseIndex = positions.length / 3;
-    positions.push(0, 0, 0); // center
+    positions.push(0, 0, 0);
     uvs.push(0.5, 0.5);
     for(let i = 1;i <= segments;i++) {
       const next = i + 1 <= segments ? i + 1 : 1;
       indices.push(baseIndex, next, i);
     }
-
     return {positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices)};
   }
 
   static cylinder(radius = 1, height = 2, segments = 32) {
     const positions = [], uvs = [], indices = [];
     const halfH = height / 2;
-
     for(let i = 0;i <= segments;i++) {
       const angle = (i / segments) * Math.PI * 2;
       const x = Math.cos(angle) * radius;
@@ -410,12 +356,10 @@ export class GeometryFactory {
       positions.push(x, -halfH, z, x, halfH, z);
       uvs.push(i / segments, 0, i / segments, 1);
     }
-
     for(let i = 0;i < segments;i++) {
       const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
-      indices.push(a, b, c, b, d, c); // side faces
+      indices.push(a, b, c, b, d, c);
     }
-
     // Caps
     const baseIndex = positions.length / 3;
     positions.push(0, -halfH, 0, 0, halfH, 0);
@@ -425,13 +369,11 @@ export class GeometryFactory {
       indices.push(baseIndex, i * 2, next * 2); // bottom
       indices.push(baseIndex + 1, next * 2 + 1, i * 2 + 1); // top
     }
-
     return {positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices)};
   }
 
   static capsule(radius = 0.5, height = 2, segments = 16) {
     const positions = [], uvs = [], indices = [];
-
     // Generate top hemisphere
     for(let y = 0;y <= segments;y++) {
       const theta = (y / segments) * Math.PI / 2;
@@ -444,8 +386,7 @@ export class GeometryFactory {
         uvs.push(x / segments, y / segments);
       }
     }
-
-    // Bottom hemisphere (mirror top)
+    // Bottom mirror top
     const offset = positions.length / 3;
     for(let y = 0;y <= segments;y++) {
       const theta = (y / segments) * Math.PI / 2;
@@ -458,22 +399,16 @@ export class GeometryFactory {
         uvs.push(x / segments, y / segments);
       }
     }
-
-    // TODO: connect indices (complex, but I can provide if needed)
     return {positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices)};
   }
 
   static icosahedron(R = 1) {
-    const t = (1 + Math.sqrt(5)) / 2; // Golden ratio
-
-    // 12 vertices of icosahedron
+    const t = (1 + Math.sqrt(5)) / 2;
     const verts = [
       -1, t, 0, 1, t, 0, -1, -t, 0, 1, -t, 0,
       0, -1, t, 0, 1, t, 0, -1, -t, 0, 1, -t,
       t, 0, -1, t, 0, 1, -t, 0, -1, -t, 0, 1
     ];
-
-    // Normalize vertices to radius R
     for(let i = 0;i < verts.length;i += 3) {
       const len = Math.sqrt(
         verts[i] * verts[i] +
@@ -484,30 +419,21 @@ export class GeometryFactory {
       verts[i + 1] = (verts[i + 1] / len) * R;
       verts[i + 2] = (verts[i + 2] / len) * R;
     }
-
     const indices = [
       0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11,
       1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
       3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9,
       4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1
     ];
-
-    // Generate spherical UVs based on position
     const uvs = [];
     for(let i = 0;i < verts.length;i += 3) {
       const x = verts[i];
       const y = verts[i + 1];
       const z = verts[i + 2];
-
-      // Spherical UV mapping
-      // u = 0.5 + atan2(z, x) / (2π)
-      // v = 0.5 - asin(y / R) / π
       const u = 0.5 + Math.atan2(z, x) / (2 * Math.PI);
       const v = 0.5 - Math.asin(y / R) / Math.PI;
-
       uvs.push(u, v);
     }
-
     return {
       positions: new Float32Array(verts),
       uvs: new Float32Array(uvs),
@@ -537,8 +463,6 @@ export class GeometryFactory {
       verts[i + 2] = verts[i + 2] / len * R;
     }
     const uvs = new Float32Array(verts.length / 3 * 2).fill(0);
-    // indices: manually computed pentagons -> triangles
-    // TODO: could generate automatically
     return {positions: new Float32Array(verts), uvs, indices: new Uint16Array([])};
   }
 
@@ -573,7 +497,6 @@ export class GeometryFactory {
     const positions = [0, 0, 0];
     const uvs = [0.5, 0.5];
     const indices = [];
-
     for(let i = 0;i <= segments;i++) {
       const t = (i / segments) * Math.PI * 2;
       const x = 16 * Math.pow(Math.sin(t), 3) * S * 0.05;
@@ -582,10 +505,9 @@ export class GeometryFactory {
       uvs.push((x / S + 1) / 2, (y / S + 1) / 2);
       if(i > 1) indices.push(0, i, i + 1);
     }
-
     return {positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices)};
   }
-  // --- BASIC SHAPES ---------------------------------------------------------
+
   static quad(S = 1) {
     const positions = new Float32Array([
       -S, S, 0, S, S, 0, -S, -S, 0, S, -S, 0
@@ -597,7 +519,6 @@ export class GeometryFactory {
 
   static cube(S = 1) {
     const p = S / 2;
-
     const positions = new Float32Array([
       // Front
       -p, -p, p, p, -p, p, p, p, p, -p, p, p,
@@ -612,8 +533,6 @@ export class GeometryFactory {
       // Left
       -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p
     ]);
-
-    // Proper UVs (same layout per face)
     const uvs = new Float32Array([
       // Front
       0, 0, 1, 0, 1, 1, 0, 1,
@@ -628,7 +547,6 @@ export class GeometryFactory {
       // Left
       0, 0, 1, 0, 1, 1, 0, 1,
     ]);
-
     const indices = new Uint16Array([
       0, 1, 2, 0, 2, 3,
       4, 5, 6, 4, 6, 7,
@@ -637,9 +555,7 @@ export class GeometryFactory {
       16, 17, 18, 16, 18, 19,
       20, 21, 22, 20, 22, 23
     ]);
-
     const normals = this.computeSmoothNormals(positions, indices);
-    // return { positions, indices, normals };
     return {positions, uvs, indices, normals};
   }
 
@@ -675,11 +591,9 @@ export class GeometryFactory {
   static star(S = 1) {
     const outer = S;
     const inner = S * 0.4;
-    const positions = [0, 0, 0]; // center vertex
-    const uvs = [0.5, 0.5];     // center UV
+    const positions = [0, 0, 0];
+    const uvs = [0.5, 0.5];
     const indices = [];
-
-    // Generate 10 points (outer and inner)
     for(let i = 0;i < 10;i++) {
       const angle = (i / 10) * Math.PI * 2;
       const radius = i % 2 === 0 ? outer : inner;
@@ -688,13 +602,10 @@ export class GeometryFactory {
       positions.push(x, y, 0);
       uvs.push((x / outer + 1) / 2, (y / outer + 1) / 2);
     }
-
-    // Triangles from center to each outer/inner vertex
     for(let i = 1;i <= 10;i++) {
       const next = i < 10 ? i + 1 : 1; // wrap last to first
       indices.push(0, i, next);
     }
-
     return {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
@@ -714,11 +625,9 @@ export class GeometryFactory {
   }
 
   static circle2(radius = 1, segments = 64) {
-    const positions = [0, 0, 0]; // center
-    const uvs = [0.5, 0.5];      // center UV
+    const positions = [0, 0, 0];
+    const uvs = [0.5, 0.5];
     const indices = [];
-
-    // create outer vertices
     for(let i = 0;i <= segments;i++) {
       const angle = (i / segments) * Math.PI * 2;
       const x = Math.cos(angle) * radius;
@@ -726,19 +635,16 @@ export class GeometryFactory {
       positions.push(x, y, 0);
       // map to circular UV range [0,1]
       uvs.push((x / radius + 1) / 2, (y / radius + 1) / 2);
-
       if(i > 0) {
         // center = 0, connect previous outer vertex with current outer vertex
         indices.push(0, i, i + 1);
       }
     }
-
     // close the circle (last triangle connects to first outer vertex)
     // we already pushed (segments + 1) outer vertices, so last index = segments + 1
     // but first outer vertex is index 1
     // gpt suggest comment this line !?
     indices.push(0, segments + 1, 1);
-
     return {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
@@ -748,17 +654,14 @@ export class GeometryFactory {
 
   static diamond(S = 1) {
     const h = S, p = S / 2;
-    // 6 Vertices
     const pos = new Float32Array([
       0, h, 0,    // 0: Top
-      -p, 0, -p,   // 1: Mid Left-Back
+      -p, 0, -p,  // 1: Mid Left-Back
       p, 0, -p,   // 2: Mid Right-Back
-      p, 0, p,   // 3: Mid Right-Front
+      p, 0, p,    // 3: Mid Right-Front
       -p, 0, p,   // 4: Mid Left-Front
-      0, -h, 0     // 5: Bottom
+      0, -h, 0    // 5: Bottom
     ]);
-
-    // Added simple UVs so the texture actually shows up
     const uv = new Float32Array([
       0.5, 1,   // Top
       0, 0.5,   // Sides...
@@ -767,18 +670,14 @@ export class GeometryFactory {
       1, 0.5,
       0.5, 0    // Bottom
     ]);
-
     const idx = new Uint16Array([
       0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1, // Top pyramid
       5, 2, 1, 5, 3, 2, 5, 4, 3, 5, 1, 4  // Bottom pyramid
     ]);
-
     return {positions: pos, uvs: uv, indices: idx};
   }
 
-  // --- FANTASY & EFFECT GEOMETRIES -----------------------------------------
   static thunder(S = 1) {
-    // jagged lightning bolt made of zig-zag quads
     const pts = [0, 0, 0];
     for(let i = 1;i < 8;i++) {
       const x = (Math.random() - 0.5) * 0.2 * S;
@@ -800,19 +699,14 @@ export class GeometryFactory {
   }
 
   static rock(S = 1, detail = 4) {
-    // randomly perturbed sphere for organic shape
     const sphere = GeometryFactory.sphere(S, detail);
-
-    // CLONE positions
     const positions = new Float32Array(sphere.positions);
-
     for(let i = 0;i < positions.length;i += 3) {
       const n = (Math.random() * 0.3 + 0.85);
       positions[i] *= n;
       positions[i + 1] *= n;
       positions[i + 2] *= n;
     }
-
     return {
       positions,
       uvs: sphere.uvs,
@@ -821,13 +715,9 @@ export class GeometryFactory {
   }
 
   static meteor(S = 1, detail = 6) {
-    // 1. Start with a sphere (or icosahedron)
     const sphere = GeometryFactory.sphere(S, detail);
-
     const positions = new Float32Array(sphere.positions.length);
     const normals = new Float32Array(sphere.positions.length);
-
-    // 2. Compute normals (centered at origin)
     for(let i = 0;i < sphere.positions.length;i += 3) {
       const x = sphere.positions[i];
       const y = sphere.positions[i + 1];
@@ -837,20 +727,13 @@ export class GeometryFactory {
       normals[i + 1] = y / len;
       normals[i + 2] = z / len;
     }
-
-    // 3. Perturb vertices outward along normal
     for(let i = 0;i < positions.length;i += 3) {
-      const offset = 0.05 + Math.random() * 0.1; // adjust roughness
+      const offset = 0.05 + Math.random() * 0.1;
       positions[i] = sphere.positions[i] + normals[i] * offset;
       positions[i + 1] = sphere.positions[i + 1] + normals[i + 1] * offset;
       positions[i + 2] = sphere.positions[i + 2] + normals[i + 2] * offset;
     }
-
-    // 4. Stretch Y slightly along normal
-    for(let i = 0;i < positions.length;i += 3) {
-      positions[i + 1] *= 1.5; // Y-stretch
-    }
-
+    for(let i = 0;i < positions.length;i += 3) {positions[i + 1] *= 1.5;}
     return {
       positions,
       uvs: sphere.uvs,
@@ -865,21 +748,18 @@ export class GeometryFactory {
       -S * 0.2, 0, S * 0.3,
       0, S * 1.2, 0
     ]);
-
     const uvs = new Float32Array([
       0.5, 0,
       1, 0.5,
       0, 0.5,
       0.5, 1
     ]);
-
     const indices = new Uint16Array([
       0, 1, 2,
       1, 2, 3,
       0, 2, 3,
       0, 1, 3
     ]);
-
     return {positions, uvs, indices};
   }
 
@@ -887,11 +767,8 @@ export class GeometryFactory {
     const positions = [];
     const uvs = [];
     const indices = [];
-
-    // Center vertex
     positions.push(0, 0, 0);
     uvs.push(0.5, 0.5);
-
     // Outer ring vertices
     for(let i = 0;i <= segments;i++) {
       const angle = (i / segments) * Math.PI * 2;
@@ -901,19 +778,13 @@ export class GeometryFactory {
       positions.push(x, y, z);
       uvs.push((x / radius + 1) / 2, (z / radius + 1) / 2);
     }
-
-    // Triangles (fan)
-    for(let i = 1;i <= segments;i++) {
-      indices.push(0, i, i + 1);
-    }
-
+    for(let i = 1;i <= segments;i++) {indices.push(0, i, i + 1)}
     return {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
       indices: new Uint16Array(indices)
     };
   }
-
 
   static ring(outerRadius = 4, innerRadiusRatio = 0.7, segments = 48, height = 0.05) {
     const innerRadius = outerRadius * innerRadiusRatio;
@@ -945,6 +816,177 @@ export class GeometryFactory {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
       indices: new Uint16Array(indices)
+    };
+  }
+
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
+  static shatter(S = 1, pieces = 8) {
+    // Pre-compute random offsets for determinism
+    const offsets = [];
+    for(let p = 0;p < pieces;p++) {
+      const angle = (p / pieces) * Math.PI * 2;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
+    }
+
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+
+      // Base sphere surface
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Crumble: breaks into small chunks, stays roughly in place
+   * Good for: stone/brick crumbling, dust formations
+   */
+  static crumble(S = 1, detail = 4) {
+    // Pre-compute chunk grid with random jitter
+    const chunks = [];
+    for(let ix = 0;ix < detail;ix++) {
+      for(let iy = 0;iy < detail;iy++) {
+        for(let iz = 0;iz < detail;iz++) {
+          chunks.push({
+            x: (ix - detail / 2) + (Math.random() - 0.5) * 0.3,
+            y: (iy - detail / 2) + (Math.random() - 0.5) * 0.3,
+            z: (iz - detail / 2) + (Math.random() - 0.5) * 0.3
+          });
+        }
+      }
+    }
+
+    const chunkSize = 2 / detail;
+
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+
+      // Small cube for each chunk
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+
+      const x = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+
+      return [x * S * 0.5, y * S * 0.5, z * S * 0.5];
+    };
+  }
+
+  /**
+   * Splinter: thin shards radiating from center
+   * Good for: ice/glass shattering, crystalline breaks
+   */
+  static splinter(S = 1, count = 12) {
+    // Pre-compute shard directions
+    const shards = [];
+    for(let i = 0;i < count;i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
+    }
+
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+
+      // Shard as elongated quad
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+
+      // Taper from base to tip
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+
+      const x = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Implode: shrinks to near-zero point (singularity effect)
+   * Good for: magic absorption, black hole, vortex
+   */
+  static implode(S = 1, scale = 0.1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x = scale * S * Math.sin(phi) * Math.cos(theta);
+      const y = scale * S * Math.cos(phi);
+      const z = scale * S * Math.sin(phi) * Math.sin(theta);
+
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Scatter: random cloud of small pieces
+   * Good for: dust, particle explosion, disintegration
+   */
+  static scatter(S = 1, spread = 0.3) {
+    const particleCount = 20;
+    const particles = [];
+
+    for(let p = 0;p < particleCount;p++) {
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
+    }
+
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+
+      // Small sphere for each particle
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r = particle.size;
+
+      const x = (particle.x + r * Math.sin(phi) * Math.cos(theta)) * S;
+      const y = (particle.y + r * Math.cos(phi)) * S;
+      const z = (particle.z + r * Math.sin(phi) * Math.sin(theta)) * S;
+
+      return [x, y, z];
     };
   }
 

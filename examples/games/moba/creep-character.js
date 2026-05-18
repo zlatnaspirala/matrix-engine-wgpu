@@ -12,6 +12,8 @@ export class Creep extends Hero {
     idle: null
   }
 
+  creepHPReset = 300;
+
   creepFocusAttackOn = null;
 
   constructor(o, archetypes = ["creep"], group = "enemy", team) {
@@ -30,7 +32,8 @@ export class Creep extends Hero {
       // var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
-        scale: [20, 20, 20],
+        shadowsCast: false,
+        scale: [22, 22, 22],
         position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
@@ -42,10 +45,10 @@ export class Creep extends Hero {
       }, null, o.data);
       // make small async - cooking glbs files
       this.asyncHelper(this.o).then(() => {
-        console.log('good')
+        // console.log('creeps loaded in scene...')
       }).catch(() => {
         console.log('catch')
-        setTimeout(() => {this.asyncHelper(this.o);}, 3000);
+        setTimeout(() => {this.asyncHelper(this.o);}, 2000);
       });
 
     } catch(err) {throw err;}
@@ -74,11 +77,11 @@ export class Creep extends Hero {
             if(a.name == 'idle') this.heroAnimationArrange.idle = index;
           });
           // adapt
-          subMesh.globalAmbient = [1, 1, 1, 1];
+          subMesh.setAmbient(1, 1, 1, 1);
           if(this.name.indexOf('friendly_creeps') != -1) {
-            subMesh.globalAmbient = [12, 12, 12, 1];
+            subMesh.setAmbient(10,10,5)
           } else if(this.name.indexOf('enemy_creep') != -1) {
-            subMesh.globalAmbient = [12, 1, 1, 1];
+            subMesh.setAmbient(50,10,5)
           }
 
           if(this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
@@ -110,7 +113,7 @@ export class Creep extends Hero {
             app.localHero.navigateCreeps();
           }
         }, 3000);
-      }, 9000);
+      }, 6000);
     })
   }
 
@@ -222,15 +225,13 @@ export class Creep extends Hero {
 
     if(this.group != 'enemy') {
       addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, (e) => {
-        // CHECK DISTANCE
-        if(e.detail.animationName != 'attack') { // && this.creepFocusAttackOn == null) {
+        if(e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
+          // console.log('animationEnd BLOCK1')
           return;
         }
-
+        console.info('animationEnd :', e.detail)
         if(this.group == "friendly") {
-
           if(this.creepFocusAttackOn == null) {
-            // console.info('setIdle:', e.detail.animationName)
             let isEnemiesClose = false;
             this.core.enemies.enemies.forEach((enemy) => {
               if(typeof enemy.heroe_bodies === 'undefined') return;
@@ -241,7 +242,6 @@ export class Creep extends Hero {
                 // console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
                 isEnemiesClose = true;
                 this.calcDamage(this, enemy);
-                // no need ?? this.creepFocusAttackOn = null;
                 return;
               }
             });

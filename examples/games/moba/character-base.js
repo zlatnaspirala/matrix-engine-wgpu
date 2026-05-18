@@ -1,6 +1,6 @@
 import {vec3} from "wgpu-matrix";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf";
-import {byId, LOG_MATRIX} from "../../../src/engine/utils";
+import {byId, isMobile, LOG_MATRIX} from "../../../src/engine/utils";
 import {Hero} from "./hero";
 import {Creep} from "./creep-character";
 import {followPath} from "./nav-mesh";
@@ -52,6 +52,7 @@ export class Character extends Hero {
       e.data = JSON.parse(e.data);
       try {
         if(e.data.netPos) {
+          // console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><OVERRIDED<>" , e.data)
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if(e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
@@ -87,9 +88,9 @@ export class Character extends Hero {
   }
 
   async loadfriendlyCreeps() {
-
+    console.log('FRINDLY ++++++++++++++++++++++++++++++++')
     var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
-
+    this.core._CREEP_DATA = glbFile01;
     this.friendlyLocal.creeps.push(new Creep({
       core: this.core,
       name: 'friendly_creeps0',
@@ -106,14 +107,14 @@ export class Character extends Hero {
       position: {x: 150, y: -23, z: 0},
       data: glbFile01
     }, ['creep'], 'friendly', app.player.data.team));
-    this.friendlyLocal.creeps.push(new Creep({
-      core: this.core,
-      name: 'friendly_creeps2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {x: 100, y: -23, z: 0},
-      data: glbFile01
-    }, ['creep'], 'friendly', app.player.data.team));
+    // this.friendlyLocal.creeps.push(new Creep({
+    //   core: this.core,
+    //   name: 'friendly_creeps2',
+    //   archetypes: ["creep"],
+    //   path: 'res/meshes/glb/bot.glb',
+    //   position: {x: 100, y: -23, z: 0},
+    //   data: glbFile01
+    // }, ['creep'], 'friendly', app.player.data.team));
 
 
     setTimeout(() => {
@@ -202,7 +203,7 @@ export class Character extends Hero {
         );
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach((subMesh, id, array) => {
-          subMesh.position.thrust = this.moveSpeed;
+          subMesh.position.thrust = isMobile() == false ? this.moveSpeed* 0.5 : this.moveSpeed;
           subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
@@ -223,7 +224,7 @@ export class Character extends Hero {
             if(app.localHero.name == "MariaSword") {
               console.log("Cast only for long distance attackers...");
               subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
-              subMesh.fireballSystem.fireballMesh.effects.flameEmitter.recreateVertexDataRND(10);
+              subMesh.fireballSystem.parent.effects.flameEmitter.recreateVertexDataRND(30);
               this.core.autoUpdate.push(subMesh.fireballSystem);
             }
           }
@@ -238,13 +239,13 @@ export class Character extends Hero {
         }
 
         // adapt
-        app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
+        app.localHero.heroe_bodies[0].setAmbient(1, 1, 1, 1);
         if(app.localHero.name == 'Slayzer') {
-          app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
+          app.localHero.heroe_bodies[0].setAmbient(2, 2, 3, 1);
         } else if(app.localHero.name == 'Steelborn') {
-          app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1]
+          app.localHero.heroe_bodies[0].setAmbient(12, 12, 12, 1)
         } else {
-          app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
+          app.localHero.heroe_bodies[0].setAmbient(2, 2, 3, 1);
         }
 
         app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
@@ -522,74 +523,78 @@ export class Character extends Hero {
     })
 
     addEventListener('close-distance', (e) => {
-      if((e.detail.A.id.indexOf('friendly') != -1 && e.detail.B.id.indexOf('friendly') != -1) ||
-        (e.detail.A.group == "local_hero" && e.detail.B.id.indexOf('friendly') != -1) ||
-        (e.detail.A.group == "friendly" && e.detail.B.group == "local_hero")) {
+      if((e.detail.data.A.id.indexOf('friendly') != -1 && e.detail.data.B.id.indexOf('friendly') != -1) ||
+        (e.detail.data.A.group == "local_hero" && e.detail.data.B.id.indexOf('friendly') != -1) ||
+        (e.detail.data.A.group == "friendly" && e.detail.data.B.group == "local_hero")) {
         // console.info('close distance BOTH friendly :', e.detail.A)
         return;
       }
       // core.net.virtualEmiter != null no emiter only for local hero corespondes
-      if(e.detail.A.group == "enemy" && this.core.net.virtualEmiter != null) {
-        if(e.detail.B.group == "friendly" && e.detail.B.id.indexOf('friendlytron') == -1) {
+      if(e.detail.data.A.group == "enemy" && this.core.net.virtualEmiter != null) {
+        if(e.detail.data.B.group == "friendly" && e.detail.data.B.id.indexOf('friendlytron') == -1) {
           //------------------ BLOCK
-          let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.B.id)[0];
-          console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
+          let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.data.B.id)[0];
 
           if(lc === undefined) {return;}
-          lc.creepFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
+          lc.creepFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.A.id)[0];
 
           if(lc.creepFocusAttackOn === undefined) {
-            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.A.id)[0];
-            // console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
+            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.A.id)[0];
+            console.info('A = enemy vs B = friendly  <close-distance> is there creap here ', lc.creepFocusAttackOn);
           }
 
-          if(lc.creepFocusAttackOn === undefined && e.detail.A.id.indexOf('enemytron') != -1) {
+          if(lc.creepFocusAttackOn === undefined && e.detail.data.A.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
 
-          if(lc.creepFocusAttackOn === undefined) {return;}
-          app.localHero.setAttackCreep(e.detail.B.id[e.detail.B.id.length - 1]);
+          if(lc.creepFocusAttackOn === undefined) {
+            console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
+            return;
+          }
+          app.localHero.setAttackCreep(e.detail.data.B.id[e.detail.data.B.id.length - 1]);
 
         }
-      } else if(e.detail.A.group == "friendly" && e.detail.A.id.indexOf('friendlytron') == -1) {
-        if(e.detail.B.group == "enemy" && this.core.net.virtualEmiter != null) {
-          let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.A.id)[0];
+      } else if(e.detail.data.A.group == "friendly" && e.detail.data.A.id.indexOf('friendlytron') == -1) {
+        if(e.detail.data.B.group == "enemy" && this.core.net.virtualEmiter != null) {
+          let lc = app.localHero.friendlyLocal.creeps.filter((localCreep) => localCreep.name == e.detail.data.A.id)[0];
           if(lc === undefined) {return;}
           lc.creepFocusAttackOn =
-            app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
+            app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.B.id)[0];
           if(lc.creepFocusAttackOn == undefined) {
-            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
+            lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.B.id)[0];
+            console.info('A = friendly vs B = enemy   <close-distance> prevent attach', lc.creepFocusAttackOn);
           }
-          if(lc.creepFocusAttackOn === undefined && e.detail.B.id.indexOf('enemytron') != -1) {
+          if(lc.creepFocusAttackOn === undefined && e.detail.data.B.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             // console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if(lc.creepFocusAttackOn === undefined) {
+            console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
             return;
           }
-          app.localHero.setAttackCreep(e.detail.A.id[e.detail.A.id.length - 1]);
+          app.localHero.setAttackCreep(e.detail.data.A.id[e.detail.data.A.id.length - 1]);
         }
       }
       // LOCAL
-      if(e.detail.A.group == 'local_hero') {
-        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.B.id)[0];
+      if(e.detail.data.A.group == 'local_hero') {
+        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.B.id)[0];
         if(this.heroFocusAttackOn == undefined) {
-          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.B.id)[0];
+          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.B.id)[0];
           if(this.heroFocusAttackOn == undefined) {
-            if(e.detail.B.id.indexOf('enemytron') != -1) {
+            if(e.detail.data.B.id.indexOf('enemytron') != -1) {
               this.heroFocusAttackOn = app.enemytron;
               // console.info('<generate game event> LOCALHERO attack enemy home.', this.heroFocusAttackOn);
             }
           }
         }
         this.setAttack(this.heroFocusAttackOn);
-      } else if(e.detail.B.group == 'local_hero') {
-        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.A.id)[0];
+      } else if(e.detail.data.B.group == 'local_hero') {
+        this.heroFocusAttackOn = app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.A.id)[0];
         if(this.heroFocusAttackOn == undefined) {
-          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.A.id)[0];
+          this.heroFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.A.id)[0];
           if(this.heroFocusAttackOn == undefined) {
-            if(e.detail.A.id.indexOf('enemytron') != -1) {
+            if(e.detail.data.A.id.indexOf('enemytron') != -1) {
               this.heroFocusAttackOn = app.enemytron;
               // console.info('<generate game event here2> creeps attack enemy home.', this.heroFocusAttackOn);
             }
@@ -676,6 +681,16 @@ export class Character extends Hero {
           return;
         }
       }
+    })
+
+    addEventListener('fireball-hit', (e) => {
+      // console.log(" SET ATTACK", e.detail.target.name)
+      let enemy = this.core.enemies.enemies.find( x => x.heroe_bodies[0].name == e.detail.target.name)
+      if (!enemy) enemy = this.core.enemies.creeps.find( x => x.heroe_bodies[0].name == e.detail.target.name)
+      if (typeof enemy === 'undefined') return;
+      console.log(`%cATTACK LONGRANGE DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX);
+      // abilityMultiplier
+      this.calcDamage(this, enemy, 0.3);
     })
 
     // This is common for all kineamtic bodies

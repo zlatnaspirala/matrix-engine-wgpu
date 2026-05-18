@@ -3,6 +3,42 @@ export var supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoint
 
 export const MeshType = {MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3};
 
+
+export function preventZoom() {
+  document.addEventListener('touchstart', function(e) {
+    if(e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, {passive: false});
+  document.addEventListener('touchmove', function(e) {
+    if(e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, {passive: false});
+  document.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
+  });
+}
+
+export function checkLock() {
+  if(screen.orientation && screen.orientation.lock) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export function mobileLock(o) {
+  if(screen.orientation && screen.orientation.lock) {
+    // Lock to landscape
+    screen.orientation.lock(o).then(function() {
+      console.log(`%cOrientation locked to ${o}`, LOG_FUNNY_ARCADE);
+    }).catch(function(error) {
+      console.error("Orientation lock failed: ", error);
+    });
+  }
+}
+
 export function isMobile() {
   if(supportsTouch == true) return true;
   const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
@@ -1334,12 +1370,12 @@ export const geoTypesForMorph = {
 export class CameraPath {
   constructor(keyframes, options = {}) {
     this.keyframes = keyframes;
-    this.loop      = options.loop            ?? false;
-    this.param     = options.parameterization ?? 'uniform';
-    this._tension  = options.tension          ?? 0.5;
-    if (this.param === 'arc') this._buildArcTable();
+    this.loop = options.loop ?? false;
+    this.param = options.parameterization ?? 'uniform';
+    this._tension = options.tension ?? 0.5;
+    if(this.param === 'arc') this._buildArcTable();
   }
- 
+
   static _cr(p0, p1, p2, p3, t, tension = 0.5) {
     const t2 = t * t, t3 = t2 * t;
     return tension * (
@@ -1349,22 +1385,22 @@ export class CameraPath {
       (-p0 + 3 * p1 - 3 * p2 + p3) * t3
     );
   }
- 
+
   _indices(i) {
     const n = this.keyframes.length;
-    if (this.loop) {
-      return [((i-1)+n)%n, i%n, (i+1)%n, (i+2)%n];
+    if(this.loop) {
+      return [((i - 1) + n) % n, i % n, (i + 1) % n, (i + 2) % n];
     }
     return [
-      Math.max(0, i-1),
-      Math.max(0, Math.min(n-1, i)),
-      Math.max(0, Math.min(n-1, i+1)),
-      Math.max(0, Math.min(n-1, i+2)),
+      Math.max(0, i - 1),
+      Math.max(0, Math.min(n - 1, i)),
+      Math.max(0, Math.min(n - 1, i + 1)),
+      Math.max(0, Math.min(n - 1, i + 2)),
     ];
   }
- 
+
   _interpVec3(field, i, lt) {
-    const [i0,i1,i2,i3] = this._indices(i);
+    const [i0, i1, i2, i3] = this._indices(i);
     const k = this.keyframes, T = this._tension, cr = CameraPath._cr;
     return [
       cr(k[i0][field][0], k[i1][field][0], k[i2][field][0], k[i3][field][0], lt, T),
@@ -1372,9 +1408,9 @@ export class CameraPath {
       cr(k[i0][field][2], k[i1][field][2], k[i2][field][2], k[i3][field][2], lt, T),
     ];
   }
- 
+
   _interpScalar(field, fallback, i, lt) {
-    const [i0,i1,i2,i3] = this._indices(i);
+    const [i0, i1, i2, i3] = this._indices(i);
     const k = this.keyframes;
     return CameraPath._cr(
       k[i0][field] ?? fallback, k[i1][field] ?? fallback,
@@ -1382,70 +1418,68 @@ export class CameraPath {
       lt, this._tension
     );
   }
- 
+
   _buildArcTable(samples = 200) {
     const n = this.keyframes.length - (this.loop ? 0 : 1);
-    this._arcTable = [{ raw: 0, arc: 0 }];
+    this._arcTable = [{raw: 0, arc: 0}];
     let totalLen = 0;
     let prev = this._sampleRaw(0);
-    for (let s = 1; s <= samples; s++) {
+    for(let s = 1;s <= samples;s++) {
       const raw = s / samples;
       const cur = this._sampleRaw(raw);
       const dx = cur.position[0] - prev.position[0];
       const dy = cur.position[1] - prev.position[1];
       const dz = cur.position[2] - prev.position[2];
-      totalLen += Math.sqrt(dx*dx + dy*dy + dz*dz);
-      this._arcTable.push({ raw, arc: totalLen });
+      totalLen += Math.sqrt(dx * dx + dy * dy + dz * dz);
+      this._arcTable.push({raw, arc: totalLen});
       prev = cur;
     }
     this._totalArcLength = totalLen;
     this._arcTable.forEach(e => e.arc /= totalLen);
   }
- 
+
   _arcToRaw(t) {
     const tbl = this._arcTable;
     let lo = 0, hi = tbl.length - 1;
-    while (lo < hi - 1) {
+    while(lo < hi - 1) {
       const mid = (lo + hi) >> 1;
-      if (tbl[mid].arc < t) lo = mid; else hi = mid;
+      if(tbl[mid].arc < t) lo = mid; else hi = mid;
     }
     const span = tbl[hi].arc - tbl[lo].arc;
-    if (span < 1e-9) return tbl[lo].raw;
+    if(span < 1e-9) return tbl[lo].raw;
     const f = (t - tbl[lo].arc) / span;
     return tbl[lo].raw + f * (tbl[hi].raw - tbl[lo].raw);
   }
- 
+
   _sampleRaw(t) {
     const n = this.keyframes.length;
     const segments = this.loop ? n : n - 1;
-    const clamped  = Math.max(0, Math.min(1, t));
-    const scaled   = clamped * segments;
-    const i        = Math.min(Math.floor(scaled), segments - 1);
-    const lt       = scaled - i;
+    const clamped = Math.max(0, Math.min(1, t));
+    const scaled = clamped * segments;
+    const i = Math.min(Math.floor(scaled), segments - 1);
+    const lt = scaled - i;
     return {
       position: this._interpVec3('position', i, lt),
-      target:   this._interpVec3('target',   i, lt),
-      roll:  this._interpScalar('roll',  0,                  i, lt),
-      fov:   this._interpScalar('fov',   (2*Math.PI)/5,      i, lt),
+      target: this._interpVec3('target', i, lt),
+      roll: this._interpScalar('roll', 0, i, lt),
+      fov: this._interpScalar('fov', (2 * Math.PI) / 5, i, lt),
     };
   }
- 
+
   sample(t) {
-    if (this.param === 'arc')   return this._sampleRaw(this._arcToRaw(t));
-    if (this.param === 'timed') {
+    if(this.param === 'arc') return this._sampleRaw(this._arcToRaw(t));
+    if(this.param === 'timed') {
       const times = this.keyframes.map(k => k.time ?? 0);
       const total = times[times.length - 1];
       return this._sampleRaw(total > 0 ? t / total : 0);
     }
     return this._sampleRaw(t);
   }
- 
+
   get totalTime() {
-    if (this.param === 'timed') {
+    if(this.param === 'timed') {
       return this.keyframes[this.keyframes.length - 1].time ?? 0;
     }
     return 1;
   }
 }
- 
-

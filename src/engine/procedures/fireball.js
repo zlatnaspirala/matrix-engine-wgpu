@@ -40,6 +40,9 @@ export class FireballSystem {
   constructor(parent, core) {
     this.core = core;
     this.parent = parent;
+    this.FBHitEvent = new CustomEvent('fireball-hit', {
+      detail: {target: null, damage: 0}
+    });
     this.loadBallAnim('./res/meshes/glb/ring1.glb');
     this.projectiles = [];
   }
@@ -110,21 +113,24 @@ export class FireballSystem {
   }
 
   _onHit(p) {
+
+    console.log('_ FireballSystem.CONFIG.damage', FireballSystem.CONFIG.damage);
     p.target.hp -= FireballSystem.CONFIG.damage;
-    dispatchEvent(new CustomEvent('fireball-hit', {
-      detail: {target: p.target, damage: FireballSystem.CONFIG.damage}
-    }));
+    // new CustomEvent('fireball-hit', {
+    //     detail: {target: p.target, damage: FireballSystem.CONFIG.damage}
+    //   })
+    this.FBHitEvent.detail.target = p.target;
+    this.FBHitEvent.detail.damage = FireballSystem.CONFIG.damage;
+    dispatchEvent(this.FBHitEvent);
     this._kill(p);
   }
 
   _kill(p) {
-
     p.mesh.position.setPosition(this.parent.position.x, this.parent.position.y, this.parent.position.z)
     // p.alive = false;
-    // // Remove from scene
+    // Remove from scene
     // const idx = app.mainRenderBundle.indexOf(p.mesh);
     // if(idx !== -1) app.mainRenderBundle.splice(idx, 1);
-
     // // Cleanup GPU resources if needed
     // p.mesh.destroy?.();
   }

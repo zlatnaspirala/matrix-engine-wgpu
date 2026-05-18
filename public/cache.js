@@ -9,9 +9,9 @@
  * for `cacheVersion`.
  * @param cacheVersion
  */
-var cacheVersion = 6;
-// var prefix = 'matrix-engine-fohb';
-var prefix = 'matrix-engine-examples';
+var cacheVersion = 25;
+var prefix = 'matrix-engine-fohb';
+// var prefix = 'matrix-engine-examples';
 var cacheName = prefix + cacheVersion;
 
 try {

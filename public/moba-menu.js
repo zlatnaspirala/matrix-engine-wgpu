@@ -4,2181 +4,6 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Character = void 0;
-var _wgpuMatrix = require("wgpu-matrix");
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
-var _utils = require("../../../src/engine/utils");
-var _hero = require("./hero");
-var _creepCharacter = require("./creep-character");
-var _navMesh = require("./nav-mesh");
-var _static = require("./static");
-var _friendlyCharacter = require("./friendly-character");
-var _fireball = require("../../../src/engine/procedures/fireball");
-class Character extends _hero.Hero {
-  friendlyLocal = {
-    heroes: [],
-    creeps: []
-  };
-  creepThrust = 0.85;
-  heroAnimationArrange = {
-    "dead": 1,
-    "walk": 4,
-    "salute": 3,
-    "attack": 0,
-    "idle": 2
-  };
-  friendlyCreepAnimationArrange = {
-    "dead": 1,
-    "walk": 4,
-    "salute": 3,
-    "attack": 0,
-    "idle": 2
-  };
-  heroFocusAttackOn = null;
-  mouseTarget = null;
-
-  // gold = 100;
-
-  constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
-    super(name, archetypes);
-    console.info(`%cplayer.data : ${forestOfHollowBlood.player.data}`, _utils.LOG_MATRIX);
-    this.name = name;
-    this.core = forestOfHollowBlood;
-    this.heroe_bodies = [];
-    this.loadLocalHero(path);
-    this.loadfriendlyCreeps();
-    app.net.multiPlayer.update = e => {
-      e.data = JSON.parse(e.data);
-      try {
-        if (e.data.netPos) {
-          //  console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><OVERRIDED<>" )
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
-        } else if (e.data.netRotY || e.data.netRotY == 0) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
-        } else if (e.data.netRotX || e.data.netRotX == 0) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
-        } else if (e.data.netRotZ || e.data.netRotZ == 0) {
-          app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
-        } else if (e.data.animationIndex || e.data.animationIndex == 0) {
-          let _e = app.enemies.enemies.filter(i => (e.data.remoteName ? e.data.remoteName : e.data.sceneName).includes(i.name) == true);
-          if (_e.length == 0) _e = app.enemies.creeps.filter(i => (e.data.remoteName ? e.data.remoteName : e.data.sceneName).includes(i.name) == true);
-          if (_e.length > 0 && _e[0].heroe_bodies) {
-            _e[0].heroe_bodies.forEach(b => {
-              b.playAnimationByIndex(e.data.animationIndex);
-            });
-          }
-        }
-      } catch (err) {
-        console.info('over mmo-err:', err);
-      }
-    };
-    setTimeout(() => this.setupHUDForHero(name), 1100);
-  }
-  setupHUDForHero(name) {
-    // console.info(`%cLOADING hero name : ${name}`, LOG_MATRIX)
-    for (var x = 1; x < 5; x++) {
-      (0, _utils.byId)(`magic-slot-${x - 1}`).style.background = `url("./res/textures/rpg/magics/${name.toLowerCase()}-${x}.png")`;
-      (0, _utils.byId)(`magic-slot-${x - 1}`).style.backgroundRepeat = "round";
-    }
-    (0, _utils.byId)('hudLeftBox').style.background = `url('./res/textures/rpg/hero-image/${name.toLowerCase()}.png')  center center / cover no-repeat`;
-    (0, _utils.byId)('hudDesriptionText').innerHTML = app.label.get[name.toLowerCase()];
-  }
-  async loadfriendlyCreeps() {
-    var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-    this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'friendly_creeps0',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 0,
-        y: -23,
-        z: 0
-      },
-      data: glbFile01
-    }, ['creep'], 'friendly', app.player.data.team));
-    this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'friendly_creeps1',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 150,
-        y: -23,
-        z: 0
-      },
-      data: glbFile01
-    }, ['creep'], 'friendly', app.player.data.team));
-    this.friendlyLocal.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'friendly_creeps2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 100,
-        y: -23,
-        z: 0
-      },
-      data: glbFile01
-    }, ['creep'], 'friendly', app.player.data.team));
-    setTimeout(() => {
-      app.localHero.setAllCreepsAtStartPos().then(() => {}).catch(() => {
-        setTimeout(() => {
-          app.localHero.setAllCreepsAtStartPos().then(() => {
-            console.log('passed in 3 creep load');
-          }).catch(() => {
-            console.log('FAILD setAllCreepsAtStartPos');
-          });
-        }, 2000);
-      });
-    }, 9000);
-  }
-  async loadLocalHero(p) {
-    try {
-      var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {
-          type: 'standard',
-          useTextureFromGlb: true
-        },
-        scale: [20, 20, 20],
-        position: {
-          x: _static.startUpPositions[this.core.player.data.team][0],
-          y: _static.startUpPositions[this.core.player.data.team][1],
-          z: _static.startUpPositions[this.core.player.data.team][2]
-        },
-        name: this.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-        raycast: {
-          enabled: true,
-          radius: 5
-        },
-        pointerEffect: {
-          enabled: true,
-          pointer: true,
-          energyBar: true,
-          flameEffect: false,
-          flameEmitter: true,
-          circlePlane: false,
-          circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/star1.png'
-        }
-      }, null, glbFile01);
-
-      // Poenter mouse click
-      var glbFile02 = await fetch('./res/meshes/glb/ring1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {
-          type: 'standard',
-          useTextureFromGlb: false
-        },
-        scale: [20, 20, 20],
-        position: {
-          x: 0,
-          y: -24,
-          z: -220
-        },
-        name: 'mouseTarget',
-        texturesPaths: ['./res/textures/default.png'],
-        raycast: {
-          enabled: false,
-          radius: 1
-        },
-        pointerEffect: {
-          enabled: true,
-          // circlePlane: true,
-          circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/star1.png'
-        }
-      }, null, glbFile02);
-
-      // make small async - cooking glbs files  mouseTarget_Circle
-      this.setupHero().then(() => {
-        //
-      }).catch(() => {
-        this.setupHero().then(() => {}).catch(() => {});
-      });
-    } catch (err) {
-      throw err;
-    }
-  }
-  setupHero() {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // console.info(`%cAnimation setup...`, LOG_MATRIX)
-        this.mouseTarget = app.getSceneObjectByName('mouseTarget_Circle');
-        this.mouseTarget.animationSpeed = 20000;
-        if (typeof app.localHero.mouseTarget.instanceTargets === 'undefined') {
-          reject();
-          return;
-        }
-        app.localHero.mouseTarget.instanceTargets[1].position[1] = 1;
-        app.localHero.mouseTarget.instanceTargets[1].scale = [0.4, 0.4, 0.4];
-        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(this.name));
-        this.core.RPG.heroe_bodies = this.heroe_bodies;
-        this.core.RPG.heroe_bodies.forEach((subMesh, id, array) => {
-          subMesh.position.thrust = this.moveSpeed;
-          subMesh.animationIndex = 0;
-          // adapt manual if blender is not setup
-          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            // console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
-            if (a.name == 'dead') this.heroAnimationArrange.dead = index;
-            if (a.name == 'walk') this.heroAnimationArrange.walk = index;
-            if (a.name == 'salute') this.heroAnimationArrange.salute = index;
-            if (a.name == 'attack') this.heroAnimationArrange.attack = index;
-            if (a.name == 'idle') this.heroAnimationArrange.idle = index;
-          });
-          if (id == 0) {
-            subMesh.sharedState.emitAnimationEvent = true;
-            // subMesh
-            // test fot magic
-            // subMesh.updateMaxInstances(5);
-            // subMesh.updateInstances(5);
-            // subMesh.trailAnimation.enabled = true;
-            if (app.localHero.name == "MariaSword") {
-              console.log("Cast only for long distance attackers...");
-              subMesh.fireballSystem = new _fireball.FireballSystem(subMesh, this.core);
-              subMesh.fireballSystem.parent.effects.flameEmitter.recreateVertexDataRND(10);
-              this.core.autoUpdate.push(subMesh.fireballSystem);
-            }
-          }
-
-          // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-          this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-        });
-        if (app.localHero.heroe_bodies[0].effects) {
-          app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
-        } else {
-          console.log(`warn: ${app.localHero.heroe_bodies[0]} `);
-        }
-
-        // adapt
-        app.localHero.heroe_bodies[0].globalAmbient = [1, 1, 1, 1];
-        if (app.localHero.name == 'Slayzer') {
-          app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
-        } else if (app.localHero.name == 'Steelborn') {
-          app.localHero.heroe_bodies[0].globalAmbient = [12, 12, 12, 1];
-        } else {
-          app.localHero.heroe_bodies[0].globalAmbient = [2, 2, 3, 1];
-        }
-        app.localHero.heroe_bodies[0].effects.circlePlaneTex.rotateEffectSpeed = 0.1;
-        this.attachEvents();
-        // important!
-        for (var x = 0; x < app.localHero.heroe_bodies.length; x++) {
-          if (x > 0) {
-            app.localHero.heroe_bodies[x].position = app.localHero.heroe_bodies[0].position;
-            app.localHero.heroe_bodies[x].rotation = app.localHero.heroe_bodies[0].rotation;
-          }
-        }
-        // activete net pos emit - becouse uniq name of hero body set net id by scene obj name simple
-        // app.localHero.heroe_bodies[0].position.netObject = app.net.session.connection.connectionId;
-        // not top solution - for now . High cost - precision good.
-        app.localHero.heroe_bodies[0].position.netObject = app.localHero.heroe_bodies[0].name;
-        // for now net view for rot is axis separated - cost is ok for orientaion remote pass
-        app.localHero.heroe_bodies[0].rotation.emitY = app.localHero.heroe_bodies[0].name;
-        dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
-          detail: `This is not sync - 99% works`
-        }));
-      }, 5000); // return to 2 -3 - testing on 3-4 on same computer
-    });
-  }
-  async loadFriendlyHero(p) {
-    try {
-      this.friendlyLocal.heroes.push(new _friendlyCharacter.FriendlyHero({
-        core: this.core,
-        name: p.hero,
-        archetypes: p.archetypes,
-        path: p.path,
-        position: {
-          x: 0,
-          y: -23,
-          z: 0
-        }
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  }
-  setAllCreepsAtStartPos = () => {
-    return new Promise((resolve, reject) => {
-      try {
-        this.friendlyLocal.creeps.forEach(subMesh_ => {
-          if (typeof subMesh_.heroe_bodies === 'undefined' || subMesh_.heroe_bodies.length == 0) {
-            reject();
-            return;
-          }
-        });
-        // console.info(`%c promise pass setAllCreepsAtStartPos...`, LOG_MATRIX)
-        this.friendlyLocal.creeps.forEach((creep, id) => {
-          let subMesh = creep.heroe_bodies[0];
-          subMesh.position.thrust = creep.moveSpeed;
-          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            if (a.name == 'dead') this.friendlyCreepAnimationArrange.dead = index;
-            if (a.name == 'walk') this.friendlyCreepAnimationArrange.walk = index;
-            if (a.name == 'salute') this.friendlyCreepAnimationArrange.salute = index;
-            if (a.name == 'attack') this.friendlyCreepAnimationArrange.attack = index;
-            if (a.name == 'idle') this.friendlyCreepAnimationArrange.idle = index;
-          });
-          subMesh.sharedState.emitAnimationEvent = true;
-          // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-        });
-        app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
-          creep.heroe_bodies[0].position.setPosition(_static.startUpPositions[this.core.player.data.team][0] + (index + 1) * 50, _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2] + (index + 1) * 50);
-        });
-        resolve();
-      } catch (err) {
-        console.info('err in: ', err);
-        reject();
-      }
-    });
-  };
-  navigateCreeps() {
-    app.localHero.friendlyLocal.creeps.forEach((creep, index) => {
-      this.navigateCreep(creep, index);
-    });
-  }
-  distance3DArrayInput(a, b) {
-    const dx = a[0] - b[0];
-    const dy = a[1] - b[1];
-    const dz = a[2] - b[2];
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-  }
-  navigateCreep(creep, index) {
-    if (creep.creepFocusAttackOn != null || !creep.heroe_bodies) {
-      // console.log('test attacher nuuu return ');
-      return;
-    }
-    creep.firstPoint = _static.creepPoints[this.core.player.data.team].firstPoint;
-    creep.finalPoint = _static.creepPoints[this.core.player.data.team].finalPoint;
-    const start = [creep.heroe_bodies[0].position.x, creep.heroe_bodies[0].position.y, creep.heroe_bodies[0].position.z];
-    let test = this.distance3DArrayInput(creep.firstPoint, start);
-    if (test < 20) {
-      creep.gotoFinal = true;
-    }
-    const end = [creep.firstPoint[0], creep.firstPoint[1], creep.firstPoint[2]];
-    const endFinal = [creep.finalPoint[0], creep.finalPoint[1], creep.finalPoint[2]];
-    let path;
-    if (creep.gotoFinal) {
-      if (creep.gotoFinal == true) {
-        path = this.core.RPG.nav.findPath(start, endFinal);
-      } else {
-        path = this.core.RPG.nav.findPath(start, end);
-      }
-    } else {
-      path = this.core.RPG.nav.findPath(start, end);
-    }
-    if (!path || path.length === 0) {
-      console.warn('No valid path found.');
-      return;
-    }
-    this.setWalkCreep(index);
-    (0, _navMesh.followPath)(creep.heroe_bodies[0], path, this.core);
-  }
-  setWalk() {
-    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.walk);
-      // console.info(`%chero walk`, LOG_MATRIX)
-      if (index == 0) app.net.send({
-        sceneName: subMesh.name,
-        animationIndex: subMesh.animationIndex
-      });
-    });
-  }
-  setSalute() {
-    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.salute);
-      // console.info(`%chero salute`, LOG_MATRIX)
-      if (index == 0) app.net.send({
-        sceneName: subMesh.name,
-        animationIndex: subMesh.animationIndex
-      });
-    });
-  }
-  setDead() {
-    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.dead);
-      if (index == 0) app.net.send({
-        sceneName: subMesh.name,
-        animationIndex: subMesh.animationIndex
-      });
-      console.info(`%cHero dead${subMesh.name}.`, _utils.LOG_MATRIX);
-    });
-  }
-  setIdle() {
-    this.core.RPG.heroe_bodies.forEach((subMesh, index) => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.idle);
-      // console.info(`%chero idle`, LOG_MATRIX)
-      if (index == 0) app.net.send({
-        sceneName: subMesh.name,
-        animationIndex: subMesh.animationIndex
-      });
-    });
-  }
-  setAttack(on) {
-    this.heroFocusAttackOn = on;
-    this.core.RPG.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
-      // console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.animationIndex}`, LOG_MATRIX)
-      app.net.send({
-        sceneName: subMesh.name,
-        animationIndex: subMesh.animationIndex
-      });
-    });
-    app.tts.speakHero(app.player.data.hero.toLowerCase(), 'attack');
-    // test fireball
-    // or bind from exstern becouse can be massive in future !!!!!
-    if (this.core.RPG.distanceForAction < this.core.RPG.distanceForLongAction) {
-      this.heroe_bodies[0].fireballSystem.spawn(this.heroe_bodies[0].position, this.heroFocusAttackOn);
-    }
-  }
-  setWalkCreep(creepIndex) {
-    console.info(`%cfriendly setWalkCreep!`, _utils.LOG_MATRIX);
-    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.friendlyCreepAnimationArrange.walk);
-    let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
-    if (this.core.net.virtualEmiter == null) {
-      return;
-    }
-    if (pos.teams.length > 0) if (pos.teams[0].length > 0) app.net.send({
-      toRemote: pos.teams[0],
-      // default null remote conns
-      sceneName: pos.netObject,
-      // origin scene name to receive
-      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].animationIndex
-    });
-    if (pos.teams.length > 0) if (pos.teams[1].length > 0) app.net.send({
-      toRemote: pos.teams[1],
-      // default null remote conns
-      remoteName: pos.remoteName,
-      // to enemy players
-      sceneName: pos.netObject,
-      // now not important
-      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].animationIndex
-    });
-  }
-  setAttackCreep(creepIndex) {
-    // console.info(`%cfriendly creep attack enemy!`, LOG_MATRIX)
-    this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].playAnimationByIndex(this.friendlyCreepAnimationArrange.attack);
-    let pos = this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].position;
-    if (this.core.net.virtualEmiter == null) {
-      return;
-    }
-    if (pos.teams.length > 0) if (pos.teams[0].length > 0) app.net.send({
-      toRemote: pos.teams[0],
-      // default null remote conns
-      sceneName: pos.netObject,
-      // origin scene name to receive
-      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].animationIndex
-    });
-    if (pos.teams.length > 0) if (pos.teams[1].length > 0) app.net.send({
-      toRemote: pos.teams[1],
-      // default null remote conns
-      remoteName: pos.remoteName,
-      // to enemy players
-      sceneName: pos.netObject,
-      // now not important
-      animationIndex: this.friendlyLocal.creeps[creepIndex].heroe_bodies[0].animationIndex
-    });
-  }
-  attachEvents() {
-    addEventListener('attack-magic0', e => {
-      this.setSalute();
-      console.log(e.detail);
-      this.core.RPG.heroe_bodies.forEach(subMesh => {
-        // level0 have only one instance - more level more instance in visuals context
-        console.info(`%cLOADING hero ghostPos`, _utils.LOG_MATRIX);
-        const distance = 100.0; // how far in front of hero
-        const lift = 0.5;
-        // --- rotation.y in degrees → radians
-        const yawRad = (subMesh.rotation.y || 0) * Math.PI / 180;
-        // --- local forward vector (relative to hero)
-        const forward = _wgpuMatrix.vec3.normalize([Math.sin(yawRad),
-        // x
-        0,
-        // y
-        Math.cos(yawRad) // z (rig faces -Z)
-        ]);
-
-        // --- compute ghost local offset
-        const ghostOffset = _wgpuMatrix.vec3.mulScalar(forward, distance);
-        ghostOffset[1] += lift;
-
-        // --- apply to local instance position
-        subMesh.instanceTargets[1].position = ghostOffset;
-        setTimeout(() => {
-          subMesh.instanceTargets[1].position[0] = 0;
-          subMesh.instanceTargets[1].position[2] = 0;
-          console.log("maybe idle? ", this.setWalk);
-          this.setWalk();
-        }, 1300);
-      });
-    });
-    // Events HERO pos
-    addEventListener('set-walk', () => {
-      this.setWalk();
-      app.tts.speakHero(app.player.data.hero.toLowerCase(), 'walk');
-    });
-    addEventListener('set-idle', () => {
-      this.setIdle();
-    });
-    addEventListener('set-attack', () => {
-      console.log('set-attack event?');
-      this.setAttack();
-    });
-    addEventListener('set-dead', () => {
-      this.setDead();
-    });
-    addEventListener('set-salute', () => {
-      this.setSalute();
-    });
-    addEventListener('close-distance', e => {
-      if (e.detail.data.A.id.indexOf('friendly') != -1 && e.detail.data.B.id.indexOf('friendly') != -1 || e.detail.data.A.group == "local_hero" && e.detail.data.B.id.indexOf('friendly') != -1 || e.detail.data.A.group == "friendly" && e.detail.data.B.group == "local_hero") {
-        // console.info('close distance BOTH friendly :', e.detail.A)
-        return;
-      }
-      // core.net.virtualEmiter != null no emiter only for local hero corespondes
-      if (e.detail.data.A.group == "enemy" && this.core.net.virtualEmiter != null) {
-        if (e.detail.data.B.group == "friendly" && e.detail.data.B.id.indexOf('friendlytron') == -1) {
-          //------------------ BLOCK
-          let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.data.B.id)[0];
-          console.info('A = enemy vs B = friendly <close-distance> is there friendly creeps here ', lc);
-          if (lc === undefined) {
-            return;
-          }
-          lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.A.id)[0];
-          if (lc.creepFocusAttackOn === undefined) {
-            lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.A.id)[0];
-            // console.info('A = enemy vs B = friendly  <close-distance> is there enemy HERO  here ', lc.creepFocusAttackOn);
-          }
-          if (lc.creepFocusAttackOn === undefined && e.detail.data.A.id.indexOf('enemytron') != -1) {
-            lc.creepFocusAttackOn = app.enemytron;
-            console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
-          }
-          if (lc.creepFocusAttackOn === undefined) {
-            return;
-          }
-          app.localHero.setAttackCreep(e.detail.data.B.id[e.detail.data.B.id.length - 1]);
-        }
-      } else if (e.detail.data.A.group == "friendly" && e.detail.data.A.id.indexOf('friendlytron') == -1) {
-        if (e.detail.data.B.group == "enemy" && this.core.net.virtualEmiter != null) {
-          let lc = app.localHero.friendlyLocal.creeps.filter(localCreep => localCreep.name == e.detail.data.A.id)[0];
-          if (lc === undefined) {
-            return;
-          }
-          lc.creepFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.B.id)[0];
-          if (lc.creepFocusAttackOn == undefined) {
-            lc.creepFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.B.id)[0];
-          }
-          if (lc.creepFocusAttackOn === undefined && e.detail.data.B.id.indexOf('enemytron') != -1) {
-            lc.creepFocusAttackOn = app.enemytron;
-            // console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
-          }
-          if (lc.creepFocusAttackOn === undefined) {
-            return;
-          }
-          app.localHero.setAttackCreep(e.detail.data.A.id[e.detail.data.A.id.length - 1]);
-        }
-      }
-      // LOCAL
-      if (e.detail.data.A.group == 'local_hero') {
-        this.heroFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.B.id)[0];
-        if (this.heroFocusAttackOn == undefined) {
-          this.heroFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.B.id)[0];
-          if (this.heroFocusAttackOn == undefined) {
-            if (e.detail.data.B.id.indexOf('enemytron') != -1) {
-              this.heroFocusAttackOn = app.enemytron;
-              // console.info('<generate game event> LOCALHERO attack enemy home.', this.heroFocusAttackOn);
-            }
-          }
-        }
-        this.setAttack(this.heroFocusAttackOn);
-      } else if (e.detail.data.B.group == 'local_hero') {
-        this.heroFocusAttackOn = app.enemies.enemies.filter(enemy => enemy.name == e.detail.data.A.id)[0];
-        if (this.heroFocusAttackOn == undefined) {
-          this.heroFocusAttackOn = app.enemies.creeps.filter(creep => creep.name == e.detail.data.A.id)[0];
-          if (this.heroFocusAttackOn == undefined) {
-            if (e.detail.data.A.id.indexOf('enemytron') != -1) {
-              this.heroFocusAttackOn = app.enemytron;
-              // console.info('<generate game event here2> creeps attack enemy home.', this.heroFocusAttackOn);
-            }
-          }
-        }
-        this.setAttack(this.heroFocusAttackOn);
-      }
-    });
-    addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, e => {
-      if (e.detail.animationName != 'attack' || typeof this.core.enemies === 'undefined') {
-        return;
-      }
-      let isEnemiesClose = false;
-      let isEnemiesCreepClose = false;
-      if (this.heroFocusAttackOn == null) {
-        // console.info('animationEnd [heroFocusAttackOn == null ]', e.detail.animationName)
-
-        this.core.enemies.enemies.forEach(enemy => {
-          if (typeof enemy.heroe_bodies === 'undefined') return;
-          if (enemy.heroe_bodies) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
-            if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%cATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-              isEnemiesClose = true;
-              this.calcDamage(this, enemy);
-            }
-          }
-        });
-        this.core.enemies.creeps.forEach(creep => {
-          if (typeof creep.heroe_bodies === 'undefined') return;
-          if (creep.heroe_bodies) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, creep.heroe_bodies[0].position);
-            if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%cATTACK DAMAGE ${creep.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-              isEnemiesCreepClose = true;
-              this.calcDamage(this, creep);
-            }
-          }
-        });
-        if (isEnemiesCreepClose == false) this.setIdle();
-        return;
-      } else {
-        if (this.core.enemies.enemies.length > 0) this.core.enemies.enemies.forEach(enemy => {
-          if (this.heroFocusAttackOn.name.indexOf(enemy.name) != -1) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
-            if (tt < this.core.RPG.distanceForAction) {
-              isEnemiesClose = true;
-              console.log(`%cATTACK DAMAGE [lhero on enemy hero] ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-              this.calcDamage(this, enemy);
-              return;
-            }
-          }
-        });
-        if (this.core.enemies.creeps.length > 0) this.core.enemies.creeps.forEach(creep => {
-          if (this.heroFocusAttackOn.name.indexOf(creep.name) != -1) {
-            let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.heroFocusAttackOn.position);
-            if (tt < this.core.RPG.distanceForAction) {
-              isEnemiesCreepClose = true;
-              console.log(`%cATTACK DAMAGE [lhero on creep] ${creep.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-              this.calcDamage(this, creep);
-              return;
-            }
-          }
-        });
-        let enemytron = app.RPG.distance3D(this.heroe_bodies[0].position, app.enemytron.position);
-        if (enemytron < app.RPG.distanceForAction) {
-          console.log(`%c HERRO ATTACK ENEMY TRON`, _utils.LOG_MATRIX);
-          isEnemiesClose = true;
-          this.calcDamage(this, app.enemytron);
-          return;
-        }
-      }
-    });
-
-    // This is common for all kineamtic bodies
-    addEventListener('onTargetPositionReach', e => {
-      if (e.detail.name.indexOf('friendly-creep') != -1) {
-        let getName = e.detail.name.split('_')[0];
-        let t = app.localHero.friendlyLocal.creeps.filter(obj => obj.name == getName);
-        if (t[0].creepFocusAttackOn != null) {
-          // console.log(`%[character base]`)
-          return;
-        }
-        let testz = e.detail.body.position.z - t[0].firstPoint[2];
-        let testx = e.detail.body.position.x - t[0].firstPoint[0];
-        if (testz > 15 && testx > 15) {
-          // got to first point  t[0] for now only  one sub mesh per creep...
-          const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
-          const path = this.core.RPG.nav.findPath(start, t[0].firstPoint);
-          if (!path || path.length === 0) {
-            console.warn('No valid path found.');
-            return;
-          }
-          // getName[getName.length-1] becouse for now creekps have sum < 10
-          console.log('followPath creep to the FIRST POINT....');
-          setTimeout(() => {
-            this.setWalkCreep(getName[getName.length - 1]);
-            (0, _navMesh.followPath)(t[0].heroe_bodies[0], path, app);
-          }, 1000);
-        } else {
-          // goto final
-          // console.log('SEND TO last POINT POINT to the enemy home....', t[0].finalPoint)
-          const start = [t[0].heroe_bodies[0].position.x, t[0].heroe_bodies[0].position.y, t[0].heroe_bodies[0].position.z];
-          const path = this.core.RPG.nav.findPath(start, t[0].finalPoint);
-          if (!path || path.length === 0) {
-            console.warn('No valid path found.');
-            return;
-          }
-          // getName[getName.length-1] becouse for now creekps have sum < 10
-          // at the end finalPoint will be point of enemy base!
-          setTimeout(() => {
-            (0, _navMesh.followPath)(t[0].heroe_bodies[0], path, app);
-            this.setWalkCreep(getName[getName.length - 1]);
-          }, 1000);
-        }
-        return;
-      }
-
-      // for now only local hero
-      if (this.heroFocusAttackOn == null) {
-        let isEnemiesClose = false;
-        this.core.enemies.enemies.forEach(enemy => {
-          if (typeof enemy.heroe_bodies === 'undefined') return;
-          let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
-          if (tt < this.core.RPG.distanceForAction) {
-            console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-            isEnemiesClose = true;
-            this.calcDamage(this, enemy);
-          }
-        });
-        if (isEnemiesClose == false) this.setIdle();
-      }
-    });
-    addEventListener('onMouseTarget', e => {
-      if (this.core.RPG.selected.includes(this.heroe_bodies[0])) {
-        this.mouseTarget.position.setPosition(e.detail.x, this.mouseTarget.position.y, e.detail.z);
-        if (e.detail.type == "attach") {
-          this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [1, 0, 0, 0.9];
-        } else {
-          this.mouseTarget.effects.circlePlaneTex.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
-        }
-      }
-    });
-    addEventListener('navigate-friendly_creeps', e => {
-      if (app.net.virtualEmiter != null) {
-        if (e.detail.localCreepNav) {
-          console.log(`%c navigate creep ${e.detail.localCreepNav}  index : ${e.detail.index}`, _utils.LOG_MATRIX);
-          this.navigateCreep(e.detail.localCreepNav, e.detail.index);
-        } else {
-          this.navigateCreeps();
-        }
-      }
-    });
-    addEventListener('updateLocalHeroGold', e => {
-      this.gold += e.detail.gold;
-    });
-  }
-}
-exports.Character = Character;
-
-},{"../../../src/engine/loaders/webgpu-gltf":59,"../../../src/engine/procedures/fireball":75,"../../../src/engine/utils":79,"./creep-character":3,"./friendly-character":7,"./hero":8,"./nav-mesh":13,"./static":15,"wgpu-matrix":32}],2:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Controller = void 0;
-var _raycast = require("../../../src/engine/raycast.js");
-var _wgpuMatrix = require("wgpu-matrix");
-var _utils = require("../../../src/engine/utils.js");
-var _navMesh = require("./nav-mesh.js");
-class Controller {
-  ignoreList = ['ground', 'mouseTarget_Circle'];
-  selected = [];
-  nav = null;
-  heroe_bodies = null;
-
-  // Must be same init !!!
-  // incorporate with automated 'close-distance'
-  distanceForAction = 36;
-  distanceForLongAction = 36;
-  distanceForLongAction = 36;
-  constructor(core) {
-    this.core = core;
-    this.canvas = this.core.canvas;
-    this.dragStart = null;
-    this.dragEnd = null;
-    this.selecting = false;
-    this.onMouseTargetEvent = new CustomEvent(`onMouseTarget`, {
-      detail: {
-        type: 'normal',
-        x: 0,
-        y: 0,
-        z: 0
-      }
-    });
-    this.navigateFriendlyCreepsEvent = new CustomEvent('navigate-friendly_creeps', {
-      detail: 'test'
-    });
-    this.setWalkEvent = new CustomEvent('set-walk');
-    this.onSelectCharacterEvent = new CustomEvent("onSelectCharacter", {
-      detail: {
-        data: 'floor'
-      }
-    });
-    this.canvas.addEventListener('mousedown', e => {
-      if (e.button === 2) {
-        // right m
-        this.selecting = true;
-        this.dragStart = {
-          x: e.clientX,
-          y: e.clientY
-        };
-        this.dragEnd = {
-          x: e.clientX,
-          y: e.clientY
-        };
-      } // else if(e.button === 0) { }
-    }, {
-      passive: true
-    });
-    this.canvas.addEventListener('mousemove', e => {
-      if (this.selecting) {
-        this.dragEnd = {
-          x: e.clientX,
-          y: e.clientY
-        };
-      }
-    }, {
-      passive: true
-    });
-    this.canvas.addEventListener('mouseup', e => {
-      if (this.selecting) {
-        this.selecting = false;
-        this.selectCharactersInRect(this.dragStart, this.dragEnd);
-        this.dragStart = this.dragEnd = null;
-        setTimeout(() => {
-          if (this.ctx) this.ctx.clearRect(0, 0, this.overlay.width, this.overlay.height);
-        }, 100);
-      }
-    }, {
-      passive: true
-    });
-    (0, _raycast.addRaycastsAABBListener)(undefined, 'click');
-    this.canvas.addEventListener("ray.hit.event", e => {
-      const {
-        hitObject,
-        hitPoint,
-        button,
-        eventName
-      } = e.detail;
-      console.log('ray.hit.event detected : ', hitObject.name);
-      if (e.detail.hitObject.name == 'ground') {
-        this.onMouseTargetEvent.detail.type = 'normal';
-        this.onMouseTargetEvent.detail.x = hitPoint[0];
-        this.onMouseTargetEvent.detail.y = hitPoint[1];
-        this.onMouseTargetEvent.detail.z = hitPoint[2];
-        dispatchEvent(this.onMouseTargetEvent);
-        this.core.localHero.heroFocusAttackOn = null;
-        // return;
-      } else if (this.core.enemies && this.core.enemies.isEnemy(e.detail.hitObject.name)) {
-        this.onMouseTargetEvent.detail.type = 'attach';
-        this.onMouseTargetEvent.detail.x = e.detail.hitObject.position.x;
-        this.onMouseTargetEvent.detail.y = e.detail.hitObject.position.y;
-        this.onMouseTargetEvent.detail.z = e.detail.hitObject.position.z;
-        dispatchEvent(this.onMouseTargetEvent);
-      } else {
-        if (app.net.virtualEmiter != null) {
-          console.log("only emiter - navigate friendly_creeps creep from controller :", e.detail.hitObject.name);
-          dispatchEvent(this.navigateFriendlyCreepsEvent);
-        }
-        // must be friendly objs
-
-        // oNLY MOB
-        if ((0, _utils.isMobile)() == true) {
-          this.selected.push(e.detail.hitObject);
-          this.onSelectCharacterEvent.detail.data = e.detail.hitObject.name;
-          (0, _utils.byId)('hud-menu').dispatchEvent(this.onSelectCharacterEvent);
-        }
-        return;
-      }
-      if (button == 0 && e.detail.hitObject.name != 'ground' && e.detail.hitObject.name !== this.heroe_bodies[0].name) {
-        if (this.heroe_bodies.length == 2) {
-          if (e.detail.hitObject.name == this.heroe_bodies[1].name) {
-            console.log("Hit object  SELF SLICKED :", e.detail.hitObject.name);
-            return;
-          }
-        }
-        const LH = this.core.localHero.heroe_bodies[0];
-        console.log("Hit object VS LH DISTANCE : ", this.distance3D(LH.position, e.detail.hitObject.position));
-        // after all check is it eneimy
-        this.core.localHero.heroFocusAttackOn = e.detail.hitObject;
-        let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
-        // cases for magic // distance attack
-        if (testDistance < this.distanceForLongAction) {
-          console.log("Lets say only for maria [SPECIAL DISTANCE ATTACK]");
-          this.core.localHero.setAttack(e.detail.hitObject);
-          return;
-        }
-        // close contact
-        if (testDistance < this.distanceForAction) {
-          console.log("this.core.localHero.setAttack [e.detail.hitObject]");
-          this.core.localHero.setAttack(e.detail.hitObject);
-          return;
-        }
-      }
-      // Only react to LEFT CLICK
-      if (button !== 0 || this.heroe_bodies === null || !this.selected.includes(this.heroe_bodies[0])) {
-        console.log(" no local here ");
-        // not hero but maybe other creaps . based on selected....
-        return;
-      }
-      // Define start (hero position) and end (clicked point)
-      const hero = this.heroe_bodies[0];
-      dispatchEvent(this.setWalkEvent);
-      const start = [hero.position.x, hero.position.y, hero.position.z];
-      const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
-      // app.net.send({
-      //   heroName: app.localHero.name,
-      //   sceneName: hero.name,
-      //   followPath: {start: start, end: end},
-      // })
-      const path = this.nav.findPath(start, end);
-      if (!path || path.length === 0) {
-        console.warn('No valid path found.');
-        return;
-      }
-      // no need if position = position of root ??? test last bug track
-      for (var x = 0; x < this.heroe_bodies.length; x++) {
-        (0, _navMesh.followPath)(this.heroe_bodies[x], path, this.core);
-      }
-      // followPath(this.heroe_bodies[0], path, this.core);
-    });
-    document.body.addEventListener("contextmenu", e => {
-      e.preventDefault();
-    });
-    this.canvas.addEventListener("contextmenu", e => {
-      e.preventDefault();
-    });
-    this.activateVisualRect();
-    let hiddenAt = null;
-    if (location.hostname.indexOf('localhost') == 'DISABLE____') {
-      console.log('Security stuff activated');
-      console.log = function () {};
-      // Security stuff
-      if (window.innerHeight < window.outerHeight) {
-        let test = window.outerHeight - window.innerHeight;
-        if (test > 100) {
-          console.log('BAN', test);
-          location.assign('https://maximumroulette.com');
-        }
-      }
-      if (window.innerWidth < window.outerWidth) {
-        let testW = window.outerWidth - window.innerWidth;
-        if (testW > 100) {
-          console.log('BAN', testW);
-          location.assign('https://maximumroulette.com');
-        }
-      }
-      window.addEventListener('keydown', e => {
-        if (e.code == "F12") {
-          e.preventDefault();
-          _utils.mb.error(`
-            You are interest in Forest Of Hollow Blood. See <a href='https://github.com/zlatnapirala'>Github Source</a>
-            You can download project for free and test it into localhost.
-            `);
-          console.log(`%c[keydown opened] ${e}`, _utils.LOG_MATRIX);
-          return false;
-        }
-      });
-      let onVisibilityChange = () => {
-        if (document.visibilityState === "visible") {
-          if (hiddenAt !== null) {
-            const now = Date.now();
-            const hiddenDuration = (now - hiddenAt) / 1000;
-            if (parseFloat(hiddenDuration.toFixed(2)) > 1) {
-              console.log(`🟢⚠️ Tab was hidden for ${hiddenDuration.toFixed(2)} sec.`);
-              document.title = document.title.replace('🟢', '🟡');
-            }
-            hiddenAt = null; // reset
-          } else {
-            console.log("🟢 Tab is visible — first activation.");
-          }
-        } else {
-          hiddenAt = Date.now();
-        }
-      };
-      document.addEventListener("visibilitychange", onVisibilityChange);
-    }
-  }
-  projectToScreen(worldPos, viewMatrix, projectionMatrix, canvas) {
-    // Convert world position to clip space
-    const world = [worldPos[0], worldPos[1], worldPos[2], 1.0];
-
-    // Multiply in correct order: clip = projection * view * world
-    const viewProj = _wgpuMatrix.mat4.multiply(projectionMatrix, viewMatrix);
-    const clip = _wgpuMatrix.vec4.transformMat4(world, viewProj);
-
-    // Perform perspective divide
-    const ndcX = clip[0] / clip[3];
-    const ndcY = clip[1] / clip[3];
-
-    // Convert NDC (-1..1) to screen pixels
-    const screenX = (ndcX * 0.5 + 0.5) * canvas.width;
-    const screenY = (1 - (ndcY * 0.5 + 0.5)) * canvas.height;
-    return {
-      x: screenX,
-      y: screenY
-    };
-  }
-  selectCharactersInRect(start, end) {
-    const xMin = Math.min(start.x, end.x);
-    const xMax = Math.max(start.x, end.x);
-    const yMin = Math.min(start.y, end.y);
-    const yMax = Math.max(start.y, end.y);
-
-    // const camera = app.cameras.WASD;
-    const camera = app.cameras.RPG;
-    for (const object of app.mainRenderBundle) {
-      if (!object.position) continue;
-      const screen = this.projectToScreen([object.position.x, object.position.y, object.position.z, 1.0], camera.view, camera.projectionMatrix, this.canvas);
-      if (screen.x >= xMin && screen.x <= xMax && screen.y >= yMin && screen.y <= yMax) {
-        if (this.ignoreList.some(str => object.name.includes(str))) continue;
-        if (this.selected.includes(object)) continue;
-        // deplaced
-        // object.setSelectedEffect(true);
-        this.selected.push(object);
-        this.onSelectCharacterEvent.detail.data = object.name;
-        (0, _utils.byId)('hud-menu').dispatchEvent(this.onSelectCharacterEvent);
-      } else {
-        if (this.selected.indexOf(object) !== -1) {
-          this.selected.splice(this.selected.indexOf(object), 1);
-          // byId('hud-menu').dispatchEvent(new CustomEvent("onSelectCharacter", {detail: object.name} ))
-        }
-        // deplaced object.setSelectedEffect(false);
-      }
-    }
-    console.info("Selected:", this.selected.map(o => o.name));
-  }
-  activateVisualRect() {
-    const overlay = document.createElement("canvas");
-    overlay.width = this.canvas.width;
-    overlay.height = this.canvas.height;
-    overlay.style.position = "absolute";
-    overlay.style.left = this.canvas.offsetLeft + "px";
-    overlay.style.top = this.canvas.offsetTop + "px";
-    this.canvas.parentNode.appendChild(overlay);
-    this.ctx = overlay.getContext("2d");
-    overlay.style.pointerEvents = "none";
-    this.overlay = overlay;
-    this.canvas.addEventListener("mousemove", e => {
-      if (this.selecting) {
-        this.dragEnd = {
-          x: e.clientX,
-          y: e.clientY
-        };
-        this.ctx.clearRect(0, 0, overlay.width, overlay.height);
-        this.ctx.strokeStyle = "rgba(0,255,0,0.8)";
-        this.ctx.lineWidth = 2.5;
-        this.ctx.strokeRect(this.dragStart.x, this.dragStart.y, this.dragEnd.x - this.dragStart.x, this.dragEnd.y - this.dragStart.y);
-      }
-    });
-  }
-  distance3D(a, b) {
-    if (!b) return 1000; // fix this later
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
-    const dz = a.z - b.z;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-  }
-}
-exports.Controller = Controller;
-
-},{"../../../src/engine/raycast.js":78,"../../../src/engine/utils.js":79,"./nav-mesh.js":13,"wgpu-matrix":32}],3:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Creep = void 0;
-var _utils = require("../../../src/engine/utils");
-var _hero = require("./hero");
-var _static = require("./static");
-class Creep extends _hero.Hero {
-  heroAnimationArrange = {
-    dead: null,
-    walk: null,
-    salute: null,
-    attack: null,
-    idle: null
-  };
-  creepFocusAttackOn = null;
-  constructor(o, archetypes = ["creep"], group = "enemy", team) {
-    super(o.name, archetypes);
-    this.name = o.name;
-    this.core = o.core;
-    this.group = group;
-    this.team = team;
-    this.loadCreep(o);
-    return this;
-  }
-  loadCreep = async o => {
-    this.o = o;
-    try {
-      // var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {
-          type: 'standard',
-          useTextureFromGlb: true
-        },
-        scale: [20, 20, 20],
-        position: o.position,
-        name: o.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-        raycast: {
-          enabled: true,
-          radius: 1.1
-        },
-        pointerEffect: {
-          enabled: true,
-          energyBar: true
-        }
-      }, null, o.data);
-      // make small async - cooking glbs files
-      this.asyncHelper(this.o).then(() => {
-        console.log('good');
-      }).catch(() => {
-        console.log('catch');
-        setTimeout(() => {
-          this.asyncHelper(this.o);
-        }, 3000);
-      });
-    } catch (err) {
-      throw err;
-    }
-  };
-  asyncHelper = async o => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
-        if (this.heroe_bodies.length == 0 || this.core.net.session == null) {
-          reject();
-          return;
-        }
-        this.heroe_bodies.forEach((subMesh, idx) => {
-          subMesh.position.thrust = this.moveSpeed;
-          subMesh.animationIndex = 0;
-          // adapt manual if blender is not setup
-          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            // console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
-            if (a.name == 'dead') this.heroAnimationArrange.dead = index;
-            if (a.name == 'walk') this.heroAnimationArrange.walk = index;
-            if (a.name == 'salute') this.heroAnimationArrange.salute = index;
-            if (a.name == 'attack') this.heroAnimationArrange.attack = index;
-            if (a.name == 'idle') this.heroAnimationArrange.idle = index;
-          });
-          // adapt
-          subMesh.globalAmbient = [1, 1, 1, 1];
-          if (this.name.indexOf('friendly_creeps') != -1) {
-            subMesh.globalAmbient = [12, 12, 12, 1];
-          } else if (this.name.indexOf('enemy_creep') != -1) {
-            subMesh.globalAmbient = [12, 1, 1, 1];
-          }
-          if (this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
-            if (idx == 0) {
-              if (this.core.net.virtualEmiter == this.core.net.session.connection.connectionId) {
-                subMesh.position.teams[0] = app.player.remoteByTeam[app.player.data.team];
-                subMesh.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
-                subMesh.position.netObject = subMesh.name;
-                let t = subMesh.name.replace('friendly_creeps', 'enemy_creep');
-                subMesh.position.remoteName = t;
-                subMesh.rotation.teams[0] = app.player.remoteByTeam[app.player.data.team];
-                subMesh.rotation.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
-                subMesh.rotation.emitY = subMesh.name;
-                subMesh.rotation.remoteName = t;
-                subMesh.sharedState.emitAnimationEvent = true;
-              }
-            }
-          }
-          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, this.group);
-        });
-        this.setStartUpPosition();
-        this.attachEvents();
-        resolve();
-        setTimeout(() => {
-          if (this.core.net.virtualEmiter != null) {
-            console.info(`%c virtualEmiter navigateCreeps : `, _utils.LOG_MATRIX);
-            app.localHero.navigateCreeps();
-          }
-        }, 3000);
-      }, 9000);
-    });
-  };
-  setWalk() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.walk);
-      console.info(`%chero walk`, _utils.LOG_MATRIX);
-    });
-  }
-  setSalute() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.salute);
-      console.info(`%chero salute`, _utils.LOG_MATRIX);
-    });
-  }
-  setDead() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.dead);
-      console.info(`%chero dead`, _utils.LOG_MATRIX);
-    });
-  }
-  setIdle() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.idle);
-      console.info(`%chero idle`, _utils.LOG_MATRIX);
-    });
-  }
-  setAttack() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
-      console.info(`%chero attack`, _utils.LOG_MATRIX);
-    });
-  }
-  setStartUpPosition() {
-    if (this.group == 'enemy') {
-      this.heroe_bodies.forEach((subMesh, idx) => {
-        subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.enemyTeam][0], _static.startUpPositions[this.core.player.data.enemyTeam][1], _static.startUpPositions[this.core.player.data.enemyTeam][2]);
-      });
-    } else {
-      this.heroe_bodies.forEach((subMesh, idx) => {
-        subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.team][0], _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2]);
-      });
-    }
-  }
-  setStartUpPosCreep() {
-    if (this.group == 'enemy') {
-      this.heroe_bodies.forEach((subMesh, idx) => {
-        subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.enemyTeam][0], _static.startUpPositions[this.core.player.data.enemyTeam][1], _static.startUpPositions[this.core.player.data.enemyTeam][2]);
-      });
-    } else {
-      this.heroe_bodies.forEach((subMesh, idx) => {
-        subMesh.position.setPosition(_static.startUpPositions[this.core.player.data.team][0], _static.startUpPositions[this.core.player.data.team][1], _static.startUpPositions[this.core.player.data.team][2]);
-      });
-    }
-  }
-  attachEvents() {
-    addEventListener(`onDamage-${this.name}`, e => {
-      if (this.group == 'enemy') {
-        console.info(`%c onDamage-${this.name} group: ${this.group}  creep damage!`, _utils.LOG_FUNNY);
-      } else {
-        console.log('friendly creep damage must come from net. [never]');
-        return;
-      }
-      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
-      this.core.net.sendOnlyData({
-        type: "damage-creep",
-        defenderName: e.detail.defender,
-        defenderTeam: this.team,
-        hp: e.detail.hp,
-        progress: e.detail.progress
-      });
-      if (e.detail.progress == 0) {
-        this.setDead();
-        console.info(`%c Creep dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
-        setTimeout(() => {
-          this.setStartUpPosCreep(this.name[this.name.length - 1]);
-          this.setWalk();
-          this.creepFocusAttackOn = null;
-          this.gotoFinal = false;
-          this.setStartUpPosCreep(this.name[this.name.length - 1]);
-          this.hp = 300;
-          this.heroe_bodies[0].effects.energyBar.setProgress(1);
-          app.localHero.setWalkCreep(this.name[this.name.length - 1]);
-          dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
-            detail: 'test'
-          }));
-        }, 700);
-      }
-    });
-    if (this.group != 'enemy') {
-      addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, e => {
-        // CHECK DISTANCE
-        if (e.detail.animationName != 'attack') {
-          // && this.creepFocusAttackOn == null) {
-          return;
-        }
-        if (this.group == "friendly") {
-          if (this.creepFocusAttackOn == null) {
-            // console.info('setIdle:', e.detail.animationName)
-            let isEnemiesClose = false;
-            this.core.enemies.enemies.forEach(enemy => {
-              if (typeof enemy.heroe_bodies === 'undefined') return;
-              let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, enemy.heroe_bodies[0].position);
-              if (tt < this.core.RPG.distanceForAction) {
-                // console.log(`%c ATTACK DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX)
-                isEnemiesClose = true;
-                this.calcDamage(this, enemy);
-                // no need ?? this.creepFocusAttackOn = null;
-                return;
-              }
-            });
-            this.core.enemies.creeps.forEach(creep => {
-              if (typeof creep.heroe_bodies === 'undefined') return;
-              let tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, creep.heroe_bodies[0].position);
-              if (tt < this.core.RPG.distanceForAction) {
-                // console.log(`%c ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
-                isEnemiesClose = true;
-                this.calcDamage(this, creep);
-                // no need ?? this.creepFocusAttackOn = null;
-                return;
-              }
-            });
-            if (!app.enemytron) return;
-            let enemytron = this.core.RPG.distance3D(this.heroe_bodies[0].position, app.enemytron.position);
-            if (enemytron < this.core.RPG.distanceForAction) {
-              console.log(`%c ATTACK ENEMY TRON ${creep.heroe_bodies[0].name}`, _utils.LOG_MATRIX);
-              isEnemiesClose = true;
-              this.calcDamage(this, app.enemytron);
-              return;
-            }
-            // if(isEnemiesClose == false) this.setIdle();
-            return;
-          } else {
-            // Focus on enemy vs creeps !
-            let tt;
-            if (typeof this.creepFocusAttackOn.position !== 'undefined') {
-              tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.position);
-            } else {
-              tt = this.core.RPG.distance3D(this.heroe_bodies[0].position, this.creepFocusAttackOn.heroe_bodies[0].position);
-            }
-            if (tt < this.core.RPG.distanceForAction) {
-              console.log(`%c [creep] ATTACK DAMAGE ON`, _utils.LOG_MATRIX);
-              this.calcDamage(this, this.creepFocusAttackOn);
-              return;
-            } else {
-              this.creepFocusAttackOn = null;
-              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
-                detail: 'test'
-              }));
-            }
-          }
-        }
-      });
-    }
-  }
-}
-exports.Creep = Creep;
-
-},{"../../../src/engine/utils":79,"./hero":8,"./static":15}],4:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.EnemiesManager = void 0;
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
-var _creepCharacter = require("./creep-character");
-var _enemyCharacter = require("./enemy-character");
-class EnemiesManager {
-  enemies = [];
-  creeps = [];
-  constructor(core, team) {
-    this.core = core;
-    this.team = team;
-    this.loadCreeps();
-  }
-  loadEnemyHero(o) {
-    this.enemies.push(new _enemyCharacter.Enemie({
-      core: this.core,
-      name: o.hero,
-      archetypes: o.archetypes,
-      path: o.path,
-      position: {
-        x: 0,
-        y: -23,
-        z: 0
-      }
-    }));
-  }
-  // Make possible to play 3x3 4x4 or 5x5 ...
-  async loadCreeps() {
-    var glbFile01 = await fetch('res/meshes/glb/bot.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-    this.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'enemy_creep0',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 0,
-        y: -23,
-        z: -0
-      },
-      data: glbFile01
-    }, ['creep'], 'enemy', app.player.data.enemyTeam));
-    this.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'enemy_creep1',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 100,
-        y: -23,
-        z: -0
-      },
-      data: glbFile01
-    }, ['creep'], 'enemy', app.player.data.enemyTeam));
-    this.creeps.push(new _creepCharacter.Creep({
-      core: this.core,
-      name: 'enemy_creep2',
-      archetypes: ["creep"],
-      path: 'res/meshes/glb/bot.glb',
-      position: {
-        x: 150,
-        y: -23,
-        z: -0
-      },
-      data: glbFile01
-    }, ['creep'], 'enemy', app.player.data.enemyTeam));
-  }
-  isEnemy(name) {
-    let test = this.enemies.filter(obj => obj.name && name.includes(obj.name));
-    let test2 = this.creeps.filter(obj => obj.name && name.includes(obj.name));
-    if (test2.length == 0 && test.length == 0) {
-      return false;
-    }
-    return true;
-  }
-}
-exports.EnemiesManager = EnemiesManager;
-
-},{"../../../src/engine/loaders/webgpu-gltf":59,"./creep-character":3,"./enemy-character":5}],5:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Enemie = void 0;
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
-var _utils = require("../../../src/engine/utils");
-var _hero = require("./hero");
-var _navMesh = require("./nav-mesh");
-var _static = require("./static");
-class Enemie extends _hero.Hero {
-  heroAnimationArrange = {
-    dead: null,
-    walk: null,
-    salute: null,
-    attack: null,
-    idle: null
-  };
-  constructor(o, archetypes = ["Warrior"]) {
-    super(o.name, archetypes);
-    this.name = o.name;
-    this.core = o.core;
-    this.loadEnemyHero(o);
-    this.attachEvents();
-    return this;
-  }
-  loadEnemyHero = async o => {
-    try {
-      console.info(`%chero enemy path  ${o.path}`, _utils.LOG_MATRIX);
-      var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {
-          type: 'standard',
-          useTextureFromGlb: true
-        },
-        scale: [20, 20, 20],
-        position: o.position,
-        name: o.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-        raycast: {
-          enabled: true,
-          radius: 25
-        },
-        pointerEffect: {
-          enabled: true,
-          energyBar: true
-        }
-      }, null, glbFile01);
-      // make small async - cooking glbs files
-      setTimeout(() => {
-        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
-        this.heroe_bodies.forEach((subMesh, idx) => {
-          subMesh.position.thrust = this.moveSpeed;
-          subMesh.animationIndex = 0;
-          // adapt manual if blender is not setup
-          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
-            if (a.name == 'dead') this.heroAnimationArrange.dead = index;
-            if (a.name == 'walk') this.heroAnimationArrange.walk = index;
-            if (a.name == 'salute') this.heroAnimationArrange.salute = index;
-            if (a.name == 'attack') this.heroAnimationArrange.attack = index;
-            if (a.name == 'idle') this.heroAnimationArrange.idle = index;
-          });
-          // adapt
-          if (this.name == 'Slayzer') {
-            subMesh.globalAmbient = [2, 2, 3, 1];
-          }
-          if (idx == 0) this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemy');
-        });
-        this.setStartUpPosition();
-        for (var x = 0; x < this.heroe_bodies.length; x++) {
-          if (x > 0) {
-            this.heroe_bodies[x].position = this.heroe_bodies[0].position;
-            this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
-          }
-        }
-      }, 1600);
-    } catch (err) {
-      throw err;
-    }
-  };
-  setWalk() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.walk);
-      console.info(`%chero walk`, _utils.LOG_MATRIX);
-    });
-  }
-  setSalute() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.salute);
-      console.info(`%chero salute`, _utils.LOG_MATRIX);
-    });
-  }
-  setDead() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.dead);
-      console.info(`%chero dead`, _utils.LOG_MATRIX);
-    });
-  }
-  setIdle() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.idle);
-      console.info(`%chero idle`, _utils.LOG_MATRIX);
-    });
-  }
-  setAttack() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
-      console.info(`%chero attack`, _utils.LOG_MATRIX);
-    });
-  }
-  setStartUpPosition() {
-    this.heroe_bodies.forEach((subMesh, idx) => {
-      subMesh.position.setPosition(_static.startUpPositions[app.player.data.enemyTeam][0], _static.startUpPositions[app.player.data.enemyTeam][1], _static.startUpPositions[app.player.data.enemyTeam][2]);
-    });
-  }
-  attachEvents() {
-    addEventListener(`onDamage-${this.name}`, e => {
-      console.info(`%c remote[enemy] hero damage ${e.detail}`, _utils.LOG_MATRIX);
-      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
-      this.core.net.sendOnlyData({
-        type: "damage",
-        defenderName: e.detail.defender,
-        attackerName: e.detail.attacker,
-        hp: e.detail.hp,
-        progress: e.detail.progress,
-        damage: e.detail.damage
-      });
-      // if detail is 0
-      if (e.detail.progress == 0) {
-        this.setDead();
-        console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
-        setTimeout(() => {
-          this.setStartUpPosition();
-        }, 500);
-      }
-    });
-  }
-}
-exports.Enemie = Enemie;
-
-},{"../../../src/engine/loaders/webgpu-gltf":59,"../../../src/engine/utils":79,"./hero":8,"./nav-mesh":13,"./static":15}],6:[function(require,module,exports){
-"use strict";
-
-var _world = _interopRequireDefault(require("../../../src/world.js"));
-var _controller = require("./controller.js");
-var _hud = require("./hud.js");
-var _mapLoader = require("./map-loader.js");
-var _characterBase = require("./character-base.js");
-var _enemiesManager = require("./enemies-manager.js");
-var _collisionSubSystem = require("../../../src/engine/collision-sub-system.js");
-var _utils = require("../../../src/engine/utils.js");
-var _net = require("../../../src/engine/networking/net.js");
-var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
-var _static = require("./static.js");
-var _tts = require("./tts.js");
-var _marketplace = require("./marketplace.js");
-var _invertoryManager = require("./invertoryManager.js");
-var _rocketCraftingAccount = require("./rocket-crafting-account.js");
-var _enBackup = require("../../../public/res/multilang/en-backup.js");
-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-/**
- * @description
- * This is main root dep file.
- * All start from here.
- * @Note
- * “Character and animation assets from Mixamo,
- * used under Adobe’s royalty‑free license. 
- * Redistribution of raw assets is not permitted.”
- **/
-if (!_utils.SS.has('player') || !_utils.LS.has('player')) {
-  location.href = 'https://maximumroulette.com';
-}
-let forestOfHollowBlood = new _world.default({
-  dontUsePhysics: true,
-  useSingleRenderPass: true,
-  canvasSize: 'fullscreen',
-  MAX_BONES: 100,
-  MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 2 : 4,
-  mainCameraParams: {
-    type: 'RPG',
-    responseCoef: 1000
-  },
-  clearColor: {
-    r: 0,
-    b: 0.122,
-    g: 0.122,
-    a: 1
-  }
-}, () => {
-  forestOfHollowBlood.account = new _rocketCraftingAccount.RCSAccount("https://maximumroulette.com");
-  forestOfHollowBlood.account.createDOM(true);
-  forestOfHollowBlood.tts = new _tts.MatrixTTS();
-  forestOfHollowBlood.player = {
-    username: "guest"
-  };
-
-  // Audios
-  forestOfHollowBlood.matrixSounds.createAudio('music', 'res/audios/rpg/music.mp3', 1);
-  forestOfHollowBlood.matrixSounds.createAudio('music2', 'res/audios/rpg/wizard-rider.mp3', 1);
-  forestOfHollowBlood.matrixSounds.createAudio('win1', 'res/audios/rpg/feel.mp3', 2);
-  forestOfHollowBlood.handleHeroImage = selectHeroIndex => {
-    // func exist in case of changinf hero names...
-    let name = 'no-name';
-    if (selectHeroIndex == 0) {
-      name = 'mariasword';
-    } else if (selectHeroIndex == 1) {
-      name = 'slayzer';
-    } else if (selectHeroIndex == 2) {
-      name = 'steelborn';
-    } else if (selectHeroIndex == 3) {
-      name = 'warrok';
-    } else if (selectHeroIndex == 4) {
-      name = 'skeletonz';
-    } else if (selectHeroIndex == 5) {
-      name = 'erika';
-    } else if (selectHeroIndex == 6) {
-      name = 'arissa';
-    }
-    return name;
-  };
-
-  // addEventListener('PhysicsReady', async () => {})
-  forestOfHollowBlood.player.data = _utils.SS.get('player');
-
-  // ASYNC FOR very small json become big buggy - pragmatic
-  if (typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
-    if (typeof app.label == 'undefined') app.label = {
-      get: {}
-    };
-    app.label.get = _enBackup.en;
-  }
-  forestOfHollowBlood.net = new _net.MatrixStream({
-    active: true,
-    domain: 'maximumroulette.com',
-    port: 2020,
-    sessionName: 'forestOfHollowBlood-free-for-all',
-    resolution: '160x240',
-    isDataOnly: forestOfHollowBlood.player.data.useCameraOrAudio,
-    //(urlQuery.camera || urlQuery.audio ? false : true),
-    customData: forestOfHollowBlood.player.data
-  });
-  forestOfHollowBlood.net.virtualEmiter = null;
-  forestOfHollowBlood.player.remoteByTeam = {
-    south: [],
-    north: []
-  };
-  app.matrixSounds.audios.music.loop = true;
-  addEventListener('net-ready', () => {
-    (0, _matrixStream.byId)('join-btn').click();
-    forestOfHollowBlood.loadEnemyCreeps();
-    (0, _matrixStream.byId)('buttonLeaveSession').addEventListener('click', () => {
-      location.assign("moba-menu.html");
-    });
-  });
-  forestOfHollowBlood.loadEnemyCreeps = () => {
-    if (forestOfHollowBlood.player.data.team == 'south') {
-      forestOfHollowBlood.player.data.enemyTeam = 'north';
-      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'north');
-    } else {
-      forestOfHollowBlood.player.data.enemyTeam = 'south';
-      forestOfHollowBlood.enemies = new _enemiesManager.EnemiesManager(forestOfHollowBlood, 'south');
-    }
-  };
-  addEventListener('connectionDestroyed', e => {
-    console.log('connectionDestroyed - end of game.');
-    /**
-     * @note
-     * For now actual is most simple way 
-     * Destroy game session if any player disconnected.
-     * Later : after adding DB backend account session
-     * add negative BAN flag for players who leave gameplay.
-     */
-    if ((0, _matrixStream.byId)('remote-' + e.detail.connectionId)) {
-      (0, _matrixStream.byId)('remote-' + e.detail.connectionId).remove();
-      // byId('waiting-' + e.detail.connectionId).remove();
-      _utils.mb.error(`Player ${e.detail.connectionId} disconnected...`);
-      let getPlayer = JSON.parse(e.detail.event.connection.data);
-      let disPlayer = forestOfHollowBlood.getSceneObjectByName(getPlayer.mesh);
-      _utils.mb.error(`Player ${e.detail.connectionId} disconnected..${disPlayer}.`);
-      // back to base for now
-      disPlayer.position.setPosition(_static.startUpPositions[getPlayer.team][0], _static.startUpPositions[getPlayer.team][1], _static.startUpPositions[getPlayer.team][2]);
-    }
-    setTimeout(() => {
-      // app.net.closeSession();
-      app.net.buttonLeaveSession.click();
-      location.assign("moba-menu.html");
-    }, 4000);
-  });
-  addEventListener("onConnectionCreated", e => {
-    const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
-    if (remoteCons.length == 4) {
-      if (location.hostname.indexOf('localhost') == -1) app.account.gameStarted();
-    }
-    const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
-    if (e.detail.connection.session.remoteConnections.size == 0) {
-      if (forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
-        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
-        document.title = "VE " + app.net.session.connection.connectionId;
-      }
-    } else {
-      // If present same team than emitter is active ...
-      let isSameTeamAlready = false;
-      for (var x = 0; x < remoteCons.length; x++) {
-        let currentRemoteConn = JSON.parse(remoteCons[x][1].data);
-        if (forestOfHollowBlood.player.data.team == currentRemoteConn.team) {
-          isSameTeamAlready = true;
-          if (forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].indexOf(remoteCons[x][1]) == -1) {
-            forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][1]);
-          }
-        } else {
-          if (forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
-            forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
-          }
-        }
-      }
-      if (isSameTeamAlready == false && isLocal == true) {
-        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
-        document.title = "VE " + app.net.session.connection.connectionId;
-      }
-    }
-    if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
-      let newPlayer = document.createElement('div');
-      newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
-      newPlayer.id = `local-${e.detail.connection.connectionId}`;
-      (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
-      // document.title = forestOfHollowBlood.label.get.titleBan;
-      // document.title = app.net.session.connection.connectionId;
-    } else {
-      let newPlayer = document.createElement('div');
-      newPlayer.innerHTML = `remote Player: ${e.detail.connection.connectionId}`;
-      newPlayer.id = `remote-${e.detail.connection.connectionId}`;
-      (0, _matrixStream.byId)('matrix-net').appendChild(newPlayer);
-      let d = JSON.parse(e.detail.connection.data);
-      if (d.team == app.player.data.team) {
-        let testIfExistAlready = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(d.mesh));
-        if (testIfExistAlready.length == 0) {
-          app.localHero.loadFriendlyHero(d);
-        }
-      } else {
-        let testIfExistAlready = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(d.mesh));
-        if (testIfExistAlready.length > 0) {
-          console.log('[new enemy hero already exist do nothing]', d);
-        } else {
-          app.enemies.loadEnemyHero(d);
-        }
-      }
-    }
-  });
-  addEventListener('self-msg-data', e => {
-    let d = JSON.parse(e.detail.data);
-    // console.log('<data-receive self>', d);
-    if (d.type == "damage") {
-      let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
-      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
-      if (IsEnemyHeroObj) {
-        // console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
-        const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
-        IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
-        IsEnemyHeroObj.hp = d.hp;
-        if (progress == 0) {
-          if (app.localHero.name == d.attackerName) {
-            console.log('<data-receive damage KILL by local >', d.attackerName);
-            app.localHero.killEnemy(1);
-          }
-        }
-      }
-    } else if (d.type == "damage-creep") {
-      if (app.player.data.team == d.defenderTeam) {
-        // console.log('<data-receive damage local creep but from self :', d.defenderTeam);
-        // can be both team
-        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
-        app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
-        if (d.progress <= 0.09) {
-          app.localHero.friendlyLocal.creeps[getCreepByIndex].creepFocusAttackOn = null;
-          app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
-          setTimeout(() => {
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].hp = 300;
-            setTimeout(() => {
-              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
-                detail: 'test'
-              }));
-            }, 100);
-          }, 500);
-        }
-      } else {
-        // console.log('<data-receive damage enemy creep but from self :', d.defenderTeam);
-        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
-        app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
-        app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
-        if (d.progress <= 0.09) {
-          app.enemies.creeps[getCreepByIndex].setDead();
-          setTimeout(() => {
-            app.enemies.creeps[getCreepByIndex].setStartUpPosition();
-            app.enemies.creeps[getCreepByIndex].gotoFinal = false;
-            app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
-            app.enemies.creeps[getCreepByIndex].hp = 300;
-          }, 700);
-        }
-      }
-    } else if (d.type == "damage-tron") {
-      if (app.player.data.team == d.defenderTeam) {
-        app.tron.effects.energyBar.setProgress(d.progress);
-        if (d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
-          _utils.mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
-          _utils.mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
-          setTimeout(() => {
-            location.assign("moba-menu.html");
-          }, 15000);
-        }
-      } else {
-        app.enemytron.effects.energyBar.setProgress(d.progress);
-        if (d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
-          _utils.mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
-          app.localHero.setSalute();
-          setTimeout(() => {
-            location.assign("moba-menu.html");
-          }, 15000);
-        }
-      }
-    }
-  });
-  addEventListener('only-data-receive', e => {
-    let d = JSON.parse(e.detail.data);
-    // if(e.detail.from.connectionId == app.net.session.connection.connectionId) {
-    //   console.log('<data-receive damage for local hero !!!>', d)
-    // }
-    if (d.type == "damage") {
-      // console.log('<data-receive damage for >', d.defenderName);
-      let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.defenderName);
-      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.defenderName);
-      // new
-      let IsFriendlyHeroObj = forestOfHollowBlood.localHero.friendlyLocal.heroes.find(fhero => fhero.name === d.defenderName);
-      if (IsFriendlyHeroObj) {
-        // console.log('<data-receive damage for IsFriendlyHeroObj >', IsFriendlyHeroObj);
-        const progress = Math.max(0, Math.min(1, d.hp / IsFriendlyHeroObj.getHPMax()));
-        IsFriendlyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
-        console.log('<data-receive damage IsFriendlyHeroObj progress >', progress);
-      } else if (IsEnemyHeroObj) {
-        // console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
-        const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
-        IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
-        console.log('<data-receive damage IsEnemyHeroObj progress >', progress);
-        if (progress == 0) {
-          if (app.localHero.name == d.attackerName) {
-            console.log('<data-receive damage KILL by local >', d.attackerName);
-            app.localHero.killEnemy(1);
-          }
-        }
-        //..
-      } else if (IsEnemyCreepObj) {
-        // maybe never ?
-        // console.log('<data-receive damage for IsEnemyCreepObj >', IsEnemyCreepObj);
-        const progress = Math.max(0, Math.min(1, d.hp / IsEnemyCreepObj.getHPMax()));
-        IsEnemyCreepObj.heroe_bodies[0].effects.energyBar.setProgress(progress);
-      } else if (app.localHero.name == d.defenderName) {
-        // console.log('<data-receive damage for LOCAL HERO >');
-        const progress = Math.max(0, Math.min(1, d.hp / app.localHero.getHPMax()));
-        app.localHero.heroe_bodies[0].effects.energyBar.setProgress(progress);
-        app.localHero.hp = d.hp;
-        if (d.hp == 0 || progress == 0) {
-          // local hero dead
-          app.localHero.setDead();
-          setTimeout(() => {
-            app.localHero.heroe_bodies[0].position.setPosition(_static.startUpPositions[forestOfHollowBlood.player.data.team][0], _static.startUpPositions[forestOfHollowBlood.player.data.team][1], _static.startUpPositions[forestOfHollowBlood.player.data.team][2]);
-            app.localHero.heroe_bodies[0].effects.energyBar.setProgress(1);
-            let newhp = app.localHero.getHPMax();
-            app.localHero.hp = newhp;
-            app.net.sendOnlyData({
-              type: "hero-update",
-              heroName: d.defenderName,
-              hp: newhp,
-              progress: 1
-            });
-          }, 600);
-        }
-      }
-    } else if (d.type == "damage-creep") {
-      if (app.player.data.team == d.defenderTeam) {
-        // console.log('<data-receive damage local creep team:', d.defenderTeam);
-        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
-        app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
-        if (d.progress <= 0.09) {
-          app.localHero.friendlyLocal.creeps[getCreepByIndex].creepFocusAttackOn = null;
-          app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
-          setTimeout(() => {
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
-            app.localHero.friendlyLocal.creeps[getCreepByIndex].hp = 300;
-            setTimeout(() => {
-              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {
-                detail: 'test'
-              }));
-            }, 200);
-          }, 500);
-        }
-      } else {
-        let getCreepByIndex = parseInt(d.defenderName[d.defenderName.length - 1]);
-        app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(d.progress);
-        app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
-        if (d.progress <= 0.09) {
-          app.enemies.creeps[getCreepByIndex].setDead();
-          setTimeout(() => {
-            app.enemies.creeps[getCreepByIndex].setStartUpPosition();
-            app.enemies.creeps[getCreepByIndex].gotoFinal = false;
-            app.enemies.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
-            app.enemies.creeps[getCreepByIndex].hp = 300;
-          }, 700);
-        }
-      }
-    } else if (d.type == "damage-tron") {
-      if (app.player.data.team == d.defenderTeam) {
-        app.tron.effects.energyBar.setProgress(d.progress);
-        if (d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
-          _utils.mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
-          _utils.mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
-          setTimeout(() => {
-            location.assign("moba-menu.html");
-          }, 15000);
-        }
-      } else {
-        app.enemytron.effects.energyBar.setProgress(d.progress);
-        if (d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
-          _utils.mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
-          app.localHero.setSalute();
-          setTimeout(() => {
-            location.assign("moba-menu.html");
-          }, 15000);
-        }
-      }
-    } else if (d.type == "hero-update") {
-      let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find(enemy => enemy.name === d.heroName);
-      if (IsEnemyHeroObj) {
-        console.log(d.hp, ' d.hp ->... IsEnemyHeroObj ... ', IsEnemyHeroObj.hp);
-        IsEnemyHeroObj.hp = d.hp;
-        IsEnemyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(1);
-        return;
-      }
-      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find(creep => creep.name === d.heroName);
-      if (IsEnemyCreepObj) {
-        console.log('... IsEnemyCreepObj test for now ... ');
-        IsEnemyCreepObj.hp = d.hp;
-        IsEnemyCreepObj.heroe_bodies[0].effects.energyBar.setProgress(1);
-        return;
-      }
-      let IsFriendlyHeroObj = forestOfHollowBlood.localHero.friendlyLocal.heroes.find(fhero => fhero.name === d.heroName);
-      if (IsFriendlyHeroObj) {
-        // console.log(d.hp, ' d.hp -> ... IsFriendlyHeroObj  ... ', IsFriendlyHeroObj.hp)
-        IsFriendlyHeroObj.hp = d.hp;
-        IsFriendlyHeroObj.heroe_bodies[0].effects.energyBar.setProgress(1);
-        return;
-      }
-    }
-  });
-  addEventListener('local-hero-bodies-ready', () => {
-    const cam = app.getCamera();
-    cam.setY(130);
-    cam.movementSpeed = 100;
-    cam.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
-    cam.mousRollInAction = true;
-
-    // diiff heros can MAGIC CASES LEVEL
-    if (app.localHero.name == "MariaSword") {
-      app.RPG.distanceForLongAction = 150;
-    }
-    app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
-  });
-  forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
-  forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
-  forestOfHollowBlood.localHero = new _characterBase.Character(forestOfHollowBlood, forestOfHollowBlood.player.data.path, forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
-  forestOfHollowBlood.localHero.inventory = new _invertoryManager.Inventory(forestOfHollowBlood.localHero);
-  forestOfHollowBlood.marketPlace = new _marketplace.Marketplace(forestOfHollowBlood.localHero);
-  forestOfHollowBlood.marketPlace.mb = _utils.mb;
-  forestOfHollowBlood.marketPlace.label = forestOfHollowBlood.label;
-  forestOfHollowBlood.localHero.inventory.loadAllRules(forestOfHollowBlood.marketPlace._generateItems());
-  forestOfHollowBlood.HUD = new _hud.HUD(forestOfHollowBlood.localHero);
-  forestOfHollowBlood.collisionSystem = new _collisionSubSystem.CollisionSystem(forestOfHollowBlood);
-  app.matrixSounds.play('music');
-  app.matrixSounds.audios.music.onended = () => {
-    app.matrixSounds.play('music2');
-  };
-  app.matrixSounds.audios.music2.onended = () => {
-    app.matrixSounds.play('music');
-  };
-  forestOfHollowBlood.addLight();
-});
-window.app = forestOfHollowBlood;
-
-},{"../../../public/res/multilang/en-backup.js":33,"../../../src/engine/collision-sub-system.js":36,"../../../src/engine/networking/matrix-stream.js":63,"../../../src/engine/networking/net.js":64,"../../../src/engine/utils.js":79,"../../../src/world.js":130,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":9,"./invertoryManager.js":10,"./map-loader.js":11,"./marketplace.js":12,"./rocket-crafting-account.js":14,"./static.js":15,"./tts.js":16}],7:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.FriendlyHero = void 0;
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf");
-var _utils = require("../../../src/engine/utils");
-var _hero = require("./hero");
-var _static = require("./static");
-class FriendlyHero extends _hero.Hero {
-  heroAnimationArrange = {
-    dead: null,
-    walk: null,
-    salute: null,
-    attack: null,
-    idle: null
-  };
-  constructor(o, archetypes = ["Warrior"]) {
-    super(o.name, archetypes);
-    this.name = o.name;
-    this.core = o.core;
-    this.loadFriendlyHero(o);
-    this.attachEvents();
-    return this;
-  }
-  loadFriendlyHero = async o => {
-    try {
-      // console.info(`%cHero friendly path ${o.path}`, LOG_MATRIX)
-      var glbFile01 = await fetch(o.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {
-          type: 'standard',
-          useTextureFromGlb: true
-        },
-        scale: [20, 20, 20],
-        position: o.position,
-        name: o.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-        raycast: {
-          enabled: true,
-          radius: 1.1
-        },
-        pointerEffect: {
-          enabled: true,
-          energyBar: true
-        }
-      }, null, glbFile01);
-      // make small async - cooking glbs files
-      setTimeout(() => {
-        this.heroe_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
-        this.heroe_bodies.forEach((subMesh, idx, array) => {
-          subMesh.position.thrust = this.moveSpeed;
-          subMesh.animationIndex = 0;
-          // adapt manual if blender is not setup
-          subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            //  console.info(`%c ANimation: ${a.name} index ${index}`, LOG_MATRIX)
-            if (a.name == 'dead') this.heroAnimationArrange.dead = index;
-            if (a.name == 'walk') this.heroAnimationArrange.walk = index;
-            if (a.name == 'salute') this.heroAnimationArrange.salute = index;
-            if (a.name == 'attack') this.heroAnimationArrange.attack = index;
-            if (a.name == 'idle') this.heroAnimationArrange.idle = index;
-          });
-          // adapt part
-          if (this.name == 'Slayzer') {
-            subMesh.globalAmbient = [2, 2, 3, 1];
-          }
-          // this is optimisation very important - no emit per sub mesh - calc on client part.
-          if (idx > 0) {
-            array[idx].position = array[0].position;
-            array[idx].rotation = array[0].rotation;
-          }
-          if (idx == 0) {
-            this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'friendly');
-          }
-        });
-        for (var x = 0; x < this.heroe_bodies.length; x++) {
-          if (x > 0) {
-            this.heroe_bodies[x].position = this.heroe_bodies[0].position;
-            this.heroe_bodies[x].rotation = this.heroe_bodies[0].rotation;
-          }
-        }
-        this.setStartUpPosition();
-      }, 1600);
-    } catch (err) {
-      throw err;
-    }
-  };
-  setWalk() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.walk);
-      console.info(`%chero walk`, _utils.LOG_MATRIX);
-    });
-  }
-  setSalute() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.salute);
-      console.info(`%chero salute`, _utils.LOG_MATRIX);
-    });
-  }
-  setDead() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.dead);
-      console.info(`%chero dead`, _utils.LOG_MATRIX);
-    });
-  }
-  setIdle() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.idle);
-      console.info(`%chero idle`, _utils.LOG_MATRIX);
-    });
-  }
-  setAttack() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
-      console.info(`%chero attack`, _utils.LOG_MATRIX);
-    });
-  }
-  setStartUpPosition() {
-    this.heroe_bodies.forEach(subMesh => {
-      subMesh.position.setPosition(_static.startUpPositions[app.player.data.team][0] + 50, _static.startUpPositions[app.player.data.team][1], _static.startUpPositions[app.player.data.team][2]);
-    });
-  }
-  attachEvents() {
-    return;
-    addEventListener(`onDamage-${this.name}`, e => {
-      console.info(`%c remote[friendly] hero damage ${e.detail}`, _utils.LOG_MATRIX);
-      this.heroe_bodies[0].effects.energyBar.setProgress(e.detail.progress);
-      this.core.net.sendOnlyData({
-        type: "damage",
-        defenderName: e.detail.defender,
-        attackerName: e.detail.attacker,
-        hp: e.detail.hp,
-        progress: e.detail.progress
-      });
-      if (e.detail.progress == 0) {
-        this.setDead();
-        console.info(`%c hero dead [${this.name}], attacker[${e.detail.attacker}]`, _utils.LOG_MATRIX);
-        setTimeout(() => {
-          this.setStartUpPosition();
-        }, 1500);
-      }
-    });
-  }
-}
-exports.FriendlyHero = FriendlyHero;
-
-},{"../../../src/engine/loaders/webgpu-gltf":59,"../../../src/engine/utils":79,"./hero":8,"./static":15}],8:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
 exports.HeroProps = exports.Hero = exports.HERO_ARCHETYPES = void 0;
 exports.mergeArchetypes = mergeArchetypes;
 exports.mergeArchetypesWeighted = mergeArchetypesWeighted;
@@ -2825,2321 +650,7 @@ function mergeArchetypesWeighted(typeA, typeB, weightA = 0.7) {
   return merged;
 }
 
-},{}],9:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.HUD = void 0;
-var _utils = require("../../../src/engine/utils.js");
-function startCooldownOverlay(slot, spellIndex) {
-  const cdMs = app.localHero.heroProps.getEffectiveCooldown(spellIndex);
-
-  // add overlay div if not present
-  let overlay = slot.querySelector('.cd-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.className = 'cd-overlay';
-    slot.appendChild(overlay);
-  }
-
-  // CSS transition sweeps the overlay away over cdMs
-  overlay.style.transition = 'none';
-  overlay.style.height = '100%';
-  requestAnimationFrame(() => {
-    overlay.style.transition = `height ${cdMs}ms linear`;
-    overlay.style.height = '0%';
-  });
-}
-class HUD {
-  constructor(localHero) {
-    this.localHero = localHero;
-    this.construct();
-    this.setCursor();
-    document.addEventListener('hero-levelup', e => {
-      const {
-        abilities
-      } = e.detail;
-      console.log('LEVEL UP');
-      abilities.forEach((spell, i) => {
-        const slot = document.getElementById(`magic-slot-${i}`);
-        if (!slot) return;
-        if (spell.level > 0) {
-          // unlocked — remove locked state
-          slot.innerText = '';
-          slot.style.opacity = '1';
-          slot.style.cursor = 'pointer';
-          // slot.classList.add('unlocked');
-        } else if (e.detail.abilityPoints > 0) {
-          // available to unlock — show pulsing hint
-          slot.innerText = '!';
-          slot.style.border = '2px solid gold';
-        }
-      });
-    });
-    document.addEventListener('spell-fail', e => {
-      const slot = document.getElementById(`magic-slot-${e.detail.spellIndex}`);
-      if (!slot) return;
-      if (e.detail.reason === 'cooldown') {
-        slot.style.animation = 'shake 0.3s ease';
-        setTimeout(() => slot.style.animation = '', 300);
-      }
-      if (e.detail.reason === 'mana') {
-        slot.style.boxShadow = '0 0 12px 4px #4af inset';
-        setTimeout(() => slot.style.boxShadow = '', 500);
-      }
-    });
-  }
-  construct() {
-    const hud = document.createElement("div");
-    hud.id = "hud-menu";
-    Object.assign(hud.style, {
-      position: "absolute",
-      bottom: "0",
-      left: "0",
-      width: "100%",
-      height: "20%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "10px",
-      boxSizing: "border-box"
-    });
-    const hudLeftBox = document.createElement("div");
-    hudLeftBox.id = "hudLeftBox";
-    Object.assign(hudLeftBox.style, {
-      width: "30%",
-      height: "100%",
-      background: "rgba(0,0,0,0.5)",
-      border: "1px solid #353535",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "10px",
-      boxSizing: "border-box",
-      overflow: 'hidden'
-    });
-    hud.appendChild(hudLeftBox);
-
-    // - Stats
-    const statsDom = document.createElement("div");
-    statsDom.id = "statsDom";
-    Object.assign(statsDom.style, {
-      display: "flex",
-      flexDirection: "column",
-      width: "12%",
-      height: "100%",
-      background: "rgba(0,0,0,0.5)",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "1px",
-      margin: '0',
-      boxSizing: "border-box",
-      overflow: 'hidden',
-      fontSize: '10px'
-    });
-    hud.appendChild(statsDom);
-    const statsDomValue = document.createElement("div");
-    statsDomValue.id = "statsDomValue";
-    Object.assign(statsDomValue.style, {
-      display: "flex",
-      flexDirection: "column",
-      width: "12%",
-      height: "100%",
-      background: "rgba(0,0,0,0.5)",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "1px",
-      margin: '0',
-      boxSizing: "border-box",
-      overflow: 'hidden',
-      fontSize: '10px'
-    });
-    hud.appendChild(statsDomValue);
-    let props = ["currentLevel", "hp", "mana", "gold", "mpRegen", "hpRegen", "moveSpeed", "attackSpeed", "armor", "attack"];
-    addEventListener('stats-localhero', e => {
-      // console.log('STATS UPDATE DOM ', e.detail[props[x]].toFixed(2))
-      for (var x = 0; x < props.length; x++) {
-        (0, _utils.byId)('stats-' + props[x]).innerHTML = e.detail[props[x]].toFixed(2);
-      }
-    });
-    for (var x = 0; x < props.length; x++) {
-      const statsDomItem = document.createElement("div");
-      statsDomItem.id = `statsLabel-${props[x]}`;
-      statsDomItem.innerHTML = props[x] + ":";
-      Object.assign(statsDomItem.style, {
-        background: "rgba(0,0,0,0.5)",
-        border: "1px solid #353535",
-        alignItems: "center",
-        justifyContent: "space-around",
-        color: "white",
-        fontFamily: "'Orbitron', sans-serif",
-        zIndex: "15",
-        margin: '0',
-        boxSizing: "border-box",
-        overflow: 'hidden'
-      });
-      statsDom.appendChild(statsDomItem);
-      const statsDomItemValue = document.createElement("div");
-      statsDomItemValue.id = `stats-${props[x]}`;
-      statsDomItemValue.innerHTML = "" + app.localHero[props[x]];
-      Object.assign(statsDomItemValue.style, {
-        background: "rgba(0,0,0,0.5)",
-        border: "1px solid #353535",
-        alignItems: "center",
-        justifyContent: "space-around",
-        color: "white",
-        fontFamily: "'Orbitron', sans-serif",
-        zIndex: "15",
-        margin: '0',
-        boxSizing: "border-box",
-        overflow: 'hidden'
-      });
-      statsDomValue.appendChild(statsDomItemValue);
-    }
-    const hudCenter = document.createElement("div");
-    hudCenter.id = "hudCenter";
-    Object.assign(hudCenter.style, {
-      width: "100%",
-      height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      flexDirection: "column",
-      border: "1px solid #353535",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "0",
-      boxSizing: "border-box"
-    });
-    const hudMagicHOlder = document.createElement("div");
-    hudMagicHOlder.id = "hudMagicHOlder";
-    Object.assign(hudMagicHOlder.style, {
-      width: "80%",
-      maxWidth: "300px",
-      minWidth: "150px",
-      aspectRatio: "4 / 1",
-      backgroundColor: "rgba(0, 0, 0, 0.4)",
-      display: "grid",
-      gridTemplateColumns: "repeat(4, 1fr)",
-      gap: "12px",
-      border: "1px solid #353535",
-      borderRadius: "10px",
-      padding: "2px",
-      boxSizing: "border-box",
-      zIndex: "15",
-      fontFamily: "'Orbitron', sans-serif",
-      backdropFilter: "blur(6px)",
-      boxShadow: "0 -2px 10px rgba(0,0,0,0.4)",
-      justifyContent: "center",
-      alignItems: "center"
-    });
-    for (let i = 0; i < 4; i++) {
-      const slot = document.createElement("div");
-      slot.className = "magic-slot-test";
-      slot.id = `magic-slot-${i}`;
-      Object.assign(slot.style, {
-        aspectRatio: "1 / 1",
-        width: "100%",
-        border: "1px solid #353535",
-        borderRadius: "8px",
-        background: "linear-gradient(145deg, #444, #222)",
-        boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
-        transition: "all 0.2s ease-in-out",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#ccc",
-        fontSize: "14px",
-        cursor: "url('./res/icons/default.png') 0 0, auto",
-        backgroundRepeat: "round"
-      });
-      slot.addEventListener("mouseenter", () => {
-        slot.style.border = "2px solid #0ff";
-        slot.style.boxShadow = "0 0 10px rgba(0,255,255,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
-      });
-      slot.addEventListener("mouseleave", () => {
-        slot.style.border = "2px solid #888";
-        slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
-      });
-      slot.innerHTML = "locked";
-      slot.addEventListener("mousedown", e => {
-        if (e.target.innerHTML == 'locked') {
-          console.info('it is locked ...');
-          return;
-        }
-        console.log('------------------MAGIC---------------------');
-        slot.style.border = "2px solid #888";
-        slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
-        dispatchEvent(new CustomEvent(`attack-magic${i}`, {
-          detail: {
-            source: 'hero',
-            magicType: i,
-            level: 1
-          }
-        }));
-      });
-      hudMagicHOlder.appendChild(slot);
-    }
-    hudCenter.appendChild(hudMagicHOlder);
-    // HP 
-    const hudHP = document.createElement("div");
-    hudHP.id = "hudHP";
-    Object.assign(hudHP.style, {
-      width: "40%",
-      height: "10%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "10px",
-      boxSizing: "border-box"
-    });
-
-    // Inner HP bar
-    const hpBar = document.createElement("div");
-    Object.assign(hpBar.style, {
-      height: "100%",
-      width: "100%",
-      height: "20px",
-      background: "linear-gradient(90deg, lime, green)",
-      transition: "width 0.3s ease-in-out",
-      borderRadius: "7px 7px 7px 7px",
-      boxShadow: "inset 0 0 10px #0f0"
-    });
-    hudHP.appendChild(hpBar);
-
-    // HP text overlay
-    const hpText = document.createElement("div");
-    Object.assign(hpText.style, {
-      position: "absolute",
-      width: "100%",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 5px black",
-      pointerEvents: "none"
-    });
-    hpText.textContent = "HP: 100%";
-    hudHP.appendChild(hpText);
-    hudCenter.appendChild(hudHP);
-    window.addEventListener("setHP", e => {
-      const clamped = Math.max(0, Math.min(100, e.detail.HP));
-      hpBar.style.width = clamped + "%";
-      hpText.textContent = `HP: ${clamped}%`;
-    });
-
-    // MANA
-    const hudMANA = document.createElement("div");
-    hudMANA.id = "hudMANA";
-    Object.assign(hudMANA.style, {
-      width: "40%",
-      height: "10%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      // border: "solid 5px blue",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "10px",
-      boxSizing: "border-box"
-    });
-    hudCenter.appendChild(hudMANA);
-
-    // Inner HP bar
-    const hudMANABar = document.createElement("div");
-    Object.assign(hudMANABar.style, {
-      height: "100%",
-      width: "100%",
-      height: "20px",
-      background: "linear-gradient(90deg, rgba(0, 162, 255, 1), blue)",
-      transition: "width 0.3s ease-in-out",
-      borderRadius: "7px 7px 7px 7px",
-      boxShadow: "inset 0 0 10px rgba(0, 162, 255, 1)"
-    });
-    hudMANA.appendChild(hudMANABar);
-
-    // HP text overlay
-    const MANAhpText = document.createElement("div");
-    Object.assign(MANAhpText.style, {
-      position: "absolute",
-      width: "100%",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 5px black",
-      pointerEvents: "none"
-    });
-    MANAhpText.textContent = "HP: 100%";
-    hudMANA.appendChild(MANAhpText);
-    window.addEventListener("setMANA", e => {
-      const clamped = Math.max(0, Math.min(100, e.detail.HP));
-      hpBar.style.width = clamped + "%";
-      hpText.textContent = `MANA: ${clamped}%`;
-    });
-    hud.appendChild(hudCenter);
-    // left box
-    const selectedCharacters = document.createElement("span");
-    selectedCharacters.textContent = "HERO";
-    hudLeftBox.appendChild(selectedCharacters);
-    hud.addEventListener("onSelectCharacter", e => {
-      console.log('onSelectCharacter : ', e.data);
-      let n = '';
-      if (e.detail.data.indexOf('_') != -1) {
-        n = e.detail.data.split('_')[0];
-      }
-      selectedCharacters.textContent = `${n}`;
-    });
-    const hudDesription = document.createElement("div");
-    hudDesription.id = "hudDesription";
-    Object.assign(hudDesription.style, {
-      width: "60%",
-      height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      border: "1px solid #353535",
-      borderLeft: "none",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "10px",
-      boxSizing: "border-box"
-    });
-    const hudDesriptionText = document.createElement("div");
-    hudDesriptionText.id = "hudDesriptionText";
-    Object.assign(hudDesriptionText.style, {
-      width: '90%',
-      height: '80%',
-      padding: '5% 5% 5% 5%',
-      aspectRatio: "1 / 1",
-      border: "2px solid #aaa",
-      borderRadius: "6px",
-      background: "linear-gradient(145deg, #444, #222)",
-      boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
-      display: "flex",
-      // alignItems: "center",
-      justifyContent: "center",
-      color: "#ccc",
-      fontSize: "12px",
-      cursor: "url('./res/icons/default.png') 0 0, auto",
-      transition: "all 0.2s ease-in-out",
-      backgroundSize: "contain",
-      backgroundRepeat: "no-repeat",
-      backgroundPosition: "center"
-    });
-    hudDesription.appendChild(hudDesriptionText);
-    hud.appendChild(hudDesription);
-    // right
-    const hudItems = document.createElement("div");
-    hudItems.id = "hudItems";
-    Object.assign(hudItems.style, {
-      width: "30%",
-      height: "100%",
-      backgroundColor: "rgba(0,0,0,0.5)",
-      backgroundPosition: 'center center',
-      backgroundRepeat: 'no-repeat',
-      backgroundSize: 'auto',
-      display: "flex",
-      border: "1px solid #353535",
-      alignItems: "center",
-      justifyContent: "space-around",
-      color: "white",
-      fontFamily: "'Orbitron', sans-serif",
-      zIndex: "15",
-      padding: "1px",
-      boxSizing: "border-box"
-    });
-    const inventoryGrid = document.createElement("div");
-    inventoryGrid.id = "inventoryGrid";
-    Object.assign(inventoryGrid.style, {
-      display: "grid",
-      gridTemplateColumns: "repeat(3, 1fr)",
-      gridTemplateRows: "repeat(2, 1fr)",
-      // gap: "10px",
-      width: "100%",
-      height: "100%",
-      padding: "5px",
-      boxSizing: "border-box"
-    });
-    for (let i = 0; i < 6; i++) {
-      const slot = document.createElement("div");
-      slot.className = "inventory-slot";
-      slot.id = `inventory-slot-${i}`;
-      Object.assign(slot.style, {
-        aspectRatio: "1 / 1",
-        width: "90%",
-        border: "2px solid #aaa",
-        borderRadius: "6px",
-        background: "linear-gradient(145deg, #444, #222)",
-        boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#ccc",
-        fontSize: "12px",
-        cursor: "url('./res/icons/default.png') 0 0, auto",
-        transition: "all 0.2s ease-in-out",
-        backgroundSize: "contain",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center"
-      });
-      // Hover effect
-      slot.addEventListener("mouseenter", e => {
-        slot.style.border = "2px solid #ff0";
-        slot.style.boxShadow = "0 0 10px rgba(255,255,0,0.5), inset 2px 2px 5px rgba(0,0,0,0.6)";
-        if (e.currentTarget.childNodes.length < 3) {
-          return;
-        }
-        let getDesc = e.currentTarget.childNodes[1].getAttribute('data-name') + " : " + e.currentTarget.childNodes[1].getAttribute('data-desc') + " \n Props: " + e.currentTarget.childNodes[1].getAttribute('data-effects');
-        (0, _utils.byId)('hudDesriptionText').innerText = getDesc;
-      });
-      slot.addEventListener("mouseleave", () => {
-        slot.style.border = "2px solid #aaa";
-        slot.style.boxShadow = "inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1)";
-      });
-      slot.textContent = "Empty";
-      inventoryGrid.appendChild(slot);
-    }
-    addEventListener('hero-invertory-update', e => {
-      console.log('hero-invertory-update', e.detail);
-      e.detail.items.forEach((item, index) => {
-        if (item != null) {
-          const effectsString = item.effects ? Object.entries(item.effects).map(([key, value]) => `${key}: ${value}`).join(', ') : 'None';
-          (0, _utils.byId)(`inventory-slot-${index}`).innerHTML = `
-            <img 
-               data-name="${item.name}" 
-               data-desc="${item.description}" 
-               data-effects="${effectsString}" 
-               width="50px" style="min-height: 50px;max-height:55px;"
-               src="${item.path}" />
-          `;
-          console.log('hero-invertory-update item', item);
-        } else {
-          // clear hud
-          (0, _utils.byId)(`inventory-slot-${index}`).innerHTML = `
-            empty
-          `;
-        }
-      });
-    });
-    const loader = document.createElement("div");
-    loader.id = "loader";
-    Object.assign(loader.style, {
-      position: "fixed",
-      display: 'flex',
-      bottom: '0',
-      left: '0',
-      width: "100vw",
-      height: "100vh",
-      textAlign: "center",
-      color: "white",
-      zIndex: 21,
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    loader.innerHTML = `
-      <div class="loader">
-        <div class="progress-container">
-          <div class="progress-bar" id="progressBar"></div>
-          </div>
-        <div class="counter" id="counter">0%</div>
-      </div>
-    `;
-    loader.addEventListener('click', e => {
-      app.matrixSounds.play('music');
-    });
-    hud.appendChild(loader);
-    let progress = 0;
-    let bar = null;
-    let counter = null;
-    function fakeProgress() {
-      if (progress < 100) {
-        // Random step to look "non-linear"
-        progress += Math.random() * 4;
-        if (progress > 100) progress = 100;
-        bar.style.width = progress + '%';
-        counter.textContent = "Prepare" + " gameplay " + Math.floor(progress) + '%';
-        let grayEffect = 30 / progress;
-        loader.style.filter = `grayscale(${grayEffect})`;
-        setTimeout(fakeProgress, 80 + Math.random() * 170);
-      } else {
-        counter.textContent = "Let the game begin!";
-        bar.style.boxShadow = "0 0 30px #00ff99";
-        setTimeout(() => {
-          // loader.remove();
-          loader.style.display = 'none';
-          bar = null;
-          counter = null;
-        }, 250);
-      }
-    }
-    setTimeout(() => {
-      bar = document.getElementById('progressBar');
-      counter = document.getElementById('counter');
-      fakeProgress();
-    }, 600);
-    app.showSecrets = () => {
-      (0, _utils.byId)('helpBox').style.display = 'block';
-      (0, _utils.typeText)('helpBox', app.label.get.invertorysecret, 10);
-    };
-    var helpBox = document.createElement('div');
-    helpBox.id = 'helpBox';
-    helpBox.style.position = 'fixed';
-    helpBox.style.right = '20%';
-    helpBox.style.display = 'none';
-    helpBox.style.zIndex = '2';
-    helpBox.style.top = '10%';
-    helpBox.style.width = '60%';
-    helpBox.style.height = '60%';
-    helpBox.style.fontSize = '100%';
-    helpBox.classList.add('btn');
-    helpBox.addEventListener('click', () => {
-      (0, _utils.byId)('helpBox').style.display = 'none';
-    });
-    document.body.appendChild(helpBox);
-
-    // Add grid to hudItems
-    hudItems.appendChild(inventoryGrid);
-    hud.appendChild(hudItems);
-    document.body.appendChild(hud);
-  }
-  setCursor() {
-    // AnimatedCursor
-    document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
-  }
-}
-exports.HUD = HUD;
-
-},{"../../../src/engine/utils.js":79}],10:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Inventory = void 0;
-/**
- * @description
- * Hero invertory (Local)
- * Advanced Inventory system for MOBA heroes.
- * Supports stacking, crafting, and time-limited items.
- */
-class Inventory {
-  constructor(hero, size = 6) {
-    this.hero = hero;
-    this.size = size;
-    this.slots = new Array(size).fill(null);
-    this.craftingRules = [];
-    this.activeTimers = new Map();
-  }
-
-  // --- Add crafting rule
-  addCraftingRule(requiredItems, resultItem) {
-    this.craftingRules.push({
-      requiredItems,
-      resultItem
-    });
-  }
-  loadAllRules(allLevel2_3) {
-    let onlyConstructable = allLevel2_3.filter(item => typeof item.from !== 'undefined');
-    onlyConstructable.forEach((item, index, array) => {
-      // console.log(item.name + " from " + item.from);
-      this.addCraftingRule(item.from, item);
-    });
-  }
-
-  // --- Add item (supports stacking + timed items + effects)
-  addItem(name, {
-    quantity = 1,
-    duration = null,
-    effects = null,
-    path = null,
-    description = ""
-  } = {}) {
-    const existingSlot = this.slots.find(s => s && s.name === name);
-    if (existingSlot && !duration) {
-      existingSlot.quantity += quantity;
-    } else {
-      const emptyIndex = this.slots.findIndex(s => s === null);
-      if (emptyIndex === -1) {
-        console.warn("Inventory is full!");
-        return false;
-      }
-      const newItem = {
-        name,
-        quantity,
-        createdAt: Date.now(),
-        duration,
-        effects,
-        path,
-        description
-      };
-      this.slots[emptyIndex] = newItem;
-
-      // Apply effects immediately
-      if (effects) this._applyEffects(effects, true);
-
-      // Time-limited logic
-      if (duration) {
-        const timerId = setTimeout(() => {
-          this.removeItem(name, quantity);
-          this.activeTimers.delete(name);
-          console.log(`⏳ Item "${name}" expired and removed.`);
-        }, duration);
-        this.activeTimers.set(name, timerId);
-      }
-    }
-    console.log(`🧩 Added item "${name}" x${quantity}`);
-    this._checkCraftingRules();
-    this._dispatchHeroUpdate();
-    return true;
-  }
-
-  // --- Remove item and reverse effects
-  removeItem(name, quantity = 1) {
-    const slotIndex = this.slots.findIndex(s => s && s.name === name);
-    if (slotIndex === -1) return false;
-    const slot = this.slots[slotIndex];
-    slot.quantity -= quantity;
-    if (slot.effects) {
-      this._applyEffects(slot.effects, false); // reverse effect
-    }
-    if (slot.quantity <= 0) {
-      this.slots[slotIndex] = null;
-      console.log(`❌ Removed item "${name}"`);
-    }
-    if (this.activeTimers.has(name)) {
-      clearTimeout(this.activeTimers.get(name));
-      this.activeTimers.delete(name);
-    }
-    this._dispatchHeroUpdate();
-    return true;
-  }
-
-  // --- Apply or reverse item effects on hero
-  _applyEffects(effects, isAdding = true) {
-    for (const [key, multiplier] of Object.entries(effects)) {
-      if (this.hero[key] !== undefined && typeof this.hero[key] === "number") {
-        const factor = isAdding ? multiplier : 1 / multiplier;
-        this.hero[key] *= factor;
-      }
-    }
-  }
-
-  // --- Crafting
-  _checkCraftingRules() {
-    for (const rule of this.craftingRules) {
-      const hasAll = rule.requiredItems.every(item => this.slots.some(slot => slot && slot.name === item));
-      if (hasAll) {
-        rule.requiredItems.forEach(item => this.removeItem(item, 1));
-        this.addItem(rule.resultItem.name, {
-          effects: rule.resultItem.effects,
-          path: rule.resultItem.path,
-          description: rule.resultItem.description
-        });
-        console.log(`✨ Crafted new item: "${rule.resultItem.name}"`);
-        return;
-      }
-    }
-  }
-  _dispatchHeroUpdate() {
-    this.slots.forEach((item, index) => {
-      if (item != null) for (var key in item.effects) {
-        if (this.hero[key]) {
-          console.log(key + '  -< effects props exist in hero base class -  value: ', item.effects[key]);
-          this.hero.invertoryBonus[key] *= item.effects[key];
-        }
-      }
-    });
-    this.hero.updateStats();
-    dispatchEvent(new CustomEvent("hero-invertory-update", {
-      detail: {
-        items: this.slots
-      }
-    }));
-  }
-  debugPrint() {
-    console.table(this.slots.map((slot, i) => ({
-      Slot: i + 1,
-      Item: slot ? slot.name : "Empty",
-      Quantity: slot ? slot.quantity : "-",
-      Duration: slot?.duration ? `${slot.duration / 1000}s` : "∞"
-    })));
-  }
-  clear() {
-    this.slots.forEach(slot => {
-      if (slot && slot.effects) this._applyEffects(slot.effects, false);
-    });
-    this.slots.fill(null);
-    this.activeTimers.forEach(t => clearTimeout(t));
-    this.activeTimers.clear();
-    this._dispatchHeroUpdate();
-    console.log("🧹 Inventory cleared");
-  }
-}
-exports.Inventory = Inventory;
-
-},{}],11:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.MEMapLoader = void 0;
-var _genTex = require("../../../src/engine/effects/gen-tex2.js");
-var _gen = require("../../../src/engine/effects/gen.js");
-var _loaderObj = require("../../../src/engine/loader-obj.js");
-var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
-var _utils = require("../../../src/engine/utils.js");
-var _navMesh = _interopRequireDefault(require("./nav-mesh.js"));
-var _static = require("./static.js");
-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-/**
- * @description
- * Map Loader controls first light
- */
-class MEMapLoader {
-  collectionOfTree1 = [];
-  collectionOfRocks = [];
-  async loadNavMesh(navMapPath) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const response = await fetch(navMapPath);
-        const navData = await response.json();
-        const nav = new _navMesh.default(navData, {
-          scale: [10, 1, 10]
-        });
-        resolve(nav);
-      } catch (err) {
-        reject(err);
-        throw err;
-      }
-    });
-  }
-  constructor(forestOfHollowBlood, navMapPath) {
-    this.core = forestOfHollowBlood;
-    this.loadNavMesh(navMapPath).then(e => {
-      console.log(`%cnavMap loaded.${e}`, _utils.LOG_FUNNY_SMALL);
-      this.core.RPG.nav = e;
-      this.loadMainMap(); // <-- FIXED
-    });
-  }
-  async onGround(m) {
-    this.core.addMeshObj({
-      position: {
-        x: 0,
-        y: -5,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/maps-objs/textures/map-bg.png'],
-      name: 'ground',
-      mesh: m.cube,
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      },
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      }
-    });
-
-    //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
-    var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-    this.core.addGlbObjInctance({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      scale: [14, 13, 14],
-      position: {
-        x: -780,
-        y: -10,
-        z: 950
-      },
-      name: 'rocks1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-      raycast: {
-        enabled: false,
-        radius: 1.5
-      },
-      pointerEffect: {
-        enabled: true
-      }
-    }, null, glbFile01);
-
-    // on engine level must be upgraded "add rotation for instanced objs... on meshObjInstanced class..."
-    // FOr now i will use another scene obj but same loaded data - that ok
-    this.core.addGlbObjInctance({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      scale: [14, 13, 14],
-      rotation: {
-        x: 0,
-        y: 90,
-        z: 0
-      },
-      position: {
-        x: -1040,
-        y: -10,
-        z: 850
-      },
-      name: 'rocks2',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-      raycast: {
-        enabled: false,
-        radius: 1.5
-      },
-      pointerEffect: {
-        enabled: true,
-        flameEffect: false
-      }
-    }, null, glbFile01);
-
-    // Tron enemy
-    var glbFile02 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-    let getEnemyName__ = '';
-    if (this.core.player.data.team == "south") {
-      getEnemyName__ = 'north';
-    } else {
-      getEnemyName__ = 'south';
-    }
-    this.core.addGlbObjInctance({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      scale: [15, 15, 15],
-      rotation: {
-        x: 0,
-        y: 90,
-        z: 0
-      },
-      position: {
-        x: _static.creepPoints[app.player.data.team].finalPoint[0],
-        y: _static.creepPoints[app.player.data.team].finalPoint[1],
-        z: _static.creepPoints[app.player.data.team].finalPoint[2]
-      },
-      name: 'enemytron',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-      raycast: {
-        enabled: false,
-        radius: 1.5
-      },
-      pointerEffect: {
-        enabled: true,
-        energyBar: true
-      }
-    }, null, glbFile02);
-    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-    this.core.addGlbObjInctance({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      scale: [15, 15, 15],
-      rotation: {
-        x: 0,
-        y: 90,
-        z: 0
-      },
-      position: {
-        x: _static.creepPoints[getEnemyName__].finalPoint[0],
-        y: _static.creepPoints[getEnemyName__].finalPoint[1],
-        z: _static.creepPoints[getEnemyName__].finalPoint[2]
-      },
-      name: 'friendlytron',
-      texturesPaths: ['./res/textures/star1.png'],
-      raycast: {
-        enabled: false,
-        radius: 1.5
-      },
-      pointerEffect: {
-        enabled: true,
-        energyBar: true
-      }
-    }, null, glbFile03);
-    setTimeout(() => {
-      this.collectionOfRocks = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks1') != -1);
-      this.collectionOfRocks.forEach(item => {
-        item.globalAmbient = [10, 10, 10];
-        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
-      });
-      this.collectionOfRocks2 = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks2') != -1);
-      this.collectionOfRocks2.forEach(item => {
-        item.globalAmbient = [10, 10, 10];
-        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
-      });
-      this.addInstancingRock();
-      this.collectionOfRocks.forEach(rock => {
-        console.log('rock done:', rock.done, 'pipeline:', !!rock.pipeline, 'instanceCount:', rock.instanceCount);
-      });
-
-      // trons 
-      app.enemytron = this.core.mainRenderBundle.filter(item => item.name.indexOf('enemytron') != -1)[0];
-      app.tron = this.core.mainRenderBundle.filter(item => item.name.indexOf('friendlytron') != -1)[0];
-      app.tron.globalAmbient = [2, 2, 2];
-
-      // no need to extend whole Hero class 
-      // Fiktive
-      app.tron.currentLevel = 10;
-      app.tron.hp = 400;
-      app.tron.armor = 0.1;
-      app.enemytron.currentLevel = 10;
-      app.enemytron.hp = 400;
-      app.enemytron.armor = 0.1;
-      addEventListener(`onDamage-${app.enemytron.name}`, e => {
-        console.info(`%c ON damage TRON send [damage-tron] ! ${e.detail}`, _utils.LOG_MATRIX);
-        app.enemytron.effects.energyBar.setProgress(e.detail.progress);
-        this.core.net.sendOnlyData({
-          type: "damage-tron",
-          defenderTeam: app.player.data.enemyTeam,
-          defenderName: e.detail.defender,
-          attackerName: e.detail.attacker,
-          hp: e.detail.hp,
-          progress: e.detail.progress
-        });
-      });
-      // this.pointerEffect.circlePlaneTexPath
-      app.tron.effects.circle = new _genTex.GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
-      app.tron.effects.circle.rotateEffectSpeed = 0.01;
-      app.enemytron.effects.circle = new _genTex.GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
-      app.enemytron.effects.circle.rotateEffectSpeed = 0.01;
-
-      // emit pos
-      app.tron.position.teams[0] = app.player.remoteByTeam[app.player.data.team];
-      app.tron.position.teams[1] = app.player.remoteByTeam[app.player.data.enemyTeam];
-      app.tron.position.netObject = app.tron.name;
-      let t = app.tron.name.replace('friendlytron', 'enemytron');
-      app.tron.position.remoteName = t;
-      this.core.collisionSystem.register(app.tron.name, app.tron.position, 25.0, 'friendly');
-      this.core.collisionSystem.register(app.enemytron.name, app.enemytron.position, 25.0, 'enemy');
-      setTimeout(() => {
-        app.tron.effects.circle.instanceTargets[0].position = [0, 6, 0];
-        app.tron.effects.circle.instanceTargets[1].position = [0, 6, 0];
-        app.tron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
-        app.tron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
-        app.enemytron.effects.circle.instanceTargets[0].position = [0, 6, 0];
-        app.enemytron.effects.circle.instanceTargets[1].position = [0, 6, 0];
-        app.enemytron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
-        app.enemytron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
-      }, 1000);
-    }, 6500);
-    this.core.lightContainer[0].setPosY(175);
-    this.core.lightContainer[0].setIntensity(1);
-  }
-  onTree(m) {
-    this.core.addMeshObj({
-      position: {
-        x: 0,
-        y: -5,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/maps-objs/textures/stablo.jpg'],
-      name: 'tree11',
-      mesh: m.tree11,
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      },
-      raycast: {
-        enabled: false,
-        radius: 1.5
-      }
-    });
-    this.core.addMeshObj({
-      position: {
-        x: 0,
-        y: -5,
-        z: -10
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
-      name: 'tree12',
-      mesh: m.tree12,
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      },
-      raycast: {
-        enabled: false,
-        radius: 1.5
-      }
-    });
-    setTimeout(() => {
-      app.getSceneObjectByName('tree1-leaf2.001-0').position.y = 50;
-    }, 200);
-  }
-  async loadMainMap() {
-    (0, _loaderObj.downloadMeshes)({
-      cube: "./res/meshes/maps-objs/map-1.obj",
-      tower: "./res/meshes/env/tower.obj"
-    }, this.onGround.bind(this), {
-      scale: [10, 10, 10]
-    });
-    var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-    this.core.addGlbObjInctance({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      scale: [(0, _utils.randomIntFromTo)(10, 15), (0, _utils.randomIntFromTo)(10, 15), (0, _utils.randomIntFromTo)(10, 15)],
-      position: {
-        x: -500,
-        y: -35,
-        z: -500
-      },
-      name: 'tree1',
-      texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      },
-      pointerEffect: {
-        enabled: true
-      }
-    }, null, glbFile01);
-    setTimeout(() => {
-      this.collectionOfTree1 = this.core.mainRenderBundle.filter(o => o.name.indexOf('tree') != -1);
-      this.addInstancing();
-    }, 4000);
-  }
-  addInstancing() {
-    const spacing = 150;
-    const clusterOffsets = [[0, 0], [700, 0], [0, 700], [700, 700]];
-    this.collectionOfTree1.forEach(partOftree => {
-      partOftree.sharedBones = true;
-      partOftree.globalAmbient = [(0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15)];
-      const treesPerCluster = 9;
-      const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
-      const totalInstances = treesPerCluster * clusterOffsets.length;
-      partOftree.updateMaxInstances(totalInstances);
-      partOftree.updateInstances(totalInstances);
-      let instanceIndex = 0;
-      for (const [offsetX, offsetZ] of clusterOffsets) {
-        for (let i = 0; i < treesPerCluster; i++) {
-          const row = Math.floor(i / gridSize);
-          const col = i % gridSize;
-          const instance = partOftree.instanceTargets[instanceIndex++];
-          instance.position[0] = offsetX + col * spacing + (0, _utils.randomIntFromTo)(0, 20);
-          instance.position[2] = offsetZ + row * spacing + (0, _utils.randomIntFromTo)(0, 20);
-          instance.position[1] = 0;
-          instance.color[3] = 1;
-          instance.color[0] = (0, _utils.randomFloatFromTo)(0.5, 2.0);
-          instance.color[1] = (0, _utils.randomFloatFromTo)(0.7, 1.0);
-          instance.color[2] = (0, _utils.randomFloatFromTo)(0.5, 0.9);
-        }
-      }
-    });
-  }
-  addInstancingRock() {
-    const NUM = 10;
-    this.collectionOfRocks.forEach(rock => {
-      rock.sharedBones = true;
-      rock.updateMaxInstances(NUM);
-      rock.updateInstances(NUM);
-      console.log("TEST rock ", rock);
-      for (var x = 0; x < NUM; x++) {
-        let instance;
-        if (x == 0) {
-          instance = rock.instanceTargets[x];
-          instance.position[0] = 200;
-          instance.position[2] = 0;
-          instance.position[1] = 0;
-        } else if (x < 8) {
-          instance = rock.instanceTargets[x];
-          instance.position[0] = x * 250;
-          instance.position[2] = 0;
-          instance.position[1] = 0;
-        } else if (x < 16) {
-          instance = rock.instanceTargets[x];
-          instance.position[0] = (x - 8) * 250;
-          instance.position[2] = -2000;
-          instance.position[1] = 0;
-        }
-        instance.color[3] = 1;
-        instance.color[0] = 1;
-        instance.color[1] = 1;
-        instance.color[2] = (0, _utils.randomIntFromTo)(1, 1.5);
-      }
-    });
-    const NUM2 = 10;
-    this.collectionOfRocks2.forEach(rock => {
-      rock.updateMaxInstances(NUM2);
-      rock.updateInstances(NUM2);
-      for (var x = 0; x < NUM2; x++) {
-        let instance;
-        if (x < 8) {
-          instance = rock.instanceTargets[x];
-          instance.position[0] = -50;
-          instance.position[2] = -2000 + x * 250;
-          instance.position[1] = 0;
-        } else if (x < 16) {
-          instance = rock.instanceTargets[x];
-          instance.position[0] = 1950;
-          instance.position[2] = -1800 + (x - 8) * 250;
-          instance.position[1] = 0;
-        }
-        instance.color[3] = 1;
-        instance.color[0] = 1;
-        instance.color[1] = 1;
-        instance.color[2] = 1;
-      }
-    });
-  }
-}
-exports.MEMapLoader = MEMapLoader;
-
-},{"../../../src/engine/effects/gen-tex2.js":43,"../../../src/engine/effects/gen.js":44,"../../../src/engine/loader-obj.js":56,"../../../src/engine/loaders/webgpu-gltf.js":59,"../../../src/engine/utils.js":79,"./nav-mesh.js":13,"./static.js":15}],12:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Marketplace = void 0;
-class Marketplace {
-  constructor(hero) {
-    this.hero = hero;
-    this.items = this._generateItems();
-    this.createHud();
-  }
-  createHud() {
-    var box = document.createElement('div');
-    box.id = 'marketplace';
-    box.style.position = 'fixed';
-    box.style.right = '0';
-    box.style.display = 'flex';
-    box.style.flexDirection = 'row';
-    box.style.flexWrap = 'wrap';
-    box.style.zIndex = '2';
-    box.style.top = '0';
-    box.style.width = '50%';
-    box.style.height = '80%';
-    box.style.fontSize = '50%';
-    box.style.paddingLeft = '30px';
-    box.style.overflowY = 'scroll';
-    box.classList.add('btn');
-    box.classList.add('btn3');
-    var boxRightTitleBar = document.createElement('div');
-    boxRightTitleBar.id = 'marketplace-boxRightTitleBar';
-    boxRightTitleBar.style.position = 'absolute';
-    boxRightTitleBar.style.left = '0';
-    boxRightTitleBar.style.width = '50px';
-    boxRightTitleBar.style.fontSize = '20px';
-    boxRightTitleBar.style.height = '-webkit-fill-available';
-    // boxRightTitleBar.style.marginLeft = `-30px`;
-    boxRightTitleBar.innerHTML = 'Invertory';
-    boxRightTitleBar.classList.add('vertical-text');
-    box.classList.add('hide-by-right');
-    box.appendChild(boxRightTitleBar);
-    box.addEventListener("wheel", function (e) {
-      e.stopPropagation();
-    });
-    box.addEventListener('click', e => {
-      if (box.classList.contains('show-by-right')) {
-        box.classList.remove('show-by-right');
-        box.classList.add('hide-by-right');
-      } else {
-        box.classList.add('show-by-right');
-        box.classList.remove('hide-by-right');
-      }
-      // console.log("*********");
-    });
-    this.items.forEach(i => {
-      var itemDOM = document.createElement('div');
-      itemDOM.id = i.name;
-      itemDOM.innerHTML = `
-        <div style="" class="itemDOM">
-          <img class="invertoryItem" src='${i.path}' />
-          <div>name: ${i.name} price: ${i.price == 0 ? "<span style='color:red;' >Cant be buyed only constructed from basic item.</span>" : i.price} ${i.description}</div>
-        </div>`;
-      itemDOM.addEventListener('click', e => {
-        e.stopPropagation();
-        console.log("invertory:", e.currentTarget.id);
-        this.buy(e.currentTarget.id);
-      });
-      box.appendChild(itemDOM);
-    });
-    document.body.appendChild(box);
-  }
-
-  // --- Player buys an item if it’s purchasable
-  buy(itemName) {
-    const item = this.items.find(i => i.name === itemName);
-    if (!item) return console.warn("Item not found in market!");
-    if (item.level > 1) return console.warn("Only level 1 items can be bought!");
-    if (this.hero.gold < item.price) {
-      this.mb.show(this.label.get.nogold);
-      console.warn("Not enough gold!");
-      return;
-    }
-    this.hero.gold -= item.price;
-    this.hero.inventory.addItem(item.name, {
-      effects: item.effects,
-      path: item.path,
-      description: item.description
-    });
-    console.log(`💰 ${this.hero.name} bought ${item.name} for ${item.price} gold.`);
-  }
-
-  // --- Sell item for half price
-  sell(itemName) {
-    const item = this.items.find(i => i.name === itemName);
-    if (!item) return console.warn("Item not found in market!");
-    this.hero.gold += Math.floor(item.price / 2);
-    this.hero.inventory.removeItem(itemName);
-    console.log(`📦 ${this.hero.name} sold ${item.name} for ${Math.floor(item.price / 2)} gold.`);
-  }
-
-  // --- Print shop table
-  showMarket() {
-    console.table(this.items.map(i => ({
-      Name: i.name,
-      Level: i.level,
-      Price: i.price,
-      Description: i.description
-    })));
-  }
-
-  // --- All items database
-  _generateItems() {
-    return [
-    // LEVEL 1 — BASIC ITEMS (30)
-    {
-      name: "Gladius Ignis",
-      level: 1,
-      price: 120,
-      effects: {
-        attackSpeed: 1.1
-      },
-      description: "A forged sword imbued with faint fire energy.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Aqua Orbis",
-      level: 1,
-      price: 110,
-      effects: {
-        mana: 1.15
-      },
-      description: "A small orb that resonates with water spirits.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Terra Clavis",
-      level: 1,
-      price: 90,
-      effects: {
-        hp: 1.05
-      },
-      description: "An ancient stone amulet of endurance.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Ventus Pluma",
-      level: 1,
-      price: 100,
-      effects: {
-        moveSpeed: 1.1
-      },
-      description: "A feather of the northern wind.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Ferrum Anulus",
-      level: 1,
-      price: 80,
-      effects: {
-        armor: 1.1
-      },
-      description: "A simple iron ring engraved with runes.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Luna Gemma",
-      level: 1,
-      price: 130,
-      effects: {
-        mana: 1.2
-      },
-      description: "A moonlit gem that glows in the dark.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Sol Corona",
-      level: 1,
-      price: 140,
-      effects: {
-        attackSpeed: 1.15
-      },
-      description: "A golden emblem of the solar knights.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Umbra Vellum",
-      level: 1,
-      price: 95,
-      effects: {
-        stealth: 1.2
-      },
-      description: "A dark fabric that absorbs light.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Vita Flos",
-      level: 1,
-      price: 85,
-      effects: {
-        hp: 1.1
-      },
-      description: "A rare flower symbolizing life and rebirth.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Glacies Sigil",
-      level: 1,
-      price: 100,
-      effects: {
-        armor: 1.15
-      },
-      description: "A sigil of frozen power.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Ignis Scutum",
-      level: 1,
-      price: 120,
-      effects: {
-        armor: 1.2
-      },
-      description: "A small fire-warding shield.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Sanguis Orb",
-      level: 1,
-      price: 130,
-      effects: {
-        hp: 1.15
-      },
-      description: "A pulsating orb of crimson light.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Arbor Blade",
-      level: 1,
-      price: 90,
-      effects: {
-        attackSpeed: 1.08
-      },
-      description: "A wooden blade carved from the elder tree.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Mare Pearl",
-      level: 1,
-      price: 150,
-      effects: {
-        mana: 1.3
-      },
-      description: "A rare pearl blessed by sea spirits.",
-      path: "./res/textures/rpg/invertory/mare-pearl.png"
-    }, {
-      name: "Vox Chime",
-      level: 1,
-      price: 70,
-      effects: {
-        moveSpeed: 1.05
-      },
-      description: "A charm that hums with sound magic.",
-      path: "./res/textures/rpg/invertory/vox-chime.png"
-    }, {
-      name: "Tenebris Fang",
-      level: 1,
-      price: 110,
-      effects: {
-        attackSpeed: 1.12
-      },
-      description: "A dark fang of unknown beast origin.",
-      path: "./res/textures/rpg/invertory/tenebris-fang.png"
-    }, {
-      name: "Lux Feather",
-      level: 1,
-      price: 100,
-      effects: {
-        mana: 1.1
-      },
-      description: "A radiant feather from a holy bird.",
-      path: "./res/textures/rpg/invertory/lux-feather.png"
-    }, {
-      name: "Fulgur Stone",
-      level: 1,
-      price: 95,
-      effects: {
-        attackSpeed: 1.1
-      },
-      description: "A crackling shard of lightning essence.",
-      path: "./res/textures/rpg/invertory/fulgur-stone.png"
-    }, {
-      name: "Silva Heart",
-      level: 1,
-      price: 80,
-      effects: {
-        hp: 1.07
-      },
-      description: "A seed pulsing with natural energy.",
-      path: "./res/textures/rpg/invertory/silva-heart.png"
-    }, {
-      name: "Noctis Band",
-      level: 1,
-      price: 120,
-      effects: {
-        stealth: 1.3
-      },
-      description: "A ring that vanishes under moonlight.",
-      path: "./res/textures/rpg/invertory/noctis-band.png"
-    }, {
-      name: "Rosa Thorn",
-      level: 1,
-      price: 100,
-      effects: {
-        attackSpeed: 1.05,
-        hp: 1.05
-      },
-      description: "A rose stem hardened into a piercing thorn.",
-      path: "./res/textures/rpg/invertory/rosa-thorn.png"
-    }, {
-      name: "Caelum Dust",
-      level: 1,
-      price: 110,
-      effects: {
-        mana: 1.1,
-        moveSpeed: 1.05
-      },
-      description: "Sky dust collected from high-altitude clouds.",
-      path: "./res/textures/rpg/invertory/caelum-dust.png"
-    }, {
-      name: "Ignifur Cape",
-      level: 1,
-      price: 125,
-      effects: {
-        armor: 1.1,
-        attackSpeed: 1.05
-      },
-      description: "A cape woven with fire-resistant fur.",
-      path: "./res/textures/rpg/invertory/ignifur-cape.png"
-    }, {
-      name: "Gelum Pendant",
-      level: 1,
-      price: 95,
-      effects: {
-        armor: 1.1
-      },
-      description: "Pendant of icy serenity.",
-      path: "./res/textures/rpg/invertory/gelum-fendant.png"
-    }, {
-      name: "Mortis Bone",
-      level: 1,
-      price: 140,
-      effects: {
-        attackSpeed: 1.15,
-        hp: 1.1
-      },
-      description: "A cursed relic bone from ancient warrior.",
-      path: "./res/textures/rpg/invertory/mortis-bone.png"
-    }, {
-      name: "Aether Scale",
-      level: 1,
-      price: 115,
-      effects: {
-        mana: 1.2
-      },
-      description: "Dragon scale imbued with aether magic.",
-      path: "./res/textures/rpg/invertory/aether-scale.png"
-    }, {
-      name: "Flamma Crystal",
-      level: 1,
-      price: 130,
-      effects: {
-        attackSpeed: 1.1
-      },
-      description: "A molten crystal of flame essence.",
-      path: "./res/textures/rpg/invertory/flamma-crystal.png"
-    }, {
-      name: "Spirit Charm",
-      level: 1,
-      price: 85,
-      effects: {
-        mana: 1.1,
-        moveSpeed: 1.1
-      },
-      description: "Charm of wandering spirits.",
-      path: "./res/textures/rpg/invertory/spirit-charm.png"
-    }, {
-      name: "Ardent Vine",
-      level: 1,
-      price: 80,
-      effects: {
-        hp: 1.05,
-        armor: 1.05
-      },
-      description: "Vine that strengthens when worn.",
-      path: "./res/textures/rpg/invertory/ardent-vine.png"
-    }, {
-      name: "Oculus Tempus",
-      level: 1,
-      price: 150,
-      effects: {
-        moveSpeed: 1.2
-      },
-      description: "An eye-shaped amulet bending time perception.",
-      path: "./res/textures/rpg/invertory/oculus-tempus.png"
-    },
-    // LEVEL 2 — CRAFTED ITEMS (10)
-    {
-      name: "Corona Ignifera",
-      level: 2,
-      price: 0,
-      from: ["Sol Corona", "Flamma Crystal"],
-      effects: {
-        attackSpeed: 1.25,
-        armor: 1.1
-      },
-      description: "Crown of blazing flame and golden radiance.",
-      path: "./res/textures/rpg/invertory/corona-ignifera.png"
-    }, {
-      name: "Aqua Sanctum",
-      level: 2,
-      price: 0,
-      from: ["Mare Pearl", "Luna Gemma"],
-      effects: {
-        mana: 1.35,
-        armor: 1.1
-      },
-      description: "Holy water relic radiating calm energy.",
-      path: "./res/textures/rpg/invertory/aqua-sanctum.png"
-    }, {
-      name: "Umbra Silens",
-      level: 2,
-      price: 0,
-      from: ["Umbra Vellum", "Noctis Band"],
-      effects: {
-        stealth: 1.5
-      },
-      description: "Veil of perfect silence and darkness.",
-      path: "./res/textures/rpg/invertory/umbra-silens.png"
-    }, {
-      name: "Terra Fortis",
-      level: 2,
-      price: 0,
-      from: ["Terra Clavis", "Ardent Vine", "Silva Heart"],
-      effects: {
-        hp: 1.3,
-        armor: 1.2
-      },
-      description: "Roots and stone fused into living armor.",
-      path: "./res/textures/rpg/invertory/terra-fortis.png"
-    }, {
-      name: "Ventus Aegis",
-      level: 2,
-      price: 0,
-      from: ["Ventus Pluma", "Ignifur Cape"],
-      effects: {
-        moveSpeed: 1.25,
-        armor: 1.15
-      },
-      description: "A shield that dances with the wind.",
-      path: "./res/textures/rpg/invertory/ventus-aegis.png"
-    }, {
-      name: "Ferrum Lux",
-      level: 2,
-      price: 0,
-      from: ["Ferrum Anulus", "Lux Feather"],
-      effects: {
-        armor: 1.25,
-        mana: 1.1
-      },
-      description: "Iron enchanted by celestial light.",
-      path: "./res/textures/rpg/invertory/ferrum-lux.png"
-    }, {
-      name: "Sanguis Vita",
-      level: 2,
-      price: 0,
-      from: ["Sanguis Orb", "Vita Flos"],
-      effects: {
-        hp: 1.4
-      },
-      description: "Blood and life entwined in crimson bloom.",
-      path: "./res/textures/rpg/invertory/sanguis-vita.png"
-    },
-    //<<<<<<
-    {
-      name: "Tenebris Vox",
-      level: 2,
-      price: 0,
-      from: ["Tenebris Fang", "Vox Chime"],
-      effects: {
-        attackSpeed: 1.2,
-        stealth: 1.2
-      },
-      description: "A cursed chime that roars like the abyss.",
-      path: "./res/textures/rpg/invertory/tenebris-vox.png"
-    }, {
-      name: "Aether Gladius",
-      level: 2,
-      price: 0,
-      from: ["Gladius Ignis", "Aether Scale"],
-      effects: {
-        attackSpeed: 1.3,
-        mana: 1.1
-      },
-      description: "A sword wreathed in spectral energy.",
-      path: "./res/textures/rpg/invertory/aether-gladius.png"
-    }, {
-      name: "Fulgur Mortis",
-      level: 2,
-      price: 0,
-      from: ["Fulgur Stone", "Mortis Bone"],
-      effects: {
-        attackSpeed: 1.25,
-        moveSpeed: 1.15
-      },
-      description: "Lightning fused with death’s essence.",
-      path: "./res/textures/rpg/invertory/fulgur-mortis.png"
-    },
-    // LEVEL 3 — ADVANCED ITEMS (5)
-    {
-      name: "Corona Umbra",
-      level: 3,
-      price: 0,
-      from: ["Umbra Silens", "Corona Ignifera", "Tenebris Vox"],
-      effects: {
-        attackSpeed: 1.4,
-        stealth: 1.3
-      },
-      description: "Crown of the night sun, radiating power and darkness.",
-      path: "./res/textures/rpg/invertory/corona-umbra.png"
-    }, {
-      name: "Terra Sanctum",
-      level: 3,
-      price: 0,
-      from: ["Terra Fortis", "Aqua Sanctum"],
-      effects: {
-        hp: 1.5,
-        armor: 1.3
-      },
-      description: "The sacred earth that sustains all life.",
-      path: "./res/textures/rpg/invertory/terra-sanctum.png"
-    }, {
-      name: "Aether Fortis",
-      level: 3,
-      price: 0,
-      from: ["Aether Gladius", "Ferrum Lux"],
-      effects: {
-        attackSpeed: 1.35,
-        mana: 1.25
-      },
-      description: "Forged in light and aetheric flame.",
-      path: "./res/textures/rpg/invertory/aether-fortis.png"
-    }, {
-      name: "Vita Mindza",
-      level: 3,
-      price: 0,
-      from: ["Sanguis Vita", "Ventus Aegis"],
-      effects: {
-        hp: 1.4,
-        moveSpeed: 1.2
-      },
-      description: "The living crown of vitality and wind.",
-      path: "./res/textures/rpg/invertory/vita-mindza.png"
-    }, {
-      name: "Mortis Ultima",
-      level: 3,
-      price: 0,
-      from: ["Fulgur Mortis", "Corona Umbra", "Aether Fortis"],
-      effects: {
-        attackSpeed: 1.6,
-        mana: 1.2,
-        stealth: 1.3
-      },
-      description: "Legendary artifact combining death, storm, and shadow.",
-      path: "./res/textures/rpg/invertory/mortis-ultima.png"
-    }];
-  }
-}
-exports.Marketplace = Marketplace;
-
-},{}],13:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = exports.MinHeap = void 0;
-exports.followPath = followPath;
-exports.orientHeroToDirection = orientHeroToDirection;
-exports.resolvePairRepulsion = resolvePairRepulsion;
-var _utils = require("../../../src/engine/utils.js");
-class NavMesh {
-  constructor(data, options = {}) {
-    const scale = options.scale ?? [1, 1, 1];
-    const sx = scale[0],
-      sy = scale[1],
-      sz = scale[2];
-    // Apply scale to each vertex
-    this.vertices = data.vertices.map(v => [v[0] * sx, v[1] * sy, v[2] * sz]);
-    this.polygons = data.polygons.map(p => ({
-      indices: p.indices.slice(),
-      neighbors: (p.neighbors || []).slice()
-    }));
-    this._computeCenters();
-    this._buildEdgeMap();
-  }
-  _computeCenters() {
-    this.centers = this.polygons.map(poly => {
-      const vs = poly.indices.map(i => this.vertices[i]);
-      const cx = (vs[0][0] + vs[1][0] + vs[2][0]) / 3;
-      const cy = (vs[0][1] + vs[1][1] + vs[2][1]) / 3;
-      const cz = (vs[0][2] + vs[1][2] + vs[2][2]) / 3;
-      return [cx, cy, cz];
-    });
-  }
-  _edgeKey(a, b) {
-    return a < b ? `${a}_${b}` : `${b}_${a}`;
-  }
-  _buildEdgeMap() {
-    // map edgeKey -> array of {poly, aIndex, bIndex}
-    this.edgeMap = new Map();
-    this.polygons.forEach((poly, pi) => {
-      const indices = poly.indices;
-      for (let i = 0; i < indices.length; i++) {
-        const a = indices[i];
-        const b = indices[(i + 1) % indices.length];
-        const key = this._edgeKey(a, b);
-        if (!this.edgeMap.has(key)) this.edgeMap.set(key, []);
-        this.edgeMap.get(key).push({
-          poly: pi,
-          a,
-          b
-        });
-      }
-    });
-  }
-
-  // Point-in-triangle test in XZ plane using barycentric technique
-  _pointInTriXZ(pt, v0, v1, v2) {
-    const x = pt[0],
-      z = pt[2];
-    const ax = v0[0],
-      az = v0[2];
-    const bx = v1[0],
-      bz = v1[2];
-    const cx = v2[0],
-      cz = v2[2];
-    // vectors
-    const v0x = cx - ax,
-      v0z = cz - az;
-    const v1x = bx - ax,
-      v1z = bz - az;
-    const v2x = x - ax,
-      v2z = z - az;
-    const dot00 = v0x * v0x + v0z * v0z;
-    const dot01 = v0x * v1x + v0z * v1z;
-    const dot02 = v0x * v2x + v0z * v2z;
-    const dot11 = v1x * v1x + v1z * v1z;
-    const dot12 = v1x * v2x + v1z * v2z;
-    const denom = dot00 * dot11 - dot01 * dot01;
-    if (Math.abs(denom) < 1e-9) return false;
-    const u = (dot11 * dot02 - dot01 * dot12) / denom;
-    const v = (dot00 * dot12 - dot01 * dot02) / denom;
-    return u >= -1e-6 && v >= -1e-6 && u + v <= 1 + 1e-6;
-  }
-  findPolygonContainingPoint(point) {
-    // first try naive linear scan (ok for medium meshes). point = [x,y,z]
-    for (let i = 0; i < this.polygons.length; i++) {
-      const poly = this.polygons[i];
-      const v0 = this.vertices[poly.indices[0]];
-      const v1 = this.vertices[poly.indices[1]];
-      const v2 = this.vertices[poly.indices[2]];
-      if (this._pointInTriXZ(point, v0, v1, v2)) return i;
-    }
-    // fallback: return nearest polygon center
-    let best = 0;
-    let bestD = Infinity;
-    for (let i = 0; i < this.centers.length; i++) {
-      const c = this.centers[i];
-      const dx = c[0] - point[0];
-      const dz = c[2] - point[2];
-      const d = dx * dx + dz * dz;
-      if (d < bestD) {
-        bestD = d;
-        best = i;
-      }
-    }
-    return best;
-  }
-
-  // A* over polygon graph. returns list of polygon indices (inclusive)
-  _findPolyPath(startPoly, endPoly) {
-    if (startPoly === endPoly) return [startPoly];
-    const open = new MinHeap((a, b) => a.f - b.f);
-    const nodes = new Array(this.polygons.length);
-    for (let i = 0; i < nodes.length; i++) nodes[i] = {
-      g: Infinity,
-      h: 0,
-      f: Infinity,
-      parent: -1,
-      id: i
-    };
-    nodes[startPoly].g = 0;
-    nodes[startPoly].h = this._heuristic(startPoly, endPoly);
-    nodes[startPoly].f = nodes[startPoly].h;
-    open.push(nodes[startPoly]);
-    const closed = new Set();
-    while (!open.empty()) {
-      const current = open.pop();
-      if (current.id === endPoly) {
-        const path = [];
-        let cur = current;
-        while (cur) {
-          path.push(cur.id);
-          if (cur.parent === -1) break;
-          cur = nodes[cur.parent];
-        }
-        return path.reverse();
-      }
-      closed.add(current.id);
-      const neighbors = this.polygons[current.id].neighbors || [];
-      for (const nId of neighbors) {
-        if (closed.has(nId)) continue;
-        const tentativeG = current.g + this._edgeCost(current.id, nId);
-        const neigh = nodes[nId];
-        if (tentativeG < neigh.g) {
-          neigh.parent = current.id;
-          neigh.g = tentativeG;
-          neigh.h = this._heuristic(nId, endPoly);
-          neigh.f = neigh.g + neigh.h;
-          open.push(neigh);
-        }
-      }
-    }
-    return []; // no path
-  }
-  _heuristic(aIdx, bIdx) {
-    const a = this.centers[aIdx];
-    const b = this.centers[bIdx];
-    const dx = a[0] - b[0];
-    const dz = a[2] - b[2];
-    return Math.sqrt(dx * dx + dz * dz);
-  }
-  _edgeCost(aIdx, bIdx) {
-    // Euclidean distance between polygon centers
-    const a = this.centers[aIdx];
-    const b = this.centers[bIdx];
-    const dx = a[0] - b[0];
-    const dz = a[2] - b[2];
-    return Math.sqrt(dx * dx + dz * dz);
-  }
-
-  // build portal list (pair of points) between the sequence of polygons
-  _buildPortals(polyPath, startPoint, endPoint) {
-    // portals: array of {left:[x,y,z], right:[x,y,z]}
-    const portals = [];
-    for (let i = 0; i < polyPath.length - 1; i++) {
-      const aIdx = polyPath[i];
-      const bIdx = polyPath[i + 1];
-      // find shared edge between aIdx and bIdx
-      const pa = this.polygons[aIdx];
-      const pb = this.polygons[bIdx];
-      let shared = null;
-      for (let ia = 0; ia < pa.indices.length; ia++) {
-        const a0 = pa.indices[ia],
-          a1 = pa.indices[(ia + 1) % pa.indices.length];
-        const key = this._edgeKey(a0, a1);
-        const entries = this.edgeMap.get(key) || [];
-        for (const e of entries) {
-          if (e.poly === bIdx) {
-            // shared edge
-            shared = [this.vertices[a0], this.vertices[a1]];
-            break;
-          }
-        }
-        if (shared) break;
-      }
-      if (!shared) {
-        // fallback: use centers
-        const cA = this.centers[aIdx];
-        const cB = this.centers[bIdx];
-        portals.push({
-          left: cA.slice(),
-          right: cB.slice()
-        });
-      } else {
-        // ensure consistent ordering (left/right) in XZ relative to path direction
-        portals.push({
-          left: shared[0].slice(),
-          right: shared[1].slice()
-        });
-      }
-    }
-
-    // prepend start and append end as degenerate portals
-    portals.unshift({
-      left: startPoint.slice(),
-      right: startPoint.slice()
-    });
-    portals.push({
-      left: endPoint.slice(),
-      right: endPoint.slice()
-    });
-    return portals;
-  }
-
-  // Funnel algorithm (returns array of [x,y,z])
-  _stringPull(portals) {
-    // classic funnel over XZ plane
-    const portalLeft = portals.map(p => [p.left[0], p.left[2]]);
-    const portalRight = portals.map(p => [p.right[0], p.right[2]]);
-    const points = []; // result XZ
-    let apexIndex = 0,
-      leftIndex = 0,
-      rightIndex = 0;
-    let apex = portalLeft[0].slice();
-    let left = portalLeft[0].slice();
-    let right = portalRight[0].slice();
-    points.push([apex[0], apex[1]]); // x,z
-
-    function vecCross(a, b) {
-      return a[0] * b[1] - a[1] * b[0];
-    }
-    function sub(a, b) {
-      return [a[0] - b[0], a[1] - b[1]];
-    }
-    for (let i = 1; i < portalLeft.length; i++) {
-      const pLeft = portalLeft[i];
-      const pRight = portalRight[i];
-      // update right
-      const relRight = sub(pRight, apex);
-      const relRightCur = sub(right, apex);
-      if (vecCross(relRightCur, relRight) >= 0) {
-        // new right is more 'right' -> tighten
-        if (vecCross(sub(left, apex), relRight) > 0) {
-          // right crosses left -> advance apex to left
-          points.push([left[0], left[1]]);
-          apex = left.slice();
-          // reset indices
-          apexIndex = leftIndex;
-          leftIndex = apexIndex;
-          rightIndex = apexIndex;
-          left = apex.slice();
-          right = apex.slice();
-          i = apexIndex;
-          continue;
-        }
-        right = pRight.slice();
-        rightIndex = i;
-      }
-      // update left
-      const relLeft = sub(pLeft, apex);
-      const relLeftCur = sub(left, apex);
-      if (vecCross(relLeftCur, relLeft) <= 0) {
-        // new left is more 'left' -> tighten
-        if (vecCross(sub(right, apex), relLeft) < 0) {
-          // left crosses right -> advance apex to right
-          points.push([right[0], right[1]]);
-          apex = right.slice();
-          apexIndex = rightIndex;
-          leftIndex = apexIndex;
-          rightIndex = apexIndex;
-          left = apex.slice();
-          right = apex.slice();
-          i = apexIndex;
-          continue;
-        }
-        left = pLeft.slice();
-        leftIndex = i;
-      }
-    }
-    // add goal
-    const lastPortal = portalLeft[portalLeft.length - 1];
-    points.push([lastPortal[0], lastPortal[1]]);
-    // convert back to [x,y,z] with Y taken from mesh average Y (or 0)
-    const out = points.map(xz => {
-      const x = xz[0],
-        z = xz[1];
-      // pick Y from nearest vertex on mesh (cheap approximation)
-      const y = this._sampleY(x, z);
-      return [x, y, z];
-    });
-    return out;
-  }
-  _sampleY(x, z) {
-    // sample Y using nearest vertex (cheap). If you have heightmap, use that.
-    let bestD = Infinity,
-      bestY = 0;
-    for (let i = 0; i < this.vertices.length; i++) {
-      const v = this.vertices[i];
-      const dx = v[0] - x,
-        dz = v[2] - z;
-      const d = dx * dx + dz * dz;
-      if (d < bestD) {
-        bestD = d;
-        bestY = v[1];
-      }
-    }
-    return bestY;
-  }
-
-  // Public API: returns an array of [x,y,z] waypoints or [] if unreachable
-  findPath(startPoint, endPoint) {
-    // startPoint and endPoint are [x,y,z]
-    const startPoly = this.findPolygonContainingPoint(startPoint);
-    const endPoly = this.findPolygonContainingPoint(endPoint);
-    if (startPoly === null || endPoly === null) return [];
-    const polyPath = this._findPolyPath(startPoly, endPoly);
-    if (!polyPath || polyPath.length === 0) return [];
-
-    // If polyPath is single poly, simply return [start,end]
-    if (polyPath.length === 1) {
-      return [[startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]], [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]]];
-    }
-    const portals = this._buildPortals(polyPath, startPoint, endPoint);
-    const smooth = this._stringPull(portals);
-    // ensure first/last are exactly start/end
-    if (smooth.length > 0) {
-      smooth[0] = [startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]];
-      smooth[smooth.length - 1] = [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]];
-    }
-    return smooth;
-  }
-
-  // Optional: clamp point into mesh (closest point on triangles) - simple nearest vertex fallback
-  closestPointOnMesh(point) {
-    // naive: return nearest vertex
-    let bestD = Infinity,
-      best = null;
-    for (const v of this.vertices) {
-      const dx = v[0] - point[0],
-        dy = v[1] - point[1],
-        dz = v[2] - point[2];
-      const d = dx * dx + dy * dy + dz * dz;
-      if (d < bestD) {
-        bestD = d;
-        best = v;
-      }
-    }
-    return best.slice();
-  }
-}
-exports.default = NavMesh;
-class MinHeap {
-  constructor(cmp) {
-    this.cmp = cmp || ((a, b) => a - b);
-    this.items = [];
-  }
-  push(v) {
-    this.items.push(v);
-    this._siftUp(this.items.length - 1);
-  }
-  pop() {
-    if (this.items.length === 0) return null;
-    const top = this.items[0];
-    const last = this.items.pop();
-    if (this.items.length > 0) {
-      this.items[0] = last;
-      this._siftDown(0);
-    }
-    return top;
-  }
-  empty() {
-    return this.items.length === 0;
-  }
-  _siftUp(i) {
-    while (i > 0) {
-      const p = Math.floor((i - 1) / 2);
-      if (this.cmp(this.items[i], this.items[p]) < 0) {
-        [this.items[i], this.items[p]] = [this.items[p], this.items[i]];
-        i = p;
-      } else break;
-    }
-  }
-  _siftDown(i) {
-    while (true) {
-      const l = 2 * i + 1,
-        r = 2 * i + 2;
-      let m = i;
-      if (l < this.items.length && this.cmp(this.items[l], this.items[m]) < 0) m = l;
-      if (r < this.items.length && this.cmp(this.items[r], this.items[m]) < 0) m = r;
-      if (m !== i) {
-        [this.items[i], this.items[m]] = [this.items[m], this.items[i]];
-        i = m;
-      } else break;
-    }
-  }
-}
-exports.MinHeap = MinHeap;
-const MIN_DIST = 0.1;
-function followPath(character, path, core) {
-  if (!path || path.length === 0) return;
-  let idx = 0;
-  const pos = character.position;
-  const rot = character.rotation;
-  const MIN_DIST = 0.001;
-  const ROTATION_SPEED = 5; // adjust for smoother/slower rotation
-
-  // --- Smoothly rotate toward a target angle ---
-  function smoothRotate(current, target, deltaTime) {
-    let diff = target - current;
-    // Normalize angle difference to [-180, 180]
-    diff = (diff + 540) % 360 - 180;
-    return current + diff * Math.min(1, deltaTime * ROTATION_SPEED);
-  }
-
-  // --- Recursive movement ---
-  function moveToNext() {
-    if (idx >= path.length) {
-      dispatchEvent(new CustomEvent('onTargetPositionReach', {
-        detail: {
-          name: character.name,
-          body: character
-        }
-      }));
-      character.position.onTargetPositionReach = () => {};
-      return;
-    }
-    const target = path[idx];
-    const dx = target[0] - pos.x;
-    const dz = target[2] - pos.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
-    // --- Skip points that are too close ---
-    if (dist < MIN_DIST) {
-      idx++;
-      moveToNext();
-      return;
-    }
-    // --- Compute target facing direction (Y rotation) ---
-    let targetAngleY = Math.atan2(dx, dz);
-    targetAngleY = ((0, _utils.radToDeg)(targetAngleY) + 360) % 360;
-    // --- Smooth rotation (optional deltaTime if you have it) ---
-    const deltaTime = core?.deltaTime || 0.016; // fallback ~60fps
-    rot.y = smoothRotate(rot.y, targetAngleY, deltaTime);
-    // --- Move toward next target ---
-    pos.translateByXZ(target[0], target[2]);
-    // When position reaches target:
-    character.position.onTargetPositionReach = () => {
-      idx++;
-      moveToNext();
-    };
-  }
-  // --- Initialize rotation toward the first valid point ---
-  const firstTarget = path.find(p => {
-    const dx = p[0] - pos.x;
-    const dz = p[2] - pos.z;
-    return Math.sqrt(dx * dx + dz * dz) >= MIN_DIST;
-  });
-  if (firstTarget) {
-    const dx = firstTarget[0] - pos.x;
-    const dz = firstTarget[2] - pos.z;
-    let initialAngleY = Math.atan2(dx, dz);
-    rot.y = ((0, _utils.radToDeg)(initialAngleY) + 360) % 360;
-  }
-  moveToNext();
-}
-function orientHeroToDirection(hero, dir) {
-  const flatDir = [dir[0], 0, dir[2]];
-  const len = Math.hypot(flatDir[0], flatDir[2]);
-  if (len < 0.0001) return;
-  flatDir[0] /= len;
-  flatDir[2] /= len;
-  // Compute rotation angle around Y axis
-  const angle = Math.atan2(flatDir[0], flatDir[2]); // note X/Z order!
-  // Apply to hero
-  hero.rotation.y = angle; // in radians
-}
-function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
-  // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
-  const dx = Bpos.x - Apos.x;
-  const dz = Bpos.z - Apos.z;
-  const distSq = dx * dx + dz * dz;
-  const minDistSq = minDistance * minDistance;
-  if (distSq < minDistSq && distSq > 1e-8) {
-    const dist = Math.sqrt(distSq);
-    const overlap = minDistance - dist;
-    const nx = dx / dist;
-    const nz = dz / dist;
-    const totalPush = overlap * pushStrength;
-    const pushA = totalPush * 0.5;
-    const pushB = totalPush * 0.5;
-    Apos.x -= nx * pushA;
-    Apos.z -= nz * pushA;
-    Bpos.x += nx * pushB;
-    Bpos.z += nz * pushB;
-    // Apos.targetX = Apos.x;
-    // Apos.targetZ = Apos.z;
-    // Bpos.targetX = Bpos.x;
-    // Bpos.targetZ = Bpos.z;
-
-    return true;
-  }
-  // exact overlap (practically same point) -> small jitter to separate
-  if (distSq <= 1e-8) {
-    const jitter = 0.01;
-    Apos.x += (Math.random() - 0.5) * jitter;
-    Apos.z += (Math.random() - 0.5) * jitter;
-    Apos.targetX = Apos.x;
-    Apos.targetZ = Apos.z;
-    return true;
-  }
-  return false;
-}
-
-},{"../../../src/engine/utils.js":79}],14:[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5636,29 +1147,1137 @@ var ROCK_RANK = exports.ROCK_RANK = {
   }
 };
 
-},{"../../../src/engine/utils.js":79}],15:[function(require,module,exports){
+},{"../../../src/engine/utils.js":65}],3:[function(require,module,exports){
 "use strict";
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.startUpPositions = exports.creepPoints = void 0;
-const startUpPositions = exports.startUpPositions = {
-  south: [-750, -23, 860],
-  north: [800, -23, -800]
-};
-const creepPoints = exports.creepPoints = {
-  south: {
-    firstPoint: [-653.83, -23, -612.95],
-    finalPoint: [700, -23, -737]
-  },
-  north: {
-    firstPoint: [-653.83, -23, -612.95],
-    finalPoint: [-700, -23, 737]
-  }
-};
+var _webgpuGltf = require("../../../src/engine/loaders/webgpu-gltf.js");
+var _net = require("../../../src/engine/networking/net.js");
+var _utils = require("../../../src/engine/utils.js");
+var _world = _interopRequireDefault(require("../../../src/world.js"));
+var _hero = require("./hero.js");
+var _animatedCursor = require("../../../src/engine/plugin/animated-cursor/animated-cursor.js");
+var _matrixStream = require("../../../src/engine/networking/matrix-stream.js");
+var _rocketCraftingAccount = require("./rocket-crafting-account.js");
+var _enBackup = require("../../../public/res/multilang/en-backup.js");
+var _tts = require("./tts.js");
+var _editor = require("../../../src/tools/editor/editor.js");
+var _cameras = require("../../../src/engine/cameras.js");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+/**
+ * @name forestOfHollowBloodStartSceen
+ * 
+ * @licence
+ * Creative Commons Attribution 4.0 International (CC BY 4.0)
+ * You are free to share and adapt this project, provided that you give appropriate credit.
+ * Attribution requirement:
+ * Include the following notice (with working link) in any distributed version or about page:
+ * 
+ * "Forest Of Hollow Blood — an MOBA example made with MatrixEngineWGPU (https://github.com/zlatnaspirala/matrix-engine-wgpu)"
+ * @Note
+ * “Character and animation assets from Mixamo,
+ * used under Adobe’s royalty‑free license. 
+ * Redistribution of raw assets is not permitted.”
+ * 
+ * @Note 
+ * This is startup main instance for menu screen and for the game.
+ * All @zlatnaspirala software use networking based
+ * on openvidu/kurento media server(webRTC).
+ * Node.js used for middleware.
+ * Server Events API also used for helping in creation of
+ * matching/waiting list players or get status of public channel
+ * (game-play channel).
+ * 
+ * @note
+ * Only last non selected hero player will get 
+ * first free hero in selection action next/back.
+ * For now. Next better varian can be timer solution.
+ * 
+ * @Backend Session account stuff.
+ * RocketCraftingServer platform used.
+ **/
 
-},{}],16:[function(require,module,exports){
+_utils.LS.clear();
+_utils.SS.clear();
+
+// {w: window.visualViewport.width, h: window.visualViewport.height }
+let forestOfHollowBloodStartSceen = new _world.default({
+  fastRender: (0, _utils.isMobile)() == true ? 0.85 : 0.95,
+  dontUsePhysics: true,
+  canvasSize: 'fullscreen',
+  MAX_BONES: 100,
+  MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 2 : 2,
+  lock: 'portrait',
+  //'landscape',
+  mainCameraParams: {
+    type: 'cinematicCamera',
+    responseCoef: 1000
+  },
+  clearColor: {
+    r: 0,
+    b: 0.1,
+    g: 0.1,
+    a: 1
+  }
+}, forestOfHollowBloodStartSceen => {
+  _cameras.MobileDOM.destroyWASD();
+  if ('serviceWorker' in navigator) {
+    if (location.hostname.indexOf('localhost') == -1) {
+      navigator.serviceWorker.register('cache.js').then(registration => {
+        if (!navigator.serviceWorker.controller) {
+          console.log('Installing & caching for the first time');
+          forestOfHollowBloodStartSceen.fakeL = 450;
+          //
+        } else {
+          forestOfHollowBloodStartSceen.fakeL = 150;
+          console.log('Loading from cache as normal');
+        }
+      });
+    } else {
+      // RCSAccount
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+  } else {
+    console.warn('Matrix Engine WGPU : No support for web workers in this browser.');
+  }
+  forestOfHollowBloodStartSceen.tts = new _tts.MatrixTTS();
+  forestOfHollowBloodStartSceen.account = new _rocketCraftingAccount.RCSAccount("https://maximumroulette.com");
+  forestOfHollowBloodStartSceen.account.createDOM();
+  forestOfHollowBloodStartSceen.FS = new _utils.FullscreenManager();
+  forestOfHollowBloodStartSceen.gamePlayStatus = null;
+  // in future replace with server event solution
+  forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
+  forestOfHollowBloodStartSceen.heroByBody = [];
+  forestOfHollowBloodStartSceen.selectedHero = 0;
+  forestOfHollowBloodStartSceen.lock = false;
+
+  // Audios
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music2', 'res/audios/rpg/music.mp3', 1);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('music', 'res/audios/rpg/wizard-rider.mp3', 1);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('click1', 'res/audios/click1.mp3', 1);
+  app.matrixSounds.audios.click1.volume = 0.2;
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('hover', 'res/audios/kenney/mp3/click3.mp3', 2);
+  forestOfHollowBloodStartSceen.matrixSounds.createAudio('feel', 'res/audios/rpg/feel.mp3', 2);
+  let heros = null;
+  function checkUsername() {
+    if (JSON.parse(_utils.SS.get('RocketAcount')) != null && typeof JSON.parse(_utils.SS.get('RocketAcount')).nickname !== 'undefined') {
+      return JSON.parse(_utils.SS.get('RocketAcount')).nickname;
+    } else {
+      if (app.net.session !== null) {
+        return app.net.session.connection.connectionId;
+      } else {
+        return 'nosession';
+      }
+    }
+  }
+
+  // Networking
+  forestOfHollowBloodStartSceen.net = new _net.MatrixStream({
+    active: true,
+    domain: 'maximumroulette.com',
+    port: 2020,
+    sessionName: 'forestOfHollowBlood-free-for-all-start',
+    resolution: '160x240',
+    isDataOnly: true
+  });
+  function handleHeroImage(selectHeroIndex) {
+    // func exist in case of changinf hero names...
+    let name = 'no-name';
+    if (selectHeroIndex == 0) {
+      name = 'mariasword';
+    } else if (selectHeroIndex == 1) {
+      name = 'slayzer';
+    } else if (selectHeroIndex == 100) {
+      name = 'steelborn'; // disabled - not optimismed 3d obj
+    } else if (selectHeroIndex == 100) {
+      name = 'warrok'; // disabled - not optimismed 3d obj
+    } else if (selectHeroIndex == 2) {
+      name = 'skeletonz';
+    } else if (selectHeroIndex == 100) {
+      name = 'erika'; // disabled - not optimismed 3d obj
+    } else if (selectHeroIndex == 3) {
+      name = 'arissa';
+    }
+    return name;
+  }
+  function checkHeroStatus() {
+    const indices = [];
+    document.querySelectorAll('[data-hero-index]').forEach(elem => {
+      const index = parseInt(elem.getAttribute('data-hero-index'));
+      indices.push(index);
+    });
+
+    // check if any value appears more than once
+    const hasDuplicate = indices.some((val, i) => indices.indexOf(val) !== i);
+    return hasDuplicate;
+  }
+  function determinateTeam() {
+    console.log('check remote conn.app.net.session.remoteConnections.size..', app.net.session.remoteConnections.size);
+    if (app.net.session.remoteConnections.size == 0) {
+      // Rule - even -> south team odd -> north team
+      return "south";
+    } else {
+      if ((0, _utils.isOdd)(app.net.session.remoteConnections.size) == true) {
+        return "north";
+      } else {
+        return "south";
+      }
+    }
+  }
+  function determinateSelection() {
+    if (app.net.session.connection != null) {
+      // console.log("Test team data moment", byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'))
+      let testDom = (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
+      if (typeof testDom != 'string') {
+        console.log('Potencial error not handled....');
+      }
+      app.net.sendOnlyData({
+        type: "selectHeroIndex",
+        selectHeroIndex: app.selectedHero,
+        team: testDom
+      });
+    }
+    // fix for local
+    if ((0, _utils.byId)(`waithero-img-${app.net.session.connection.connectionId}`)) {
+      let heroImage = (0, _utils.byId)(`waithero-img-${app.net.session.connection.connectionId}`);
+      heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+      heroImage.setAttribute('data-hero-index', app.selectedHero);
+    } else {
+      let heroImage = document.createElement('img');
+      heroImage.setAttribute('data-hero-index', app.selectedHero);
+      heroImage.id = `waithero-img-${app.net.session.connection.connectionId}`;
+      heroImage.width = '64';
+      heroImage.height = '64';
+      heroImage.src = `./res/textures/rpg/hero-image/${handleHeroImage(app.selectedHero)}.png`;
+      (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).appendChild(heroImage);
+    }
+    // Only last non selected hero player will get 
+    // first free hero in selection action next/back.
+    // For now.
+    if (checkHeroStatus() == true) {
+      console.log("hero used keep graphics no send");
+      return;
+    }
+    if (isAllSelected() == true) {
+      forestOfHollowBloodStartSceen.gotoGamePlay();
+    }
+  }
+  forestOfHollowBloodStartSceen.determinateSelection = determinateSelection;
+  function isAllSelected() {
+    let sumParty = document.querySelectorAll('[id*="waiting-"]');
+    let testSelection = document.querySelectorAll('[id*="waithero-img-"]');
+    console.info(testSelection, ' testSelection vs Number of players:', sumParty);
+    if (sumParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      // good all are still here
+      if (testSelection.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+        // good all selected hero !PLAY!
+        return true;
+      } else {
+        _utils.mb.error(`No selection hero for all players...`);
+        return false;
+      }
+    } else {
+      _utils.mb.error(`No enough players...`);
+      return false;
+    }
+  }
+  forestOfHollowBloodStartSceen.gotoGamePlay = preventEmit => {
+    setTimeout(() => {
+      // check again ! good all selected hero !PLAY!
+      // console.log('...', byId(`waiting-${app.net.session.connection.connectionId}`));
+      _utils.LS.set('player', {
+        mesh: heros[app.selectedHero].meshName,
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path,
+        pathMobile: heros[app.selectedHero].pathMobile,
+        archetypes: [heros[app.selectedHero].type],
+        team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+        data: Date.now(),
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
+        useCameraOrAudio: true
+      });
+      _utils.SS.set('player', {
+        mesh: heros[app.selectedHero].meshName,
+        hero: heros[app.selectedHero].name,
+        path: heros[app.selectedHero].path,
+        pathMobile: heros[app.selectedHero].pathMobile,
+        archetypes: [heros[app.selectedHero].type],
+        team: (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
+        data: Date.now(),
+        numOfPlayers: forestOfHollowBloodStartSceen.MINIMUM_PLAYERS,
+        useCameraOrAudio: true
+      });
+      if (typeof preventEmit === 'undefined') forestOfHollowBloodStartSceen.net.sendOnlyData({
+        type: 'start'
+      });
+      location.assign('moba-game.html');
+    }, 1000);
+  };
+  if ('connection' in navigator && navigator.connection) {
+    navigator.connection.onchange = e => {
+      console.info('Network state changed...', e);
+      if (e.target.downlink < 0.4) {
+        (0, _utils.byId)('loader').style.display = 'block';
+        (0, _utils.byId)('loader').style.fontSize = '150%';
+        (0, _utils.byId)('loader').innerHTML = `NO INTERNET CONNECTIONS`;
+        setTimeout(() => {
+          location.href = 'https://maximumroulette.com';
+        }, 3000);
+      }
+    };
+  }
+  addEventListener('check-gameplay-channel', e => {
+    let info = e.detail;
+    if (info.status != 'false' && typeof info.status !== "undefined") {
+      // console.log('check-gameplay-channel status:', info.status)
+      (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
+      forestOfHollowBloodStartSceen.gamePlayStatus = "free";
+      (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
+      (0, _utils.byId)("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
+      clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
+      forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
+    } else {
+      // console.log('check-gameplay-channel status:', info.status)
+      if (typeof info.status != "undefined" && info.status == "false") {
+        // no internet
+        (0, _utils.byId)('loader').style.display = 'block';
+        alert("This is modal window, No internet connection... Please try ");
+      } else {
+        info = JSON.parse(e.detail);
+        if (info.connections && info.connections.numberOfElements == 0) {
+          (0, _utils.byId)("onlineUsers").innerHTML = `GamePlay:Free`;
+          forestOfHollowBloodStartSceen.gamePlayStatus = "free";
+          (0, _utils.byId)('startBtnText').innerHTML = app.label.get.play;
+          (0, _utils.byId)("startBtnText").style.color = 'rgba(0, 0, 0, 0)';
+          clearInterval(forestOfHollowBloodStartSceen.gamePlayStatusTimer);
+          forestOfHollowBloodStartSceen.gamePlayStatusTimer = null;
+          return;
+        }
+        (0, _utils.byId)("onlineUsers").innerHTML = `${app.label.get.alreadyingame}:${info.connections.numberOfElements}`;
+        forestOfHollowBloodStartSceen.gamePlayStatus = "used";
+        (0, _utils.byId)('startBtnText').innerHTML = `${app.label.get.gameplaychannel}:${app.label.get.used}`;
+        (0, _utils.byId)("startBtnText").style.color = 'rgb(255 53 53)';
+        forestOfHollowBloodStartSceen.gamePlayStatusTimer = setTimeout(() => {
+          app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+        }, 30000);
+      }
+    }
+  });
+
+  // MIN is 2 for easy test game
+  forestOfHollowBloodStartSceen.MINIMUM_PLAYERS = location.hostname.indexOf('localhost') != -1 ? 2 : 2;
+  forestOfHollowBloodStartSceen.setWaitingList = () => {
+    // access net doms who comes with broadcaster2.html
+    const waitingForOthersDOM = document.createElement("div");
+    waitingForOthersDOM.id = "waitingForOthersDOM";
+    Object.assign(waitingForOthersDOM.style, {
+      flexFlow: 'wrap',
+      width: "100%",
+      height: "35%",
+      backgroundColor: "rgba(60, 60, 60, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "1",
+      fontSize: '20px',
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    (0, _utils.byId)('session-header').appendChild(waitingForOthersDOM);
+    const onlineUsers = document.createElement("div");
+    onlineUsers.id = "onlineUsers";
+    Object.assign(onlineUsers.style, {
+      flexFlow: 'wrap',
+      width: "100%",
+      height: "35%",
+      backgroundColor: "rgba(60, 60, 60, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "1",
+      fontSize: '20px',
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    (0, _utils.byId)('netHeader').appendChild(onlineUsers);
+    // app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+  };
+  if (document.querySelector('.form-group')) document.querySelector('.form-group').style.display = 'none';
+  // keep simple all networking code on top level
+  // all job will be done with no account for now.
+  addEventListener('net-ready', () => {
+    (0, _utils.byId)('matrix-net').style.opacity = '0.75';
+    document.querySelector('.form-group').style.display = 'none';
+    (0, _utils.byId)("caller-title").innerHTML = `forestOfHollowBlood`;
+    (0, _utils.byId)("sessionName").disabled = true;
+    forestOfHollowBloodStartSceen.setWaitingList();
+    // check game-play channel
+    setTimeout(() => {
+      app.net.fetchInfo('forestOfHollowBlood-free-for-all');
+      app.sendmsg = m => {
+        if (typeof m != 'string') return;
+        if (m.length > 120) return;
+        let username = checkUsername();
+        if (username != 'nosession') app.net.sendOnlyData({
+          type: "chat",
+          msg: m,
+          username: username
+        });
+      };
+    }, 1500);
+  });
+  addEventListener('connectionDestroyed', e => {
+    (0, _utils.byId)(`waiting-${e.detail.connectionId}`).remove();
+  });
+  addEventListener("onConnectionCreated", e => {
+    console.log('newconn : created', e.detail);
+    let newPlayer = document.createElement('div');
+    if (app.net.session.connection.connectionId == e.detail.connection.connectionId) {
+      console.log('newconn : created [LOCAL] determinate team');
+      document.title = app.net.session.connection.connectionId;
+      let team = determinateTeam();
+      newPlayer.setAttribute('data-hero-team', team);
+      newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
+      setTimeout(() => {
+        //---------- test
+        if (app.net.session.connection != null) {
+          console.log("Test team data moment", (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'));
+          let testDom = (0, _utils.byId)(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team');
+          if (typeof testDom != 'string') {
+            console.low('Potencial error not handled....');
+          }
+          app.net.sendOnlyData({
+            type: "selectHeroIndex",
+            selectHeroIndex: app.selectedHero,
+            team: testDom
+          });
+          app.net.sendOnlyData({
+            type: "team-notify",
+            team: team
+          });
+        }
+      }, 2000);
+    } else {
+      newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId}</div>`;
+    }
+    newPlayer.id = `waiting-${e.detail.connection.connectionId}`;
+    (0, _utils.byId)('waitingForOthersDOM').appendChild(newPlayer);
+    let testParty = document.querySelectorAll('[id*="waiting-"]');
+    console.info('Test number of players:', testParty);
+    if (testParty.length == forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      // when all choose hero goto play
+      _utils.mb.success(`Consensus is reached. Party${forestOfHollowBloodStartSceen.MINIMUM_PLAYERS}
+          When all player select hero gameplay starts.
+        `);
+    } else if (testParty.length < forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      _utils.mb.success(`Player ${e.detail.connection.connectionId} joined party.Select your hero and wait for other...`);
+    } else if (testParty.length > forestOfHollowBloodStartSceen.MINIMUM_PLAYERS) {
+      if (e.detail.connection.connectionId == app.net.session.connection.connectionId) {
+        _utils.mb.success(`Max players is reached.Please wait for next party...`);
+      }
+    }
+  });
+  addEventListener('only-data-receive', e => {
+    let t = JSON.parse(e.detail.data);
+    if (t) {
+      if (t.type == 'selectHeroIndex') {
+        console.log(`<data-receive From ${e.detail.from} data:${t.selectHeroIndex}`);
+        let name = handleHeroImage(t.selectHeroIndex);
+        let heroImage = (0, _utils.byId)(`waithero-img-${e.detail.from.connectionId}`);
+        if (heroImage) {
+          heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+          heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
+        } else {
+          let heroImage = document.createElement('img');
+          heroImage.id = `waithero-img-${e.detail.from.connectionId}`;
+          heroImage.width = '64';
+          heroImage.height = '64';
+          heroImage.src = `./res/textures/rpg/hero-image/${name.toLowerCase()}.png`;
+          heroImage.setAttribute('data-hero-index', t.selectHeroIndex);
+          (0, _utils.byId)(`waiting-${e.detail.from.connectionId}`).appendChild(heroImage);
+          // also add team for initial user problem case...
+          if (t.team) {
+            (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
+          }
+        }
+      } else if (t.type == 'team-notify') {
+        console.log(`<data-receive From ${e.detail.from.connectionId} team:${t.team}  ${(0, _utils.byId)(`waiting-${e.detail.from.connectionId}`)}`);
+        (0, _utils.byId)(`${e.detail.from.connectionId}-title`).innerHTML = `Player:${e.detail.from.connectionId} Team:${t.team}`;
+      } else if (t.type == 'start') {
+        forestOfHollowBloodStartSceen.gotoGamePlay("no emit");
+      } else if (t.type == 'chat') {
+        // add chat
+        if (t.msg.length > 120) {
+          t.msg = '';
+          return;
+        }
+        _utils.mb.show(`Msg from ${t.username}: ${t.msg}`);
+      }
+    }
+  });
+  if (typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
+    if (typeof app.label == 'undefined') app.label = {
+      get: {}
+    };
+    app.label.get = _enBackup.en;
+  }
+  app.matrixSounds.play('music');
+  heros = [{
+    type: "Warrior",
+    name: 'MariaSword',
+    pathMobile: "res/meshes/glb/woman-mobile.glb",
+    path: "res/meshes/glb/woman1.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.mariasword
+  }, {
+    type: "Ranger",
+    name: 'Slayzer',
+    pathMobile: "res/meshes/glb/monster.glb",
+    path: "res/meshes/glb/monster.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.slayzer
+  },
+  // {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
+  // {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
+  {
+    type: "Necromancer",
+    name: 'Skeletonz',
+    pathMobile: "res/meshes/glb/skeletonz.glb",
+    path: "res/meshes/glb/skeletonz.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.skeletonz
+  },
+  // {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
+  {
+    type: "Support",
+    name: 'Arissa',
+    pathMobile: "res/meshes/glb/arissa.glb",
+    path: "res/meshes/glb/arissa.glb",
+    desc: forestOfHollowBloodStartSceen.label.get.arissa
+  }];
+  forestOfHollowBloodStartSceen.heros = heros;
+
+  // helper
+  async function loadHeros() {
+    for (var x = 0; x < heros.length; x++) {
+      var glbFile01 = await fetch(heros[x].path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, app.device)));
+      forestOfHollowBloodStartSceen.addGlbObjInctance({
+        material: x == 2 || x == 1 ? {
+          type: 'pong',
+          useTextureFromGlb: true
+        } : {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        scale: [20, 20, 20],
+        position: {
+          x: 0 + x * 50,
+          y: 0,
+          z: -10
+        },
+        name: heros[x].name,
+        useScale: true,
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+        raycast: {
+          enabled: true,
+          radius: 1
+        },
+        pointerEffect: {
+          enabled: true,
+          pointer: true,
+          flameEffect: false,
+          flameEmitter: true,
+          circlePlane: true,
+          circlePlaneTex: true,
+          circlePlaneTexPath: './res/textures/star1.png'
+        }
+      }, null, glbFile01);
+    }
+    setTimeout(() => {
+      let cam = app.getCamera();
+      const introPath = new _utils.CameraPath([{
+        position: [0, 15, -30],
+        target: [0, 0, 0]
+      }, {
+        position: [13, 17, 10],
+        target: [0, 10, 0]
+      }, {
+        position: [0, 19, 42],
+        target: [0, 14, 0]
+      }], {
+        parameterization: 'arc'
+      });
+      cam.setPath(introPath).play({
+        speed: 0.3,
+        onEnd: () => {}
+      });
+      forestOfHollowBloodStartSceen.buildRenderBuckets(forestOfHollowBloodStartSceen.mainRenderBundle);
+      cam._dirtyAngle = true;
+      cam.setPosition(0, 14, 52);
+      cam.setPitch(-0.13);
+      cam.setYaw(0);
+      app.mainRenderBundle.forEach(sceneObj => {
+        sceneObj.position.thrust = 1;
+        if (sceneObj.effects) if (sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
+      });
+      for (var x = 0; x < heros.length; x++) {
+        let hero0 = app.mainRenderBundle.filter(obj => obj.name.indexOf(heros[x].name) != -1);
+        app.heroByBody.push(hero0);
+        heros[x].meshName = hero0[0].name;
+        hero0[0].playAnimationByIndex(2);
+        if (x == 0) {
+          hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+          // hero0[1].playAnimationByIndex(2);
+        }
+        if (hero0.length == 2) {
+          hero0[1].playAnimationByIndex(2);
+        }
+        if (hero0[0].effects.flameEmitter) hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+          array[i].color = [0, 1, 0, 0.7];
+        });
+        if (x == 2) {
+          hero0.forEach((p, i, array) => {
+            array[i].setAmbient(11, 11, 1);
+          });
+        }
+        if (x == 3 || x == 5) {
+          hero0.forEach((p, i, array) => {
+            array[i].setAmbient(10, 10, 10);
+            // array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+          });
+        }
+        if (x == 6) {
+          hero0.forEach((p, i, array) => {
+            array[i].setAmbient(21, 11, 11);
+          });
+        }
+      }
+    }, (0, _utils.isMobile)() == true ? 2000 : 1000);
+  }
+  loadHeros();
+  createHUDMenu();
+  forestOfHollowBloodStartSceen.addLight();
+  app.lightContainer[0].setPosition(0, 50, 1);
+  app.lightContainer[0].setTarget(0, 0, -10);
+  app.activateBloomEffect();
+  if ((0, _utils.isMobile)() == true) {
+    app.lightContainer[0].setIntensity(40);
+    app.bloomPass.setBlurRadius(3);
+  } else {
+    app.lightContainer[0].setIntensity(40);
+    app.bloomPass.setBlurRadius(1);
+  }
+  function createHUDMenu() {
+    // forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
+    //   path: "./res/icons/seq1/",
+    //   frameCount: 7,
+    //   speed: 80,
+    //   loop: true
+    // })
+
+    // forestOfHollowBloodStartSceen.animatedCursor.start();
+    // document.body.style.cursor = "url('./res/icons/default.png') 0 0, auto";
+
+    document.addEventListener("contextmenu", event => event.preventDefault());
+    (0, _utils.byId)('canvas1').style.pointerEvents = 'none';
+    const hud = document.createElement("div");
+    hud.id = "hud-menu";
+    Object.assign(hud.style, {
+      position: "fixed",
+      bottom: "0",
+      left: "0",
+      opacity: "0.9",
+      width: "100%",
+      height: "35%",
+      backgroundColor: "rgba(60, 60, 60, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-around",
+      color: "white",
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: "1",
+      fontSize: '20px',
+      padding: "10px",
+      boxSizing: "border-box"
+    });
+    const nextBtn = document.createElement("button");
+    Object.assign(nextBtn.style, {
+      // position: "absolute",
+      marginTop: (0, _utils.isMobile)() ? "-100px" : "0",
+      width: "80px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      height: "40px",
+      fontSize: '16px'
+    });
+    nextBtn.classList.add('buttonMatrix');
+    nextBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span id='nextBtn'>${app.label.get.next}</span>
+        </div>
+      </div>
+    `;
+    nextBtn.addEventListener('click', () => {
+      if (app.selectedHero >= app.heroByBody.length - 1 || app.lock == true) {
+        console.log('NEXTBLOCKED ', app.selectedHero);
+        return;
+      }
+      app.lock = true;
+      app.selectedHero++;
+      console.log('app.selectedHero::: ', app.selectedHero);
+      // Fix on remote 
+      if (app.net.session) {
+        determinateSelection();
+      } else {
+        app.tts.speakHero(handleHeroImage(app.selectedHero), 'hello');
+      }
+      app.heroByBody.forEach((sceneObj, indexRoot) => {
+        sceneObj.forEach(heroBodie => {
+          heroBodie.position.translateByX(-50 * app.selectedHero + indexRoot * 50);
+          heroBodie.position.onTargetPositionReach = () => {
+            app.lock = false;
+          };
+          if (heroBodie.effects.circlePlane) {
+            if (indexRoot == app.selectedHero) {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+            } else {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+            }
+          }
+        });
+      });
+      updateDesc();
+      app.matrixSounds.play('click1');
+    });
+    const desc = document.createElement("div");
+    desc.id = 'desc';
+    Object.assign(desc.style, {
+      display: 'flex',
+      flexDirection: 'column',
+      width: "300px",
+      textAlign: "center",
+      color: 'c4deff',
+      fontWeight: "bold",
+      textShadow: "0 0 5px black"
+    });
+    desc.textContent = "HERO INFO";
+    const previusBtn = document.createElement("button");
+    Object.assign(previusBtn.style, {
+      marginTop: (0, _utils.isMobile)() ? "-100px" : "0",
+      width: "80px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      height: "40px",
+      fontSize: '16px'
+    });
+    previusBtn.classList.add('buttonMatrix');
+    previusBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span id='previusBtnText'>${app.label.get.back}</span>
+        </div>
+      </div>
+    `;
+    previusBtn.addEventListener('click', () => {
+      console.log('TEST previusBtn forestOfHollowBloodStartSceen.selectedHero', app.selectedHero);
+      if (app.selectedHero < 1 || app.lock == true) {
+        // console.log('BLOCKED', app.selectedHero)
+        return;
+      }
+      app.lock = true;
+      app.selectedHero--;
+      if (app.net.session) {
+        determinateSelection();
+      } else {
+        app.tts.speakHero(handleHeroImage(app.selectedHero), 'hello');
+      }
+      app.heroByBody.forEach((sceneObj, indexRoot) => {
+        sceneObj.forEach(heroBodie => {
+          heroBodie.position.translateByX(-app.selectedHero * 50 + indexRoot * 50);
+          heroBodie.position.onTargetPositionReach = () => {
+            app.lock = false;
+          };
+          if (heroBodie.effects.circlePlane) {
+            if (indexRoot == app.selectedHero) {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+            } else {
+              heroBodie.effects.circlePlane.instanceTargets[0].color = [0.6, 0.8, 1, 0.4];
+            }
+          }
+        });
+      });
+      updateDesc();
+      app.matrixSounds.play('click1');
+    });
+    function updateDesc() {
+      (0, _utils.byId)('desc').innerHTML = `
+        <div style='height:130px;'> ${app.heros[app.selectedHero].desc}</div>
+        `;
+      let C = _hero.HERO_ARCHETYPES[app.heros[app.selectedHero].type];
+      for (let key in C) {
+        (0, _utils.byId)('desc').innerHTML += ` 
+         <div style='font-size: 15px;display: inline-flex;justify-content:space-between'>
+           <span style="color:#00e2ff"> ${key} </span> : <span style="color:#02e2ff">${C[key]} </span>
+          </div>
+        `;
+      }
+    }
+    const startBtn = document.createElement("button");
+    startBtn.id = 'startBtn';
+    Object.assign(startBtn.style, {
+      position: "fixed",
+      bottom: (0, _utils.isMobile)() == true ? "34%" : '40px',
+      right: (0, _utils.isMobile)() == true ? "16%" : '120px',
+      opacity: (0, _utils.isMobile)() == true ? "0.8" : '1',
+      width: "250px",
+      height: "54px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto'
+    });
+    startBtn.classList.add('buttonMatrix');
+    startBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span id='startBtnText'>${app.label.get.play}</span>
+        </div>
+      </div>
+    `;
+    forestOfHollowBloodStartSceen.notifyHeroSelectionTimer = null;
+    startBtn.addEventListener('click', e => {
+      if (app.net.connection == null) {
+        if (forestOfHollowBloodStartSceen.gamePlayStatus != "free") {
+          _utils.mb.show(app.label.get.gameplayused);
+          return;
+        }
+        // console.log('app.net.connection is null let join gameplay sesion... Wait list.', app.selectedHero)
+        (0, _utils.byId)('join-btn').click();
+        (0, _utils.byId)("startBtnText").innerHTML = app.label.get.waiting_for_others;
+        e.target.disabled = true;
+        app.matrixSounds.play('feel');
+
+        // test - for late users notify again 
+        app.notifyHeroSelectionTimer = setInterval(() => {
+          // not tested
+          console.log('determinateSelection called 10 sec !');
+          determinateSelection();
+        }, 10000);
+        return;
+      } else {
+        console.log('nothing...', app.selectedHero);
+        return;
+      }
+    });
+
+    //about
+    forestOfHollowBloodStartSceen.showAbout = () => {
+      (0, _utils.byId)('helpBox').style.display = 'block';
+      (0, _utils.typeText)('helpBox', app.label.get.aboutRPG, 10);
+    };
+    var helpBox = document.createElement('div');
+    helpBox.id = 'helpBox';
+    if ((0, _utils.isMobile)()) {
+      helpBox.style.position = 'fixed';
+      helpBox.style.right = '0%';
+      helpBox.style.display = 'none';
+      helpBox.style.zIndex = '2';
+      helpBox.style.top = '0%';
+      helpBox.style.width = '89%';
+      helpBox.style.height = '100%';
+      helpBox.style.fontSize = '100%';
+    } else {
+      helpBox.style.position = 'fixed';
+      helpBox.style.right = '20%';
+      helpBox.style.display = 'none';
+      helpBox.style.zIndex = '2';
+      helpBox.style.top = '15%';
+      helpBox.style.width = '60%';
+      helpBox.style.height = '50%';
+      helpBox.style.fontSize = '100%';
+    }
+    helpBox.classList.add('btn');
+    helpBox.addEventListener('click', () => {
+      (0, _utils.byId)('helpBox').style.display = 'none';
+    });
+    document.body.appendChild(helpBox);
+    const aboutBtn = document.createElement("button");
+    Object.assign(aboutBtn.style, {
+      position: "fixed",
+      bottom: '40px',
+      left: '20px',
+      width: (0, _utils.isMobile)() == true ? "50px" : "72px",
+      height: "25px",
+      textAlign: "center",
+      color: "white",
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto'
+    });
+    aboutBtn.classList.add('buttonMatrix');
+    if ((0, _utils.isMobile)() == false) {
+      aboutBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span data-label='aboutword'>${app.label.get.about_}</span>
+        </div>
+      </div>
+    `;
+    } else {
+      // 
+      aboutBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span>ℹ️</span>
+        </div>
+      </div>
+    `;
+    }
+    aboutBtn.addEventListener('click', e => app.showAbout());
+    hud.appendChild(aboutBtn);
+    const LBBtn = document.createElement("button");
+    LBBtn.innerHTML = `
+          <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
+    `;
+    LBBtn.addEventListener('click', app.account.getLeaderboard);
+    hud.appendChild(LBBtn);
+
+    // chat box
+    const sendMsgInput = document.createElement("input");
+    sendMsgInput.id = 'msg-input';
+    sendMsgInput.type = "text";
+    sendMsgInput.addEventListener("input", e => {
+      if (e.target.value.length > 120) {
+        e.target.value = e.target.value.slice(0, 120);
+      }
+    });
+    hud.appendChild(sendMsgInput);
+    const sendMsgBtn = document.createElement("button");
+
+    // suntetise later
+    if ((0, _utils.isMobile)() == true) {
+      Object.assign(LBBtn.style, {
+        position: "fixed",
+        top: '10%',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+      Object.assign(sendMsgInput.style, {
+        position: "fixed",
+        top: '3%',
+        opacity: 0.5,
+        left: '20px',
+        width: "134px",
+        height: "17px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        color: 'black',
+        // background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+      Object.assign(sendMsgBtn.style, {
+        position: "fixed",
+        top: '6.5%',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+    } else {
+      Object.assign(LBBtn.style, {
+        position: "fixed",
+        bottom: '220px',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+      Object.assign(sendMsgInput.style, {
+        position: "fixed",
+        bottom: '282px',
+        left: '20px',
+        width: "134px",
+        height: "17px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        color: 'black',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+      Object.assign(sendMsgBtn.style, {
+        position: "fixed",
+        bottom: '253px',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+    }
+    sendMsgBtn.innerHTML = `<span data-label='sendmsg'>${app.label.get.sendmsg}</span>    `;
+    sendMsgBtn.addEventListener('click', () => {
+      sendMsgBtn.disabled = true;
+      sendMsgBtn.style.color = 'gray';
+      app.sendmsg(sendMsgInput.value);
+      setTimeout(() => {
+        sendMsgBtn.disabled = false;
+        sendMsgBtn.style.color = 'white';
+      }, 5000);
+      sendMsgInput.value = "";
+    });
+    hud.appendChild(sendMsgBtn);
+    // end
+    const loader = document.createElement("div");
+    loader.id = 'loader';
+    Object.assign(loader.style, {
+      position: "fixed",
+      display: 'flex',
+      bottom: '0',
+      left: '0',
+      width: "100vw",
+      height: "100vh",
+      textAlign: "center",
+      color: "white",
+      zIndex: 10,
+      fontWeight: "bold",
+      textShadow: "0 0 2px black",
+      color: '#ffffffff',
+      background: '#000000ff',
+      fontSize: '16px',
+      cursor: 'url(./res/icons/default.png) 0 0, auto',
+      pointerEvents: 'auto',
+      filter: 'grayscale(1)'
+    });
+    loader.innerHTML = `
+      <div class="loader">
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+          </div>
+        <div class="counter" id="counter">0%</div>
+      </div>
+    `;
+    loader.addEventListener('click', e => {
+      app.matrixSounds.play('music');
+    });
+    hud.appendChild(loader);
+    let progress = 0;
+    let bar = null;
+    let counter = null;
+    function fakeProgress() {
+      if (progress < 100) {
+        progress += Math.random() * 3.5;
+        if (progress > 100) progress = 100;
+        bar.style.width = progress + '%';
+        counter.textContent = (app.fakeL > 150 ? "Installing" : "Loading") + Math.floor(progress) + '%' + ' This is beta 1 version - no magic attack implementation...';
+        let grayEffect = 30 / progress;
+        (0, _utils.byId)('loader').style.filter = `grayscale(${grayEffect})`;
+        setTimeout(fakeProgress, 80 + Math.random() * app.fakeL);
+      } else {
+        counter.textContent = app.label.get.letthegame + " - This is beta 1 version - no magic attack...";
+        bar.style.boxShadow = "0 0 30px #00ff99";
+        setTimeout(() => {
+          loader.style.display = 'none';
+          // loader.remove();
+        }, (0, _utils.isMobile)() ? 10000 : 1250);
+      }
+    }
+    setTimeout(() => {
+      bar = document.getElementById('progressBar');
+      counter = document.getElementById('counter');
+      fakeProgress();
+    }, 300);
+    hud.appendChild(previusBtn);
+    hud.appendChild(desc);
+    hud.appendChild(nextBtn);
+    hud.appendChild(startBtn);
+    document.body.appendChild(hud);
+    updateDesc();
+    document.querySelectorAll('.buttonMatrix').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        app.matrixSounds.play('hover');
+      });
+    });
+
+    /**
+     * @description
+     * Important moment for sys browser stuff
+     */
+    function firstClick() {
+      // add here after - fs force
+      app.matrixSounds.audios.music.volume = 0.2;
+      app.matrixSounds.audios.music2.volume = 0.2;
+      app.matrixSounds.play('music');
+      app.matrixSounds.audios.music.onended = () => {
+        app.matrixSounds.play('music2');
+      };
+      app.matrixSounds.audios.music2.onended = () => {
+        app.matrixSounds.play('music');
+      };
+      removeEventListener('click', firstClick);
+      // for mobile no need to call - if called porttrain forced (current orientation on mobile device)
+      if (location.hostname.indexOf('localhost') == -1 && (0, _utils.isMobile)() == false) app.FS.request();
+    }
+    addEventListener('click', firstClick);
+  }
+});
+window.app = forestOfHollowBloodStartSceen;
+
+},{"../../../public/res/multilang/en-backup.js":20,"../../../src/engine/cameras.js":22,"../../../src/engine/loaders/webgpu-gltf.js":45,"../../../src/engine/networking/matrix-stream.js":49,"../../../src/engine/networking/net.js":50,"../../../src/engine/plugin/animated-cursor/animated-cursor.js":57,"../../../src/engine/utils.js":65,"../../../src/tools/editor/editor.js":108,"../../../src/world.js":116,"./hero.js":1,"./rocket-crafting-account.js":2,"./tts.js":4}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5908,9 +2527,7 @@ const speakBot = exports.speakBot = {
   }
 };
 
-},{}],17:[function(require,module,exports){
-arguments[4][13][0].apply(exports,arguments)
-},{"../../../src/engine/utils.js":79,"dup":13}],18:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5920,7 +2537,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":19}],19:[function(require,module,exports){
+},{"./module/bvh-loader":6}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6609,7 +3226,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":31}],20:[function(require,module,exports){
+},{"webgpu-matrix":18}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6687,7 +3304,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],21:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6716,7 +3333,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":20,"./mat2.js":22,"./mat2d.js":23,"./mat3.js":24,"./mat4.js":25,"./quat.js":26,"./quat2.js":27,"./vec2.js":28,"./vec3.js":29,"./vec4.js":30}],22:[function(require,module,exports){
+},{"./common.js":7,"./mat2.js":9,"./mat2d.js":10,"./mat3.js":11,"./mat4.js":12,"./quat.js":13,"./quat2.js":14,"./vec2.js":15,"./vec3.js":16,"./vec4.js":17}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7178,7 +3795,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":20}],23:[function(require,module,exports){
+},{"./common.js":7}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7692,7 +4309,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":20}],24:[function(require,module,exports){
+},{"./common.js":7}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8504,7 +5121,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":20}],25:[function(require,module,exports){
+},{"./common.js":7}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10524,7 +7141,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":20}],26:[function(require,module,exports){
+},{"./common.js":7}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11307,7 +7924,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":20,"./mat3.js":24,"./vec3.js":29,"./vec4.js":30}],27:[function(require,module,exports){
+},{"./common.js":7,"./mat3.js":11,"./vec3.js":16,"./vec4.js":17}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12180,7 +8797,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":20,"./mat4.js":25,"./quat.js":26}],28:[function(require,module,exports){
+},{"./common.js":7,"./mat4.js":12,"./quat.js":13}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -12858,7 +9475,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":20}],29:[function(require,module,exports){
+},{"./common.js":7}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -13710,7 +10327,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":20}],30:[function(require,module,exports){
+},{"./common.js":7}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14417,7 +11034,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":20}],31:[function(require,module,exports){
+},{"./common.js":7}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -18350,7 +14967,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],32:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23697,7 +20314,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],33:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23768,7 +20385,7 @@ const en = exports.en = {
   "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
-},{}],34:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23806,7 +20423,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":79}],35:[function(require,module,exports){
+},{"./utils":65}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24308,6 +20925,15 @@ class RPGCamera {
   minY = 50.5;
   maxY = 135.0;
   scrollSpeed = 1;
+  _detachedFromFollow = false;
+  _digital = {
+    forward: false,
+    backward: false,
+    left: false,
+    right: false
+  };
+  _keyInterval = null;
+  KEYBOARD_SPEED = 4.5;
   mousRollInAction = false;
   _dirty = true;
   constructor(options = {}) {
@@ -24318,7 +20944,7 @@ class RPGCamera {
     }
     this.canvas = options.canvas;
     this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
-    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2000);
+    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1000);
     this._setupEvents();
     this._recalculateViewVP();
   }
@@ -24405,6 +21031,67 @@ class RPGCamera {
     out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
     return out;
   }
+  _applyDigitalMovement() {
+    const d = this._digital;
+    let vx = 0,
+      vz = 0;
+    if (d.forward) {
+      vx -= this.back[0];
+      vz -= this.back[2];
+    }
+    if (d.backward) {
+      vx += this.back[0];
+      vz += this.back[2];
+    }
+    if (d.right) {
+      vx += this.right[0];
+      vz += this.right[2];
+    }
+    if (d.left) {
+      vx -= this.right[0];
+      vz -= this.right[2];
+    }
+    const len = Math.sqrt(vx * vx + vz * vz);
+    if (len < 0.0001) return;
+    const s = this.KEYBOARD_SPEED / len;
+    this.position[0] += vx * s;
+    this.position[2] += vz * s;
+    this._dirty = true;
+  }
+  _setupKeyboard() {
+    const setDigital = (e, value) => {
+      switch (e.code) {
+        case 'KeyW':
+          this._digital.forward = value;
+          break;
+        case 'KeyS':
+          this._digital.backward = value;
+          break;
+        case 'KeyA':
+          this._digital.left = value;
+          break;
+        case 'KeyD':
+          this._digital.right = value;
+          break;
+      }
+      if (value && this._keyInterval === null) {
+        this._detachedFromFollow = true;
+        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
+      } else {
+        const d = this._digital;
+        if (!d.forward && !d.backward && !d.left && !d.right) {
+          clearInterval(this._keyInterval);
+          this._keyInterval = null;
+        }
+      }
+    };
+    window.addEventListener('keydown', e => setDigital(e, true), {
+      passive: true
+    });
+    window.addEventListener('keyup', e => setDigital(e, false), {
+      passive: true
+    });
+  }
   _pinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
@@ -24418,25 +21105,57 @@ class RPGCamera {
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
         this._dirty = true;
       });
+      this._setupKeyboard();
     } else {
       let lastPinchDist;
+      let lastTouchX = null,
+        lastTouchY = null;
       addEventListener('touchmove', e => {
-        if (e.touches.length !== 2) return;
-        const dist = this._pinchDist(e.touches);
-        if (lastPinchDist === null) {
+        // --- 2 fingers: pinch zoom ---
+        if (e.touches.length === 2) {
+          const dist = this._pinchDist(e.touches);
+          if (lastPinchDist === null) {
+            lastPinchDist = dist;
+            return;
+          }
+          const delta = lastPinchDist - dist;
+          this.scrollY -= delta * this.scrollSpeed * 0.5;
+          this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+          this._dirty = true;
           lastPinchDist = dist;
           return;
         }
-        const delta = lastPinchDist - dist; // pinch in = positive = zoom out
-        this.scrollY -= delta * this.scrollSpeed * 0.5;
-        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-        this._dirty = true;
-        lastPinchDist = dist;
+
+        // --- 1 finger: pan camera ---
+        if (e.touches.length === 1) {
+          const tx = e.touches[0].clientX;
+          const tz = e.touches[0].clientY;
+          if (lastTouchX === null) {
+            lastTouchX = tx;
+            lastTouchY = tz;
+            return;
+          }
+          const dx = tx - lastTouchX;
+          const dz = tz - lastTouchY;
+          lastTouchX = tx;
+          lastTouchY = tz;
+          const s = this.KEYBOARD_SPEED * 0.3;
+          this.position[0] += this.right[0] * dx * s;
+          this.position[2] -= this.right[2] * dx * s;
+          this.position[0] -= this.back[0] * dz * s;
+          this.position[2] += this.back[2] * dz * s;
+          this._detachedFromFollow = true;
+          this._dirty = true;
+        }
       }, {
         passive: true
       });
       addEventListener('touchend', e => {
         if (e.touches.length < 2) lastPinchDist = null;
+        if (e.touches.length === 0) {
+          lastTouchX = null;
+          lastTouchY = null;
+        }
       }, {
         passive: true
       });
@@ -24459,6 +21178,11 @@ class RPGCamera {
   }
   _updateFollow() {
     if (!this.followMe) return;
+    if (this.followMe.inMove === true) {
+      this._detachedFromFollow = false; // player moved → re-attach
+    }
+    if (this._detachedFromFollow) return; // WASD mode, skip follow
+
     if (this.followMe.inMove === true || this.mousRollInAction) {
       this.followMeOffset = this.scrollY;
       this.position[0] = this.followMe.x;
@@ -25389,151 +22113,7 @@ const MobileDOM = exports.MobileDOM = {
   }
 };
 
-},{"./utils":79,"wgpu-matrix":32}],36:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.CollisionSystem = void 0;
-var _navMesh = require("../../examples/games/rpg/nav-mesh");
-var _matrixClass = require("./matrix-class");
-class CollisionSystem {
-  constructor() {
-    this.entries = [];
-    this.staticEntries = []; // walls go here
-    this.cameraEntry = null;
-    this.cellSize = 100;
-    this._grid = new Map();
-    this._staticGrid = new Map(); // built once, never rebuilt
-
-    this._event1 = new CustomEvent('close-distance', {
-      data: ""
-    });
-    this._eventDetail = {};
-    this._neighbors = [];
-    this._staticNeighbors = [];
-  }
-
-  // existing register — dynamic entities (enemies, players)
-  register(id, positionInstance, radius = 0.6, group = "default") {
-    this.entries.push({
-      id,
-      pos: positionInstance,
-      radius,
-      group
-    });
-  }
-
-  // new: walls, maze geometry — built into _staticGrid once
-  registerStatic(id, positionInstance, radius = 0.6, group = "default") {
-    const entry = {
-      id,
-      pos: positionInstance,
-      radius,
-      group
-    };
-    this.staticEntries.push(entry);
-    // insert directly into static grid
-    const key = this._cellKey(positionInstance.x, positionInstance.z);
-    let cell = this._staticGrid.get(key);
-    if (!cell) {
-      cell = [];
-      this._staticGrid.set(key, cell);
-    }
-    cell.push(entry);
-  }
-  unregister(id) {
-    this.entries = this.entries.filter(e => e.id !== id);
-    if (this.cameraEntry && this.cameraEntry.id === id) this.cameraEntry = null;
-  }
-  registerCamera(cameraInstance, radius = 1.0) {
-    this.cameraEntry = {
-      id: "camera",
-      pos: cameraInstance,
-      radius,
-      group: "camera"
-    };
-  }
-  _cellKey(x, z) {
-    const cx = Math.floor(x / this.cellSize);
-    const cz = Math.floor(z / this.cellSize);
-    return cx << 16 ^ cz;
-  }
-  _buildGrid() {
-    const grid = this._grid;
-    grid.clear();
-    for (let i = 0; i < this.entries.length; i++) {
-      const e = this.entries[i];
-      const key = this._cellKey(e.pos.x, e.pos.z);
-      let cell = grid.get(key);
-      if (!cell) {
-        cell = [];
-        grid.set(key, cell);
-      }
-      cell.push(e);
-    }
-  }
-  _getNeighborCells(x, z, grid, out) {
-    out.length = 0;
-    const cx = Math.floor(x / this.cellSize);
-    const cz = Math.floor(z / this.cellSize);
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dz = -1; dz <= 1; dz++) {
-        const key = cx + dx << 16 ^ cz + dz;
-        const cell = grid.get(key);
-        if (cell) {
-          for (let i = 0; i < cell.length; i++) out.push(cell[i]);
-        }
-      }
-    }
-    return out;
-  }
-  update() {
-    // dynamic vs dynamic (enemies vs enemies) — your existing MOBA logic untouched
-    this._buildGrid();
-    const n = this.entries.length;
-    for (let i = 0; i < n; i++) {
-      const A = this.entries[i];
-      const neighbors = this._getNeighborCells(A.pos.x, A.pos.z, this._grid, this._neighbors);
-      for (let j = 0; j < neighbors.length; j++) {
-        const B = neighbors[j];
-        if (A === B) continue;
-        if (A.group === B.group) continue;
-        if (A.id >= B.id) continue;
-        const minDist = (A.radius + B.radius) * 0.5;
-        const dx = A.pos.x - B.pos.x;
-        const dz = A.pos.z - B.pos.z;
-        if (dx * dx + dz * dz > minDist * minDist) continue;
-        const testCollide = (0, _navMesh.resolvePairRepulsion)(A.pos, B.pos, minDist, 1.0);
-        if (testCollide) {
-          this._eventDetail.A = A;
-          this._eventDetail.B = B;
-          this._event1.detail.data = this._eventDetail;
-          dispatchEvent(this._event1);
-        }
-      }
-    }
-
-    // camera vs static walls — query _staticGrid only
-    if (this.cameraEntry) {
-      const cam = this.cameraEntry;
-      const camX = cam.pos[0];
-      const camZ = cam.pos[2];
-      if (camX !== this._lastCamX || camZ !== this._lastCamZ) {
-        this._lastCamX = camX;
-        this._lastCamZ = camZ;
-        const neighbors = this._getNeighborCells(camX, camZ, this._staticGrid, this._staticNeighbors);
-        for (let i = 0; i < neighbors.length; i++) {
-          (0, _matrixClass.pairRepulsion)(cam.pos, neighbors[i].pos, 1 + 0.5, 1.1);
-        }
-      }
-    }
-  }
-}
-exports.CollisionSystem = CollisionSystem;
-
-},{"../../examples/games/rpg/nav-mesh":17,"./matrix-class":61}],37:[function(require,module,exports){
+},{"./utils":65,"wgpu-matrix":19}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25639,7 +22219,7 @@ class TextureCache {
 }
 exports.TextureCache = TextureCache;
 
-},{}],38:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26076,7 +22656,7 @@ class DestructionEffect {
 }
 exports.DestructionEffect = DestructionEffect;
 
-},{"../../shaders/desctruction/dust-shader.wgsl.js":82,"wgpu-matrix":32}],39:[function(require,module,exports){
+},{"../../shaders/desctruction/dust-shader.wgsl.js":68,"wgpu-matrix":19}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26249,7 +22829,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":83,"wgpu-matrix":32}],40:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":69,"wgpu-matrix":19}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26554,7 +23134,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":84,"../utils":79,"wgpu-matrix":32}],41:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":70,"../utils":65,"wgpu-matrix":19}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26876,7 +23456,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":85,"../geometry-factory":51,"wgpu-matrix":32}],42:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":71,"../geometry-factory":37,"wgpu-matrix":19}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27121,7 +23701,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":110,"../geometry-factory.js":51,"wgpu-matrix":32}],43:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":96,"../geometry-factory.js":37,"wgpu-matrix":19}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27334,6 +23914,7 @@ class GenGeoTexture2 {
     });
   }
   updateInstanceData = baseModelMatrix => {
+    if (!this.instanceData) return;
     if (this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
       if (this.rotateAngle >= 360) {
@@ -27380,7 +23961,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":110,"../geometry-factory.js":51,"wgpu-matrix":32}],44:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":96,"../geometry-factory.js":37,"wgpu-matrix":19}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27571,7 +24152,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":109,"../geometry-factory.js":51,"wgpu-matrix":32}],45:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":95,"../geometry-factory.js":37,"wgpu-matrix":19}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28029,7 +24610,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":97}],46:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":83}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28197,7 +24778,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":83,"wgpu-matrix":32}],47:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":69,"wgpu-matrix":19}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28351,7 +24932,7 @@ class MSDFTextEffect {
 }
 exports.MSDFTextEffect = MSDFTextEffect;
 
-},{"wgpu-matrix":32}],48:[function(require,module,exports){
+},{"wgpu-matrix":19}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28501,7 +25082,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":111,"wgpu-matrix":32}],49:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":97,"wgpu-matrix":19}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28689,7 +25270,7 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":112}],50:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":98}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29233,7 +25814,7 @@ function physicsBodiesChain(material = "standard", pos = {
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":126,"../loader-obj":56,"../procedural-mesh":74}],51:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":112,"../loader-obj":42,"../procedural-mesh":61}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29243,7 +25824,7 @@ exports.GeometryFactory = void 0;
 /**
  * @description
  * GeometryFactory - can be reused for any level of pipeline integration.
- * It is already integrated with level of 'me effects'.
+ * It is already integrated with level of 'mewgpu effects subsystem'.
  */
 class GeometryFactory {
   static create(type, size = 1, segments = 16, options = {}) {
@@ -29292,12 +25873,21 @@ class GeometryFactory {
         return GeometryFactory.crescent(size, options.innerRatio || 0.5, segments);
       case "pyramidFractal":
         return GeometryFactory.pyramidFractal(size, options.levels || 2);
+      // DESTRUCTION
+      case "shatter":
+        return GeometryFactory.shatter(size, options.pieces || 8);
+      case "crumble":
+        return GeometryFactory.crumble(size, options.detail || 4);
+      case "splinter":
+        return GeometryFactory.splinter(size, options.count || 12);
+      case "implode":
+        return GeometryFactory.implode(size, options.scale || 0.1);
+      case "scatter":
+        return GeometryFactory.scatter(size, options.spread || 0.3);
       default:
         throw new Error(`Unknown geometry: ${type}`);
     }
   }
-
-  // --- Flat normals for faceted shapes ---
   static computeFlatNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     for (let i = 0; i < indices.length; i += 3) {
@@ -29329,8 +25919,6 @@ class GeometryFactory {
     }
     return normals;
   }
-
-  // --- Smooth normals for rounded shapes ---
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     const counts = new Uint16Array(positions.length / 3);
@@ -29511,17 +26099,13 @@ class GeometryFactory {
     };
   }
   static pyramidFractal(S = 1, levels = 2) {
-    // ✅ Use arrays that get properly filled, not mutated references
     const positions = [];
     const uvs = [];
     const indices = [];
-    let vertexIndex = 0; // Track current vertex count
-
+    let vertexIndex = 0;
     const generate = (x = 0, y = 0, z = 0, s = S, level = levels) => {
       if (level <= 0) return;
       const halfS = s / 2;
-
-      // 5 vertices: 4 base corners + 1 apex
       const verts = [x - halfS, y, z - halfS,
       // 0: bottom-left
       x + halfS, y, z - halfS,
@@ -29532,8 +26116,6 @@ class GeometryFactory {
       // 3: top-left
       x, y + s, z // 4: apex
       ];
-
-      // ✅ Proper UVs for each vertex (not just one pair!)
       const vertUVs = [0, 0,
       // 0: bottom-left corner
       1, 0,
@@ -29544,8 +26126,6 @@ class GeometryFactory {
       // 3: top-left corner
       0.5, 0.5 // 4: apex (center)
       ];
-
-      // Triangle indices (relative to current base)
       const baseIdx = vertexIndex;
       const tris = [baseIdx + 0, baseIdx + 1, baseIdx + 4,
       // Front face
@@ -29555,14 +26135,10 @@ class GeometryFactory {
       // Back face
       baseIdx + 3, baseIdx + 0, baseIdx + 4 // Left face
       ];
-
-      // ✅ Push to arrays (not mutate references)
       positions.push(...verts);
       uvs.push(...vertUVs);
       indices.push(...tris);
-      vertexIndex += 5; // 5 vertices added
-
-      // Recurse: smaller pyramid on top
+      vertexIndex += 5;
       if (level > 1) {
         generate(x, y + s, z, halfS, level - 1);
       }
@@ -29581,7 +26157,6 @@ class GeometryFactory {
     let vertexIndex = 0;
     const generate = (x = 0, y = 0, z = 0, s = S, level = levels) => {
       if (level <= 0) {
-        // Base case: draw a single pyramid
         const halfS = s / 2;
         const verts = [x - halfS, y, z - halfS, x + halfS, y, z - halfS, x + halfS, y, z + halfS, x - halfS, y, z + halfS, x, y + s, z];
         const vertUVs = [0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0.5];
@@ -29595,18 +26170,14 @@ class GeometryFactory {
         vertexIndex += 5;
         return;
       }
-
-      // Recursive case: 4 smaller pyramids (Sierpiński pattern)
       const halfS = s / 2;
       const quarterS = s / 4;
-
-      // Bottom 4 corners
+      // Bottom 4
       generate(x - quarterS, y, z - quarterS, halfS, level - 1); // Front-left
       generate(x + quarterS, y, z - quarterS, halfS, level - 1); // Front-right
       generate(x + quarterS, y, z + quarterS, halfS, level - 1); // Back-right
       generate(x - quarterS, y, z + quarterS, halfS, level - 1); // Back-left
-
-      // Top pyramid
+      // Top
       generate(x, y + halfS, z, halfS, level - 1);
     };
     generate();
@@ -29618,8 +26189,6 @@ class GeometryFactory {
   }
   static dodecahedronFlat(R = 1) {
     const geo = GeometryFactory.dodecahedron(R);
-
-    // Duplicate vertices so each triangle has its own (for flat shading)
     const positions = [];
     const uvs = [];
     const indices = [];
@@ -29627,10 +26196,8 @@ class GeometryFactory {
       const i0 = geo.indices[i] * 3;
       const i1 = geo.indices[i + 1] * 3;
       const i2 = geo.indices[i + 2] * 3;
-
       // Add 3 vertices for this triangle
       positions.push(geo.positions[i0], geo.positions[i0 + 1], geo.positions[i0 + 2], geo.positions[i1], geo.positions[i1 + 1], geo.positions[i1 + 2], geo.positions[i2], geo.positions[i2 + 1], geo.positions[i2 + 2]);
-
       // Add UVs
       const u0 = geo.uvs[geo.indices[i] * 2];
       const v0 = geo.uvs[geo.indices[i] * 2 + 1];
@@ -29639,8 +26206,6 @@ class GeometryFactory {
       const u2 = geo.uvs[geo.indices[i + 2] * 2];
       const v2 = geo.uvs[geo.indices[i + 2] * 2 + 1];
       uvs.push(u0, v0, u1, v1, u2, v2);
-
-      // New indices (each triangle is independent)
       const baseIdx = i / 3 * 3;
       indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
     }
@@ -29651,7 +26216,7 @@ class GeometryFactory {
     };
   }
   static cone(radius = 1, height = 2, segments = 32) {
-    const positions = [0, height, 0]; // top
+    const positions = [0, height, 0];
     const uvs = [0.5, 1];
     const indices = [];
     for (let i = 0; i <= segments; i++) {
@@ -29664,10 +26229,8 @@ class GeometryFactory {
     for (let i = 1; i <= segments; i++) {
       indices.push(0, i, i + 1 <= segments ? i + 1 : 1); // triangles to top
     }
-
-    // Base
     const baseIndex = positions.length / 3;
-    positions.push(0, 0, 0); // center
+    positions.push(0, 0, 0);
     uvs.push(0.5, 0.5);
     for (let i = 1; i <= segments; i++) {
       const next = i + 1 <= segments ? i + 1 : 1;
@@ -29696,9 +26259,8 @@ class GeometryFactory {
         b = a + 1,
         c = a + 2,
         d = a + 3;
-      indices.push(a, b, c, b, d, c); // side faces
+      indices.push(a, b, c, b, d, c);
     }
-
     // Caps
     const baseIndex = positions.length / 3;
     positions.push(0, -halfH, 0, 0, halfH, 0);
@@ -29718,7 +26280,6 @@ class GeometryFactory {
     const positions = [],
       uvs = [],
       indices = [];
-
     // Generate top hemisphere
     for (let y = 0; y <= segments; y++) {
       const theta = y / segments * Math.PI / 2;
@@ -29731,8 +26292,7 @@ class GeometryFactory {
         uvs.push(x / segments, y / segments);
       }
     }
-
-    // Bottom hemisphere (mirror top)
+    // Bottom mirror top
     const offset = positions.length / 3;
     for (let y = 0; y <= segments; y++) {
       const theta = y / segments * Math.PI / 2;
@@ -29745,8 +26305,6 @@ class GeometryFactory {
         uvs.push(x / segments, y / segments);
       }
     }
-
-    // TODO: connect indices (complex, but I can provide if needed)
     return {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
@@ -29754,12 +26312,8 @@ class GeometryFactory {
     };
   }
   static icosahedron(R = 1) {
-    const t = (1 + Math.sqrt(5)) / 2; // Golden ratio
-
-    // 12 vertices of icosahedron
+    const t = (1 + Math.sqrt(5)) / 2;
     const verts = [-1, t, 0, 1, t, 0, -1, -t, 0, 1, -t, 0, 0, -1, t, 0, 1, t, 0, -1, -t, 0, 1, -t, t, 0, -1, t, 0, 1, -t, 0, -1, -t, 0, 1];
-
-    // Normalize vertices to radius R
     for (let i = 0; i < verts.length; i += 3) {
       const len = Math.sqrt(verts[i] * verts[i] + verts[i + 1] * verts[i + 1] + verts[i + 2] * verts[i + 2]);
       verts[i] = verts[i] / len * R;
@@ -29767,17 +26321,11 @@ class GeometryFactory {
       verts[i + 2] = verts[i + 2] / len * R;
     }
     const indices = [0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8, 3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1];
-
-    // Generate spherical UVs based on position
     const uvs = [];
     for (let i = 0; i < verts.length; i += 3) {
       const x = verts[i];
       const y = verts[i + 1];
       const z = verts[i + 2];
-
-      // Spherical UV mapping
-      // u = 0.5 + atan2(z, x) / (2π)
-      // v = 0.5 - asin(y / R) / π
       const u = 0.5 + Math.atan2(z, x) / (2 * Math.PI);
       const v = 0.5 - Math.asin(y / R) / Math.PI;
       uvs.push(u, v);
@@ -29810,8 +26358,6 @@ class GeometryFactory {
       verts[i + 2] = verts[i + 2] / len * R;
     }
     const uvs = new Float32Array(verts.length / 3 * 2).fill(0);
-    // indices: manually computed pentagons -> triangles
-    // TODO: could generate automatically
     return {
       positions: new Float32Array(verts),
       uvs,
@@ -29871,7 +26417,6 @@ class GeometryFactory {
       indices: new Uint16Array(indices)
     };
   }
-  // --- BASIC SHAPES ---------------------------------------------------------
   static quad(S = 1) {
     const positions = new Float32Array([-S, S, 0, S, S, 0, -S, -S, 0, S, -S, 0]);
     const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
@@ -29897,8 +26442,6 @@ class GeometryFactory {
     p, -p, -p, p, p, -p, p, p, p, p, -p, p,
     // Left
     -p, -p, -p, -p, -p, p, -p, p, p, -p, p, -p]);
-
-    // Proper UVs (same layout per face)
     const uvs = new Float32Array([
     // Front
     0, 0, 1, 0, 1, 1, 0, 1,
@@ -29914,7 +26457,6 @@ class GeometryFactory {
     0, 0, 1, 0, 1, 1, 0, 1]);
     const indices = new Uint16Array([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23]);
     const normals = this.computeSmoothNormals(positions, indices);
-    // return { positions, indices, normals };
     return {
       positions,
       uvs,
@@ -29963,11 +26505,9 @@ class GeometryFactory {
   static star(S = 1) {
     const outer = S;
     const inner = S * 0.4;
-    const positions = [0, 0, 0]; // center vertex
-    const uvs = [0.5, 0.5]; // center UV
+    const positions = [0, 0, 0];
+    const uvs = [0.5, 0.5];
     const indices = [];
-
-    // Generate 10 points (outer and inner)
     for (let i = 0; i < 10; i++) {
       const angle = i / 10 * Math.PI * 2;
       const radius = i % 2 === 0 ? outer : inner;
@@ -29976,8 +26516,6 @@ class GeometryFactory {
       positions.push(x, y, 0);
       uvs.push((x / outer + 1) / 2, (y / outer + 1) / 2);
     }
-
-    // Triangles from center to each outer/inner vertex
     for (let i = 1; i <= 10; i++) {
       const next = i < 10 ? i + 1 : 1; // wrap last to first
       indices.push(0, i, next);
@@ -30005,11 +26543,9 @@ class GeometryFactory {
     };
   }
   static circle2(radius = 1, segments = 64) {
-    const positions = [0, 0, 0]; // center
-    const uvs = [0.5, 0.5]; // center UV
+    const positions = [0, 0, 0];
+    const uvs = [0.5, 0.5];
     const indices = [];
-
-    // create outer vertices
     for (let i = 0; i <= segments; i++) {
       const angle = i / segments * Math.PI * 2;
       const x = Math.cos(angle) * radius;
@@ -30022,7 +26558,6 @@ class GeometryFactory {
         indices.push(0, i, i + 1);
       }
     }
-
     // close the circle (last triangle connects to first outer vertex)
     // we already pushed (segments + 1) outer vertices, so last index = segments + 1
     // but first outer vertex is index 1
@@ -30037,7 +26572,6 @@ class GeometryFactory {
   static diamond(S = 1) {
     const h = S,
       p = S / 2;
-    // 6 Vertices
     const pos = new Float32Array([0, h, 0,
     // 0: Top
     -p, 0, -p,
@@ -30050,8 +26584,6 @@ class GeometryFactory {
     // 4: Mid Left-Front
     0, -h, 0 // 5: Bottom
     ]);
-
-    // Added simple UVs so the texture actually shows up
     const uv = new Float32Array([0.5, 1,
     // Top
     0, 0.5,
@@ -30068,10 +26600,7 @@ class GeometryFactory {
       indices: idx
     };
   }
-
-  // --- FANTASY & EFFECT GEOMETRIES -----------------------------------------
   static thunder(S = 1) {
-    // jagged lightning bolt made of zig-zag quads
     const pts = [0, 0, 0];
     for (let i = 1; i < 8; i++) {
       const x = (Math.random() - 0.5) * 0.2 * S;
@@ -30102,10 +26631,7 @@ class GeometryFactory {
     };
   }
   static rock(S = 1, detail = 4) {
-    // randomly perturbed sphere for organic shape
     const sphere = GeometryFactory.sphere(S, detail);
-
-    // CLONE positions
     const positions = new Float32Array(sphere.positions);
     for (let i = 0; i < positions.length; i += 3) {
       const n = Math.random() * 0.3 + 0.85;
@@ -30120,12 +26646,9 @@ class GeometryFactory {
     };
   }
   static meteor(S = 1, detail = 6) {
-    // 1. Start with a sphere (or icosahedron)
     const sphere = GeometryFactory.sphere(S, detail);
     const positions = new Float32Array(sphere.positions.length);
     const normals = new Float32Array(sphere.positions.length);
-
-    // 2. Compute normals (centered at origin)
     for (let i = 0; i < sphere.positions.length; i += 3) {
       const x = sphere.positions[i];
       const y = sphere.positions[i + 1];
@@ -30135,18 +26658,14 @@ class GeometryFactory {
       normals[i + 1] = y / len;
       normals[i + 2] = z / len;
     }
-
-    // 3. Perturb vertices outward along normal
     for (let i = 0; i < positions.length; i += 3) {
-      const offset = 0.05 + Math.random() * 0.1; // adjust roughness
+      const offset = 0.05 + Math.random() * 0.1;
       positions[i] = sphere.positions[i] + normals[i] * offset;
       positions[i + 1] = sphere.positions[i + 1] + normals[i + 1] * offset;
       positions[i + 2] = sphere.positions[i + 2] + normals[i + 2] * offset;
     }
-
-    // 4. Stretch Y slightly along normal
     for (let i = 0; i < positions.length; i += 3) {
-      positions[i + 1] *= 1.5; // Y-stretch
+      positions[i + 1] *= 1.5;
     }
     return {
       positions,
@@ -30168,11 +26687,8 @@ class GeometryFactory {
     const positions = [];
     const uvs = [];
     const indices = [];
-
-    // Center vertex
     positions.push(0, 0, 0);
     uvs.push(0.5, 0.5);
-
     // Outer ring vertices
     for (let i = 0; i <= segments; i++) {
       const angle = i / segments * Math.PI * 2;
@@ -30182,8 +26698,6 @@ class GeometryFactory {
       positions.push(x, y, z);
       uvs.push((x / radius + 1) / 2, (z / radius + 1) / 2);
     }
-
-    // Triangles (fan)
     for (let i = 1; i <= segments; i++) {
       indices.push(0, i, i + 1);
     }
@@ -30221,6 +26735,162 @@ class GeometryFactory {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
       indices: new Uint16Array(indices)
+    };
+  }
+
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
+  static shatter(S = 1, pieces = 8) {
+    // Pre-compute random offsets for determinism
+    const offsets = [];
+    for (let p = 0; p < pieces; p++) {
+      const angle = p / pieces * Math.PI * 2;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
+    }
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+
+      // Base sphere surface
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Crumble: breaks into small chunks, stays roughly in place
+   * Good for: stone/brick crumbling, dust formations
+   */
+  static crumble(S = 1, detail = 4) {
+    // Pre-compute chunk grid with random jitter
+    const chunks = [];
+    for (let ix = 0; ix < detail; ix++) {
+      for (let iy = 0; iy < detail; iy++) {
+        for (let iz = 0; iz < detail; iz++) {
+          chunks.push({
+            x: ix - detail / 2 + (Math.random() - 0.5) * 0.3,
+            y: iy - detail / 2 + (Math.random() - 0.5) * 0.3,
+            z: iz - detail / 2 + (Math.random() - 0.5) * 0.3
+          });
+        }
+      }
+    }
+    const chunkSize = 2 / detail;
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+
+      // Small cube for each chunk
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+      return [x * S * 0.5, y * S * 0.5, z * S * 0.5];
+    };
+  }
+
+  /**
+   * Splinter: thin shards radiating from center
+   * Good for: ice/glass shattering, crystalline breaks
+   */
+  static splinter(S = 1, count = 12) {
+    // Pre-compute shard directions
+    const shards = [];
+    for (let i = 0; i < count; i++) {
+      const angle = i / count * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
+    }
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+
+      // Shard as elongated quad
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+
+      // Taper from base to tip
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+      const x = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Implode: shrinks to near-zero point (singularity effect)
+   * Good for: magic absorption, black hole, vortex
+   */
+  static implode(S = 1, scale = 0.1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x = scale * S * Math.sin(phi) * Math.cos(theta);
+      const y = scale * S * Math.cos(phi);
+      const z = scale * S * Math.sin(phi) * Math.sin(theta);
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Scatter: random cloud of small pieces
+   * Good for: dust, particle explosion, disintegration
+   */
+  static scatter(S = 1, spread = 0.3) {
+    const particleCount = 20;
+    const particles = [];
+    for (let p = 0; p < particleCount; p++) {
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
+    }
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+
+      // Small sphere for each particle
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r = particle.size;
+      const x = (particle.x + r * Math.sin(phi) * Math.cos(theta)) * S;
+      const y = (particle.y + r * Math.cos(phi)) * S;
+      const z = (particle.z + r * Math.sin(phi) * Math.sin(theta)) * S;
+      return [x, y, z];
     };
   }
   static icosahedronSubdivided(R = 1, subdivisions = 1) {
@@ -30305,7 +26975,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],52:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30991,7 +27661,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.mirror.wgsl":89,"../../shaders/fragment.wgsl":91,"../../shaders/fragment.wgsl.metal":92,"../../shaders/fragment.wgsl.noCut":93,"../../shaders/fragment.wgsl.normalmap":94,"../../shaders/fragment.wgsl.pong":95,"../../shaders/fragment.wgsl.power":96,"../../shaders/instanced/fragment.instanced.wgsl":98,"../../shaders/instanced/fragment.mirror.instanced.wgsl":99,"../../shaders/minimalist/color-a.wgsl":102,"../../shaders/minimalist/color-b.wgsl":103,"../../shaders/minimalist/hybrid.wgsl":104,"../../shaders/minimalist/mini.wgsl":107,"../../shaders/water/water-c.wgls":117,"../pipelineManager":70}],53:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":75,"../../shaders/fragment.wgsl":77,"../../shaders/fragment.wgsl.metal":78,"../../shaders/fragment.wgsl.noCut":79,"../../shaders/fragment.wgsl.normalmap":80,"../../shaders/fragment.wgsl.pong":81,"../../shaders/fragment.wgsl.power":82,"../../shaders/instanced/fragment.instanced.wgsl":84,"../../shaders/instanced/fragment.mirror.instanced.wgsl":85,"../../shaders/minimalist/color-a.wgsl":88,"../../shaders/minimalist/color-b.wgsl":89,"../../shaders/minimalist/hybrid.wgsl":90,"../../shaders/minimalist/mini.wgsl":93,"../../shaders/water/water-c.wgls":103,"../pipelineManager":56}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32134,7 +28804,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../me-config":80,"../../shaders/fragment.video.wgsl":90,"../../shaders/instanced/vertex.instanced.wgsl":100,"../effects/energy-bar":39,"../effects/flame":41,"../effects/flame-emmiter":40,"../effects/gen":44,"../effects/gen-tex":42,"../effects/gen-tex2":43,"../effects/mana-bar":46,"../effects/pointerEffect":48,"../literals":55,"../loaders/bvh-instaced":57,"../matrix-class":61,"../pipelineManager":70,"../utils":79,"./materials-instanced":52,"wgpu-matrix":32}],54:[function(require,module,exports){
+},{"../../me-config":66,"../../shaders/fragment.video.wgsl":76,"../../shaders/instanced/vertex.instanced.wgsl":86,"../effects/energy-bar":25,"../effects/flame":27,"../effects/flame-emmiter":26,"../effects/gen":30,"../effects/gen-tex":28,"../effects/gen-tex2":29,"../effects/mana-bar":32,"../effects/pointerEffect":34,"../literals":41,"../loaders/bvh-instaced":43,"../matrix-class":47,"../pipelineManager":56,"../utils":65,"./materials-instanced":38,"wgpu-matrix":19}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32748,7 +29418,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../me-config":80,"../shaders/instanced/vertexShadow.instanced.wgsl":101,"../shaders/vertex.procedural.wgsl":113,"../shaders/vertexShadow.wgsl":116,"./behavior":34,"./utils":79,"wgpu-matrix":32}],55:[function(require,module,exports){
+},{"../me-config":66,"../shaders/instanced/vertexShadow.instanced.wgsl":87,"../shaders/vertex.procedural.wgsl":99,"../shaders/vertexShadow.wgsl":102,"./behavior":21,"./utils":65,"wgpu-matrix":19}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32772,7 +29442,7 @@ const VERTEX_ANIM_FLAGS = exports.VERTEX_ANIM_FLAGS = {
   DISPLACEMENT: 1 << 6 // 64
 };
 
-},{}],56:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33240,7 +29910,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],57:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33311,10 +29981,13 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       animationFinished: false
     };
     this.animationIndex = 0;
+    this.glbAnimEvents = {};
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${anim.name}`, {
+      // console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ' , `animationEnd-${anim.name}` )
+      this.glbAnimEvents['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
-          animationName: this.glb.glbJsonData.animations[index].name
+          animationName: this.glb.glbJsonData.animations[index].name,
+          targetName: this.name
         }
       });
     });
@@ -33540,11 +30213,12 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
+      const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if (this.animationIndex == null) this.animationIndex = 0;
-        dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + this.animationIndex]);
-      }, inTime * 1000);
+        window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
+      }, inTime * 1200);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if (this.sharedBones) {
@@ -33929,7 +30603,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../../me-config.js":80,"../instanced/mesh-obj-instances.js":53,"../utils.js":79,"./webgpu-gltf.js":59,"wgpu-matrix":32}],58:[function(require,module,exports){
+},{"../../me-config.js":66,"../instanced/mesh-obj-instances.js":39,"../utils.js":65,"./webgpu-gltf.js":45,"wgpu-matrix":19}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34588,7 +31262,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../../me-config.js":80,"../mesh-obj":62,"../utils.js":79,"./webgpu-gltf.js":59,"bvh-loader":18,"wgpu-matrix":32}],59:[function(require,module,exports){
+},{"../../me-config.js":66,"../mesh-obj":48,"../utils.js":65,"./webgpu-gltf.js":45,"bvh-loader":5,"wgpu-matrix":19}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35169,7 +31843,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":21}],60:[function(require,module,exports){
+},{"gl-matrix":8}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35370,7 +32044,7 @@ class Materials {
     0.0 // padding
     ]);
     this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
-    console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>');
+    // console.log('>>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>')
     this.waterBindGroup = this.device.createBindGroup({
       label: 'waterBG',
       layout: this.waterBindGroupLayout,
@@ -36038,7 +32712,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fontana/fontana.wgsl":86,"../shaders/fragment.dark.wgsl":87,"../shaders/fragment.gpt.wgsl":88,"../shaders/fragment.mirror.wgsl":89,"../shaders/fragment.wgsl":91,"../shaders/fragment.wgsl.metal":92,"../shaders/fragment.wgsl.noCut":93,"../shaders/fragment.wgsl.normalmap":94,"../shaders/fragment.wgsl.pong":95,"../shaders/fragment.wgsl.power":96,"../shaders/minimalist/color-a.wgsl":102,"../shaders/minimalist/color-b.wgsl":103,"../shaders/minimalist/hybrid.wgsl":104,"../shaders/minimalist/mid-a.wgsl":105,"../shaders/minimalist/mini-a.wgsl":106,"../shaders/minimalist/mini.wgsl":107,"../shaders/mixed/fragmentMix1.wgsl":108,"../shaders/water/water-c.wgls":117,"./pipelineManager":70,"./utils":79}],61:[function(require,module,exports){
+},{"../shaders/fontana/fontana.wgsl":72,"../shaders/fragment.dark.wgsl":73,"../shaders/fragment.gpt.wgsl":74,"../shaders/fragment.mirror.wgsl":75,"../shaders/fragment.wgsl":77,"../shaders/fragment.wgsl.metal":78,"../shaders/fragment.wgsl.noCut":79,"../shaders/fragment.wgsl.normalmap":80,"../shaders/fragment.wgsl.pong":81,"../shaders/fragment.wgsl.power":82,"../shaders/minimalist/color-a.wgsl":88,"../shaders/minimalist/color-b.wgsl":89,"../shaders/minimalist/hybrid.wgsl":90,"../shaders/minimalist/mid-a.wgsl":91,"../shaders/minimalist/mini-a.wgsl":92,"../shaders/minimalist/mini.wgsl":93,"../shaders/mixed/fragmentMix1.wgsl":94,"../shaders/water/water-c.wgls":103,"./pipelineManager":56,"./utils":65}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36533,7 +33207,7 @@ class PVector {
 }
 exports.PVector = PVector;
 
-},{"./utils":79}],62:[function(require,module,exports){
+},{"./utils":65}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37636,7 +34310,7 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../me-config":80,"../shaders/fragment.video.wgsl":90,"../shaders/vertex.wgsl":114,"../shaders/vertex.wgsl.normalmap":115,"./effects/destruction":38,"./effects/flame":41,"./effects/flame-emmiter":40,"./effects/gizmo":45,"./effects/msdfText":47,"./effects/pointerEffect":48,"./effects/topology-point":49,"./literals":55,"./materials":60,"./matrix-class":61,"./pipelineManager":70,"./procedures/procedural-textures":77,"./utils":79,"wgpu-matrix":32}],63:[function(require,module,exports){
+},{"../me-config":66,"../shaders/fragment.video.wgsl":76,"../shaders/vertex.wgsl":100,"../shaders/vertex.wgsl.normalmap":101,"./effects/destruction":24,"./effects/flame":27,"./effects/flame-emmiter":26,"./effects/gizmo":31,"./effects/msdfText":33,"./effects/pointerEffect":34,"./effects/topology-point":35,"./literals":41,"./materials":46,"./matrix-class":47,"./pipelineManager":56,"./procedures/procedural-textures":63,"./utils":65,"wgpu-matrix":19}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38127,7 +34801,7 @@ function clearEventsTextarea() {
   exports.events = events = '';
 }
 
-},{}],64:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38341,7 +35015,7 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":79,"./matrix-stream":63}],65:[function(require,module,exports){
+},{"../utils":65,"./matrix-stream":49}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38454,7 +35128,7 @@ let zeroPass = function () {
 };
 exports.zeroPass = zeroPass;
 
-},{"../utils":79}],66:[function(require,module,exports){
+},{"../utils":65}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38584,7 +35258,7 @@ let mobile1 = function () {
 };
 exports.mobile1 = mobile1;
 
-},{"../utils":79}],67:[function(require,module,exports){
+},{"../utils":65}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38651,7 +35325,7 @@ let nanoPass = function () {
 };
 exports.nanoPass = nanoPass;
 
-},{"../utils":79}],68:[function(require,module,exports){
+},{"../utils":65}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38663,7 +35337,7 @@ var _utils = require("../utils");
 let noShadowPass = function () {};
 exports.noShadowPass = noShadowPass;
 
-},{"../utils":79}],69:[function(require,module,exports){
+},{"../utils":65}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39125,7 +35799,7 @@ function _snapQuat(snap, b) {
   return [Math.cos(a / 2), ax * s, ay * s, az * s];
 }
 
-},{"wgpu-matrix":32}],70:[function(require,module,exports){
+},{"wgpu-matrix":19}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39221,7 +35895,61 @@ class MaterialBindGroupCache {
 }
 exports.MaterialBindGroupCache = MaterialBindGroupCache;
 
-},{}],71:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.AnimatedCursor = void 0;
+class AnimatedCursor {
+  constructor(options = {}) {
+    this.path = options.path || './res/icons/';
+    this.frameCount = options.frameCount || 8; // number of PNGs
+    this.speed = options.speed || 100; // ms per frame
+    this.hotspot = options.hotspot || {
+      x: 0,
+      y: 0
+    };
+    this.loop = options.loop !== undefined ? options.loop : true;
+    this._current = 0;
+    this._timer = null;
+    this._isPlaying = false;
+  }
+  _applyCursor(index) {
+    const cursorUrl = `url('${this.path}${index}.png') ${this.hotspot.x} ${this.hotspot.y}, auto`;
+    document.body.style.cursor = cursorUrl;
+  }
+  start() {
+    if (this._isPlaying) return;
+    this._isPlaying = true;
+    this._applyCursor(this._current);
+    this._timer = setInterval(() => {
+      this._current++;
+      if (this._current >= this.frameCount) {
+        if (this.loop) this._current = 0;else return this.stop();
+      }
+      this._applyCursor(this._current);
+    }, this.speed);
+  }
+  stop() {
+    if (!this._isPlaying) return;
+    clearInterval(this._timer);
+    this._timer = null;
+    this._isPlaying = false;
+  }
+  reset() {
+    this._current = 0;
+    this._applyCursor(this._current);
+  }
+  destroy() {
+    this.stop();
+    document.body.style.cursor = 'auto';
+  }
+}
+exports.AnimatedCursor = AnimatedCursor;
+
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39263,7 +35991,7 @@ class METoolTip {
 }
 exports.METoolTip = METoolTip;
 
-},{}],72:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39664,7 +36392,7 @@ function combinePassWGSL() {
 `;
 }
 
-},{}],73:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40223,7 +36951,7 @@ function compositeFragWGSL() {
   `;
 }
 
-},{}],74:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40964,6 +37692,73 @@ class ProceduralMeshObj extends _materials.default {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
     }
   }
+  async destroy(destructionType = "shatter", duration = 0.8, options = {}) {
+    const {
+      onComplete = null,
+      physics = null,
+      debris = null,
+      velocity = 1,
+      lifetime = 3
+    } = options;
+    const destructionFunc = this._getDestructionFunction(destructionType);
+    const pair = MeshMorpher.createMatchedPair(this.currentShape || MeshMorpher.sphere(this.size), destructionFunc, 32, 32);
+    await this.morphTo(destructionFunc, duration);
+    if (debris) {
+      this.spawnDebris(null, destructionType, {
+        velocity,
+        lifetime
+      });
+    }
+    // Cleanup
+    if (onComplete) onComplete();
+  }
+
+  /**
+   * Get destruction preset function from MeshMorpher (now parametric)
+   */
+  _getDestructionFunction(type) {
+    const presets = {
+      shatter: () => MeshMorpher.shatter(this.size, 8),
+      crumble: () => MeshMorpher.crumble(this.size, 4),
+      splinter: () => MeshMorpher.splinter(this.size, 12),
+      implode: () => MeshMorpher.implode(this.size, 0.1),
+      scatter: () => MeshMorpher.scatter(this.size, 0.3)
+    };
+    if (!presets[type]) throw new Error(`Unknown destruction type: ${type}`);
+    return presets[type]();
+  }
+
+  /**
+   * Spawn individual physics chunks after morph
+   */
+  spawnDebris(physicsEngine, type, options = {}) {
+    // const {velocity = 1, lifetime = 3} = options;
+
+    // const debrisCount = {
+    //   shatter: 8,
+    //   crumble: 16,
+    //   splinter: 12,
+    //   implode: 0,    // implode absorbs, no debris
+    //   scatter: 20
+    // }[type] || 8;
+
+    // for(let i = 0;i < debrisCount;i++) {
+    //   const vx = (Math.random() - 0.5) * velocity * 2;
+    //   const vy = (Math.random() - 0.5) * velocity * 2 + (type === "shatter" ? 1 : 0);
+    //   const vz = (Math.random() - 0.5) * velocity * 2;
+
+    //   const body = physicsEngine.createRigidBody({
+    //     shape: "sphere",
+    //     size: this.size * 0.1,
+    //     mass: 1,
+    //     linearVelocity: [vx, vy, vz],
+    //     angularVelocity: [Math.random() * 5, Math.random() * 5, Math.random() * 5]
+    //   });
+
+    //   // Auto-despawn after lifetime
+    //   setTimeout(() => body.destroy(), lifetime * 1000);
+    // }
+  }
   switchMesh(specA, specB) {
     this.meshA = this._loadGeometry(specA);
     this.meshB = this._loadGeometry(specB);
@@ -41655,151 +38450,166 @@ class MeshMorpher {
       return [x, y * scale, z];
     };
   }
+
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
+  static shatter(S = 1, pieces = 8) {
+    // Pre-compute random offsets for determinism
+    const offsets = [];
+    for (let p = 0; p < pieces; p++) {
+      const angle = p / pieces * Math.PI * 2;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
+    }
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+
+      // Base sphere surface
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Crumble: breaks into small chunks, stays roughly in place
+   * Good for: stone/brick crumbling, dust formations
+   */
+  static crumble(S = 1, detail = 4) {
+    // Pre-compute chunk grid with random jitter
+    const chunks = [];
+    for (let ix = 0; ix < detail; ix++) {
+      for (let iy = 0; iy < detail; iy++) {
+        for (let iz = 0; iz < detail; iz++) {
+          chunks.push({
+            x: ix - detail / 2 + (Math.random() - 0.5) * 0.3,
+            y: iy - detail / 2 + (Math.random() - 0.5) * 0.3,
+            z: iz - detail / 2 + (Math.random() - 0.5) * 0.3
+          });
+        }
+      }
+    }
+    const chunkSize = 2 / detail;
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+
+      // Small cube for each chunk
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+      return [x * S * 0.5, y * S * 0.5, z * S * 0.5];
+    };
+  }
+
+  /**
+   * Splinter: thin shards radiating from center
+   * Good for: ice/glass shattering, crystalline breaks
+   */
+  static splinter(S = 1, count = 12) {
+    // Pre-compute shard directions
+    const shards = [];
+    for (let i = 0; i < count; i++) {
+      const angle = i / count * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
+    }
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+
+      // Shard as elongated quad
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+
+      // Taper from base to tip
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+      const x = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Implode: shrinks to near-zero point (singularity effect)
+   * Good for: magic absorption, black hole, vortex
+   */
+  static implode(S = 1, scale = 0.1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x = scale * S * Math.sin(phi) * Math.cos(theta);
+      const y = scale * S * Math.cos(phi);
+      const z = scale * S * Math.sin(phi) * Math.sin(theta);
+      return [x, y, z];
+    };
+  }
+
+  /**
+   * Scatter: random cloud of small pieces
+   * Good for: dust, particle explosion, disintegration
+   */
+  static scatter(S = 1, spread = 0.3) {
+    const particleCount = 20;
+    const particles = [];
+    for (let p = 0; p < particleCount; p++) {
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
+    }
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+
+      // Small sphere for each particle
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r = particle.size;
+      const x = (particle.x + r * Math.sin(phi) * Math.cos(theta)) * S;
+      const y = (particle.y + r * Math.cos(phi)) * S;
+      const z = (particle.z + r * Math.sin(phi) * Math.sin(theta)) * S;
+      return [x, y, z];
+    };
+  }
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/fragment.video.wgsl":90,"../shaders/vertex.procedural.wgsl":113,"./effects/flame":41,"./effects/flame-emmiter":40,"./effects/gizmo":45,"./geometry-factory":51,"./literals":55,"./materials":60,"./matrix-class":61,"./pipelineManager":70,"./utils":79,"wgpu-matrix":32}],75:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.FireballSystem = void 0;
-var _webgpuGltf = require("../loaders/webgpu-gltf");
-class FireballSystem {
-  static CONFIG = {
-    speed: 2.3,
-    homingStrength: 0.08,
-    hitRadius: 1.5,
-    damage: 50,
-    lifetime: 4000,
-    maxActive: 2
-  };
-  loadBallAnim = async p => {
-    var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-    this.core.addGlbObjInctance({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      scale: [12, 12, 12],
-      position: {
-        x: this.parent.position.x,
-        y: this.parent.position.y,
-        z: this.parent.position.z
-      },
-      name: "FIRE",
-      // this.parent.name + "-fireball",
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      },
-      pointerEffect: {
-        enabled: true,
-        pointer: true,
-        flameEffect: false,
-        flameEmitter: true,
-        circlePlane: false,
-        circlePlaneTex: true,
-        circlePlaneTexPath: './res/textures/star1.png'
-      }
-    }, null, glbFile01);
-    setTimeout(() => this.fireballMesh = app.getSceneObjectByName('FIRE_Circle'), 300);
-  };
-  constructor(parent, core) {
-    this.core = core;
-    this.parent = parent;
-    this.loadBallAnim('./res/meshes/glb/ring1.glb');
-    this.projectiles = [];
-  }
-
-  // Spawn a new fireball scene object
-  async spawn(fromPosition, target) {
-    if (this.projectiles.length >= FireballSystem.CONFIG.maxActive) return;
-    // Create new MeshObjInstanced for this fireball
-    // position: new Position(fromPosition.x, fromPosition.y, fromPosition.z),
-    // let fireballMesh = app.getSceneObjectByName('FIRE_Circle');
-
-    // change it to setX
-    this.fireballMesh.position.x = fromPosition.x;
-    this.fireballMesh.position.y = fromPosition.y;
-    this.fireballMesh.position.z = fromPosition.z;
-    this.fireballMesh.position.setSpeed(FireballSystem.CONFIG.speed);
-    this.projectiles.push({
-      mesh: this.fireballMesh,
-      target: target,
-      spawnTime: performance.now(),
-      alive: true
-    });
-  }
-  update(deltaTime) {
-    const cfg = FireballSystem.CONFIG;
-    const toRemove = [];
-    for (let i = 0; i < this.projectiles.length; i++) {
-      const p = this.projectiles[i];
-      if (!p.alive) {
-        toRemove.push(i);
-        continue;
-      }
-      // Expire / target dead checks
-      if (performance.now() - p.spawnTime > cfg.lifetime || !p.target || p.target.hp <= 0) {
-        this._kill(p);
-        toRemove.push(i);
-        continue;
-      }
-      // Homing hardcoded for MOBA !
-      let dx = 0;
-      let dy = 0;
-      let dz = 0;
-      if (p.target.heroe_bodies) {
-        p.mesh.position.translateByXZ(p.target.heroe_bodies[0].position.x, p.target.heroe_bodies[0].position.z);
-        p.mesh.position.translateByY(p.target.heroe_bodies[0].position.y);
-        // Hit check
-        dx = p.mesh.position.x - p.target.heroe_bodies[0].position.x;
-        dy = p.mesh.position.y - p.target.heroe_bodies[0].position.y;
-        dz = p.mesh.position.z - p.target.heroe_bodies[0].position.z;
-      } else {
-        p.mesh.position.translateByXZ(p.target.position.x, p.target.position.z);
-        p.mesh.position.translateByY(p.target.position.y);
-        // Hit check
-        dx = p.mesh.position.x - p.target.position.x;
-        dy = p.mesh.position.y - p.target.position.y;
-        dz = p.mesh.position.z - p.target.position.z;
-      }
-      if (Math.sqrt(dx * dx + dy * dy + dz * dz) < cfg.hitRadius) {
-        this._onHit(p);
-        toRemove.push(i);
-      }
-    }
-    for (let i = toRemove.length - 1; i >= 0; i--) {
-      this.projectiles.splice(toRemove[i], 1);
-    }
-  }
-  _onHit(p) {
-    p.target.hp -= FireballSystem.CONFIG.damage;
-    dispatchEvent(new CustomEvent('fireball-hit', {
-      detail: {
-        target: p.target,
-        damage: FireballSystem.CONFIG.damage
-      }
-    }));
-    this._kill(p);
-  }
-  _kill(p) {
-    p.mesh.position.setPosition(this.parent.position.x, this.parent.position.y, this.parent.position.z);
-    // p.alive = false;
-    // // Remove from scene
-    // const idx = app.mainRenderBundle.indexOf(p.mesh);
-    // if(idx !== -1) app.mainRenderBundle.splice(idx, 1);
-
-    // // Cleanup GPU resources if needed
-    // p.mesh.destroy?.();
-  }
-}
-exports.FireballSystem = FireballSystem;
-
-},{"../loaders/webgpu-gltf":59}],76:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":76,"../shaders/vertex.procedural.wgsl":99,"./effects/flame":27,"./effects/flame-emmiter":26,"./effects/gizmo":31,"./geometry-factory":37,"./literals":41,"./materials":46,"./matrix-class":47,"./pipelineManager":56,"./utils":65,"wgpu-matrix":19}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41858,7 +38668,7 @@ function fountainBasinWaterConfig(MeshMorpher) {
 }
 const FOUNTAIN_COLUMN_TOP = exports.FOUNTAIN_COLUMN_TOP = 1.25; // half of cylinder height 2.5
 
-},{}],77:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41897,7 +38707,7 @@ function createGroundTexture(device, size = 512) {
   return texture;
 }
 
-},{}],78:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42121,7 +38931,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
     } = getRayFromMouse(event, canvas, camera);
     let closestHit = null;
     for (const object of app.mainRenderBundle) {
-      if (!object.raycast?.enabled) continue;
+      if (!object.raycast?.enabled || !object.getModelMatrix) continue;
       const {
         boxMin,
         boxMax
@@ -42155,7 +38965,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":32}],79:[function(require,module,exports){
+},{"wgpu-matrix":19}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43563,7 +40373,7 @@ class CameraPath {
 }
 exports.CameraPath = CameraPath;
 
-},{}],80:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43598,6 +40408,7 @@ const MEConfig = exports.MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: true,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
+  logLoopError: false,
   construct: function (options = {}) {
     if (urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
@@ -43661,7 +40472,7 @@ const MEConfig = exports.MEConfig = {
   }
 };
 
-},{"./engine/utils.js":79}],81:[function(require,module,exports){
+},{"./engine/utils.js":65}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43703,7 +40514,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":33,"../engine/utils":79}],82:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":20,"../engine/utils":65}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43873,7 +40684,7 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],83:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43919,7 +40730,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],84:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44053,7 +40864,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],85:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44213,7 +41024,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],86:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44760,7 +41571,7 @@ fn main(input: VertexInput) -> VertexOutput {
 `;
 exports.fountainWaterVertexWGSL = fountainWaterVertexWGSL;
 
-},{"../../me-config":80}],87:[function(require,module,exports){
+},{"../../me-config":66}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45004,7 +41815,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 exports.fragmentDarkWGSL = fragmentDarkWGSL;
 
-},{"../me-config":80}],88:[function(require,module,exports){
+},{"../me-config":66}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45209,7 +42020,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.fragmentWGSLGPT = fragmentWGSLGPT;
 
-},{"../me-config":80}],89:[function(require,module,exports){
+},{"../me-config":66}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45519,7 +42330,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.mirrorIlluminateFragmentWGSL = mirrorIlluminateFragmentWGSL;
 
-},{"../me-config":80}],90:[function(require,module,exports){
+},{"../me-config":66}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45587,7 +42398,7 @@ fn main(input : FragmentInput) -> @location(0) vec4f {
 `;
 exports.fragmentVideoWGSL = fragmentVideoWGSL;
 
-},{}],91:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45837,7 +42648,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 exports.fragmentWGSL = fragmentWGSL;
 
-},{"../me-config":80}],92:[function(require,module,exports){
+},{"../me-config":66}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46051,7 +42862,7 @@ let validLight = select(0.0, 1.0, NdotL > 0.0);
 `;
 exports.fragmentWGSLMetal = fragmentWGSLMetal;
 
-},{"../me-config":80}],93:[function(require,module,exports){
+},{"../me-config":66}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46298,7 +43109,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 exports.fragmentWGSLDark = fragmentWGSLDark;
 
-},{"../me-config":80}],94:[function(require,module,exports){
+},{"../me-config":66}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46548,7 +43359,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 exports.fragmentWGSLNormalMap = fragmentWGSLNormalMap;
 
-},{"../me-config":80}],95:[function(require,module,exports){
+},{"../me-config":66}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46775,7 +43586,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 exports.fragmentWGSLPong = fragmentWGSLPong;
 
-},{"../me-config":80}],96:[function(require,module,exports){
+},{"../me-config":66}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46944,7 +43755,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.fragmentWGSLPower = fragmentWGSLPower;
 
-},{"../me-config":80}],97:[function(require,module,exports){
+},{"../me-config":66}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47013,7 +43824,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(input.color, 1.0);
 }`;
 
-},{}],98:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47231,7 +44042,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 exports.fragmentWGSLInstanced = fragmentWGSLInstanced;
 
-},{"../../me-config":80}],99:[function(require,module,exports){
+},{"../../me-config":66}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47523,7 +44334,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.fragmentMirrorWGSLInstanced = fragmentMirrorWGSLInstanced;
 
-},{"../../me-config":80}],100:[function(require,module,exports){
+},{"../../me-config":66}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47792,7 +44603,7 @@ fn main(
 }`;
 exports.vertexWGSLInstanced = vertexWGSLInstanced;
 
-},{"../../me-config":80}],101:[function(require,module,exports){
+},{"../../me-config":66}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48006,7 +44817,7 @@ fn main(
 `;
 exports.vertexShadowWGSLInstanced = vertexShadowWGSLInstanced;
 
-},{"../../me-config":80}],102:[function(require,module,exports){
+},{"../../me-config":66}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48098,7 +44909,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.coloraWGSL = coloraWGSL;
 
-},{}],103:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48263,7 +45074,7 @@ let uv = fract(input.fragUV);
 // `;
 exports.colorbWGSL = colorbWGSL;
 
-},{"../../me-config":80}],104:[function(require,module,exports){
+},{"../../me-config":66}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48390,7 +45201,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.hybridWGSL = hybridWGSL;
 
-},{"../../me-config":80}],105:[function(require,module,exports){
+},{"../../me-config":66}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48505,7 +45316,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.midaWGSL = midaWGSL;
 
-},{"../../me-config":80}],106:[function(require,module,exports){
+},{"../../me-config":66}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48608,7 +45419,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.miniaWGSL = miniaWGSL;
 
-},{"../../me-config":80}],107:[function(require,module,exports){
+},{"../../me-config":66}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48687,7 +45498,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.miniWGSL = miniWGSL;
 
-},{"../../me-config":80}],108:[function(require,module,exports){
+},{"../../me-config":66}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48910,7 +45721,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 exports.fragmentWGSLMix1 = fragmentWGSLMix1;
 
-},{"../../me-config":80}],109:[function(require,module,exports){
+},{"../../me-config":66}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48968,7 +45779,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],110:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49055,7 +45866,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],111:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49113,7 +45924,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],112:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49204,7 +46015,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],113:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49556,7 +46367,7 @@ fn main(input: VertexInput) -> @builtin(position) vec4f {
 `;
 exports.vertexMorphShadowWGSL = vertexMorphShadowWGSL;
 
-},{}],114:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49830,7 +46641,7 @@ fn main(
 }`;
 exports.vertexWGSL = vertexWGSL;
 
-},{"../me-config":80}],115:[function(require,module,exports){
+},{"../me-config":66}],101:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49944,7 +46755,7 @@ fn main(
 }`;
 exports.vertexWGSL_NM = vertexWGSL_NM;
 
-},{"../me-config":80}],116:[function(require,module,exports){
+},{"../me-config":66}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50203,7 +47014,7 @@ fn main(
 `;
 exports.vertexShadowWGSL = vertexShadowWGSL;
 
-},{"../me-config":80}],117:[function(require,module,exports){
+},{"../me-config":66}],103:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50399,7 +47210,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 }`;
 exports.fragmentWaterWGSL = fragmentWaterWGSL;
 
-},{"../../me-config":80}],118:[function(require,module,exports){
+},{"../../me-config":66}],104:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50486,7 +47297,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],119:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50556,7 +47367,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],120:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50893,7 +47704,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":79}],121:[function(require,module,exports){
+},{"../../engine/utils":65}],107:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51660,7 +48471,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":79}],122:[function(require,module,exports){
+},{"../../engine/utils":65}],108:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51837,7 +48648,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":71,"../../engine/utils":79,"./client":120,"./editor.provider":123,"./flexCodexShader":124,"./fluxCodexVertex":126,"./hud":128,"./methodsManager":129}],123:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":58,"../../engine/utils":65,"./client":106,"./editor.provider":109,"./flexCodexShader":110,"./fluxCodexVertex":112,"./hud":114,"./methodsManager":115}],109:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52065,7 +48876,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":56,"../../engine/loaders/webgpu-gltf":59}],124:[function(require,module,exports){
+},{"../../engine/loader-obj":42,"../../engine/loaders/webgpu-gltf":45}],110:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54259,7 +51070,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":79,"./flexCodexShaderAdapter.js":125}],125:[function(require,module,exports){
+},{"../../engine/utils.js":65,"./flexCodexShaderAdapter.js":111}],111:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54483,7 +51294,7 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 `;
 }
 
-},{"../../me-config":80}],126:[function(require,module,exports){
+},{"../../me-config":66}],112:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -60986,7 +57797,7 @@ LIST OF INTEREST OBJECT:
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/matrix-class.js":61,"../../engine/utils":79,"./curve-editor":121,"./generateAISchema.js":127}],127:[function(require,module,exports){
+},{"../../engine/matrix-class.js":47,"../../engine/utils":65,"./curve-editor":107,"./generateAISchema.js":113}],113:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -61113,7 +57924,7 @@ function catalogToText(catalog) {
 let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
-},{}],128:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -62460,7 +59271,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":79,"./flexCodexShader.js":124}],129:[function(require,module,exports){
+},{"../../engine/utils.js":65,"./flexCodexShader.js":110}],115:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -62777,7 +59588,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],130:[function(require,module,exports){
+},{}],116:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -62917,7 +59728,7 @@ class MatrixEngineWGPU {
     this.MEConfig.construct(options);
     this.label = new _lang.MultiLang();
     this.now = 0;
-    this.logLoopError = true;
+    this.logLoopError = this.MEConfig.logLoopError;
     if (typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
     } else if (options.alphaMode != 'opaque' && options.alphaMode != 'premultiplied') {
@@ -63176,7 +59987,6 @@ class MatrixEngineWGPU {
         });
         return;
       }
-      _utils.mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       _utils.meLoader.create();
       this.MEConfig.fsManager.onChange((isFS, target) => {
         console.log('GOT BACK FROM FS', isFS);
@@ -63375,13 +60185,12 @@ class MatrixEngineWGPU {
       alphaMode: 'premultiplied'
     });
 
-    // only for mobile
+    // Only for mobile
     if (typeof this.options.lock !== 'undefined') {
       if (this.options.lock != 'landscape' && this.options.lock != 'portrait') {
         this.options.lock = 'portrait';
       }
-      if ((0, _utils.checkLock)()) {
-        // mobileLock(this.options.lock);
+      if ((0, _utils.checkLock)() && (0, _utils.isMobile)() == true) {
         screen.orientation.lock(this.options.lock).then(() => {
           console.log(`%cOrientation locked to ${this.options.lock}`, _utils.LOG_FUNNY_ARCADE);
           this.applyCanvasSize(this.options.fastRender);
@@ -64744,4 +61553,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/cameras.js":35,"./engine/core-cache.js":37,"./engine/effects/energy-bar.js":39,"./engine/effects/flame-emmiter.js":40,"./engine/effects/flame.js":41,"./engine/effects/mana-bar.js":46,"./engine/effects/pointerEffect.js":48,"./engine/generators/generator.js":50,"./engine/instanced/mesh-obj-instances.js":53,"./engine/lights.js":54,"./engine/loader-obj.js":56,"./engine/loaders/bvh-instaced.js":57,"./engine/loaders/bvh.js":58,"./engine/mesh-obj.js":62,"./engine/overrides/min-render.js":65,"./engine/overrides/mobile-1.js":66,"./engine/overrides/nano-render.js":67,"./engine/overrides/noshadow-render.js":68,"./engine/physics/bridge.js":69,"./engine/pipelineManager.js":70,"./engine/postprocessing/bloom.js":72,"./engine/postprocessing/volumetric.js":73,"./engine/procedural-mesh.js":74,"./engine/procedures/fontana.js":76,"./engine/raycast.js":78,"./engine/utils.js":79,"./me-config.js":80,"./multilang/lang.js":81,"./shaders/fontana/fontana.wgsl.js":86,"./sounds/audioAsset.js":118,"./sounds/sounds.js":119,"./tools/editor/editor.js":122,"./tools/editor/flexCodexShaderAdapter.js":125,"wgpu-matrix":32}]},{},[6]);
+},{"./engine/cameras.js":22,"./engine/core-cache.js":23,"./engine/effects/energy-bar.js":25,"./engine/effects/flame-emmiter.js":26,"./engine/effects/flame.js":27,"./engine/effects/mana-bar.js":32,"./engine/effects/pointerEffect.js":34,"./engine/generators/generator.js":36,"./engine/instanced/mesh-obj-instances.js":39,"./engine/lights.js":40,"./engine/loader-obj.js":42,"./engine/loaders/bvh-instaced.js":43,"./engine/loaders/bvh.js":44,"./engine/mesh-obj.js":48,"./engine/overrides/min-render.js":51,"./engine/overrides/mobile-1.js":52,"./engine/overrides/nano-render.js":53,"./engine/overrides/noshadow-render.js":54,"./engine/physics/bridge.js":55,"./engine/pipelineManager.js":56,"./engine/postprocessing/bloom.js":59,"./engine/postprocessing/volumetric.js":60,"./engine/procedural-mesh.js":61,"./engine/procedures/fontana.js":62,"./engine/raycast.js":64,"./engine/utils.js":65,"./me-config.js":66,"./multilang/lang.js":67,"./shaders/fontana/fontana.wgsl.js":72,"./sounds/audioAsset.js":104,"./sounds/sounds.js":105,"./tools/editor/editor.js":108,"./tools/editor/flexCodexShaderAdapter.js":111,"wgpu-matrix":19}]},{},[3]);

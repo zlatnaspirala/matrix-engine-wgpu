@@ -291,6 +291,7 @@ export default class MaterialsInstanced {
   setBlend = (alpha) => {
     this.material.useBlend = true;
     this.setupMaterialPBR([1, 1, 1, alpha]);
+    if(app) app.buildLightShadowBuckets();
   }
 
   getMaterial() {

@@ -2,7 +2,7 @@ import {MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {ArcballCamera, CinematicCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader, checkLock, mobileLock, preventZoom} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -108,7 +108,7 @@ export default class MatrixEngineWGPU {
     this.MEConfig.construct(options);
     this.label = new MultiLang();
     this.now = 0;
-    this.logLoopError = true;
+    this.logLoopError = this.MEConfig.logLoopError;
 
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
@@ -193,6 +193,8 @@ export default class MatrixEngineWGPU {
       }
     }, {passive: true});
 
+    if (isMobile()== true) preventZoom();
+
     this.activateEditor = () => {
       if(this.editor == null || typeof this.editor === 'undefined') {
         if(typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
@@ -212,6 +214,7 @@ export default class MatrixEngineWGPU {
     };
 
     this.options = options;
+
     this.mainCameraParams = options.mainCameraParams;
     const target = this.options.appendTo || document.body;
     var canvas = document.createElement('canvas');
@@ -310,7 +313,6 @@ export default class MatrixEngineWGPU {
         return;
       }
 
-      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
       meLoader.create();
 
       this.MEConfig.fsManager.onChange((isFS, target) => {
@@ -418,6 +420,21 @@ export default class MatrixEngineWGPU {
       format: presentationFormat,
       alphaMode: 'premultiplied',
     });
+
+    // Only for mobile
+    if(typeof this.options.lock !== 'undefined') {
+      if(this.options.lock != 'landscape' && this.options.lock != 'portrait') {
+        this.options.lock = 'portrait';
+      }
+      if(checkLock() && isMobile() == true) {
+        screen.orientation.lock(this.options.lock).then(() => {
+          console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
+          this.applyCanvasSize(this.options.fastRender)
+        }).catch(function(error) {
+          console.error("Orientation lock failed: ", error);
+        });
+      }
+    }
 
     this.globalAmbient = vec3.create(1.0, 1.0, 1.0);
     if(this.options.MAX_SPOTLIGHTS) {
@@ -1185,8 +1202,8 @@ export default class MatrixEngineWGPU {
         if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
         // if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
-        mesh.updateModelUniformBuffer(i);
         mesh.position.update();
+        mesh.updateModelUniformBuffer(i);
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
         if(mesh.isVideo) mesh.updateVideoTexture();

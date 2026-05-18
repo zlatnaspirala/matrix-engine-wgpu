@@ -45,6 +45,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+
+    this.sharedBones = false;
     this.trailAnimation = {
       enabled: false, // deplaced
       delay: 0
@@ -60,10 +62,13 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       animationFinished: false
     };
     this.animationIndex = 0;
+    this.glbAnimEvents = {};
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      this.glb.glbJsonData.animations[index]['animEndEvent' + index] = new CustomEvent(`animationEnd-${anim.name}`, {
+      // console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ' , `animationEnd-${anim.name}` )
+      this.glbAnimEvents['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
-          animationName: this.glb.glbJsonData.animations[index].name
+          animationName: this.glb.glbJsonData.animations[index].name,
+          targetName: this.name
         }
       });
     });
@@ -290,24 +295,41 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     var inTime = this._animationLength;
     if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
+      const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if(this.animationIndex == null) this.animationIndex = 0;
-        dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]['animEndEvent' + this.animationIndex]);
-      }, inTime * 1000)
+        window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
+      }, inTime * 1200)
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      for(let i = 0;i < this.instanceCount;i++) {
-        const timeOffsetMs = i * this.trailAnimation.delay;
-        const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
+
+      if(this.sharedBones) {
+        // Forest/rocks: all instances share same skeleton pose
+        const currentTime = now / this.animationSpeed - this.startTime;
         this.updateSingleBoneCubeAnimation(
           this.glb.glbJsonData.animations[this.animationIndex],
           this.nodes,
           currentTime,
           this._boneMatrices,
-          i
+          0
         );
+      } else {
+
+        for(let i = 0;i < this.instanceCount;i++) {
+          const timeOffsetMs = i * this.trailAnimation.delay;
+          const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
+          this.updateSingleBoneCubeAnimation(
+            this.glb.glbJsonData.animations[this.animationIndex],
+            this.nodes,
+            currentTime,
+            this._boneMatrices,
+            i
+          );
+        }
+
       }
+
     }
   }
 
@@ -643,9 +665,8 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     }
 
     /* ── WRITE TO GPU BUFFER ── */
-    const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
+    const byteOffset = this.sharedBones ? 0 : alignTo256(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
-
     return boneMatrices;
   }
 }

@@ -5,7 +5,7 @@ import {MEMapLoader} from "./map-loader.js";
 import {Character} from "./character-base.js";
 import {EnemiesManager} from "./enemies-manager.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
-import {LS, mb, SS, urlQuery} from "../../../src/engine/utils.js";
+import {isMobile, LS, mb, SS, urlQuery} from "../../../src/engine/utils.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId} from "../../../src/engine/networking/matrix-stream.js";
 import {startUpPositions} from "./static.js";
@@ -30,8 +30,10 @@ if(!SS.has('player') || !LS.has('player')) {
 
 let forestOfHollowBlood = new MatrixEngineWGPU({
   dontUsePhysics: true,
-  useSingleRenderPass: true,
+  fastRender: isMobile() == true ? 0.85 : 0.95,
   canvasSize: 'fullscreen',
+  MAX_BONES: 100,
+  MAX_SPOTLIGHTS: isMobile() ? 2 : 2,
   mainCameraParams: {
     type: 'RPG',
     responseCoef: 1000
@@ -102,12 +104,6 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
   app.matrixSounds.audios.music.loop = true;
 
-  addEventListener('net-ready', () => {
-    byId('join-btn').click();
-    forestOfHollowBlood.loadEnemyCreeps();
-    byId('buttonLeaveSession').addEventListener('click', () => {location.assign("rpg-menu.html")});
-  });
-
   forestOfHollowBlood.loadEnemyCreeps = () => {
     if(forestOfHollowBlood.player.data.team == 'south') {
       forestOfHollowBlood.player.data.enemyTeam = 'north';
@@ -117,6 +113,13 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       forestOfHollowBlood.enemies = new EnemiesManager(forestOfHollowBlood, 'south');
     }
   }
+
+  addEventListener('net-ready', () => {
+    byId('join-btn').click();
+    byId('buttonLeaveSession').addEventListener('click', () => {location.assign("moba-menu.html")});
+    app.loadEnemyCreeps();
+    byId('netHeaderTitle').click();
+  });
 
   addEventListener('connectionDestroyed', (e) => {
     console.log('connectionDestroyed - end of game.');
@@ -144,7 +147,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     setTimeout(() => {
       // app.net.closeSession();
       app.net.buttonLeaveSession.click();
-      location.assign("rpg-menu.html");
+      location.assign("moba-menu.html");
     }, 4000);
   });
 
@@ -155,8 +158,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     }
     const isLocal = e.detail.connection.connectionId == app.net.session.connection.connectionId;
     if(e.detail.connection.session.remoteConnections.size == 0) {
-      if(forestOfHollowBlood.net.virtualEmiter == null && isLocal) {
-        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+      if(app.net.virtualEmiter == null && isLocal) {
+        app.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
       }
     }
@@ -165,19 +168,19 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       let isSameTeamAlready = false;
       for(var x = 0;x < remoteCons.length;x++) {
         let currentRemoteConn = JSON.parse(remoteCons[x][1].data);
-        if(forestOfHollowBlood.player.data.team == currentRemoteConn.team) {
+        if(app.player.data.team == currentRemoteConn.team) {
           isSameTeamAlready = true;
-          if(forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].indexOf(remoteCons[x][1]) == -1) {
-            forestOfHollowBlood.player.remoteByTeam[forestOfHollowBlood.player.data.team].push(remoteCons[x][1]);
+          if(app.player.remoteByTeam[app.player.data.team].indexOf(remoteCons[x][1]) == -1) {
+            app.player.remoteByTeam[app.player.data.team].push(remoteCons[x][1]);
           }
         } else {
-          if(forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
-            forestOfHollowBlood.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
+          if(app.player.remoteByTeam[currentRemoteConn.team].indexOf(remoteCons[x][1]) == -1) {
+            app.player.remoteByTeam[currentRemoteConn.team].push(remoteCons[x][1]);
           }
         }
       }
       if(isSameTeamAlready == false && isLocal == true) {
-        forestOfHollowBlood.net.virtualEmiter = e.detail.connection.connectionId;
+        app.net.virtualEmiter = e.detail.connection.connectionId;
         document.title = "VE " + app.net.session.connection.connectionId;
 
       }
@@ -208,6 +211,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         if(testIfExistAlready.length > 0) {
           console.log('[new enemy hero already exist do nothing]', d);
         } else {
+
+          console.log('[new enemy HERO]', d);
           app.enemies.loadEnemyHero(d);
         }
       }
@@ -219,7 +224,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     // console.log('<data-receive self>', d);
     if(d.type == "damage") {
       let IsEnemyHeroObj = forestOfHollowBlood.enemies.enemies.find((enemy) => enemy.name === d.defenderName);
-      let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.defenderName);
+      // let IsEnemyCreepObj = forestOfHollowBlood.enemies.creeps.find((creep) => creep.name === d.defenderName);
       if(IsEnemyHeroObj) {
         // console.log('<data-receive damage for IsEnemyHeroObj >', IsEnemyHeroObj);
         const progress = Math.max(0, Math.min(1, d.hp / IsEnemyHeroObj.getHPMax()));
@@ -242,6 +247,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         if(d.progress <= 0.09) {
           app.localHero.friendlyLocal.creeps[getCreepByIndex].creepFocusAttackOn = null;
           app.localHero.friendlyLocal.creeps[getCreepByIndex].setDead();
+
           setTimeout(() => {
             app.localHero.friendlyLocal.creeps[getCreepByIndex].setStartUpPosition();
             app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
@@ -260,6 +266,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
         app.enemies.creeps[getCreepByIndex].creepFocusAttackOn = null;
         if(d.progress <= 0.09) {
           app.enemies.creeps[getCreepByIndex].setDead();
+          app.localHero.killEnemy(1);
           setTimeout(() => {
             app.enemies.creeps[getCreepByIndex].setStartUpPosition();
             app.enemies.creeps[getCreepByIndex].gotoFinal = false;
@@ -272,21 +279,21 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       if(app.player.data.team == d.defenderTeam) {
         app.tron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(12, 1, 1);
           mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
           mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
           setTimeout(() => {
-            location.assign("rpg-menu.html");
+            location.assign("moba-menu.html");
           }, 15000);
         }
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(2, 1, 1);
           mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
           app.localHero.setSalute();
           setTimeout(() => {
-            location.assign("rpg-menu.html",);
+            location.assign("moba-menu.html",);
           }, 15000);
         }
       }
@@ -390,21 +397,21 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       if(app.player.data.team == d.defenderTeam) {
         app.tron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(2, 1, 1);
           mb.show(`☠️☠️☠️ ${app.player.data.enemyTeam} ☠️☠️☠️`);
           mb.show(`☠️ Enemy wins ☠️  ${app.player.data.enemyTeam} `);
           setTimeout(() => {
-            location.assign("rpg-menu.html");
+            location.assign("moba-menu.html");
           }, 15000);
         }
       } else {
         app.enemytron.effects.energyBar.setProgress(d.progress);
         if(d.progress == 0) {
-          app.tron.globalAmbient = [2, 1, 1];
+          app.tron.setAmbient(2, 1, 1);
           mb.show(`🏆🏆🏆 Your team wins ! 🏆🏆🏆 ${app.player.data.team} 🏆🏆🏆`);
           app.localHero.setSalute();
           setTimeout(() => {
-            location.assign("rpg-menu.html",);
+            location.assign("moba-menu.html",);
           }, 15000);
         }
       }
@@ -435,24 +442,28 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   })
 
   addEventListener('local-hero-bodies-ready', () => {
-    app.cameras.RPG.setY(130);
-    app.cameras.RPG.movementSpeed = 100;
-    app.cameras.RPG.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
-    app.cameras.RPG.mousRollInAction = true;
+    const cam = app.getCamera();
+    cam.setY(130);
+    cam.movementSpeed = 100;
+    cam.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
+    cam.mousRollInAction = true;
 
     // diiff heros can MAGIC CASES LEVEL
     if(app.localHero.name == "MariaSword") {
       app.RPG.distanceForLongAction = 150;
     }
 
-    app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
+    // app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
+    forestOfHollowBlood.buildRenderBuckets(forestOfHollowBlood.mainRenderBundle);
+    forestOfHollowBlood.buildLightShadowBuckets()
+
   });
 
   forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);
   forestOfHollowBlood.mapLoader = new MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
 
   forestOfHollowBlood.localHero = new Character(
-    forestOfHollowBlood, forestOfHollowBlood.player.data.path,
+    forestOfHollowBlood, isMobile() == true ? forestOfHollowBlood.player.data.pathMobile : forestOfHollowBlood.player.data.path,
     forestOfHollowBlood.player.data.hero, [forestOfHollowBlood.player.data.archetypes]);
 
   forestOfHollowBlood.localHero.inventory = new Inventory(forestOfHollowBlood.localHero);

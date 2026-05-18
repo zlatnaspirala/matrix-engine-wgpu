@@ -1,6 +1,6 @@
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {MatrixStream} from "../../../src/engine/networking/net.js";
-import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager, isMobile} from "../../../src/engine/utils.js";
+import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager, isMobile, CameraPath} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
 import {AnimatedCursor} from "../../../src/engine/plugin/animated-cursor/animated-cursor.js";
@@ -9,6 +9,7 @@ import {RCSAccount} from "./rocket-crafting-account.js";
 import {en} from "../../../public/res/multilang/en-backup.js";
 import {MatrixTTS} from "./tts.js";
 import {Editor} from "../../../src/tools/editor/editor.js";
+import {MobileDOM} from "../../../src/engine/cameras.js";
 
 /**
  * @name forestOfHollowBloodStartSceen
@@ -46,17 +47,22 @@ import {Editor} from "../../../src/tools/editor/editor.js";
 LS.clear();
 SS.clear();
 
+// {w: window.visualViewport.width, h: window.visualViewport.height }
 let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
+  fastRender: isMobile() == true ? 0.85 : 0.95,
   dontUsePhysics: true,
-  // useEditor: true,
-  useSingleRenderPass: true,
-  canvasSize: 'fullscreen', // {w: window.visualViewport.width, h: window.visualViewport.height }
+  canvasSize: 'fullscreen',
+  MAX_BONES: 100,
+  MAX_SPOTLIGHTS: isMobile() ? 2 : 2,
+  lock: 'portrait', //'landscape',
   mainCameraParams: {
-    type: 'WASD',
+    type: 'cinematicCamera',
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0.1, g: 0.1, a: 1}
 }, (forestOfHollowBloodStartSceen) => {
+
+  MobileDOM.destroyWASD()
 
   if('serviceWorker' in navigator) {
     if(location.hostname.indexOf('localhost') == -1) {
@@ -136,15 +142,15 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       name = 'mariasword';
     } else if(selectHeroIndex == 1) {
       name = 'slayzer';
+    } else if(selectHeroIndex == 100) {
+      name = 'steelborn';// disabled - not optimismed 3d obj
+    } else if(selectHeroIndex == 100) {
+      name = 'warrok'; // disabled - not optimismed 3d obj
     } else if(selectHeroIndex == 2) {
-      name = 'steelborn';
-    } else if(selectHeroIndex == 3) {
-      name = 'warrok';
-    } else if(selectHeroIndex == 4) {
       name = 'skeletonz';
-    } else if(selectHeroIndex == 5) {
-      name = 'erika';
-    } else if(selectHeroIndex == 6) {
+    } else if(selectHeroIndex == 100) {
+      name = 'erika';// disabled - not optimismed 3d obj
+    } else if(selectHeroIndex == 3) {
       name = 'arissa';
     }
     return name;
@@ -248,6 +254,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         mesh: heros[app.selectedHero].meshName,
         hero: heros[app.selectedHero].name,
         path: heros[app.selectedHero].path,
+        pathMobile: heros[app.selectedHero].pathMobile,
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
@@ -259,6 +266,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         mesh: heros[app.selectedHero].meshName,
         hero: heros[app.selectedHero].name,
         path: heros[app.selectedHero].path,
+        pathMobile: heros[app.selectedHero].pathMobile,
         archetypes: [heros[app.selectedHero].type],
         team: byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'),
         data: Date.now(),
@@ -270,7 +278,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         type: 'start'
       })
 
-      location.assign('rpg-game.html');
+      location.assign('moba-game.html');
     }, 1000);
   }
 
@@ -482,22 +490,21 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
   })
 
-  // addEventListener('PhysicsReady', async () => {
-  // catch
   if(typeof app.label == 'undefined' || typeof app.label.get == 'undefined' || typeof app.label.get.mariasword == 'undefined') {
     if(typeof app.label == 'undefined') app.label = {get: {}};
     app.label.get = en;
   }
 
   app.matrixSounds.play('music');
+
   heros = [
-    {type: "Warrior", name: 'MariaSword', path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
-    {type: "Ranger", name: 'Slayzer', path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
-    {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
-    {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
-    {type: "Necromancer", name: 'Skeletonz', path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
-    {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
-    {type: "Support", name: 'Arissa', path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
+    {type: "Warrior", name: 'MariaSword', pathMobile: "res/meshes/glb/woman-mobile.glb", path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
+    {type: "Ranger", name: 'Slayzer',  pathMobile: "res/meshes/glb/monster.glb",  path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
+    // {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
+    // {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
+    {type: "Necromancer", name: 'Skeletonz', pathMobile: "res/meshes/glb/skeletonz.glb", path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
+    // {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
+    {type: "Support", name: 'Arissa', pathMobile: "res/meshes/glb/arissa.glb",  path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
   ];
 
   forestOfHollowBloodStartSceen.heros = heros;
@@ -528,9 +535,22 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
 
     setTimeout(() => {
-      forestOfHollowBloodStartSceen.cameras.WASD.setPosition(0, 14, 52);
-      app.cameras.WASD.pitch = -0.13;
-      app.cameras.WASD.yaw = 0;
+      let cam = app.getCamera();
+      const introPath = new CameraPath([
+        {position: [0, 15, -30], target: [0, 0, 0]},
+        {position: [13, 17, 10], target: [0, 10, 0]},
+        {position: [0, 19, 42], target: [0, 14, 0]},
+      ], {parameterization: 'arc'});
+      cam.setPath(introPath).play({
+        speed: 0.3,
+        onEnd: () => {},
+      });
+
+      forestOfHollowBloodStartSceen.buildRenderBuckets(forestOfHollowBloodStartSceen.mainRenderBundle);
+      cam._dirtyAngle = true;
+      cam.setPosition(0, 14, 52);
+      cam.setPitch(-0.13);
+      cam.setYaw(0);
       app.mainRenderBundle.forEach((sceneObj) => {
         sceneObj.position.thrust = 1;
         if(sceneObj.effects) if(sceneObj.effects.flameEmitter) sceneObj.effects.flameEmitter.recreateVertexDataRND(1);
@@ -540,41 +560,61 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         let hero0 = app.mainRenderBundle.filter((obj) => obj.name.indexOf(heros[x].name) != -1)
         app.heroByBody.push(hero0);
         heros[x].meshName = hero0[0].name;
+
+        hero0[0].playAnimationByIndex(2);
+
         if(x == 0) {
           hero0[0].effects.circlePlane.instanceTargets[0].color = [1, 0, 2, 1];
+          // hero0[1].playAnimationByIndex(2);
         }
-        hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+
+        if (hero0.length == 2) {
+          hero0[1].playAnimationByIndex(2);
+        } 
+
+        if(hero0[0].effects.flameEmitter) hero0[0].effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 1, 0, 0.7];
         })
 
         if(x == 2) {
           hero0.forEach((p, i, array) => {
-            array[i].globalAmbient = [11, 11, 1];
+            array[i].setAmbient(11, 11, 1);
           })
         }
         if(x == 3 || x == 5) {
           hero0.forEach((p, i, array) => {
-            array[i].globalAmbient = [10, 10, 10];
-            array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
+            array[i].setAmbient(10, 10, 10);
+            // array[i].effects.flameEmitter.smoothFlickeringScale = 0.005;
           })
         }
         if(x == 6) {
           hero0.forEach((p, i, array) => {
-            array[i].globalAmbient = [21, 11, 11];
+            array[i].setAmbient(21, 11, 11);
           })
         }
       }
-    }, 4000);
+    }, isMobile() == true ? 2000 : 1000);
   }
   loadHeros();
   createHUDMenu();
 
   forestOfHollowBloodStartSceen.addLight();
+
   app.lightContainer[0].setPosition(0, 50, 1);
   app.lightContainer[0].setTarget(0, 0, -10);
-  app.lightContainer[0].setIntensity(40);
+
   app.activateBloomEffect();
-  app.bloomPass.setBlurRadius(3);
+
+  if(isMobile() == true) {
+    app.lightContainer[0].setIntensity(40);
+    app.bloomPass.setBlurRadius(3);
+  } else {
+    app.lightContainer[0].setIntensity(40);
+    app.bloomPass.setBlurRadius(1);
+  }
+
+
+
 
   function createHUDMenu() {
     // forestOfHollowBloodStartSceen.animatedCursor = new AnimatedCursor({
@@ -596,6 +636,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       position: "fixed",
       bottom: "0",
       left: "0",
+      opacity: "0.9",
       width: "100%",
       height: "35%",
       backgroundColor: "rgba(60, 60, 60, 1)",
@@ -613,6 +654,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     const nextBtn = document.createElement("button");
     Object.assign(nextBtn.style, {
       // position: "absolute",
+      marginTop: isMobile() ? "-100px" : "0",
       width: "80px",
       textAlign: "center",
       color: "white",
@@ -681,6 +723,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
     const previusBtn = document.createElement("button");
     Object.assign(previusBtn.style, {
+      marginTop: isMobile() ? "-100px" : "0",
       width: "80px",
       textAlign: "center",
       color: "white",
@@ -752,10 +795,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     }
 
     const startBtn = document.createElement("button");
+    startBtn.id = 'startBtn';
     Object.assign(startBtn.style, {
       position: "fixed",
-      bottom: '40px',
-      right: '120px',
+      bottom: isMobile() == true ? "34%" : '40px',
+      right: isMobile() == true ? "16%" : '120px',
+      opacity: isMobile() == true ? "0.8" : '1',
       width: "250px",
       height: "54px",
       textAlign: "center",
@@ -814,14 +859,26 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
     var helpBox = document.createElement('div')
     helpBox.id = 'helpBox';
-    helpBox.style.position = 'fixed';
-    helpBox.style.right = '20%';
-    helpBox.style.display = 'none';
-    helpBox.style.zIndex = '2';
-    helpBox.style.top = '15%';
-    helpBox.style.width = '60%';
-    helpBox.style.height = '50%';
-    helpBox.style.fontSize = '100%';
+    if(isMobile()) {
+      helpBox.style.position = 'fixed';
+      helpBox.style.right = '0%';
+      helpBox.style.display = 'none';
+      helpBox.style.zIndex = '2';
+      helpBox.style.top = '0%';
+      helpBox.style.width = '89%';
+      helpBox.style.height = '100%';
+      helpBox.style.fontSize = '100%';
+    } else {
+      helpBox.style.position = 'fixed';
+      helpBox.style.right = '20%';
+      helpBox.style.display = 'none';
+      helpBox.style.zIndex = '2';
+      helpBox.style.top = '15%';
+      helpBox.style.width = '60%';
+      helpBox.style.height = '50%';
+      helpBox.style.fontSize = '100%';
+    }
+
     helpBox.classList.add('btn');
     helpBox.addEventListener('click', () => {
       byId('helpBox').style.display = 'none';
@@ -833,8 +890,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       position: "fixed",
       bottom: '40px',
       left: '20px',
-      width: "150px",
-      height: "54px",
+      width: isMobile() == true ? "50px" : "72px",
+      height: "25px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -847,41 +904,28 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     });
     aboutBtn.classList.add('buttonMatrix');
 
-    aboutBtn.innerHTML = `
+    if(isMobile() == false) {
+      aboutBtn.innerHTML = `
       <div class="button-outer">
         <div class="button-inner">
           <span data-label='aboutword'>${app.label.get.about_}</span>
         </div>
       </div>
     `;
+    } else { // 
+      aboutBtn.innerHTML = `
+      <div class="button-outer">
+        <div class="button-inner">
+          <span>ℹ️</span>
+        </div>
+      </div>
+    `;
+    }
+
     aboutBtn.addEventListener('click', (e) => app.showAbout());
     hud.appendChild(aboutBtn);
 
     const LBBtn = document.createElement("button");
-    Object.assign(LBBtn.style, {
-      position: "fixed",
-      bottom: '220px',
-      left: '20px',
-      width: "140px",
-      height: "28px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    // LBBtn.classList.add('buttonMatrix');
-    // LBBtn.innerHTML = `
-    //   <div class="button-outer">
-    //     <div class="button-inner">
-    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-    //     </div>
-    //   </div>
-    // `;
 
     LBBtn.innerHTML = `
           <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
@@ -899,50 +943,115 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       }
     });
 
-    Object.assign(sendMsgInput.style, {
-      position: "fixed",
-      bottom: '282px',
-      left: '20px',
-      width: "134px",
-      height: "17px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      // textShadow: "0 0 2px black",
-      color: 'black',
-      // background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
     hud.appendChild(sendMsgInput);
-
     const sendMsgBtn = document.createElement("button");
-    Object.assign(sendMsgBtn.style, {
-      position: "fixed",
-      bottom: '253px',
-      left: '20px',
-      width: "140px",
-      height: "28px",
-      textAlign: "center",
-      color: "white",
-      fontWeight: "bold",
-      textShadow: "0 0 2px black",
-      color: '#ffffffff',
-      background: '#000000ff',
-      fontSize: '16px',
-      cursor: 'url(./res/icons/default.png) 0 0, auto',
-      pointerEvents: 'auto'
-    });
-    // sendMsgBtn.classList.add('buttonMatrix');
-    // sendMsgBtn.innerHTML = `
-    //   <div class="button-outer">
-    //     <div class="button-inner">
-    //       <span data-label='leaderboard'>${app.label.get.leaderboard}</span>
-    //     </div>
-    //   </div>
-    // `;
-    sendMsgBtn.innerHTML = `<span data-label='leaderboard'>${app.label.get.sendmsg}</span>    `;
+
+    // suntetise later
+    if(isMobile() == true) {
+      Object.assign(LBBtn.style, {
+        position: "fixed",
+        top: '10%',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+
+      Object.assign(sendMsgInput.style, {
+        position: "fixed",
+        top: '3%',
+        opacity: 0.5,
+        left: '20px',
+        width: "134px",
+        height: "17px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        color: 'black',
+        // background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+
+      Object.assign(sendMsgBtn.style, {
+        position: "fixed",
+        top: '6.5%',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+    } else {
+
+      Object.assign(LBBtn.style, {
+        position: "fixed",
+        bottom: '220px',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+
+
+      Object.assign(sendMsgInput.style, {
+        position: "fixed",
+        bottom: '282px',
+        left: '20px',
+        width: "134px",
+        height: "17px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        color: 'black',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+
+      Object.assign(sendMsgBtn.style, {
+        position: "fixed",
+        bottom: '253px',
+        left: '20px',
+        width: "140px",
+        height: "28px",
+        textAlign: "center",
+        color: "white",
+        fontWeight: "bold",
+        textShadow: "0 0 2px black",
+        color: '#ffffffff',
+        background: '#000000ff',
+        fontSize: '16px',
+        cursor: 'url(./res/icons/default.png) 0 0, auto',
+        pointerEvents: 'auto'
+      });
+    }
+
+    sendMsgBtn.innerHTML = `<span data-label='sendmsg'>${app.label.get.sendmsg}</span>    `;
     sendMsgBtn.addEventListener('click', () => {
       sendMsgBtn.disabled = true;
       sendMsgBtn.style.color = 'gray';
@@ -1005,7 +1114,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         setTimeout(() => {
           loader.style.display = 'none';
           // loader.remove();
-        }, 250)
+        }, isMobile() ? 10000 : 1250)
       }
     }
 
@@ -1021,7 +1130,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     hud.appendChild(startBtn);
     document.body.appendChild(hud);
     updateDesc();
-
 
     document.querySelectorAll('.buttonMatrix').forEach(el => {
       el.addEventListener('mouseenter', () => {

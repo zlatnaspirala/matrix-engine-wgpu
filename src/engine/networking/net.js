@@ -148,6 +148,7 @@ export class MatrixStream {
       e.data = JSON.parse(e.data);
       try {
         if(e.data.netPos) {
+          // console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><<>" )
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
         } else if(e.data.netRotY || e.data.netRotY == 0) {
           app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;

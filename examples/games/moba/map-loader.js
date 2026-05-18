@@ -57,6 +57,7 @@ export class MEMapLoader {
     //https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=rock&type=models
     var glbFile01 = await fetch('./res/meshes/env/rocks/rock1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
+      shadowsCast: false,
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [14, 13, 14],
       position: {
@@ -75,6 +76,7 @@ export class MEMapLoader {
     // on engine level must be upgraded "add rotation for instanced objs... on meshObjInstanced class..."
     // FOr now i will use another scene obj but same loaded data - that ok
     this.core.addGlbObjInctance({
+      shadowsCast: false,
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [14, 13, 14],
       rotation: {x: 0, y: 90, z: 0},
@@ -105,6 +107,7 @@ export class MEMapLoader {
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [15, 15, 15],
+      shadowsCast: false,
       rotation: {x: 0, y: 90, z: 0},
       position: {
         x: creepPoints[app.player.data.team].finalPoint[0],
@@ -120,11 +123,12 @@ export class MEMapLoader {
       }
     }, null, glbFile02);
 
-    var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+    // var glbFile03 = await fetch('./res/meshes/env/rocks/home.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
       scale: [15, 15, 15],
       rotation: {x: 0, y: 90, z: 0},
+      shadowsCast: false,
       position: {
         x: creepPoints[getEnemyName__].finalPoint[0],
         y: creepPoints[getEnemyName__].finalPoint[1],
@@ -137,25 +141,29 @@ export class MEMapLoader {
         enabled: true,
         energyBar: true,
       }
-    }, null, glbFile03);
+    }, null, glbFile02);
 
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks1') != -1);
       this.collectionOfRocks.forEach((item) => {
-        item.globalAmbient = [10, 10, 10];
+        item.setAmbient(10, 10, 10);
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       });
       this.collectionOfRocks2 = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks2') != -1);
       this.collectionOfRocks2.forEach((item) => {
-        item.globalAmbient = [10, 10, 10];
+        item.setAmbient(10, 10, 10);
         // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       })
       this.addInstancingRock();
 
+      this.collectionOfRocks.forEach(rock => {
+        console.log('rock done:', rock.done, 'pipeline:', !!rock.pipeline, 'instanceCount:', rock.instanceCount);
+      });
+
       // trons 
       app.enemytron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('enemytron') != -1)[0];
       app.tron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('friendlytron') != -1)[0];
-      app.tron.globalAmbient = [2, 2, 2];
+      app.tron.setAmbient(2, 2, 2);
 
       // no need to extend whole Hero class 
       // Fiktive
@@ -206,9 +214,9 @@ export class MEMapLoader {
         app.enemytron.effects.circle.instanceTargets[1].position = [0, 6, 0];
         app.enemytron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
         app.enemytron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
-      }, 1000);
+      }, 500);
 
-    }, 6500);
+    }, 7500);
 
     this.core.lightContainer[0].setPosY(175);
     this.core.lightContainer[0].setIntensity(1);
@@ -254,7 +262,7 @@ export class MEMapLoader {
   async loadMainMap() {
     downloadMeshes({
       cube: "./res/meshes/maps-objs/map-1.obj",
-      tower: "./res/meshes/env/tower.obj"
+      // tower: "./res/meshes/env/tower.obj"
     }, this.onGround.bind(this), {scale: [10, 10, 10]});
 
     var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
@@ -271,8 +279,13 @@ export class MEMapLoader {
     }, null, glbFile01);
     setTimeout(() => {
       this.collectionOfTree1 = this.core.mainRenderBundle.filter((o => o.name.indexOf('tree') != -1));
+      if(this.collectionOfTree1.length == 0) {
+        console.log('BAD NOT TREE YET, try again bad')
+        setTimeout(() => {this.addInstancing()}, 2000);
+        return;
+      }
       this.addInstancing();
-    }, 4000);
+    }, 6000);
   }
 
   addInstancing() {
@@ -286,7 +299,8 @@ export class MEMapLoader {
 
     this.collectionOfTree1.forEach((partOftree) => {
 
-      partOftree.globalAmbient = [randomIntFromTo(5, 15), randomIntFromTo(5, 15), randomIntFromTo(5, 15)];
+      partOftree.sharedBones = true;
+      partOftree.setAmbient(randomIntFromTo(5, 15), randomIntFromTo(5, 15), randomIntFromTo(5, 15));
 
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
@@ -319,8 +333,11 @@ export class MEMapLoader {
   addInstancingRock() {
     const NUM = 16;
     this.collectionOfRocks.forEach((rock) => {
+      rock.sharedBones = true;
       rock.updateMaxInstances(NUM);
       rock.updateInstances(NUM);
+
+      console.log("TEST rock ", rock)
       for(var x = 0;x < NUM;x++) {
         let instance;
         if(x == 0) {
@@ -348,7 +365,7 @@ export class MEMapLoader {
     });
 
 
-    const NUM2 = 16;
+    const NUM2 = 10;
     this.collectionOfRocks2.forEach((rock) => {
       rock.updateMaxInstances(NUM2);
       rock.updateInstances(NUM2);

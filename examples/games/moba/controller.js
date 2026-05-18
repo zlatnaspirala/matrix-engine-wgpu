@@ -1,6 +1,6 @@
 import {addRaycastsAABBListener, computeWorldVertsAndAABB, touchCoordinate, rayIntersectsAABB, rayIntersectsSphere, getRayFromMouse2, getRayFromMouse, addRaycastsListener} from "../../../src/engine/raycast.js";
 import {mat4, vec4} from "wgpu-matrix";
-import {byId, LOG_MATRIX, mb} from "../../../src/engine/utils.js";
+import {byId, isMobile, LOG_MATRIX, mb} from "../../../src/engine/utils.js";
 import {followPath} from "./nav-mesh.js";
 
 export class Controller {
@@ -10,11 +10,9 @@ export class Controller {
   nav = null;
   heroe_bodies = null;
 
-  // Must be same init !!!
+  // Must be same init !
   // incorporate with automated 'close-distance'
   distanceForAction = 36;
-  distanceForLongAction = 36;
-
   distanceForLongAction = 36;
 
   constructor(core) {
@@ -24,12 +22,12 @@ export class Controller {
     this.dragEnd = null;
     this.selecting = false;
 
-    this.onMouseTargetEvent = new CustomEvent(`onMouseTarget`, 
-      { detail: {type: 'normal', x: 0, y: 0, z: 0}}
+    this.onMouseTargetEvent = new CustomEvent(`onMouseTarget`,
+      {detail: {type: 'normal', x: 0, y: 0, z: 0}}
     );
     this.navigateFriendlyCreepsEvent = new CustomEvent('navigate-friendly_creeps', {detail: 'test'});
     this.setWalkEvent = new CustomEvent('set-walk');
-    this.onSelectCharacterEvent = new CustomEvent("onSelectCharacter", {detail: 'floor'});
+    this.onSelectCharacterEvent = new CustomEvent("onSelectCharacter", {detail: {data: 'floor'}});
 
     this.canvas.addEventListener('mousedown', (e) => {
       if(e.button === 2) { // right m
@@ -83,6 +81,15 @@ export class Controller {
           dispatchEvent(this.navigateFriendlyCreepsEvent);
         }
         // must be friendly objs
+
+        // oNLY MOB
+        if(isMobile() == true) {
+          this.selected.push(e.detail.hitObject);
+          this.onSelectCharacterEvent.detail.data = e.detail.hitObject.name;
+          byId('hud-menu').dispatchEvent(this.onSelectCharacterEvent);
+        }
+
+
         return;
       }
       if(button == 0 && e.detail.hitObject.name != 'ground' &&
@@ -237,7 +244,7 @@ export class Controller {
         // deplaced
         // object.setSelectedEffect(true);
         this.selected.push(object);
-        this.onSelectCharacterEvent.detail = object.name;
+        this.onSelectCharacterEvent.detail.data = object.name;
         byId('hud-menu').dispatchEvent(this.onSelectCharacterEvent);
       } else {
         if(this.selected.indexOf(object) !== -1) {
