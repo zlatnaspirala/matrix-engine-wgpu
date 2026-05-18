@@ -25,7 +25,7 @@ export var loadKale = function() {
     ray.addLight();
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
-      onLoadObj, {scale: [1, 1, 1]})
+      onLoadObj, {scale: [-1, -1, -1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
 
     addRaycastsAABBListener('canvas1', 'click');
@@ -69,14 +69,14 @@ export var loadKale = function() {
         position: {x: -10, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [3, 5, 1],
+        scale: [3, 7, 3],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
         envMapParams: {
           baseColorMix: 0.1,                // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.75,               // 25% reflection blend
+          reflectivity: 0.45,               // 25% reflection blend
           illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
           illuminateStrength: 1.5,          // Gentle rim
           illuminatePulse: 0.1,             // No pulse (static)
@@ -92,7 +92,7 @@ export var loadKale = function() {
         },
         pointerEffect: {
           enabled: true,
-          flameEmitter: true
+          // flameEmitter: true
           // flameEffect: true
         }
       });
@@ -102,10 +102,44 @@ export var loadKale = function() {
         position: {x: 10, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [3, 5, 1],
+        scale: [3, 7, 3],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
+        raycast: {enabled: true, radius: 1},
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        envMapParams: {
+          baseColorMix: 0.1,                // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+          reflectivity: 0.45,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 1.5,          // Gentle rim
+          illuminatePulse: 0.1,             // No pulse (static)
+          fresnelPower: 5,                  // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false,       // ✅ Env map mode
+        },
+        pointerEffect: {
+          enabled: true,
+          // flameEmitter: true
+          // flameEffect: true
+        }
+      });
+
+      let MYBALL = ray.addMeshObj({
+        material: {type: 'mirror'},
+        position: {x: 0, y: 5, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 1, z: 0},
+        scale: [4, 4, 4],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'ball',
+        mesh: m.ball,
+        raycast: {enabled: true, radius: 1},
         envMapParams: {
           baseColorMix: 0.1,                // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
@@ -117,29 +151,6 @@ export var loadKale = function() {
           envLodBias: 1.5,
           usePlanarReflection: false,       // ✅ Env map mode
         },
-        raycast: {enabled: true, radius: 1},
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
-          // flameEffect: true
-        }
-      });
-
-      let MYBALL = ray.addMeshObj({
-        material: {type: 'dark'},
-        position: {x: 0, y: 5, z: -5},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [2, 3, 2],
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'ball',
-        mesh: m.ball,
-        raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,
           mass: 0,
@@ -162,34 +173,34 @@ export var loadKale = function() {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       })
-      ray.lightContainer[0].setPosition(0, 20, -10);
+      ray.lightContainer[0].setPosition(0, 45, -10);
       ray.lightContainer[0].setTarget(0, 0, -10);
       // }
 
       setTimeout(() => {
 
-        MYCUBE.effects.keffect = new KaleidoscopeEffect(ray.device, 'rgba16float', 'rgba16float', KaleidoscopePresets.deep)
+        // MYCUBE.effects.keffect = new KaleidoscopeEffect(ray.device, 'rgba16float', 'rgba16float', KaleidoscopePresets.classic)
 
-        MYBALL.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 20)
+        // MYCUBE.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10)
+        // MYCUBE2.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10)
+        MYBALL.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 30)
 
         // Just for console manipulation test
-        app.MYCUBE = MYCUBE;
-
-
+        app.MYBALL = MYBALL;
 
         // How to make object invisible (no shadow also) but leave effects alone in visible field.
-        app.MYCUBE.setBlend(0);
-        app.MYCUBE.shadowsCast = false;
-        app.buildLightShadowBuckets();
+        // app.MYCUBE.setBlend(0);
+        // app.MYCUBE.shadowsCast = false;
+        // app.buildLightShadowBuckets();
 
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
-        MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-          0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+        // MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        // MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+        //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
+        //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
         MYCUBE.setAmbient(2, 3, 0.5);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
@@ -216,18 +227,25 @@ export var loadKale = function() {
     ray.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
-        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
         app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
+
+        if(app.volumetricPass.enabled == false) app.activateVolumetricEffect()
+        // e.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(5);
+        // e.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(1, 200));
+
+        e.detail.hitObject.setupMaterialPBR([randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)],
+          [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)])
       }
 
       else if(e.detail.hitObject.name.startsWith('ball')) {
         // e.detail.hitObject.effects.keeffect.recreateVertexDataRND(10);
-        e.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(13);
+        e.detail.hitObject.setupMaterialPBR([randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)],
+          [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)])
+        e.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
         e.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(0, 15))
+        app.bloomPass.setBlurRadius(randomIntFromTo(0, 45))
       }
 
 

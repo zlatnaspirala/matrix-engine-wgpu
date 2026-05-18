@@ -7,11 +7,15 @@
  * code. You will need only to change this number
  * increment 1 for example old 1 replace with `2` 
  * for `cacheVersion`.
+ * 
+ * From socound refresh new update will come in right pass(load from worker)
+ * For DEV regime (when debugger is opened) use CTRL+F5
  * @param cacheVersion
  */
-var cacheVersion = 25;
-var prefix = 'matrix-engine-fohb';
-// var prefix = 'matrix-engine-examples';
+
+var cacheVersion = 29;
+var prefixMOBA = 'matrix-engine-fohb';
+var prefix = 'matrix-engine-examples';
 var cacheName = prefix + cacheVersion;
 
 try {
@@ -24,6 +28,21 @@ try {
     caches.delete(oldCacheName);
   }
 }
+
+catch(e) {}
+
+// both
+try {
+  for(var j = 0;j < cacheVersion;j++) {
+    var oldCacheName = prefixMOBA + j;
+    caches.delete(oldCacheName);
+  }
+  for(var j = 200;j > cacheVersion;j--) {
+    var oldCacheName = prefixMOBA + j;
+    caches.delete(oldCacheName);
+  }
+}
+
 catch(e) {}
 
 const offlineUrl = 'offline.html';
