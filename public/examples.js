@@ -26100,12 +26100,10 @@ const KaleidoscopePresets = exports.KaleidoscopePresets = {
   }
 };
 class KaleidoscopeEffect {
-  constructor(device, format, colorFormat, params = {}) {
+  constructor(device, format, shape = "quad", params = {}) {
     this.device = device;
     this.format = format;
-    this.colorFormat = colorFormat ?? format;
-
-    // Parse params (string = preset name, object = config)
+    this.colorFormat = format;
     const config = typeof params === 'string' ? KaleidoscopePresets[params] : params;
     const defaults = KaleidoscopePresets.classic;
     this.intensity = config.intensity ?? defaults.intensity;
