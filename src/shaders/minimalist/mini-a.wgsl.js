@@ -70,8 +70,13 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
     // ===== TEXTURE =====
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
@@ -90,6 +95,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         discard;
     }
 
-    return vec4f(finalColor, alpha);
+    // return vec4f(finalColor, alpha);
+
+    return FragOut(
+      vec4f(finalColor, alpha),
+      vec4f(input.fragNorm, 0.0)
+    );
 }
 `;

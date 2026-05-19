@@ -34,8 +34,13 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);

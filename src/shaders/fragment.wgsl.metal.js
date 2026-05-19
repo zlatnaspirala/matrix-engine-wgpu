@@ -133,8 +133,13 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let materialData = getPBRMaterial(input.uv);
     
     // ✅ Early discard for fully transparent pixels

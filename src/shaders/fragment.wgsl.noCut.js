@@ -190,16 +190,16 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / weight;
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
-
     let materialData = getPBRMaterial(input.uv);
-    // if (materialData.alpha < 0.01) {
-    //     discard;
-    // }
-
     var lightContribution = vec3f(0.0);
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
         let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
@@ -207,10 +207,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
         let depthRef = p.z;
         let lightDir = normalize(spotlights[i].position - input.fragPos);
-        // let inFrustum =
-        //     p.z >= 0.0 && p.z <= 1.0 &&
-        //     p.x >= -1.0 && p.x <= 1.0 &&
-        //     p.y >= -1.0 && p.y <= 1.0;
         let inDepth = p.z >= 0.0 && p.z <= 1.0;
         let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
         let shadowFactor = select(1.0, visibility, inDepth);
@@ -235,5 +231,10 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // var finalColor = ambientTerm + texColor.rgb * lightContribution;
     var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
     let alpha = mix(materialData.alpha, 1.0 , 0.5); 
-    return vec4f(finalColor, alpha);
+    // return vec4f(finalColor, alpha);
+
+      return FragOut(
+        vec4f(finalColor, alpha),
+        vec4f(norm, 0.0)
+    );
 }`;

@@ -32,6 +32,7 @@ import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.
 import {nanoPass} from "./engine/overrides/nano-render.js";
 import {PhysicsBridge} from "./engine/physics/bridge.js";
 import {mobile1} from "./engine/overrides/mobile-1.js";
+import {patchMainRenderPassDesc, SSRPass} from "./engine/postprocessing/hzb.js";
 /**
  * @description
  * Main engine root class.
@@ -193,7 +194,7 @@ export default class MatrixEngineWGPU {
       }
     }, {passive: true});
 
-    if (isMobile()== true) preventZoom();
+    if(isMobile() == true) preventZoom();
 
     this.activateEditor = () => {
       if(this.editor == null || typeof this.editor === 'undefined') {
@@ -544,6 +545,10 @@ export default class MatrixEngineWGPU {
       setThreshold: (v) => {},
     };
 
+    this.ssrPass = {
+      enabled: false,
+    };
+
     this.volumetricPass = {enabled: false};
 
     this.bloomOutputTex = this.device.createTexture({
@@ -575,6 +580,8 @@ export default class MatrixEngineWGPU {
 
     this.postProcessInputView = this.postProcessInputTex.createView();
 
+    // this.presentPipeline = this.device.createRenderPipeline({
+
     this.presentPipeline = this.device.createRenderPipeline({
       label: "final pipeline",
       layout: 'auto',
@@ -585,22 +592,51 @@ export default class MatrixEngineWGPU {
       fragment: {
         module: this.device.createShaderModule({
           code: `
-        @group(0) @binding(0) var hdrTex : texture_2d<f32>;
-        @group(0) @binding(1) var samp : sampler;
+        @group(0) @binding(0) var hdrTex  : texture_2d<f32>;
+        @group(0) @binding(1) var samp    : sampler;
+        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;  // NEW
+
         @fragment
         fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
-          let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
-          let hdr = textureSample(hdrTex, samp, uv).rgb;
-          // simple tonemap
-          let ldr = hdr / (hdr + vec3(1.0));
-          return vec4<f32>(ldr, 1.0);
+            let uv  = pos.xy / vec2<f32>(textureDimensions(hdrTex));
+            let hdr = textureSample(hdrTex, samp, uv).rgb;
+            let ssr = textureSample(ssrTex, samp, uv);          // NEW
+
+            let composited = mix(hdr, ssr.rgb, ssr.a);           // NEW
+            let ldr = composited / (composited + vec3(1.0));
+            return vec4<f32>(ldr, 1.0);
         }
       `
         }),
         entryPoint: 'main',
-        targets: [{format: isMobile() == true ? 'rgba8unorm' : 'bgra8unorm'}], // rgba16float  bgra8unorm rgba8unorm
+        targets: [{format: isMobile() == true ? 'rgba8unorm' : 'bgra8unorm'}],
       },
     });
+    //   label: "final pipeline",
+    //   layout: 'auto',
+    //   vertex: {
+    //     module: this.device.createShaderModule({code: fullscreenQuadWGSL()}),
+    //     entryPoint: 'vert',
+    //   },
+    //   fragment: {
+    //     module: this.device.createShaderModule({
+    //       code: `
+    //     @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+    //     @group(0) @binding(1) var samp : sampler;
+    //     @fragment
+    //     fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
+    //       let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
+    //       let hdr = textureSample(hdrTex, samp, uv).rgb;
+    //       // simple tonemap
+    //       let ldr = hdr / (hdr + vec3(1.0));
+    //       return vec4<f32>(ldr, 1.0);
+    //     }
+    //   `
+    //     }),
+    //     entryPoint: 'main',
+    //     targets: [{format: isMobile() == true ? 'rgba8unorm' : 'bgra8unorm'}], // rgba16float  bgra8unorm rgba8unorm
+    //   },
+    // });
 
     this.createBloomBindGroup();
     // global
@@ -663,6 +699,16 @@ export default class MatrixEngineWGPU {
     });
 
     this.mainDepthView = this.mainDepthTexture.createView();
+
+    // Dummy for initial attacment[1]
+    this.normalTexture = this.device.createTexture({
+      label: 'GBuffer normals',
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
+    this.normalTextureView = this.normalTexture.createView();
+
     this.mainRenderPassDesc = {
       label: 'mainRenderPassDesc',
       colorAttachments: [{
@@ -670,7 +716,13 @@ export default class MatrixEngineWGPU {
         loadOp: 'clear',
         storeOp: 'store',
         clearValue: [0.0, 0.0, 0.0, 1],
-      }],
+      },
+      {
+        view: this.normalTextureView,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [0.0, 0.0, 0.0, 0],
+      },],
       depthStencilAttachment: {
         view: this.mainDepthView,
         depthLoadOp: 'clear',
@@ -1261,6 +1313,16 @@ export default class MatrixEngineWGPU {
 
       pass.end();
 
+
+      // test 
+      if(this.ssrPass.enabled == true) this.ssrPass.render(commandEncoder, {
+        sceneTextureView: this.sceneTextureView,
+        normalTextureView: this.normalTextureView,
+        mainDepthView: this.mainDepthView,
+        mainDepthTexture: this.mainDepthTexture,
+      });
+
+
       if(this.volumetricPass.enabled === true) {
         mat4.invert(camera.VP, this._invViewProj);
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
@@ -1501,6 +1563,26 @@ export default class MatrixEngineWGPU {
       this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, this.sceneTextureView, 1.5);
       this.bloomPass.enabled = true;
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+    }
+  }
+
+  activateHZB = () => {
+    if(this.ssrPass.enabled != true) {
+      this.ssrPass = new SSRPass(this.device, this.canvas.width, this.canvas.height, this.globalSceneUniformBuffer);
+      this.ssrPass.enabled = true;
+
+      const {normalTexture, normalTextureView} = patchMainRenderPassDesc(
+        this.device, this.canvas.width, this.canvas.height, this.mainRenderPassDesc
+      );
+      this.normalTexture = normalTexture;
+      this.normalTextureView = normalTextureView;
+
+      // Rebuild all mesh pipelines with 2 targets
+      PipelineManager.invalidateAll();
+      for(const mesh of this.mainRenderBundle) {
+        mesh.setupPipeline();
+      }
+
     }
   }
 

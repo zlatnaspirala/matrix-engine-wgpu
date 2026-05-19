@@ -157,8 +157,10 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
   return PBRMaterialData(baseColor, metallic, roughness);
 }
 
+struct FragOut {@location(0) color : vec4f,@location(1) normal : vec4f,}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
   let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
   let viewDir = normalize(scene.cameraPos - input.fragPos);
   let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);

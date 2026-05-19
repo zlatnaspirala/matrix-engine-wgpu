@@ -816,9 +816,8 @@ export default class MEMeshObj extends Materials {
           module: fragmentModule,
           constants: fragmentConstants,
           targets: [
-            {
-              format: 'rgba16float',
-            },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'},
           ],
         },
         depthStencil: {
@@ -860,6 +859,7 @@ export default class MEMeshObj extends Materials {
                 },
               },
             },
+            {format: 'rgba16float'},
           ],
         },
         depthStencil: {

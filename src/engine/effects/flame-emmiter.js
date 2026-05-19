@@ -164,7 +164,8 @@ export class FlameEmitter {
             },
 
           }
-        }]
+        },
+        {format: this.format}]
       },
       primitive: {topology: "triangle-list"},
       depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}

@@ -179,22 +179,23 @@ fn calculatePBRLighting(materialData: PBRMaterialData, N: vec3f, V: vec3f, fragP
     return Lo;
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let materialData = getPBRMaterial(input.uv);
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
-    
     let resolution = vec2f(1080.0, 687.0);
-    
     var finalColor = vec3f(0.0);
-    
     if (material.lightingEnabled > 0.5) {
         // Lighting enabled - calculate PBR
         let Lo = calculatePBRLighting(materialData, N, V, input.fragPos);
         let ambient = scene.globalAmbient * materialData.baseColor;
         let litColor = ambient + Lo;
-        
         if (material.effectMix > 0.01) {
             // Blend with effect
             let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
@@ -204,12 +205,14 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
             finalColor = litColor;
         }
     } else {
-        // Pure effect mode
         let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
-        // Modulate slightly by material color
         finalColor = effectColor * mix(vec3f(1.0), materialData.baseColor, 0.2);
     }
-    
-    return vec4f(finalColor, 1.0);
+
+    // return vec4f(finalColor, 1.0);
+    return FragOut(
+      vec4f(finalColor, materialData.alpha),
+      vec4f(N, 0.0)
+    );
 }
 `;

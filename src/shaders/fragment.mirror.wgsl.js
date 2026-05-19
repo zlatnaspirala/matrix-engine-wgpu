@@ -246,8 +246,13 @@ fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
     return vec2f(u, v);
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let N = normalize(input.fragNorm);
     let V = normalize(scene.cameraPos - input.fragPos);
 
@@ -297,6 +302,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
     finalColor += illuminate;
     let alpha = mix(materialData.alpha, 1.0, 0.5);
-    return vec4f(finalColor, alpha);
+
+    // return vec4f(finalColor, alpha);
+      return FragOut(
+        vec4f(finalColor, alpha),
+        vec4f(N, 0.0)
+    );
 }
 `;

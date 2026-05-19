@@ -157,9 +157,13 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 
-// ---------------- Fragment ----------------
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
     let materialData = getPBRMaterial(input.uv);
@@ -192,6 +196,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
 
-    return vec4f(finalColor, materialData.alpha);
+    // return vec4f(finalColor, materialData.alpha);
+
+    return FragOut(
+      vec4f(finalColor, materialData.alpha),
+      vec4f(norm, 0.0)
+    );
 }
 `;

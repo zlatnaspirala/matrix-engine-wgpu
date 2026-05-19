@@ -191,8 +191,13 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / weight;
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
 
@@ -238,5 +243,10 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
     // let alpha = mix(materialData.alpha, 1.0 , 0.5);
     let alpha = texColor.a * material.baseColorFactor.a;
     // let alpha = material.baseColorFactor.a;
-    return vec4f(finalColor, alpha);
+    
+    // return vec4f(finalColor, alpha);
+      return FragOut(
+        vec4f(finalColor, alpha),
+        vec4f(norm, 0.0)
+    );
 }`;

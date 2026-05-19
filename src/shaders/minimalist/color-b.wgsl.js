@@ -64,8 +64,18 @@ struct FragmentInput {
         @location(3) fragUV    : vec2f,  // need UV
 };
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
 let uv = fract(input.fragUV);
     // distance to nearest edge 0 or 1
@@ -140,7 +150,7 @@ let uv = fract(input.fragUV);
 // };
 
 // @fragment
-// fn main(input: FragmentInput) -> @location(0) vec4f {
+// fn main(input: FragmentInput) -> FragOut {
 
 //     let N = normalize(input.fragNorm);
 //     let V = normalize(scene.cameraPos - input.fragPos);
