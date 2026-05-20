@@ -45,28 +45,28 @@ export var loadObjFile = function() {
     }
 
     async function onLoadObj(m) {
-      // loadObjFile.addMeshObj({
-      //   material: {type: 'standard', share: true},
-      //   position: {x: 0, y: -1, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [100, 100, 100],
-      //   rotationSpeed: {x: 0, y: 0.1, z: 0},
-      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-      //   name: 'sky',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   }
-      // });
+      loadObjFile.addMeshObj({
+        material: {type: 'standard', share: true},
+        position: {x: 0, y: -1, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [100, 100, 100],
+        rotationSpeed: {x: 0, y: 0.1, z: 0},
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'sky',
+        mesh: m.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
 
       // share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 0, z: -10},
+        position: {x: 0, y: 1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [3, 5, 1],
+        scale: [6, 6, 6],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
@@ -94,7 +94,41 @@ export var loadObjFile = function() {
         }
       })
 
-      loadObjFile.lightContainer[0].setIntensity(5);
+
+      let MYCUBE2 = loadObjFile.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 10, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [2, 2,2],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'cube',
+        mesh: m.cube,
+        envMapParams: {
+          baseColorMix: 0.1,                // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+          reflectivity: 0.75,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 1.5,          // Gentle rim
+          illuminatePulse: 0.1,             // No pulse (static)
+          fresnelPower: 5,                  // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false,       // ✅ Env map mode
+        },
+        raycast: {enabled: true, radius: 1},
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          // flameEmitter: true
+          // flameEffect: true
+        }
+      })
+
+      loadObjFile.lightContainer[0].setIntensity(4);
 
       // if(isMobile() == false) {
       loadObjFile.activateBloomEffect();
@@ -109,7 +143,7 @@ export var loadObjFile = function() {
       // }
 
       setTimeout(() => {
-        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         // // MYCUBE.effects.flameEmitter.setIntensity(100);
         // // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         // MYCUBE.effects.flameEmitter.rotSpeed = 1;
@@ -128,7 +162,7 @@ export var loadObjFile = function() {
     }
 
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
-       console.log('ray.hit.event detected');
+      console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
         // e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         // e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));

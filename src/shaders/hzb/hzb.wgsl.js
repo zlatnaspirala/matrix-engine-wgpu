@@ -182,7 +182,7 @@ fn fs2(in: VertOut) -> @location(0) vec4f {
     // This removes world-space scale dependencies
     let viewMatrix = scene.cameraViewProjMatrix; 
     
-    var rayPos     = worldPos + normal * 0.05; // Small, safe bias
+    var rayPos     = worldPos + normal * 0.001; // Small, safe bias
     var prevRayPos = rayPos;
     var stepSize   = 0.04; 
     var hit        = false;
@@ -253,9 +253,9 @@ fn fs(in: VertOut) -> @location(0) vec4f {
     let reflDir = reflect(viewDir, normal);
 
     // Interleave the ray steps using screen-space noise + running time
-    let jitter = hash(in.uv + vec2f(scene.time * 0.1));
+    // let jitter = hash(in.uv + vec2f(scene.time * 0.1));
     
-    // let jitter = hash(in.uv); 
+    let jitter = hash(in.uv); 
     
     var rayPos     = worldPos + normal * 0.05; 
     var prevRayPos = rayPos;
@@ -269,6 +269,7 @@ fn fs(in: VertOut) -> @location(0) vec4f {
         
         // Apply the subtle, stable jittering offset
         let currentStep = stepSize * (1.0 + jitter * 0.05);
+        // let currentStep = stepSize * (1.0 + jitter * 0.01);
         rayPos += reflDir * currentStep;
 
         let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
@@ -276,7 +277,10 @@ fn fs(in: VertOut) -> @location(0) vec4f {
         let ndc = clip.xyz / clip.w;
         
         let uv  = vec2f(ndc.x * 0.5 + 0.5, 1.0 - (ndc.y * 0.5 + 0.5));
-        if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+        // if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+        if (any(uv < vec2f(-0.05)) || any(uv > vec2f(1.05))) {
+    break;
+}
 
         if (i < minSteps) { continue; }
 
@@ -332,13 +336,56 @@ fn fs(in: VertOut) -> @location(0) vec4f {
             break;
         }
 
-        stepSize *= 1.015;
+         stepSize *= 1.015;
     }
 
     if (!hit) { return vec4f(0.0); }
 
-    let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
-    let confidence = edgeFade(hitUV);
+
+let texel = 1.0 / ssrCfg.resolution;
+
+let c0 = textureSampleLevel(sceneColor, linearSampler, hitUV, 0.0).rgb;
+
+let c1 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV + vec2f(texel.x, 0.0),
+    0.0
+).rgb;
+
+let c2 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV - vec2f(texel.x, 0.0),
+    0.0
+).rgb;
+
+let c3 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV + vec2f(0.0, texel.y),
+    0.0
+).rgb;
+
+let c4 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV - vec2f(0.0, texel.y),
+    0.0
+).rgb;
+
+let color = (c0 + c1 + c2 + c3 + c4) / 5.0;
+
+    // let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
+    var confidence = edgeFade(hitUV);
+
+//     let fresnel = pow(
+//     1.0 - max(dot(normal, -viewDir), 0.0),
+//     5.0
+// );
+
+//       confidence *= fresnel;
+
     return vec4f(color, confidence * 0.8);
 }
 `;
