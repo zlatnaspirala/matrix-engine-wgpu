@@ -1,16 +1,14 @@
 import {DEPTH_BLIT_WGSL, HZB_BUILD_WGSL, SSR_PASS_WGSL} from "../../shaders/hzb/hzb.wgsl";
 
 export class SSRPass {
-  constructor(device, width, height, globalSceneUniformBuffer) {
+  constructor(device, width, height, globalSceneUniformBuffer, mainDepthView) {
     this.device = device;
     this.width = width;
     this.height = height;
     // Cap mip count to prevent texture sizes dropping below 1x1 pixels
     this.mipCount = Math.floor(Math.log2(Math.max(width, height)));
     this.enabled = true;
-
     this._globalSceneUniformBuffer = globalSceneUniformBuffer;
-
     this.ssrOutputTexture = device.createTexture({
       label: 'SSR output',
       size: [width, height],
@@ -18,10 +16,23 @@ export class SSRPass {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
     this.ssrOutputView = this.ssrOutputTexture.createView();
-
+    this.depthBlitBindGroup = null;
     this._createHZB();
     this._createSSRConfig();
     this._createPipelines();
+    this._createHZBResources();
+    this._createDepthBlitBindGroup(mainDepthView);
+  }
+
+  _createDepthBlitBindGroup(depthView) {
+
+    this.depthBlitBindGroup =
+      this.device.createBindGroup({
+        layout: this.blitPipeline.getBindGroupLayout(0),
+        entries: [
+          {binding: 0, resource: depthView},
+          {binding: 1, resource: this.pointSampler}],
+      });
   }
 
   _createHZB() {
@@ -35,25 +46,65 @@ export class SSRPass {
         GPUTextureUsage.STORAGE_BINDING |
         GPUTextureUsage.RENDER_ATTACHMENT,
     });
-
-    // Write views: Only 1 mip level thick
     this.hzbMipWriteViews = Array.from({length: this.mipCount}, (_, i) =>
-      this.hzbTexture.createView({label: `HZB Write Mip ${i}`, baseMipLevel: i, mipLevelCount: 1})
+      this.hzbTexture.createView({
+        label: `HZB Mip ${i}`,
+        baseMipLevel: i,
+        mipLevelCount: 1
+      })
     );
-
-    // FIX: Force read views to be exactly 1 mip level thick as well!
-    // This guarantees to WebGPU that Read Mip (N) and Write Mip (N+1) have zero overlapping memory.
     this.hzbMipReadViews = Array.from({length: this.mipCount}, (_, i) =>
-      this.hzbTexture.createView({label: `HZB Read Mip ${i}`, baseMipLevel: i, mipLevelCount: 1})
+      this.hzbTexture.createView({
+        label: `HZB Read Mip ${i}`,
+        baseMipLevel: i,
+        mipLevelCount: 1
+      })
     );
-
-    // Full pyramid view for SSR pass sampling
     this.hzbFullView = this.hzbTexture.createView();
+    this.hzbMipBuffers = [];
+    this.hzbMipBindGroups = [];
+  }
 
-    this.hzbUniformBuffer = this.device.createBuffer({
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
+  _createHZBResources() {
+    for(let mip = 1;mip < this.mipCount;mip++) {
+
+      const dstW = Math.max(1, this.width >> mip);
+      const dstH = Math.max(1, this.height >> mip);
+
+      // Create ONCE
+      const buffer = this.device.createBuffer({
+        size: 16,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      this.device.queue.writeBuffer(
+        buffer,
+        0,
+        new Uint32Array([dstW, dstH, 0, 0])
+      );
+
+      const bindGroup = this.device.createBindGroup({
+        label: `HZB Build BG ${mip}`,
+        layout: this.hzbPipeline.getBindGroupLayout(0),
+        entries: [
+          {
+            binding: 0,
+            resource: {buffer}
+          },
+          {
+            binding: 1,
+            resource: this.hzbMipReadViews[mip - 1]
+          },
+          {
+            binding: 2,
+            resource: this.hzbMipWriteViews[mip]
+          },
+        ],
+      });
+
+      this.hzbMipBuffers.push(buffer);
+      this.hzbMipBindGroups.push(bindGroup);
+    }
   }
 
   _createSSRConfig() {
@@ -170,13 +221,13 @@ export class SSRPass {
   }
 
   _blitDepth(commandEncoder, depthTexture, depthView) {
-    const bg = this.device.createBindGroup({
-      layout: this.blitPipeline.getBindGroupLayout(0),
-      entries: [
-        {binding: 0, resource: depthView},
-        {binding: 1, resource: this.pointSampler},
-      ],
-    });
+    // const bg = this.device.createBindGroup({
+    //   layout: this.blitPipeline.getBindGroupLayout(0),
+    //   entries: [
+    //     {binding: 0, resource: depthView},
+    //     {binding: 1, resource: this.pointSampler},
+    //   ],
+    // });
 
     const pass = commandEncoder.beginRenderPass({
       label: 'Depth blit Pass',
@@ -188,52 +239,20 @@ export class SSRPass {
       }],
     });
     pass.setPipeline(this.blitPipeline);
-    pass.setBindGroup(0, bg);
+    // pass.setBindGroup(0, bg);
+    pass.setBindGroup(0, this.depthBlitBindGroup);
     pass.draw(3);
     pass.end();
   }
 
   _buildHZB(commandEncoder) {
-    // Loop through each mip level starting from 1 down to the smallest mip
     for(let mip = 1;mip < this.mipCount;mip++) {
       const dstW = Math.max(1, this.width >> mip);
       const dstH = Math.max(1, this.height >> mip);
-
-      // 1. Create a tiny local scratch buffer for this loop iteration's dimensions
-      const hzbUpdateBuffer = this.device.createBuffer({
-        size: 16,
-        usage: GPUBufferUsage.UNIFORM,
-        mappedAtCreation: true
-      });
-      new Uint32Array(hzbUpdateBuffer.getMappedRange()).set([dstW, dstH, 0, 0]);
-      hzbUpdateBuffer.unmap();
-
-      // 2. Build a localized bind group targeting only the isolated mip views
-      const bg = this.device.createBindGroup({
-        label: `HZB Build Bind Group Mip ${mip}`,
-        layout: this.hzbPipeline.getBindGroupLayout(0),
-        entries: [
-          {binding: 0, resource: {buffer: hzbUpdateBuffer}},
-          {binding: 1, resource: this.hzbMipReadViews[mip - 1]}, // Reading from previous stable mip
-          {binding: 2, resource: this.hzbMipWriteViews[mip]},    // Writing safely to current target mip
-        ],
-      });
-
-      // 3. FIX: Open an independent compute pass scope for ONLY this single mip tier.
-      // This tells the WebGPU scheduler that the read pass on (mip - 1) is completely 
-      // separate from any writes occurring on other levels!
-      const pass = commandEncoder.beginComputePass({
-        label: `HZB compute level ${mip}`
-      });
-
+      const pass = commandEncoder.beginComputePass({label: `HZB compute level ${mip}`});
       pass.setPipeline(this.hzbPipeline);
-      pass.setBindGroup(0, bg);
-      pass.dispatchWorkgroups(
-        Math.ceil(dstW / 8),
-        Math.ceil(dstH / 8)
-      );
-
-      // 4. Close the scope immediately. This creates a clean synchronization boundary.
+      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
+      pass.dispatchWorkgroups(Math.ceil(dstW / 8), Math.ceil(dstH / 8));
       pass.end();
     }
   }

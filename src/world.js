@@ -1597,7 +1597,7 @@ export default class MatrixEngineWGPU {
 
   activateHZB = () => {
     if(this.ssrPass.enabled != true) {
-      this.ssrPass = new SSRPass(this.device, this.canvas.width, this.canvas.height, this.globalSceneUniformBuffer);
+      this.ssrPass = new SSRPass(this.device, this.canvas.width, this.canvas.height, this.globalSceneUniformBuffer, this.mainDepthView);
       this.ssrPass.enabled = true;
 
       // const {normalTexture, normalTextureView} = patchMainRenderPassDesc(
