@@ -249,64 +249,54 @@ fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
 struct FragOut {
     @location(0) color  : vec4f,
     @location(1) normal : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
 fn main(input: FragmentInput) -> FragOut {
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
+  if (materialData.alpha < 0.01) { discard; }
+  var lightContribution = vec3f(0.0);
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
+      let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p        = sc.xyz / sc.w;
+      let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
+      let depthRef = p.z;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let inFrustum = p.z >= 0.0 && p.z <= 1.0
+                    && p.x >= -1.0 && p.x <= 1.0
+                    && p.y >= -1.0 && p.y <= 1.0;
+      let vis         = sampleShadow(shadowUV, i32(i), depthRef, N, lightDir);
+      let shadowFactor = select(1.0, vis, inFrustum);
+      let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
+      lightContribution += contrib * shadowFactor;
+      // Mirror: sharp specular from each spotlight
+      let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+      let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+      lightContribution += mirrorSpec * coneFactor * shadowFactor;
+  }
 
-    let materialData = getPBRMaterial(input.uv);
-    if (materialData.alpha < 0.01) { discard; }
-
-    var lightContribution = vec3f(0.0);
-
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
-        let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p        = sc.xyz / sc.w;
-        // let shadowUV = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-        let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
-        let depthRef = p.z;
-
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let inFrustum = p.z >= 0.0 && p.z <= 1.0
-                     && p.x >= -1.0 && p.x <= 1.0
-                     && p.y >= -1.0 && p.y <= 1.0;
-
-        let vis         = sampleShadow(shadowUV, i32(i), depthRef, N, lightDir);
-        let shadowFactor = select(1.0, vis, inFrustum);
-
-        let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
-        lightContribution += contrib * shadowFactor;
-
-        // Mirror: sharp specular from each spotlight
-        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
-        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
-        lightContribution += mirrorSpec * coneFactor * shadowFactor;
-    }
-
-    let R = reflect(-V, N);
-    // var envColor: vec3f;
-    let envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
-
-    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    finalColor = mix(
-        envColor,
-        finalColor,
-        mirrorParams.baseColorMix
-    );
-
-    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
-    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
-    finalColor += illuminate;
-    let alpha = mix(materialData.alpha, 1.0, 0.5);
-
-    // return vec4f(finalColor, alpha);
-      return FragOut(
-        vec4f(finalColor, alpha),
-        vec4f(N, 0.0)
-    );
+  let R = reflect(-V, N);
+  let envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+  let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+  finalColor = mix(
+      envColor,
+      finalColor,
+      mirrorParams.baseColorMix
+  );
+  finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+  let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
+  finalColor += illuminate;
+  let alpha = mix(materialData.alpha, 1.0, 0.5);
+  // return vec4f(finalColor, alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0),
+  );
 }
 `;

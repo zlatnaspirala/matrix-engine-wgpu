@@ -110,7 +110,8 @@ fn main(input: FragmentInput) -> FragOut {
     // return vec4f(finalColor, alpha);
     return FragOut(
       vec4f(finalColor, alpha),
-      vec4f(N, 0.0)
+      vec4f(N, 0.0),
+      vec4f(input.fragPos, 1.0)
     );
 }
 `;

@@ -4,45 +4,45 @@ export let miniaWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,   // unused (kept for layout)
-    cameraViewProjMatrix : mat4x4f,   // unused
-    cameraPos            : vec3f,     // unused
-    padding2             : f32,
-    lightPos             : vec3f,     // unused
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,   // unused (kept for layout)
+  cameraViewProjMatrix : mat4x4f,   // unused
+  cameraPos            : vec3f,     // unused
+  padding2             : f32,
+  lightPos             : vec3f,     // unused
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 // MINIMAL MATERIAL (keep layout compatibility)
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,  // unused
-    roughnessFactor : f32,  // unused
-    _pad1           : f32,
-    _pad2           : f32,
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,  // unused
+  roughnessFactor : f32,  // unused
+  _pad1           : f32,
+  _pad2           : f32,
 };
 
 // Dummy spotlight struct (not used but keeps binding valid)
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
@@ -64,42 +64,43 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f, // unused
-    @location(1) fragPos   : vec3f, // unused
-    @location(2) fragNorm  : vec3f, // unused
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f, // unused
+  @location(1) fragPos   : vec3f, // unused
+  @location(2) fragNorm  : vec3f, // unused
+  @location(3) uv        : vec2f,
 };
 
 struct FragOut {
-    @location(0) color  : vec4f,
-    @location(1) normal : vec4f,
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
 }
 
 @fragment
 fn main(input: FragmentInput) -> FragOut {
 
-    // ===== TEXTURE =====
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  // ===== TEXTURE =====
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
 
-    // ===== BASIC COLOR CONTROL =====
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  // ===== BASIC COLOR CONTROL =====
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
 
-    // ===== AMBIENT ONLY =====
-    let finalColor = baseColor * scene.globalAmbient;
+  // ===== AMBIENT ONLY =====
+  let finalColor = baseColor * scene.globalAmbient;
 
-    // ===== ALPHA =====
-    let alpha = texColor.a * material.baseColorFactor.a;
+  // ===== ALPHA =====
+  let alpha = texColor.a * material.baseColorFactor.a;
 
-    // optional discard (keep if you use alpha cutout)
-    if(alpha < 0.01) {
-        discard;
-    }
+  // optional discard (keep if you use alpha cutout)
+  if(alpha < 0.01) {
+      discard;
+  }
 
-    // return vec4f(finalColor, alpha);
+  // return vec4f(finalColor, alpha);
 
-    return FragOut(
-      vec4f(finalColor, alpha),
-      vec4f(input.fragNorm, 0.0)
-    );
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;

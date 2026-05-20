@@ -700,7 +700,7 @@ export default class MatrixEngineWGPU {
 
     this.mainDepthView = this.mainDepthTexture.createView();
 
-    // Dummy for initial attacment[1]
+    // Dummy for initial attacment[1] This is HZB
     this.normalTexture = this.device.createTexture({
       label: 'GBuffer normals',
       size: [this.canvas.width, this.canvas.height],
@@ -708,6 +708,14 @@ export default class MatrixEngineWGPU {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
     this.normalTextureView = this.normalTexture.createView();
+
+    this.worldPosTexture = this.device.createTexture({
+      label: 'GBuffer worldPos',
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
+    this.worldPosTextureView = this.worldPosTexture.createView();
 
     this.mainRenderPassDesc = {
       label: 'mainRenderPassDesc',
@@ -722,7 +730,8 @@ export default class MatrixEngineWGPU {
         loadOp: 'clear',
         storeOp: 'store',
         clearValue: [0.0, 0.0, 0.0, 0],
-      },],
+      },
+      {view: this.worldPosTextureView, loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0]},],
       depthStencilAttachment: {
         view: this.mainDepthView,
         depthLoadOp: 'clear',
@@ -1103,18 +1112,27 @@ export default class MatrixEngineWGPU {
   }
 
   createBloomBindGroup() {
+    this.dummySSRTexture = this.device.createTexture({
+      size: [1, 1],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
     this.bloomBindGroup = this.device.createBindGroup({
       layout: this.presentPipeline.getBindGroupLayout(0),
       entries: [
         {binding: 0, resource: this.bloomOutputTex},
-        {binding: 1, resource: this.presentSampler}
+        {binding: 1, resource: this.presentSampler},
+        {binding: 2, resource: this.dummySSRTexture.createView()},
       ]
-    })
+    });
+
     this.noBloomBindGroup = this.device.createBindGroup({
       layout: this.presentPipeline.getBindGroupLayout(0),
       entries: [
         {binding: 0, resource: this.sceneTexture.createView()},
-        {binding: 1, resource: this.presentSampler}
+        {binding: 1, resource: this.presentSampler},
+        {binding: 2, resource: this.dummySSRTexture.createView()},
       ]
     })
   }
@@ -1313,14 +1331,25 @@ export default class MatrixEngineWGPU {
 
       pass.end();
 
-
       // test 
-      if(this.ssrPass.enabled == true) this.ssrPass.render(commandEncoder, {
-        sceneTextureView: this.sceneTextureView,
-        normalTextureView: this.normalTextureView,
-        mainDepthView: this.mainDepthView,
-        mainDepthTexture: this.mainDepthTexture,
-      });
+      if(this.ssrPass.enabled == true) {
+
+        const invProj = new Float32Array(16);
+        mat4.invert(camera.projectionMatrix, invProj);
+
+        this.ssrPass.updateConfig(
+          invProj,
+          camera.projectionMatrix
+        );
+
+        this.ssrPass.render(commandEncoder, {
+          sceneTextureView: this.sceneTextureView,
+          normalTextureView: this.normalTextureView,
+          mainDepthView: this.mainDepthView,
+          mainDepthTexture: this.mainDepthTexture,
+          worldPosTextureView: this.worldPosTextureView
+        });
+      }
 
 
       if(this.volumetricPass.enabled === true) {
@@ -1434,9 +1463,8 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
-        // bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
-        bvhPlayer.clearColor = clearColor;
 
+        bvhPlayer.clearColor = clearColor;
         bvhPlayer.itIsPhysicsBody = false;
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);
@@ -1571,11 +1599,32 @@ export default class MatrixEngineWGPU {
       this.ssrPass = new SSRPass(this.device, this.canvas.width, this.canvas.height, this.globalSceneUniformBuffer);
       this.ssrPass.enabled = true;
 
-      const {normalTexture, normalTextureView} = patchMainRenderPassDesc(
-        this.device, this.canvas.width, this.canvas.height, this.mainRenderPassDesc
-      );
-      this.normalTexture = normalTexture;
-      this.normalTextureView = normalTextureView;
+      // const {normalTexture, normalTextureView} = patchMainRenderPassDesc(
+      //   this.device, this.canvas.width, this.canvas.height, this.mainRenderPassDesc
+      // );
+      // this.normalTexture = normalTexture;
+      // this.normalTextureView = normalTextureView;
+
+      this.bloomBindGroup = this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [
+          {binding: 0, resource: this.bloomOutputTex},
+          {binding: 1, resource: this.presentSampler},
+          {binding: 2, resource: this.ssrPass.ssrOutputView},
+        ]
+      });
+
+      this.noBloomBindGroup = this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [
+          {binding: 0, resource: this.sceneTexture.createView()},
+          {binding: 1, resource: this.presentSampler},
+          {binding: 2, resource: this.ssrPass.ssrOutputView}, // real
+        ]
+      });
+
+      // this._activeBindGroup = this.noBloomBindGroup;
+      this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup
 
       // Rebuild all mesh pipelines with 2 targets
       PipelineManager.invalidateAll();
@@ -1583,6 +1632,8 @@ export default class MatrixEngineWGPU {
         mesh.setupPipeline();
       }
 
+      // MAYBE BEST PLACE IS HERE 
+      //  this._activeBindGroup = 
     }
   }
 

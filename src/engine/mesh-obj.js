@@ -818,6 +818,7 @@ export default class MEMeshObj extends Materials {
           targets: [
             {format: 'rgba16float'},
             {format: 'rgba16float'},
+            {format: 'rgba16float'}, 
           ],
         },
         depthStencil: {
@@ -859,6 +860,7 @@ export default class MEMeshObj extends Materials {
                 },
               },
             },
+            {format: 'rgba16float'},
             {format: 'rgba16float'},
           ],
         },

@@ -210,6 +210,7 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 struct FragOut {
     @location(0) color  : vec4f,
     @location(1) normal : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
@@ -241,6 +242,7 @@ fn main(input: FragmentInput) -> FragOut {
 
     return FragOut(
       vec4f(finalColor, materialData.alpha),
-      vec4f(N, 0.0)
+      vec4f(N, 0.0),
+      vec4f(input.fragPos, 1.0)
     );
 }`;
