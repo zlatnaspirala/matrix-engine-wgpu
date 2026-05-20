@@ -63,7 +63,7 @@ export var loadObjFile = function() {
       // share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 4, z: -10},
+        position: {x: 0, y: 0, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [3, 5, 1],

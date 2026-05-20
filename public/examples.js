@@ -3849,7 +3849,7 @@ var loadObjFile = function () {
         },
         position: {
           x: 0,
-          y: 4,
+          y: 0,
           z: -10
         },
         rotation: {
@@ -48071,9 +48071,105 @@ fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
     return VertOut(vec4(p, 0.0, 1.0), uv);
 }
 
+fn worldPosFromDepth(uv: vec2f, depth: f32) -> vec3f {
+    // Convert UV and Depth back to NDC space
+    // WebGPU NDC: X is [-1, 1], Y is [-1, 1] (top is positive), Z is [0, 1]
+    let ndc = vec4f(
+        uv.x * 2.0 - 1.0,
+        (1.0 - uv.y) * 2.0 - 1.0, // Reversing UV Y to match NDC Y
+        depth,
+        1.0
+    );
+
+    // Unproject using your configuration matrices
+    // Note: If you have a direct Inverse View-Projection Matrix, use that instead.
+    // Otherwise, we unproject from NDC to View Space, then View to World.
+    let viewPos = ssrCfg.invProj * ndc;
+    let viewPosSpace = viewPos / viewPos.w;
+    
+    // Convert from View Space to World Space
+    // (Assuming scene.cameraViewProjMatrix inverse isn't fully available, 
+    // we approximate or use your inverse view projection if you choose to pass it.
+    // If you already have worldPosTex for G-Buffer, we can use this logic to find the ray intersections!)
+    return viewPosSpace.xyz; 
+}
 
 @fragment
 fn fs(in: VertOut) -> @location(0) vec4f {
+    let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
+
+    let worldPos4 = textureLoad(worldPosTex, tc, 0);
+    if (worldPos4.w < 0.5) { return vec4f(0.0); }
+    let worldPos = worldPos4.xyz;
+
+    let rawNormal = textureLoad(normalTex, tc, 0).xyz;
+    if (length(rawNormal) < 0.1) { return vec4f(0.0); }
+    let normal = normalize(rawNormal);
+
+    let viewDir = normalize(worldPos - scene.cameraPos);
+    let reflDir = reflect(viewDir, normal);
+
+    // Transform vectors into View Space to make linear depth matching bulletproof
+    // This removes world-space scale dependencies
+    let viewMatrix = scene.cameraViewProjMatrix; 
+    
+    var rayPos     = worldPos + normal * 0.05; // Small, safe bias
+    var prevRayPos = rayPos;
+    var stepSize   = 0.04; 
+    var hit        = false;
+    var hitUV      = vec2f(0.0);
+    var minSteps   = 2u; 
+
+    for (var i = 0u; i < 80u; i++) {
+        prevRayPos = rayPos;
+        rayPos    += reflDir * stepSize;
+
+        let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
+        if (clip.w <= 0.0) { break; }
+        let ndc = clip.xyz / clip.w;
+        
+        // Convert to WebGPU standard UV
+        let uv  = vec2f(ndc.x * 0.5 + 0.5, 1.0 - (ndc.y * 0.5 + 0.5));
+        if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+
+        if (i < minSteps) { continue; }
+
+        // Get the real world position of whatever geometry is visible at this UV coordinate
+        let sampleTC = vec2u(uv * ssrCfg.resolution);
+        let sceneWorld4 = textureLoad(worldPosTex, sampleTC, 0);
+        if (sceneWorld4.w < 0.5) { continue; }
+
+        // Calculate linear depth relative to the camera plane (Z-depth)
+        // This is much more stable than pure 3D distance() calculations
+        let rayLinearDepth   = (scene.cameraViewProjMatrix * vec4f(rayPos, 1.0)).w;
+        let sceneLinearDepth = (scene.cameraViewProjMatrix * vec4f(sceneWorld4.xyz, 1.0)).w;
+        
+        let depthDiff = rayLinearDepth - sceneLinearDepth;
+
+        // If the ray has traveled behind the scene geometry, but is within the thickness threshold
+        if (depthDiff > 0.0 && depthDiff < ssrCfg.thickness) {
+            // Check if we are accidentally hitting the object we cast from
+            let distFromOrigin = distance(worldPos, sceneWorld4.xyz);
+            if (distFromOrigin < 0.2) { continue; } // Skip self-intersections completely
+
+            hit   = true;
+            hitUV = uv;
+            break;
+        }
+
+        // Gradually increase step size to cover distance, but not too aggressively
+        stepSize *= 1.015;
+    }
+
+    if (!hit) { return vec4f(0.0); }
+
+    let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
+    let confidence = edgeFade(hitUV);
+    return vec4f(color, confidence * 0.8);
+}
+
+@fragment
+fn fsOLD(in: VertOut) -> @location(0) vec4f {
     let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
 
     let worldPos4 = textureLoad(worldPosTex, tc, 0);
@@ -48091,26 +48187,29 @@ fn fs(in: VertOut) -> @location(0) vec4f {
     let viewDir = normalize(worldPos - scene.cameraPos);
     let reflDir = reflect(viewDir, normal);
 
-    var rayPos     = worldPos + normal * 0.5;
-    var prevRayPos = rayPos;
-    var stepSize   = 0.05;
-    var hit        = false;
-    var hitUV      = vec2f(0.0);
+var rayPos     = worldPos + normal * 0.5;  // was 0.01 — much larger bias
+var prevRayPos = rayPos;
+var stepSize   = 0.05;  // was 0.02
+var hit        = false;
+var hitUV      = vec2f(0.0);
+var minSteps   = 3u;  // skip first 3 steps to avoid self-intersection
 
-    for (var i = 0u; i < 128u; i++) {
-        prevRayPos = rayPos;
-        rayPos    += reflDir * stepSize;
+for (var i = 0u; i < 128u; i++) {
+    prevRayPos = rayPos;
+    rayPos    += reflDir * stepSize;
 
-        let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
-        if (clip.w <= 0.0) { break; }
-        let ndc = clip.xyz / clip.w;
-        let uv  = vec2f(ndc.x * 0.5 + 0.5, ndc.y * 0.5 + 0.5);
-        if (any(uv < vec2f(0.01)) || any(uv > vec2f(0.99))) { break; }
+    let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
+    if (clip.w <= 0.0) { break; }
+    let ndc = clip.xyz / clip.w;
+    let uv  = vec2f(ndc.x * 0.5 + 0.5, ndc.y * 0.5 + 0.5);
+    if (any(uv < vec2f(0.01)) || any(uv > vec2f(0.99))) { break; }
 
-        let sceneDepth = textureLoad(hzbTex, vec2i(uv * ssrCfg.resolution), 0).r;
-        let depthDiff  = ndc.z - sceneDepth;
+    if (i < minSteps) { stepSize *= 1.02; continue; }  // skip early steps
 
-        if (depthDiff > 0.0) {
+    let sceneDepth = textureLoad(hzbTex, vec2i(uv * ssrCfg.resolution), 0).r;
+    let depthDiff  = ndc.z - sceneDepth;
+
+    if (depthDiff > 0.0) {
             var refinePos  = prevRayPos;
             var refineStep = stepSize * 0.5;
             var rUV        = vec2f(0.0);
