@@ -100,6 +100,7 @@ struct SSRConfig {
 @group(0) @binding(4) var hzbTex : texture_2d<f32>;
 @group(0) @binding(5) var pointSampler          : sampler;
 @group(0) @binding(6) var worldPosTex           : texture_2d<f32>;
+@group(0) @binding(7) var linearSampler : sampler;
 
 fn edgeFade(uv: vec2f) -> f32 {
     let e = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
@@ -123,6 +124,9 @@ struct VertOut {
 //   return VertOut(vec4(p, 0.0, 1.0), p * 0.5 + 0.5);
 // }
 
+fn hash(p: vec2f) -> f32 {
+ return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453123);
+}
 
 @vertex
 fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
@@ -160,7 +164,7 @@ fn worldPosFromDepth(uv: vec2f, depth: f32) -> vec3f {
 }
 
 @fragment
-fn fs(in: VertOut) -> @location(0) vec4f {
+fn fs2(in: VertOut) -> @location(0) vec4f {
     let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
 
     let worldPos4 = textureLoad(worldPosTex, tc, 0);
@@ -232,9 +236,9 @@ fn fs(in: VertOut) -> @location(0) vec4f {
     let confidence = edgeFade(hitUV);
     return vec4f(color, confidence * 0.8);
 }
-
+ 
 @fragment
-fn fsOLD(in: VertOut) -> @location(0) vec4f {
+fn fs(in: VertOut) -> @location(0) vec4f {
     let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
 
     let worldPos4 = textureLoad(worldPosTex, tc, 0);
@@ -245,64 +249,90 @@ fn fsOLD(in: VertOut) -> @location(0) vec4f {
     if (length(rawNormal) < 0.1) { return vec4f(0.0); }
     let normal = normalize(rawNormal);
 
-    
-    // let upDot = dot(normal, vec3f(0.0, 1.0, 0.0));
-    // if (upDot < 0.7) { return vec4f(0.0); }
-
     let viewDir = normalize(worldPos - scene.cameraPos);
     let reflDir = reflect(viewDir, normal);
 
-var rayPos     = worldPos + normal * 0.5;  // was 0.01 — much larger bias
-var prevRayPos = rayPos;
-var stepSize   = 0.05;  // was 0.02
-var hit        = false;
-var hitUV      = vec2f(0.0);
-var minSteps   = 3u;  // skip first 3 steps to avoid self-intersection
+    // Interleave the ray steps using screen-space noise + running time
+    let jitter = hash(in.uv + vec2f(scene.time * 0.1));
+    
+    // let jitter = hash(in.uv); 
+    
+    var rayPos     = worldPos + normal * 0.05; 
+    var prevRayPos = rayPos;
+    var stepSize   = 0.04; 
+    var hit        = false;
+    var hitUV      = vec2f(0.0);
+    var minSteps   = 2u; 
 
-for (var i = 0u; i < 128u; i++) {
-    prevRayPos = rayPos;
-    rayPos    += reflDir * stepSize;
+    for (var i = 0u; i < 80u; i++) {
+        prevRayPos = rayPos;
+        
+        // Apply the subtle, stable jittering offset
+        let currentStep = stepSize * (1.0 + jitter * 0.05);
+        rayPos += reflDir * currentStep;
 
-    let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
-    if (clip.w <= 0.0) { break; }
-    let ndc = clip.xyz / clip.w;
-    let uv  = vec2f(ndc.x * 0.5 + 0.5, ndc.y * 0.5 + 0.5);
-    if (any(uv < vec2f(0.01)) || any(uv > vec2f(0.99))) { break; }
+        let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
+        if (clip.w <= 0.0) { break; }
+        let ndc = clip.xyz / clip.w;
+        
+        let uv  = vec2f(ndc.x * 0.5 + 0.5, 1.0 - (ndc.y * 0.5 + 0.5));
+        if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
 
-    if (i < minSteps) { stepSize *= 1.02; continue; }  // skip early steps
+        if (i < minSteps) { continue; }
 
-    let sceneDepth = textureLoad(hzbTex, vec2i(uv * ssrCfg.resolution), 0).r;
-    let depthDiff  = ndc.z - sceneDepth;
+        let sampleTC = vec2u(uv * ssrCfg.resolution);
+        let sceneWorld4 = textureLoad(worldPosTex, sampleTC, 0);
+        if (sceneWorld4.w < 0.5) { continue; }
 
-    if (depthDiff > 0.0) {
+        let rayLinearDepth   = (scene.cameraViewProjMatrix * vec4f(rayPos, 1.0)).w;
+        let sceneLinearDepth = (scene.cameraViewProjMatrix * vec4f(sceneWorld4.xyz, 1.0)).w;
+        let depthDiff = rayLinearDepth - sceneLinearDepth;
+
+        // Potential Intersection Found!
+        if (depthDiff > 0.0 && depthDiff < ssrCfg.thickness) {
+            let distFromOrigin = distance(worldPos, sceneWorld4.xyz);
+            if (distFromOrigin < 0.2) { continue; } 
+
+            // --- BINARY REFINEMENT LOOP ---
+            // Step back to the last empty position and halve the search interval
             var refinePos  = prevRayPos;
             var refineStep = stepSize * 0.5;
-            var rUV        = vec2f(0.0);
+            var rUV        = uv;
 
-            for (var j = 0u; j < 16u; j++) {
-                refinePos     += reflDir * refineStep;
-                let rClip      = scene.cameraViewProjMatrix * vec4f(refinePos, 1.0);
-                let rNDC       = rClip.xyz / rClip.w;
-                rUV            = vec2f(rNDC.x * 0.5 + 0.5, rNDC.y * 0.5 + 0.5);
-                let rDepth     = textureLoad(hzbTex, vec2i(rUV * ssrCfg.resolution), 0).r;
-                let rDiff      = rNDC.z - rDepth;
-                if (rDiff > 0.0) { refinePos -= reflDir * refineStep; }
-                refineStep    *= 0.5;
+            for (var j = 0u; j < 10u; j++) {
+                refinePos += reflDir * refineStep;
+                
+                let rClip = scene.cameraViewProjMatrix * vec4f(refinePos, 1.0);
+                let rNDC  = rClip.xyz / rClip.w;
+                rUV       = vec2f(rNDC.x * 0.5 + 0.5, 1.0 - (rNDC.y * 0.5 + 0.5));
+                
+                let rSceneWorld = textureLoad(worldPosTex, vec2u(rUV * ssrCfg.resolution), 0);
+                
+                let rRayDepth   = (scene.cameraViewProjMatrix * vec4f(refinePos, 1.0)).w;
+                let rSceneDepth = (scene.cameraViewProjMatrix * vec4f(rSceneWorld.xyz, 1.0)).w;
+                
+                // If we went too deep, pull back the step and cut it in half
+                if ((rRayDepth - rSceneDepth) > 0.0) {
+                    refinePos -= reflDir * refineStep;
+                }
+                refineStep *= 0.5;
             }
+            // ------------------------------
 
-            let fClip  = scene.cameraViewProjMatrix * vec4f(refinePos, 1.0);
-            let fNDC   = fClip.xyz / fClip.w;
-            let fUV    = vec2f(fNDC.x * 0.5 + 0.5, fNDC.y * 0.5 + 0.5);
-            let fDepth = textureLoad(hzbTex, vec2i(fUV * ssrCfg.resolution), 0).r;
+            // Final validation of the refined coordinates
+            let finalTC = vec2u(rUV * ssrCfg.resolution);
+            let finalSceneWorld = textureLoad(worldPosTex, finalTC, 0).xyz;
+            let finalRayDepth   = (scene.cameraViewProjMatrix * vec4f(refinePos, 1.0)).w;
+            let finalSceneDepth = (scene.cameraViewProjMatrix * vec4f(finalSceneWorld, 1.0)).w;
 
-            if (abs(fNDC.z - fDepth) < 0.02) {
+            if (abs(finalRayDepth - finalSceneDepth) < ssrCfg.thickness) {
                 hit   = true;
-                hitUV = fUV;
+                hitUV = rUV;
             }
             break;
         }
 
-        stepSize *= 1.02;
+        stepSize *= 1.015;
     }
 
     if (!hit) { return vec4f(0.0); }
@@ -311,5 +341,4 @@ for (var i = 0u; i < 128u; i++) {
     let confidence = edgeFade(hitUV);
     return vec4f(color, confidence * 0.8);
 }
-
 `;

@@ -24,37 +24,37 @@ export class SSRPass {
     this._createPipelines();
   }
 
-_createHZB() {
-  this.hzbTexture = this.device.createTexture({
-    label: 'HZB',
-    size: [this.width, this.height],
-    mipLevelCount: this.mipCount,
-    format: 'r32float',
-    usage:
-      GPUTextureUsage.TEXTURE_BINDING |
-      GPUTextureUsage.STORAGE_BINDING |
-      GPUTextureUsage.RENDER_ATTACHMENT,
-  });
+  _createHZB() {
+    this.hzbTexture = this.device.createTexture({
+      label: 'HZB',
+      size: [this.width, this.height],
+      mipLevelCount: this.mipCount,
+      format: 'r32float',
+      usage:
+        GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.STORAGE_BINDING |
+        GPUTextureUsage.RENDER_ATTACHMENT,
+    });
 
-  // Write views: Only 1 mip level thick
-  this.hzbMipWriteViews = Array.from({length: this.mipCount}, (_, i) =>
-    this.hzbTexture.createView({label: `HZB Write Mip ${i}`, baseMipLevel: i, mipLevelCount: 1})
-  );
-  
-  // FIX: Force read views to be exactly 1 mip level thick as well!
-  // This guarantees to WebGPU that Read Mip (N) and Write Mip (N+1) have zero overlapping memory.
-  this.hzbMipReadViews = Array.from({length: this.mipCount}, (_, i) =>
-    this.hzbTexture.createView({label: `HZB Read Mip ${i}`, baseMipLevel: i, mipLevelCount: 1})
-  );
+    // Write views: Only 1 mip level thick
+    this.hzbMipWriteViews = Array.from({length: this.mipCount}, (_, i) =>
+      this.hzbTexture.createView({label: `HZB Write Mip ${i}`, baseMipLevel: i, mipLevelCount: 1})
+    );
 
-  // Full pyramid view for SSR pass sampling
-  this.hzbFullView = this.hzbTexture.createView();
+    // FIX: Force read views to be exactly 1 mip level thick as well!
+    // This guarantees to WebGPU that Read Mip (N) and Write Mip (N+1) have zero overlapping memory.
+    this.hzbMipReadViews = Array.from({length: this.mipCount}, (_, i) =>
+      this.hzbTexture.createView({label: `HZB Read Mip ${i}`, baseMipLevel: i, mipLevelCount: 1})
+    );
 
-  this.hzbUniformBuffer = this.device.createBuffer({
-    size: 16,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-}
+    // Full pyramid view for SSR pass sampling
+    this.hzbFullView = this.hzbTexture.createView();
+
+    this.hzbUniformBuffer = this.device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+  }
 
   _createSSRConfig() {
     // Layout Alignment Checklist: 
@@ -104,6 +104,12 @@ _createHZB() {
       primitive: {topology: 'triangle-list'},
     });
 
+    this.linearSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+      mipmapFilter: 'linear',
+    });
+
     const ssrModule = this.device.createShaderModule({
       label: 'SSR',
       code: SSR_PASS_WGSL,
@@ -118,20 +124,13 @@ _createHZB() {
         {binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {}},
         {
           binding: 4, visibility: GPUShaderStage.FRAGMENT, texture: {
-            sampleType: "unfilterable-float",
-            viewDimension: "2d"
+            sampleType: "unfilterable-float", viewDimension: "2d"
           }
         },
-    //     { 
-    //   binding: 4, 
-    //   visibility: GPUShaderStage.FRAGMENT, 
-    //   texture: { 
-    //     sampleType: 'depth',          // <-- CHANGE THIS FROM 'unfilterable-float' TO 'depth'
-    //     viewDimension: '2d' 
-    //   } 
-    // },
         {binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
         {binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: {}},
+        {binding: 7, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
+
       ]
     });
 
@@ -250,6 +249,7 @@ _createHZB() {
         {binding: 4, resource: this.hzbFullView}, // Samples complete structural HZB map cleanly
         {binding: 5, resource: this.pointSampler},
         {binding: 6, resource: worldPosTextureView},
+        {binding: 7, resource: this.linearSampler},
       ],
     });
 
