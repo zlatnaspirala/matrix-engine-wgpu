@@ -605,6 +605,7 @@ export default class MatrixEngineWGPU {
             let composited = mix(hdr, ssr.rgb, ssr.a);           // NEW
             let ldr = composited / (composited + vec3(1.0));
             return vec4<f32>(ldr, 1.0);
+            // return vec4<f32>(ssr.rgb, 1.0);
         }
       `
         }),

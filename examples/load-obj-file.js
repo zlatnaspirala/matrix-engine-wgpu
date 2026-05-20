@@ -12,8 +12,8 @@ export var loadObjFile = function() {
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
-      // type: 'WASD',
-      type: 'firstPersonCamera',
+      type: 'WASD',
+      // type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -45,20 +45,20 @@ export var loadObjFile = function() {
     }
 
     async function onLoadObj(m) {
-      loadObjFile.addMeshObj({
-        material: {type: 'standard', share: true},
-        position: {x: 0, y: -1, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 0.1, z: 0},
-        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'sky',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
+      // loadObjFile.addMeshObj({
+      //   material: {type: 'standard', share: true},
+      //   position: {x: 0, y: -1, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [100, 100, 100],
+      //   rotationSpeed: {x: 0, y: 0.1, z: 0},
+      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+      //   name: 'sky',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
 
       // share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
@@ -109,7 +109,7 @@ export var loadObjFile = function() {
       // }
 
       setTimeout(() => {
-        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         // // MYCUBE.effects.flameEmitter.setIntensity(100);
         // // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         // MYCUBE.effects.flameEmitter.rotSpeed = 1;

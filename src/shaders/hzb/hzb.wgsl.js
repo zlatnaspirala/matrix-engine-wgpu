@@ -111,15 +111,29 @@ struct VertOut {
   @location(0) uv        : vec2f,
 }
 
+// @vertex
+// fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
+//   var pos = array<vec2f, 3>(
+//       vec2(-1.0, -1.0),
+//       vec2( 3.0, -1.0),
+//       vec2(-1.0,  3.0),
+//   );
+//   let p = pos[vi];
+//   // return VertOut(vec4(p, 0.0, 1.0), p * vec2(0.5, -0.5) + 0.5);
+//   return VertOut(vec4(p, 0.0, 1.0), p * 0.5 + 0.5);
+// }
+
+
 @vertex
 fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
-  var pos = array<vec2f, 3>(
-      vec2(-1.0, -1.0),
-      vec2( 3.0, -1.0),
-      vec2(-1.0,  3.0),
-  );
-  let p = pos[vi];
-  return VertOut(vec4(p, 0.0, 1.0), p * vec2(0.5, -0.5) + 0.5);
+    var pos = array<vec2f, 3>(
+        vec2(-1.0,  1.0),
+        vec2( 3.0,  1.0),
+        vec2(-1.0, -3.0),
+    );
+    let p = pos[vi];
+    let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+    return VertOut(vec4(p, 0.0, 1.0), uv);
 }
 
 
@@ -135,12 +149,16 @@ fn fs(in: VertOut) -> @location(0) vec4f {
     if (length(rawNormal) < 0.1) { return vec4f(0.0); }
     let normal = normalize(rawNormal);
 
+    
+    // let upDot = dot(normal, vec3f(0.0, 1.0, 0.0));
+    // if (upDot < 0.7) { return vec4f(0.0); }
+
     let viewDir = normalize(worldPos - scene.cameraPos);
     let reflDir = reflect(viewDir, normal);
 
-    var rayPos     = worldPos + normal * 0.01;
+    var rayPos     = worldPos + normal * 0.5;
     var prevRayPos = rayPos;
-    var stepSize   = 0.02;
+    var stepSize   = 0.05;
     var hit        = false;
     var hitUV      = vec2f(0.0);
 
@@ -151,7 +169,7 @@ fn fs(in: VertOut) -> @location(0) vec4f {
         let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
         if (clip.w <= 0.0) { break; }
         let ndc = clip.xyz / clip.w;
-        let uv  = vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
+        let uv  = vec2f(ndc.x * 0.5 + 0.5, ndc.y * 0.5 + 0.5);
         if (any(uv < vec2f(0.01)) || any(uv > vec2f(0.99))) { break; }
 
         let sceneDepth = textureLoad(hzbTex, vec2i(uv * ssrCfg.resolution), 0).r;
@@ -162,11 +180,11 @@ fn fs(in: VertOut) -> @location(0) vec4f {
             var refineStep = stepSize * 0.5;
             var rUV        = vec2f(0.0);
 
-            for (var j = 0u; j < 8u; j++) {
+            for (var j = 0u; j < 16u; j++) {
                 refinePos     += reflDir * refineStep;
                 let rClip      = scene.cameraViewProjMatrix * vec4f(refinePos, 1.0);
                 let rNDC       = rClip.xyz / rClip.w;
-                rUV            = vec2f(rNDC.x * 0.5 + 0.5, -rNDC.y * 0.5 + 0.5);
+                rUV            = vec2f(rNDC.x * 0.5 + 0.5, rNDC.y * 0.5 + 0.5);
                 let rDepth     = textureLoad(hzbTex, vec2i(rUV * ssrCfg.resolution), 0).r;
                 let rDiff      = rNDC.z - rDepth;
                 if (rDiff > 0.0) { refinePos -= reflDir * refineStep; }
@@ -175,10 +193,10 @@ fn fs(in: VertOut) -> @location(0) vec4f {
 
             let fClip  = scene.cameraViewProjMatrix * vec4f(refinePos, 1.0);
             let fNDC   = fClip.xyz / fClip.w;
-            let fUV    = vec2f(fNDC.x * 0.5 + 0.5, -fNDC.y * 0.5 + 0.5);
+            let fUV    = vec2f(fNDC.x * 0.5 + 0.5, fNDC.y * 0.5 + 0.5);
             let fDepth = textureLoad(hzbTex, vec2i(fUV * ssrCfg.resolution), 0).r;
 
-            if (abs(fNDC.z - fDepth) < 0.05) {
+            if (abs(fNDC.z - fDepth) < 0.02) {
                 hit   = true;
                 hitUV = fUV;
             }
@@ -192,61 +210,7 @@ fn fs(in: VertOut) -> @location(0) vec4f {
 
     let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
     let confidence = edgeFade(hitUV);
-    return vec4f(color, confidence);
+    return vec4f(color, confidence * 0.8);
 }
 
-
-@fragment
-fn fs2(in: VertOut) -> @location(0) vec4f {
-    let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
-
-    let worldPos4 = textureLoad(worldPosTex, tc, 0);
-    if (worldPos4.w < 0.5) { return vec4f(0.0); }
-    let worldPos = worldPos4.xyz;
-
-    let rawNormal = textureLoad(normalTex, tc, 0).xyz;
-    if (length(rawNormal) < 0.1) { return vec4f(0.0); }
-    let normal = normalize(rawNormal);
-
-    // Everything in world space — no view matrix needed
-    let viewDir = normalize(worldPos - scene.cameraPos);
-    let reflDir = reflect(viewDir, normal);
-
-    // March in world space, project each step to screen
-    var rayPos = worldPos + normal * 0.05;
-    var hit    = false;
-    var hitUV  = vec2f(0.0);
-    var stepSize = 0.05;
-
-    for (var i = 0u; i < 128u; i++) {
-        rayPos += reflDir * stepSize;
-
-        // Project to clip space
-        let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
-        if (clip.w <= 0.0) { break; }
-        let ndc = clip.xyz / clip.w;
-
-        let uv = vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
-        if (any(uv < vec2f(0.01)) || any(uv > vec2f(0.99))) { break; }
-        if (ndc.z < 0.0 || ndc.z > 1.0) { break; }
-
-        let sceneDepth = textureLoad(hzbTex, vec2i(uv * ssrCfg.resolution), 0).r;
-        let depthDiff  = ndc.z - sceneDepth;
-
-        if (depthDiff > 0.0 && depthDiff < 0.5) {
-            hit   = true;
-            hitUV = uv;
-            break;
-        }
-
-        // Adaptive step
-        stepSize *= 1.01;
-    }
-
-    if (!hit) { return vec4f(0.0); }
-
-    let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
-    let confidence = edgeFade(hitUV);
-    return vec4f(color, confidence);
-}
 `;
