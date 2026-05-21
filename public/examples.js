@@ -41985,6 +41985,10 @@ class ProceduralMeshObj extends _materials.default {
           }),
           targets: [{
             format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
           }],
           constants: fragmentConstants
         },
@@ -42026,6 +42030,10 @@ class ProceduralMeshObj extends _materials.default {
                 operation: 'add'
               }
             }
+          }, {
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
           }],
           constants: fragmentConstants
         },

@@ -571,7 +571,11 @@ export default class ProceduralMeshObj extends Materials {
         fragment: {
           entryPoint: 'main',
           module: this.device.createShaderModule({code: fragmentCode}),
-          targets: [{format: 'rgba16float'}],
+          targets: [
+            {format: 'rgba16float'},
+            {format: 'rgba16float'},
+            {format: 'rgba16float'}
+          ],
           constants: fragmentConstants,
         },
         depthStencil: {
@@ -610,7 +614,9 @@ export default class ProceduralMeshObj extends Materials {
                 operation: 'add'
               },
             },
-          }],
+          },
+          {format: 'rgba16float'},
+          {format: 'rgba16float'}],
           constants: fragmentConstants,
         },
         depthStencil: {
