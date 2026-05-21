@@ -4443,7 +4443,7 @@ LIST OF INTEREST OBJECT:
           return;
         }
         // console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
-        if(typeof specialCanvas2dArg == 'string') {
+        if(typeof specialCanvas2dArg === 'string') {
           eval("specialCanvas2dArg = " + specialCanvas2dArg);
         }
         if(typeof canvaInlineProgram != 'function') {
@@ -4461,7 +4461,7 @@ LIST OF INTEREST OBJECT:
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        // mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
+        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,

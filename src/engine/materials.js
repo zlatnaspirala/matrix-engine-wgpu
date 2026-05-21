@@ -653,6 +653,12 @@ export default class Materials {
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
       this.video = null;
+
+      this.updateVideoTexture();
+      this.createMaterialBindGroupVideo();
+      this.setupPipeline();
+      // little strange
+      // this.isVideo = false;
       // this.video = document.createElement('video');
       // this.video.style.position = 'absolute';
       // // this.video.style.zIndex = '1';
@@ -688,8 +694,8 @@ export default class Materials {
   }
 
   updateVideoTexture() {
-    // if(!this.video || this.video.readyState < 4) return;
-    if(this.video.readyState < 4) return;
+    if(!this.video || this.video.readyState < 4) return;
+    // if(this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({source: this.video});
     if(!this.externalTexture) return;
     this.createMaterialBindGroupVideo();
