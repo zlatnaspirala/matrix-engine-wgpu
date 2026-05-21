@@ -65,24 +65,25 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(10) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-    @builtin(position) position : vec4f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+  @builtin(position) position : vec4f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha     = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+  return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
@@ -106,113 +107,106 @@ fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
     return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
-// ===== SIMPLIFIED WORKING EFFECT =====
-
 fn calculateEffect(fragCoord: vec2f, resolution: vec2f, time: f32) -> vec3f {
-    // Normalize coordinates
-    let uv = fragCoord.xy / resolution;
-    let aspect = resolution.x / resolution.y;
-    let p = (uv * 2.0 - 1.0) * vec2f(aspect, 1.0);
+  let uv = fragCoord.xy / resolution;
+  let aspect = resolution.x / resolution.y;
+  let p = (uv * 2.0 - 1.0) * vec2f(aspect, 1.0);
+  var color = vec3f(0.0);
+  // Simplified version - 5 iterations instead of 9x7
+  for(var i: f32 = 0.0; i < 5.0; i = i + 1.0) {
+    // Rotating coordinates
+    let angle = time * 0.1 + i * 0.5;
+    let c = cos(angle);
+    let s = sin(angle);
+    var pos = vec2f(
+        p.x * c - p.y * s,
+        p.x * s + p.y * c
+    );
     
-    var color = vec3f(0.0);
+    // Add some warping
+    pos += sin(pos.yx * 3.0 + time * 0.5) * 0.1;
     
-    // Simplified version - 5 iterations instead of 9x7
-    for(var i: f32 = 0.0; i < 5.0; i = i + 1.0) {
-        // Rotating coordinates
-        let angle = time * 0.1 + i * 0.5;
-        let c = cos(angle);
-        let s = sin(angle);
-        var pos = vec2f(
-            p.x * c - p.y * s,
-            p.x * s + p.y * c
-        );
-        
-        // Add some warping
-        pos += sin(pos.yx * 3.0 + time * 0.5) * 0.1;
-        
-        // Distance field
-        let dist = length(pos) - 0.5 - i * 0.15;
-        let rings = sin(dist * 10.0 - time * 2.0) * 0.5 + 0.5;
-        
-        // Color based on iteration and distance
-        let hue = i / 5.0 + time * 0.1;
-        color += vec3f(
-            0.5 + 0.5 * sin(hue * 6.28),
-            0.5 + 0.5 * sin(hue * 6.28 + 2.09),
-            0.5 + 0.5 * sin(hue * 6.28 + 4.18)
-        ) * rings * 0.3;
-    }
+    // Distance field
+    let dist = length(pos) - 0.5 - i * 0.15;
+    let rings = sin(dist * 10.0 - time * 2.0) * 0.5 + 0.5;
     
-    // Add some glow
-    let centerDist = length(p);
-    color += vec3f(0.1) / (centerDist * centerDist + 0.1);
-    
-    return clamp(color, vec3f(0.0), vec3f(1.0));
+    // Color based on iteration and distance
+    let hue = i / 5.0 + time * 0.1;
+    color += vec3f(
+        0.5 + 0.5 * sin(hue * 6.28),
+        0.5 + 0.5 * sin(hue * 6.28 + 2.09),
+        0.5 + 0.5 * sin(hue * 6.28 + 4.18)
+    ) * rings * 0.3;
+  }
+  
+  // Add some glow
+  let centerDist = length(p);
+  color += vec3f(0.1) / (centerDist * centerDist + 0.1);
+  
+  return clamp(color, vec3f(0.0), vec3f(1.0));
 }
 
-// ===== STANDARD PBR LIGHTING =====
-
 fn calculatePBRLighting(materialData: PBRMaterialData, N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
-    var Lo = vec3f(0.0);
+  var Lo = vec3f(0.0);
+  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let L = normalize(spotlights[i].position - fragPos);
+    let H = normalize(V + L);
+    let distance = length(spotlights[i].position - fragPos);
+    let attenuation = clamp(1.0 - (distance / max(spotlights[i].range, 0.1)), 0.0, 1.0);
+    let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
     
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let L = normalize(spotlights[i].position - fragPos);
-        let H = normalize(V + L);
-        let distance = length(spotlights[i].position - fragPos);
-        let attenuation = clamp(1.0 - (distance / max(spotlights[i].range, 0.1)), 0.0, 1.0);
-        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-        
-        let NDF = distributionGGX(N, H, materialData.roughness);
-        let G   = geometrySmith(N, V, L, materialData.roughness);
-        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-        
-        let kS = F;
-        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-        let diffuse  = kD * materialData.baseColor / PI;
-        let NdotL = max(dot(N, L), 0.0);
-        let specular = (NDF * G * F) / max(4.0 * max(dot(N, V), 0.0) * NdotL + 0.001, 0.001);
-        
-        Lo += (diffuse + specular) * radiance * NdotL;
-    }
+    let NDF = distributionGGX(N, H, materialData.roughness);
+    let G   = geometrySmith(N, V, L, materialData.roughness);
+    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
     
-    return Lo;
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+    let diffuse  = kD * materialData.baseColor / PI;
+    let NdotL = max(dot(N, L), 0.0);
+    let specular = (NDF * G * F) / max(4.0 * max(dot(N, V), 0.0) * NdotL + 0.001, 0.001);
+    
+    Lo += (diffuse + specular) * radiance * NdotL;
+  }
+  return Lo;
 }
 
 struct FragOut {
-    @location(0) color  : vec4f,
-    @location(1) normal : vec4f,
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
 fn main(input: FragmentInput) -> FragOut {
-    let materialData = getPBRMaterial(input.uv);
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let resolution = vec2f(1080.0, 687.0);
-    var finalColor = vec3f(0.0);
-    if (material.lightingEnabled > 0.5) {
-        // Lighting enabled - calculate PBR
-        let Lo = calculatePBRLighting(materialData, N, V, input.fragPos);
-        let ambient = scene.globalAmbient * materialData.baseColor;
-        let litColor = ambient + Lo;
-        if (material.effectMix > 0.01) {
-            // Blend with effect
-            let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
-            finalColor = mix(litColor, effectColor, material.effectMix);
-        } else {
-            // Pure PBR
-            finalColor = litColor;
-        }
-    } else {
-        let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
-        finalColor = effectColor * mix(vec3f(1.0), materialData.baseColor, 0.2);
-    }
+  let materialData = getPBRMaterial(input.uv);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let resolution = vec2f(1080.0, 687.0);
+  var finalColor = vec3f(0.0);
+  if (material.lightingEnabled > 0.5) {
+      // Lighting enabled - calculate PBR
+      let Lo = calculatePBRLighting(materialData, N, V, input.fragPos);
+      let ambient = scene.globalAmbient * materialData.baseColor;
+      let litColor = ambient + Lo;
+      if (material.effectMix > 0.01) {
+          // Blend with effect
+          let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
+          finalColor = mix(litColor, effectColor, material.effectMix);
+      } else {
+          // Pure PBR
+          finalColor = litColor;
+      }
+  } else {
+      let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
+      finalColor = effectColor * mix(vec3f(1.0), materialData.baseColor, 0.2);
+  }
 
-    // return vec4f(finalColor, 1.0);
-    return FragOut(
-      vec4f(finalColor, materialData.alpha),
-      vec4f(N, 0.0)
-    );
+  // return vec4f(finalColor, 1.0);
+  return FragOut(
+    vec4f(finalColor, materialData.alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;

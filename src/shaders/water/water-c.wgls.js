@@ -154,10 +154,15 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
   let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
   let metallic = mrTex.b * material.metallicFactor;
   let roughness = mrTex.g * material.roughnessFactor;
-  return PBRMaterialData(baseColor, metallic, roughness);
+  let alpha     = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
-struct FragOut {@location(0) color : vec4f,@location(1) normal : vec4f,}
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
 
 @fragment
 fn main(input: FragmentInput) -> FragOut {

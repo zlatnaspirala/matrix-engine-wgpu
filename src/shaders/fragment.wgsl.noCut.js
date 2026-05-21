@@ -37,20 +37,20 @@ lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-baseColorFactor : vec4f,
-metallicFactor  : f32,
-roughnessFactor : f32,
-effectMix       : f32,
-lightingEnabled : f32,
-ambientColor    : vec3f,  // add this
-_pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,
+  _pad            : f32,
 };
 
 struct PBRMaterialData {
-baseColor : vec3f,
-metallic  : f32,
-roughness : f32,
-alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;

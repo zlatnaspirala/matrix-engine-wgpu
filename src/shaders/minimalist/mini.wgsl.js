@@ -60,8 +60,8 @@ struct FragmentInput {
 struct FragOut {
   @location(0) color  : vec4f,
   @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
-
 
 @fragment
 fn main(input: FragmentInput) -> FragOut {
@@ -73,11 +73,10 @@ fn main(input: FragmentInput) -> FragOut {
       discard;
   }
   // return vec4f(finalColor, alpha);
-
-  
+  let N = normalize(input.fragNorm);
   return FragOut(
     vec4f(finalColor, alpha),
-    vec4f(input.fragNorm, 0.0),
+    vec4f(N, 0.0),
     vec4f(input.fragPos, 1.0)
   );
 }

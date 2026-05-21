@@ -65,8 +65,9 @@ struct FragmentInput {
 };
 
 struct FragOut {
-    @location(0) color  : vec4f,
-    @location(1) normal : vec4f,
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment

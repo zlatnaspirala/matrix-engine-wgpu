@@ -65,27 +65,29 @@ struct FragmentInput {
 };
 
 struct FragOut {
-    @location(0) color  : vec4f,
-    @location(1) normal : vec4f,
-}
-
-struct FragOut {
-    @location(0) color  : vec4f,
-    @location(1) normal : vec4f,
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
 fn main(input: FragmentInput) -> FragOut {
-
-let uv = fract(input.fragUV);
-    // distance to nearest edge 0 or 1
-    let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-    let edgeWidth = 0.05;  // tweak thickness
-    let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
-    let neonColor = vec3f(0.0, 1.0, 1.0);
-    let coreColor = vec3f(0.0, 0.0, 0.0);
-    let color = mix(coreColor, neonColor, edgeFactor);
-    return vec4f(color, 1);
+  let N = normalize(input.fragNorm);
+  let uv = fract(input.fragUV);
+  let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  let edgeWidth = 0.05;  // tweak thickness
+  let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
+  let neonColor = vec3f(0.0, 1.0, 1.0);
+  let coreColor = vec3f(0.0, 0.0, 0.0);
+  let color = mix(coreColor, neonColor, edgeFactor);
+  // return vec4f(color, 1);
+  // !HARDCODE! - for now
+  let alpha = 1.0;
+  return FragOut(
+    vec4f(color, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }`;
 
 // export let colorbWGSL = () => `
