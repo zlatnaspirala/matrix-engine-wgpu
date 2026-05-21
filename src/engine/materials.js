@@ -688,7 +688,8 @@ export default class Materials {
   }
 
   updateVideoTexture() {
-    if(!this.video || this.video.readyState < 4) return;
+    // if(!this.video || this.video.readyState < 4) return;
+    if(this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({source: this.video});
     if(!this.externalTexture) return;
     this.createMaterialBindGroupVideo();

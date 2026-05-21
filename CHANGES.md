@@ -1,5 +1,9 @@
 ## CHANGES [Started from feb 2026]
 
+
+[1.13.0]
+ - Added HZB postproccesing effect
+
 [1.12.0]
  - CinematicCamera
  

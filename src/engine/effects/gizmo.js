@@ -74,7 +74,9 @@ export class GizmoEffect {
             color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
             alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
           }
-        }]
+        },
+        {format: 'rgba16float'},
+        {format: 'rgba16float'}]
       },
       primitive: {topology: "line-list"},
       depthStencil: {
