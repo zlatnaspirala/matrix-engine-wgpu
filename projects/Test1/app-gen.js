@@ -497,13 +497,7 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END BANNER2 updatePosz
  
-    // ME START FLOOR updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(-2.4500000000000046);
- }, 800);
- // ME END FLOOR updatePosy
- 
-  // ME START BANNER2 updatePosx
+    // ME START BANNER2 updatePosx
  setTimeout(() => {
   app.getSceneObjectByName('BANNER2').position.SetX(-9);
  }, 800);
@@ -611,11 +605,17 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END FLOOR updatePosz
  
-  // ME START FLOOR updatePosx
+   // ME START FLOOR updatePosx
  setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetX(0);
+  app.getSceneObjectByName('FLOOR').position.SetX(-0.035);
  }, 800);
  // ME END FLOOR updatePosx
+ 
+   // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-2.6249999999999907);
+ }, 800);
+ // ME END FLOOR updatePosy
  
  // [MAIN_REPLACE2]
 
