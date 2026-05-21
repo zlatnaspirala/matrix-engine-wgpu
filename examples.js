@@ -27,6 +27,7 @@ import {canvasInline} from "./examples/canvas-inline.js";
 import {loadCinematicCamera} from "./examples/cinematic-camera.js";
 import {loadDestructionProcedural} from "./examples/destruction-procedural.js";
 import {loadKale} from "./examples/kale.js";
+import {loadHZB} from "./examples/hzb-ray.js";
 
 window.urlQ = urlQuery;
 
@@ -66,6 +67,7 @@ byId('canvas-inline').addEventListener("click", () => switchDemo('17'));
 byId('cinematicCamera').addEventListener("click", () => switchDemo('18'));
 byId('destruction-procedure').addEventListener("click", () => switchDemo('19'));
 byId('loadkale').addEventListener("click", () => switchDemo('20'));
+byId('loadhzb').addEventListener("click", () => switchDemo('21'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
@@ -112,6 +114,8 @@ if(urlQ['demo'] === '1') {
   loadDestructionProcedural();
 } else if(urlQ['demo'] === '20') {
   loadKale();
+} else if (urlQ['demo'] === '21') {
+  loadHZB();
 } else {
   flipperJolt();
 }

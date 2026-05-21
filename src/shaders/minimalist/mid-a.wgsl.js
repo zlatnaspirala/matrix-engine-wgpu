@@ -64,8 +64,14 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
@@ -102,6 +108,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         discard;
     }
 
-    return vec4f(finalColor, alpha);
+    // return vec4f(finalColor, alpha);
+    return FragOut(
+      vec4f(finalColor, alpha),
+      vec4f(N, 0.0),
+      vec4f(input.fragPos, 1.0)
+    );
 }
 `;

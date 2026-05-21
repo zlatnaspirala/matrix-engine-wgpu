@@ -2,16 +2,18 @@ import MatrixEngineWGPU from '../src/world.js';
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {CollisionSystem} from '../src/engine/collision-sub-system.js';
+import {isMobile} from '../src/engine/utils.js';
 
 export var mazeGame = function() {
   let maze = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
-    render: 'nano', //'zero', // test
+    render: 'nano',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: isMobile() ? 1 : 2,
+    MAX_BONES: 1,
     mainCameraParams: {
       type: 'firstPersonCamera',
-      // type: 'WASD',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -75,12 +77,12 @@ export var mazeGame = function() {
         }
       }
 
-      console.log('__________________')
+      // console.log('__________________')
       maze.cameras.firstPersonCamera.movementSpeed = 0.03;
       maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
 
       maze.cameras.firstPersonCamera.setPosition(-49, 0.40, -49);
-      maze.cameras.WASD.setPosition(-49, 0.40, -49);
+      maze.cameras.firstPersonCamera.setPosition(-49, 0.40, -49);
 
       // close space
       let test2 = maze.addMeshObj({

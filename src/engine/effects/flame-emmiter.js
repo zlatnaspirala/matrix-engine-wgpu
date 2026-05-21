@@ -1,6 +1,6 @@
 import {mat4} from "wgpu-matrix";
 import {flameEffectInstance} from "../../shaders/flame-effect/flame-instanced";
-import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
+import {LOG_FUNNY_ARCADE, randomFloatFromTo} from "../utils";
 
 /**
  * @description
@@ -164,7 +164,9 @@ export class FlameEmitter {
             },
 
           }
-        }]
+        },
+        {format: 'rgba16float'},
+        {format: 'rgba16float'}]
       },
       primitive: {topology: "triangle-list"},
       depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}

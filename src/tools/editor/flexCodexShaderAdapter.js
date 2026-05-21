@@ -1,21 +1,54 @@
 import {MEConfig} from "../../me-config";
 
+/**
+ * Attachment metadata: defines what each output attachment expects
+ */
+const ATTACHMENT_SPEC = {
+  color: {
+    location: 0,
+    type: "vec4f",
+    usage: "Final composited color + alpha",
+    format: "rgba8unorm"
+  },
+  normal: {
+    location: 1,
+    type: "vec4f",
+    usage: "World-space normal for deferred/SSR",
+    format: "rgba16float"
+  },
+  worldPos: {
+    location: 2,
+    type: "vec4f",
+    usage: "World position for depth/position reconstruction",
+    format: "rgba16float"
+  }
+};
+
 export function graphAdapter(compilerResult, nodes) {
   const {structs, uniforms, functions, locals, outputs, mainLines} = compilerResult;
-  // console.log("what os node in adapter", nodes);
   const globals = new Set();
   globals.add("const PI: f32 = 3.141592653589793;");
   globals.add(`override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};`);
-  // 3️⃣ Prepare final color outputs
-  const baseColor = outputs.baseColor || "vec3f(1.0)";
-  const alpha = outputs.alpha || "1.0";
-  const normal = outputs.normal || "normalize(input.fragNorm)";
-  const emissive = outputs.emissive || "vec3f(0.0)";
+
+  // ✅ Build attachment outputs with explicit fallbacks
+  const attachmentOutputs = {
+    color: outputs.outColor || buildColorOutput(outputs),
+    normal: outputs.normal || `vec4f(normalize(input.fragNorm), 1.0)`,
+    worldPos: outputs.worldPos || `vec4f(input.fragPos, 1.0)`
+  };
+  
+  // Validate all attachments are present
+  validateAttachments(attachmentOutputs);
+
+  // ✅ Track which node-generated functions have been added (avoid duplicates)
+  const addedNodeFunctions = new Set();
 
   // --- Iterate nodes in topological order ---
   for(const node of nodes) {
     if(node.type === "LightShadowNode") {
-      functions.push(`
+      // Only add once, even if multiple LightShadowNodes exist
+      if (!addedNodeFunctions.has("LightShadowNode")) {
+        functions.push(`
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
     let L = normalize(light.position - fragPos);
     let NdotL = max(dot(N, L), 0.0);
@@ -24,7 +57,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let epsilon = light.innerCutoff - light.outerCutoff;
     var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    // coneAtten = 1.0;
     if (coneAtten <= 0.0 || NdotL <= 0.0) {
         return vec3f(0.0);
     }
@@ -54,7 +86,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let diffuse = kD * material.baseColor.rgb / PI;
 
     let radiance = light.color * light.intensity;
-    // return (diffuse + specular) * radiance * NdotL * coneAtten;
     return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
@@ -79,11 +110,11 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 `);
-      // Inject compute function (inline or multi-line)
-      // mainLines.push(`finalColor *= vec4(scene.globalAmbient + lightContribution, 1);`);
-
+        addedNodeFunctions.add("LightShadowNode");
+      }
     }
   }
+
   return `
 /* === Engine uniforms === */
 
@@ -134,8 +165,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 // PREDEFINED
@@ -149,16 +180,6 @@ struct PBRMaterialData {
 // PREDEFINED
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
-// // PREDEFINED
-// @group(0) @binding(0) var<uniform> scene : Scene;
-// @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-// @group(0) @binding(2) var shadowSampler: sampler_comparison;
-// @group(0) @binding(3) var meshTexture: texture_2d<f32>;
-// @group(0) @binding(4) var meshSampler: sampler;
-// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-// @group(0) @binding(7) var metallicRoughnessSampler: sampler;
-// @group(0) @binding(8) var<uniform> material: MaterialPBR;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -179,33 +200,65 @@ ${functions.join("\n\n")}
 
 // PREDEFINED Fragment input
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f
 };
 
-// PREDEFINED PBR helpers
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    
-    // ✅ Get alpha from texture and material factor
-    // let alpha = texColor.a * material.baseColorFactor.a;
-    let alpha = material.baseColorFactor.a;
-    
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+// ✅ 3-Attachment output struct (explicit format metadata for deferred/SSR)
+struct FragOut {
+  @location(0) color  : vec4f,     // rgba8unorm — final color + alpha
+  @location(1) normal : vec4f,     // rgba16float — world-space normal
+  @location(2) worldPos : vec4f,   // rgba16float — world position for reconstruction
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
   // Locals
   ${locals.join("\n  ")}
   ${mainLines.join("\n  ")}
-  return ${outputs.outColor};
+  
+  return FragOut(
+    ${attachmentOutputs.color},
+    ${attachmentOutputs.normal},
+    ${attachmentOutputs.worldPos}
+  );
 }
 `;
+}
+
+/**
+ * Helper: build color output from component pieces
+ */
+function buildColorOutput(outputs) {
+  const baseColor = outputs.baseColor || "vec3f(1.0)";
+  const alpha = outputs.alpha || "1.0";
+  return `vec4f(${baseColor}, ${alpha})`;
+}
+
+/**
+ * Helper: validate all required attachments are defined
+ */
+function validateAttachments(attachmentOutputs) {
+  const missing = Object.entries(attachmentOutputs)
+    .filter(([_, val]) => !val || val.trim() === "")
+    .map(([key]) => key);
+  
+  if (missing.length > 0) {
+    console.warn(
+      `⚠️ graphAdapter: Missing attachment outputs: ${missing.join(", ")}. ` +
+      `Falling back to defaults.`
+    );
+  }
 }

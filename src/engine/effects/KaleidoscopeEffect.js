@@ -197,7 +197,8 @@ export class KaleidoscopeEffect {
             color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
             alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
           }
-        }]
+        },
+        {format: this.colorFormat},{format: this.colorFormat}]
       },
       primitive: {topology: "triangle-list"},
       depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},

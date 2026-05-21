@@ -1,11 +1,10 @@
 export const kaleidoscopeEffectShader = `
-// === CAMERA BUFFER ========================================================
 struct Camera {
   viewProjMatrix : mat4x4<f32>,
 };
+
 @group(0) @binding(0) var<uniform> camera : Camera;
 
-// === MODEL & EFFECT BUFFER ================================================
 struct ModelData {
   model : mat4x4<f32>,
   time : f32,
@@ -21,7 +20,6 @@ struct ModelData {
 };
 @group(0) @binding(1) var<uniform> modelData : ModelData;
 
-// === VERTEX STAGE =========================================================
 struct VertexInput {
   @location(0) position : vec3<f32>,
   @location(1) uv : vec2<f32>,
@@ -41,9 +39,14 @@ fn vsMain(input : VertexInput) -> VSOut {
   return out;
 }
 
-// === FRAGMENT STAGE - KALEIDOSCOPE PATTERN ================================
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VSOut) -> FragOut {
   // Normalize UV to [-1, 1] centered
   var p = input.v_uv * 2.0 - 1.0;
   p *= modelData.zoom;
@@ -73,13 +76,23 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
     hueShift
   );
 
-  // Fade edges for smooth falloff
   let fade = smoothstep(1.2, 0.3, radius);
-
-  // Apply tint
   let tinted = mix(col, modelData.tint, modelData.tintStrength);
 
-  return vec4<f32>(tinted * fade, fade);
+  // return vec4<f32>(tinted * fade, fade);
+
+  // ✅ New (use fade for alpha)
+  let finalColor = vec4f(tinted * fade, fade);
+
+  // ✅ Also cleaned up duplicates:
+  let particleNormal = vec4f(normalize(vec3f(p, 0.0)), 1.0);
+  let particleWorldPos = input.Position;
+
+  return FragOut(
+    finalColor,
+    particleNormal,
+    particleWorldPos
+  );
 }
 `;
 
@@ -138,8 +151,14 @@ fn vsMain(input : VSIn) -> VSOut {
     return output;
 }
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VSOut) -> FragOut {
     let time            = input.p0.x;
     let speed           = input.p0.y;
     let intensity       = input.p0.z;
@@ -197,7 +216,16 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
     // Apply tint
     let tinted = mix(col, col * tintColor * 2.0, tintStrength * fade);
 
-    return vec4<f32>(tinted * fade, fade * intensity);
+    // return vec4<f32>(tinted * fade, fade * intensity);
+    let finalColor = vec4f(tinted * fade, fade * intensity);
+    let particleNormal = vec4f(normalize(vec3f(p, 0.0)), 1.0);
+    let particleWorldPos = input.position;
+
+    return FragOut(
+      finalColor,
+      particleNormal,
+      particleWorldPos
+    );
 }
 `;
 
