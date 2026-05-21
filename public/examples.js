@@ -227,6 +227,8 @@ var canvasInline = function () {
     canvasSize: 'fullscreen',
     fastRender: 0.85,
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 1 : 2,
+    MAX_BONES: 1,
     mainCameraParams: {
       type: 'WASD',
       // type: 'firstPersonCamera',
@@ -4382,17 +4384,18 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _collisionSubSystem = require("../src/engine/collision-sub-system.js");
+var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var mazeGame = function () {
   let maze = new _world.default({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     render: 'nano',
-    //'zero', // test
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 1 : 2,
+    MAX_BONES: 1,
     mainCameraParams: {
       type: 'firstPersonCamera',
-      // type: 'WASD',
       responseCoef: 1000
     },
     clearColor: {
@@ -4469,11 +4472,12 @@ var mazeGame = function () {
           }
         }
       }
-      console.log('__________________');
+
+      // console.log('__________________')
       maze.cameras.firstPersonCamera.movementSpeed = 0.03;
       maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
       maze.cameras.firstPersonCamera.setPosition(-49, 0.40, -49);
-      maze.cameras.WASD.setPosition(-49, 0.40, -49);
+      maze.cameras.firstPersonCamera.setPosition(-49, 0.40, -49);
 
       // close space
       let test2 = maze.addMeshObj({
@@ -4503,7 +4507,7 @@ var mazeGame = function () {
 };
 exports.mazeGame = mazeGame;
 
-},{"../src/engine/collision-sub-system.js":41,"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":83,"../src/world.js":137}],15:[function(require,module,exports){
+},{"../src/engine/collision-sub-system.js":41,"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
