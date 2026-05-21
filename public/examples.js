@@ -27744,6 +27744,10 @@ class FlameEffect {
               operation: "add"
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -45144,7 +45148,7 @@ fn vsMain(input : VSIn) -> VSOut {
   output.position = camera.viewProj * worldPos;
   output.uv = input.uv;
 
-  output.fragPos = worldPos.xyz; /// test
+  output.fragPos = worldPos.xyz;
   let localNormal = vec3<f32>(0.0, 0.0, 1.0); 
   output.fragNorm = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz) * localNormal;
 
@@ -45258,6 +45262,7 @@ const flameEffect = exports.flameEffect = /* wgsl */`
 struct Camera {
   viewProj : mat4x4<f32>
 };
+
 @group(0) @binding(0) var<uniform> camera : Camera;
 
 // Uniform buffer layout (112 bytes, all vec4-aligned):
@@ -45265,12 +45270,14 @@ struct Camera {
 //   offset  64 : timeSpeed    vec4<f32>     (.x = time, .y = speed)
 //   offset  80 : params       vec4<f32>     (.x = intensity, .y = turbulence, .z = stretch)
 //   offset  96 : tint         vec4<f32>     (.xyz = rgb tint colour, .w = tint strength 0..1)
+
 struct ModelData {
   model     : mat4x4<f32>,
   timeSpeed : vec4<f32>,
   params    : vec4<f32>,
   tint      : vec4<f32>,
 };
+
 @group(0) @binding(1) var<uniform> modelData : ModelData;
 
 struct VSIn {
@@ -45281,10 +45288,12 @@ struct VSIn {
 struct VSOut {
   @builtin(position) position  : vec4<f32>,
   @location(0)       uv        : vec2<f32>,
-  // Pack all scalar params into two interpolants to stay within limits
   @location(1)       p0        : vec4<f32>, // .x=time .y=speed .z=intensity .w=turbulence
   @location(2)       p1        : vec4<f32>, // .x=stretch .y=tintStrength
   @location(3)       tintColor : vec3<f32>,
+
+  @location(4) fragNorm  : vec3<f32>,
+  @location(5) fragPos   : vec3<f32>,
 };
 
 @vertex
@@ -45294,6 +45303,10 @@ fn vsMain(input : VSIn) -> VSOut {
   let worldPos     = modelData.model * vec4<f32>(input.position, 1.0);
   output.position  = camera.viewProj * worldPos;
   output.uv        = input.uv;
+
+  output.fragPos = worldPos.xyz;
+  let localNormal = vec3<f32>(0.0, 0.0, 1.0); 
+  output.fragNorm = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz) * localNormal;
 
   output.p0 = vec4<f32>(
     modelData.timeSpeed.x,  // time
@@ -45342,11 +45355,14 @@ fn fbm(p : vec2<f32>) -> f32 {
   return v;
 }
 
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VSOut) -> FragOut {
   // Unpack
   let time       = input.p0.x;
   let speed      = input.p0.y;
@@ -45402,7 +45418,13 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   let alpha = smoothstep(0.08, 0.65, n) * edgeMask * topFade;
 
   // Premultiplied alpha for additive blending
-  return vec4<f32>(finalColor * alpha, alpha);
+  // return vec4<f32>(finalColor * alpha, alpha);
+
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 

@@ -168,7 +168,9 @@ export class FlameEffect {
             color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
             alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
           }
-        }]
+        },
+        {format: 'rgba16float'},
+        {format: 'rgba16float'}]
       },
       primitive: {topology: "triangle-list"},
       depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},

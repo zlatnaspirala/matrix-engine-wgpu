@@ -38,7 +38,7 @@ fn vsMain(input : VSIn) -> VSOut {
   output.position = camera.viewProj * worldPos;
   output.uv = input.uv;
 
-  output.fragPos = worldPos.xyz; /// test
+  output.fragPos = worldPos.xyz;
   let localNormal = vec3<f32>(0.0, 0.0, 1.0); 
   output.fragNorm = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz) * localNormal;
 
