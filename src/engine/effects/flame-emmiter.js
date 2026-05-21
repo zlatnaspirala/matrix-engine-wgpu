@@ -1,6 +1,6 @@
 import {mat4} from "wgpu-matrix";
 import {flameEffectInstance} from "../../shaders/flame-effect/flame-instanced";
-import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
+import {LOG_FUNNY_ARCADE, randomFloatFromTo} from "../utils";
 
 /**
  * @description
