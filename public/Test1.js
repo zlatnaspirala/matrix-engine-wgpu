@@ -38117,9 +38117,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER3").scale[2] = 3;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("BANNER3").position.SetX(8);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("BANNER3").rotation.z = 30;
       }, 800);
       setTimeout(() => {
@@ -38193,9 +38190,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER2").position.SetZ(-20);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("BANNER2").position.SetX(-9);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("L_BOX").position.SetY(0.6600000000000011);
       }, 800);
       setTimeout(() => {
@@ -38251,6 +38245,15 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("REEL_2").position.SetZ(-21.59984181315592);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER2").position.SetX(-9.07);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER3").position.SetZ(-19.70773526332103);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER3").position.SetX(7.859999999999999);
       }, 800);
     });
   }
