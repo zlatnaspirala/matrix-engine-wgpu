@@ -8710,6 +8710,17 @@ var GizmoEffect = class {
     this.dragAxis = 0;
     this.parentMesh = null;
     this.initialPosition = null;
+    this.editorUpdatePosEvent = new CustomEvent("web.editor.update.pos", {
+      detail: { inputFor: "", propertyId: "position", property: "x", value: 0 }
+    });
+    this.editorUpdateRotEvent = new CustomEvent("web.editor.update.rot", {
+      detail: { inputFor: "", propertyId: "rotation", property: "y", value: 0 }
+    });
+    this.editorUpdateScaleEvent = new CustomEvent("web.editor.update.scale", {
+      detail: { inputFor: "", propertyId: "scale", property: "1", value: 0 }
+    });
+    this.gizmoSettingsCache = new Float32Array(4);
+    this.matrixResultCache = new Float32Array(16);
     this._initPipeline();
     this._setupEventListeners();
     addEventListener("editor-set-gizmo-mode", (e2) => {
@@ -9005,32 +9016,23 @@ var GizmoEffect = class {
       if (this.isDragging) {
         if (this.parentMesh._GRAPH_CACHE) return;
         if (this.mode == 0) {
-          document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "position",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z
-            }
-          }));
+          this.editorUpdatePosEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdatePosEvent.detail.propertyId = "position";
+          this.editorUpdatePosEvent.detail.property = this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z";
+          this.editorUpdatePosEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z;
+          document.dispatchEvent(this.editorUpdatePosEvent);
         } else if (this.mode == 1) {
-          document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "rotation",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
+          this.editorUpdateRotEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdateRotEvent.detail.propertyId = "rotation";
+          this.editorUpdateRotEvent.detail.property = this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z";
+          this.editorUpdateRotEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
+          document.dispatchEvent(this.editorUpdateRotEvent);
         } else if (this.mode == 2) {
-          document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "scale",
-              property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
+          this.editorUpdateScaleEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdateScaleEvent.detail.propertyId = "scale";
+          this.editorUpdateScaleEvent.detail.property = this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2";
+          this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
+          document.dispatchEvent(this.editorUpdateScaleEvent);
         }
         this.isDragging = false;
         this.selectedAxis = 0;
@@ -9103,16 +9105,45 @@ var GizmoEffect = class {
     return { x: x2, y: y2, z, w };
   }
   _multiplyMatrices(a, b) {
-    const result2 = new Array(16);
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        result2[i * 4 + j] = a[i * 4 + 0] * b[0 * 4 + j] + a[i * 4 + 1] * b[1 * 4 + j] + a[i * 4 + 2] * b[2 * 4 + j] + a[i * 4 + 3] * b[3 * 4 + j];
-      }
-    }
-    return result2;
+    const out = this.matrixResultCache;
+    let a0, a1, a2, a3;
+    a0 = a[0];
+    a1 = a[1];
+    a2 = a[2];
+    a3 = a[3];
+    out[0] = a0 * b[0] + a1 * b[4] + a2 * b[8] + a3 * b[12];
+    out[1] = a0 * b[1] + a1 * b[5] + a2 * b[9] + a3 * b[13];
+    out[2] = a0 * b[2] + a1 * b[6] + a2 * b[10] + a3 * b[14];
+    out[3] = a0 * b[3] + a1 * b[7] + a2 * b[11] + a3 * b[15];
+    a0 = a[4];
+    a1 = a[5];
+    a2 = a[6];
+    a3 = a[7];
+    out[4] = a0 * b[0] + a1 * b[4] + a2 * b[8] + a3 * b[12];
+    out[5] = a0 * b[1] + a1 * b[5] + a2 * b[9] + a3 * b[13];
+    out[6] = a0 * b[2] + a1 * b[6] + a2 * b[10] + a3 * b[14];
+    out[7] = a0 * b[3] + a1 * b[7] + a2 * b[11] + a3 * b[15];
+    a0 = a[8];
+    a1 = a[9];
+    a2 = a[10];
+    a3 = a[11];
+    out[8] = a0 * b[0] + a1 * b[4] + a2 * b[8] + a3 * b[12];
+    out[9] = a0 * b[1] + a1 * b[5] + a2 * b[9] + a3 * b[13];
+    out[10] = a0 * b[2] + a1 * b[6] + a2 * b[10] + a3 * b[14];
+    out[11] = a0 * b[3] + a1 * b[7] + a2 * b[11] + a3 * b[15];
+    a0 = a[12];
+    a1 = a[13];
+    a2 = a[14];
+    a3 = a[15];
+    out[12] = a0 * b[0] + a1 * b[4] + a2 * b[8] + a3 * b[12];
+    out[13] = a0 * b[1] + a1 * b[5] + a2 * b[9] + a3 * b[13];
+    out[14] = a0 * b[2] + a1 * b[6] + a2 * b[10] + a3 * b[14];
+    out[15] = a0 * b[3] + a1 * b[7] + a2 * b[11] + a3 * b[15];
+    return out;
   }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
+    if (this.parentMesh.dontDrag) return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -9220,8 +9251,11 @@ var GizmoEffect = class {
     return dist2 < threshold;
   }
   _updateGizmoSettings() {
-    const data = new Float32Array([this.mode, this.size, this.selectedAxis, 1]);
-    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, data);
+    this.gizmoSettingsCache[0] = this.mode;
+    this.gizmoSettingsCache[1] = this.size;
+    this.gizmoSettingsCache[2] = this.selectedAxis;
+    this.gizmoSettingsCache[3] = 1;
+    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, this.gizmoSettingsCache);
   }
   updateInstanceData(baseModelMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
@@ -38029,9 +38063,6 @@ var app2 = new MatrixEngineWGPU(
       setTimeout(() => {
         app3.getSceneObjectByName("R_BOX").scale[1] = 4;
       }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_1").position.SetY(3);
-      }, 800);
       downloadMeshes({ cube: "res/meshes/blender/plane.obj" }, (m) => {
         const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
@@ -38193,9 +38224,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("L_BOX").position.SetY(0.6600000000000011);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").position.SetX(0.03);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("BANNER3").position.SetY(9);
       }, 800);
       setTimeout(() => {
@@ -38241,12 +38269,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("FLOOR").position.SetY(-2.6249999999999907);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_TOP").position.SetY(1.295);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").position.SetZ(-21.59984181315592);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("BANNER2").position.SetX(-9.07);
       }, 800);
       setTimeout(() => {
@@ -38254,6 +38276,18 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("BANNER3").position.SetX(7.859999999999999);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").position.SetY(3);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").position.SetX(0);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").position.SetZ(-20);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_TOP").position.SetY(3);
       }, 800);
     });
   }

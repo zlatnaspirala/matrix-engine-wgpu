@@ -208,14 +208,6 @@ let app = new MatrixEngineWGPU(
       }, 800);
       // ME END R_BOX updateScale1
 
-      // ME START REEL_1 updatePosy
-      setTimeout(() => {
-        app.getSceneObjectByName('REEL_1').position.SetY(3);
-      }, 800);
-      // ME END REEL_1 updatePosy
-
-
-
       // ME START BANNER1
       downloadMeshes({cube: "res/meshes/blender/plane.obj"}, (m) => {
         const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
@@ -497,12 +489,6 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END L_BOX updatePosy
  
-   // ME START REEL_2 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('REEL_2').position.SetX(0.03);
- }, 800);
- // ME END REEL_2 updatePosx
- 
    // ME START BANNER3 updatePosy
  setTimeout(() => {
   app.getSceneObjectByName('BANNER3').position.SetY(9);
@@ -593,18 +579,6 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END FLOOR updatePosy
  
-   // ME START REEL_TOP updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('REEL_TOP').position.SetY(1.295);
- }, 800);
- // ME END REEL_TOP updatePosy
- 
-  // ME START REEL_2 updatePosz
- setTimeout(() => {
-  app.getSceneObjectByName('REEL_2').position.SetZ(-21.59984181315592);
- }, 800);
- // ME END REEL_2 updatePosz
- 
    // ME START BANNER2 updatePosx
  setTimeout(() => {
   app.getSceneObjectByName('BANNER2').position.SetX(-9.07);
@@ -622,6 +596,30 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('BANNER3').position.SetX(7.859999999999999);
  }, 800);
  // ME END BANNER3 updatePosx
+ 
+  // ME START REEL_1 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_1').position.SetY(3);
+ }, 800);
+ // ME END REEL_1 updatePosy
+ 
+  // ME START REEL_2 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_2').position.SetX(0);
+ }, 800);
+ // ME END REEL_2 updatePosx
+ 
+  // ME START REEL_2 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_2').position.SetZ(-20);
+ }, 800);
+ // ME END REEL_2 updatePosz
+ 
+   // ME START REEL_TOP updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').position.SetY(3);
+ }, 800);
+ // ME END REEL_TOP updatePosy
  
  // [MAIN_REPLACE2]
 
