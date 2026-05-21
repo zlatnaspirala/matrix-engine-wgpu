@@ -33361,6 +33361,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           constants: fragmentConstants,
           targets: [{
             format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
           }]
         },
         depthStencil: {
@@ -33402,6 +33406,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
                 operation: 'add'
               }
             }
+          }, {
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
           }]
         },
         depthStencil: {
@@ -48767,6 +48775,7 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
 struct FragOut {
   @location(0) color  : vec4f,
   @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
@@ -49046,6 +49055,7 @@ let NdotV = max(dot(N, V), 0.0);
 struct FragOut {
   @location(0) color  : vec4f,
   @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment

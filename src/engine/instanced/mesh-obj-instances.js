@@ -891,9 +891,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           module: this.device.createShaderModule({code: fragmentCode}),
           constants: fragmentConstants,
           targets: [
-            {
-              format: 'rgba16float',
-            },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'},
+            {format: 'rgba16float'}
           ],
         },
         depthStencil: {
@@ -935,6 +935,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
                 },
               },
             },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'}
           ],
         },
         depthStencil: {
