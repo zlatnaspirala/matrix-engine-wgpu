@@ -656,7 +656,7 @@ export default class ProceduralMeshObj extends Materials {
     }
   }
 
-  async destroy(destructionType = "shatter", duration = 0.8, options = {}) {
+  async destroyGeo(destructionType = "shatter", duration = 0.8, options = {}) {
     const {onComplete = null, physics = null, debris = null, velocity = 1, lifetime = 3} = options;
     const destructionFunc = this._getDestructionFunction(destructionType);
     const pair = MeshMorpher.createMatchedPair(

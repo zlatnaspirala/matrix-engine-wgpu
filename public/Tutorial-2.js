@@ -33560,7 +33560,7 @@ var ProceduralMeshObj = class extends Materials {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} \u2192 ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
     }
   }
-  async destroy(destructionType = "shatter", duration = 0.8, options2 = {}) {
+  async destroyGeo(destructionType = "shatter", duration = 0.8, options2 = {}) {
     const { onComplete = null, physics = null, debris = null, velocity = 1, lifetime = 3 } = options2;
     const destructionFunc = this._getDestructionFunction(destructionType);
     const pair = MeshMorpher.createMatchedPair(
