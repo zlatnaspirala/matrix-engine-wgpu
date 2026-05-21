@@ -1586,7 +1586,7 @@ export default class FluxCodexVertex {
         spec.fields[0].value = name;
         const dom = document.querySelector(`.node[data-id="${spec.id}"]`);
         let fields = dom.querySelectorAll(".node-fields");
-        // console.log('WORKS objects', fields);
+        console.log('set shader ', name);
         fields[0].children[0].value = name;
       });
       el.appendChild(select);
@@ -4566,7 +4566,6 @@ LIST OF INTEREST OBJECT:
         }
         n._returnCache = n.osc.UPDATE();
       } else if(n.title === "Set Shader Graph") {
-        console.warn("[Set Shader Graph] ?????  ??input fields...");
         const objectName = this.getValue(nodeId, "objectName");
         let selectedShader = this.getValue(nodeId, "selectedShader");
         if(!objectName) {
@@ -4574,8 +4573,9 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
+
         let o = app.getSceneObjectByName(objectName);
-        // 
+        console.warn("[Set Shader Graph] Missing input fields...  ", app.shaderGraph.runtime_memory[selectedShader]);
         o.changeMaterial("graph", app.shaderGraph.runtime_memory[selectedShader]);
         this.enqueueOutputs(n, "execOut");
         return;
@@ -4790,8 +4790,9 @@ LIST OF INTEREST OBJECT:
       return;
     } else if(n.title === "Set RotateX") {
       const rot = this.getValue(nodeId, "rotation");
-      console.log('TEST ROTATE X')
+      console.log('TEST ROTATE X', rot)
       if(rot?.setRotateX) {
+        console.log('TEST ROTATE X', this.getValue(nodeId, "x"))
         rot.setRotateX(this.getValue(nodeId, "x"));
       }
       this.enqueueOutputs(n, "execOut");

@@ -308,6 +308,7 @@ export class Rotation {
     //   return degToRad(this.x);
     // }
 
+    // console.log(this.rotationSpeed.x)
     if(this.rotationSpeed.x == 0) {
       if(this.netx != this.x && this.emitX) {
         app.net.send({remoteName: this.remoteName, sceneName: this.emitX, netRotX: this.x})

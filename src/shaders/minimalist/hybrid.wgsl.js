@@ -48,9 +48,9 @@ struct SpotLight {
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,

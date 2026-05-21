@@ -26,7 +26,7 @@ struct MaterialPBR {
 };
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
