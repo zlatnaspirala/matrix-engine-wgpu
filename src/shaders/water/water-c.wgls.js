@@ -191,5 +191,10 @@ fn main(input: FragmentInput) -> FragOut {
   let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
   let alpha = mix(0.2, 0.5, fresnel);
   let vibrantColor = finalColor * 1.5;
-  return vec4f(vibrantColor, alpha);
+  // return vec4f(vibrantColor, alpha);
+  return FragOut(
+  vec4f(vibrantColor, alpha),
+  vec4f(normalize(waterNormal), 1.0),
+  vec4f(input.fragPos, 1.0)
+);
 }`;

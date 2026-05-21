@@ -21,39 +21,44 @@ struct FragmentInput {
 const albedo = vec3f(0.9);
 const ambientFactor = 1.2;
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input : FragmentInput) -> @location(0) vec4f {
+fn main(input : FragmentInput) -> FragOut {
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-  let color: vec4f = vec4(textureColor.rgb * ambientFactor , textureColor.a);
-  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a);
-   switch (postFXMode) {
-    case 0: {
-      return color;
-    }
-    case 1: {
-      // Invert
-      return vec4f(1.0 - color.rgb, color.a);
-    }
-    case 2: {
-      // Grayscale
-      let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
-      return vec4f(vec3f(gray), color.a);
-    }
-    case 3: {
-      // Chroma Key
-      let keyColor = vec3f(0.0, 1.0, 0.0);
-      let threshold = 0.3;
-      let diff = distance(color.rgb, keyColor);
-      if (diff < threshold) {
-        return vec4f(0.0, 0.0, 0.0, 0.0);
-      }
-      return color;
-    }
-    default: {
-      return color;
+  let color: vec4f = vec4(textureColor.rgb * ambientFactor, textureColor.a);
+  
+  // ✅ Apply post-FX based on mode
+  var finalColor: vec4f = color;
+  
+  if (postFXMode == 1u) {
+    // Invert
+    finalColor = vec4f(1.0 - color.rgb, color.a);
+  } else if (postFXMode == 2u) {
+    // Grayscale
+    let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
+    finalColor = vec4f(vec3f(gray), color.a);
+  } else if (postFXMode == 3u) {
+    // Chroma Key (green screen)
+    let keyColor = vec3f(0.0, 1.0, 0.0);
+    let threshold = 0.3;
+    let diff = distance(color.rgb, keyColor);
+    if (diff < threshold) {
+      finalColor = vec4f(0.0, 0.0, 0.0, 0.0);
     }
   }
+  
+  // ✅ Return all 3 attachments
+  return FragOut(
+    finalColor,
+    vec4f(normalize(input.fragNorm), 1.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;

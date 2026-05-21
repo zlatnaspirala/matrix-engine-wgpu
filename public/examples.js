@@ -26508,6 +26508,10 @@ class KaleidoscopeEffect {
               operation: "add"
             }
           }
+        }, {
+          format: this.colorFormat
+        }, {
+          format: this.colorFormat
         }]
       },
       primitive: {
@@ -29214,7 +29218,15 @@ class KaleidoscopeEmitter {
               dstFactor: 'one-minus-src-alpha',
               operation: 'add'
             }
-          }
+          },
+          writeMask: 0xF
+        },
+        // {format: 'rgba16float', writeMask: 0xF},
+        // {format: 'rgba16float', writeMask: 0xF}
+        {
+          format: this.format
+        }, {
+          format: this.format
         }]
       },
       primitive: {
@@ -46811,40 +46823,45 @@ struct FragmentInput {
 const albedo = vec3f(0.9);
 const ambientFactor = 1.2;
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input : FragmentInput) -> @location(0) vec4f {
+fn main(input : FragmentInput) -> FragOut {
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-  let color: vec4f = vec4(textureColor.rgb * ambientFactor , textureColor.a);
-  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a);
-   switch (postFXMode) {
-    case 0: {
-      return color;
-    }
-    case 1: {
-      // Invert
-      return vec4f(1.0 - color.rgb, color.a);
-    }
-    case 2: {
-      // Grayscale
-      let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
-      return vec4f(vec3f(gray), color.a);
-    }
-    case 3: {
-      // Chroma Key
-      let keyColor = vec3f(0.0, 1.0, 0.0);
-      let threshold = 0.3;
-      let diff = distance(color.rgb, keyColor);
-      if (diff < threshold) {
-        return vec4f(0.0, 0.0, 0.0, 0.0);
-      }
-      return color;
-    }
-    default: {
-      return color;
+  let color: vec4f = vec4(textureColor.rgb * ambientFactor, textureColor.a);
+  
+  // ✅ Apply post-FX based on mode
+  var finalColor: vec4f = color;
+  
+  if (postFXMode == 1u) {
+    // Invert
+    finalColor = vec4f(1.0 - color.rgb, color.a);
+  } else if (postFXMode == 2u) {
+    // Grayscale
+    let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
+    finalColor = vec4f(vec3f(gray), color.a);
+  } else if (postFXMode == 3u) {
+    // Chroma Key (green screen)
+    let keyColor = vec3f(0.0, 1.0, 0.0);
+    let threshold = 0.3;
+    let diff = distance(color.rgb, keyColor);
+    if (diff < threshold) {
+      finalColor = vec4f(0.0, 0.0, 0.0, 0.0);
     }
   }
+  
+  // ✅ Return all 3 attachments
+  return FragOut(
+    finalColor,
+    vec4f(normalize(input.fragNorm), 1.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.fragmentVideoWGSL = fragmentVideoWGSL;
@@ -49613,13 +49630,12 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.kaleidoscopeEffectShader = exports.kaleidoscopeEffectInstance = void 0;
 const kaleidoscopeEffectShader = exports.kaleidoscopeEffectShader = `
-// === CAMERA BUFFER ========================================================
 struct Camera {
   viewProjMatrix : mat4x4<f32>,
 };
+
 @group(0) @binding(0) var<uniform> camera : Camera;
 
-// === MODEL & EFFECT BUFFER ================================================
 struct ModelData {
   model : mat4x4<f32>,
   time : f32,
@@ -49635,7 +49651,6 @@ struct ModelData {
 };
 @group(0) @binding(1) var<uniform> modelData : ModelData;
 
-// === VERTEX STAGE =========================================================
 struct VertexInput {
   @location(0) position : vec3<f32>,
   @location(1) uv : vec2<f32>,
@@ -49655,9 +49670,14 @@ fn vsMain(input : VertexInput) -> VSOut {
   return out;
 }
 
-// === FRAGMENT STAGE - KALEIDOSCOPE PATTERN ================================
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VSOut) -> FragOut {
   // Normalize UV to [-1, 1] centered
   var p = input.v_uv * 2.0 - 1.0;
   p *= modelData.zoom;
@@ -49687,13 +49707,23 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
     hueShift
   );
 
-  // Fade edges for smooth falloff
   let fade = smoothstep(1.2, 0.3, radius);
-
-  // Apply tint
   let tinted = mix(col, modelData.tint, modelData.tintStrength);
 
-  return vec4<f32>(tinted * fade, fade);
+  // return vec4<f32>(tinted * fade, fade);
+
+  // ✅ New (use fade for alpha)
+  let finalColor = vec4f(tinted * fade, fade);
+
+  // ✅ Also cleaned up duplicates:
+  let particleNormal = vec4f(normalize(vec3f(p, 0.0)), 1.0);
+  let particleWorldPos = input.Position;
+
+  return FragOut(
+    finalColor,
+    particleNormal,
+    particleWorldPos
+  );
 }
 `;
 const kaleidoscopeEffectInstance = exports.kaleidoscopeEffectInstance = `
@@ -49751,8 +49781,14 @@ fn vsMain(input : VSIn) -> VSOut {
     return output;
 }
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VSOut) -> FragOut {
     let time            = input.p0.x;
     let speed           = input.p0.y;
     let intensity       = input.p0.z;
@@ -49810,7 +49846,16 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
     // Apply tint
     let tinted = mix(col, col * tintColor * 2.0, tintStrength * fade);
 
-    return vec4<f32>(tinted * fade, fade * intensity);
+    // return vec4<f32>(tinted * fade, fade * intensity);
+    let finalColor = vec4f(tinted * fade, fade * intensity);
+    let particleNormal = vec4f(normalize(vec3f(p, 0.0)), 1.0);
+    let particleWorldPos = input.position;
+
+    return FragOut(
+      finalColor,
+      particleNormal,
+      particleWorldPos
+    );
 }
 `;
 
@@ -52369,7 +52414,12 @@ fn main(input: FragmentInput) -> FragOut {
   let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
   let alpha = mix(0.2, 0.5, fresnel);
   let vibrantColor = finalColor * 1.5;
-  return vec4f(vibrantColor, alpha);
+  // return vec4f(vibrantColor, alpha);
+  return FragOut(
+  vec4f(vibrantColor, alpha),
+  vec4f(normalize(waterNormal), 1.0),
+  vec4f(input.fragPos, 1.0)
+);
 }`;
 exports.fragmentWaterWGSL = fragmentWaterWGSL;
 
