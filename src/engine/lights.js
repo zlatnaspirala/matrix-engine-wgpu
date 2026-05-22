@@ -36,7 +36,6 @@ export class SpotLight {
   innerCutoff;
   outerCutoff;
 
-  // spotlightUniformBuffer;
   // Dirty flags
   _dirty = true;            // VP matrix needs recompute (position/target changed)
   _lightBufferDirty = true; // _lightBuffer array needs rebuild before next upload
@@ -44,6 +43,7 @@ export class SpotLight {
   get position() {return this._position;}
 
   setPosition(x, y, z) {
+    if(this._position[0] === x && this._position[1] === y && this._position[2] === z) return;
     this._position[0] = x;
     this._position[1] = y;
     this._position[2] = z;
@@ -52,6 +52,7 @@ export class SpotLight {
   }
 
   setPositionVec(v) {
+    if(vec3.equals(v, this._position)) return;
     vec3.copy(v, this._position);
     this._dirty = true;
     this._lightBufferDirty = true;
@@ -60,12 +61,14 @@ export class SpotLight {
   get target() {return this._target;}
 
   setTargetVec(v) {
+    if(vec3.equals(v, this._target)) return;
     vec3.copy(v, this._target);
     this._dirty = true;
     this._lightBufferDirty = true;
   }
 
   setTarget(x, y, z) {
+    if(this._target[0] === x && this._target[1] === y && this._target[2] === z) return;
     this._target[0] = x;
     this._target[1] = y;
     this._target[2] = z;
@@ -74,18 +77,21 @@ export class SpotLight {
   }
 
   setTargetX(x) {
+    if(this._target[0] === x) return;
     this._target[0] = x;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
 
   setTargetY(y) {
+    if(this._target[1] === y) return;
     this._target[1] = y;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
 
   setTargetZ(z) {
+    if(this._target[2] === z) return;
     this._target[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
@@ -100,11 +106,16 @@ export class SpotLight {
     shadowSampler = null,
     fov = 175, aspect = 1.0, near = 0.1, far = 100) {
 
-    aspect = 1;
+    // Validate parameters
+    if(fov <= 0 || fov >= 180) throw new Error('FOV must be between 0 and 180 degrees');
+    if(near >= far) throw new Error('near must be less than far');
+    if(near <= 0) throw new Error('near must be positive');
+    if(far <= 0) throw new Error('far must be positive');
+
     this.name = "light" + indexx;
     this.getName = () => {return this.name};
     this.fov = fov;
-    this.aspect = 1;
+    this.aspect = 1.0; // Force square aspect for shadow map
     this.near = near;
     this.far = far;
 
@@ -123,14 +134,6 @@ export class SpotLight {
     this.intensity = 1.0;
     this.color = vec3.create(1.0, 1.0, 1.0);
 
-    this.viewMatrix = mat4.lookAt(this._position, this._target, this.up);
-    this.projectionMatrix = mat4.perspective(
-      this.fov,
-      this.aspect,
-      this.near,
-      this.far
-    );
-
     this._lightBuffer = new Float32Array(36);
     this._diffScratch = vec3.create();
     this._dirScratch = vec3.create();
@@ -148,23 +151,23 @@ export class SpotLight {
     });
 
     this.setProjection = function(fov = 175, aspect = 1.0, near = 0.1, far = 200) {
-      this.projectionMatrix = mat4.perspective(fov, aspect, near, far);
+      if(fov <= 0 || fov >= 180) throw new Error('FOV must be between 0 and 180 degrees');
+      if(near >= far) throw new Error('near must be less than far');
+      this.projectionMatrix = mat4.perspective(fov, 1.0, near, far);
       this._dirty = true;
     };
 
     this.updateProjection = function() {
-      console.log('test ', this.fov, this.aspect, this.near, this.far)
-      this.projectionMatrix = mat4.perspective(this.fov, this.aspect, this.near, this.far);
+      this.projectionMatrix = mat4.perspective(this.fov, 1.0, this.near, this.far);
       this._dirty = true;
     };
 
     this.device = device;
+    
+    // Initialize matrices
+    this.viewMatrix = mat4.lookAt(this._position, this._target, this.up);
+    this.projectionMatrix = mat4.perspective(this.fov, 1.0, this.near, this.far);
     this.viewProjMatrix = mat4.multiply(this.projectionMatrix, this.viewMatrix);
-
-    this.fov = fov;
-    this.aspect = aspect;
-    this.near = near;
-    this.far = far;
 
     this.innerCutoff = Math.cos((Math.PI / 180) * 20.0);
     this.outerCutoff = Math.cos((Math.PI / 180) * 30.0);
@@ -184,7 +187,7 @@ export class SpotLight {
     this.shadowSampler = shadowSampler;
 
     this.renderPassDescriptor = {
-      label: "descriptor shadowPass[SpotLigth]",
+      label: "descriptor shadowPass[SpotLight]",
       colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowTextureView,
@@ -349,7 +352,7 @@ export class SpotLight {
     this.updater = [];
   }
 
-  // ─── Update ───────────────────────────────────────────────────────────────
+  // ─── Update ───────────────────────────────────────────────────────────
 
   /**
    * Recomputes VP matrix only when dirty.
@@ -438,12 +441,12 @@ export class SpotLight {
     this.color[0] = colorR;
     this._lightBufferDirty = true;
   };
-  setColorB = (colorB) => {
-    this.color[1] = colorB;
+  setColorG = (colorG) => {
+    this.color[1] = colorG;
     this._lightBufferDirty = true;
   };
-  setColorG = (colorG) => {
-    this.color[2] = colorG;
+  setColorB = (colorB) => {
+    this.color[2] = colorB;
     this._lightBufferDirty = true;
   };
   setRange = (range) => {
