@@ -118,7 +118,7 @@ setTimeout(() => {
   hideMenu();
 }, 2000);
 
-},{"./examples/camera-texture.js":2,"./examples/canvas-inline.js":3,"./examples/cinematic-camera.js":4,"./examples/destruction-procedural.js":5,"./examples/flipper-ammo.js":6,"./examples/flipper-jolt.js":7,"./examples/fontana.js":8,"./examples/glb-loader.js":9,"./examples/hzb-ray.js":10,"./examples/kale.js":11,"./examples/load-obj-file.js":12,"./examples/load-objs-sequence.js":13,"./examples/maze.js":14,"./examples/my-lights.js":15,"./examples/physics-playground.js":16,"./examples/physics-test-cannones.js":17,"./examples/physics-test-jolt.js":18,"./examples/procedural-mesh.js":19,"./examples/snake-lights-instanced.js":20,"./examples/snake-lights.js":21,"./examples/video-texture.js":22,"./src/engine/utils.js":83}],2:[function(require,module,exports){
+},{"./examples/camera-texture.js":2,"./examples/canvas-inline.js":3,"./examples/cinematic-camera.js":4,"./examples/destruction-procedural.js":5,"./examples/flipper-ammo.js":6,"./examples/flipper-jolt.js":7,"./examples/fontana.js":8,"./examples/glb-loader.js":9,"./examples/hzb-ray.js":10,"./examples/kale.js":11,"./examples/load-obj-file.js":12,"./examples/load-objs-sequence.js":13,"./examples/maze.js":14,"./examples/my-lights.js":15,"./examples/physics-playground.js":16,"./examples/physics-test-cannones.js":17,"./examples/physics-test-jolt.js":18,"./examples/procedural-mesh.js":19,"./examples/snake-lights-instanced.js":20,"./examples/snake-lights.js":21,"./examples/video-texture.js":22,"./src/engine/utils.js":84}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -209,7 +209,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":80,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":81,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -504,7 +504,7 @@ var canvasInline = function () {
 };
 exports.canvasInline = canvasInline;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":80,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],4:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":81,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -730,7 +730,7 @@ var loadCinematicCamera = function () {
 };
 exports.loadCinematicCamera = loadCinematicCamera;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -955,7 +955,7 @@ var loadDestructionProcedural = function () {
 };
 exports.loadDestructionProcedural = loadDestructionProcedural;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":80,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":81,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1838,7 +1838,7 @@ var flipperAmmo = function () {
 };
 exports.flipperAmmo = flipperAmmo;
 
-},{"../src/engine/cameras.js":40,"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],7:[function(require,module,exports){
+},{"../src/engine/cameras.js":40,"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2974,7 +2974,7 @@ var flipperJolt = function () {
 };
 exports.flipperJolt = flipperJolt;
 
-},{"../src/engine/cameras.js":40,"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],8:[function(require,module,exports){
+},{"../src/engine/cameras.js":40,"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3154,7 +3154,7 @@ var fontana = function () {
 };
 exports.fontana = fontana;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":80,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],9:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":81,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3415,7 +3415,7 @@ function loadGLBLoader() {
   window.app = TEST_ANIM;
 }
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/loaders/webgpu-gltf.js":66,"../src/engine/utils.js":83,"../src/world.js":136}],10:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/loaders/webgpu-gltf.js":66,"../src/engine/utils.js":84,"../src/world.js":137}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3692,7 +3692,7 @@ var loadHZB = function () {
 };
 exports.loadHZB = loadHZB;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],11:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4060,7 +4060,7 @@ var loadKale = function () {
 };
 exports.loadKale = loadKale;
 
-},{"../src/engine/effects/KaleidoscopeEffect.js":43,"../src/engine/effects/kaleidoscopeEffectInstance.js":52,"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/shaders/kale/kale.wgsl.js":107,"../src/world.js":136}],12:[function(require,module,exports){
+},{"../src/engine/effects/KaleidoscopeEffect.js":43,"../src/engine/effects/kaleidoscopeEffectInstance.js":52,"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/shaders/kale/kale.wgsl.js":108,"../src/world.js":137}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4270,7 +4270,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/me-config.js":84,"../src/world.js":136}],13:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/me-config.js":85,"../src/world.js":137}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4401,7 +4401,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/utils.js":83,"../src/world.js":136}],14:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/utils.js":84,"../src/world.js":137}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4535,7 +4535,7 @@ var mazeGame = function () {
 };
 exports.mazeGame = mazeGame;
 
-},{"../src/engine/collision-sub-system.js":41,"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],15:[function(require,module,exports){
+},{"../src/engine/collision-sub-system.js":41,"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4706,7 +4706,7 @@ var myLights = function () {
 };
 exports.myLights = myLights;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/loaders/webgpu-gltf.js":66,"../src/engine/utils.js":83,"../src/world.js":136}],16:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/loaders/webgpu-gltf.js":66,"../src/engine/utils.js":84,"../src/world.js":137}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5132,7 +5132,7 @@ var physicsPlayground = function () {
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/procedural-mesh.js":80,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],17:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/procedural-mesh.js":81,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5404,7 +5404,7 @@ var testCannonES = function () {
 };
 exports.testCannonES = testCannonES;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/procedural-mesh.js":80,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],18:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/procedural-mesh.js":81,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5681,7 +5681,7 @@ var testJolt = function () {
 };
 exports.testJolt = testJolt;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/procedural-mesh.js":80,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],19:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/matrix-class.js":68,"../src/engine/procedural-mesh.js":81,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5883,7 +5883,7 @@ var procMesh = function () {
 };
 exports.procMesh = procMesh;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":80,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/world.js":136}],20:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/procedural-mesh.js":81,"../src/engine/raycast.js":83,"../src/engine/utils.js":84,"../src/world.js":137}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6015,7 +6015,7 @@ var snakeLightsInstanced = function () {
 };
 exports.snakeLightsInstanced = snakeLightsInstanced;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/loaders/webgpu-gltf.js":66,"../src/engine/utils.js":83,"../src/world.js":136}],21:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/loaders/webgpu-gltf.js":66,"../src/engine/utils.js":84,"../src/world.js":137}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6281,7 +6281,7 @@ var snakeLights = function () {
 };
 exports.snakeLights = snakeLights;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/loaders/webgpu-gltf.js":66,"../src/engine/utils.js":83,"../src/world.js":136}],22:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/loaders/webgpu-gltf.js":66,"../src/engine/utils.js":84,"../src/world.js":137}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6431,7 +6431,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":82,"../src/world.js":136}],23:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":83,"../src/world.js":137}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -24327,7 +24327,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":83}],40:[function(require,module,exports){
+},{"./utils":84}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26017,7 +26017,7 @@ const MobileDOM = exports.MobileDOM = {
   }
 };
 
-},{"./utils":83,"wgpu-matrix":37}],41:[function(require,module,exports){
+},{"./utils":84,"wgpu-matrix":37}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26640,7 +26640,7 @@ class KaleidoscopeEffect {
 }
 exports.KaleidoscopeEffect = KaleidoscopeEffect;
 
-},{"../../shaders/kale/kale.wgsl":107,"../geometry-factory":58,"wgpu-matrix":37}],44:[function(require,module,exports){
+},{"../../shaders/kale/kale.wgsl":108,"../geometry-factory":58,"wgpu-matrix":37}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27077,7 +27077,7 @@ class DestructionEffect {
 }
 exports.DestructionEffect = DestructionEffect;
 
-},{"../../shaders/desctruction/dust-shader.wgsl.js":86,"wgpu-matrix":37}],45:[function(require,module,exports){
+},{"../../shaders/desctruction/dust-shader.wgsl.js":87,"wgpu-matrix":37}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27250,7 +27250,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":87,"wgpu-matrix":37}],46:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":88,"wgpu-matrix":37}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27559,7 +27559,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":88,"../utils":83,"wgpu-matrix":37}],47:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":89,"../utils":84,"wgpu-matrix":37}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27885,7 +27885,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":89,"../geometry-factory":58,"wgpu-matrix":37}],48:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":90,"../geometry-factory":58,"wgpu-matrix":37}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28130,7 +28130,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":116,"../geometry-factory.js":58,"wgpu-matrix":37}],49:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":117,"../geometry-factory.js":58,"wgpu-matrix":37}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28390,7 +28390,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":116,"../geometry-factory.js":58,"wgpu-matrix":37}],50:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":117,"../geometry-factory.js":58,"wgpu-matrix":37}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28581,7 +28581,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":115,"../geometry-factory.js":58,"wgpu-matrix":37}],51:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":116,"../geometry-factory.js":58,"wgpu-matrix":37}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28589,6 +28589,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.GizmoEffect = void 0;
 var _gimzoShader = require("../../shaders/gizmo/gimzoShader");
+var _matrixStream = require("../networking/matrix-stream");
 class GizmoEffect {
   constructor(device, format) {
     this.device = device;
@@ -28796,6 +28797,7 @@ class GizmoEffect {
     app.canvas.addEventListener("ray.hit.mousedown", e => {
       const detail = e.detail;
       if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
+        console.log('test _handleRayHit ');
         this._handleRayHit(detail);
       } else {
         e.detail.hitObject.effects.gizmoEffect = this;
@@ -28840,6 +28842,7 @@ class GizmoEffect {
           this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
           document.dispatchEvent(this.editorUpdateScaleEvent);
         }
+        console.log('this.isDragging = false;');
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
@@ -28865,6 +28868,7 @@ class GizmoEffect {
       this.initialPositionCache.z = this.parentMesh.position.z;
       this.dragAxis = axis;
       this._updateGizmoSettings();
+      console.log('this.isDragging = true;');
       this.isDragging = true;
     }
   }
@@ -28918,7 +28922,7 @@ class GizmoEffect {
   }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.isDragging) return;
-    if (this.parentMesh.dontDrag) return;
+    if (this.parentMesh.dontDrag && (0, _matrixStream.byId)('graph-status').innerText === "🔴") return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -29088,7 +29092,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":101}],52:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":102,"../networking/matrix-stream":70}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29443,7 +29447,7 @@ class KaleidoscopeEmitter {
 }
 exports.KaleidoscopeEmitter = KaleidoscopeEmitter;
 
-},{"../../shaders/kale/kale.wgsl":107,"../utils":83,"wgpu-matrix":37}],53:[function(require,module,exports){
+},{"../../shaders/kale/kale.wgsl":108,"../utils":84,"wgpu-matrix":37}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29611,7 +29615,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":87,"wgpu-matrix":37}],54:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":88,"wgpu-matrix":37}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29915,7 +29919,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":117,"wgpu-matrix":37}],56:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":118,"wgpu-matrix":37}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30103,7 +30107,7 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":118}],57:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":119}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30647,7 +30651,7 @@ function physicsBodiesChain(material = "standard", pos = {
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":132,"../loader-obj":63,"../procedural-mesh":80}],58:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":133,"../loader-obj":63,"../procedural-mesh":81}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32496,7 +32500,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.mirror.wgsl":93,"../../shaders/fragment.wgsl":95,"../../shaders/fragment.wgsl.metal":96,"../../shaders/fragment.wgsl.noCut":97,"../../shaders/fragment.wgsl.normalmap":98,"../../shaders/fragment.wgsl.pong":99,"../../shaders/fragment.wgsl.power":100,"../../shaders/instanced/fragment.instanced.wgsl":103,"../../shaders/instanced/fragment.mirror.instanced.wgsl":104,"../../shaders/minimalist/color-a.wgsl":108,"../../shaders/minimalist/color-b.wgsl":109,"../../shaders/minimalist/hybrid.wgsl":110,"../../shaders/minimalist/mini.wgsl":113,"../../shaders/water/water-c.wgls":123,"../pipelineManager":75}],60:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":94,"../../shaders/fragment.wgsl":96,"../../shaders/fragment.wgsl.metal":97,"../../shaders/fragment.wgsl.noCut":98,"../../shaders/fragment.wgsl.normalmap":99,"../../shaders/fragment.wgsl.pong":100,"../../shaders/fragment.wgsl.power":101,"../../shaders/instanced/fragment.instanced.wgsl":104,"../../shaders/instanced/fragment.mirror.instanced.wgsl":105,"../../shaders/minimalist/color-a.wgsl":109,"../../shaders/minimalist/color-b.wgsl":110,"../../shaders/minimalist/hybrid.wgsl":111,"../../shaders/minimalist/mini.wgsl":114,"../../shaders/water/water-c.wgls":124,"../pipelineManager":76}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33648,7 +33652,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../me-config":84,"../../shaders/fragment.video.wgsl":94,"../../shaders/instanced/vertex.instanced.wgsl":105,"../effects/energy-bar":45,"../effects/flame":47,"../effects/flame-emmiter":46,"../effects/gen":50,"../effects/gen-tex":48,"../effects/gen-tex2":49,"../effects/mana-bar":53,"../effects/pointerEffect":55,"../literals":62,"../loaders/bvh-instaced":64,"../matrix-class":68,"../pipelineManager":75,"../utils":83,"./materials-instanced":59,"wgpu-matrix":37}],61:[function(require,module,exports){
+},{"../../me-config":85,"../../shaders/fragment.video.wgsl":95,"../../shaders/instanced/vertex.instanced.wgsl":106,"../effects/energy-bar":45,"../effects/flame":47,"../effects/flame-emmiter":46,"../effects/gen":50,"../effects/gen-tex":48,"../effects/gen-tex2":49,"../effects/mana-bar":53,"../effects/pointerEffect":55,"../literals":62,"../loaders/bvh-instaced":64,"../matrix-class":68,"../pipelineManager":76,"../utils":84,"./materials-instanced":59,"wgpu-matrix":37}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34262,7 +34266,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../me-config":84,"../shaders/instanced/vertexShadow.instanced.wgsl":106,"../shaders/vertex.procedural.wgsl":119,"../shaders/vertexShadow.wgsl":122,"./behavior":39,"./utils":83,"wgpu-matrix":37}],62:[function(require,module,exports){
+},{"../me-config":85,"../shaders/instanced/vertexShadow.instanced.wgsl":107,"../shaders/vertex.procedural.wgsl":120,"../shaders/vertexShadow.wgsl":123,"./behavior":39,"./utils":84,"wgpu-matrix":37}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35447,7 +35451,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../../me-config.js":84,"../instanced/mesh-obj-instances.js":60,"../utils.js":83,"./webgpu-gltf.js":66,"wgpu-matrix":37}],65:[function(require,module,exports){
+},{"../../me-config.js":85,"../instanced/mesh-obj-instances.js":60,"../utils.js":84,"./webgpu-gltf.js":66,"wgpu-matrix":37}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36106,7 +36110,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../../me-config.js":84,"../mesh-obj":69,"../utils.js":83,"./webgpu-gltf.js":66,"bvh-loader":23,"wgpu-matrix":37}],66:[function(require,module,exports){
+},{"../../me-config.js":85,"../mesh-obj":69,"../utils.js":84,"./webgpu-gltf.js":66,"bvh-loader":23,"wgpu-matrix":37}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37565,7 +37569,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fontana/fontana.wgsl":90,"../shaders/fragment.dark.wgsl":91,"../shaders/fragment.gpt.wgsl":92,"../shaders/fragment.mirror.wgsl":93,"../shaders/fragment.wgsl":95,"../shaders/fragment.wgsl.metal":96,"../shaders/fragment.wgsl.noCut":97,"../shaders/fragment.wgsl.normalmap":98,"../shaders/fragment.wgsl.pong":99,"../shaders/fragment.wgsl.power":100,"../shaders/minimalist/color-a.wgsl":108,"../shaders/minimalist/color-b.wgsl":109,"../shaders/minimalist/hybrid.wgsl":110,"../shaders/minimalist/mid-a.wgsl":111,"../shaders/minimalist/mini-a.wgsl":112,"../shaders/minimalist/mini.wgsl":113,"../shaders/mixed/fragmentMix1.wgsl":114,"../shaders/water/water-c.wgls":123,"./pipelineManager":75,"./utils":83}],68:[function(require,module,exports){
+},{"../shaders/fontana/fontana.wgsl":91,"../shaders/fragment.dark.wgsl":92,"../shaders/fragment.gpt.wgsl":93,"../shaders/fragment.mirror.wgsl":94,"../shaders/fragment.wgsl":96,"../shaders/fragment.wgsl.metal":97,"../shaders/fragment.wgsl.noCut":98,"../shaders/fragment.wgsl.normalmap":99,"../shaders/fragment.wgsl.pong":100,"../shaders/fragment.wgsl.power":101,"../shaders/minimalist/color-a.wgsl":109,"../shaders/minimalist/color-b.wgsl":110,"../shaders/minimalist/hybrid.wgsl":111,"../shaders/minimalist/mid-a.wgsl":112,"../shaders/minimalist/mini-a.wgsl":113,"../shaders/minimalist/mini.wgsl":114,"../shaders/mixed/fragmentMix1.wgsl":115,"../shaders/water/water-c.wgls":124,"./pipelineManager":76,"./utils":84}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38061,7 +38065,7 @@ class PVector {
 }
 exports.PVector = PVector;
 
-},{"./utils":83}],69:[function(require,module,exports){
+},{"./utils":84}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39173,7 +39177,498 @@ class MEMeshObj extends _materials.default {
 }
 exports.default = MEMeshObj;
 
-},{"../me-config":84,"../shaders/fragment.video.wgsl":94,"../shaders/vertex.wgsl":120,"../shaders/vertex.wgsl.normalmap":121,"./effects/destruction":44,"./effects/flame":47,"./effects/flame-emmiter":46,"./effects/gizmo":51,"./effects/msdfText":54,"./effects/pointerEffect":55,"./effects/topology-point":56,"./literals":62,"./materials":67,"./matrix-class":68,"./pipelineManager":75,"./procedures/procedural-textures":81,"./utils":83,"wgpu-matrix":37}],70:[function(require,module,exports){
+},{"../me-config":85,"../shaders/fragment.video.wgsl":95,"../shaders/vertex.wgsl":121,"../shaders/vertex.wgsl.normalmap":122,"./effects/destruction":44,"./effects/flame":47,"./effects/flame-emmiter":46,"./effects/gizmo":51,"./effects/msdfText":54,"./effects/pointerEffect":55,"./effects/topology-point":56,"./literals":62,"./materials":67,"./matrix-class":68,"./pipelineManager":76,"./procedures/procedural-textures":82,"./utils":84,"wgpu-matrix":37}],70:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.REDLOG = exports.NETLOG = exports.BIGLOG = exports.ANYLOG = void 0;
+exports.byId = byId;
+exports.checkBtnsForce = checkBtnsForce;
+exports.checkBtnsRecordings = checkBtnsRecordings;
+exports.clearEventsTextarea = clearEventsTextarea;
+exports.clearHttpTextarea = clearHttpTextarea;
+exports.closeSession = closeSession;
+exports.deleteRecording = deleteRecording;
+exports.enableBtn = enableBtn;
+exports.events = void 0;
+exports.fetchAll = fetchAll;
+exports.fetchInfo = fetchInfo;
+exports.forceDisconnect = forceDisconnect;
+exports.forceUnpublish = forceUnpublish;
+exports.getRecording = getRecording;
+exports.getToken = getToken;
+exports.httpRequest = httpRequest;
+exports.joinSession = joinSession;
+exports.leaveSession = leaveSession;
+exports.listRecordings = listRecordings;
+exports.netConfig = void 0;
+exports.pushEvent = pushEvent;
+exports.removeUser = removeUser;
+exports.session = void 0;
+exports.startRecording = startRecording;
+exports.stopRecording = stopRecording;
+exports.updateNumVideos = updateNumVideos;
+const netConfig = exports.netConfig = {
+  NETWORKING_DOMAIN: '',
+  NETWORKING_PORT: '2020',
+  isDataOnly: false
+};
+function byId(d) {
+  return document.getElementById(d);
+}
+;
+var BIGLOG = exports.BIGLOG = "color: #55fd53;font-size:20px;text-shadow: 0px 0px 5px #f4fd63, -1px -1px 5px orange";
+var REDLOG = exports.REDLOG = "color: lime;font-size:15px;text-shadow: 0px 0px 5px red, -2px -2px 5px orangered";
+var NETLOG = exports.NETLOG = "color: orange;font-size:15px;text-shadow: 0px 0px 1px red, 0px 0px 5px orangered";
+var ANYLOG = exports.ANYLOG = "color: yellow;font-size:15px;text-shadow: 1px 1px 4px red, 0px 0px 2px orangered";
+var OV;
+var numVideos = 0;
+var sessionName;
+var token;
+var session;
+function joinSession(options) {
+  if (typeof options === 'undefined') {
+    options = {
+      resolution: '320x240'
+    };
+  }
+  // console.log('resolution:', options.resolution);
+  document.getElementById("join-btn").disabled = true;
+  document.getElementById("join-btn").innerHTML = "Joining...";
+  getToken(function () {
+    OV = new OpenVidu();
+    window.OV = OV;
+    exports.session = session = OV.initSession();
+    session.on('connectionCreated', event => {
+      // console.log(`connectionCreated ${event.connection.connectionId}`)
+      dispatchEvent(new CustomEvent('onConnectionCreated', {
+        detail: event
+      }));
+      pushEvent(event);
+    });
+    session.on('connectionDestroyed', e => {
+      console.log(`Connection destroyed ${e.connection.connectionId}`);
+      dispatchEvent(new CustomEvent('connectionDestroyed', {
+        detail: {
+          connectionId: e.connection.connectionId,
+          event: e
+        }
+      }));
+      // byId("pwa-container-2").style.display = "none";
+      pushEvent(e);
+    });
+    if (!options.isDataOnly) {
+      // On every new Stream received...
+      session.on('streamCreated', event => {
+        pushEvent(event);
+        console.log(`%c [onStreamCreated] ${event.stream.streamId}`);
+        setTimeout(() => {
+          console.log(`%c REMOTE STREAM READY [] ${byId("remote-video-" + event.stream.streamId)}`, BIGLOG);
+        }, 2000);
+        dispatchEvent(new CustomEvent('onStreamCreated', {
+          detail: {
+            event: event,
+            msg: `[connectionId][${event.stream.connection.connectionId}]`
+          }
+        }));
+        // Subscribe to the Stream to receive it
+        // HTML video will be appended to element with 'video-container' id
+        var subscriber = session.subscribe(event.stream, 'video-container');
+        // When the HTML video has been appended to DOM...
+        subscriber.on('videoElementCreated', event => {
+          dispatchEvent(new CustomEvent(`videoElementCreatedSubscriber`, {
+            detail: event
+          }));
+          // Add a new HTML element for the user's name and nickname over its video
+          updateNumVideos(1);
+        });
+
+        // When the HTML video has been appended to DOM...
+        subscriber.on('videoElementDestroyed', event => {
+          pushEvent(event);
+          // Add a new HTML element for the user's name and nickname over its video
+          updateNumVideos(-1);
+        });
+
+        // When the subscriber stream has started playing media...
+        subscriber.on('streamPlaying', event => {
+          dispatchEvent(new CustomEvent('streamPlaying', {
+            detail: event
+          }));
+        });
+      });
+      session.on('streamDestroyed', event => {
+        pushEvent(event);
+      });
+    } else {
+      // data
+      session.on('streamCreated', event => {
+        const subscriber = session.subscribe(event.stream, "subscriber");
+        console.log("USER DATA: " + event.stream.connection.data);
+      });
+    }
+    session.on('sessionDisconnected', event => {
+      console.log("Session Disconected", event);
+      // byId("pwa-container-2").style.display = "none";
+      pushEvent(event);
+      if (event.reason !== 'disconnect') {
+        removeUser();
+      }
+      if (event.reason !== 'sessionClosedByServer') {
+        exports.session = session = null;
+        numVideos = 0;
+        // $('#join').show();
+        byId('join').style.display = 'block';
+        byId('session').style.display = 'none';
+      }
+    });
+
+    // session.on('recordingStarted', event => {
+    //   pushEvent(event);
+    // });
+
+    // session.on('recordingStopped', event => {
+    //   pushEvent(event);
+    // });
+
+    // On every asynchronous exception...
+    session.on('exception', exception => {
+      console.warn(exception);
+    });
+    dispatchEvent(new CustomEvent(`setupSessionObject`, {
+      detail: session
+    }));
+    if (!netConfig.isDataOnly === true) {
+      session.connect(token).then(() => {
+        byId('session-title').innerText = sessionName;
+        byId('join').style.display = 'none';
+        byId('session').style.display = 'block';
+        var publisher = OV.initPublisher('video-container', {
+          audioSource: netConfig.isDataOnly ? false : undefined,
+          // The source of audio. If undefined default microphone
+          videoSource: netConfig.isDataOnly ? false : undefined,
+          // The source of video. If undefined default webcam
+          publishAudio: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your audio unmuted or not
+          publishVideo: !netConfig.isDataOnly,
+          // Whether you want to start publishing with your video enabled or not
+          resolution: options.resolution,
+          // The resolution of your video
+          frameRate: 30,
+          // The frame rate of your video
+          insertMode: 'APPEND',
+          // How the video is inserted in the target element 'video-container'
+          mirror: false // Whether to mirror your local video or not
+        });
+        publisher.on('accessAllowed', event => {
+          pushEvent({
+            type: 'accessAllowed'
+          });
+        });
+        publisher.on('accessDenied', event => {
+          pushEvent(event);
+        });
+        publisher.on('accessDialogOpened', event => {
+          pushEvent({
+            type: 'accessDialogOpened'
+          });
+        });
+        publisher.on('accessDialogClosed', event => {
+          pushEvent({
+            type: 'accessDialogClosed'
+          });
+        });
+
+        // When the publisher stream has started playing media...
+        publisher.on('streamCreated', event => {
+          dispatchEvent(new CustomEvent(`LOCAL-STREAM-READY`, {
+            detail: event.stream
+          }));
+          console.log(`%c LOCAL STREAM READY ${event.stream.connection.connectionId}`, BIGLOG);
+          // if(document.getElementById("pwa-container-1").style.display != 'none') {
+          // 	document.getElementById("pwa-container-1").style.display = 'none';
+          // }
+          pushEvent(event);
+        });
+
+        // When our HTML video has been added to DOM...
+        publisher.on('videoElementCreated', event => {
+          dispatchEvent(new CustomEvent(`videoElementCreated`, {
+            detail: event
+          }));
+          updateNumVideos(1);
+          console.log('NOT FIXED MUTE event.element, ', event.element);
+          event.element.mute = true;
+          // $(event.element).prop('muted', true); // Mute local video
+        });
+
+        // When the HTML video has been appended to DOM...
+        publisher.on('videoElementDestroyed', event => {
+          dispatchEvent(new CustomEvent(`videoElementDestroyed`, {
+            detail: event
+          }));
+          pushEvent(event);
+          updateNumVideos(-1);
+        });
+
+        // When the publisher stream has started playing media...
+        publisher.on('streamPlaying', event => {
+          console.log("publisher.on streamPlaying");
+          // if(document.getElementById("pwa-container-1").style.display != 'none') {
+          // 	document.getElementById("pwa-container-1").style.display = 'none';
+          // }
+          // pushEvent(event);
+        });
+        session.publish(publisher);
+      }).catch(error => {
+        console.warn('Error connecting to the session:', error.code, error.message);
+        enableBtn();
+      });
+    } else {
+      // in future some meta data can be added here -> on conn created event
+      console.log("netConfig", netConfig.customData);
+      session.connect(token, netConfig.customData).then(() => {
+        byId('session-title').innerText = sessionName;
+        byId('join').style.display = 'none';
+        byId('session').style.display = 'block';
+        // console.log('[ONLY DATA]', session);
+      }).catch(error => {
+        console.warn('Error connecting to the session:', error.code, error.message);
+        enableBtn();
+      });
+    }
+    return false;
+  });
+}
+function leaveSession() {
+  session.disconnect();
+  enableBtn();
+}
+
+/* OPENVIDU METHODS */
+
+function enableBtn() {
+  document.getElementById("join-btn").disabled = false;
+  document.getElementById("join-btn").innerHTML = "Join!";
+}
+
+/* APPLICATION REST METHODS */
+
+function getToken(callback) {
+  sessionName = byId("sessionName").value;
+  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/get-token', {
+    sessionName: sessionName
+  }, 'Request of TOKEN gone WRONG:', res => {
+    token = res[0];
+    console.log('Excellent (TOKEN:' + token + ')');
+    callback(token);
+  });
+}
+function removeUser() {
+  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/remove-user', {
+    sessionName: sessionName,
+    token: token
+  }, 'User couldn\'t be removed from session', res => {
+    console.warn("You have been removed from session " + sessionName);
+  });
+}
+function closeSession() {
+  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/close-session', {
+    sessionName: sessionName
+  }, 'Session couldn\'t be closed', res => {
+    console.warn("Session " + sessionName + " has been closed");
+  });
+}
+function fetchInfo(sessionName) {
+  httpRequest('POST', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-info', {
+    sessionName: sessionName
+  }, 'Session couldn\'t be fetched', res => {
+    // console.info("Session fetched");
+    dispatchEvent(new CustomEvent('check-gameplay-channel', {
+      detail: JSON.stringify(res, null, "\t")
+    }));
+    // byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function fetchAll() {
+  httpRequest('GET', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/fetch-all', {}, 'All session info couldn\'t be fetched', res => {
+    console.warn("All session fetched");
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function forceDisconnect() {
+  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/force-disconnect', {
+    sessionName: sessionName,
+    connectionId: document.getElementById('forceValue').value
+  }, 'Connection couldn\'t be closed', res => {
+    console.warn("Connection has been closed");
+  });
+}
+function forceUnpublish() {
+  httpRequest('DELETE', 'https://' + netConfig.NETWORKING_DOMAIN + ':' + netConfig.NETWORKING_PORT + '/api/force-unpublish', {
+    sessionName: sessionName,
+    streamId: document.getElementById('forceValue').value
+  }, 'Stream couldn\'t be closed', res => {
+    console.warn("Stream has been closed");
+  });
+}
+function httpRequest(method, url, body, errorMsg, callback) {
+  byId('textarea-http').innerText = '';
+  var http = new XMLHttpRequest();
+  http.open(method, url, true);
+  http.setRequestHeader('Content-type', 'application/json');
+  http.addEventListener('readystatechange', processRequest, false);
+  http.send(JSON.stringify(body));
+  function processRequest() {
+    if (http.readyState == 4) {
+      if (http.status == 200) {
+        try {
+          callback(JSON.parse(http.responseText));
+        } catch (e) {
+          callback(e);
+        }
+      } else {
+        console.warn(errorMsg + ' (' + http.status + ')');
+        if (url.indexOf('fetch-info') != -1) {
+          if (http.status == 0 && errorMsg == "Session couldn't be fetched") {
+            const errorText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+            dispatchEvent(new CustomEvent('check-gameplay-channel', {
+              detail: {
+                status: 'false',
+                errorText: errorText
+              }
+            }));
+          } else {
+            dispatchEvent(new CustomEvent('check-gameplay-channel', {
+              detail: {
+                status: 'free',
+                url: url
+              }
+            }));
+          }
+        }
+      }
+    }
+  }
+}
+function startRecording() {
+  // not fixed 
+  var outputMode = $('input[name=outputMode]:checked').val();
+  var hasAudio = $('#has-audio-checkbox').prop('checked');
+  var hasVideo = $('#has-video-checkbox').prop('checked');
+  httpRequest('POST', 'api/recording/start', {
+    session: session.sessionId,
+    outputMode: outputMode,
+    hasAudio: hasAudio,
+    hasVideo: hasVideo
+  }, 'Start recording WRONG', res => {
+    console.log(res);
+    document.getElementById('forceRecordingId').value = res.id;
+    checkBtnsRecordings();
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function stopRecording() {
+  var forceRecordingId = document.getElementById('forceRecordingId').value;
+  httpRequest('POST', 'api/recording/stop', {
+    recording: forceRecordingId
+  }, 'Stop recording WRONG', res => {
+    console.log(res);
+    $('#textarea-http').text(JSON.stringify(res, null, "\t"));
+  });
+}
+function deleteRecording() {
+  var forceRecordingId = document.getElementById('forceRecordingId').value;
+  httpRequest('DELETE', 'api/recording/delete', {
+    recording: forceRecordingId
+  }, 'Delete recording WRONG', res => {
+    console.log("DELETE ok");
+    byId('textarea-http').innerText = "DELETE ok";
+  });
+}
+function getRecording() {
+  var forceRecordingId = document.getElementById('forceRecordingId').value;
+  httpRequest('GET', 'api/recording/get/' + forceRecordingId, {}, 'Get recording WRONG', res => {
+    console.log(res);
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+function listRecordings() {
+  httpRequest('GET', 'api/recording/list', {}, 'List recordings WRONG', res => {
+    console.log(res);
+    byId('textarea-http').innerText = JSON.stringify(res, null, "\t");
+  });
+}
+
+/* APPLICATION REST METHODS */
+/* APPLICATION BROWSER METHODS */
+var events = exports.events = '';
+window.onbeforeunload = function () {
+  if (session) {
+    removeUser();
+    leaveSession();
+  }
+};
+function updateNumVideos(i) {
+  numVideos += i;
+  var coll = document.getElementsByTagName('video');
+  for (var x = 0; x < coll.length; x++) {
+    coll.classList = '';
+  }
+  for (var x = 0; x < coll.length; x++) {
+    coll.classList = '';
+    switch (numVideos) {
+      case 1:
+        coll[x].classList.add('two');
+        break;
+      case 2:
+        coll[x].classList.add('two');
+        break;
+      case 3:
+        coll[x].classList.add('three');
+        break;
+      case 4:
+        coll[x].classList.add('four');
+        break;
+    }
+  }
+}
+function checkBtnsForce() {
+  if (document.getElementById("forceValue").value === "") {
+    document.getElementById('buttonForceUnpublish').disabled = true;
+    document.getElementById('buttonForceDisconnect').disabled = true;
+  } else {
+    document.getElementById('buttonForceUnpublish').disabled = false;
+    document.getElementById('buttonForceDisconnect').disabled = false;
+  }
+}
+function checkBtnsRecordings() {
+  if (document.getElementById("forceRecordingId").value === "") {
+    document.getElementById('buttonGetRecording').disaevents$bled = true;
+    document.getElementById('buttonStopRecording').disabled = true;
+    document.getElementById('buttonDeleteRecording').disabled = true;
+  } else {
+    document.getElementById('buttonGetRecording').disabled = false;
+    document.getElementById('buttonStopRecording').disabled = false;
+    document.getElementById('buttonDeleteRecording').disabled = false;
+  }
+}
+function pushEvent(event) {
+  exports.events = events = events + ((!events ? '' : '\n') + event.type);
+  byId('textarea-events').innerText = events;
+  // console.info("EVENT: ", events)
+}
+function clearHttpTextarea() {
+  byId('textarea-http').innerText = '';
+}
+function clearEventsTextarea() {
+  byId('textarea-events').innerText = '';
+  exports.events = events = '';
+}
+
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39286,7 +39781,7 @@ let zeroPass = function () {
 };
 exports.zeroPass = zeroPass;
 
-},{"../utils":83}],71:[function(require,module,exports){
+},{"../utils":84}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39416,7 +39911,7 @@ let mobile1 = function () {
 };
 exports.mobile1 = mobile1;
 
-},{"../utils":83}],72:[function(require,module,exports){
+},{"../utils":84}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39483,7 +39978,7 @@ let nanoPass = function () {
 };
 exports.nanoPass = nanoPass;
 
-},{"../utils":83}],73:[function(require,module,exports){
+},{"../utils":84}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39495,7 +39990,7 @@ var _utils = require("../utils");
 let noShadowPass = function () {};
 exports.noShadowPass = noShadowPass;
 
-},{"../utils":83}],74:[function(require,module,exports){
+},{"../utils":84}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39959,7 +40454,7 @@ function _snapQuat(snap, b) {
   return [Math.cos(a / 2), ax * s, ay * s, az * s];
 }
 
-},{"wgpu-matrix":37}],75:[function(require,module,exports){
+},{"wgpu-matrix":37}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40055,7 +40550,7 @@ class MaterialBindGroupCache {
 }
 exports.MaterialBindGroupCache = MaterialBindGroupCache;
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40097,7 +40592,7 @@ class METoolTip {
 }
 exports.METoolTip = METoolTip;
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40498,7 +40993,7 @@ function combinePassWGSL() {
 `;
 }
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40877,7 +41372,7 @@ function patchMainRenderPassDesc(device, width, height, existingDesc) {
   };
 }
 
-},{"../../shaders/hzb/hzb.wgsl":102}],79:[function(require,module,exports){
+},{"../../shaders/hzb/hzb.wgsl":103}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41436,7 +41931,7 @@ function compositeFragWGSL() {
   `;
 }
 
-},{}],80:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43102,7 +43597,7 @@ class MeshMorpher {
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/fragment.video.wgsl":94,"../shaders/vertex.procedural.wgsl":119,"./effects/flame":47,"./effects/flame-emmiter":46,"./effects/gizmo":51,"./geometry-factory":58,"./literals":62,"./materials":67,"./matrix-class":68,"./pipelineManager":75,"./utils":83,"wgpu-matrix":37}],81:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":95,"../shaders/vertex.procedural.wgsl":120,"./effects/flame":47,"./effects/flame-emmiter":46,"./effects/gizmo":51,"./geometry-factory":58,"./literals":62,"./materials":67,"./matrix-class":68,"./pipelineManager":76,"./utils":84,"wgpu-matrix":37}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43141,7 +43636,7 @@ function createGroundTexture(device, size = 512) {
   return texture;
 }
 
-},{}],82:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -43399,7 +43894,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
   });
 }
 
-},{"wgpu-matrix":37}],83:[function(require,module,exports){
+},{"wgpu-matrix":37}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44807,7 +45302,7 @@ class CameraPath {
 }
 exports.CameraPath = CameraPath;
 
-},{}],84:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44906,7 +45401,7 @@ const MEConfig = exports.MEConfig = {
   }
 };
 
-},{"./engine/utils.js":83}],85:[function(require,module,exports){
+},{"./engine/utils.js":84}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44948,7 +45443,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":38,"../engine/utils":83}],86:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":38,"../engine/utils":84}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45118,7 +45613,7 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],87:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45164,7 +45659,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],88:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45313,7 +45808,7 @@ fn fsMain(input : VSOut) -> FragOut {
 }
 `;
 
-},{}],89:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45491,7 +45986,7 @@ fn fsMain(input : VSOut) -> FragOut {
 }
 `;
 
-},{}],90:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46055,7 +46550,7 @@ fn main(input: VertexInput) -> VertexOutput {
 `;
 exports.fountainWaterVertexWGSL = fountainWaterVertexWGSL;
 
-},{"../../me-config":84}],91:[function(require,module,exports){
+},{"../../me-config":85}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46302,7 +46797,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentDarkWGSL = fragmentDarkWGSL;
 
-},{"../me-config":84}],92:[function(require,module,exports){
+},{"../me-config":85}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46518,7 +47013,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.fragmentWGSLGPT = fragmentWGSLGPT;
 
-},{"../me-config":84}],93:[function(require,module,exports){
+},{"../me-config":85}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46828,7 +47323,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.mirrorIlluminateFragmentWGSL = mirrorIlluminateFragmentWGSL;
 
-},{"../me-config":84}],94:[function(require,module,exports){
+},{"../me-config":85}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46901,7 +47396,7 @@ fn main(input : FragmentInput) -> FragOut {
 `;
 exports.fragmentVideoWGSL = fragmentVideoWGSL;
 
-},{}],95:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47152,7 +47647,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWGSL = fragmentWGSL;
 
-},{"../me-config":84}],96:[function(require,module,exports){
+},{"../me-config":85}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47346,7 +47841,7 @@ for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
 `;
 exports.fragmentWGSLMetal = fragmentWGSLMetal;
 
-},{"../me-config":84}],97:[function(require,module,exports){
+},{"../me-config":85}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47587,7 +48082,7 @@ return FragOut(
 }`;
 exports.fragmentWGSLDark = fragmentWGSLDark;
 
-},{"../me-config":84}],98:[function(require,module,exports){
+},{"../me-config":85}],99:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47845,7 +48340,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWGSLNormalMap = fragmentWGSLNormalMap;
 
-},{"../me-config":84}],99:[function(require,module,exports){
+},{"../me-config":85}],100:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48083,7 +48578,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWGSLPong = fragmentWGSLPong;
 
-},{"../me-config":84}],100:[function(require,module,exports){
+},{"../me-config":85}],101:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48267,7 +48762,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.fragmentWGSLPower = fragmentWGSLPower;
 
-},{"../me-config":84}],101:[function(require,module,exports){
+},{"../me-config":85}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48340,7 +48835,7 @@ fn fsMain(input : VSOut) -> FragOut {
   );
 }`;
 
-},{}],102:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48643,7 +49138,7 @@ fn fs(in: VertOut) -> @location(0) vec4f {
   return vec4f(color, confidence * 0.8);
 }`;
 
-},{}],103:[function(require,module,exports){
+},{}],104:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48874,7 +49369,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWGSLInstanced = fragmentWGSLInstanced;
 
-},{"../../me-config":84}],104:[function(require,module,exports){
+},{"../../me-config":85}],105:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49178,7 +49673,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.fragmentMirrorWGSLInstanced = fragmentMirrorWGSLInstanced;
 
-},{"../../me-config":84}],105:[function(require,module,exports){
+},{"../../me-config":85}],106:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49447,7 +49942,7 @@ fn main(
 }`;
 exports.vertexWGSLInstanced = vertexWGSLInstanced;
 
-},{"../../me-config":84}],106:[function(require,module,exports){
+},{"../../me-config":85}],107:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49661,7 +50156,7 @@ fn main(
 `;
 exports.vertexShadowWGSLInstanced = vertexShadowWGSLInstanced;
 
-},{"../../me-config":84}],107:[function(require,module,exports){
+},{"../../me-config":85}],108:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50003,7 +50498,7 @@ fn fsMain(input : VSOut) -> FragOut {
 // }
 // `;
 
-},{}],108:[function(require,module,exports){
+},{}],109:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50107,7 +50602,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.coloraWGSL = coloraWGSL;
 
-},{}],109:[function(require,module,exports){
+},{}],110:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50284,7 +50779,7 @@ fn main(input: FragmentInput) -> FragOut {
 // `;
 exports.colorbWGSL = colorbWGSL;
 
-},{"../../me-config":84}],110:[function(require,module,exports){
+},{"../../me-config":85}],111:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50406,7 +50901,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.hybridWGSL = hybridWGSL;
 
-},{"../../me-config":84}],111:[function(require,module,exports){
+},{"../../me-config":85}],112:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50532,7 +51027,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.midaWGSL = midaWGSL;
 
-},{"../../me-config":84}],112:[function(require,module,exports){
+},{"../../me-config":85}],113:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50650,7 +51145,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.miniaWGSL = miniaWGSL;
 
-},{"../../me-config":84}],113:[function(require,module,exports){
+},{"../../me-config":85}],114:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50741,7 +51236,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.miniWGSL = miniWGSL;
 
-},{"../../me-config":84}],114:[function(require,module,exports){
+},{"../../me-config":85}],115:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50961,7 +51456,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.fragmentWGSLMix1 = fragmentWGSLMix1;
 
-},{"../../me-config":84}],115:[function(require,module,exports){
+},{"../../me-config":85}],116:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51019,7 +51514,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],116:[function(require,module,exports){
+},{}],117:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51106,7 +51601,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],117:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51164,7 +51659,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color, 1.0);
 }`;
 
-},{}],118:[function(require,module,exports){
+},{}],119:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51255,7 +51750,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],119:[function(require,module,exports){
+},{}],120:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51607,7 +52102,7 @@ fn main(input: VertexInput) -> @builtin(position) vec4f {
 `;
 exports.vertexMorphShadowWGSL = vertexMorphShadowWGSL;
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51881,7 +52376,7 @@ fn main(
 }`;
 exports.vertexWGSL = vertexWGSL;
 
-},{"../me-config":84}],121:[function(require,module,exports){
+},{"../me-config":85}],122:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51995,7 +52490,7 @@ fn main(
 }`;
 exports.vertexWGSL_NM = vertexWGSL_NM;
 
-},{"../me-config":84}],122:[function(require,module,exports){
+},{"../me-config":85}],123:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52254,7 +52749,7 @@ fn main(
 `;
 exports.vertexShadowWGSL = vertexShadowWGSL;
 
-},{"../me-config":84}],123:[function(require,module,exports){
+},{"../me-config":85}],124:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52462,7 +52957,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWaterWGSL = fragmentWaterWGSL;
 
-},{"../../me-config":84}],124:[function(require,module,exports){
+},{"../../me-config":85}],125:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52549,7 +53044,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],125:[function(require,module,exports){
+},{}],126:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52619,7 +53114,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],126:[function(require,module,exports){
+},{}],127:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52956,7 +53451,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":83}],127:[function(require,module,exports){
+},{"../../engine/utils":84}],128:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -53723,7 +54218,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":83}],128:[function(require,module,exports){
+},{"../../engine/utils":84}],129:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -53900,7 +54395,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":76,"../../engine/utils":83,"./client":126,"./editor.provider":129,"./flexCodexShader":130,"./fluxCodexVertex":132,"./hud":134,"./methodsManager":135}],129:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":77,"../../engine/utils":84,"./client":127,"./editor.provider":130,"./flexCodexShader":131,"./fluxCodexVertex":133,"./hud":135,"./methodsManager":136}],130:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54128,7 +54623,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":63,"../../engine/loaders/webgpu-gltf":66}],130:[function(require,module,exports){
+},{"../../engine/loader-obj":63,"../../engine/loaders/webgpu-gltf":66}],131:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56322,7 +56817,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":83,"./flexCodexShaderAdapter.js":131}],131:[function(require,module,exports){
+},{"../../engine/utils.js":84,"./flexCodexShaderAdapter.js":132}],132:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56592,7 +57087,7 @@ function validateAttachments(attachmentOutputs) {
   }
 }
 
-},{"../../me-config":84}],132:[function(require,module,exports){
+},{"../../me-config":85}],133:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -63095,7 +63590,7 @@ LIST OF INTEREST OBJECT:
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/matrix-class.js":68,"../../engine/utils":83,"./curve-editor":127,"./generateAISchema.js":133}],133:[function(require,module,exports){
+},{"../../engine/matrix-class.js":68,"../../engine/utils":84,"./curve-editor":128,"./generateAISchema.js":134}],134:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -63222,7 +63717,7 @@ function catalogToText(catalog) {
 let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
-},{}],134:[function(require,module,exports){
+},{}],135:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -64569,7 +65064,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":83,"./flexCodexShader.js":130}],135:[function(require,module,exports){
+},{"../../engine/utils.js":84,"./flexCodexShader.js":131}],136:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -64886,7 +65381,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],136:[function(require,module,exports){
+},{}],137:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -66779,4 +67274,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/cameras.js":40,"./engine/core-cache.js":42,"./engine/effects/energy-bar.js":45,"./engine/effects/flame-emmiter.js":46,"./engine/effects/flame.js":47,"./engine/effects/mana-bar.js":53,"./engine/effects/pointerEffect.js":55,"./engine/generators/generator.js":57,"./engine/instanced/mesh-obj-instances.js":60,"./engine/lights.js":61,"./engine/loader-obj.js":63,"./engine/loaders/bvh-instaced.js":64,"./engine/loaders/bvh.js":65,"./engine/mesh-obj.js":69,"./engine/overrides/min-render.js":70,"./engine/overrides/mobile-1.js":71,"./engine/overrides/nano-render.js":72,"./engine/overrides/noshadow-render.js":73,"./engine/physics/bridge.js":74,"./engine/pipelineManager.js":75,"./engine/postprocessing/bloom.js":77,"./engine/postprocessing/hzb.js":78,"./engine/postprocessing/volumetric.js":79,"./engine/procedural-mesh.js":80,"./engine/raycast.js":82,"./engine/utils.js":83,"./me-config.js":84,"./multilang/lang.js":85,"./sounds/audioAsset.js":124,"./sounds/sounds.js":125,"./tools/editor/editor.js":128,"./tools/editor/flexCodexShaderAdapter.js":131,"wgpu-matrix":37}]},{},[1]);
+},{"./engine/cameras.js":40,"./engine/core-cache.js":42,"./engine/effects/energy-bar.js":45,"./engine/effects/flame-emmiter.js":46,"./engine/effects/flame.js":47,"./engine/effects/mana-bar.js":53,"./engine/effects/pointerEffect.js":55,"./engine/generators/generator.js":57,"./engine/instanced/mesh-obj-instances.js":60,"./engine/lights.js":61,"./engine/loader-obj.js":63,"./engine/loaders/bvh-instaced.js":64,"./engine/loaders/bvh.js":65,"./engine/mesh-obj.js":69,"./engine/overrides/min-render.js":71,"./engine/overrides/mobile-1.js":72,"./engine/overrides/nano-render.js":73,"./engine/overrides/noshadow-render.js":74,"./engine/physics/bridge.js":75,"./engine/pipelineManager.js":76,"./engine/postprocessing/bloom.js":78,"./engine/postprocessing/hzb.js":79,"./engine/postprocessing/volumetric.js":80,"./engine/procedural-mesh.js":81,"./engine/raycast.js":83,"./engine/utils.js":84,"./me-config.js":85,"./multilang/lang.js":86,"./sounds/audioAsset.js":125,"./sounds/sounds.js":126,"./tools/editor/editor.js":129,"./tools/editor/flexCodexShaderAdapter.js":132,"wgpu-matrix":37}]},{},[1]);

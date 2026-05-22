@@ -8695,6 +8695,76 @@ fn fsMain(input : VSOut) -> FragOut {
   );
 }`;
 
+// ../../../engine/networking/matrix-stream.js
+var netConfig = {
+  NETWORKING_DOMAIN: "",
+  NETWORKING_PORT: "2020",
+  isDataOnly: false
+};
+function byId2(d) {
+  return document.getElementById(d);
+}
+var sessionName;
+var token;
+var session;
+function leaveSession() {
+  session.disconnect();
+  enableBtn();
+}
+function enableBtn() {
+  document.getElementById("join-btn").disabled = false;
+  document.getElementById("join-btn").innerHTML = "Join!";
+}
+function removeUser() {
+  httpRequest(
+    "POST",
+    "https://" + netConfig.NETWORKING_DOMAIN + ":" + netConfig.NETWORKING_PORT + "/api/remove-user",
+    {
+      sessionName,
+      token
+    },
+    "User couldn't be removed from session",
+    (res) => {
+      console.warn("You have been removed from session " + sessionName);
+    }
+  );
+}
+function httpRequest(method, url, body2, errorMsg, callback) {
+  byId2("textarea-http").innerText = "";
+  var http = new XMLHttpRequest();
+  http.open(method, url, true);
+  http.setRequestHeader("Content-type", "application/json");
+  http.addEventListener("readystatechange", processRequest, false);
+  http.send(JSON.stringify(body2));
+  function processRequest() {
+    if (http.readyState == 4) {
+      if (http.status == 200) {
+        try {
+          callback(JSON.parse(http.responseText));
+        } catch (e2) {
+          callback(e2);
+        }
+      } else {
+        console.warn(errorMsg + " (" + http.status + ")");
+        if (url.indexOf("fetch-info") != -1) {
+          if (http.status == 0 && errorMsg == "Session couldn't be fetched") {
+            const errorText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
+            dispatchEvent(new CustomEvent("check-gameplay-channel", { detail: { status: "false", errorText } }));
+          } else {
+            dispatchEvent(new CustomEvent("check-gameplay-channel", { detail: { status: "free", url } }));
+          }
+        }
+      }
+    }
+  }
+}
+window.onbeforeunload = function() {
+  if (session) {
+    removeUser();
+    leaveSession();
+  }
+};
+
 // ../../../engine/effects/gizmo.js
 var GizmoEffect = class {
   constructor(device2, format) {
@@ -8994,6 +9064,7 @@ var GizmoEffect = class {
     app.canvas.addEventListener("ray.hit.mousedown", (e2) => {
       const detail = e2.detail;
       if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
+        console.log("test _handleRayHit ");
         this._handleRayHit(detail);
       } else {
         e2.detail.hitObject.effects.gizmoEffect = this;
@@ -9037,6 +9108,7 @@ var GizmoEffect = class {
           this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
           document.dispatchEvent(this.editorUpdateScaleEvent);
         }
+        console.log("this.isDragging = false;");
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
@@ -9056,6 +9128,7 @@ var GizmoEffect = class {
       this.initialPositionCache.z = this.parentMesh.position.z;
       this.dragAxis = axis;
       this._updateGizmoSettings();
+      console.log("this.isDragging = true;");
       this.isDragging = true;
     }
   }
@@ -9102,7 +9175,7 @@ var GizmoEffect = class {
   }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.isDragging) return;
-    if (this.parentMesh.dontDrag) return;
+    if (this.parentMesh.dontDrag && byId2("graph-status").innerText === "\u{1F534}") return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -15813,7 +15886,7 @@ function npdeg2rad(degrees) {
     degrees[2] * (Math.PI / 180)
   ];
 }
-function byId2(id2) {
+function byId3(id2) {
   return document.getElementById(id2);
 }
 function dot3vs1(a, b) {
@@ -16093,9 +16166,9 @@ var MEBvh = class {
           var newLog2 = document.createElement("span");
           newLog2.innerHTML += "<h2>Motion</h2>";
           newLog2.innerHTML += '<p class="paragraf fixHeight" >' + motion + "</p>";
-          if (byId2 && byId2("log") !== null) {
-            byId2("log").appendChild(newLog2);
-            byId2("log").appendChild(newLog);
+          if (byId3 && byId3("log") !== null) {
+            byId3("log").appendChild(newLog2);
+            byId3("log").appendChild(newLog);
           }
           this._parse_hierarchy(hierarchy);
           this.computeJointOrder();
@@ -16165,7 +16238,7 @@ var MEBvh = class {
     });
     newLog1.innerHTML += "</p>";
     newLog1.innerHTML += "<p>Argument offset : " + offset + "</p>";
-    byId2("log").appendChild(newLog1);
+    byId3("log").appendChild(newLog1);
     var pose = arraySum3(joint.offset, offset);
     poses.push(pose);
     for (var c in joint.children) {
@@ -38231,13 +38304,7 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("FLOOR").position.SetY(-2.6249999999999907);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("BANNER2").position.SetX(-9.07);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("BANNER3").position.SetZ(-19.70773526332103);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("BANNER3").position.SetX(7.859999999999999);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("REEL_1").position.SetY(3);
@@ -38252,9 +38319,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_TOP").position.SetY(3);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("BANNER1").position.SetX(-0.10499999999999995);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("L_BOX").position.SetX(-4);
       }, 800);
       setTimeout(() => {
@@ -38265,6 +38329,15 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("REEL_TOP").position.SetX(0.08000000000000052);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER3").position.SetX(7.859999999999999);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER2").position.SetX(-9.07);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER1").position.SetX(0.735000000000001);
       }, 800);
     });
   }
