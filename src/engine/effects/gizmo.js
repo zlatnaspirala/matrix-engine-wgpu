@@ -165,7 +165,7 @@ export class GizmoEffect {
     app.canvas.addEventListener("mousemove", (e) => {
       if(this.isDragging && e.buttons === 1) {
         this._handleDrag(e);
-        if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
+        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if(this.isDragging && e.buttons === 0) {
         this.isDragging = false;
         this.selectedAxis = 0;

@@ -28809,7 +28809,7 @@ class GizmoEffect {
     app.canvas.addEventListener("mousemove", e => {
       if (this.isDragging && e.buttons === 1) {
         this._handleDrag(e);
-        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
+        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if (this.isDragging && e.buttons === 0) {
         this.isDragging = false;
         this.selectedAxis = 0;
@@ -39582,7 +39582,7 @@ class PhysicsBridge {
       this._bodyIndexMap.set(idx, MEObject);
     });
   }
-  updatePhysics() {
+  setKinematicTransform() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -39604,11 +39604,13 @@ class PhysicsBridge {
         pos: posArr
       });
     }
-    // if(this.c % 2 === 0) 
-    this._worker.postMessage({
+  }
+  updatePhysics() {
+    if (this.c % 4 === 0) this._worker.postMessage({
       cmd: 'step'
     });
-    // this.c++;
+    this.c = 0;
+    this.c++;
   }
 
   // MatrixJolt public API

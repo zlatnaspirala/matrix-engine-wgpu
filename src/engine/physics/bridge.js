@@ -39,7 +39,7 @@ export class PhysicsBridge {
   }
 
   getBodyByName(name) {
-    for(const [idx,meObj] of this._bodyIndexMap) if(meObj.name === name) return idx;
+    for(const [idx, meObj] of this._bodyIndexMap) if(meObj.name === name) return idx;
     console.info('[bridge] Body not found -1 :', name);
     return -1;
   }
@@ -68,7 +68,7 @@ export class PhysicsBridge {
     });
   }
 
-  updatePhysics() {
+  setKinematicTransform() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -85,9 +85,11 @@ export class PhysicsBridge {
     if(count > 0) {
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idxArr, pos: posArr});
     }
-    // if(this.c % 2 === 0) 
-    this._worker.postMessage({cmd: 'step'});
-    // this.c++;
+  }
+
+  updatePhysics() {
+    if(this.c % 4 === 0) this._worker.postMessage({cmd: 'step'}); this.c=0;
+    this.c++;
   }
 
   // MatrixJolt public API
