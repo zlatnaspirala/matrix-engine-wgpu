@@ -29,14 +29,16 @@ export class GizmoEffect {
     this.gizmoSettingsCache = new Float32Array(4);
     this.matrixResultCache = new Float32Array(16);
     this.dragStartPointCache = new Float32Array(3);
-    this.initialPositionCache = { x: 0, y: 0, z: 0 };
-    
+    this.initialPositionCache = {x: 0, y: 0, z: 0};
+
     // Flattened caches for tracking vectors without allocations
-    this._axisScreenDirCache = { x: 0, y: 0 };
-    this._p2Cache = { x: 0, y: 0, z: 0 };
+    this._axisScreenDirCache = {x: 0, y: 0};
+    this._p2Cache = {x: 0, y: 0, z: 0};
     this._rayIntersectsCache = {
       ro: new Float32Array(3),
       rd: new Float32Array(3),
+      lineStart: new Float32Array(3),
+      lineEnd: new Float32Array(3),
       line: new Float32Array(3),
       w: new Float32Array(3),
       closestOnRay: new Float32Array(3),
@@ -59,7 +61,7 @@ export class GizmoEffect {
     this.modelBuffer = this.device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.gizmoSettingsBuffer = this.device.createBuffer({size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this._updateGizmoSettings();
-    
+
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
@@ -86,8 +88,8 @@ export class GizmoEffect {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}] },
-          { arrayStride: 3 * 4, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}] }
+          {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+          {arrayStride: 3 * 4, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}
         ]
       },
       fragment: {
@@ -115,8 +117,8 @@ export class GizmoEffect {
   }
 
   _createTranslateGizmo() {
-    const axisLength = 2.0;
-    const arrowSize = 0.15;
+    const axisLength = 1.0;
+    const arrowSize = 0.05;
     const positions = new Float32Array([
       0, 0, 0, axisLength, 0, 0,
       axisLength, 0, 0, axisLength - arrowSize, arrowSize, 0,
@@ -156,7 +158,7 @@ export class GizmoEffect {
         this._handleRayHit(detail);
       } else {
         e.detail.hitObject.effects.gizmoEffect = this;
-        if (this.parentMesh && this.parentMesh.effects) {
+        if(this.parentMesh && this.parentMesh.effects) {
           this.parentMesh.effects.gizmoEffect = null;
         }
         this.parentMesh = e.detail.hitObject;
@@ -212,7 +214,7 @@ export class GizmoEffect {
     const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
     if(axis > 0) {
       this.selectedAxis = axis;
-      
+
       // Zero allocations write to tracking buffers
       this.dragStartPointCache[0] = hitPoint[0];
       this.dragStartPointCache[1] = hitPoint[1];
@@ -232,14 +234,14 @@ export class GizmoEffect {
   _getAxisScreenDirection(axisIndex) {
     // Perform manual mapping instead of initializing structural inner lists
     let xDir = 0, yDir = 0, zDir = 0;
-    if (axisIndex === 0) xDir = 1;
-    else if (axisIndex === 1) yDir = 1;
-    else if (axisIndex === 2) zDir = 1;
+    if(axisIndex === 0) xDir = 1;
+    else if(axisIndex === 1) yDir = 1;
+    else if(axisIndex === 2) zDir = 1;
 
     const viewMatrix = app.getCamera().view;
     const projMatrix = app.getCamera().projectionMatrix;
     const p1 = this.parentMesh.position;
-    
+
     // Write directly to reusable object memory
     this._p2Cache.x = p1.x + xDir;
     this._p2Cache.y = p1.y + yDir;
@@ -247,7 +249,7 @@ export class GizmoEffect {
 
     const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
     const s1X = screen1.x, s1Y = screen1.y; // Copy out primitive fields
-    
+
     const screen2 = this._worldToScreen(this._p2Cache, viewMatrix, projMatrix);
 
     const dx = screen2.x - s1X;
@@ -261,14 +263,23 @@ export class GizmoEffect {
   }
 
   _worldToScreen(worldPos, viewMatrix, projMatrix) {
+    // const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
+    // const ndcX = clipPos.x / clipPos.w;
+    // const ndcY = clipPos.y / clipPos.w;
+
+    // // Use a single returned local mutable coordinate representation to avoid heap footprint
+    // this._p2Cache.x = (ndcX + 1) * 0.5 * app.canvas.width;
+    // this._p2Cache.y = (1 - ndcY) * 0.5 * app.canvas.height;
+    // return this._p2Cache;
     const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
+
     const ndcX = clipPos.x / clipPos.w;
     const ndcY = clipPos.y / clipPos.w;
 
-    // Use a single returned local mutable coordinate representation to avoid heap footprint
-    this._p2Cache.x = (ndcX + 1) * 0.5 * app.canvas.width;
-    this._p2Cache.y = (1 - ndcY) * 0.5 * app.canvas.height;
-    return this._p2Cache;
+    return {
+      x: (ndcX + 1) * 0.5 * app.canvas.width,
+      y: (1 - ndcY) * 0.5 * app.canvas.height
+    };
   }
 
   _transformPoint(point, viewMatrix, projMatrix) {
@@ -297,9 +308,10 @@ export class GizmoEffect {
           case 1: this.parentMesh.position.x += deltaX * this.movementScale; break;
           case 2: this.parentMesh.position.y -= deltaY * this.movementScale; break;
           case 3:
-            const zAxisScreenDir = this._getAxisScreenDirection(2);
-            const movement = (deltaX * zAxisScreenDir.x + (-deltaY) * zAxisScreenDir.y);
-            this.parentMesh.position.z += movement * this.movementScale;
+            // const zAxisScreenDir = this._getAxisScreenDirection(2);
+            // const movement = (deltaX * zAxisScreenDir.x + (-deltaY) * zAxisScreenDir.y);
+            // this.parentMesh.position.z += movement * this.movementScale;
+            this.parentMesh.position.z -= (deltaX - deltaY) * this.movementScale;
         }
         break;
       case 1:
@@ -327,11 +339,13 @@ export class GizmoEffect {
     const ext = 2 * this.size;
 
     // Direct initialization into primitive values instead of wrapper tracking structures
-    const start = this._rayIntersectsCache.ro; // reuse array pointers
+    // const start = this._rayIntersectsCache.ro; // reuse array pointers
+    const start = this._rayIntersectsCache.lineStart;
     start[0] = mX; start[1] = mY; start[2] = mZ;
 
-    const end = this._rayIntersectsCache.rd;
-    
+    // const end = this._rayIntersectsCache.rd;
+    const end = this._rayIntersectsCache.lineEnd;
+
     // X Axis check
     end[0] = mX + ext; end[1] = mY; end[2] = mZ;
     if(this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 1;
@@ -342,21 +356,21 @@ export class GizmoEffect {
 
     // Z Axis check
     end[0] = mX; end[1] = mY; end[2] = mZ + ext;
-    if(this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 3;
+    if(this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold * 2)) return 3;
 
     return 0;
   }
 
   _rayIntersectsLine(rayOrigin, rayDir, lineStart, lineEnd, threshold) {
     const cache = this._rayIntersectsCache;
-    
+
     cache.ro[0] = rayOrigin[0]; cache.ro[1] = rayOrigin[1]; cache.ro[2] = rayOrigin[2];
-    
+
     const rd0 = rayDir[0], rd1 = rayDir[1], rd2 = rayDir[2];
     const rdLen = Math.sqrt(rd0 * rd0 + rd1 * rd1 + rd2 * rd2);
-    
-    cache.rd[0] = rd0 / rdLen; 
-    cache.rd[1] = rd1 / rdLen; 
+
+    cache.rd[0] = rd0 / rdLen;
+    cache.rd[1] = rd1 / rdLen;
     cache.rd[2] = rd2 / rdLen;
 
     cache.line[0] = lineEnd[0] - lineStart[0];
@@ -372,9 +386,10 @@ export class GizmoEffect {
     const c = cache.line[0] * cache.line[0] + cache.line[1] * cache.line[1] + cache.line[2] * cache.line[2];
     const d = cache.rd[0] * cache.w[0] + cache.rd[1] * cache.w[1] + cache.rd[2] * cache.w[2];
     const e = cache.line[0] * cache.w[0] + cache.line[1] * cache.w[1] + cache.line[2] * cache.w[2];
-    
+
     const denom = a * c - b * b;
-    if(Math.abs(denom) < 0.0001) return false;
+    // if(Math.abs(denom) < 0.0001) return false;
+    if(Math.abs(denom) < 0.0000001) return false;
 
     const sc = (b * e - c * d) / denom;
     const tc = (a * e - b * d) / denom;
@@ -425,7 +440,8 @@ export class GizmoEffect {
   }
 
   render(pass, mesh, viewProjMatrix) {
-    this.parentMesh = mesh;
+    // this.parentMesh = mesh;
+    if(mesh !== this.parentMesh) return;
     this.draw(pass, viewProjMatrix);
   }
 

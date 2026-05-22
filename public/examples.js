@@ -28652,6 +28652,8 @@ class GizmoEffect {
     this._rayIntersectsCache = {
       ro: new Float32Array(3),
       rd: new Float32Array(3),
+      lineStart: new Float32Array(3),
+      lineEnd: new Float32Array(3),
       line: new Float32Array(3),
       w: new Float32Array(3),
       closestOnRay: new Float32Array(3),
@@ -28777,8 +28779,8 @@ class GizmoEffect {
     });
   }
   _createTranslateGizmo() {
-    const axisLength = 2.0;
-    const arrowSize = 0.15;
+    const axisLength = 1.0;
+    const arrowSize = 0.05;
     const positions = new Float32Array([0, 0, 0, axisLength, 0, 0, axisLength, 0, 0, axisLength - arrowSize, arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, -arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, 0, arrowSize, axisLength, 0, 0, axisLength - arrowSize, 0, -arrowSize, 0, 0, 0, 0, axisLength, 0, 0, axisLength, 0, arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, -arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, 0, axisLength - arrowSize, arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, -arrowSize, 0, 0, 0, 0, 0, axisLength, 0, 0, axisLength, arrowSize, 0, axisLength - arrowSize, 0, 0, axisLength, -arrowSize, 0, axisLength - arrowSize, 0, 0, axisLength, 0, arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, -arrowSize, axisLength - arrowSize]);
     const colors = new Float32Array([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]);
     this.vertexBuffer = this.device.createBuffer({
@@ -28899,14 +28901,21 @@ class GizmoEffect {
     return this._axisScreenDirCache;
   }
   _worldToScreen(worldPos, viewMatrix, projMatrix) {
+    // const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
+    // const ndcX = clipPos.x / clipPos.w;
+    // const ndcY = clipPos.y / clipPos.w;
+
+    // // Use a single returned local mutable coordinate representation to avoid heap footprint
+    // this._p2Cache.x = (ndcX + 1) * 0.5 * app.canvas.width;
+    // this._p2Cache.y = (1 - ndcY) * 0.5 * app.canvas.height;
+    // return this._p2Cache;
     const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
     const ndcX = clipPos.x / clipPos.w;
     const ndcY = clipPos.y / clipPos.w;
-
-    // Use a single returned local mutable coordinate representation to avoid heap footprint
-    this._p2Cache.x = (ndcX + 1) * 0.5 * app.canvas.width;
-    this._p2Cache.y = (1 - ndcY) * 0.5 * app.canvas.height;
-    return this._p2Cache;
+    return {
+      x: (ndcX + 1) * 0.5 * app.canvas.width,
+      y: (1 - ndcY) * 0.5 * app.canvas.height
+    };
   }
   _transformPoint(point, viewMatrix, projMatrix) {
     const vp = this._multiplyMatrices(projMatrix, viewMatrix);
@@ -28936,9 +28945,10 @@ class GizmoEffect {
             this.parentMesh.position.y -= deltaY * this.movementScale;
             break;
           case 3:
-            const zAxisScreenDir = this._getAxisScreenDirection(2);
-            const movement = deltaX * zAxisScreenDir.x + -deltaY * zAxisScreenDir.y;
-            this.parentMesh.position.z += movement * this.movementScale;
+            // const zAxisScreenDir = this._getAxisScreenDirection(2);
+            // const movement = (deltaX * zAxisScreenDir.x + (-deltaY) * zAxisScreenDir.y);
+            // this.parentMesh.position.z += movement * this.movementScale;
+            this.parentMesh.position.z -= (deltaX - deltaY) * this.movementScale;
         }
         break;
       case 1:
@@ -28979,11 +28989,14 @@ class GizmoEffect {
     const ext = 2 * this.size;
 
     // Direct initialization into primitive values instead of wrapper tracking structures
-    const start = this._rayIntersectsCache.ro; // reuse array pointers
+    // const start = this._rayIntersectsCache.ro; // reuse array pointers
+    const start = this._rayIntersectsCache.lineStart;
     start[0] = mX;
     start[1] = mY;
     start[2] = mZ;
-    const end = this._rayIntersectsCache.rd;
+
+    // const end = this._rayIntersectsCache.rd;
+    const end = this._rayIntersectsCache.lineEnd;
 
     // X Axis check
     end[0] = mX + ext;
@@ -29001,7 +29014,7 @@ class GizmoEffect {
     end[0] = mX;
     end[1] = mY;
     end[2] = mZ + ext;
-    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 3;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold * 2)) return 3;
     return 0;
   }
   _rayIntersectsLine(rayOrigin, rayDir, lineStart, lineEnd, threshold) {
@@ -29028,7 +29041,8 @@ class GizmoEffect {
     const d = cache.rd[0] * cache.w[0] + cache.rd[1] * cache.w[1] + cache.rd[2] * cache.w[2];
     const e = cache.line[0] * cache.w[0] + cache.line[1] * cache.w[1] + cache.line[2] * cache.w[2];
     const denom = a * c - b * b;
-    if (Math.abs(denom) < 0.0001) return false;
+    // if(Math.abs(denom) < 0.0001) return false;
+    if (Math.abs(denom) < 0.0000001) return false;
     const sc = (b * e - c * d) / denom;
     const tc = (a * e - b * d) / denom;
     if (tc < 0 || tc > 1) return false;
@@ -29071,7 +29085,8 @@ class GizmoEffect {
     pass.draw(this.vertexCount);
   }
   render(pass, mesh, viewProjMatrix) {
-    this.parentMesh = mesh;
+    // this.parentMesh = mesh;
+    if (mesh !== this.parentMesh) return;
     this.draw(pass, viewProjMatrix);
   }
   setMode(mode) {
@@ -48320,13 +48335,11 @@ fn vsMain(input : VSIn) -> VSOut {
   else if (input.color.g > 0.9) { axisId = 2.0; } // Y axis
   else if (input.color.b > 0.9) { axisId = 3.0; } // Z axis
   output.axisId = axisId;
-  
-  // Highlight selected axis
-  var finalColor = input.color;
-  if (gizmoSettings.selectedAxis > 0u && u32(axisId) == gizmoSettings.selectedAxis) {
-    finalColor = vec3<f32>(1.0, 1.0, 0.0); // Yellow when selected
-  }
 
+  var finalColor = input.color * 4.5;
+  if (gizmoSettings.selectedAxis > 0u && u32(axisId) == gizmoSettings.selectedAxis) {
+    finalColor = vec3<f32>(8.0, 7.0, 0.5);
+  }
   output.color = finalColor;
   return output;
 }
@@ -48340,9 +48353,9 @@ struct FragOut {
 @fragment
 fn fsMain(input : VSOut) -> FragOut {
   return FragOut(
-    vec4f(input.color, 1.0),                    // Color
-    vec4f(normalize(input.worldPos), 1.0),      // Normal (direction from origin)
-    vec4f(input.worldPos, 1.0)                  // World position
+    vec4f(input.color * 2, 1.0),
+    vec4f(normalize(input.worldPos), 1.0),
+    vec4f(input.worldPos, 1.0)
   );
 }`;
 
@@ -57606,9 +57619,9 @@ class FluxCodexVertex {
     outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
     if (node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
-      console.log('!TEST! ??? BEFORE   ', select);
+      // console.log('!TEST! ??? BEFORE   ', select)
       if (select) {
-        console.log('!TEST! ??? exist');
+        // console.log('!TEST! ??? exist')
         // const objects = spec.accessObject || [];
         // objects.forEach(obj => {
         //   const opt = document.createElement("option");
@@ -62230,7 +62243,7 @@ LIST OF INTEREST OBJECT:
           return;
         }
         let o = app.getSceneObjectByName(objectName);
-        console.warn("[Set Shader Graph] Missing input fields...  ", app.shaderGraph.runtime_memory[selectedShader]);
+        // console.warn("[Set Shader Graph]  ", app.shaderGraph.runtime_memory[selectedShader]);
         o.changeMaterial("graph", app.shaderGraph.runtime_memory[selectedShader]);
         this.enqueueOutputs(n, "execOut");
         return;
@@ -62403,7 +62416,6 @@ LIST OF INTEREST OBJECT:
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (texpath) {
-        console.log('SET TECTURE : sceneObjectName', sceneObjectName);
         let obj = app.getSceneObjectByName(sceneObjectName);
         obj.loadTex0([texpath]).then(_ => {
           setTimeout(() => {
@@ -62429,6 +62441,8 @@ LIST OF INTEREST OBJECT:
       return;
     } else if (n.title === "Set Rotation") {
       const rot = this.getValue(nodeId, "rotation");
+      console.log('TEST RotationRotation X', rot);
+      console.log('TEST this.getValue(nodeId, "x") X', this.getValue(nodeId, "x"));
       if (rot?.setRotation) {
         rot.setRotation(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
       }
@@ -62443,9 +62457,7 @@ LIST OF INTEREST OBJECT:
       return;
     } else if (n.title === "Set RotateX") {
       const rot = this.getValue(nodeId, "rotation");
-      console.log('TEST ROTATE X', rot);
       if (rot?.setRotateX) {
-        console.log('TEST ROTATE X', this.getValue(nodeId, "x"));
         rot.setRotateX(this.getValue(nodeId, "x"));
       }
       this.enqueueOutputs(n, "execOut");

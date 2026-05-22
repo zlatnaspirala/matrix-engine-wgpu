@@ -38,13 +38,11 @@ fn vsMain(input : VSIn) -> VSOut {
   else if (input.color.g > 0.9) { axisId = 2.0; } // Y axis
   else if (input.color.b > 0.9) { axisId = 3.0; } // Z axis
   output.axisId = axisId;
-  
-  // Highlight selected axis
-  var finalColor = input.color;
-  if (gizmoSettings.selectedAxis > 0u && u32(axisId) == gizmoSettings.selectedAxis) {
-    finalColor = vec3<f32>(1.0, 1.0, 0.0); // Yellow when selected
-  }
 
+  var finalColor = input.color * 4.5;
+  if (gizmoSettings.selectedAxis > 0u && u32(axisId) == gizmoSettings.selectedAxis) {
+    finalColor = vec3<f32>(8.0, 7.0, 0.5);
+  }
   output.color = finalColor;
   return output;
 }
@@ -58,8 +56,8 @@ struct FragOut {
 @fragment
 fn fsMain(input : VSOut) -> FragOut {
   return FragOut(
-    vec4f(input.color, 1.0),                    // Color
-    vec4f(normalize(input.worldPos), 1.0),      // Normal (direction from origin)
-    vec4f(input.worldPos, 1.0)                  // World position
+    vec4f(input.color * 2, 1.0),
+    vec4f(normalize(input.worldPos), 1.0),
+    vec4f(input.worldPos, 1.0)
   );
 }`;

@@ -1045,9 +1045,9 @@ export default class FluxCodexVertex {
 
     if(node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
-      console.log('!TEST! ??? BEFORE   ', select)
+      // console.log('!TEST! ??? BEFORE   ', select)
       if(select) {
-        console.log('!TEST! ??? exist')
+        // console.log('!TEST! ??? exist')
         // const objects = spec.accessObject || [];
         // objects.forEach(obj => {
         //   const opt = document.createElement("option");
@@ -4573,9 +4573,8 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
-
         let o = app.getSceneObjectByName(objectName);
-        console.warn("[Set Shader Graph] Missing input fields...  ", app.shaderGraph.runtime_memory[selectedShader]);
+        // console.warn("[Set Shader Graph]  ", app.shaderGraph.runtime_memory[selectedShader]);
         o.changeMaterial("graph", app.shaderGraph.runtime_memory[selectedShader]);
         this.enqueueOutputs(n, "execOut");
         return;
@@ -4750,7 +4749,6 @@ LIST OF INTEREST OBJECT:
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if(texpath) {
-        console.log('SET TECTURE : sceneObjectName', sceneObjectName)
         let obj = app.getSceneObjectByName(sceneObjectName);
         obj.loadTex0([texpath]).then((_) => {
           setTimeout(() => {
@@ -4776,6 +4774,10 @@ LIST OF INTEREST OBJECT:
       return;
     } else if(n.title === "Set Rotation") {
       const rot = this.getValue(nodeId, "rotation");
+
+      console.log('TEST RotationRotation X', rot)
+      console.log('TEST this.getValue(nodeId, "x") X', this.getValue(nodeId, "x"))
+
       if(rot?.setRotation) {
         rot.setRotation(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
       }
@@ -4790,9 +4792,8 @@ LIST OF INTEREST OBJECT:
       return;
     } else if(n.title === "Set RotateX") {
       const rot = this.getValue(nodeId, "rotation");
-      console.log('TEST ROTATE X', rot)
       if(rot?.setRotateX) {
-        console.log('TEST ROTATE X', this.getValue(nodeId, "x"))
+        
         rot.setRotateX(this.getValue(nodeId, "x"));
       }
       this.enqueueOutputs(n, "execOut");
