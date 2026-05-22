@@ -37,6 +37,8 @@ export default class MEMeshObj extends Materials {
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+
+    this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     if(typeof o.material.useTextureFromGlb === 'undefined' ||

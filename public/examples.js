@@ -28797,6 +28797,7 @@ class GizmoEffect {
     app.canvas.addEventListener("ray.hit.mousedown", e => {
       const detail = e.detail;
       if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
+        console.log('test _handleRayHit ');
         this._handleRayHit(detail);
       } else {
         e.detail.hitObject.effects.gizmoEffect = this;
@@ -28841,6 +28842,7 @@ class GizmoEffect {
           this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
           document.dispatchEvent(this.editorUpdateScaleEvent);
         }
+        console.log('this.isDragging = false;');
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
@@ -28866,6 +28868,7 @@ class GizmoEffect {
       this.initialPositionCache.z = this.parentMesh.position.z;
       this.dragAxis = axis;
       this._updateGizmoSettings();
+      console.log('this.isDragging = true;');
       this.isDragging = true;
     }
   }
@@ -28919,9 +28922,7 @@ class GizmoEffect {
   }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.isDragging) return;
-    // if(this.parentMesh.dontDrag) return;
-    if ((0, _utils.byId)('graph-status') && (0, _utils.byId)('graph-status').innerHTML === "🔴") return;
-    // graph-status
+    if (this.parentMesh.dontDrag && (0, _utils.byId)('graph-status').innerText === "🔴") return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -32382,6 +32383,7 @@ class MaterialsInstanced {
       textureResource = material.baseColorTexture.imageView;
     }
     key = JSON.stringify(key);
+    // if(typeof this.material.share === 'undefined' || this.material.share == true) {
     if (typeof this.material.share !== 'undefined' && this.material.share == true) {
       if (!this.materialBindGroupCache._cache.has(key)) {
         // console.log('[CREATE NEW] materialBindGroup [key] = ', key);
@@ -32545,6 +32547,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
@@ -37458,6 +37461,7 @@ class Materials {
     }
     if (this.isVideo == true) return;
     key = JSON.stringify(key);
+    // if(typeof this.material.share === 'undefined' || this.material.share == true) {
     if (typeof this.material.share !== 'undefined' && this.material.share == true) {
       if (!this.materialBindGroupCache._cache.has(key)) {
         // console.log('[CREATE NEW] materialBindGroup [key] = ', key);
@@ -38116,6 +38120,7 @@ class MEMeshObj extends _materials.default {
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
@@ -39585,7 +39590,7 @@ class PhysicsBridge {
       this._bodyIndexMap.set(idx, MEObject);
     });
   }
-  updatePhysics() {
+  setKinematicTransform() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -39607,11 +39612,13 @@ class PhysicsBridge {
         pos: posArr
       });
     }
-    // if(this.c % 2 === 0) 
-    this._worker.postMessage({
+  }
+  updatePhysics() {
+    if (this.c % 4 === 0) this._worker.postMessage({
       cmd: 'step'
     });
-    // this.c++;
+    this.c = 0;
+    this.c++;
   }
 
   // MatrixJolt public API
@@ -41480,7 +41487,7 @@ class ProceduralMeshObj extends _materials.default {
       o.material.useBlend = false;
     }
     this.mType = _utils.MeshType.PROCEDURAL;
-    //cache
+    this.dontDrag = true;
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
@@ -66277,9 +66284,12 @@ class MatrixEngineWGPU {
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
-      //this.getTransformationMatrix(camera, now2);
+      // if(camera._dirtyAngle || camera._dirty) 
+      if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
       camera.update();
+
+      // camera.update();
+
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);

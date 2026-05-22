@@ -152,6 +152,7 @@ export class GizmoEffect {
     app.canvas.addEventListener("ray.hit.mousedown", (e) => {
       const detail = e.detail;
       if(detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
+        console.log('test _handleRayHit ')
         this._handleRayHit(detail);
       } else {
         e.detail.hitObject.effects.gizmoEffect = this;
@@ -198,6 +199,7 @@ export class GizmoEffect {
           this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
           document.dispatchEvent(this.editorUpdateScaleEvent);
         }
+        console.log('this.isDragging = false;')
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
@@ -222,6 +224,7 @@ export class GizmoEffect {
 
       this.dragAxis = axis;
       this._updateGizmoSettings();
+      console.log('this.isDragging = true;')
       this.isDragging = true;
     }
   }
@@ -284,9 +287,7 @@ export class GizmoEffect {
 
   _handleDrag(mouseEvent) {
     if(!this.parentMesh || !this.isDragging) return;
-    // if(this.parentMesh.dontDrag) return;
-    if(byId('graph-status') && byId('graph-status').innerHTML === "🔴") return;
-    // graph-status
+    if(this.parentMesh.dontDrag && byId('graph-status').innerText === "🔴") return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;

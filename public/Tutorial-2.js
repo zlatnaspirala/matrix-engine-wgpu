@@ -8074,8 +8074,6 @@ var Materials = class {
       const canvas = document.createElement("canvas");
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
-      canvas.style.width = (arg.width || 256) + "px";
-      canvas.style.height = (arg.height || 256) + "px";
       canvas.style.position = "absolute";
       canvas.style.left = "0px";
       canvas.style.top = "-325px";
@@ -9009,11 +9007,13 @@ var GizmoEffect = class {
     app.canvas.addEventListener("mousemove", (e2) => {
       if (this.isDragging && e2.buttons === 1) {
         this._handleDrag(e2);
+        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if (this.isDragging && e2.buttons === 0) {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       } else {
+        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
       }
     });
     app.canvas.addEventListener("mouseup", () => {
@@ -9103,7 +9103,7 @@ var GizmoEffect = class {
   }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.isDragging) return;
-    if (byId("graph-status") && byId("graph-status").innerHTML === "\u{1F534}") return;
+    if (this.parentMesh.dontDrag) return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;

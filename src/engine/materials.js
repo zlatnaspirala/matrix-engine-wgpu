@@ -748,6 +748,7 @@ export default class Materials {
     }
     if(this.isVideo == true) return;
     key = JSON.stringify(key);
+    // if(typeof this.material.share === 'undefined' || this.material.share == true) {
     if(typeof this.material.share !== 'undefined' && this.material.share == true) {
       if(!this.materialBindGroupCache._cache.has(key)) {
         // console.log('[CREATE NEW] materialBindGroup [key] = ', key);

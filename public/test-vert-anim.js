@@ -9103,7 +9103,7 @@ var GizmoEffect = class {
   }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.isDragging) return;
-    if (byId("graph-status") && byId("graph-status").innerHTML === "\u{1F534}") return;
+    if (this.parentMesh.dontDrag && byId("graph-status") && byId("graph-status").innerHTML === "\u{1F534}") return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
