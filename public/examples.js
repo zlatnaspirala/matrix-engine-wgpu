@@ -32542,6 +32542,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
@@ -38111,6 +38112,7 @@ class MEMeshObj extends _materials.default {
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
@@ -41475,7 +41477,7 @@ class ProceduralMeshObj extends _materials.default {
       o.material.useBlend = false;
     }
     this.mType = _utils.MeshType.PROCEDURAL;
-    //cache
+    this.dontDrag = true;
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);

@@ -7728,6 +7728,7 @@ var Materials = class {
   changeMaterial(newType = "graph", graphShader) {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
+    this.setupPipeline();
   }
   createCheckerboardTexture(size2 = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
     const mipLevelCount = Math.floor(Math.log2(size2)) + 1;
@@ -8108,6 +8109,9 @@ var Materials = class {
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       this.video = null;
+      this.updateVideoTexture();
+      this.createMaterialBindGroupVideo();
+      this.setupPipeline();
     }
     if (this.video) await new Promise((resolve) => {
       this.video.requestVideoFrameCallback(() => {
@@ -8128,7 +8132,7 @@ var Materials = class {
     });
   }
   updateVideoTexture() {
-    if (this.video.readyState < 4) return;
+    if (!this.video || this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({ source: this.video });
     if (!this.externalTexture) return;
     this.createMaterialBindGroupVideo();
@@ -8702,16 +8706,37 @@ var GizmoEffect = class {
     this.selectedAxis = 0;
     this.movementScale = 0.035;
     this.isDragging = false;
-    this.dragStartPoint = null;
     this.dragAxis = 0;
     this.parentMesh = null;
-    this.initialPosition = null;
+    this.editorUpdatePosEvent = new CustomEvent("web.editor.update.pos", {
+      detail: { inputFor: "", propertyId: "position", property: "x", value: 0 }
+    });
+    this.editorUpdateRotEvent = new CustomEvent("web.editor.update.rot", {
+      detail: { inputFor: "", propertyId: "rotation", property: "y", value: 0 }
+    });
+    this.editorUpdateScaleEvent = new CustomEvent("web.editor.update.scale", {
+      detail: { inputFor: "", propertyId: "scale", property: "1", value: 0 }
+    });
+    this.gizmoSettingsCache = new Float32Array(4);
+    this.matrixResultCache = new Float32Array(16);
+    this.dragStartPointCache = new Float32Array(3);
+    this.initialPositionCache = { x: 0, y: 0, z: 0 };
+    this._axisScreenDirCache = { x: 0, y: 0 };
+    this._p2Cache = { x: 0, y: 0, z: 0 };
+    this._rayIntersectsCache = {
+      ro: new Float32Array(3),
+      rd: new Float32Array(3),
+      line: new Float32Array(3),
+      w: new Float32Array(3),
+      closestOnRay: new Float32Array(3),
+      closestOnLine: new Float32Array(3)
+    };
     this._initPipeline();
     this._setupEventListeners();
-    addEventListener("editor-set-gizmo-mode", (e2) => {
-      console.log("MODE:", e2.detail.mode);
+    this._onGizmoModeChange = (e2) => {
       this.setMode(e2.detail.mode);
-    });
+    };
+    addEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
   _initPipeline() {
     this._createTranslateGizmo();
@@ -8745,14 +8770,8 @@ var GizmoEffect = class {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          {
-            arrayStride: 3 * 4,
-            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-          },
-          {
-            arrayStride: 3 * 4,
-            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
-          }
+          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] }
         ]
       },
       fragment: {
@@ -8904,7 +8923,6 @@ var GizmoEffect = class {
       1,
       0,
       0,
-      // Y axis (green)
       0,
       1,
       0,
@@ -8935,7 +8953,6 @@ var GizmoEffect = class {
       0,
       1,
       0,
-      // Z axis (blue)
       0,
       0,
       1,
@@ -8980,7 +8997,9 @@ var GizmoEffect = class {
         this._handleRayHit(detail);
       } else {
         e2.detail.hitObject.effects.gizmoEffect = this;
-        this.parentMesh.effects.gizmoEffect = null;
+        if (this.parentMesh && this.parentMesh.effects) {
+          this.parentMesh.effects.gizmoEffect = null;
+        }
         this.parentMesh = e2.detail.hitObject;
         app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
       }
@@ -9001,32 +9020,23 @@ var GizmoEffect = class {
       if (this.isDragging) {
         if (this.parentMesh._GRAPH_CACHE) return;
         if (this.mode == 0) {
-          document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "position",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z
-            }
-          }));
+          this.editorUpdatePosEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdatePosEvent.detail.propertyId = "position";
+          this.editorUpdatePosEvent.detail.property = this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z";
+          this.editorUpdatePosEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z;
+          document.dispatchEvent(this.editorUpdatePosEvent);
         } else if (this.mode == 1) {
-          document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "rotation",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
+          this.editorUpdateRotEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdateRotEvent.detail.propertyId = "rotation";
+          this.editorUpdateRotEvent.detail.property = this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z";
+          this.editorUpdateRotEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
+          document.dispatchEvent(this.editorUpdateRotEvent);
         } else if (this.mode == 2) {
-          document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "scale",
-              property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
+          this.editorUpdateScaleEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdateScaleEvent.detail.propertyId = "scale";
+          this.editorUpdateScaleEvent.detail.property = this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2";
+          this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
+          document.dispatchEvent(this.editorUpdateScaleEvent);
         }
         this.isDragging = false;
         this.selectedAxis = 0;
@@ -9039,56 +9049,45 @@ var GizmoEffect = class {
     const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
     if (axis > 0) {
       this.selectedAxis = axis;
-      this.dragStartPoint = [...hitPoint];
-      this.initialPosition = {
-        x: this.parentMesh.position.x,
-        y: this.parentMesh.position.y,
-        z: this.parentMesh.position.z
-      };
+      this.dragStartPointCache[0] = hitPoint[0];
+      this.dragStartPointCache[1] = hitPoint[1];
+      this.dragStartPointCache[2] = hitPoint[2];
+      this.initialPositionCache.x = this.parentMesh.position.x;
+      this.initialPositionCache.y = this.parentMesh.position.y;
+      this.initialPositionCache.z = this.parentMesh.position.z;
       this.dragAxis = axis;
       this._updateGizmoSettings();
       this.isDragging = true;
     }
   }
-  /**
-  * Get the screen-space direction of a world axis
-  * @param {number} axisIndex - 0=X, 1=Y, 2=Z
-  * @returns {{x: number, y: number}} - Normalized 2D screen direction
-  */
   _getAxisScreenDirection(axisIndex) {
-    const worldAxis = [
-      [1, 0, 0],
-      // X
-      [0, 1, 0],
-      // Y
-      [0, 0, 1]
-      // Z
-    ][axisIndex];
+    let xDir = 0, yDir = 0, zDir = 0;
+    if (axisIndex === 0) xDir = 1;
+    else if (axisIndex === 1) yDir = 1;
+    else if (axisIndex === 2) zDir = 1;
     const viewMatrix = app.getCamera().view;
     const projMatrix = app.getCamera().projectionMatrix;
     const p1 = this.parentMesh.position;
-    const p2 = {
-      x: p1.x + worldAxis[0],
-      y: p1.y + worldAxis[1],
-      z: p1.z + worldAxis[2]
-    };
+    this._p2Cache.x = p1.x + xDir;
+    this._p2Cache.y = p1.y + yDir;
+    this._p2Cache.z = p1.z + zDir;
     const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
-    const screen2 = this._worldToScreen(p2, viewMatrix, projMatrix);
-    const dx = screen2.x - screen1.x;
-    const dy = screen2.y - screen1.y;
+    const s1X = screen1.x, s1Y = screen1.y;
+    const screen2 = this._worldToScreen(this._p2Cache, viewMatrix, projMatrix);
+    const dx = screen2.x - s1X;
+    const dy = screen2.y - s1Y;
     const length2 = Math.sqrt(dx * dx + dy * dy);
-    return {
-      x: length2 > 1e-3 ? dx / length2 : 0,
-      y: length2 > 1e-3 ? dy / length2 : 0
-    };
+    this._axisScreenDirCache.x = length2 > 1e-3 ? dx / length2 : 0;
+    this._axisScreenDirCache.y = length2 > 1e-3 ? dy / length2 : 0;
+    return this._axisScreenDirCache;
   }
   _worldToScreen(worldPos, viewMatrix, projMatrix) {
     const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
     const ndcX = clipPos.x / clipPos.w;
     const ndcY = clipPos.y / clipPos.w;
-    const screenX = (ndcX + 1) * 0.5 * app.canvas.width;
-    const screenY = (1 - ndcY) * 0.5 * app.canvas.height;
-    return { x: screenX, y: screenY };
+    this._p2Cache.x = (ndcX + 1) * 0.5 * app.canvas.width;
+    this._p2Cache.y = (1 - ndcY) * 0.5 * app.canvas.height;
+    return this._p2Cache;
   }
   _transformPoint(point, viewMatrix, projMatrix) {
     const vp = this._multiplyMatrices(projMatrix, viewMatrix);
@@ -9096,19 +9095,15 @@ var GizmoEffect = class {
     const y2 = vp[1] * point.x + vp[5] * point.y + vp[9] * point.z + vp[13];
     const z = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
     const w = vp[3] * point.x + vp[7] * point.y + vp[11] * point.z + vp[15];
-    return { x: x2, y: y2, z, w };
-  }
-  _multiplyMatrices(a, b) {
-    const result2 = new Array(16);
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        result2[i * 4 + j] = a[i * 4 + 0] * b[0 * 4 + j] + a[i * 4 + 1] * b[1 * 4 + j] + a[i * 4 + 2] * b[2 * 4 + j] + a[i * 4 + 3] * b[3 * 4 + j];
-      }
-    }
-    return result2;
+    this._p2Cache.x = x2;
+    this._p2Cache.y = y2;
+    this._p2Cache.z = z;
+    this._p2Cache.w = w;
+    return this._p2Cache;
   }
   _handleDrag(mouseEvent) {
-    if (!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
+    if (!this.parentMesh || !this.isDragging) return;
+    if (this.parentMesh.dontDrag) return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -9121,11 +9116,9 @@ var GizmoEffect = class {
           case 2:
             this.parentMesh.position.y -= deltaY * this.movementScale;
             break;
-          // case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
           case 3:
             const zAxisScreenDir = this._getAxisScreenDirection(2);
-            const mouseDelta = { x: deltaX, y: -deltaY };
-            const movement = mouseDelta.x * zAxisScreenDir.x + mouseDelta.y * zAxisScreenDir.y;
+            const movement = deltaX * zAxisScreenDir.x + -deltaY * zAxisScreenDir.y;
             this.parentMesh.position.z += movement * this.movementScale;
         }
         break;
@@ -9160,65 +9153,78 @@ var GizmoEffect = class {
     }
   }
   _raycastAxis(rayOrigin, rayDirection, mesh) {
-    const gizmoPos = [
-      mesh.position.x,
-      mesh.position.y,
-      mesh.position.z
-    ];
+    const mX = mesh.position.x, mY = mesh.position.y, mZ = mesh.position.z;
     const threshold = 0.1 * this.size;
-    const xEnd = [gizmoPos[0] + 2 * this.size, gizmoPos[1], gizmoPos[2]];
-    const xHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, xEnd, threshold);
-    if (xHit) return 1;
-    const yEnd = [gizmoPos[0], gizmoPos[1] + 2 * this.size, gizmoPos[2]];
-    const yHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, yEnd, threshold);
-    if (yHit) return 2;
-    const zEnd = [gizmoPos[0], gizmoPos[1], gizmoPos[2] + 2 * this.size];
-    const zHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, zEnd, threshold);
-    if (zHit) return 3;
+    const ext = 2 * this.size;
+    const start = this._rayIntersectsCache.ro;
+    start[0] = mX;
+    start[1] = mY;
+    start[2] = mZ;
+    const end = this._rayIntersectsCache.rd;
+    end[0] = mX + ext;
+    end[1] = mY;
+    end[2] = mZ;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 1;
+    end[0] = mX;
+    end[1] = mY + ext;
+    end[2] = mZ;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 2;
+    end[0] = mX;
+    end[1] = mY;
+    end[2] = mZ + ext;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 3;
     return 0;
   }
   _rayIntersectsLine(rayOrigin, rayDir, lineStart, lineEnd, threshold) {
-    const ro = Array.isArray(rayOrigin) ? rayOrigin : [rayOrigin[0], rayOrigin[1], rayOrigin[2]];
-    const rd = [rayDir[0], rayDir[1], rayDir[2]];
-    const rdLen = Math.sqrt(rd[0] ** 2 + rd[1] ** 2 + rd[2] ** 2);
-    const ray = [rd[0] / rdLen, rd[1] / rdLen, rd[2] / rdLen];
-    const line = [
-      lineEnd[0] - lineStart[0],
-      lineEnd[1] - lineStart[1],
-      lineEnd[2] - lineStart[2]
-    ];
-    const w = [
-      ro[0] - lineStart[0],
-      ro[1] - lineStart[1],
-      ro[2] - lineStart[2]
-    ];
-    const a = ray[0] ** 2 + ray[1] ** 2 + ray[2] ** 2;
-    const b = ray[0] * line[0] + ray[1] * line[1] + ray[2] * line[2];
-    const c = line[0] ** 2 + line[1] ** 2 + line[2] ** 2;
-    const d = ray[0] * w[0] + ray[1] * w[1] + ray[2] * w[2];
-    const e2 = line[0] * w[0] + line[1] * w[1] + line[2] * w[2];
+    const cache = this._rayIntersectsCache;
+    cache.ro[0] = rayOrigin[0];
+    cache.ro[1] = rayOrigin[1];
+    cache.ro[2] = rayOrigin[2];
+    const rd0 = rayDir[0], rd1 = rayDir[1], rd2 = rayDir[2];
+    const rdLen = Math.sqrt(rd0 * rd0 + rd1 * rd1 + rd2 * rd2);
+    cache.rd[0] = rd0 / rdLen;
+    cache.rd[1] = rd1 / rdLen;
+    cache.rd[2] = rd2 / rdLen;
+    cache.line[0] = lineEnd[0] - lineStart[0];
+    cache.line[1] = lineEnd[1] - lineStart[1];
+    cache.line[2] = lineEnd[2] - lineStart[2];
+    cache.w[0] = cache.ro[0] - lineStart[0];
+    cache.w[1] = cache.ro[1] - lineStart[1];
+    cache.w[2] = cache.ro[2] - lineStart[2];
+    const a = cache.rd[0] * cache.rd[0] + cache.rd[1] * cache.rd[1] + cache.rd[2] * cache.rd[2];
+    const b = cache.rd[0] * cache.line[0] + cache.rd[1] * cache.line[1] + cache.rd[2] * cache.line[2];
+    const c = cache.line[0] * cache.line[0] + cache.line[1] * cache.line[1] + cache.line[2] * cache.line[2];
+    const d = cache.rd[0] * cache.w[0] + cache.rd[1] * cache.w[1] + cache.rd[2] * cache.w[2];
+    const e2 = cache.line[0] * cache.w[0] + cache.line[1] * cache.w[1] + cache.line[2] * cache.w[2];
     const denom = a * c - b * b;
     if (Math.abs(denom) < 1e-4) return false;
     const sc = (b * e2 - c * d) / denom;
     const tc = (a * e2 - b * d) / denom;
     if (tc < 0 || tc > 1) return false;
-    const closestOnRay = [
-      ro[0] + sc * ray[0],
-      ro[1] + sc * ray[1],
-      ro[2] + sc * ray[2]
-    ];
-    const closestOnLine = [
-      lineStart[0] + tc * line[0],
-      lineStart[1] + tc * line[1],
-      lineStart[2] + tc * line[2]
-    ];
-    const dist2 = Math.sqrt((closestOnRay[0] - closestOnLine[0]) ** 2 + (closestOnRay[1] - closestOnLine[1]) ** 2 + (closestOnRay[2] - closestOnLine[2]) ** 2);
+    cache.closestOnRay[0] = cache.ro[0] + sc * cache.rd[0];
+    cache.closestOnRay[1] = cache.ro[1] + sc * cache.rd[1];
+    cache.closestOnRay[2] = cache.ro[2] + sc * cache.rd[2];
+    cache.closestOnLine[0] = lineStart[0] + tc * cache.line[0];
+    cache.closestOnLine[1] = lineStart[1] + tc * cache.line[1];
+    cache.closestOnLine[2] = lineStart[2] + tc * cache.line[2];
+    const dX = cache.closestOnRay[0] - cache.closestOnLine[0];
+    const dY = cache.closestOnRay[1] - cache.closestOnLine[1];
+    const dZ = cache.closestOnRay[2] - cache.closestOnLine[2];
+    const dist2 = Math.sqrt(dX * dX + dY * dY + dZ * dZ);
     return dist2 < threshold;
   }
-  _updateGizmoSettings() {
-    const data = new Float32Array([this.mode, this.size, this.selectedAxis, 1]);
-    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, data);
+  // Lifecycle cleanup method to completely eliminate global memory retention loops
+  destroy() {
+    removeEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
+  _updateGizmoSettings() {
+    this.gizmoSettingsCache[0] = this.mode;
+    this.gizmoSettingsCache[1] = this.size;
+    this.gizmoSettingsCache[2] = this.selectedAxis;
+    this.gizmoSettingsCache[3] = 1;
+    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, this.gizmoSettingsCache);
+  }
+  // ... rest of structural binding configurations unchanged ...
   updateInstanceData(baseModelMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
   }
@@ -29861,7 +29867,7 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        if (typeof specialCanvas2dArg == "string") {
+        if (typeof specialCanvas2dArg === "string") {
           eval("specialCanvas2dArg = " + specialCanvas2dArg);
         }
         if (typeof canvaInlineProgram != "function") {
@@ -29878,6 +29884,7 @@ LIST OF INTEREST OBJECT:
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
+        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram,

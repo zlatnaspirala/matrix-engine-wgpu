@@ -118,12 +118,6 @@ let app = new MatrixEngineWGPU(
       }, 800);
       // ME END REEL_1 updateScale2
 
-      // ME START R_BOX updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('R_BOX').position.SetX(4);
-      }, 800);
-      // ME END R_BOX updatePosx
-
       // ME START REEL_2
       downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => {
         const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
@@ -513,12 +507,6 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END REEL_2 updatePosy
  
-  // ME START BANNER1 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('BANNER1').position.SetX(0.035);
- }, 800);
- // ME END BANNER1 updatePosx
- 
   // ME START BANNER1 updatePosz
  setTimeout(() => {
   app.getSceneObjectByName('BANNER1').position.SetZ(-22.2275707408788);
@@ -567,12 +555,6 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END FLOOR updatePosz
  
-   // ME START FLOOR updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetX(-0.035);
- }, 800);
- // ME END FLOOR updatePosx
- 
    // ME START FLOOR updatePosy
  setTimeout(() => {
   app.getSceneObjectByName('FLOOR').position.SetY(-2.6249999999999907);
@@ -620,6 +602,24 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('REEL_TOP').position.SetY(3);
  }, 800);
  // ME END REEL_TOP updatePosy
+ 
+   // ME START R_BOX updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('R_BOX').position.SetX(3.93);
+ }, 800);
+ // ME END R_BOX updatePosx
+ 
+   // ME START FLOOR updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetX(0.38500000000000006);
+ }, 800);
+ // ME END FLOOR updatePosx
+ 
+    // ME START BANNER1 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').position.SetX(-0.10499999999999995);
+ }, 800);
+ // ME END BANNER1 updatePosx
  
  // [MAIN_REPLACE2]
 

@@ -37,7 +37,8 @@ export default class ProceduralMeshObj extends Materials {
       o.material.useBlend = false;
     }
     this.mType = MeshType.PROCEDURAL;
-    //cache
+    this.dontDrag = true;
+
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
