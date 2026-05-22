@@ -613,6 +613,10 @@ export default class Materials {
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
+
+      canvas.style.width = (arg.width || 256)+ 'px';
+      canvas.style.height = (arg.height || 256) + 'px';
+
       canvas.style.position = 'absolute';
       canvas.style.left = '0px';
       canvas.style.top = '-325px';

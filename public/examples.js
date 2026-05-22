@@ -28589,6 +28589,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.GizmoEffect = void 0;
 var _gimzoShader = require("../../shaders/gizmo/gimzoShader");
+var _utils = require("../utils");
 class GizmoEffect {
   constructor(device, format) {
     this.device = device;
@@ -28809,13 +28810,13 @@ class GizmoEffect {
     app.canvas.addEventListener("mousemove", e => {
       if (this.isDragging && e.buttons === 1) {
         this._handleDrag(e);
-        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
+        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if (this.isDragging && e.buttons === 0) {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       } else {
-        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
+        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
       }
     });
     app.canvas.addEventListener("mouseup", () => {
@@ -28918,7 +28919,9 @@ class GizmoEffect {
   }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.isDragging) return;
-    if (this.parentMesh.dontDrag) return;
+    // if(this.parentMesh.dontDrag) return;
+    if ((0, _utils.byId)('graph-status') && (0, _utils.byId)('graph-status').innerHTML === "🔴") return;
+    // graph-status
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -29088,7 +29091,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":101}],52:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":101,"../utils":83}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37335,6 +37338,8 @@ class Materials {
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
+      canvas.style.width = (arg.width || 256) + 'px';
+      canvas.style.height = (arg.height || 256) + 'px';
       canvas.style.position = 'absolute';
       canvas.style.left = '0px';
       canvas.style.top = '-325px';

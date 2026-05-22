@@ -1,4 +1,5 @@
 import {gizmoEffect} from "../../shaders/gizmo/gimzoShader";
+import {byId} from "../utils";
 
 export class GizmoEffect {
   constructor(device, format) {
@@ -165,13 +166,13 @@ export class GizmoEffect {
     app.canvas.addEventListener("mousemove", (e) => {
       if(this.isDragging && e.buttons === 1) {
         this._handleDrag(e);
-        if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
+        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if(this.isDragging && e.buttons === 0) {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       } else {
-        if(app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
+        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
       }
     });
 
@@ -283,7 +284,9 @@ export class GizmoEffect {
 
   _handleDrag(mouseEvent) {
     if(!this.parentMesh || !this.isDragging) return;
-    if(this.parentMesh.dontDrag) return;
+    // if(this.parentMesh.dontDrag) return;
+    if(byId('graph-status') && byId('graph-status').innerHTML === "🔴") return;
+    // graph-status
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
