@@ -37410,7 +37410,7 @@ var MatrixEngineWGPU = class {
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -38255,9 +38255,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("BANNER1").position.SetX(-0.10499999999999995);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_TOP").position.SetX(0.08000000000000052);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("L_BOX").position.SetX(-4);
       }, 800);
       setTimeout(() => {
@@ -38265,6 +38262,9 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("FLOOR").position.SetX(0.38500000000000006);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_TOP").position.SetX(0.08000000000000052);
       }, 800);
     });
   }
