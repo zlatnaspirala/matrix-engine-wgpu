@@ -66308,9 +66308,6 @@ class MatrixEngineWGPU {
       // if(camera._dirtyAngle || camera._dirty) 
       if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
       camera.update();
-
-      // camera.update();
-
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -66365,8 +66362,8 @@ class MatrixEngineWGPU {
             l = mesh.materialBindGroup;
           }
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -66384,8 +66381,8 @@ class MatrixEngineWGPU {
         for (const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
