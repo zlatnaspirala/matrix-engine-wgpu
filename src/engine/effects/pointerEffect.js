@@ -2,25 +2,24 @@ import {mat4} from "wgpu-matrix";
 import {pointerEffect} from "../../shaders/standalone/pointer.effect.js";
 
 export class PointerEffect {
-  constructor(device, format, initialScale = 10) {
+  constructor(device, format, initialScale = 10, cameraBuffer) {
     this.initialScale = initialScale;
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this._tempModelMatrix = mat4.identity();
     this._tempTranslation = new Float32Array(3);
     this.enabled = true;
     this.yOffset = 60;
     this._initPipeline();
-    // alert('pointer');
   }
 
   _initPipeline() {
-    // Vertex data: simple quad
     let S = this.initialScale;
     const vertexData = new Float32Array([
       -0.5 * S, 0.5 * S, 0.0 * S,  // top-left
-      0.5 * S, 0.5 * S, 0.0 * S,  // top-right
-      -0.1 * S, -0.1 * S, 0.0 * S,  // bottom-left
+      0.5 * S, 0.5 * S, 0.0 * S,   // top-right
+      -0.1 * S, -0.1 * S, 0.0 * S, // bottom-left
       0.1 * S, -0.1 * S, 0.0 * S,  // bottom-right
     ]);
 
@@ -52,10 +51,6 @@ export class PointerEffect {
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
 
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST

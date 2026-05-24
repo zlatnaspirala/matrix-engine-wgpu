@@ -3,9 +3,10 @@ import {GeometryFactory} from "../geometry-factory.js";
 import {mat4} from "wgpu-matrix";
 
 export class GenGeoTexture2 {
-  constructor(device, format, type = "sphere", path, scale = 1) {
+  constructor(device, format, type = "sphere", path, scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -91,25 +92,15 @@ export class GenGeoTexture2 {
     } else {
       this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     }
-
     this.indexCount = indexData.length;
-
-    // --- CAMERA BUFFER
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
-
     // Mobile optimization: track frame time for frame-rate independent animation
     this.lastFrameTime = performance.now();
     this.frameTimeMs = 16; // default 60fps
-
     for(let x = 0;x < this.maxInstances;x++) {
       this.instanceTargets.push({
         index: x,

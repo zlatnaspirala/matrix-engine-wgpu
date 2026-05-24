@@ -3,9 +3,10 @@ import {GeometryFactory} from "../geometry-factory.js";
 import {mat4} from "wgpu-matrix";
 
 export class GenGeoTexture {
-  constructor(device, format, type = "sphere", path, scale = 1) {
+  constructor(device, format, type = "sphere", path, scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -70,11 +71,6 @@ export class GenGeoTexture {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
 
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;

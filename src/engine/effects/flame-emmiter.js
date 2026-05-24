@@ -8,7 +8,7 @@ import {LOG_FUNNY_ARCADE, randomFloatFromTo} from "../utils";
  * transformed vertex particle, posible to choose dir also...
  */
 export class FlameEmitter {
-  constructor(device, format, maxParticles = 20) {
+  constructor(device, format, maxParticles = 20, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.time = 0;
@@ -29,6 +29,7 @@ export class FlameEmitter {
     this.scaleCoeficient = 0.12;
     this.rotSpeed = 0.1;
     // cache
+    this.cameraBuffer = cameraBuffer;
     this._localMatrix = mat4.create();
     this._finalMatrix = mat4.create();
     this._scratch4 = new Float32Array(4);
@@ -116,7 +117,6 @@ export class FlameEmitter {
     this.indexBuffer = this.device.createBuffer({size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.modelBuffer = this.device.createBuffer({label: 'flame-emmiter modeBuffer', size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST});
     const bindGroupLayout = this.device.createBindGroupLayout({
       label: 'flame-emmiter bindGroupLayout',

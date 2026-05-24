@@ -16,9 +16,10 @@ import {GenGeoTexture2} from '../effects/gen-tex2';
 import {VERTEX_ANIM_FLAGS} from '../literals';
 import {MEConfig} from '../../me-config';
 import {buildPipelineKey, PipelineManager} from '../pipelineManager';
+import {PointEffect} from '../effects/topology-point';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device, o.material, _glbFile, o.textureCache);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {this.raycast = {enabled: false, radius: 2}} else {
@@ -30,6 +31,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
@@ -752,32 +754,32 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
         if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new PointerEffect(device, pf, this, true);
+          this.effects.pointer = new PointerEffect(device, pf, 1, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.ballEffect !== 'undefined' && this.pointerEffect.ballEffect == true) {
-          this.effects.ballEffect = new GenGeo(device, pf, 'sphere');
+          this.effects.ballEffect = new GenGeo(device, pf, 'sphere', 1, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.energyBar !== 'undefined' && this.pointerEffect.energyBar == true) {
-          this.effects.energyBar = new HPBarEffect(device, pf);
-          this.effects.manaBar = new MANABarEffect(device, pf);
+          this.effects.energyBar = new HPBarEffect(device, pf, this.cameraBuffer);
+          this.effects.manaBar = new MANABarEffect(device, pf, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new FlameEffect(device, pf);
+          this.effects.flameEffect = new FlameEffect(device, pf, pf, undefined, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect(device, pf);
+          this.effects.pointEffect = new PointEffect(device, pf, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new FlameEmitter(device, pf);
+          this.effects.flameEmitter = new FlameEmitter(device, pf, 20, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.circlePlane !== 'undefined' && this.pointerEffect.circlePlane == true) {
-          this.effects.circlePlane = new GenGeo(device, pf, 'circlePlane');
+          this.effects.circlePlane = new GenGeo(device, pf, 'circlePlane', 1, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
-          this.effects.circlePlaneTex = new GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circlePlaneTex = new GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath, undefined, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
-          this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath, 1, this.cameraBuffer);
         }
       }
 

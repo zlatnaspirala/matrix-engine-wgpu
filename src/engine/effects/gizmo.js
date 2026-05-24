@@ -2,9 +2,10 @@ import {gizmoEffect} from "../../shaders/gizmo/gimzoShader";
 import {byId} from "../utils";
 
 export class GizmoEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.enabled = true;
     this.mode = 0;
     this.size = 3;
@@ -57,11 +58,9 @@ export class GizmoEffect {
 
   _initPipeline() {
     this._createTranslateGizmo();
-    this.cameraBuffer = this.device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.modelBuffer = this.device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.gizmoSettingsBuffer = this.device.createBuffer({size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this._updateGizmoSettings();
-
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
@@ -74,7 +73,7 @@ export class GizmoEffect {
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
-        {binding: 2, resource: {buffer: this.gizmoSettingsBuffer}},
+        {binding: 2, resource: {buffer: this.gizmoSettingsBuffer}}
       ]
     });
     const shaderModule = this.device.createShaderModule({code: gizmoEffect});
@@ -82,7 +81,7 @@ export class GizmoEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
-      label: 'gizmo Pipeline',
+      label: 'gizmo',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,

@@ -1,20 +1,18 @@
 import {mat4} from "wgpu-matrix";
 
 export class MSDFTextEffect {
-  constructor(device, format, msdfTexture, sampler) {
+  constructor(device, format, msdfTexture, sampler, cameraBuffer) {
     this.device = device;
     this.format = format;
-
+    this.cameraBuffer = cameraBuffer;
     this.msdfTexture = msdfTexture;
     this.sampler = sampler;
-
     this.glyphs = [];
     this._init();
   }
 
   _init() {
-
-    // quad (same as your HP bar idea)
+    // quad
     const vertexData = new Float32Array([
       -0.5, 0.5,
       0.5, 0.5,
@@ -48,22 +46,13 @@ export class MSDFTextEffect {
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-
     this.indexCount = indexData.length;
 
-    // glyph buffer (dynamic text)
     this.glyphBuffer = this.device.createBuffer({
       size: 1024 * 64,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
 
-    // camera
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // bind group layout
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},

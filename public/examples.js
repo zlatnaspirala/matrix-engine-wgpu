@@ -4809,6 +4809,7 @@ var physicsPlayground = function () {
         y: 0,
         z: 0
       }, "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400);
+      physicsPlayground.matrixPhysics.speedUpSimulation(11);
 
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
@@ -26689,7 +26690,7 @@ var _dustShaderWgsl = require("../../shaders/desctruction/dust-shader.wgsl.js");
  */
 
 class DestructionEffect {
-  constructor(device, format, config = {}) {
+  constructor(device, format, config = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
 
@@ -26706,6 +26707,9 @@ class DestructionEffect {
     // Visual properties
     this.color = config.color || [0.6, 0.5, 0.4, 1.0]; // Brownish dust
     this.intensity = 1.0;
+
+    // Uniform buffers
+    this.cameraBuffer = cameraBuffer;
     this._initPipeline();
     this._initParticles();
   }
@@ -26760,13 +26764,6 @@ class DestructionEffect {
     this.instanceBuffer = this.device.createBuffer({
       size: instanceDataSize,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-
-    // Uniform buffers
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      // mat4x4
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.modelBuffer = this.device.createBuffer({
       size: 64 + 16 + 16,
@@ -27114,19 +27111,16 @@ exports.HPBarEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _energyBarShader = require("../../shaders/energy-bars/energy-bar-shader.js");
 class HPBarEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.progress = 1.0;
     this.color = [0.1, 0.9, 0.1, 1.0];
     this.offsetY = 48;
     this.enabled = true;
-
-    // Cache flags for dirty state tracking
     this._colorDirty = true;
     this._progressDirty = true;
-
-    // scratch buffers — no allocs per frame
     this._modelMatrix = new Float32Array(16);
     this._colorScratch = new Float32Array(4);
     this._progressScratch = new Float32Array(1);
@@ -27134,10 +27128,8 @@ class HPBarEffect {
     this._initPipeline();
   }
   _initPipeline() {
-    // Pre-compute constants to avoid repeated calculations
     const W = 20; // 0.5 * 40
     const H = 1.5; // 0.5 * 3
-
     // Use typed array directly instead of creating intermediate arrays
     const vertexData = new Float32Array([-W, H, 0.0, W, H, 0.0, -W, -H, 0.0, W, -H, 0.0]);
 
@@ -27172,19 +27164,11 @@ class HPBarEffect {
     this.indexBuffer.unmap();
     this.indexCount = 6;
 
-    // Uniforms - exact sizes
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
     // model (64) + color (16) + progress (4) = 84, padded to 96
     this.modelBuffer = this.device.createBuffer({
       size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // BindGroup Layout - reuse if possible
     const bindGroupLayout = this.device.createBindGroupLayout({
       label: 'energy-bar bindGroupLayout',
       entries: [{
@@ -27341,7 +27325,7 @@ var _utils = require("../utils");
  * transformed vertex particle, posible to choose dir also...
  */
 class FlameEmitter {
-  constructor(device, format, maxParticles = 20) {
+  constructor(device, format, maxParticles = 20, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.time = 0;
@@ -27362,6 +27346,7 @@ class FlameEmitter {
     this.scaleCoeficient = 0.12;
     this.rotSpeed = 0.1;
     // cache
+    this.cameraBuffer = cameraBuffer;
     this._localMatrix = _wgpuMatrix.mat4.create();
     this._finalMatrix = _wgpuMatrix.mat4.create();
     this._scratch4 = new Float32Array(4);
@@ -27432,10 +27417,6 @@ class FlameEmitter {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       label: 'flame-emmiter modeBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
@@ -27727,9 +27708,10 @@ const FlamePresets = exports.FlamePresets = {
 
 // FlameEffect
 class FlameEffect {
-  constructor(device, format, colorFormat, params = {}) {
+  constructor(device, format, colorFormat, params = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.colorFormat = colorFormat ?? format;
     const config = typeof params === 'string' ? FlamePresets[params] : params;
     const defaults = FlamePresets.natural;
@@ -27775,10 +27757,6 @@ class FlameEffect {
     this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
   }
   _initPipeline() {
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 112,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -27971,9 +27949,10 @@ var _geoTex = require("../../shaders/standalone/geo.tex.js");
 var _geometryFactory = require("../geometry-factory.js");
 var _wgpuMatrix = require("wgpu-matrix");
 class GenGeoTexture {
-  constructor(device, format, type = "sphere", path, scale = 1) {
+  constructor(device, format, type = "sphere", path, scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = _geometryFactory.GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -28035,10 +28014,6 @@ class GenGeoTexture {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
@@ -28220,9 +28195,10 @@ var _geoTex = require("../../shaders/standalone/geo.tex.js");
 var _geometryFactory = require("../geometry-factory.js");
 var _wgpuMatrix = require("wgpu-matrix");
 class GenGeoTexture2 {
-  constructor(device, format, type = "sphere", path, scale = 1) {
+  constructor(device, format, type = "sphere", path, scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = _geometryFactory.GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -28306,22 +28282,14 @@ class GenGeoTexture2 {
       this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     }
     this.indexCount = indexData.length;
-
-    // --- CAMERA BUFFER
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
-
     // Mobile optimization: track frame time for frame-rate independent animation
     this.lastFrameTime = performance.now();
     this.frameTimeMs = 16; // default 60fps
-
     for (let x = 0; x < this.maxInstances; x++) {
       this.instanceTargets.push({
         index: x,
@@ -28543,9 +28511,10 @@ var _geometryFactory = require("../geometry-factory.js");
 var _wgpuMatrix = require("wgpu-matrix");
 var _geoInstanced = require("../../shaders/standalone/geo.instanced.js");
 class GenGeo {
-  constructor(device, format, type = "sphere", scale = 1) {
+  constructor(device, format, type = "sphere", scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = _geometryFactory.GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -28576,10 +28545,6 @@ class GenGeo {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
@@ -28737,9 +28702,10 @@ exports.GizmoEffect = void 0;
 var _gimzoShader = require("../../shaders/gizmo/gimzoShader");
 var _utils = require("../utils");
 class GizmoEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.enabled = true;
     this.mode = 0;
     this.size = 3;
@@ -28816,10 +28782,6 @@ class GizmoEffect {
   }
   _initPipeline() {
     this._createTranslateGizmo();
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -28870,7 +28832,7 @@ class GizmoEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
-      label: 'gizmo Pipeline',
+      label: 'gizmo',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -29615,9 +29577,10 @@ exports.MANABarEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _energyBarShader = require("../../shaders/energy-bars/energy-bar-shader.js");
 class MANABarEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.progress = 1.0;
     this.color = [0.1, 0.1, 0.9, 1.0];
     this.offsetY = 45;
@@ -29652,20 +29615,10 @@ class MANABarEffect {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-
-    // Uniforms
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // model + color + progress (64 + 16 + 4)
     this.modelBuffer = this.device.createBuffer({
       size: 64 + 16 + 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // BindGroup
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [{
         binding: 0,
@@ -29691,8 +29644,6 @@ class MANABarEffect {
         }
       }]
     });
-
-    // Pipeline
     const shaderModule = this.device.createShaderModule({
       code: _energyBarShader.hpBarEffectShaders
     });
@@ -29786,16 +29737,17 @@ Object.defineProperty(exports, "__esModule", {
 exports.MSDFTextEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 class MSDFTextEffect {
-  constructor(device, format, msdfTexture, sampler) {
+  constructor(device, format, msdfTexture, sampler, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.msdfTexture = msdfTexture;
     this.sampler = sampler;
     this.glyphs = [];
     this._init();
   }
   _init() {
-    // quad (same as your HP bar idea)
+    // quad
     const vertexData = new Float32Array([-0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5]);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
@@ -29817,20 +29769,10 @@ class MSDFTextEffect {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-
-    // glyph buffer (dynamic text)
     this.glyphBuffer = this.device.createBuffer({
       size: 1024 * 64,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-
-    // camera
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // bind group layout
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [{
         binding: 0,
@@ -29945,19 +29887,18 @@ exports.PointerEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _pointerEffect = require("../../shaders/standalone/pointer.effect.js");
 class PointerEffect {
-  constructor(device, format, initialScale = 10) {
+  constructor(device, format, initialScale = 10, cameraBuffer) {
     this.initialScale = initialScale;
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this._tempModelMatrix = _wgpuMatrix.mat4.identity();
     this._tempTranslation = new Float32Array(3);
     this.enabled = true;
     this.yOffset = 60;
     this._initPipeline();
-    // alert('pointer');
   }
   _initPipeline() {
-    // Vertex data: simple quad
     let S = this.initialScale;
     const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0.0 * S,
     // top-left
@@ -29985,10 +29926,6 @@ class PointerEffect {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -30098,29 +30035,20 @@ Object.defineProperty(exports, "__esModule", {
 exports.PointEffect = void 0;
 var _pointEffect = require("../../shaders/topology-point/pointEffect");
 class PointEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.pointSize = 8.0;
     this.enabled = true;
     this._pointSettingsScratch = new Float32Array(4);
     this._initPipeline();
   }
   _initPipeline() {
-    // Camera uniform buffer
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // Model buffer
     this.modelBuffer = this.device.createBuffer({
       size: 64,
-      // mat4x4
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // Point settings buffer
     this.pointSettingsBuffer = this.device.createBuffer({
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -30224,8 +30152,6 @@ class PointEffect {
       }
     });
   }
-
-  // ✅ THIS MATCHES FlameEffect PATTERN
   updateInstanceData(baseModelMatrix) {
     // You can apply additional transforms here if needed
     // For now, just use the parent's model matrix directly
@@ -32699,9 +32625,10 @@ var _genTex2 = require("../effects/gen-tex2");
 var _literals = require("../literals");
 var _meConfig = require("../../me-config");
 var _pipelineManager = require("../pipelineManager");
+var _topologyPoint = require("../effects/topology-point");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObjInstances extends _materialsInstanced.default {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device, o.material, _glbFile, o.textureCache);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
@@ -32718,6 +32645,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
@@ -33491,32 +33419,32 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
         if (typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
+          this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.ballEffect !== 'undefined' && this.pointerEffect.ballEffect == true) {
-          this.effects.ballEffect = new _gen.GenGeo(device, pf, 'sphere');
+          this.effects.ballEffect = new _gen.GenGeo(device, pf, 'sphere', 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.energyBar !== 'undefined' && this.pointerEffect.energyBar == true) {
-          this.effects.energyBar = new _energyBar.HPBarEffect(device, pf);
-          this.effects.manaBar = new _manaBar.MANABarEffect(device, pf);
+          this.effects.energyBar = new _energyBar.HPBarEffect(device, pf, this.cameraBuffer);
+          this.effects.manaBar = new _manaBar.MANABarEffect(device, pf, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new _flame.FlameEffect(device, pf);
+          this.effects.flameEffect = new _flame.FlameEffect(device, pf, pf, undefined, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect(device, pf);
+          this.effects.pointEffect = new _topologyPoint.PointEffect(device, pf, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, pf);
+          this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, pf, 20, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.circlePlane !== 'undefined' && this.pointerEffect.circlePlane == true) {
-          this.effects.circlePlane = new _gen.GenGeo(device, pf, 'circlePlane');
+          this.effects.circlePlane = new _gen.GenGeo(device, pf, 'circlePlane', 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
-          this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath, undefined, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
-          this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath, 1, this.cameraBuffer);
         }
       }
       this.getModelMatrix = (pos, useScale = false) => {
@@ -33826,7 +33754,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../me-config":84,"../../shaders/fragment.video.wgsl":94,"../../shaders/instanced/vertex.instanced.wgsl":105,"../effects/energy-bar":45,"../effects/flame":47,"../effects/flame-emmiter":46,"../effects/gen":50,"../effects/gen-tex":48,"../effects/gen-tex2":49,"../effects/mana-bar":53,"../effects/pointerEffect":55,"../literals":62,"../loaders/bvh-instaced":64,"../matrix-class":68,"../pipelineManager":75,"../utils":83,"./materials-instanced":59,"wgpu-matrix":37}],61:[function(require,module,exports){
+},{"../../me-config":84,"../../shaders/fragment.video.wgsl":94,"../../shaders/instanced/vertex.instanced.wgsl":105,"../effects/energy-bar":45,"../effects/flame":47,"../effects/flame-emmiter":46,"../effects/gen":50,"../effects/gen-tex":48,"../effects/gen-tex2":49,"../effects/mana-bar":53,"../effects/pointerEffect":55,"../effects/topology-point":56,"../literals":62,"../loaders/bvh-instaced":64,"../matrix-class":68,"../pipelineManager":75,"../utils":83,"./materials-instanced":59,"wgpu-matrix":37}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38277,7 +38205,7 @@ var _pipelineManager = require("./pipelineManager");
 var _msdfText = require("./effects/msdfText");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device, o.material, _glbFile, o.textureCache, o.isVideo);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
@@ -38300,6 +38228,7 @@ class MEMeshObj extends _materials.default {
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
@@ -38961,29 +38890,29 @@ class MEMeshObj extends _materials.default {
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if (typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new _pointerEffect.PointerEffect(device, 'rgba16float', 1);
+          this.effects.pointer = new _pointerEffect.PointerEffect(device, 'rgba16float', 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new _topologyPoint.PointEffect(device, 'rgba16float');
+          this.effects.pointEffect = new _topologyPoint.PointEffect(device, 'rgba16float', this.cameraBuffer);
         }
         if (typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
-          this.effects.gizmoEffect = new _gizmo.GizmoEffect(device, 'rgba16float');
+          this.effects.gizmoEffect = new _gizmo.GizmoEffect(device, 'rgba16float', this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new _flame.FlameEffect(device, pf, "rgba16float", 'torch');
+          this.effects.flameEffect = new _flame.FlameEffect(device, pf, "rgba16float", 'torch', this.cameraBuffer);
         }
         if (typeof this.pointerEffect.gpuText !== 'undefined' && this.pointerEffect.gpuText == true) {
-          this.effects.gpuText = new _msdfText.MSDFTextEffect(device, pf, "rgba16float", 'torch');
+          this.effects.gpuText = new _msdfText.MSDFTextEffect(device, pf, "rgba16float", 'torch', this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, "rgba16float");
+          this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, "rgba16float", 20, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new _destruction.DestructionEffect(device, 'rgba16float', {
             particleCount: 100,
             duration: 2.5,
             color: [0.6, 0.5, 0.4, 1.0]
-          });
+          }, this.cameraBuffer);
         }
       }
       this.getModelMatrix = (pos, useScale = false) => {
@@ -65173,6 +65102,7 @@ var _nanoRender = require("./engine/overrides/nano-render.js");
 var _bridge = require("./engine/physics/bridge.js");
 var _mobile = require("./engine/overrides/mobile-1.js");
 var _hzb = require("./engine/postprocessing/hzb.js");
+var _KaleidoscopeEffect = require("./engine/effects/KaleidoscopeEffect.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -65197,7 +65127,8 @@ class MatrixEngineWGPU {
       FlameEmitter: _flameEmmiter.FlameEmitter,
       PointerEffect: _pointerEffect.PointerEffect,
       HPBarEffect: _energyBar.HPBarEffect,
-      MANABarEffect: _manaBar.MANABarEffect
+      MANABarEffect: _manaBar.MANABarEffect,
+      KaleidoscopeEffect: _KaleidoscopeEffect.KaleidoscopeEffect
     }
   };
   mainRenderBundle = [];
@@ -65860,9 +65791,6 @@ class MatrixEngineWGPU {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
     this.postProcessInputView = this.postProcessInputTex.createView();
-
-    // this.presentPipeline = this.device.createRenderPipeline({
-
     this.presentPipeline = this.device.createRenderPipeline({
       label: "final pipeline",
       layout: 'auto',
@@ -65877,15 +65805,13 @@ class MatrixEngineWGPU {
           code: `
         @group(0) @binding(0) var hdrTex  : texture_2d<f32>;
         @group(0) @binding(1) var samp    : sampler;
-        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;  // NEW
-
+        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;
         @fragment
         fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
             let uv  = pos.xy / vec2<f32>(textureDimensions(hdrTex));
             let hdr = textureSample(hdrTex, samp, uv).rgb;
-            let ssr = textureSample(ssrTex, samp, uv);          // NEW
-
-            let composited = mix(hdr, ssr.rgb, ssr.a);           // NEW
+            let ssr = textureSample(ssrTex, samp, uv);
+            let composited = mix(hdr, ssr.rgb, ssr.a);
             let ldr = composited / (composited + vec3(1.0));
             return vec4<f32>(ldr, 1.0);
             // return vec4<f32>(ssr.rgb, 1.0);
@@ -65898,34 +65824,8 @@ class MatrixEngineWGPU {
         }]
       }
     });
-    //   label: "final pipeline",
-    //   layout: 'auto',
-    //   vertex: {
-    //     module: this.device.createShaderModule({code: fullscreenQuadWGSL()}),
-    //     entryPoint: 'vert',
-    //   },
-    //   fragment: {
-    //     module: this.device.createShaderModule({
-    //       code: `
-    //     @group(0) @binding(0) var hdrTex : texture_2d<f32>;
-    //     @group(0) @binding(1) var samp : sampler;
-    //     @fragment
-    //     fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
-    //       let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
-    //       let hdr = textureSample(hdrTex, samp, uv).rgb;
-    //       // simple tonemap
-    //       let ldr = hdr / (hdr + vec3(1.0));
-    //       return vec4<f32>(ldr, 1.0);
-    //     }
-    //   `
-    //     }),
-    //     entryPoint: 'main',
-    //     targets: [{format: isMobile() == true ? 'rgba8unorm' : 'bgra8unorm'}], // rgba16float  bgra8unorm rgba8unorm
-    //   },
-    // });
-
     this.createBloomBindGroup();
-    // global
+    // Global
     this.globalSceneUniformBuffer = this.device.createBuffer({
       label: 'Shared[sceneUniformBuffer]',
       size: 192,
@@ -66045,6 +65945,10 @@ class MatrixEngineWGPU {
       }
     };
     this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
     this.run(callback);
   }
   createTexArrayForShadows() {
@@ -66292,7 +66196,7 @@ class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
+    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM, null, null, null, this.cameraBuffer);
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
@@ -66906,7 +66810,7 @@ class MatrixEngineWGPU {
         }
         o.materialBGL = this.materialBGL;
         o.uniformBufferBindGroupLayoutInstanced = this.uniformBufferBindGroupLayoutInstanced;
-        const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
+        const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice(), this.cameraBuffer);
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
         // if(o.physics.enabled == true) {
@@ -67004,4 +66908,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/cameras.js":40,"./engine/core-cache.js":42,"./engine/effects/energy-bar.js":45,"./engine/effects/flame-emmiter.js":46,"./engine/effects/flame.js":47,"./engine/effects/mana-bar.js":53,"./engine/effects/pointerEffect.js":55,"./engine/generators/generator.js":57,"./engine/instanced/mesh-obj-instances.js":60,"./engine/lights.js":61,"./engine/loader-obj.js":63,"./engine/loaders/bvh-instaced.js":64,"./engine/loaders/bvh.js":65,"./engine/mesh-obj.js":69,"./engine/overrides/min-render.js":70,"./engine/overrides/mobile-1.js":71,"./engine/overrides/nano-render.js":72,"./engine/overrides/noshadow-render.js":73,"./engine/physics/bridge.js":74,"./engine/pipelineManager.js":75,"./engine/postprocessing/bloom.js":77,"./engine/postprocessing/hzb.js":78,"./engine/postprocessing/volumetric.js":79,"./engine/procedural-mesh.js":80,"./engine/raycast.js":82,"./engine/utils.js":83,"./me-config.js":84,"./multilang/lang.js":85,"./sounds/audioAsset.js":124,"./sounds/sounds.js":125,"./tools/editor/editor.js":128,"./tools/editor/flexCodexShaderAdapter.js":131,"wgpu-matrix":37}]},{},[1]);
+},{"./engine/cameras.js":40,"./engine/core-cache.js":42,"./engine/effects/KaleidoscopeEffect.js":43,"./engine/effects/energy-bar.js":45,"./engine/effects/flame-emmiter.js":46,"./engine/effects/flame.js":47,"./engine/effects/mana-bar.js":53,"./engine/effects/pointerEffect.js":55,"./engine/generators/generator.js":57,"./engine/instanced/mesh-obj-instances.js":60,"./engine/lights.js":61,"./engine/loader-obj.js":63,"./engine/loaders/bvh-instaced.js":64,"./engine/loaders/bvh.js":65,"./engine/mesh-obj.js":69,"./engine/overrides/min-render.js":70,"./engine/overrides/mobile-1.js":71,"./engine/overrides/nano-render.js":72,"./engine/overrides/noshadow-render.js":73,"./engine/physics/bridge.js":74,"./engine/pipelineManager.js":75,"./engine/postprocessing/bloom.js":77,"./engine/postprocessing/hzb.js":78,"./engine/postprocessing/volumetric.js":79,"./engine/procedural-mesh.js":80,"./engine/raycast.js":82,"./engine/utils.js":83,"./me-config.js":84,"./multilang/lang.js":85,"./sounds/audioAsset.js":124,"./sounds/sounds.js":125,"./tools/editor/editor.js":128,"./tools/editor/flexCodexShaderAdapter.js":131,"wgpu-matrix":37}]},{},[1]);

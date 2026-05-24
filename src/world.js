@@ -31,6 +31,7 @@ import {nanoPass} from "./engine/overrides/nano-render.js";
 import {PhysicsBridge} from "./engine/physics/bridge.js";
 import {mobile1} from "./engine/overrides/mobile-1.js";
 import {SSRPass} from "./engine/postprocessing/hzb.js";
+import {KaleidoscopeEffect} from "./engine/effects/KaleidoscopeEffect.js";
 
 /**
  * @description
@@ -56,6 +57,7 @@ export default class MatrixEngineWGPU {
       PointerEffect,
       HPBarEffect,
       MANABarEffect,
+      KaleidoscopeEffect
     }
   }
 
@@ -576,10 +578,7 @@ export default class MatrixEngineWGPU {
         GPUTextureUsage.RENDER_ATTACHMENT |
         GPUTextureUsage.TEXTURE_BINDING
     });
-
     this.postProcessInputView = this.postProcessInputTex.createView();
-
-    // this.presentPipeline = this.device.createRenderPipeline({
 
     this.presentPipeline = this.device.createRenderPipeline({
       label: "final pipeline",
@@ -593,15 +592,13 @@ export default class MatrixEngineWGPU {
           code: `
         @group(0) @binding(0) var hdrTex  : texture_2d<f32>;
         @group(0) @binding(1) var samp    : sampler;
-        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;  // NEW
-
+        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;
         @fragment
         fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
             let uv  = pos.xy / vec2<f32>(textureDimensions(hdrTex));
             let hdr = textureSample(hdrTex, samp, uv).rgb;
-            let ssr = textureSample(ssrTex, samp, uv);          // NEW
-
-            let composited = mix(hdr, ssr.rgb, ssr.a);           // NEW
+            let ssr = textureSample(ssrTex, samp, uv);
+            let composited = mix(hdr, ssr.rgb, ssr.a);
             let ldr = composited / (composited + vec3(1.0));
             return vec4<f32>(ldr, 1.0);
             // return vec4<f32>(ssr.rgb, 1.0);
@@ -612,34 +609,9 @@ export default class MatrixEngineWGPU {
         targets: [{format: isMobile() == true ? 'rgba8unorm' : 'bgra8unorm'}],
       },
     });
-    //   label: "final pipeline",
-    //   layout: 'auto',
-    //   vertex: {
-    //     module: this.device.createShaderModule({code: fullscreenQuadWGSL()}),
-    //     entryPoint: 'vert',
-    //   },
-    //   fragment: {
-    //     module: this.device.createShaderModule({
-    //       code: `
-    //     @group(0) @binding(0) var hdrTex : texture_2d<f32>;
-    //     @group(0) @binding(1) var samp : sampler;
-    //     @fragment
-    //     fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
-    //       let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
-    //       let hdr = textureSample(hdrTex, samp, uv).rgb;
-    //       // simple tonemap
-    //       let ldr = hdr / (hdr + vec3(1.0));
-    //       return vec4<f32>(ldr, 1.0);
-    //     }
-    //   `
-    //     }),
-    //     entryPoint: 'main',
-    //     targets: [{format: isMobile() == true ? 'rgba8unorm' : 'bgra8unorm'}], // rgba16float  bgra8unorm rgba8unorm
-    //   },
-    // });
 
     this.createBloomBindGroup();
-    // global
+    // Global
     this.globalSceneUniformBuffer = this.device.createBuffer({
       label: 'Shared[sceneUniformBuffer]',
       size: 192,
@@ -649,29 +621,10 @@ export default class MatrixEngineWGPU {
     this.sceneBGL = this.device.createBindGroupLayout({
       label: 'SceneBGL',
       entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {type: 'uniform'}
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "depth",
-            viewDimension: "2d-array"
-          }
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: 'comparison'}
-        },
-        {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: {type: 'read-only-storage'}
-        }
+        {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: "depth", viewDimension: "2d-array"}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},
+        {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'read-only-storage'}}
       ]
     });
 
@@ -755,6 +708,12 @@ export default class MatrixEngineWGPU {
     };
 
     this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
 
     this.run(callback);
   }
@@ -966,7 +925,10 @@ export default class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
+    let myMesh1 = new MEMeshObj(
+      this.canvas, this.device, this.context, o, this.inputHandler, AM,
+      null, null, null,
+      this.cameraBuffer);
     myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
@@ -1471,7 +1433,7 @@ export default class MatrixEngineWGPU {
           this.device,
           this.context,
           this.inputHandler,
-          this.globalAmbient.slice());
+          this.globalAmbient.slice(), this.cameraBuffer);
 
         bvhPlayer.clearColor = clearColor;
 

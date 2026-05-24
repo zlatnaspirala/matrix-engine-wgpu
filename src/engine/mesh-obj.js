@@ -18,7 +18,7 @@ import {buildPipelineKey, PipelineManager} from './pipelineManager';
 import {MSDFTextEffect} from './effects/msdfText';
 
 export default class MEMeshObj extends Materials {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device, o.material, _glbFile, o.textureCache, o.isVideo);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
@@ -34,6 +34,7 @@ export default class MEMeshObj extends Materials {
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
@@ -666,29 +667,29 @@ export default class MEMeshObj extends Materials {
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new PointerEffect(device, 'rgba16float', 1);
+          this.effects.pointer = new PointerEffect(device, 'rgba16float', 1, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect(device, 'rgba16float');
+          this.effects.pointEffect = new PointEffect(device, 'rgba16float', this.cameraBuffer);
         }
         if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
-          this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float');
+          this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float', this.cameraBuffer);
         }
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new FlameEffect(device, pf, "rgba16float", 'torch');
+          this.effects.flameEffect = new FlameEffect(device, pf, "rgba16float", 'torch', this.cameraBuffer);
         }
         if(typeof this.pointerEffect.gpuText !== 'undefined' && this.pointerEffect.gpuText == true) {
-          this.effects.gpuText = new MSDFTextEffect(device, pf, "rgba16float", 'torch');
+          this.effects.gpuText = new MSDFTextEffect(device, pf, "rgba16float", 'torch', this.cameraBuffer);
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");
+          this.effects.flameEmitter = new FlameEmitter(device, "rgba16float", 20, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect(device, 'rgba16float', {
             particleCount: 100,
             duration: 2.5,
             color: [0.6, 0.5, 0.4, 1.0]
-          });
+          }, this.cameraBuffer);
         }
       }
 

@@ -57,6 +57,8 @@ export var physicsPlayground = function() {
         "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400
       );
 
+      physicsPlayground.matrixPhysics.speedUpSimulation(11)
+
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
       //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},

@@ -18,7 +18,7 @@ import {mat4} from "wgpu-matrix";
 import {dustShader} from "../../shaders/desctruction/dust-shader.wgsl.js";
 
 export class DestructionEffect {
-  constructor(device, format, config = {}) {
+  constructor(device, format, config = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
 
@@ -35,6 +35,9 @@ export class DestructionEffect {
     // Visual properties
     this.color = config.color || [0.6, 0.5, 0.4, 1.0]; // Brownish dust
     this.intensity = 1.0;
+
+    // Uniform buffers
+    this.cameraBuffer = cameraBuffer;
 
     this._initPipeline();
     this._initParticles();
@@ -89,12 +92,6 @@ export class DestructionEffect {
     this.instanceBuffer = this.device.createBuffer({
       size: instanceDataSize,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-
-    // Uniform buffers
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64, // mat4x4
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
     this.modelBuffer = this.device.createBuffer({
