@@ -10,7 +10,7 @@ export var testJolt = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     useJolt: true,
-    fastRender: 1,
+    fastRender: 0.7,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000

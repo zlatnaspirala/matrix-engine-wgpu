@@ -93,7 +93,7 @@ export class FlameEmitter {
   }
 
   recreateVertexDataFromData(data) {
-    console.info(`%c Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
+    // console.info(`%c Crazzy flame emitter : ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([
       data[0], data[4], 0.0,
       data[1], data[5], 0.0,
@@ -142,8 +142,8 @@ export class FlameEmitter {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 2 * 4, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
         ]
       },
       fragment: {

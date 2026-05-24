@@ -31,7 +31,7 @@ export class PointEffect {
 
     this._pointSettingsScratch[0] = this.pointSize;
     this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
-    
+
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
@@ -82,7 +82,7 @@ export class PointEffect {
             color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
             alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
           }
-        }]
+        }, {format: 'rgba16float'}, {format: 'rgba16float'}]
       },
       primitive: {topology: "triangle-strip"},
       depthStencil: {

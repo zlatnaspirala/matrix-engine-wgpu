@@ -16,18 +16,18 @@ export class MSDFTextEffect {
 
     // quad (same as your HP bar idea)
     const vertexData = new Float32Array([
-      -0.5,  0.5,
-       0.5,  0.5,
+      -0.5, 0.5,
+      0.5, 0.5,
       -0.5, -0.5,
-       0.5, -0.5,
+      0.5, -0.5,
     ]);
 
     const uvData = new Float32Array([
-      0,1, 1,1, 0,0, 1,0
+      0, 1, 1, 1, 0, 0, 1, 0
     ]);
 
     const indexData = new Uint16Array([
-      0,2,1, 1,2,3
+      0, 2, 1, 1, 2, 3
     ]);
 
     // buffers
@@ -66,20 +66,20 @@ export class MSDFTextEffect {
     // bind group layout
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {} },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {}},
+        {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
       ]
     });
 
     this.bindGroup = this.device.createBindGroup({
       layout: bindGroupLayout,
       entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.glyphBuffer } },
-        { binding: 2, resource: this.msdfTexture.createView() },
-        { binding: 3, resource: this.sampler },
+        {binding: 0, resource: {buffer: this.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.glyphBuffer}},
+        {binding: 2, resource: this.msdfTexture.createView()},
+        {binding: 3, resource: this.sampler},
       ]
     });
 
@@ -99,19 +99,19 @@ export class MSDFTextEffect {
         entryPoint: "vsMain",
         buffers: [
           {
-            arrayStride: 2 * 4,
-            attributes: [{ shaderLocation: 0, format: "float32x2" }]
+            arrayStride: 8,
+            attributes: [{shaderLocation: 0, format: "float32x2"}]
           },
           {
-            arrayStride: 2 * 4,
-            attributes: [{ shaderLocation: 1, format: "float32x2" }]
+            arrayStride: 8,
+            attributes: [{shaderLocation: 1, format: "float32x2"}]
           }
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{ format: this.format }]
+        targets: [{format: this.format}, {format: 'rgba16float'}, {format: 'rgba16float'}]
       },
       primitive: {
         topology: "triangle-list"

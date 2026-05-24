@@ -194,8 +194,8 @@ export class KaleidoscopeEmitter {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 2 * 4, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
         ]
       },
       fragment: {
@@ -217,8 +217,6 @@ export class KaleidoscopeEmitter {
           },
           writeMask: 0xF
         },
-        // {format: 'rgba16float', writeMask: 0xF},
-        // {format: 'rgba16float', writeMask: 0xF}
         {format: this.format},
         {format: this.format}
         

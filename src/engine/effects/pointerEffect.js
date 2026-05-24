@@ -93,7 +93,7 @@ export class PointerEffect {
       fragment: {
         module: shaderModule,
         entryPoint: 'fsMain',
-        targets: [{format: this.format}]
+        targets: [{format: this.format}, {format: 'rgba16float'}, {format: 'rgba16float'}]
       },
       primitive: {topology: 'triangle-list'},
       depthStencil: {depthWriteEnabled: true, depthCompare: 'always', format: 'depth24plus'}
@@ -112,12 +112,12 @@ export class PointerEffect {
   }
 
   render(transPass, mesh, viewProjMatrix) {
-      const objPos = mesh.position;
-      mat4.identity(this._tempModelMatrix);
-      this._tempTranslation[0] = objPos.x;
-      this._tempTranslation[1] = objPos.y + this.yOffset;
-      this._tempTranslation[2] = objPos.z;
-      mat4.translate(this._tempModelMatrix, this._tempTranslation, this._tempModelMatrix);
-      this.draw(transPass, viewProjMatrix, this._tempModelMatrix);
+    const objPos = mesh.position;
+    mat4.identity(this._tempModelMatrix);
+    this._tempTranslation[0] = objPos.x;
+    this._tempTranslation[1] = objPos.y + this.yOffset;
+    this._tempTranslation[2] = objPos.z;
+    mat4.translate(this._tempModelMatrix, this._tempTranslation, this._tempModelMatrix);
+    this.draw(transPass, viewProjMatrix, this._tempModelMatrix);
   }
 }

@@ -163,7 +163,8 @@ export class DestructionEffect {
             color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
             alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
           }
-        }]
+        }, {format: 'rgba16float'},
+        {format: 'rgba16float'}]
       },
       primitive: {topology: "triangle-list", cullMode: "none"},
       depthStencil: {

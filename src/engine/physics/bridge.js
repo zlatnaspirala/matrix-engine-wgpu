@@ -88,7 +88,10 @@ export class PhysicsBridge {
   }
 
   updatePhysics() {
-    if(this.c % 4 === 0) this._worker.postMessage({cmd: 'step'}); this.c=0;
+    if(this.c % 4 === 0) {
+      this._worker.postMessage({cmd: 'step'}); 
+      this.c=0;
+    }
     this.c++;
   }
 

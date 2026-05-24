@@ -95,14 +95,14 @@ export class MANABarEffect {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [
-          {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
-          {arrayStride: 2 * 4, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
+          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: 'fsMain',
-        targets: [{format: this.format}]
+        targets: [{format: this.format}, {format: 'rgba16float'}, {format: 'rgba16float'}]
       },
       primitive: {topology: 'triangle-list'},
       depthStencil: {depthWriteEnabled: false, depthCompare: 'always', format: 'depth24plus'}

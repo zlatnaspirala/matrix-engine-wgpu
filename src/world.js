@@ -1157,45 +1157,42 @@ export default class MatrixEngineWGPU {
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
-
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      // if(camera._dirtyAngle || camera._dirty) 
-      if(camera._dirtyAngle) {
+      if(camera._dirtyAngle || camera._dirty) {
         this.getTransformationMatrix(camera, now2);
         camera.update();
       }
-      
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-        const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+        const p = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
         if(this.shadowBuckets.default.length) {
-          pass.setPipeline(light.shadowPipeline);
+          p.setPipeline(light.shadowPipeline);
           for(let m of this.shadowBuckets.default) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if(this.shadowBuckets.instanced.length) {
-          pass.setPipeline(light.shadowPipelineInstanced);
+          p.setPipeline(light.shadowPipelineInstanced);
           for(let m of this.shadowBuckets.instanced) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if(this.shadowBuckets.procedural.length) {
-          pass.setPipeline(light.shadowPipelineMorph);
+          p.setPipeline(light.shadowPipelineMorph);
           for(let m of this.shadowBuckets.procedural) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
-        pass.end();
+        p.end();
       }
 
       const len = this.mainRenderBundle.length;
@@ -1254,16 +1251,15 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if(effect == null || effect.enabled === false) continue;
+            if(effect === null || effect.enabled === false) continue;
             if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(pass, mesh, camera.VP);
           }
         }
       }
-
       pass.end();
 
-      if(this.ssrPass.enabled == true) {
+      if(this.ssrPass.enabled === true) {
         mat4.invert(camera.VP, this._invViewProj);
         this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
         this.ssrPass.render(commandEncoder, {

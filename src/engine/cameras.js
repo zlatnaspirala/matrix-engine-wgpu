@@ -909,13 +909,9 @@ export class FirstPersonCamera {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CinematicCamera — no input, pure programmatic control
 // Drop-in replacement alongside FirstPersonCamera — same .view / .VP / .projectionMatrix API
-// ─────────────────────────────────────────────────────────────────────────────
 export class CinematicCamera {
-
-  // ── same public fields as FirstPersonCamera ──────────────────────────────────
   pitch = 0;
   yaw = 0;
   position = new Float32Array(3);
@@ -929,7 +925,6 @@ export class CinematicCamera {
   back = vec3.fromValues(0, 0, 1);
   _dirtyAngle = false;
 
-  // ── cinematic-only state ─────────────────────────────────────────────────────
   _path = null;
   _t = 0;
   _playing = false;
@@ -940,8 +935,6 @@ export class CinematicCamera {
   _shake = {active: false, amplitude: 0, frequency: 10, elapsed: 0, duration: 0};
   _shakeOffset = new Float32Array(3);
 
-  // ── "look-at target" helpers (optional, used by path playback) ───────────────
-  // When _useTarget is true, view is built from position+_target instead of pitch/yaw
   _useTarget = false;
   _target = new Float32Array(3);
 
@@ -969,7 +962,6 @@ export class CinematicCamera {
     this._recalculateViewVP();
   }
 
-  // ── same static helper as FirstPersonCamera ──────────────────────────────────
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
     const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];

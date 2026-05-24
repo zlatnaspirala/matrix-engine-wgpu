@@ -696,6 +696,7 @@ var loadCinematicCamera = function () {
         cam.setPitch(-0.49);
         cam.setZ(10);
         cam.setY(20);
+        console.log('sssssssssssss');
         const introPath = new _utils.CameraPath([{
           position: [0, 5, 20],
           target: [0, 0, 0]
@@ -712,9 +713,9 @@ var loadCinematicCamera = function () {
           speed: 0.3,
           onEnd: () => console.log('done')
         });
-        app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
-      }, 700);
+        app.buildRenderBuckets(app.mainRenderBundle);
+      }, 1000);
     }
     cinematicCamera.canvas.addEventListener("ray.hit.event", e => {
       console.log('ray.hit.event detected');
@@ -4092,6 +4093,7 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
 var _meConfig = require("../src/me-config.js");
+var _genTex = require("../src/engine/effects/gen-tex2.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjFile = function () {
   let loadObjFile = new _world.default({
@@ -4245,7 +4247,7 @@ var loadObjFile = function () {
           // flameEffect: true
         }
       });
-      loadObjFile.lightContainer[0].setIntensity(5);
+      loadObjFile.lightContainer[0].setIntensity(15);
 
       // if(isMobile() == false) {
       loadObjFile.activateBloomEffect();
@@ -4260,6 +4262,8 @@ var loadObjFile = function () {
       // }
 
       setTimeout(() => {
+        // MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png');
+
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
@@ -4273,6 +4277,7 @@ var loadObjFile = function () {
         cam.setZ(0);
         cam.setY(10);
         app.buildRenderBuckets(app.mainRenderBundle);
+        console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData);
         cam._dirtyAngle = true;
       }, 700);
     }
@@ -4290,7 +4295,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/me-config.js":84,"../src/world.js":136}],13:[function(require,module,exports){
+},{"../src/engine/effects/gen-tex2.js":49,"../src/engine/loader-obj.js":63,"../src/engine/raycast.js":82,"../src/engine/utils.js":83,"../src/me-config.js":84,"../src/world.js":136}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4745,7 +4750,8 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
-    fastRender: 1,
+    // Ammojs is default no need flag
+    fastRender: 0.7,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -5444,7 +5450,7 @@ var testJolt = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
     useJolt: true,
-    fastRender: 1,
+    fastRender: 0.7,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -25467,13 +25473,10 @@ class FirstPersonCamera {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CinematicCamera — no input, pure programmatic control
 // Drop-in replacement alongside FirstPersonCamera — same .view / .VP / .projectionMatrix API
-// ─────────────────────────────────────────────────────────────────────────────
 exports.FirstPersonCamera = FirstPersonCamera;
 class CinematicCamera {
-  // ── same public fields as FirstPersonCamera ──────────────────────────────────
   pitch = 0;
   yaw = 0;
   position = new Float32Array(3);
@@ -25486,8 +25489,6 @@ class CinematicCamera {
   up = _wgpuMatrix.vec3.fromValues(0, 1, 0);
   back = _wgpuMatrix.vec3.fromValues(0, 0, 1);
   _dirtyAngle = false;
-
-  // ── cinematic-only state ─────────────────────────────────────────────────────
   _path = null;
   _t = 0;
   _playing = false;
@@ -25502,9 +25503,6 @@ class CinematicCamera {
     duration: 0
   };
   _shakeOffset = new Float32Array(3);
-
-  // ── "look-at target" helpers (optional, used by path playback) ───────────────
-  // When _useTarget is true, view is built from position+_target instead of pitch/yaw
   _useTarget = false;
   _target = new Float32Array(3);
   constructor(options = {}) {
@@ -25526,8 +25524,6 @@ class CinematicCamera {
     this.setProjection(options.fov ?? 2 * Math.PI / 5, aspect, options.near ?? 0.3, options.far ?? 200);
     this._recalculateViewVP();
   }
-
-  // ── same static helper as FirstPersonCamera ──────────────────────────────────
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0],
       a01 = a[4],
@@ -26886,6 +26882,10 @@ class DestructionEffect {
               operation: "add"
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -27406,7 +27406,7 @@ class FlameEmitter {
     return vertexData;
   }
   recreateVertexDataFromData(data) {
-    console.info(`%c Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, _utils.LOG_FUNNY_ARCADE);
+    // console.info(`%c Crazzy flame emitter : ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([data[0], data[4], 0.0, data[1], data[5], 0.0, data[2], data[6], 0.0, data[3], data[7], 0.0]);
     if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
@@ -27483,14 +27483,14 @@ class FlameEmitter {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: "float32x3"
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -28113,14 +28113,14 @@ class GenGeoTexture {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: 'float32x3'
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -28392,14 +28392,14 @@ class GenGeoTexture2 {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: 'float32x3'
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -28640,14 +28640,14 @@ class GenGeo {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: 'float32x3'
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -28672,6 +28672,10 @@ class GenGeo {
               operation: 'add'
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -29429,14 +29433,14 @@ class KaleidoscopeEmitter {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: "float32x3"
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -29462,10 +29466,7 @@ class KaleidoscopeEmitter {
             }
           },
           writeMask: 0xF
-        },
-        // {format: 'rgba16float', writeMask: 0xF},
-        // {format: 'rgba16float', writeMask: 0xF}
-        {
+        }, {
           format: this.format
         }, {
           format: this.format
@@ -29705,14 +29706,14 @@ class MANABarEffect {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: 'float32x3'
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -29725,6 +29726,10 @@ class MANABarEffect {
         entryPoint: 'fsMain',
         targets: [{
           format: this.format
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -29881,13 +29886,13 @@ class MSDFTextEffect {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [{
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 0,
             format: "float32x2"
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             format: "float32x2"
@@ -29899,6 +29904,10 @@ class MSDFTextEffect {
         entryPoint: "fsMain",
         targets: [{
           format: this.format
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -30042,6 +30051,10 @@ class PointerEffect {
         entryPoint: 'fsMain',
         targets: [{
           format: this.format
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -30195,6 +30208,10 @@ class PointEffect {
               operation: "add"
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -39780,10 +39797,12 @@ class PhysicsBridge {
     }
   }
   updatePhysics() {
-    if (this.c % 4 === 0) this._worker.postMessage({
-      cmd: 'step'
-    });
-    this.c = 0;
+    if (this.c % 4 === 0) {
+      this._worker.postMessage({
+        cmd: 'step'
+      });
+      this.c = 0;
+    }
     this.c++;
   }
 
@@ -66506,39 +66525,38 @@ class MatrixEngineWGPU {
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      // if(camera._dirtyAngle || camera._dirty) 
-      if (camera._dirtyAngle) {
+      if (camera._dirtyAngle || camera._dirty) {
         this.getTransformationMatrix(camera, now2);
         camera.update();
       }
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
-        const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+        const p = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
         if (this.shadowBuckets.default.length) {
-          pass.setPipeline(light.shadowPipeline);
+          p.setPipeline(light.shadowPipeline);
           for (let m of this.shadowBuckets.default) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if (this.shadowBuckets.instanced.length) {
-          pass.setPipeline(light.shadowPipelineInstanced);
+          p.setPipeline(light.shadowPipelineInstanced);
           for (let m of this.shadowBuckets.instanced) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if (this.shadowBuckets.procedural.length) {
-          pass.setPipeline(light.shadowPipelineMorph);
+          p.setPipeline(light.shadowPipelineMorph);
           for (let m of this.shadowBuckets.procedural) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
-        pass.end();
+        p.end();
       }
       const len = this.mainRenderBundle.length;
       for (let i = 0; i < len; i++) {
@@ -66594,14 +66612,14 @@ class MatrixEngineWGPU {
         if (mesh.effects) {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if (effect == null || effect.enabled === false) continue;
+            if (effect === null || effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(pass, mesh, camera.VP);
           }
         }
       }
       pass.end();
-      if (this.ssrPass.enabled == true) {
+      if (this.ssrPass.enabled === true) {
         _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
         this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
         this.ssrPass.render(commandEncoder, {

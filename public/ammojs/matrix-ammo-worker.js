@@ -9,7 +9,10 @@ class MatrixAmmoWorker {
     this.Ammo = null;
     this.dynamicsWorld = null;
     this.rigidBodies = [];
-    this.speedUpSimulation = 2;
+    this.speedUp = 1;
+    this.speedUpSimulation = (v) => {
+      this.speedUp = v;
+    }
     this.maxSubSteps = 1;
     this.options = {roundDimensionX: 100, roundDimensionY: 100, gravity: -10};
     this._snapshot = null;
@@ -76,7 +79,7 @@ class MatrixAmmoWorker {
   }
 
   speedUpSimulation(v) {
-    this.speedUpSimulation = v;
+    this.speedUp = v;
   }
 
   _allocBuffer(bodyCount) {
@@ -145,7 +148,6 @@ class MatrixAmmoWorker {
   }
 
   _registerBody(body, pOptions) {
-    // console.log('_registerBody:', pOptions.name, 'group:', pOptions.group, 'mask:', pOptions.mask);
     body.name = pOptions.name;
     const group = pOptions.group ?? 1;
     const mask = pOptions.mask ?? -1;
@@ -160,7 +162,7 @@ class MatrixAmmoWorker {
       this._snapshot[base + 0] = pOptions.position?.x ?? 0;
       this._snapshot[base + 1] = pOptions.position?.y ?? 0;
       this._snapshot[base + 2] = pOptions.position?.z ?? 0;
-      this._snapshot[base + 7] = 1; // ← mark as active
+      this._snapshot[base + 7] = 1; // mark as active
     }
     return body;
   }
@@ -225,7 +227,6 @@ class MatrixAmmoWorker {
     const pivotB = pOptions.pivotB || [0, 0, 0];
     bodyA.setAngularVelocity(this._zero);
     bodyA.setDamping(0.05, 0.1);
-    // console.log("pivotA", pivotA);
     const axis = pOptions.axis || [0, 1, 0];
     this._pivotsA.setValue(pivotA[0], pivotA[1], pivotA[2]);
     this._pivotsB.setValue(pivotB[0], pivotB[1], pivotB[2]);
@@ -242,8 +243,6 @@ class MatrixAmmoWorker {
     if(pOptions.limits) {
       hinge.setLimit(pOptions.limits[0], pOptions.limits[1]);
     }
-    // hinge.setLimit(-0.8, 0.5, 0.0, 0.5, 1.0);
-    // addHingeConstraint
     this.dynamicsWorld.addConstraint(hinge, true);
     hinge.enableAngularMotor(true, 0, 100);
     // hinge.setLimit(-0.8, 0.5);
@@ -252,7 +251,6 @@ class MatrixAmmoWorker {
     hinge.name = pOptions.name;
     this.constraints.push(hinge);
     const constraintIdx = this.constraints.length - 1;
-    // console.log("hingle at index: ", constraintIdx);
     self.postMessage({cmd: 'constraintAdded', id: msgID, idx: constraintIdx});
   }
 
@@ -263,31 +261,23 @@ class MatrixAmmoWorker {
   createChain(ids, size = 0.5, marginSpace = 0.05) {
     const Ammo = this.Ammo;
     const space = marginSpace * size;
-
     if(!this.constraints) this.constraints = [];
 
     for(let i = 1;i < ids.length;i++) {
       const bodyA = this.rigidBodies[ids[i]];
       const bodyB = this.rigidBodies[ids[i - 1]];
       if(!bodyA || !bodyB) continue;
-
-      // pivots
       const pivotA1 = new Ammo.btVector3(-size, size + space, 0);
       const pivotB1 = new Ammo.btVector3(-size, -size - space, 0);
-
       const pivotA2 = new Ammo.btVector3(size, size + space, 0);
       const pivotB2 = new Ammo.btVector3(size, -size - space, 0);
-
       const c1 = new Ammo.btPoint2PointConstraint(bodyA, bodyB, pivotA1, pivotB1);
       const c2 = new Ammo.btPoint2PointConstraint(bodyA, bodyB, pivotA2, pivotB2);
-
       this.dynamicsWorld.addConstraint(c1, true);
       this.dynamicsWorld.addConstraint(c2, true);
-
       this.constraints.push(c1, c2);
     }
 
-    // anchor (top)
     const anchor = this.rigidBodies[ids[0]];
     if(anchor) {
       anchor.setMassProps(0, new Ammo.btVector3(0, 0, 0));
@@ -304,7 +294,6 @@ class MatrixAmmoWorker {
     t.setIdentity();
     t.setOrigin(new Ammo.btVector3(pOptions.position.x, pOptions.position.y, pOptions.position.z));
     const mass = pOptions.mass ?? 1;
-    // const inertia = new Ammo.btVector3(0, 0, 0);
     this.inertia.setValue(0, 0, 0);
     if(mass > 0) shape.calculateLocalInertia(mass, this.inertia);
     const body = new Ammo.btRigidBody(
@@ -326,7 +315,6 @@ class MatrixAmmoWorker {
     this._origin.setValue(pOptions.position.x, pOptions.position.y, pOptions.position.z);
     this._transform2.setOrigin(this._origin);
     const mass = pOptions.mass ?? 1;
-    // const inertia = new Ammo.btVector3(0, 0, 0);
     this.inertia.setValue(0, 0, 0);
     if(mass > 0) shape.calculateLocalInertia(mass, this.inertia);
     const motionState = new Ammo.btDefaultMotionState(this._transform2);
@@ -388,7 +376,6 @@ class MatrixAmmoWorker {
     body.setAngularVelocity(this._zero);
     body.setLinearVelocity(this._zero);
     body.clearForces();
-    // Ammo.destroy(zero);
   }
 
   _addBvhMesh(pOptions) {
@@ -412,8 +399,6 @@ class MatrixAmmoWorker {
     const body = new Ammo.btRigidBody(
       new Ammo.btRigidBodyConstructionInfo(0, new Ammo.btDefaultMotionState(t), shape, new Ammo.btVector3(0, 0, 0))
     );
-    // body.setCollisionFlags(2);
-    // body.setActivationState(2);
     return this._registerBody(body, pOptions);
   }
 
@@ -433,7 +418,6 @@ class MatrixAmmoWorker {
   }
 
   explode(idx, x, y, z, radius, strength) {
-    // console.log('worker  explode')
     const body = this.rigidBodies[idx];
     if(!body) return;
     this.rigidBodies.forEach(body => {
@@ -549,50 +533,10 @@ class MatrixAmmoWorker {
     this.rigidBodies[idx]?.activate(true);
   }
 
-  // Step + Snapshot
-  // step() {
-  //   if(!this.dynamicsWorld) return;
-  //   for(let i = 0;i < this.speedUpSimulation;i++) {
-  //     this.dynamicsWorld.stepSimulation(1 / 30, this.maxSubSteps);
-  //   }
-  //   const snap = this._snapshot;
-  //   if(!snap) return;
-  //   this.rigidBodies.forEach((body, i) => {
-  //     const base = i * FLOATS_PER_BODY;
-  //     if(body.isKinematic == true) {
-  //       body.getWorldTransform(this._trans);
-  //       const origin = this._trans.getOrigin();
-  //       const rot = this._trans.getRotation();
-  //       snap[base + 0] = origin.x();
-  //       snap[base + 1] = origin.y();
-  //       snap[base + 2] = origin.z();
-  //       snap[base + 3] = rot.x();
-  //       snap[base + 4] = rot.y();
-  //       snap[base + 5] = rot.z();
-  //       snap[base + 6] = rot.w();
-  //       snap[base + 7] = 0;
-  //       return;
-  //     }
-  //     if(!body.getMotionState()) return;
-  //     body.getMotionState().getWorldTransform(this._trans);
-  //     const origin = this._trans.getOrigin();
-  //     const rot = this._trans.getRotation();
-  //     snap[base + 0] = origin.x();
-  //     snap[base + 1] = origin.y();
-  //     snap[base + 2] = origin.z();
-  //     snap[base + 3] = rot.x();
-  //     snap[base + 4] = rot.y();
-  //     snap[base + 5] = rot.z();
-  //     snap[base + 6] = rot.w();
-  //     snap[base + 7] = 0;
-  //   });
-  //   this._detectCollision();
-  // }
-
   step() {
     if(!this.dynamicsWorld) return;
     const deltaTime = 1 / 30;
-    for(let i = 0;i < this.speedUpSimulation;i++) {
+    for(let i = 0;i < this.speedUp;i++) {
       this.dynamicsWorld.stepSimulation(deltaTime, this.maxSubSteps);
     }
     const snap = this._snapshot;
@@ -602,10 +546,6 @@ class MatrixAmmoWorker {
     for(let i = 0;i < numBodies;i++) {
       const body = bodies[i];
       const base = i * FLOATS_PER_BODY;
-      // if(!body.isActive() && !body.isKinematic) {
-      //   snap[base + 7] = 0;
-      //   continue;
-      // }
       if(body.isKinematic) {
         body.getWorldTransform(this._trans);
       } else {
@@ -671,7 +611,6 @@ class MatrixAmmoWorker {
       const name1 = this.ptrToName.get(ptr1);
       if(!name0 || !name1) continue;
       if(name0 === 'ground' || name1 === 'ground') continue;
-      // const key = name0 < name1 ? `${name0}|${name1}` : `${name1}|${name0}`;
       const key = name0 < name1
         ? name0 + "|" + name1
         : name1 + "|" + name0;

@@ -3,6 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {MEConfig} from "../src/me-config.js";
+import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 
 export var loadObjFile = function() {
 
@@ -94,7 +95,10 @@ export var loadObjFile = function() {
         }
       })
 
-      loadObjFile.lightContainer[0].setIntensity(5);
+
+      
+
+      loadObjFile.lightContainer[0].setIntensity(15);
 
       // if(isMobile() == false) {
       loadObjFile.activateBloomEffect();
@@ -110,14 +114,18 @@ export var loadObjFile = function() {
 
       setTimeout(() => {
 
+        // MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png');
+
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
           0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+
         MYCUBE.setAmbient(2, 3, 0.5);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
@@ -125,6 +133,9 @@ export var loadObjFile = function() {
         cam.setZ(0);
         cam.setY(10);
         app.buildRenderBuckets(app.mainRenderBundle);
+
+        console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData)
+        
         cam._dirtyAngle = true;
       }, 700);
     }
