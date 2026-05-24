@@ -1163,7 +1163,11 @@ export default class MatrixEngineWGPU {
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       // if(camera._dirtyAngle || camera._dirty) 
-      if(camera._dirtyAngle) this.getTransformationMatrix(camera, now2); camera.update();
+      if(camera._dirtyAngle) {
+        this.getTransformationMatrix(camera, now2);
+        camera.update();
+      }
+      
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
         const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -1197,7 +1201,7 @@ export default class MatrixEngineWGPU {
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
-        if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
+        mesh.updateInstanceData?.(mesh.modelMatrix);
         if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
         // if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
@@ -1259,17 +1263,9 @@ export default class MatrixEngineWGPU {
 
       pass.end();
 
-      // test 
       if(this.ssrPass.enabled == true) {
-
-        const invProj = new Float32Array(16);
-        mat4.invert(camera.projectionMatrix, invProj);
-
-        this.ssrPass.updateConfig(
-          invProj,
-          camera.projectionMatrix
-        );
-
+        mat4.invert(camera.VP, this._invViewProj);
+        this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
         this.ssrPass.render(commandEncoder, {
           sceneTextureView: this.sceneTextureView,
           normalTextureView: this.normalTextureView,
@@ -1279,13 +1275,11 @@ export default class MatrixEngineWGPU {
         });
       }
 
-
       if(this.volumetricPass.enabled === true) {
-        mat4.invert(camera.VP, this._invViewProj);
+        if(this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
         for(let i = 0;i < this.lightContainer.length;i++) {
           const light = this.lightContainer[i];
-          // if(!light.viewProjMatrix || !light.direction) continue;
           this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
           this._volumetricLightUniforms.direction = light.direction;
           this.volumetricPass.render(commandEncoder,
@@ -1303,10 +1297,7 @@ export default class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if(this.bloomPass.enabled == true) {
-        // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-        this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
-      }
+      if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
       this.finalPS.colorAttachments[0].view = this._canvasView;
       pass = commandEncoder.beginRenderPass(this.finalPS);
       pass.setPipeline(this.presentPipeline);
@@ -1526,13 +1517,6 @@ export default class MatrixEngineWGPU {
     if(this.ssrPass.enabled != true) {
       this.ssrPass = new SSRPass(this.device, this.canvas.width, this.canvas.height, this.globalSceneUniformBuffer, this.mainDepthView);
       this.ssrPass.enabled = true;
-
-      // const {normalTexture, normalTextureView} = patchMainRenderPassDesc(
-      //   this.device, this.canvas.width, this.canvas.height, this.mainRenderPassDesc
-      // );
-      // this.normalTexture = normalTexture;
-      // this.normalTextureView = normalTextureView;
-
       this.bloomBindGroup = this.device.createBindGroup({
         layout: this.presentPipeline.getBindGroupLayout(0),
         entries: [
@@ -1541,7 +1525,6 @@ export default class MatrixEngineWGPU {
           {binding: 2, resource: this.ssrPass.ssrOutputView},
         ]
       });
-
       this.noBloomBindGroup = this.device.createBindGroup({
         layout: this.presentPipeline.getBindGroupLayout(0),
         entries: [
@@ -1550,18 +1533,10 @@ export default class MatrixEngineWGPU {
           {binding: 2, resource: this.ssrPass.ssrOutputView}, // real
         ]
       });
-
-      // this._activeBindGroup = this.noBloomBindGroup;
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup
-
       // Rebuild all mesh pipelines with 2 targets
       PipelineManager.invalidateAll();
-      for(const mesh of this.mainRenderBundle) {
-        mesh.setupPipeline();
-      }
-
-      // MAYBE BEST PLACE IS HERE 
-      //  this._activeBindGroup = 
+      for(const mesh of this.mainRenderBundle) {mesh.setupPipeline()}
     }
   }
 

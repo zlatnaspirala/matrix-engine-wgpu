@@ -10,13 +10,14 @@ export class SSRPass {
     this.enabled = true;
     this._globalSceneUniformBuffer = globalSceneUniformBuffer;
     this.ssrOutputTexture = device.createTexture({
-      label: 'SSR output',
+      label: 'SSR out-tex',
       size: [width, height],
       format: 'rgba16float',
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
     this.ssrOutputView = this.ssrOutputTexture.createView();
     this.depthBlitBindGroup = null;
+    this.data = new Float32Array(40);
     this._createHZB();
     this._createSSRConfig();
     this._createPipelines();
@@ -25,13 +26,12 @@ export class SSRPass {
   }
 
   _createDepthBlitBindGroup(depthView) {
-
     this.depthBlitBindGroup =
       this.device.createBindGroup({
         layout: this.blitPipeline.getBindGroupLayout(0),
         entries: [
           {binding: 0, resource: depthView},
-          {binding: 1, resource: this.pointSampler}],
+          {binding: 1, resource: this.pointSampler}]
       });
   }
 
@@ -77,11 +77,7 @@ export class SSRPass {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      this.device.queue.writeBuffer(
-        buffer,
-        0,
-        new Uint32Array([dstW, dstH, 0, 0])
-      );
+      this.device.queue.writeBuffer(buffer, 0, new Uint32Array([dstW, dstH, 0, 0]));
 
       const bindGroup = this.device.createBindGroup({
         label: `HZB Build BG ${mip}`,
@@ -118,14 +114,13 @@ export class SSRPass {
   }
 
   updateConfig(invProjMatrix, projMatrix) {
-    const data = new Float32Array(40);
-    data.set(invProjMatrix, 0);   // mat4 invProj
-    data.set(projMatrix, 16);     // mat4 proj
-    data[32] = this.width;
-    data[33] = this.height;
-    data[34] = this.mipCount - 1; // maxMip
-    data[35] = 0.04;              // thickness - matching our structural test recommendations
-    this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, data);
+    this.data.set(invProjMatrix, 0);   // mat4 invProj
+    this.data.set(projMatrix, 16);     // mat4 proj
+    this.data[32] = this.width;
+    this.data[33] = this.height;
+    this.data[34] = this.mipCount - 1; // maxMip
+    this.data[35] = 0.05;              // thickness - matching our structural test recommendations
+    this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, this.data);
   }
 
   _createPipelines() {

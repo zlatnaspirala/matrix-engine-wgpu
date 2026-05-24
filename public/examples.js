@@ -3432,10 +3432,10 @@ var loadHZB = function () {
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     dontUsePhysics: true,
+    MAX_BONES: 1,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'WASD',
-      // type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {
@@ -3446,7 +3446,7 @@ var loadHZB = function () {
     }
   }, () => {
     HZB.addLight();
-    // if you double call downloadMeshes for same path engine use cached values no double fetch...
+    _raycast.touchCoordinate.stopOnFirstDetectedHit = true;
     (0, _loaderObj.downloadMeshes)({
       ball: "./res/meshes/blender/sphere.obj",
       cube: "./res/meshes/blender/cube.obj"
@@ -3459,6 +3459,12 @@ var loadHZB = function () {
       scale: [30, 0.5, 30]
     });
     (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
+
+    // Keep track of our grid objects globally within the block scope
+    let activeGridCubes = [];
+    let completedCubesCount = 0;
+    const totalCubesInGrid = 9; // 3x3 grid
+
     function onGround(m) {
       HZB.addMeshObj({
         material: {
@@ -3467,7 +3473,7 @@ var loadHZB = function () {
         },
         position: {
           x: 0,
-          y: -5,
+          y: -1,
           z: -10
         },
         rotation: {
@@ -3481,7 +3487,6 @@ var loadHZB = function () {
           z: 0
         },
         texturesPaths: ['./res/textures/floor1.webp'],
-        //, './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -3491,7 +3496,152 @@ var loadHZB = function () {
         }
       });
     }
+    function createCube(mesh, options = {}) {
+      return HZB.addMeshObj({
+        material: {
+          type: options.materialType || 'dark'
+        },
+        position: {
+          x: options.x || 0,
+          y: options.y || 3,
+          z: options.z || -15
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: options.scale || [3.5, 3.5, 3.5],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        name: options.name || 'cube',
+        mesh: mesh,
+        envMapParams: {
+          baseColorMix: 0.1,
+          mirrorTint: [0.9, 0.95, 1.0],
+          reflectivity: 0.75,
+          illuminateColor: [0.3, 0.7, 1.0],
+          illuminateStrength: 1.5,
+          illuminatePulse: 0.1,
+          fresnelPower: 5,
+          envLodBias: 1.5,
+          usePlanarReflection: false
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true
+        }
+      });
+    }
+
+    // --- Dynamic Single Lap Runner ---
+    function runSingleLap(cubeObj, startX, startZ, row, col) {
+      cubeObj.position.setSpeed(0.2);
+      const travelDistance = 12;
+      const groundY = 3;
+      const peakY = 11;
+      const pathPoints = [{
+        x: startX + travelDistance,
+        y: groundY,
+        z: startZ
+      }, {
+        x: startX + travelDistance,
+        y: peakY,
+        z: startZ - travelDistance
+      }, {
+        x: startX,
+        y: peakY,
+        z: startZ - travelDistance
+      }, {
+        x: startX,
+        y: groundY,
+        z: startZ
+      }];
+      let currentStep = 0;
+      function executeNextMove() {
+        const target = pathPoints[currentStep];
+        cubeObj.position.translateByX(target.x);
+        cubeObj.position.translateByY(target.y);
+        cubeObj.position.translateByZ(target.z);
+        cubeObj.position.onTargetPositionReach = () => {
+          cubeObj.position.onTargetPositionReach = null;
+          if (currentStep === 3) {
+            // Final home spin flourish
+            cubeObj.rotationSpeed.y = 10;
+            setTimeout(() => {
+              cubeObj.rotationSpeed.y = 0;
+              cubeObj.rotation.y = 0;
+              completedCubesCount++;
+              if (completedCubesCount === totalCubesInGrid) {
+                console.log("All cubes parked! Starting global sequence cooldown...");
+                setTimeout(() => {
+                  triggerEntireGridSequence();
+                }, 2000);
+              }
+            }, 600);
+          } else {
+            currentStep++;
+            executeNextMove();
+          }
+        };
+      }
+
+      // Maintain our staggered cascading wave entry timing
+      setTimeout(() => {
+        executeNextMove();
+      }, (row + col) * 250);
+    }
+    function triggerEntireGridSequence() {
+      completedCubesCount = 0;
+      console.log("🎬 Playing layout sequence again...");
+      activeGridCubes.forEach(item => {
+        item.cube.position.x = item.startX;
+        item.cube.position.y = 3;
+        item.cube.position.z = item.startZ;
+        runSingleLap(item.cube, item.startX, item.startZ, item.row, item.col);
+      });
+    }
+    HZB.triggerEntireGridSequence = triggerEntireGridSequence;
+    function generateCubeGrid(mesh, rows = 3, cols = 3, spacing = 12) {
+      const startX = -((cols - 1) * spacing) / 2;
+      const startZ = -15;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const posX = startX + c * spacing;
+          const posZ = startZ + r * spacing;
+          const cubeName = `cube_r${r}_c${c}`;
+          let newCube = createCube(mesh, {
+            x: posX,
+            y: 3,
+            z: posZ,
+            name: cubeName
+          });
+
+          // Cache references and spatial anchors to play again safely later
+          activeGridCubes.push({
+            cube: newCube,
+            startX: posX,
+            startZ: posZ,
+            row: r,
+            col: c
+          });
+        }
+      }
+    }
     async function onLoadObj(m) {
+      // Skybox sphere
       HZB.addMeshObj({
         material: {
           type: 'dark',
@@ -3504,13 +3654,13 @@ var loadHZB = function () {
         },
         rotation: {
           x: 0,
-          y: 0,
+          y: 0.1,
           z: 0
         },
         scale: [100, 100, 100],
         rotationSpeed: {
           x: 0,
-          y: 0.1,
+          y: 0.02,
           z: 0
         },
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
@@ -3522,122 +3672,8 @@ var loadHZB = function () {
         }
       });
 
-      // share: true if not defined it is false.
-      let MYCUBE = HZB.addMeshObj({
-        material: {
-          type: 'dark'
-        },
-        position: {
-          x: 0,
-          y: 1,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [6, 6, 6],
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'cube',
-        mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.1,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.75,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 1.5,
-          // Gentle rim
-          illuminatePulse: 0.1,
-          // No pulse (static)
-          fresnelPower: 5,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        },
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true
-          // flameEmitter: true
-          // flameEffect: true
-        }
-      });
-      let MYCUBE2 = HZB.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: 9,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [2, 2, 2],
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'cube',
-        mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.1,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.75,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 1.5,
-          // Gentle rim
-          illuminatePulse: 0.1,
-          // No pulse (static)
-          fresnelPower: 5,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        },
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true
-          // flameEmitter: true
-          // flameEffect: true
-        }
-      });
-
-      // }
-
+      // Construct structural dataset layout
+      generateCubeGrid(m.cube, 3, 3, 12);
       setTimeout(() => {
         HZB.lightContainer[0].setIntensity(14);
         HZB.activateBloomEffect();
@@ -3646,43 +3682,27 @@ var loadHZB = function () {
           density: 0.03,
           steps: 32,
           scatterStrength: 0.8,
-          heightFalloff: 0.08,
+          heightFollowoff: 0.08,
           lightColor: [2.0, 0.8, 0.5]
         });
         HZB.activateHZB();
-
-        // HZB.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
-        // HZB.lightContainer[0].behavior.value_ = -1;
-        // HZB.lightContainer[0].updater.push((light) => {
-        //   light.setTargetX(light.behavior.setPath0());
-        //   light.setPosX(light.behavior.setPath0());
-        // })
-
         HZB.lightContainer[0].setPosition(0, 45, -10);
         HZB.lightContainer[0].setTarget(0, 0, -10);
         app.buildLightShadowBuckets();
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-        // // MYCUBE.effects.flameEmitter.setIntensity(100);
-        // // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
-        // MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        // MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-        //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-        //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
-        MYCUBE.setAmbient(2, 3, 0.5);
         let cam = app.getCamera();
-        cam.setYaw(-0.03);
-        cam.setPitch(-0.49);
-        cam.setZ(5);
-        cam.setY(25);
-        app.buildRenderBuckets(app.mainRenderBundle);
+        cam.setYaw(-0.0);
+        cam.setPitch(-0.29);
+        cam.setZ(25);
+        cam.setY(5);
+        // app.buildRenderBuckets(app.mainRenderBundle);
+        // 🚀 First main playback run trigger
+        triggerEntireGridSequence();
         cam._dirtyAngle = true;
       }, 700);
     }
     HZB.canvas.addEventListener("ray.hit.event", e => {
-      console.log('ray.hit.event detected');
       if (e.detail.hitObject.name.startsWith('cube')) {
-        // e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        // e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
         e.detail.hitObject.setAmbient((0, _utils.randomIntFromTo)(1, 7), (0, _utils.randomIntFromTo)(1, 2), (0, _utils.randomIntFromTo)(1, 5));
         app.bloomPass.setBlurRadius((0, _utils.randomIntFromTo)(1, 5));
       }
@@ -24344,6 +24364,7 @@ class WASDCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
@@ -24672,6 +24693,7 @@ class WASDCamera {
 }
 exports.WASDCamera = WASDCamera;
 class ArcballCamera {
+  invProj = new Float32Array(16);
   position = new Float32Array(3);
   right = new Float32Array(3);
   up = new Float32Array(3);
@@ -24820,6 +24842,7 @@ class RPGCamera {
   back = new Float32Array(3);
   view = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   VP = new Float32Array(16);
 
   // ===== RPG =====
@@ -25147,6 +25170,7 @@ class FirstPersonCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
@@ -25374,6 +25398,7 @@ class FirstPersonCamera {
       if (value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
+          this._dirtyAngle = true;
           this._applyDigitalMovement();
         }, 16);
       } else {
@@ -25382,6 +25407,7 @@ class FirstPersonCamera {
           clearInterval(this._keyInterval);
           this._keyInterval = null;
           this._dirty = false;
+          this._dirtyAngle = false;
         }
       }
     };
@@ -25455,6 +25481,7 @@ class CinematicCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
   up = _wgpuMatrix.vec3.fromValues(0, 1, 0);
   back = _wgpuMatrix.vec3.fromValues(0, 0, 1);
@@ -40547,13 +40574,14 @@ class SSRPass {
     this.enabled = true;
     this._globalSceneUniformBuffer = globalSceneUniformBuffer;
     this.ssrOutputTexture = device.createTexture({
-      label: 'SSR output',
+      label: 'SSR out-tex',
       size: [width, height],
       format: 'rgba16float',
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
     this.ssrOutputView = this.ssrOutputTexture.createView();
     this.depthBlitBindGroup = null;
+    this.data = new Float32Array(40);
     this._createHZB();
     this._createSSRConfig();
     this._createPipelines();
@@ -40639,14 +40667,13 @@ class SSRPass {
     });
   }
   updateConfig(invProjMatrix, projMatrix) {
-    const data = new Float32Array(40);
-    data.set(invProjMatrix, 0); // mat4 invProj
-    data.set(projMatrix, 16); // mat4 proj
-    data[32] = this.width;
-    data[33] = this.height;
-    data[34] = this.mipCount - 1; // maxMip
-    data[35] = 0.04; // thickness - matching our structural test recommendations
-    this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, data);
+    this.data.set(invProjMatrix, 0); // mat4 invProj
+    this.data.set(projMatrix, 16); // mat4 proj
+    this.data[32] = this.width;
+    this.data[33] = this.height;
+    this.data[34] = this.mipCount - 1; // maxMip
+    this.data[35] = 0.05; // thickness - matching our structural test recommendations
+    this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, this.data);
   }
   _createPipelines() {
     const hzbModule = this.device.createShaderModule({
@@ -43179,7 +43206,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.addRaycastsAABBListener = addRaycastsAABBListener;
 exports.addRaycastsListener = addRaycastsListener;
-exports.computeAABB = computeAABB;
 exports.computeWorldVertsAndAABB = computeWorldVertsAndAABB;
 exports.getRayFromMouse = getRayFromMouse;
 exports.getRayFromMouse2 = void 0;
@@ -43188,9 +43214,9 @@ exports.rayIntersectsSphere = rayIntersectsSphere;
 exports.touchCoordinate = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 /**
-* MatrixEngine Raycaster (improved)
+* MatrixEngine Raycaster (Fixed Sorting)
 * Author: Nikola Lukić
-* Version: 2.0
+* Version: 2.1
 */
 
 let touchCoordinate = exports.touchCoordinate = {
@@ -43201,25 +43227,30 @@ let touchCoordinate = exports.touchCoordinate = {
 };
 const _invProj = _wgpuMatrix.mat4.create();
 const _invView = _wgpuMatrix.mat4.create();
-const _clip = new Float32Array([0, 0, 1, 1]);
-const _rayOrigin = new Float32Array(3);
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
   const x = (event.clientX - rect.left) / rect.width * 2 - 1;
   const y = -((event.clientY - rect.top) / rect.height * 2 - 1);
+
+  // 🎯 FIX: WebGPU Clip Space near plane is 0, far plane is 1
+  const nearPoint = [x, y, 0, 1];
+  const farPoint = [x, y, 1, 1];
   _wgpuMatrix.mat4.inverse(camera.projectionMatrix, _invProj);
   _wgpuMatrix.mat4.inverse(camera.view, _invView);
-  _clip[0] = x;
-  _clip[1] = y;
-  let eye = _wgpuMatrix.vec4.transformMat4(_clip, _invProj);
-  eye = [eye[0], eye[1], -1, 0];
-  const worldDir4 = _wgpuMatrix.vec4.transformMat4(eye, _invView);
-  const rayDirection = _wgpuMatrix.vec3.normalize([worldDir4[0], worldDir4[1], worldDir4[2]]);
-  _rayOrigin[0] = camera.position[0];
-  _rayOrigin[1] = camera.position[1];
-  _rayOrigin[2] = camera.position[2];
+
+  // Unproject near
+  let nearWorld = _wgpuMatrix.vec4.transformMat4(nearPoint, _invProj);
+  nearWorld = [nearWorld[0] / nearWorld[3], nearWorld[1] / nearWorld[3], nearWorld[2] / nearWorld[3], 1];
+  nearWorld = _wgpuMatrix.vec4.transformMat4(nearWorld, _invView);
+
+  // Unproject far
+  let farWorld = _wgpuMatrix.vec4.transformMat4(farPoint, _invProj);
+  farWorld = [farWorld[0] / farWorld[3], farWorld[1] / farWorld[3], farWorld[2] / farWorld[3], 1];
+  farWorld = _wgpuMatrix.vec4.transformMat4(farWorld, _invView);
+  const rayOrigin = [nearWorld[0], nearWorld[1], nearWorld[2]];
+  const rayDirection = _wgpuMatrix.vec3.normalize([farWorld[0] - nearWorld[0], farWorld[1] - nearWorld[1], farWorld[2] - nearWorld[2]]);
   return {
-    rayOrigin: _rayOrigin,
+    rayOrigin,
     rayDirection,
     screen: {
       x,
@@ -43248,40 +43279,76 @@ function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius
     hitNormal
   };
 }
-function computeAABB(vertices) {
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-  for (let i = 0; i < vertices.length; i += 3) {
-    min[0] = Math.min(min[0], vertices[i]);
-    min[1] = Math.min(min[1], vertices[i + 1]);
-    min[2] = Math.min(min[2], vertices[i + 2]);
-    max[0] = Math.max(max[0], vertices[i]);
-    max[1] = Math.max(max[1], vertices[i + 1]);
-    max[2] = Math.max(max[2], vertices[i + 2]);
-  }
-  return [min, max];
-}
 
-// Ray-AABB intersection returning distance (slab method)
-function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
-  let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
-  let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
-  if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
-  let tymin = (boxMin[1] - rayOrigin[1]) / rayDirection[1];
-  let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
-  if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
-  if (tmin > tymax || tymin > tmax) return null;
-  if (tymin > tmin) tmin = tymin;
-  if (tymax < tmax) tmax = tymax;
-  let tzmin = (boxMin[2] - rayOrigin[2]) / rayDirection[2];
-  let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
-  if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
-  if (tmin > tzmax || tzmin > tmax) return null;
-  const t = Math.max(tmin, 0.0);
-  const hitPoint = _wgpuMatrix.vec3.add(rayOrigin, _wgpuMatrix.vec3.mulScalar(rayDirection, t));
+// export function rayIntersectsAABB(rayOrigin, rayDir, boxMin, boxMax) {
+//   let tmin = -Infinity;
+//   let tmax = Infinity;
+
+//   for (let i = 0; i < 3; i++) {
+//     if (Math.abs(rayDir[i]) < 0.000001) {
+//       if (rayOrigin[i] < boxMin[i] || rayOrigin[i] > boxMax[i]) {
+//         return null;
+//       }
+//       continue;
+//     }
+
+//     let t1 = (boxMin[i] - rayOrigin[i]) / rayDir[i];
+//     let t2 = (boxMax[i] - rayOrigin[i]) / rayDir[i];
+
+//     if (t1 > t2) {
+//       const temp = t1;
+//       t1 = t2;
+//       t2 = temp;
+//     }
+
+//     tmin = Math.max(tmin, t1);
+//     tmax = Math.min(tmax, t2);
+
+//     if (tmin > tmax) return null;
+//   }
+
+//   if (tmax < 0) return null;
+
+//   const t = tmin >= 0 ? tmin : tmax;
+
+//   return {
+//     t,
+//     hitPoint: [
+//       rayOrigin[0] + rayDir[0] * t,
+//       rayOrigin[1] + rayDir[1] * t,
+//       rayOrigin[2] + rayDir[2] * t
+//     ]
+//   };
+// }
+
+function rayIntersectsAABB(rayOrigin, rayDir, boxMin, boxMax) {
+  let tmin = -Infinity;
+  let tmax = Infinity;
+  for (let i = 0; i < 3; i++) {
+    if (Math.abs(rayDir[i]) < 0.000001) {
+      if (rayOrigin[i] < boxMin[i] || rayOrigin[i] > boxMax[i]) return null;
+      continue;
+    }
+    let t1 = (boxMin[i] - rayOrigin[i]) / rayDir[i];
+    let t2 = (boxMax[i] - rayOrigin[i]) / rayDir[i];
+    if (t1 > t2) {
+      const temp = t1;
+      t1 = t2;
+      t2 = temp;
+    }
+    tmin = Math.max(tmin, t1);
+    tmax = Math.min(tmax, t2);
+    if (tmin > tmax) return null;
+  }
+
+  // Object is behind the camera ray path entirely
+  if (tmax < 0) return null;
+
+  // If we are inside the box, tmin is negative, so closest intersection forward is tmax
+  const t = tmin >= 0 ? tmin : tmax;
   return {
     t,
-    hitPoint
+    hitPoint: [rayOrigin[0] + rayDir[0] * t, rayOrigin[1] + rayDir[1] * t, rayOrigin[2] + rayDir[2] * t]
   };
 }
 function computeWorldVertsAndAABB(object) {
@@ -43292,7 +43359,6 @@ function computeWorldVertsAndAABB(object) {
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
   const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
-  // Compute AABB directly without building worldVerts array
   for (let i = 0; i < verts.length; i += 3) {
     const world = _wgpuMatrix.vec3.transformMat4([verts[i], verts[i + 1], verts[i + 2]], modelMatrix);
     min[0] = Math.min(min[0], world[0]);
@@ -43302,8 +43368,6 @@ function computeWorldVertsAndAABB(object) {
     max[1] = Math.max(max[1], world[1]);
     max[2] = Math.max(max[2], world[2]);
   }
-
-  // Cache result with position snapshot
   object._aabbCache = {
     modelMatrix,
     boxMin: min,
@@ -43314,14 +43378,12 @@ function computeWorldVertsAndAABB(object) {
   };
   return object._aabbCache;
 }
-
-// 🧠 Dispatch rich event
 function dispatchRayHitEvent(canvas, data) {
-  if (data.eventName == 'click') {
+  if (data.eventName === 'click') {
     canvas.dispatchEvent(new CustomEvent("ray.hit.event", {
       detail: data
     }));
-  } else if (data.eventName == 'mousedown') {
+  } else if (data.eventName === 'mousedown') {
     canvas.dispatchEvent(new CustomEvent("ray.hit.mousedown", {
       detail: data
     }));
@@ -43331,6 +43393,8 @@ function dispatchRayHitEvent(canvas, data) {
     }));
   }
 }
+
+// 🎯 FIXED LISTENER 1
 function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   const canvas = document.getElementById(canvasId);
   if (!canvas) {
@@ -43352,15 +43416,32 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
         boxMax
       } = computeWorldVertsAndAABB(object);
       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
-      if (!hitAABB) continue;
       const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
-      const hit = sphereHit || hitAABB;
-      if (hit && (!closestHit || hit.t < closestHit.t)) {
-        closestHit = {
-          ...hit,
-          hitObject: object
-        };
-        if (touchCoordinate.stopOnFirstDetectedHit) break;
+
+      // Determine the valid intersection distance for this object
+      let currentT = null;
+      let chosenHit = null;
+      if (hitAABB && sphereHit) {
+        // Use whichever mathematical volume boundary is encountered first
+        chosenHit = hitAABB.t < sphereHit.t ? hitAABB : sphereHit;
+        currentT = chosenHit.t;
+      } else if (hitAABB) {
+        chosenHit = hitAABB;
+        currentT = hitAABB.t;
+      } else if (sphereHit) {
+        chosenHit = sphereHit;
+        currentT = sphereHit.t;
+      }
+
+      // Strict closest comparison evaluation
+      if (chosenHit && currentT >= 0) {
+        if (!closestHit || currentT < closestHit.t) {
+          closestHit = {
+            ...chosenHit,
+            t: currentT,
+            hitObject: object
+          };
+        }
       }
     }
     if (closestHit) {
@@ -43380,6 +43461,8 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
     }
   });
 }
+
+// 🎯 FIXED LISTENER 2
 function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
   const canvas = document.getElementById(canvasId);
   if (!canvas) {
@@ -43401,14 +43484,17 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
         boxMax
       } = computeWorldVertsAndAABB(object);
       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
-      if (!hitAABB) continue;
-      const hit = hitAABB;
-      if (hit && (!closestHit || hit.t < closestHit.t)) {
+      if (!hitAABB || hitAABB.t < 0) continue;
+      if (!closestHit || hitAABB.t < closestHit.t) {
         closestHit = {
-          ...hit,
+          ...hitAABB,
           hitObject: object
         };
-        if (touchCoordinate.stopOnFirstDetectedHit) break;
+        if (touchCoordinate.stopOnFirstDetectedHit) {
+          // Note: Only break if order in app.mainRenderBundle matches depth,
+          // otherwise leave stopOnFirstDetectedHit false to get absolute closest.
+          break;
+        }
       }
     }
     if (closestHit) {
@@ -66306,8 +66392,10 @@ class MatrixEngineWGPU {
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       // if(camera._dirtyAngle || camera._dirty) 
-      if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
-      camera.update();
+      if (camera._dirtyAngle) {
+        this.getTransformationMatrix(camera, now2);
+        camera.update();
+      }
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
         const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -66340,7 +66428,7 @@ class MatrixEngineWGPU {
       const len = this.mainRenderBundle.length;
       for (let i = 0; i < len; i++) {
         const mesh = this.mainRenderBundle[i];
-        if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
+        mesh.updateInstanceData?.(mesh.modelMatrix);
         if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
         // if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
@@ -66398,12 +66486,9 @@ class MatrixEngineWGPU {
         }
       }
       pass.end();
-
-      // test 
       if (this.ssrPass.enabled == true) {
-        const invProj = new Float32Array(16);
-        _wgpuMatrix.mat4.invert(camera.projectionMatrix, invProj);
-        this.ssrPass.updateConfig(invProj, camera.projectionMatrix);
+        _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
+        this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
         this.ssrPass.render(commandEncoder, {
           sceneTextureView: this.sceneTextureView,
           normalTextureView: this.normalTextureView,
@@ -66413,11 +66498,10 @@ class MatrixEngineWGPU {
         });
       }
       if (this.volumetricPass.enabled === true) {
-        _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
+        if (this.ssrPass.enabled === false) _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
         for (let i = 0; i < this.lightContainer.length; i++) {
           const light = this.lightContainer[i];
-          // if(!light.viewProjMatrix || !light.direction) continue;
           this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
           this._volumetricLightUniforms.direction = light.direction;
           this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricUniforms, this._volumetricLightUniforms);
@@ -66428,10 +66512,7 @@ class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if (this.bloomPass.enabled == true) {
-        // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-        this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
-      }
+      if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
       this.finalPS.colorAttachments[0].view = this._canvasView;
       pass = commandEncoder.beginRenderPass(this.finalPS);
       pass.setPipeline(this.presentPipeline);
@@ -66729,13 +66810,6 @@ class MatrixEngineWGPU {
     if (this.ssrPass.enabled != true) {
       this.ssrPass = new _hzb.SSRPass(this.device, this.canvas.width, this.canvas.height, this.globalSceneUniformBuffer, this.mainDepthView);
       this.ssrPass.enabled = true;
-
-      // const {normalTexture, normalTextureView} = patchMainRenderPassDesc(
-      //   this.device, this.canvas.width, this.canvas.height, this.mainRenderPassDesc
-      // );
-      // this.normalTexture = normalTexture;
-      // this.normalTextureView = normalTextureView;
-
       this.bloomBindGroup = this.device.createBindGroup({
         layout: this.presentPipeline.getBindGroupLayout(0),
         entries: [{
@@ -66763,18 +66837,12 @@ class MatrixEngineWGPU {
         } // real
         ]
       });
-
-      // this._activeBindGroup = this.noBloomBindGroup;
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
-
       // Rebuild all mesh pipelines with 2 targets
       _pipelineManager.PipelineManager.invalidateAll();
       for (const mesh of this.mainRenderBundle) {
         mesh.setupPipeline();
       }
-
-      // MAYBE BEST PLACE IS HERE 
-      //  this._activeBindGroup = 
     }
   };
   activateVolumetricEffect = arg => {

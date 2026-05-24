@@ -9,6 +9,7 @@ export class WASDCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = vec3.fromValues(1, 0, 0);
@@ -247,6 +248,7 @@ export class WASDCamera {
 }
 
 export class ArcballCamera {
+  invProj = new Float32Array(16);
   position = new Float32Array(3);
   right = new Float32Array(3);
   up = new Float32Array(3);
@@ -398,6 +400,7 @@ export class RPGCamera {
 
   view = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   VP = new Float32Array(16);
 
   // ===== RPG =====
@@ -686,6 +689,7 @@ export class FirstPersonCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = vec3.fromValues(1, 0, 0);
@@ -850,6 +854,7 @@ export class FirstPersonCamera {
       if(value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
+          this._dirtyAngle = true;
           this._applyDigitalMovement();
         }, 16);
       } else {
@@ -858,6 +863,7 @@ export class FirstPersonCamera {
           clearInterval(this._keyInterval);
           this._keyInterval = null;
           this._dirty = false;
+          this._dirtyAngle = false;
         }
       }
     };
@@ -917,6 +923,7 @@ export class CinematicCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   right = vec3.fromValues(1, 0, 0);
   up = vec3.fromValues(0, 1, 0);
   back = vec3.fromValues(0, 0, 1);
