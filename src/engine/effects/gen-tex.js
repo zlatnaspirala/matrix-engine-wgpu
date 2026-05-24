@@ -148,7 +148,8 @@ export class GenGeoTexture {
               operation: 'add',
             },
           },
-        }]
+        }, {format: 'rgba16float'},
+        {format: 'rgba16float'}]
       },
       primitive: {topology: 'triangle-list'},
       depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}
