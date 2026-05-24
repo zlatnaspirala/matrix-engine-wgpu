@@ -15,16 +15,16 @@ export class GenGeoTexture2 {
     this.rotateEffect = true;
     this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
-    
+
     // Mobile optimization: track dirty state to avoid redundant GPU uploads
     this.isDirty = false;
     this.cameraMatrixDirty = false;
     this.lastCameraMatrix = null;
-    
+
     // Reusable matrix buffers to reduce allocations
     this.localMatrix = mat4.identity();
     this.finalMatrix = mat4.identity();
-    
+
     this.loadTexture(path).then(() => {
       this._initPipeline();
     });
@@ -105,12 +105,12 @@ export class GenGeoTexture2 {
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
-    
+
     // Mobile optimization: track frame time for frame-rate independent animation
     this.lastFrameTime = performance.now();
     this.frameTimeMs = 16; // default 60fps
 
-    for(let x = 0; x < this.maxInstances; x++) {
+    for(let x = 0;x < this.maxInstances;x++) {
       this.instanceTargets.push({
         index: x,
         position: [0, 0, 0],
@@ -177,7 +177,8 @@ export class GenGeoTexture2 {
               operation: 'add',
             },
           },
-        }]
+        }, {format: 'rgba16float'},
+        {format: 'rgba16float'}]
       },
       primitive: {topology: 'triangle-list'},
       depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}
@@ -185,16 +186,16 @@ export class GenGeoTexture2 {
   }
 
   updateInstanceData = (baseModelMatrix) => {
-    if (!this.instanceData) return;
-    
+    if(!this.instanceData) return;
+
     // Mobile optimization: track frame time for frame-rate independent animation
     const now = performance.now();
     this.frameTimeMs = now - this.lastFrameTime;
     this.lastFrameTime = now;
-    
+
     // Clamp frame time to prevent huge jumps (e.g., when tab is unfocused)
     const clampedFrameTime = Math.min(this.frameTimeMs, 50) / 1000; // ms to seconds
-    
+
     if(this.rotateEffect) {
       // Frame-time aware rotation
       this.rotateAngle += this.rotateEffectSpeed * clampedFrameTime;
@@ -202,61 +203,61 @@ export class GenGeoTexture2 {
         this.rotateAngle -= 360;
       }
     }
-    
+
     const count = Math.min(this.instanceCount, this.maxInstances);
     let anyInstanceDirty = false;
-    
-    for(let i = 0; i < count; i++) {
+
+    for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
       let instanceUpdated = false;
-      
+
       // Mobile optimization: smooth interpolation with frame-time awareness
       const frameAwareLerpSpeed = this.lerpSpeed * clampedFrameTime * 60; // normalize to 60fps
-      
-      for(let j = 0; j < 3; j++) {
+
+      for(let j = 0;j < 3;j++) {
         const oldPos = t.currentPosition[j];
         const oldScale = t.currentScale[j];
-        
+
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * frameAwareLerpSpeed;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * frameAwareLerpSpeed;
-        
-        if(Math.abs(t.currentPosition[j] - oldPos) > 0.0001 || 
-           Math.abs(t.currentScale[j] - oldScale) > 0.0001) {
+
+        if(Math.abs(t.currentPosition[j] - oldPos) > 0.0001 ||
+          Math.abs(t.currentScale[j] - oldScale) > 0.0001) {
           instanceUpdated = true;
         }
       }
-      
+
       if(!instanceUpdated && t.isDirty === false) {
         continue; // Skip GPU upload for unchanged instances
       }
-      
+
       anyInstanceDirty = true;
       t.isDirty = true;
-      
+
       // Mobile optimization: reuse matrix buffer to reduce allocations
       mat4.identity(this.localMatrix);
-      
+
       if(this.rotateEffect === true) {
         mat4.rotateY(this.localMatrix, this.rotateAngle, this.localMatrix);
       }
-      
+
       mat4.translate(this.localMatrix, t.currentPosition, this.localMatrix);
       mat4.scale(this.localMatrix, t.currentScale, this.localMatrix);
-      
+
       // Combine matrices in-place to reduce allocations
       mat4.multiply(baseModelMatrix, this.localMatrix, this.finalMatrix);
-      
+
       const offset = i * this.floatsPerInstance;
       this.instanceData.set(this.finalMatrix, offset);
       this.instanceData.set(t.color, offset + 16);
     }
-    
+
     // Mobile optimization: only upload changed data to GPU
     if(anyInstanceDirty) {
       const activeFloatCount = count * this.floatsPerInstance;
       this.device.queue.writeBuffer(
-        this.modelBuffer, 
-        0, 
+        this.modelBuffer,
+        0,
         this.instanceData.subarray(0, activeFloatCount)
       );
     }
@@ -268,7 +269,7 @@ export class GenGeoTexture2 {
       this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
       this.lastCameraMatrix = new Float32Array(cameraMatrix);
     }
-    
+
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -280,10 +281,10 @@ export class GenGeoTexture2 {
   render(transPass, mesh, viewProjMatrix) {
     this.draw(transPass, viewProjMatrix);
   }
-  
+
   // Mobile optimization: quick matrix comparison to avoid redundant GPU uploads
   _matricesEqual(m1, m2) {
-    for(let i = 0; i < 16; i++) {
+    for(let i = 0;i < 16;i++) {
       if(Math.abs(m1[i] - m2[i]) > 0.0001) {
         return false;
       }
