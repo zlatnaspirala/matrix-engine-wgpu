@@ -4,6 +4,8 @@
 [1.14.0]
  - Added HZB postproccesing effect
  - Light micro optimisations
+ - canvas.requestPointerLock for FPS camera
+
 
 [1.12.0]
  - CinematicCamera

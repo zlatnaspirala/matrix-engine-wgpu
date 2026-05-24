@@ -7,9 +7,10 @@ import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
  * procedural kaleidoscope particles with vertex animation
  */
 export class KaleidoscopeEmitter {
-  constructor(device, format, maxParticles = 20) {
+  constructor(device, format, maxParticles = 20, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.time = 0;
     this.intensity = 1.0;
     this.enabled = true;
@@ -156,19 +157,14 @@ export class KaleidoscopeEmitter {
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
 
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
     this.modelBuffer = this.device.createBuffer({
-      label: 'kaleidoscope-emitter modelBuffer',
+      label: 'kale-emitter modelBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
 
     const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'kaleidoscope-emitter bindGroupLayout',
+      label: 'kale-emitter layout',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
         {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},

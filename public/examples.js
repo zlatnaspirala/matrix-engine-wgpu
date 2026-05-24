@@ -4010,10 +4010,9 @@ var loadKale = function () {
 
       setTimeout(() => {
         // MYCUBE.effects.keffect = new KaleidoscopeEffect(ray.device, 'rgba16float', 'rgba16float', KaleidoscopePresets.classic)
-
-        // MYCUBE.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10)
-        // MYCUBE2.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10)
-        MYBALL.effects.keeffect = new _kaleidoscopeEffectInstance.KaleidoscopeEmitter(ray.device, 'rgba16float', 30);
+        // MYCUBE.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10, ray.cameraBuffer)
+        // MYCUBE2.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10, ray.cameraBuffer)
+        MYBALL.effects.keeffect = new _kaleidoscopeEffectInstance.KaleidoscopeEmitter(ray.device, 'rgba16float', 30, ray.cameraBuffer);
 
         // Just for console manipulation test
         app.MYBALL = MYBALL;
@@ -4101,6 +4100,7 @@ var loadObjFile = function () {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 1,
     mainCameraParams: {
       // type: 'WASD',
       type: 'firstPersonCamera',
@@ -4308,9 +4308,11 @@ var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjsSequence = function () {
   let loadObjFile = new _world.default({
-    fastRender: 0.9,
+    fastRender: 0.8,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -4468,6 +4470,27 @@ var mazeGame = function () {
       cube: "./res/meshes/blender/cube.obj"
     }, m => {
       generateMazeLogic(m);
+      let floor = maze.addMeshObj({
+        shadowsCast: false,
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [100, 0.1, 100],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        // becouse nano render use single mat per objectScene entity text not changed!
+        name: 'floor',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
     }, {
       scale: [1, 1, 1]
     });
@@ -4505,14 +4528,15 @@ var mazeGame = function () {
             let test = maze.addMeshObj({
               shadowsCast: false,
               material: {
-                type: 'standard'
+                type: 'standard',
+                shared: true
               },
               position: {
                 x: x * spacing - mazeSize * spacing / 2,
                 y: 0,
                 z: y * spacing - mazeSize * spacing / 2
               },
-              texturesPaths: ['./res/textures/tex02.webp'],
+              texturesPaths: ['./res/textures/blankgray2.webp'],
               name: wallName,
               mesh: meshes.cube,
               physics: {
@@ -4773,7 +4797,7 @@ var physicsPlayground = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
+      physicsPlayground.matrixPhysics.speedUpSimulation(11);
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -4809,7 +4833,6 @@ var physicsPlayground = function () {
         y: 0,
         z: 0
       }, "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400);
-      physicsPlayground.matrixPhysics.speedUpSimulation(11);
 
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
@@ -5473,8 +5496,7 @@ var testJolt = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
-
+      app.matrixPhysics.speedUpSimulation(10);
       physicsPlayground.physicsBodiesGeneratorDeepPyramid("standard", {
         x: 0,
         y: 1,
@@ -5724,6 +5746,8 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var procMesh = function () {
   let procMesh = new _world.default({
     fastRender: 0.9,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 1,
     dontUsePhysics: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -5867,7 +5891,7 @@ var procMesh = function () {
           },
           raycast: {
             enabled: true,
-            radius: 1.5
+            radius: 1
           }
         });
         meshObjects.push(obj);
@@ -5894,11 +5918,12 @@ var procMesh = function () {
       procMesh.lightContainer[0].setPosition(0, 17, -10);
       procMesh.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
-        app.cameras.WASD.setYaw(-0.03);
-        app.cameras.WASD.setPitch(-0.49);
-        app.cameras.WASD.setZ(0);
-        app.cameras.WASD.setY(5);
-        app.cameras.WASD._dirtyAngle = true;
+        let cam = procMesh.getCamera();
+        cam.setYaw(-0.03);
+        cam.setPitch(-0.49);
+        cam.setZ(0);
+        cam.setY(5);
+        cam._dirtyAngle = true;
       }, 800);
     }
     procMesh.canvas.addEventListener("ray.hit.event", e => {
@@ -25349,6 +25374,7 @@ class FirstPersonCamera {
       this._lastX = e.clientX;
       this._lastY = e.clientY;
       canvas.setPointerCapture(e.pointerId);
+      canvas.requestPointerLock?.();
     }, {
       passive: true
     });
@@ -26437,10 +26463,11 @@ const KaleidoscopePresets = exports.KaleidoscopePresets = {
   }
 };
 class KaleidoscopeEffect {
-  constructor(device, format, shape = "quad", params = {}) {
+  constructor(device, format, shape = "quad", params = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.colorFormat = format;
+    this.cameraBuffer = cameraBuffer;
     const config = typeof params === 'string' ? KaleidoscopePresets[params] : params;
     const defaults = KaleidoscopePresets.classic;
     this.intensity = config.intensity ?? defaults.intensity;
@@ -26484,10 +26511,6 @@ class KaleidoscopeEffect {
     this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
   }
   _initPipeline() {
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 128,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -29231,9 +29254,10 @@ var _utils = require("../utils");
  * procedural kaleidoscope particles with vertex animation
  */
 class KaleidoscopeEmitter {
-  constructor(device, format, maxParticles = 20) {
+  constructor(device, format, maxParticles = 20, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.time = 0;
     this.intensity = 1.0;
     this.enabled = true;
@@ -29344,17 +29368,13 @@ class KaleidoscopeEmitter {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
-      label: 'kaleidoscope-emitter modelBuffer',
+      label: 'kale-emitter modelBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
     const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'kaleidoscope-emitter bindGroupLayout',
+      label: 'kale-emitter layout',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -34915,8 +34935,8 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * @credits Chatgpt assist here.
  */
 class BVHPlayerInstances extends _meshObjInstances.default {
-  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
-    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
+  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient, cameraBuffer) {
+    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex, cameraBuffer);
     // bvh arg not actual at the moment
     this.bvh = {};
     this.glb = glb;
@@ -34929,7 +34949,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       // deplaced
       delay: 0
     };
-    // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     this.sharedState = {
@@ -34942,7 +34961,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.animationIndex = 0;
     this.glbAnimEvents = {};
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      // console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ' , `animationEnd-${anim.name}` )
       this.glbAnimEvents['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
           animationName: this.glb.glbJsonData.animations[index].name,
@@ -35274,16 +35292,12 @@ class BVHPlayerInstances extends _meshObjInstances.default {
    * @returns {ArrayBuffer} sliced array buffer
    **/
   getBufferSlice(bufferDef, byteOffset, byteLength) {
-    // GLTFBuffer instance:
     if (bufferDef instanceof _webgpuGltf.GLTFBuffer) {
-      // Use .arrayBuffer + .byteOffset:
       return bufferDef.arrayBuffer.slice(bufferDef.byteOffset + (byteOffset || 0), bufferDef.byteOffset + (byteOffset || 0) + byteLength);
     }
-    // Already have a raw ArrayBuffer:
     if (bufferDef instanceof ArrayBuffer) {
       return bufferDef.slice(byteOffset, byteOffset + byteLength);
     }
-    // Some loaders store it as .data or ._data:
     if (bufferDef && bufferDef.data instanceof ArrayBuffer) {
       return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
     }
@@ -35345,16 +35359,13 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     //   m2 m6 m10 m14
     //   m3 m7 m11 m15 ]
     const t = new Float32Array([m[12], m[13], m[14]]);
-    // Extract the 3 column vectors (upper-left 3x3)
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
-    // Lengths = scales
     const len = v => Math.hypot(v[0], v[1], v[2]);
     let sx = len(cx),
       sy = len(cy),
       sz = len(cz);
-    // If any scale nearly zero, avoid divide-by-zero
     if (sx === 0) sx = 1.0;
     if (sy === 0) sy = 1.0;
     if (sz === 0) sz = 1.0;
@@ -35387,25 +35398,25 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     const trace = r00 + r11 + r22;
     let qx, qy, qz, qw;
     if (trace > 0.00001) {
-      const s = Math.sqrt(trace + 1.0) * 2; // s=4*qw
+      const s = Math.sqrt(trace + 1.0) * 2;
       qw = 0.25 * s;
       qx = (r21 - r12) / s;
       qy = (r02 - r20) / s;
       qz = (r10 - r01) / s;
     } else if (r00 > r11 && r00 > r22) {
-      const s = Math.sqrt(1.0 + r00 - r11 - r22) * 2; // s=4*qx
+      const s = Math.sqrt(1.0 + r00 - r11 - r22) * 2;
       qw = (r21 - r12) / s;
       qx = 0.25 * s;
       qy = (r01 + r10) / s;
       qz = (r02 + r20) / s;
     } else if (r11 > r22) {
-      const s = Math.sqrt(1.0 + r11 - r00 - r22) * 2; // s=4*qy
+      const s = Math.sqrt(1.0 + r11 - r00 - r22) * 2;
       qw = (r02 - r20) / s;
       qx = (r01 + r10) / s;
       qy = 0.25 * s;
       qz = (r12 + r21) / s;
     } else {
-      const s = Math.sqrt(1.0 + r22 - r00 - r11) * 2; // s=4*qz
+      const s = Math.sqrt(1.0 + r22 - r00 - r11) * 2;
       qw = (r10 - r01) / s;
       qx = (r02 + r20) / s;
       qy = (r12 + r21) / s;
@@ -35467,7 +35478,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
-      /* ── TRANSLATION CHANNELS ── */
       for (let k = 0; k < tChannels.length; k++) {
         const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
@@ -35488,8 +35498,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         tr[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         tr[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-
-      /* ── SCALE CHANNELS ── */
       for (let k = 0; k < sChannels.length; k++) {
         const channel = sChannels[k];
         const inputTimes = channel._inputTimes;
@@ -35510,8 +35518,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         sc[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         sc[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-
-      /* ── ROTATION CHANNELS ── */
       for (let k = 0; k < rChannels.length; k++) {
         const channel = rChannels[k];
         const inputTimes = channel._inputTimes;
@@ -35529,12 +35535,8 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         const base1 = next * 4;
         this.slerp(outputArray, base0, outputArray, base1, factor, rot);
       }
-
-      /* ── COMPOSE LOCAL TRANSFORM ── */
       this.composeTRS(tr, rot, sc, node.transform);
     }
-
-    /* ── WORLD MATRICES ── */
     const sorted = this._sortedNodes;
     for (let i = 0; i < sorted.length; i++) {
       const nodeIndex = sorted[i];
@@ -35546,15 +35548,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
       }
     }
-
-    /* ── BONE MATRICES ── */
     for (let j = 0; j < skeleton.length; j++) {
       const jointNode = nodes[skeleton[j]];
       _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
-
-    /* ── WRITE TO GPU BUFFER ── */
     const byteOffset = this.sharedBones ? 0 : (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
@@ -43269,6 +43267,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.addRaycastsAABBListener = addRaycastsAABBListener;
 exports.addRaycastsListener = addRaycastsListener;
+exports.computeAABB = computeAABB;
 exports.computeWorldVertsAndAABB = computeWorldVertsAndAABB;
 exports.getRayFromMouse = getRayFromMouse;
 exports.getRayFromMouse2 = void 0;
@@ -43276,10 +43275,16 @@ exports.rayIntersectsAABB = rayIntersectsAABB;
 exports.rayIntersectsSphere = rayIntersectsSphere;
 exports.touchCoordinate = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
+// /**
+// * MatrixEngine Raycaster (Fixed Sorting)
+// * Author: Nikola Lukić
+// * Version: 2.1
+// */
+
 /**
-* MatrixEngine Raycaster (Fixed Sorting)
+* MatrixEngine Raycaster (improved)
 * Author: Nikola Lukić
-* Version: 2.1
+* Version: 2.0
 */
 
 let touchCoordinate = exports.touchCoordinate = {
@@ -43290,30 +43295,25 @@ let touchCoordinate = exports.touchCoordinate = {
 };
 const _invProj = _wgpuMatrix.mat4.create();
 const _invView = _wgpuMatrix.mat4.create();
+const _clip = new Float32Array([0, 0, 1, 1]);
+const _rayOrigin = new Float32Array(3);
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
   const x = (event.clientX - rect.left) / rect.width * 2 - 1;
   const y = -((event.clientY - rect.top) / rect.height * 2 - 1);
-
-  // 🎯 FIX: WebGPU Clip Space near plane is 0, far plane is 1
-  const nearPoint = [x, y, 0, 1];
-  const farPoint = [x, y, 1, 1];
   _wgpuMatrix.mat4.inverse(camera.projectionMatrix, _invProj);
   _wgpuMatrix.mat4.inverse(camera.view, _invView);
-
-  // Unproject near
-  let nearWorld = _wgpuMatrix.vec4.transformMat4(nearPoint, _invProj);
-  nearWorld = [nearWorld[0] / nearWorld[3], nearWorld[1] / nearWorld[3], nearWorld[2] / nearWorld[3], 1];
-  nearWorld = _wgpuMatrix.vec4.transformMat4(nearWorld, _invView);
-
-  // Unproject far
-  let farWorld = _wgpuMatrix.vec4.transformMat4(farPoint, _invProj);
-  farWorld = [farWorld[0] / farWorld[3], farWorld[1] / farWorld[3], farWorld[2] / farWorld[3], 1];
-  farWorld = _wgpuMatrix.vec4.transformMat4(farWorld, _invView);
-  const rayOrigin = [nearWorld[0], nearWorld[1], nearWorld[2]];
-  const rayDirection = _wgpuMatrix.vec3.normalize([farWorld[0] - nearWorld[0], farWorld[1] - nearWorld[1], farWorld[2] - nearWorld[2]]);
+  _clip[0] = x;
+  _clip[1] = y;
+  let eye = _wgpuMatrix.vec4.transformMat4(_clip, _invProj);
+  eye = [eye[0], eye[1], -1, 0];
+  const worldDir4 = _wgpuMatrix.vec4.transformMat4(eye, _invView);
+  const rayDirection = _wgpuMatrix.vec3.normalize([worldDir4[0], worldDir4[1], worldDir4[2]]);
+  _rayOrigin[0] = camera.position[0];
+  _rayOrigin[1] = camera.position[1];
+  _rayOrigin[2] = camera.position[2];
   return {
-    rayOrigin,
+    rayOrigin: _rayOrigin,
     rayDirection,
     screen: {
       x,
@@ -43342,76 +43342,40 @@ function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius
     hitNormal
   };
 }
-
-// export function rayIntersectsAABB(rayOrigin, rayDir, boxMin, boxMax) {
-//   let tmin = -Infinity;
-//   let tmax = Infinity;
-
-//   for (let i = 0; i < 3; i++) {
-//     if (Math.abs(rayDir[i]) < 0.000001) {
-//       if (rayOrigin[i] < boxMin[i] || rayOrigin[i] > boxMax[i]) {
-//         return null;
-//       }
-//       continue;
-//     }
-
-//     let t1 = (boxMin[i] - rayOrigin[i]) / rayDir[i];
-//     let t2 = (boxMax[i] - rayOrigin[i]) / rayDir[i];
-
-//     if (t1 > t2) {
-//       const temp = t1;
-//       t1 = t2;
-//       t2 = temp;
-//     }
-
-//     tmin = Math.max(tmin, t1);
-//     tmax = Math.min(tmax, t2);
-
-//     if (tmin > tmax) return null;
-//   }
-
-//   if (tmax < 0) return null;
-
-//   const t = tmin >= 0 ? tmin : tmax;
-
-//   return {
-//     t,
-//     hitPoint: [
-//       rayOrigin[0] + rayDir[0] * t,
-//       rayOrigin[1] + rayDir[1] * t,
-//       rayOrigin[2] + rayDir[2] * t
-//     ]
-//   };
-// }
-
-function rayIntersectsAABB(rayOrigin, rayDir, boxMin, boxMax) {
-  let tmin = -Infinity;
-  let tmax = Infinity;
-  for (let i = 0; i < 3; i++) {
-    if (Math.abs(rayDir[i]) < 0.000001) {
-      if (rayOrigin[i] < boxMin[i] || rayOrigin[i] > boxMax[i]) return null;
-      continue;
-    }
-    let t1 = (boxMin[i] - rayOrigin[i]) / rayDir[i];
-    let t2 = (boxMax[i] - rayOrigin[i]) / rayDir[i];
-    if (t1 > t2) {
-      const temp = t1;
-      t1 = t2;
-      t2 = temp;
-    }
-    tmin = Math.max(tmin, t1);
-    tmax = Math.min(tmax, t2);
-    if (tmin > tmax) return null;
+function computeAABB(vertices) {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < vertices.length; i += 3) {
+    min[0] = Math.min(min[0], vertices[i]);
+    min[1] = Math.min(min[1], vertices[i + 1]);
+    min[2] = Math.min(min[2], vertices[i + 2]);
+    max[0] = Math.max(max[0], vertices[i]);
+    max[1] = Math.max(max[1], vertices[i + 1]);
+    max[2] = Math.max(max[2], vertices[i + 2]);
   }
+  return [min, max];
+}
 
-  // Object is behind the camera ray path entirely
-  if (tmax < 0) return null;
-
-  // If we are inside the box, tmin is negative, so closest intersection forward is tmax
-  const t = tmin >= 0 ? tmin : tmax;
+// Ray-AABB intersection returning distance (slab method)
+function rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax) {
+  let tmin = (boxMin[0] - rayOrigin[0]) / rayDirection[0];
+  let tmax = (boxMax[0] - rayOrigin[0]) / rayDirection[0];
+  if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+  let tymin = (boxMin[1] - rayOrigin[1]) / rayDirection[1];
+  let tymax = (boxMax[1] - rayOrigin[1]) / rayDirection[1];
+  if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
+  if (tmin > tymax || tymin > tmax) return null;
+  if (tymin > tmin) tmin = tymin;
+  if (tymax < tmax) tmax = tymax;
+  let tzmin = (boxMin[2] - rayOrigin[2]) / rayDirection[2];
+  let tzmax = (boxMax[2] - rayOrigin[2]) / rayDirection[2];
+  if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
+  if (tmin > tzmax || tzmin > tmax) return null;
+  const t = Math.max(tmin, 0.0);
+  const hitPoint = _wgpuMatrix.vec3.add(rayOrigin, _wgpuMatrix.vec3.mulScalar(rayDirection, t));
   return {
     t,
-    hitPoint: [rayOrigin[0] + rayDir[0] * t, rayOrigin[1] + rayDir[1] * t, rayOrigin[2] + rayDir[2] * t]
+    hitPoint
   };
 }
 function computeWorldVertsAndAABB(object) {
@@ -43422,6 +43386,7 @@ function computeWorldVertsAndAABB(object) {
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
   const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
+  // Compute AABB directly without building worldVerts array
   for (let i = 0; i < verts.length; i += 3) {
     const world = _wgpuMatrix.vec3.transformMat4([verts[i], verts[i + 1], verts[i + 2]], modelMatrix);
     min[0] = Math.min(min[0], world[0]);
@@ -43431,6 +43396,8 @@ function computeWorldVertsAndAABB(object) {
     max[1] = Math.max(max[1], world[1]);
     max[2] = Math.max(max[2], world[2]);
   }
+
+  // Cache result with position snapshot
   object._aabbCache = {
     modelMatrix,
     boxMin: min,
@@ -43441,12 +43408,14 @@ function computeWorldVertsAndAABB(object) {
   };
   return object._aabbCache;
 }
+
+// 🧠 Dispatch rich event
 function dispatchRayHitEvent(canvas, data) {
-  if (data.eventName === 'click') {
+  if (data.eventName == 'click') {
     canvas.dispatchEvent(new CustomEvent("ray.hit.event", {
       detail: data
     }));
-  } else if (data.eventName === 'mousedown') {
+  } else if (data.eventName == 'mousedown') {
     canvas.dispatchEvent(new CustomEvent("ray.hit.mousedown", {
       detail: data
     }));
@@ -43456,8 +43425,6 @@ function dispatchRayHitEvent(canvas, data) {
     }));
   }
 }
-
-// 🎯 FIXED LISTENER 1
 function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
   const canvas = document.getElementById(canvasId);
   if (!canvas) {
@@ -43479,32 +43446,15 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
         boxMax
       } = computeWorldVertsAndAABB(object);
       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+      if (!hitAABB) continue;
       const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
-
-      // Determine the valid intersection distance for this object
-      let currentT = null;
-      let chosenHit = null;
-      if (hitAABB && sphereHit) {
-        // Use whichever mathematical volume boundary is encountered first
-        chosenHit = hitAABB.t < sphereHit.t ? hitAABB : sphereHit;
-        currentT = chosenHit.t;
-      } else if (hitAABB) {
-        chosenHit = hitAABB;
-        currentT = hitAABB.t;
-      } else if (sphereHit) {
-        chosenHit = sphereHit;
-        currentT = sphereHit.t;
-      }
-
-      // Strict closest comparison evaluation
-      if (chosenHit && currentT >= 0) {
-        if (!closestHit || currentT < closestHit.t) {
-          closestHit = {
-            ...chosenHit,
-            t: currentT,
-            hitObject: object
-          };
-        }
+      const hit = sphereHit || hitAABB;
+      if (hit && (!closestHit || hit.t < closestHit.t)) {
+        closestHit = {
+          ...hit,
+          hitObject: object
+        };
+        if (touchCoordinate.stopOnFirstDetectedHit) break;
       }
     }
     if (closestHit) {
@@ -43524,8 +43474,6 @@ function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
     }
   });
 }
-
-// 🎯 FIXED LISTENER 2
 function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
   const canvas = document.getElementById(canvasId);
   if (!canvas) {
@@ -43547,17 +43495,14 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
         boxMax
       } = computeWorldVertsAndAABB(object);
       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
-      if (!hitAABB || hitAABB.t < 0) continue;
-      if (!closestHit || hitAABB.t < closestHit.t) {
+      if (!hitAABB) continue;
+      const hit = hitAABB;
+      if (hit && (!closestHit || hit.t < closestHit.t)) {
         closestHit = {
-          ...hitAABB,
+          ...hit,
           hitObject: object
         };
-        if (touchCoordinate.stopOnFirstDetectedHit) {
-          // Note: Only break if order in app.mainRenderBundle matches depth,
-          // otherwise leave stopOnFirstDetectedHit false to get absolute closest.
-          break;
-        }
+        if (touchCoordinate.stopOnFirstDetectedHit) break;
       }
     }
     if (closestHit) {
@@ -43577,6 +43522,333 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
     }
   });
 }
+// import {mat4, vec3, vec4} from "wgpu-matrix";
+
+// export let touchCoordinate = {
+//   enabled: false,
+//   x: 0,
+//   y: 0,
+//   stopOnFirstDetectedHit: false,
+// };
+
+// const _invProj = mat4.create();
+// const _invView = mat4.create();
+
+// export function getRayFromMouse(event, canvas, camera) {
+//   const rect = canvas.getBoundingClientRect();
+
+//   const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+//   const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+
+//   // 🎯 FIX: WebGPU Clip Space near plane is 0, far plane is 1
+//   const nearPoint = [x, y, 0, 1]; 
+//   const farPoint = [x, y, 1, 1];
+
+//   mat4.inverse(camera.projectionMatrix, _invProj);
+//   mat4.inverse(camera.view, _invView);
+
+//   // Unproject near
+//   let nearWorld = vec4.transformMat4(nearPoint, _invProj);
+//   nearWorld = [
+//     nearWorld[0] / nearWorld[3],
+//     nearWorld[1] / nearWorld[3],
+//     nearWorld[2] / nearWorld[3],
+//     1
+//   ];
+//   nearWorld = vec4.transformMat4(nearWorld, _invView);
+
+//   // Unproject far
+//   let farWorld = vec4.transformMat4(farPoint, _invProj);
+//   farWorld = [
+//     farWorld[0] / farWorld[3],
+//     farWorld[1] / farWorld[3],
+//     farWorld[2] / farWorld[3],
+//     1
+//   ];
+//   farWorld = vec4.transformMat4(farWorld, _invView);
+
+//   const rayOrigin = [nearWorld[0], nearWorld[1], nearWorld[2]];
+
+//   const rayDirection = vec3.normalize([
+//     farWorld[0] - nearWorld[0],
+//     farWorld[1] - nearWorld[1],
+//     farWorld[2] - nearWorld[2]
+//   ]);
+
+//   return {
+//     rayOrigin,
+//     rayDirection,
+//     screen: {x, y}
+//   };
+// }
+
+// // Backward compatibility alias
+// export const getRayFromMouse2 = getRayFromMouse;
+
+// export function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+//   const center = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+//   const oc = vec3.subtract(rayOrigin, center);
+//   const a = vec3.dot(rayDirection, rayDirection);
+//   const b = 2.0 * vec3.dot(oc, rayDirection);
+//   const c = vec3.dot(oc, oc) - sphereRadius * sphereRadius;
+//   const discriminant = b * b - 4 * a * c;
+
+//   if (discriminant < 0) return null;
+//   const t = (-b - Math.sqrt(discriminant)) / (2.0 * a);
+//   if (t < 0) return null;
+
+//   const hitPoint = vec3.add(rayOrigin, vec3.mulScalar(rayDirection, t));
+//   const hitNormal = vec3.normalize(vec3.subtract(hitPoint, center));
+//   return {t, hitPoint, hitNormal};
+// }
+
+// // export function rayIntersectsAABB(rayOrigin, rayDir, boxMin, boxMax) {
+// //   let tmin = -Infinity;
+// //   let tmax = Infinity;
+
+// //   for (let i = 0; i < 3; i++) {
+// //     if (Math.abs(rayDir[i]) < 0.000001) {
+// //       if (rayOrigin[i] < boxMin[i] || rayOrigin[i] > boxMax[i]) {
+// //         return null;
+// //       }
+// //       continue;
+// //     }
+
+// //     let t1 = (boxMin[i] - rayOrigin[i]) / rayDir[i];
+// //     let t2 = (boxMax[i] - rayOrigin[i]) / rayDir[i];
+
+// //     if (t1 > t2) {
+// //       const temp = t1;
+// //       t1 = t2;
+// //       t2 = temp;
+// //     }
+
+// //     tmin = Math.max(tmin, t1);
+// //     tmax = Math.min(tmax, t2);
+
+// //     if (tmin > tmax) return null;
+// //   }
+
+// //   if (tmax < 0) return null;
+
+// //   const t = tmin >= 0 ? tmin : tmax;
+
+// //   return {
+// //     t,
+// //     hitPoint: [
+// //       rayOrigin[0] + rayDir[0] * t,
+// //       rayOrigin[1] + rayDir[1] * t,
+// //       rayOrigin[2] + rayDir[2] * t
+// //     ]
+// //   };
+// // }
+
+// export function rayIntersectsAABB(rayOrigin, rayDir, boxMin, boxMax) {
+//   let tmin = -Infinity;
+//   let tmax = Infinity;
+
+//   for (let i = 0; i < 3; i++) {
+//     if (Math.abs(rayDir[i]) < 0.000001) {
+//       if (rayOrigin[i] < boxMin[i] || rayOrigin[i] > boxMax[i]) return null;
+//       continue;
+//     }
+
+//     let t1 = (boxMin[i] - rayOrigin[i]) / rayDir[i];
+//     let t2 = (boxMax[i] - rayOrigin[i]) / rayDir[i];
+
+//     if (t1 > t2) {
+//       const temp = t1;
+//       t1 = t2;
+//       t2 = temp;
+//     }
+
+//     tmin = Math.max(tmin, t1);
+//     tmax = Math.min(tmax, t2);
+
+//     if (tmin > tmax) return null;
+//   }
+
+//   // Object is behind the camera ray path entirely
+//   if (tmax < 0) return null;
+
+//   // If we are inside the box, tmin is negative, so closest intersection forward is tmax
+//   const t = tmin >= 0 ? tmin : tmax;
+
+//   return {
+//     t,
+//     hitPoint: [
+//       rayOrigin[0] + rayDir[0] * t,
+//       rayOrigin[1] + rayDir[1] * t,
+//       rayOrigin[2] + rayDir[2] * t
+//     ]
+//   };
+// }
+
+// export function computeWorldVertsAndAABB(object) {
+//   if (object._aabbCache &&
+//     object._aabbCache.x === object.position.x &&
+//     object._aabbCache.y === object.position.y &&
+//     object._aabbCache.z === object.position.z) {
+//     return object._aabbCache;
+//   }
+//   const modelMatrix = object.getModelMatrix(object.position, true);
+//   const min = [Infinity, Infinity, Infinity];
+//   const max = [-Infinity, -Infinity, -Infinity];
+//   const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
+
+//   for (let i = 0; i < verts.length; i += 3) {
+//     const world = vec3.transformMat4(
+//       [verts[i], verts[i + 1], verts[i + 2]],
+//       modelMatrix
+//     );
+//     min[0] = Math.min(min[0], world[0]);
+//     min[1] = Math.min(min[1], world[1]);
+//     min[2] = Math.min(min[2], world[2]);
+//     max[0] = Math.max(max[0], world[0]);
+//     max[1] = Math.max(max[1], world[1]);
+//     max[2] = Math.max(max[2], world[2]);
+//   }
+
+//   object._aabbCache = {
+//     modelMatrix,
+//     boxMin: min,
+//     boxMax: max,
+//     x: object.position.x,
+//     y: object.position.y,
+//     z: object.position.z
+//   };
+
+//   return object._aabbCache;
+// }
+
+// function dispatchRayHitEvent(canvas, data) {
+//   if (data.eventName === 'click') {
+//     canvas.dispatchEvent(new CustomEvent("ray.hit.event", {detail: data}));
+//   } else if (data.eventName === 'mousedown') {
+//     canvas.dispatchEvent(new CustomEvent("ray.hit.mousedown", {detail: data}));
+//   } else {
+//     canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", {detail: data}));
+//   }
+// }
+
+// // 🎯 FIXED LISTENER 1
+// export function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
+//   const canvas = document.getElementById(canvasId);
+//   if (!canvas) {
+//     console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
+//     return;
+//   }
+
+//   canvas.addEventListener(eventName, (event) => {
+//     const camera = app.cameras[app.mainCameraParams.type];
+//     const {rayOrigin, rayDirection, screen} = getRayFromMouse(event, canvas, camera);
+//     let closestHit = null;
+
+//     for (const object of app.mainRenderBundle) {
+//       if (!object.raycast?.enabled) continue;
+
+//       const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
+//       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+//       const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
+
+//       // Determine the valid intersection distance for this object
+//       let currentT = null;
+//       let chosenHit = null;
+
+//       if (hitAABB && sphereHit) {
+//         // Use whichever mathematical volume boundary is encountered first
+//         chosenHit = hitAABB.t < sphereHit.t ? hitAABB : sphereHit;
+//         currentT = chosenHit.t;
+//       } else if (hitAABB) {
+//         chosenHit = hitAABB;
+//         currentT = hitAABB.t;
+//       } else if (sphereHit) {
+//         chosenHit = sphereHit;
+//         currentT = sphereHit.t;
+//       }
+
+//       // Strict closest comparison evaluation
+//       if (chosenHit && currentT >= 0) {
+//         if (!closestHit || currentT < closestHit.t) {
+//           closestHit = {
+//             ...chosenHit,
+//             t: currentT,
+//             hitObject: object
+//           };
+//         }
+//       }
+//     }
+
+//     if (closestHit) {
+//       dispatchRayHitEvent(canvas, {
+//         hitObject: closestHit.hitObject,
+//         hitPoint: closestHit.hitPoint,
+//         hitNormal: closestHit.hitNormal || null,
+//         hitDistance: closestHit.t,
+//         rayOrigin,
+//         rayDirection,
+//         screenCoords: screen,
+//         camera,
+//         timestamp: performance.now(),
+//         button: event.button,
+//         eventName: eventName
+//       });
+//     }
+//   });
+// }
+
+// // 🎯 FIXED LISTENER 2
+// export function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
+//   const canvas = document.getElementById(canvasId);
+//   if (!canvas) {
+//     console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
+//     return;
+//   }
+
+//   canvas.addEventListener(eventName, (event) => {
+//     const camera = app.cameras[app.mainCameraParams.type];
+//     const {rayOrigin, rayDirection, screen} = getRayFromMouse(event, canvas, camera);
+//     let closestHit = null;
+
+//     for (const object of app.mainRenderBundle) {
+//       if (!object.raycast?.enabled || !object.getModelMatrix) continue;
+
+//       const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
+//       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+
+//       if (!hitAABB || hitAABB.t < 0) continue;
+
+//       if (!closestHit || hitAABB.t < closestHit.t) {
+//         closestHit = {
+//           ...hitAABB,
+//           hitObject: object
+//         };
+
+//         if (touchCoordinate.stopOnFirstDetectedHit) {
+//           // Note: Only break if order in app.mainRenderBundle matches depth,
+//           // otherwise leave stopOnFirstDetectedHit false to get absolute closest.
+//           break; 
+//         }
+//       }
+//     }
+
+//     if (closestHit) {
+//       dispatchRayHitEvent(canvas, {
+//         hitObject: closestHit.hitObject,
+//         hitPoint: closestHit.hitPoint,
+//         hitNormal: closestHit.hitNormal || null,
+//         hitDistance: closestHit.t,
+//         rayOrigin,
+//         rayDirection,
+//         screenCoords: screen,
+//         camera,
+//         timestamp: performance.now(),
+//         button: event.button,
+//         eventName: eventName
+//       });
+//     }
+//   });
+// }
 
 },{"wgpu-matrix":37}],83:[function(require,module,exports){
 "use strict";

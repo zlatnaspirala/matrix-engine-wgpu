@@ -816,6 +816,7 @@ export class FirstPersonCamera {
       this._lastX = e.clientX;
       this._lastY = e.clientY;
       canvas.setPointerCapture(e.pointerId);
+      canvas.requestPointerLock?.();
     }, {passive: true});
     const pointerUp = e => {this._mouseDown = false;};
     canvas.addEventListener('pointerup', pointerUp, {passive: true});

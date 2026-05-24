@@ -178,12 +178,10 @@ export var loadKale = function() {
       // }
 
       setTimeout(() => {
-
         // MYCUBE.effects.keffect = new KaleidoscopeEffect(ray.device, 'rgba16float', 'rgba16float', KaleidoscopePresets.classic)
-
-        // MYCUBE.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10)
-        // MYCUBE2.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10)
-        MYBALL.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 30)
+        // MYCUBE.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10, ray.cameraBuffer)
+        // MYCUBE2.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 10, ray.cameraBuffer)
+        MYBALL.effects.keeffect = new KaleidoscopeEmitter(ray.device, 'rgba16float', 30, ray.cameraBuffer)
 
         // Just for console manipulation test
         app.MYBALL = MYBALL;

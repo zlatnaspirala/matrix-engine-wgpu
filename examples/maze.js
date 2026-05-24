@@ -27,7 +27,21 @@ export var mazeGame = function() {
     // 1. Load the Cube Mesh
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
       generateMazeLogic(m);
+
+      let floor = maze.addMeshObj({
+        shadowsCast: false,
+        material: {type: 'standard'},
+        position: {x: 0, y: 0, z: 0},
+        scale: [100, 0.1, 100],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        // becouse nano render use single mat per objectScene entity text not changed!
+        name: 'floor',
+        mesh: m.cube,
+        physics: {enabled: false, mass: 0, geometry: "Cube"}
+      });
+
     }, {scale: [1, 1, 1]});
+
 
     function generateMazeLogic(meshes) {
       if(mazeSize % 2 === 0) mazeSize += 1;
@@ -61,13 +75,13 @@ export var mazeGame = function() {
             const wallName = `wall_${x}_${y}`;
             let test = maze.addMeshObj({
               shadowsCast: false,
-              material: {type: 'standard'},
+              material: {type: 'standard', shared: true},
               position: {
                 x: x * spacing - (mazeSize * spacing) / 2,
                 y: 0,
                 z: y * spacing - (mazeSize * spacing) / 2
               },
-              texturesPaths: ['./res/textures/tex02.webp'],
+              texturesPaths: ['./res/textures/blankgray2.webp'],
               name: wallName,
               mesh: meshes.cube,
               physics: {enabled: false, mass: 0, geometry: "Cube"}
@@ -93,7 +107,7 @@ export var mazeGame = function() {
           y: 0,
           z: -49
         },
-        texturesPaths: ['./res/textures/floor1.webp'], 
+        texturesPaths: ['./res/textures/floor1.webp'],
         // becouse nano render use single mat per objectScene entity text not changed!
         name: 'enter',
         mesh: meshes.cube,

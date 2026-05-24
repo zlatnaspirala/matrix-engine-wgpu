@@ -24,8 +24,9 @@ export var physicsPlayground = function() {
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
-      }, onGround, {scale: [1, 1, 1]})
-      // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
+      }, onGround, {scale: [1, 1, 1]});
+
+      physicsPlayground.matrixPhysics.speedUpSimulation(11);
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
@@ -56,8 +57,6 @@ export var physicsPlayground = function() {
         "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
         "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400
       );
-
-      physicsPlayground.matrixPhysics.speedUpSimulation(11)
 
       // Buildin options
       // app.physicsBodiesGeneratorWall("standard",

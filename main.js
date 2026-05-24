@@ -160,7 +160,7 @@ export let application = new MatrixEngineWGPU({
     myDom.createJamb();
     myDom.addDraggerForTable();
     myDom.createBlocker();
-    app.matrixPhysics.speedUpSimulation = 2;
+    app.matrixPhysics.speedUpSimulation(10);
 
     downloadMeshes({
       cube: "./res/meshes/jamb/dice.obj",

@@ -12,6 +12,7 @@ export var loadObjFile = function() {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
+    MAX_BONES : 1,
     mainCameraParams: {
       // type: 'WASD',
       type: 'firstPersonCamera',
