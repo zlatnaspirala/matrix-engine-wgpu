@@ -811,13 +811,23 @@ export class FirstPersonCamera {
 
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
+    // canvas.addEventListener('pointerdown', e => {
+    //   this._mouseDown = true;
+    //   this._lastX = e.clientX;
+    //   this._lastY = e.clientY;
+    //   canvas.setPointerCapture(e.pointerId);
+    //   canvas.requestPointerLock?.();
+    // }, {passive: true});
     canvas.addEventListener('pointerdown', e => {
       this._mouseDown = true;
       this._lastX = e.clientX;
       this._lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
-      canvas.requestPointerLock?.();
-    }, {passive: true});
+      if(canvas.requestPointerLock) {
+        canvas.requestPointerLock();
+      } else {
+        canvas.setPointerCapture(e.pointerId);
+      }
+    }, {passive: false});
     const pointerUp = e => {this._mouseDown = false;};
     canvas.addEventListener('pointerup', pointerUp, {passive: true});
     canvas.addEventListener('pointercancel', pointerUp, {passive: true});

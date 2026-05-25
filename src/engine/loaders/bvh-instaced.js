@@ -303,7 +303,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     }
     if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
 
-      if(this.sharedBones) {
+      if(this.sharedBones === true) {
         // Forest/rocks: all instances share same skeleton pose
         const currentTime = now / this.animationSpeed - this.startTime;
         this.updateSingleBoneCubeAnimation(
@@ -314,7 +314,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
           0
         );
       } else {
-
         for(let i = 0;i < this.instanceCount;i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;

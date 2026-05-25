@@ -3460,7 +3460,6 @@ var loadHZB = function () {
       scale: [30, 0.5, 30]
     });
     (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
-
     // Keep track of our grid objects globally within the block scope
     let activeGridCubes = [];
     let completedCubesCount = 0;
@@ -3517,7 +3516,7 @@ var loadHZB = function () {
           y: 0,
           z: 0
         },
-        scale: options.scale || [3.5, 3.5, 3.5],
+        scale: options.scale || [3.5, 4.5, 3.5],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: options.name || 'cube',
         mesh: mesh,
@@ -3736,8 +3735,8 @@ var loadKale = function () {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 1,
     mainCameraParams: {
-      // type: 'cinematicCamera',
       type: 'WASD',
       responseCoef: 1000
     },
@@ -3832,7 +3831,7 @@ var loadKale = function () {
         },
         position: {
           x: -10,
-          y: 4,
+          y: 3,
           z: -10
         },
         rotation: {
@@ -3888,7 +3887,7 @@ var loadKale = function () {
         },
         position: {
           x: 10,
-          y: 4,
+          y: 3,
           z: -10
         },
         rotation: {
@@ -4739,12 +4738,15 @@ var myLights = function () {
         light.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
-    if ((0, _utils.isMobile)() == false) myLights.activateBloomEffect();
+    if ((0, _utils.isMobile)() == false) {
+      myLights.activateBloomEffect();
+      myLights.activateHZB();
+    }
     setTimeout(() => {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
       monster.updateMaxInstances(4);
       monster.updateInstances(4);
-      monster.trailAnimation.delay = 50;
+      monster.trailAnimation.delay = 1250;
       monster.playAnimationByIndex(3);
       myLights.getCamera().setYaw(-0.03);
       myLights.getCamera().setPitch(-0.35);
@@ -25386,14 +25388,24 @@ class FirstPersonCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
+    // canvas.addEventListener('pointerdown', e => {
+    //   this._mouseDown = true;
+    //   this._lastX = e.clientX;
+    //   this._lastY = e.clientY;
+    //   canvas.setPointerCapture(e.pointerId);
+    //   canvas.requestPointerLock?.();
+    // }, {passive: true});
     canvas.addEventListener('pointerdown', e => {
       this._mouseDown = true;
       this._lastX = e.clientX;
       this._lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
-      canvas.requestPointerLock?.();
+      if (canvas.requestPointerLock) {
+        canvas.requestPointerLock();
+      } else {
+        canvas.setPointerCapture(e.pointerId);
+      }
     }, {
-      passive: true
+      passive: false
     });
     const pointerUp = e => {
       this._mouseDown = false;
@@ -35433,7 +35445,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       }, inTime * 1200);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      if (this.sharedBones) {
+      if (this.sharedBones === true) {
         // Forest/rocks: all instances share same skeleton pose
         const currentTime = now / this.animationSpeed - this.startTime;
         this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0);

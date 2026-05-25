@@ -106,13 +106,16 @@ export var myLights = function() {
       });
     }
 
-    if(isMobile() == false) myLights.activateBloomEffect();
+    if(isMobile() == false) {
+      myLights.activateBloomEffect();
+      myLights.activateHZB();
+    }
 
     setTimeout(() => {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
       monster.updateMaxInstances(4);
       monster.updateInstances(4);
-      monster.trailAnimation.delay = 50;
+      monster.trailAnimation.delay = 1250;
       monster.playAnimationByIndex(3);
 
       myLights.getCamera().setYaw(-0.03);

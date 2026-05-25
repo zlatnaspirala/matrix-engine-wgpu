@@ -14,8 +14,8 @@ export var loadKale = function() {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 1,
     mainCameraParams: {
-      // type: 'cinematicCamera',
       type: 'WASD',
       responseCoef: 1000
     },
@@ -66,7 +66,7 @@ export var loadKale = function() {
       // share: true if not defined it is false.
       let MYCUBE = ray.addMeshObj({
         material: {type: 'mirror'},
-        position: {x: -10, y: 4, z: -10},
+        position: {x: -10, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [3, 7, 3],
@@ -99,7 +99,7 @@ export var loadKale = function() {
 
       let MYCUBE2 = ray.addMeshObj({
         material: {type: 'mirror'},
-        position: {x: 10, y: 4, z: -10},
+        position: {x: 10, y: 3, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [3, 7, 3],

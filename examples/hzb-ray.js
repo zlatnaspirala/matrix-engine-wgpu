@@ -19,15 +19,14 @@ export var loadHZB = function() {
   }, () => {
 
     HZB.addLight();
-    
+
     touchCoordinate.stopOnFirstDetectedHit = true;
-    
+
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
 
     addRaycastsAABBListener('canvas1', 'click');
-
     // Keep track of our grid objects globally within the block scope
     let activeGridCubes = [];
     let completedCubesCount = 0;
@@ -42,17 +41,17 @@ export var loadHZB = function() {
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
-        physics: { enabled: false, mass: 0, geometry: "Cube" }
+        physics: {enabled: false, mass: 0, geometry: "Cube"}
       })
     }
 
     function createCube(mesh, options = {}) {
       return HZB.addMeshObj({
-        material: { type: options.materialType || 'dark' },
-        position: { x: options.x || 0, y: options.y || 3, z: options.z || -15 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: options.scale || [3.5, 3.5, 3.5],
+        material: {type: options.materialType || 'dark'},
+        position: {x: options.x || 0, y: options.y || 3, z: options.z || -15},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: options.scale || [3.5, 4.5, 3.5],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: options.name || 'cube',
         mesh: mesh,
@@ -67,55 +66,55 @@ export var loadHZB = function() {
           envLodBias: 1.5,
           usePlanarReflection: false,
         },
-        raycast: { enabled: true, radius: 1 },
-        physics: { enabled: false, mass: 0, geometry: "Cube" },
-        pointerEffect: { enabled: true }
+        raycast: {enabled: true, radius: 1},
+        physics: {enabled: false, mass: 0, geometry: "Cube"},
+        pointerEffect: {enabled: true}
       });
     }
 
-// --- Dynamic Single Lap Runner ---
+    // --- Dynamic Single Lap Runner ---
     function runSingleLap(cubeObj, startX, startZ, row, col) {
-      cubeObj.position.setSpeed(0.2); 
+      cubeObj.position.setSpeed(0.2);
 
       const travelDistance = 12;
       const groundY = 3;
-      const peakY = 11; 
-      
+      const peakY = 11;
+
       const pathPoints = [
-        { x: startX + travelDistance, y: groundY, z: startZ },                 
-        { x: startX + travelDistance, y: peakY,   z: startZ - travelDistance },  
-        { x: startX,                 y: peakY,   z: startZ - travelDistance },  
-        { x: startX,                 y: groundY, z: startZ }                   
+        {x: startX + travelDistance, y: groundY, z: startZ},
+        {x: startX + travelDistance, y: peakY, z: startZ - travelDistance},
+        {x: startX, y: peakY, z: startZ - travelDistance},
+        {x: startX, y: groundY, z: startZ}
       ];
 
       let currentStep = 0;
 
       function executeNextMove() {
         const target = pathPoints[currentStep];
-        
+
         cubeObj.position.translateByX(target.x);
-        cubeObj.position.translateByY(target.y); 
+        cubeObj.position.translateByY(target.y);
         cubeObj.position.translateByZ(target.z);
 
         cubeObj.position.onTargetPositionReach = () => {
           cubeObj.position.onTargetPositionReach = null;
 
-          if (currentStep === 3) {
+          if(currentStep === 3) {
             // Final home spin flourish
             cubeObj.rotationSpeed.y = 10;
-            
+
             setTimeout(() => {
               cubeObj.rotationSpeed.y = 0;
-              cubeObj.rotation.y = 0; 
-              
+              cubeObj.rotation.y = 0;
+
               completedCubesCount++;
-              
-              if (completedCubesCount === totalCubesInGrid) {
+
+              if(completedCubesCount === totalCubesInGrid) {
                 console.log("All cubes parked! Starting global sequence cooldown...");
-                
+
                 setTimeout(() => {
                   triggerEntireGridSequence();
-                }, 2000); 
+                }, 2000);
               }
 
             }, 600);
@@ -133,7 +132,7 @@ export var loadHZB = function() {
     }
 
     function triggerEntireGridSequence() {
-      completedCubesCount = 0; 
+      completedCubesCount = 0;
       console.log("🎬 Playing layout sequence again...");
       activeGridCubes.forEach(item => {
         item.cube.position.x = item.startX;
@@ -147,14 +146,14 @@ export var loadHZB = function() {
 
     function generateCubeGrid(mesh, rows = 3, cols = 3, spacing = 12) {
       const startX = -((cols - 1) * spacing) / 2;
-      const startZ = -15; 
+      const startZ = -15;
 
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
+      for(let r = 0;r < rows;r++) {
+        for(let c = 0;c < cols;c++) {
           const posX = startX + (c * spacing);
           const posZ = startZ + (r * spacing);
           const cubeName = `cube_r${r}_c${c}`;
-          
+
           let newCube = createCube(mesh, {
             x: posX,
             y: 3,
@@ -185,7 +184,7 @@ export var loadHZB = function() {
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'sky',
         mesh: m.ball,
-        physics: { enabled: false, geometry: "Sphere" }
+        physics: {enabled: false, geometry: "Sphere"}
       });
 
       // Construct structural dataset layout
@@ -218,7 +217,6 @@ export var loadHZB = function() {
         // app.buildRenderBuckets(app.mainRenderBundle);
         // 🚀 First main playback run trigger
         triggerEntireGridSequence();
-
         cam._dirtyAngle = true;
       }, 700);
     }
