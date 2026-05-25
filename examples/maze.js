@@ -31,15 +31,29 @@ export var mazeGame = function() {
 
       let floor = maze.addMeshObj({
         shadowsCast: false,
-        material: {type: 'standard'},
+        material: {type: 'standard', share: false},
         position: {x: 0, y: 0, z: 0},
-        scale: [100, 0.1, 100],
-        texturesPaths: ['./res/textures/floor1.webp'],
+        scale: [80, 0.1, 80],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
         // becouse nano render use single mat per objectScene entity text not changed!
         name: 'floor',
         mesh: m.cube,
         physics: {enabled: false, mass: 0, geometry: "Cube"}
       });
+      floor.ignoreCulling = true;
+
+      setTimeout(() => {
+        const checker2 = floor.createCheckerboardTexture(256, 128, [110, 150, 50, 255], [0, 0, 0, 1]);
+        let samplerTest = maze.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat',
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(12, 12);
+
+      }, 500)
 
     }, {scale: [1, 1, 1]});
 
@@ -82,7 +96,7 @@ export var mazeGame = function() {
                 y: 0,
                 z: y * spacing - (mazeSize * spacing) / 2
               },
-              scale: [1,3,1],
+              scale: [1, 3, 1],
               texturesPaths: ['./res/textures/blankgray2.webp'],
               name: wallName,
               mesh: meshes.cube,
@@ -96,7 +110,7 @@ export var mazeGame = function() {
       // console.log('__________________')
 
       const light = maze.lightContainer[0];
-      light.setPosition(0,200,0)
+      light.setPosition(0, 200, 0)
       light.setIntensity(8.5);
 
       maze.cameras.firstPersonCamera.movementSpeed = 0.1;

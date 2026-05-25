@@ -5,7 +5,7 @@
  - Added HZB postproccesing effect
  - Light micro optimisations
  - canvas.requestPointerLock for FPS camera
- - Culling scene system
+ - Culling scene system not active by default - activate with arg `render: 'culling'`
 
 
 [1.12.0]

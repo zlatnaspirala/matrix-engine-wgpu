@@ -56,7 +56,7 @@ export class CulledRenderPass {
         for(let i = 0; i < len; i++) {
           const mesh = meshes[i];
           this.cullStats.total++;
-          if(!mesh || !mesh._modelMatrix) {
+          if(!mesh || !mesh._modelMatrix || mesh.ignoreCulling === true) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
             continue;

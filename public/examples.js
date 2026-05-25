@@ -4474,15 +4474,16 @@ var mazeGame = function () {
       let floor = maze.addMeshObj({
         shadowsCast: false,
         material: {
-          type: 'standard'
+          type: 'standard',
+          share: false
         },
         position: {
           x: 0,
           y: 0,
           z: 0
         },
-        scale: [100, 0.1, 100],
-        texturesPaths: ['./res/textures/floor1.webp'],
+        scale: [80, 0.1, 80],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
         // becouse nano render use single mat per objectScene entity text not changed!
         name: 'floor',
         mesh: m.cube,
@@ -4492,6 +4493,18 @@ var mazeGame = function () {
           geometry: "Cube"
         }
       });
+      floor.ignoreCulling = true;
+      setTimeout(() => {
+        const checker2 = floor.createCheckerboardTexture(256, 128, [110, 150, 50, 255], [0, 0, 0, 1]);
+        let samplerTest = maze.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat'
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(12, 12);
+      }, 500);
     }, {
       scale: [1, 1, 1]
     });
@@ -26430,7 +26443,7 @@ class CulledRenderPass {
         for (let i = 0; i < len; i++) {
           const mesh = meshes[i];
           this.cullStats.total++;
-          if (!mesh || !mesh._modelMatrix) {
+          if (!mesh || !mesh._modelMatrix || mesh.ignoreCulling === true) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
             continue;
