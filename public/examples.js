@@ -3180,9 +3180,10 @@ function loadGLBLoader() {
     fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
-    MAX_SPOTLIGHTS: 1,
+    MAX_SPOTLIGHTS: 4,
     mainCameraParams: {
-      type: 'cinematicCamera',
+      // type: 'cinematicCamera',
+      type: 'WASD',
       responseCoef: 1000
     },
     clearColor: {
@@ -3225,7 +3226,7 @@ function loadGLBLoader() {
       }], {
         parameterization: 'arc'
       });
-      cam.setPath(bankTurn).play({
+      if (cam.setPath) cam.setPath(bankTurn).play({
         speed: 0.25
       });
     }, 1000);
@@ -32860,6 +32861,14 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = _wgpuMatrix.mat4.create();
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
+
+    // EDIT INSTANCED PART
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.lerpSpeedAlpha = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 1;
+    this.floatsPerInstance = 16 + 4;
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -33239,14 +33248,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           }
         }]
       });
-
-      // EDIT INSTANCED PART
-      this.instanceTargets = [];
-      this.lerpSpeed = 0.05;
-      this.lerpSpeedAlpha = 0.05;
-      this.maxInstances = 5;
-      this.instanceCount = 2;
-      this.floatsPerInstance = 16 + 4;
       for (let x = 0; x < this.maxInstances; x++) {
         this.instanceTargets.push({
           index: x,
@@ -33371,10 +33372,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }
       };
       // end of instanced
-
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
-        // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
@@ -33405,28 +33404,21 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         return Math.ceil(n / 256) * 256;
       }
       this.MAX_BONES = _meConfig.MEConfig.MAX_BONES;
-      // your total instance count
-      const TRAIL_INSTANCES = 10;
-      const BYTES_ONE_SKELETON = this.MAX_BONES * 16 * 4; // 1600 
-      const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
+      console.log('maxInstances', _meConfig.MEConfig.MAX_BONES);
+      console.log('INIT', this.maxInstances, this.instanceCount);
+      const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device.createBuffer({
-        label: "bonesBuffer",
-        size: 64000,
-        // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
-        // usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        label: 'bonesBuffer',
+        size: boneBufferSize,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
-
-      // const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
-      const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
-      for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
+      const bones = new Float32Array(this.MAX_BONES * 16 * this.maxInstances);
+      for (let i = 0; i < this.MAX_BONES * this.maxInstances; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
-      // for(let i = 0;i < this.MAX_BONES;i++) {
-      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      // }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      // vertex Anim
+
+      // VertexAnim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex AnimationParams",
@@ -35118,7 +35110,6 @@ exports.BVHPlayerInstances = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("./webgpu-gltf.js");
 var _meshObjInstances = _interopRequireDefault(require("../instanced/mesh-obj-instances.js"));
-var _utils = require("../utils.js");
 var _meConfig = require("../../me-config.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import MEBvh from "bvh-loader";
@@ -35209,7 +35200,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.inverseBindMatrices = []; // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
-    this.initInstanceSkeletons();
+    this.rebuildInstanceSkeletons();
     this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = _wgpuMatrix.mat4.create();
@@ -35733,7 +35724,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
-
       // TRANSLATION
       for (let k = 0; k < tChannels.length; k++) {
         const channel = tChannels[k];
@@ -35755,11 +35745,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         tr[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         tr[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-
-      // =====================================================
       // SCALE
-      // =====================================================
-
       for (let k = 0; k < sChannels.length; k++) {
         const channel = sChannels[k];
         const inputTimes = channel._inputTimes;
@@ -35780,11 +35766,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         sc[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         sc[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-
-      // =====================================================
-      // ROTATION
-      // =====================================================
-
       for (let k = 0; k < rChannels.length; k++) {
         const channel = rChannels[k];
         const inputTimes = channel._inputTimes;
@@ -35803,10 +35784,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         this.slerp(outputArray, base0, outputArray, base1, factor, rot);
       }
 
-      // =====================================================
       // BUILD LOCAL MATRIX
-      // =====================================================
-
       this.composeTRS(tr, rot, sc, node.transform);
     }
     const sorted = this._sortedNodes;
@@ -35832,7 +35810,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../../me-config.js":85,"../instanced/mesh-obj-instances.js":61,"../utils.js":84,"./webgpu-gltf.js":67,"wgpu-matrix":37}],66:[function(require,module,exports){
+},{"../../me-config.js":85,"../instanced/mesh-obj-instances.js":61,"./webgpu-gltf.js":67,"wgpu-matrix":37}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45766,7 +45744,7 @@ const MEConfig = exports.MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: true,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
-  logLoopError: false,
+  logLoopError: true,
   construct: function (options = {}) {
     if (urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);

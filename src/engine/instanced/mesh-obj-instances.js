@@ -55,6 +55,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = mat4.create();
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
+
+    // EDIT INSTANCED PART
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.lerpSpeedAlpha = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 1;
+    this.floatsPerInstance = 16 + 4;
+
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -418,14 +427,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ]
       });
 
-      // EDIT INSTANCED PART
-      this.instanceTargets = [];
-      this.lerpSpeed = 0.05;
-      this.lerpSpeedAlpha = 0.05;
-      this.maxInstances = 5;
-      this.instanceCount = 2;
-      this.floatsPerInstance = 16 + 4;
-
       for(let x = 0;x < this.maxInstances;x++) {
         this.instanceTargets.push({
           index: x,
@@ -489,6 +490,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
         this.instanceCount = newCount;
         this.rebuildInstanceSkeletons();
+
+
         const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
         this.bonesBuffer = device.createBuffer({
           label: 'bonesBuffer',
@@ -544,12 +547,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
       }
       // end of instanced
-
       this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16, // 4x4 matrix
+        size: 4 * 16,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-
 
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [regular]',
@@ -565,27 +566,28 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         return Math.ceil(n / 256) * 256;
       }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      // your total instance count
-      const TRAIL_INSTANCES = 10;
-      const BYTES_ONE_SKELETON = this.MAX_BONES * 16 * 4; // 1600 
-      const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
+      console.log('maxInstances', MEConfig.MAX_BONES);
+      console.log(
+        'INIT',
+        this.maxInstances,
+        this.instanceCount
+      );
+
+      const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device.createBuffer({
-        label: "bonesBuffer",
-        size: 64000, // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
-        // usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        label: 'bonesBuffer',
+        size: boneBufferSize,
+        usage: GPUBufferUsage.STORAGE |
+          GPUBufferUsage.COPY_DST,
       });
 
-      // const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
-      const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
-      for(let i = 0;i < this.MAX_BONES * TRAIL_INSTANCES;i++) {
+      const bones = new Float32Array(this.MAX_BONES * 16 * this.maxInstances);
+      for(let i = 0;i < this.MAX_BONES * this.maxInstances;i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
-      // for(let i = 0;i < this.MAX_BONES;i++) {
-      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      // }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      // vertex Anim
+
+      // VertexAnim
       this.vertexAnimParams = new Float32Array([
         0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
       ]);

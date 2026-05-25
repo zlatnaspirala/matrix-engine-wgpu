@@ -2,7 +2,6 @@
 import {mat4} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
 import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
-import {alignTo256} from "../utils.js";
 import {MEConfig} from "../../me-config.js";
 
 // export var animBVH = new MEBvh();
@@ -85,8 +84,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       worldMatrix: mat4.create()
     }));
 
-
-
     this._composeMat = mat4.create();
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
@@ -97,7 +94,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.initInverseBindMatrices();
     this.makeSkeletal();
 
-    this.initInstanceSkeletons();
+    this.rebuildInstanceSkeletons();
 
     this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
@@ -108,44 +105,20 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   rebuildInstanceSkeletons() {
-
     this.instanceNodes = [];
     this.instanceBoneMatrices = [];
-
     for(let i = 0;i < this.instanceCount;i++) {
-
       const clonedNodes = this.nodes.map(n => ({
-
         ...n,
-
-        translation: n.translation
-          ? new Float32Array(n.translation)
-          : new Float32Array([0, 0, 0]),
-
-        rotation: n.rotation
-          ? new Float32Array(n.rotation)
-          : new Float32Array([0, 0, 0, 1]),
-
-        scale: n.scale
-          ? new Float32Array(n.scale)
-          : new Float32Array([1, 1, 1]),
-
-        transform: n.transform
-          ? new Float32Array(n.transform)
-          : mat4.identity(),
-
+        translation: n.translation ? new Float32Array(n.translation) : new Float32Array([0, 0, 0]),
+        rotation: n.rotation ? new Float32Array(n.rotation) : new Float32Array([0, 0, 0, 1]),
+        scale: n.scale ? new Float32Array(n.scale) : new Float32Array([1, 1, 1]),
+        transform: n.transform ? new Float32Array(n.transform) : mat4.identity(),
         worldMatrix: mat4.create(),
-
-        inverseBindMatrix: n.inverseBindMatrix
-          ? new Float32Array(n.inverseBindMatrix)
-          : null
+        inverseBindMatrix: n.inverseBindMatrix ? new Float32Array(n.inverseBindMatrix) : null
       }));
-
       this.instanceNodes.push(clonedNodes);
-
-      this.instanceBoneMatrices.push(
-        new Float32Array(this.MAX_BONES * 16)
-      );
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
     }
   }
 
@@ -414,44 +387,26 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     ) {
 
       if(this.sharedBones === true) {
-
-        const currentTime =
-          now / this.animationSpeed - this.startTime;
-
+        const currentTime = now / this.animationSpeed - this.startTime;
         this.updateSingleBoneCubeAnimation(
-
           this.glb.glbJsonData.animations[this.animationIndex],
-
           this.instanceNodes[0],
-
           currentTime,
-
           this.instanceBoneMatrices[0],
-
           0
         );
 
       } else {
-
         for(let i = 0;i < this.instanceCount;i++) {
+          const timeOffsetMs = i * this.trailAnimation.delay;
 
-          const timeOffsetMs =
-            i * this.trailAnimation.delay;
-
-          const currentTime =
-            (now - timeOffsetMs) / this.animationSpeed -
-            this.startTime;
+          const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
 
           this.updateSingleBoneCubeAnimation(
-
             this.glb.glbJsonData.animations[this.animationIndex],
-
             this.instanceNodes[i],
-
             currentTime,
-
             this.instanceBoneMatrices[i],
-
             i
           );
         }
@@ -675,7 +630,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 0) {
     const animTime = time % this._animationLength;
     const skeleton = this.skeleton;
-
     for(let j = 0;j < skeleton.length;j++) {
       const nodeIndex = skeleton[j];
       const node = nodes[nodeIndex];
@@ -685,193 +639,66 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
-
       // TRANSLATION
       for(let k = 0;k < tChannels.length;k++) {
         const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-
         let i = 0;
-
-        while(
-          i < lastFrame &&
-          inputTimes[i + 1] <= animTime
-        ) {
-          i++;
-        }
-
-        const next =
-          i < lastFrame ? i + 1 : lastFrame;
-
-        const t0 =
-          inputTimes[i];
-
-        const t1 =
-          inputTimes[next];
-
-        const factor =
-          t1 !== t0
-            ? (animTime - t0) / (t1 - t0)
-            : 0;
-
-        const inv =
-          1.0 - factor;
-
-        const base0 =
-          i * 3;
-
-        const base1 =
-          next * 3;
-
-        tr[0] =
-          outputArray[base0] * inv +
-          outputArray[base1] * factor;
-
-        tr[1] =
-          outputArray[base0 + 1] * inv +
-          outputArray[base1 + 1] * factor;
-
-        tr[2] =
-          outputArray[base0 + 2] * inv +
-          outputArray[base1 + 2] * factor;
+        while(i < lastFrame && inputTimes[i + 1] <= animTime) {i++;}
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const inv = 1.0 - factor;
+        const base0 = i * 3;
+        const base1 = next * 3;
+        tr[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+        tr[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+        tr[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-
-      // =====================================================
       // SCALE
-      // =====================================================
-
       for(let k = 0;k < sChannels.length;k++) {
-
-        const channel =
-          sChannels[k];
-
-        const inputTimes =
-          channel._inputTimes;
-
-        const outputArray =
-          channel._outputArray;
-
-        const lastFrame =
-          channel._lastFrame;
-
+        const channel = sChannels[k];
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
+        const lastFrame = channel._lastFrame;
         let i = 0;
-
-        while(
-          i < lastFrame &&
-          inputTimes[i + 1] <= animTime
-        ) {
-          i++;
-        }
-
-        const next =
-          i < lastFrame ? i + 1 : lastFrame;
-
-        const t0 =
-          inputTimes[i];
-
-        const t1 =
-          inputTimes[next];
-
-        const factor =
-          t1 !== t0
-            ? (animTime - t0) / (t1 - t0)
-            : 0;
-
-        const inv =
-          1.0 - factor;
-
-        const base0 =
-          i * 3;
-
-        const base1 =
-          next * 3;
-
-        sc[0] =
-          outputArray[base0] * inv +
-          outputArray[base1] * factor;
-
-        sc[1] =
-          outputArray[base0 + 1] * inv +
-          outputArray[base1 + 1] * factor;
-
-        sc[2] =
-          outputArray[base0 + 2] * inv +
-          outputArray[base1 + 2] * factor;
+        while(i < lastFrame && inputTimes[i + 1] <= animTime) {i++;}
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const inv = 1.0 - factor;
+        const base0 = i * 3;
+        const base1 = next * 3;
+        sc[0] = outputArray[base0] * inv + outputArray[base1] * factor;
+        sc[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
+        sc[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-
-      // =====================================================
-      // ROTATION
-      // =====================================================
 
       for(let k = 0;k < rChannels.length;k++) {
-
-        const channel =
-          rChannels[k];
-
-        const inputTimes =
-          channel._inputTimes;
-
-        const outputArray =
-          channel._outputArray;
-
-        const lastFrame =
-          channel._lastFrame;
-
+        const channel = rChannels[k];
+        const inputTimes = channel._inputTimes;
+        const outputArray = channel._outputArray;
+        const lastFrame = channel._lastFrame;
         let i = 0;
-
-        while(
-          i < lastFrame &&
-          inputTimes[i + 1] <= animTime
-        ) {
-          i++;
-        }
-
-        const next =
-          i < lastFrame ? i + 1 : lastFrame;
-
-        const t0 =
-          inputTimes[i];
-
-        const t1 =
-          inputTimes[next];
-
-        const factor =
-          t1 !== t0
-            ? (animTime - t0) / (t1 - t0)
-            : 0;
-
-        const base0 =
-          i * 4;
-
-        const base1 =
-          next * 4;
-
-        this.slerp(
-          outputArray,
-          base0,
-          outputArray,
-          base1,
-          factor,
-          rot
-        );
+        while(i < lastFrame && inputTimes[i + 1] <= animTime) {i++;}
+        const next = i < lastFrame ? i + 1 : lastFrame;
+        const t0 = inputTimes[i];
+        const t1 = inputTimes[next];
+        const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
+        const base0 = i * 4;
+        const base1 = next * 4;
+        this.slerp(outputArray, base0, outputArray, base1, factor, rot);
       }
 
-      // =====================================================
       // BUILD LOCAL MATRIX
-      // =====================================================
-
-      this.composeTRS(
-        tr,
-        rot,
-        sc,
-        node.transform
-      );
+      this.composeTRS(tr, rot, sc, node.transform);
     }
 
-    const sorted =
-      this._sortedNodes;
+    const sorted = this._sortedNodes;
 
     for(let i = 0;i < sorted.length;i++) {
       const nodeIndex = sorted[i];
