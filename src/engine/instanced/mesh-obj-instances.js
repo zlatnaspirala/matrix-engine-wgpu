@@ -36,6 +36,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.clearColor = "red";
     this.video = null;
     this.dontDrag = true;
+    this.ignoreCulling = false;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
@@ -1080,4 +1081,51 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       shadowPass.drawIndexed(this.indexCount);
     }
   }
+
+  initBoundingSphere() {
+    if(!this.mesh || !this.mesh.vertices) return;
+    const pos = this.mesh.vertices;
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for(let i = 0;i < pos.length;i += 3) {
+      minX = Math.min(minX, pos[i]);
+      maxX = Math.max(maxX, pos[i]);
+      minY = Math.min(minY, pos[i + 1]);
+      maxY = Math.max(maxY, pos[i + 1]);
+      minZ = Math.min(minZ, pos[i + 2]);
+      maxZ = Math.max(maxZ, pos[i + 2]);
+    }
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    let r = 0;
+    for(let i = 0;i < pos.length;i += 3) {
+      const dx = pos[i] - cx;
+      const dy = pos[i + 1] - cy;
+      const dz = pos[i + 2] - cz;
+      r = Math.max(r, Math.sqrt(dx * dx + dy * dy + dz * dz));
+    }
+
+    this.boundingSphere = {
+      center: new Float32Array([cx, cy, cz]),
+      radius: r,
+    };
+  }
+
+  updateBoundingSphere() {
+    if(!this.boundingSphere) return;
+    const local = this.boundingSphere.center;
+    const m = this.modelMatrix;
+    const center = new Float32Array(3);
+
+    // Transform local sphere center by model matrix
+    center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
+    center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
+    center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
+
+    this.boundingSphere.center = center;  // ← Update world-space center
+  }
+
 }

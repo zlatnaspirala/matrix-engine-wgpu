@@ -25,13 +25,14 @@ import {PointerEffect} from "./engine/effects/pointerEffect.js";
 import {FlameEffect} from "./engine/effects/flame.js";
 import ProceduralMeshObj from "./engine/procedural-mesh.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
-import {noShadowPass} from "./engine/overrides/noshadow-render.js";
+import {cullingPass, noShadowPass} from "./engine/overrides/culling.js";
 import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.js';
 import {nanoPass} from "./engine/overrides/nano-render.js";
 import {PhysicsBridge} from "./engine/physics/bridge.js";
 import {mobile1} from "./engine/overrides/mobile-1.js";
 import {SSRPass} from "./engine/postprocessing/hzb.js";
 import {KaleidoscopeEffect} from "./engine/effects/KaleidoscopeEffect.js";
+import {CulledRenderPass, CulledRenderPassDisabled} from "./engine/culling/culling.js";
 
 /**
  * @description
@@ -163,6 +164,8 @@ export default class MatrixEngineWGPU {
     this._volumetricUniforms = {invViewProjectionMatrix: null};
     this._volumetricLightUniforms = {viewProjectionMatrix: null, direction: null};
     this.usEvent = new CustomEvent('updateSceneContainer', {detail: {}});
+    this.culledRenderPass = new CulledRenderPass();
+    // this.culledRenderPass = new CulledRenderPassDisabled();
 
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
@@ -184,6 +187,8 @@ export default class MatrixEngineWGPU {
         this.overrideRender = noShadowPass.bind(this);
       } else if(options.render == 'mobile1') {
         this.overrideRender = mobile1.bind(this);
+      } else if(options.render == 'culling') {
+        this.overrideRender = cullingPass.bind(this);
       }
     }
     window.addEventListener('keydown', e => {

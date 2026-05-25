@@ -22,7 +22,6 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
     // Apos.targetZ = Apos.z;
     // Bpos.targetX = Bpos.x;
     // Bpos.targetZ = Bpos.z;
-
     return true;
   }
   // exact overlap (practically same point) -> small jitter to separate

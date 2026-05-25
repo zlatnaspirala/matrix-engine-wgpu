@@ -5,6 +5,7 @@
  - Added HZB postproccesing effect
  - Light micro optimisations
  - canvas.requestPointerLock for FPS camera
+ - Culling scene system
 
 
 [1.12.0]
