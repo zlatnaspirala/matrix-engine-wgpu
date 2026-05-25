@@ -8,23 +8,10 @@ struct Scene {
   lightPos: vec3f,
 }
 
-struct Model {
-  modelMatrix: mat4x4f,
-}
-
-struct Bones {
-  boneMatrices : array<mat4x4f, MAX_BONES>
-}
-
-struct SkinResult {
-  position : vec4f,
-  normal   : vec3f,
-};
-
-struct InstanceData {
-    model     : mat4x4<f32>,
-    colorMult : vec4<f32>,
-};
+struct Model {modelMatrix: mat4x4f}
+struct Bones {boneMatrices : array<mat4x4f>}
+struct SkinResult {position: vec4f, normal: vec3f};
+struct InstanceData {model: mat4x4<f32>, colorMult : vec4<f32>};
 
 struct VertexAnimParams {
   time: f32,
@@ -63,7 +50,7 @@ struct VertexAnimParams {
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
-@group(2) @binding(1) var<uniform> bones : Bones;
+@group(2) @binding(1) var<storage, read> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 @group(2) @binding(3) var<uniform> uvScale: vec2f;
 
@@ -83,46 +70,23 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
-//     var skinnedPos  = vec4f(0.0);
-//     var skinnedNorm = vec3f(0.0);
-//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-//         let jointIndex = joints[i];
-//         let w = weights[i];
-//         if (w > 0.0) {
-//             let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
-//             skinnedPos  += (boneMat * pos) * w;
-//             let boneMat3 = mat3x3f(
-//                 boneMat[0].xyz,
-//                 boneMat[1].xyz,
-//                 boneMat[2].xyz
-//             );
-//             skinnedNorm += (boneMat3 * nrm) * w;
-//         }
-//     }
-//     return SkinResult(skinnedPos, skinnedNorm);
-// }
-
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
-    var skinnedPos  = vec4f(0.0);
-    var skinnedNorm = vec3f(0.0);
-    for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-        let jointIndex = joints[i];
-        let w = weights[i];
-        if (w > 0.0) {
-            let boneMat = bones.boneMatrices[jointIndex]; // ← no instId offset
-            skinnedPos  += (boneMat * pos) * w;
-            let boneMat3 = mat3x3f(
-                boneMat[0].xyz,
-                boneMat[1].xyz,
-                boneMat[2].xyz
-            );
-            skinnedNorm += (boneMat3 * nrm) * w;
-        }
+fn skinVertex( pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
+  var skinnedPos  = vec4f(0.0);
+  var skinnedNorm = vec3f(0.0);
+  let base = instId * MAX_BONES;
+  for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+    let jointIndex = joints[i];
+    let w = weights[i];
+    if (w > 0.0) {
+      let boneMat = bones.boneMatrices[base + jointIndex];
+      skinnedPos += (boneMat * pos) * w;
+      let boneMat3 = mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz);
+      skinnedNorm +=(boneMat3 * nrm) * w;
     }
-    return SkinResult(skinnedPos, skinnedNorm);
+  }
+  return SkinResult(skinnedPos, skinnedNorm);
 }
-    
+
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -236,15 +200,11 @@ fn main(
   @location(4) weights  : vec4<f32>,
   @builtin(instance_index) instId: u32
 ) -> VertexOutput {
-
   let inst = instances[instId];
-
   var output : VertexOutput;
   let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights, instId);
   let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
-
   let worldPos = inst.model * animated.position;
-
   let normalMatrix = mat3x3f(
     inst.model[0].xyz,
     inst.model[1].xyz,

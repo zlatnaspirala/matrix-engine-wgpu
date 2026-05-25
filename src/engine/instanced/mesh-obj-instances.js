@@ -1,6 +1,6 @@
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "../matrix-class";
-import {degToRad, genName, LOG_FUNNY_SMALL, MeshType} from '../utils';
+import {genName, LOG_FUNNY_SMALL, MeshType} from '../utils';
 import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
 import {PointerEffect} from '../effects/pointerEffect';
 import MaterialsInstanced from './materials-instanced';
@@ -45,7 +45,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayoutInstanced = o.uniformBufferBindGroupLayoutInstanced;
-    // cache
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = mat4.create();
@@ -56,17 +55,13 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = mat4.create();
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
-
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
-
     if(typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
     }
-
     if(o.envMapParams !== null) {this.envMapParams = o.envMapParams;}
-
     this.material = o.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
@@ -282,7 +277,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     this.runProgram = () => {
       return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 512; // HARDCODE REMOVE LATER !!!
+        this.shadowDepthTextureSize = MEConfig.SHADOW_RES;
         this.modelViewProjectionMatrix = mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {resolve(this)})
       })
@@ -493,6 +488,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           return;
         }
         this.instanceCount = newCount;
+        this.rebuildInstanceSkeletons();
+        const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
+        this.bonesBuffer = device.createBuffer({
+          label: 'bonesBuffer',
+          size: boneBufferSize,
+          usage: GPUBufferUsage.STORAGE |
+            GPUBufferUsage.COPY_DST,
+        });
+
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device.createBuffer({
           label: 'instanceBuffer in bvh mesh [instanced]',
@@ -513,7 +517,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
-
         dispatchEvent(this.buildPipelineBucketsEvent);
       };
 
@@ -569,7 +572,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       this.bonesBuffer = device.createBuffer({
         label: "bonesBuffer",
         size: 64000, // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        // usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
 
       // const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
@@ -842,7 +846,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     const vertexCode = vertexWGSLInstanced();
     const fragmentCode = isVideo ? fragmentVideoWGSL() : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
-    // console.log('INSTANCED')
     const baseKey = {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
@@ -855,12 +858,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       normalMap: isNormalMap ? 1 : 0,
       isWater: isWater ? 1 : 0
     };
-
     let MKEY = structuredClone(baseKey);
     MKEY.texturesPaths = this.texturesPaths.join();
     this.material.pipelineKey = baseKey;
     this.material.matKey = MKEY;
-    // console.log("MKEY:", MKEY);
     this.createBindGroupForRender(MKEY);
 
     const layout = this.device.createPipelineLayout({
@@ -1013,7 +1014,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   }
 
   drawElements = (pass) => {
-    // IN
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -1021,7 +1021,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    // instanceCount covers all instances including index 0
     pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
   }
 
@@ -1043,7 +1042,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   drawElementsAnim = (renderPass, lightContainer) => {
     if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log(' NULL 1'); return;}
     if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log(' NULL 2'); return;}
-
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
@@ -1070,10 +1068,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-
     shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     if(this instanceof BVHPlayerInstances) {
       shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);

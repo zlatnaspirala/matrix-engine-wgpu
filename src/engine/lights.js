@@ -163,7 +163,7 @@ export class SpotLight {
     };
 
     this.device = device;
-    
+
     // Initialize matrices
     this.viewMatrix = mat4.lookAt(this._position, this._target, this.up);
     this.projectionMatrix = mat4.perspective(this.fov, 1.0, this.near, this.far);
@@ -228,7 +228,7 @@ export class SpotLight {
       label: 'modelBindGroupLayout light [skinned][instanced]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ],

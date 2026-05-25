@@ -3232,57 +3232,38 @@ function loadGLBLoader() {
 
     // Monster1
     var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'standard',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: 0,
-        y: -4,
-        z: -70
-      },
-      name: 'firstGlb',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
-    }, null, glbFile01);
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'power',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: -40,
-        y: -4,
-        z: -70
-      },
-      name: 'firstGlb',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
-    }, null, glbFile01);
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'pong',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: 40,
-        y: -4,
-        z: -70
-      },
-      name: 'firstGlb',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
-    }, null, glbFile01);
+    // TEST_ANIM.addGlbObj({
+    //   material: {type: 'standard', useTextureFromGlb: true},
+    //   useScale: true,
+    //   scale: [20, 20, 20],
+    //   position: {x: 0, y: -4, z: -70},
+    //   name: 'firstGlb',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+    // }, null, glbFile01);
 
-    // woman
+    // TEST_ANIM.addGlbObj({
+    //   material: {type: 'power', useTextureFromGlb: true},
+    //   useScale: true,
+    //   scale: [20, 20, 20],
+    //   position: {x: -40, y: -4, z: -70},
+    //   name: 'firstGlb',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+    // }, null, glbFile01);
+
+    // TEST_ANIM.addGlbObj({
+    //   material: {type: 'pong', useTextureFromGlb: true},
+    //   useScale: true,
+    //   scale: [20, 20, 20],
+    //   position: {x: 40, y: -4, z: -70},
+    //   name: 'firstGlb',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+    // }, null, glbFile01);
+
+    // // woman
     var glbFile11 = await fetch("./res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
     TEST_ANIM.addGlbObjInctance({
       material: {
-        type: 'mirror',
+        type: 'dark',
         useTextureFromGlb: true
       },
       envMapParams: {
@@ -3312,36 +3293,24 @@ function loadGLBLoader() {
       name: 'woman1',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp']
     }, null, glbFile11);
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'power',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: -40,
-        y: -4,
-        z: -20
-      },
-      name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
-    }, null, glbFile11);
-    TEST_ANIM.addGlbObj({
-      material: {
-        type: 'pong',
-        useTextureFromGlb: true
-      },
-      useScale: true,
-      scale: [20, 20, 20],
-      position: {
-        x: 40,
-        y: -4,
-        z: -20
-      },
-      name: 'woman1',
-      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
-    }, null, glbFile11);
+
+    // TEST_ANIM.addGlbObj({
+    //   material: {type: 'power', useTextureFromGlb: true},
+    //   useScale: true,
+    //   scale: [20, 20, 20],
+    //   position: {x: -40, y: -4, z: -20},
+    //   name: 'woman1',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+    // }, null, glbFile11);
+
+    // TEST_ANIM.addGlbObj({
+    //   material: {type: 'pong', useTextureFromGlb: true},
+    //   useScale: true,
+    //   scale: [20, 20, 20],
+    //   position: {x: 40, y: -4, z: -20},
+    //   name: 'woman1',
+    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+    // }, null, glbFile11);
 
     // this is future load and replace skeletal anim.
     // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
@@ -32881,7 +32850,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayoutInstanced = o.uniformBufferBindGroupLayoutInstanced;
-    // cache
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = _wgpuMatrix.mat4.create();
@@ -33106,7 +33074,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     }
     this.runProgram = () => {
       return new Promise(async resolve => {
-        this.shadowDepthTextureSize = 512; // HARDCODE REMOVE LATER !!!
+        this.shadowDepthTextureSize = _meConfig.MEConfig.SHADOW_RES;
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {
           resolve(this);
@@ -33337,6 +33305,13 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           return;
         }
         this.instanceCount = newCount;
+        this.rebuildInstanceSkeletons();
+        const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
+        this.bonesBuffer = device.createBuffer({
+          label: 'bonesBuffer',
+          size: boneBufferSize,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device.createBuffer({
           label: 'instanceBuffer in bvh mesh [instanced]',
@@ -33438,7 +33413,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         label: "bonesBuffer",
         size: 64000,
         // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        // usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
 
       // const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
@@ -33732,7 +33708,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     const vertexCode = (0, _vertexInstanced.vertexWGSLInstanced)();
     const fragmentCode = isVideo ? (0, _fragmentVideo.fragmentVideoWGSL)() : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
-    // console.log('INSTANCED')
     const baseKey = {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
@@ -33749,7 +33724,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     MKEY.texturesPaths = this.texturesPaths.join();
     this.material.pipelineKey = baseKey;
     this.material.matKey = MKEY;
-    // console.log("MKEY:", MKEY);
     this.createBindGroupForRender(MKEY);
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Instanced Mesh',
@@ -33908,7 +33882,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     }
   }
   drawElements = pass => {
-    // IN
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -33916,7 +33889,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    // instanceCount covers all instances including index 0
     pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
   };
   drawVideoElements = pass => {
@@ -34264,7 +34236,7 @@ class SpotLight {
         binding: 1,
         visibility: GPUShaderStage.VERTEX,
         buffer: {
-          type: 'uniform'
+          type: "read-only-storage"
         }
       }, {
         binding: 2,
@@ -35237,12 +35209,30 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.inverseBindMatrices = []; // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this.initInstanceSkeletons();
     this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = _wgpuMatrix.mat4.create();
     this.buildNodeChannelMap();
     this.buildSortedNodes();
     this.initNodeOriginals();
+  }
+  rebuildInstanceSkeletons() {
+    this.instanceNodes = [];
+    this.instanceBoneMatrices = [];
+    for (let i = 0; i < this.instanceCount; i++) {
+      const clonedNodes = this.nodes.map(n => ({
+        ...n,
+        translation: n.translation ? new Float32Array(n.translation) : new Float32Array([0, 0, 0]),
+        rotation: n.rotation ? new Float32Array(n.rotation) : new Float32Array([0, 0, 0, 1]),
+        scale: n.scale ? new Float32Array(n.scale) : new Float32Array([1, 1, 1]),
+        transform: n.transform ? new Float32Array(n.transform) : _wgpuMatrix.mat4.identity(),
+        worldMatrix: _wgpuMatrix.mat4.create(),
+        inverseBindMatrix: n.inverseBindMatrix ? new Float32Array(n.inverseBindMatrix) : null
+      }));
+      this.instanceNodes.push(clonedNodes);
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
+    }
   }
   initNodeOriginals() {
     for (let j = 0; j < this.skeleton.length; j++) {
@@ -35352,6 +35342,23 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       }
     }
   }
+  initInstanceSkeletons() {
+    this.instanceNodes = [];
+    this.instanceBoneMatrices = [];
+    for (let i = 0; i < this.instanceCount; i++) {
+      const clonedNodes = this.nodes.map(n => ({
+        ...n,
+        translation: n.translation ? new Float32Array(n.translation) : new Float32Array([0, 0, 0]),
+        rotation: n.rotation ? new Float32Array(n.rotation) : new Float32Array([0, 0, 0, 1]),
+        scale: n.scale ? new Float32Array(n.scale) : new Float32Array([1, 1, 1]),
+        transform: n.transform ? new Float32Array(n.transform) : _wgpuMatrix.mat4.identity(),
+        worldMatrix: _wgpuMatrix.mat4.create(),
+        inverseBindMatrix: n.inverseBindMatrix ? new Float32Array(n.inverseBindMatrix) : null
+      }));
+      this.instanceNodes.push(clonedNodes);
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
+    }
+  }
   initInverseBindMatrices(skinIndex = 0) {
     const skin = this.glb.skins[skinIndex];
     const invBindAccessorIndex = skin.inverseBindMatrices; // number
@@ -35440,20 +35447,21 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        if (this.animationIndex == null) this.animationIndex = 0;
+        if (this.animationIndex == null) {
+          this.animationIndex = 0;
+        }
         window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
       }, inTime * 1200);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if (this.sharedBones === true) {
-        // Forest/rocks: all instances share same skeleton pose
         const currentTime = now / this.animationSpeed - this.startTime;
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.instanceNodes[0], currentTime, this.instanceBoneMatrices[0], 0);
       } else {
         for (let i = 0; i < this.instanceCount; i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
-          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, i);
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.instanceNodes[i], currentTime, this.instanceBoneMatrices[i], i);
         }
       }
     }
@@ -35713,7 +35721,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     out[2] = s0 * az + s1 * bz;
     out[3] = s0 * aw + s1 * bw;
   }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 0) {
     const animTime = time % this._animationLength;
     const skeleton = this.skeleton;
     for (let j = 0; j < skeleton.length; j++) {
@@ -35725,55 +35733,67 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
+
+      // TRANSLATION
       for (let k = 0; k < tChannels.length; k++) {
         const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-        let i = channel._lastKeyIndex;
-        if (inputTimes[i] > animTime) i = 0;
-        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
+        let i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) {
+          i++;
+        }
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const inv = 1 - factor;
+        const inv = 1.0 - factor;
         const base0 = i * 3;
         const base1 = next * 3;
         tr[0] = outputArray[base0] * inv + outputArray[base1] * factor;
         tr[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         tr[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
+
+      // =====================================================
+      // SCALE
+      // =====================================================
+
       for (let k = 0; k < sChannels.length; k++) {
         const channel = sChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-        let i = channel._lastKeyIndex;
-        if (inputTimes[i] > animTime) i = 0;
-        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
+        let i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) {
+          i++;
+        }
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const inv = 1 - factor;
+        const inv = 1.0 - factor;
         const base0 = i * 3;
         const base1 = next * 3;
         sc[0] = outputArray[base0] * inv + outputArray[base1] * factor;
         sc[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         sc[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
+
+      // =====================================================
+      // ROTATION
+      // =====================================================
+
       for (let k = 0; k < rChannels.length; k++) {
         const channel = rChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-        let i = channel._lastKeyIndex;
-        if (inputTimes[i] > animTime) i = 0;
-        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
+        let i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) {
+          i++;
+        }
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
@@ -35782,6 +35802,11 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         const base1 = next * 4;
         this.slerp(outputArray, base0, outputArray, base1, factor, rot);
       }
+
+      // =====================================================
+      // BUILD LOCAL MATRIX
+      // =====================================================
+
       this.composeTRS(tr, rot, sc, node.transform);
     }
     const sorted = this._sortedNodes;
@@ -35800,8 +35825,8 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
-    const byteOffset = this.sharedBones ? 0 : (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
-    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
+    const byteOffset = instanceIndex * this.MAX_BONES * 64;
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices.buffer, boneMatrices.byteOffset, boneMatrices.byteLength);
     return boneMatrices;
   }
 }
@@ -50091,23 +50116,10 @@ struct Scene {
   lightPos: vec3f,
 }
 
-struct Model {
-  modelMatrix: mat4x4f,
-}
-
-struct Bones {
-  boneMatrices : array<mat4x4f, MAX_BONES>
-}
-
-struct SkinResult {
-  position : vec4f,
-  normal   : vec3f,
-};
-
-struct InstanceData {
-    model     : mat4x4<f32>,
-    colorMult : vec4<f32>,
-};
+struct Model {modelMatrix: mat4x4f}
+struct Bones {boneMatrices : array<mat4x4f>}
+struct SkinResult {position: vec4f, normal: vec3f};
+struct InstanceData {model: mat4x4<f32>, colorMult : vec4<f32>};
 
 struct VertexAnimParams {
   time: f32,
@@ -50146,7 +50158,7 @@ struct VertexAnimParams {
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
-@group(2) @binding(1) var<uniform> bones : Bones;
+@group(2) @binding(1) var<storage, read> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 @group(2) @binding(3) var<uniform> uvScale: vec2f;
 
@@ -50166,46 +50178,23 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
-//     var skinnedPos  = vec4f(0.0);
-//     var skinnedNorm = vec3f(0.0);
-//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-//         let jointIndex = joints[i];
-//         let w = weights[i];
-//         if (w > 0.0) {
-//             let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
-//             skinnedPos  += (boneMat * pos) * w;
-//             let boneMat3 = mat3x3f(
-//                 boneMat[0].xyz,
-//                 boneMat[1].xyz,
-//                 boneMat[2].xyz
-//             );
-//             skinnedNorm += (boneMat3 * nrm) * w;
-//         }
-//     }
-//     return SkinResult(skinnedPos, skinnedNorm);
-// }
-
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
-    var skinnedPos  = vec4f(0.0);
-    var skinnedNorm = vec3f(0.0);
-    for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-        let jointIndex = joints[i];
-        let w = weights[i];
-        if (w > 0.0) {
-            let boneMat = bones.boneMatrices[jointIndex]; // ← no instId offset
-            skinnedPos  += (boneMat * pos) * w;
-            let boneMat3 = mat3x3f(
-                boneMat[0].xyz,
-                boneMat[1].xyz,
-                boneMat[2].xyz
-            );
-            skinnedNorm += (boneMat3 * nrm) * w;
-        }
+fn skinVertex( pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
+  var skinnedPos  = vec4f(0.0);
+  var skinnedNorm = vec3f(0.0);
+  let base = instId * MAX_BONES;
+  for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+    let jointIndex = joints[i];
+    let w = weights[i];
+    if (w > 0.0) {
+      let boneMat = bones.boneMatrices[base + jointIndex];
+      skinnedPos += (boneMat * pos) * w;
+      let boneMat3 = mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz);
+      skinnedNorm +=(boneMat3 * nrm) * w;
     }
-    return SkinResult(skinnedPos, skinnedNorm);
+  }
+  return SkinResult(skinnedPos, skinnedNorm);
 }
-    
+
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -50319,15 +50308,11 @@ fn main(
   @location(4) weights  : vec4<f32>,
   @builtin(instance_index) instId: u32
 ) -> VertexOutput {
-
   let inst = instances[instId];
-
   var output : VertexOutput;
   let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights, instId);
   let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
-
   let worldPos = inst.model * animated.position;
-
   let normalMatrix = mat3x3f(
     inst.model[0].xyz,
     inst.model[1].xyz,
@@ -50366,7 +50351,7 @@ struct InstanceData {
 };
 
 struct Bones {
-  boneMatrices: array<mat4x4f, MAX_BONES>
+  boneMatrices: array<mat4x4f>
 }
 
 struct VertexAnimParams {
@@ -50406,7 +50391,8 @@ struct VertexAnimParams {
 
 @group(0) @binding(0) var<uniform>      scene      : Scene;
 @group(1) @binding(0) var<storage,read> instances  : array<InstanceData>;
-@group(1) @binding(1) var<uniform>      bones      : Bones;
+// @group(1) @binding(1) var<uniform>      bones      : Bones;
+@group(1) @binding(1) var<storage, read> bones : Bones;
 @group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
 
 
@@ -50439,17 +50425,40 @@ fn noise(p: vec2f) -> f32 {
   );
 }
 
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+//   var skinnedPos  = vec4f(0.0);
+//   var skinnedNorm = vec3f(0.0);
+//   for (var i: u32 = 0u; i < 4u; i++) {
+//     let w = weights[i];
+//     if (w > 0.0) {
+//       let boneMat  = bones.boneMatrices[joints[i]];
+//       skinnedPos  += (boneMat * pos) * w;
+//       skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+//     }
+//   }
+//   return SkinResult(skinnedPos, skinnedNorm);
+// }
+
+fn skinVertex( pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
   var skinnedPos  = vec4f(0.0);
   var skinnedNorm = vec3f(0.0);
+  let bonesPerInstance = MAX_BONES;
   for (var i: u32 = 0u; i < 4u; i++) {
     let w = weights[i];
     if (w > 0.0) {
-      let boneMat  = bones.boneMatrices[joints[i]];
-      skinnedPos  += (boneMat * pos) * w;
-      skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+      let jointIndex = joints[i];
+      let boneIndex = instId * bonesPerInstance + jointIndex;
+      let boneMat = bones.boneMatrices[boneIndex];
+      skinnedPos += (boneMat * pos) * w;
+
+      skinnedNorm += ( mat3x3f(
+          boneMat[0].xyz,
+          boneMat[1].xyz,
+          boneMat[2].xyz) * nrm
+      ) * w;
     }
   }
+
   return SkinResult(skinnedPos, skinnedNorm);
 }
 
@@ -50542,7 +50551,8 @@ fn main(
 ) -> @builtin(position) vec4f {
 
   // Skinning
-  let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  // let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  let skinned = skinVertex(  vec4f(position, 1.0),  normal,  joints,  weights,  instId);
   var finalPos = skinned.position.xyz;
 
   // Vertex animation
@@ -66323,7 +66333,7 @@ class MatrixEngineWGPU {
         binding: 1,
         visibility: GPUShaderStage.VERTEX,
         buffer: {
-          type: 'uniform'
+          type: "read-only-storage"
         }
       }, {
         binding: 2,
