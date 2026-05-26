@@ -159,8 +159,14 @@ fn sss_lights(fragPos: vec3f, N: vec3f, V: vec3f, fresnel: f32) -> vec3f {
 //  Fragment: discard outside circle, caustics + ripple rings + glow
 // ─────────────────────────────────────────────────────────────────
 export const fountainCapFragmentWGSL = () => SHARED + `
+
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let t  = scene.time;
     let N  = normalize(input.fragNorm);
     let V  = normalize(scene.cameraPos - input.fragPos);
@@ -232,8 +238,13 @@ fn pb_shadows(fragPos: vec3f, N: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f
 //  Fragment: vertical scrolling streaks, fade at bottom
 // ─────────────────────────────────────────────────────────────────
 export const fountainCurtainFragmentWGSL = () => SHARED + `
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let t  = scene.time;
     let N  = normalize(input.fragNorm);
     let V  = normalize(scene.cameraPos - input.fragPos);
@@ -296,8 +307,14 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 //  Fragment: discard outside ring + inside column hole, ripple water
 // ─────────────────────────────────────────────────────────────────
 export const fountainBasinFragmentWGSL = () => SHARED + `
+
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let t  = scene.time;
     let N  = normalize(input.fragNorm);
     let V  = normalize(scene.cameraPos - input.fragPos);

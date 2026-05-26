@@ -82,7 +82,7 @@ export var myLights = function() {
       const light = myLights.lightContainer[i];
       const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
       const color = LIGHT_COLORS[i];
-      light.intensity = 8.5;
+      light.setIntensity(8.5);
       light.color = color;
       // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 2;
@@ -106,13 +106,16 @@ export var myLights = function() {
       });
     }
 
-    if(isMobile() == false) myLights.activateBloomEffect();
+    if(isMobile() == false) {
+      myLights.activateBloomEffect();
+      myLights.activateHZB();
+    }
 
     setTimeout(() => {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
       monster.updateMaxInstances(4);
       monster.updateInstances(4);
-      monster.trailAnimation.delay = 50;
+      monster.trailAnimation.delay = 1250;
       monster.playAnimationByIndex(3);
 
       myLights.getCamera().setYaw(-0.03);

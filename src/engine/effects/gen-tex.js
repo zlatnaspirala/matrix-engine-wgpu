@@ -3,9 +3,10 @@ import {GeometryFactory} from "../geometry-factory.js";
 import {mat4} from "wgpu-matrix";
 
 export class GenGeoTexture {
-  constructor(device, format, type = "sphere", path, scale = 1) {
+  constructor(device, format, type = "sphere", path, scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -71,11 +72,6 @@ export class GenGeoTexture {
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
 
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
@@ -127,8 +123,8 @@ export class GenGeoTexture {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [
-          {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
-          {arrayStride: 2 * 4, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
+          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
         ]
       },
       fragment: {
@@ -148,7 +144,8 @@ export class GenGeoTexture {
               operation: 'add',
             },
           },
-        }]
+        }, {format: 'rgba16float'},
+        {format: 'rgba16float'}]
       },
       primitive: {topology: 'triangle-list'},
       depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}

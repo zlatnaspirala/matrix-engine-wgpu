@@ -24,6 +24,7 @@ It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle
 Published on npm as: **`matrix-engine-wgpu`**
 
 Backend editor (works in local env - desktop browsers) support list:
+
 - Chrome, Edge, Opera
 
 HOT: For 1.1x.0 Firefox render not FIXED yet.
@@ -38,6 +39,8 @@ HOT: For 1.1x.0 Firefox render not FIXED yet.
   Physics use webworkers by default.
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
 - ✔️ Bloom post processing.
+- ✔️ HZB post processing.
+- ✔️ Scene Culling feature.
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
 - ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).
 - ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader).
@@ -194,15 +197,7 @@ https://maximumroulette.com/apps/webgpu/api-docs/
 ---
 
 ### Camera Options
-
-For now translation is only with `WASD` keyboard keys.
-
-Supported types: `WASD`, `RPGCamera`, `FirstPersonCamera`
-
-`WASD` also use 'c' and 'v' for up and down camera position.
-
-To change position dont use direct edit on position array.
-Use methods 
+Add in args for instancing main MEWGPU class.
 
 ```js
 mainCameraParams: {
@@ -211,22 +206,44 @@ mainCameraParams: {
 }
 ```
 
+For now translation is only with `WASD` keyboard keys.
+Supported types: `WASD`, `RPGCamera`, `FirstPersonCamera`, `cinematicCamera`
+
+`WASD` also use 'c' and 'v' for up and down camera position.
+
+To change position dont use direct edit on position array.
+Use methods:
+
+```js
+maze.cameras.firstPersonCamera.movementSpeed = 0.1;
+maze.collisionSystem.registerCamera(maze.cameras.firstPersonCamera.position, 1.0);
+maze.cameras.firstPersonCamera.setPosition(-49, 10.40, -49);
+maze.cameras.firstPersonCamera.setTarget(-49, 0.0, -49);
+
+or
+
+const cam = app.getCamera();
+cam.setYaw(-0.03);
+cam.setPitch(-0.49);
+cam.setZ(0);
+cam.setY(33);
+cam._dirtyAngle = true;
+```
+
 ---
 
 ### Object Position
 
 Best way for access physics body object:
-app.matrixPhysics.getBodyByName(name)
-also app.matrixPhysics.getNameByBody
+`app.matrixPhysics.getBodyByName(name)`
+Return idx of body.Use that idx for any call of worker fn.
 
 Control object position:
-
 ```js
 app.mainRenderBundle[0].position.translateByX(12);
 ```
 
 Teleport / set directly:
-
 ```js
 app.mainRenderBundle[0].position.SetX(-2);
 ```
@@ -244,12 +261,13 @@ app.mainRenderBundle[0].position.thrust = 0.1;
 > see examples for physics like flipper game.
 
 Example for `apply physics on scene object click`.
+
 ```js
-physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
-  console.log('ray.hit.event:', e.detail);
+physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
+  console.log("ray.hit.event:", e.detail);
   const physics = app.matrixPhysics; // The engine instance
   const body = physics.getBodyByName(e.detail.hitObject.name);
-  if(!body) return;
+  if (!body) return;
   // 1. Apply Impulse up
   // physics.applyImpulse(body, new PVector(0, 5, 0));
   // 2. Set Angular Velocity
@@ -263,7 +281,11 @@ physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
   //   dir[2] * strength
   // ));
   // 4. Explosion example
-  const hitPos = new PVector(e.detail.hitPoint.x, e.detail.hitPoint.y, e.detail.hitPoint.z);
+  const hitPos = new PVector(
+    e.detail.hitPoint.x,
+    e.detail.hitPoint.y,
+    e.detail.hitPoint.z,
+  );
   physics.explode(idx, hitPos, 10, 50);
   // 5. Change Materials
   // const metal = {friction: 0.4, restitution: 0.1};
@@ -303,7 +325,6 @@ Manipulate WASD camera:
 
 ```js
 app.cameras.WASD.setPitch(0.2);
-
 ```
 
 ---
@@ -332,9 +353,10 @@ engine.addLight();
 ```
 
 Access lights with array lightContainer:
+
 ```js
-app.lightContainer[0]
-app.getSceneLightByName('light1')
+app.lightContainer[0];
+app.getSceneLightByName("light1");
 ```
 
 Small behavior object.
@@ -490,7 +512,6 @@ pointerEffect: {
 Use random for creation than when you find perfect crazzy fancy case just collect input data see:
 https://gist.github.com/zlatnaspirala/8758bcfb8be81d65c2c428e222abbef2
 
-
 ### Bloom post processing
 
 Activete with :
@@ -514,9 +535,9 @@ Call from app `app.activateVolumetricEffect()`
 !Note volumetric works only if bloom is activated. Bloom can work alone.
 
 Passing arguments:
+
 ```js
-app.activateVolumetricEffect(
-{
+app.activateVolumetricEffect({
   density: 0.03,
   steps: 32,
   scatterStrength: 1.2,
@@ -848,6 +869,7 @@ for (let i = 0; i < keys.length - 1; i++) {
 ```
 
 Morph between two shapes
+
 ```js
 sceneObject.morphTo(1.0, 2000, () => {
   /*callback*/
@@ -989,29 +1011,30 @@ urlQuery.lang;
 
 ### [From 1.10.0] Configure render from url link
 
-  // URL PARAMS ----------- defaults
-  SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
-  MAX_BONES: isMobile() == true ? 80 : 100,
-  PHYSICS_GROUND_Y: -1,
-  PHYSICS_GROUND_BYX: 100,
-  PHYSICS_GROUND_BYZ: 100,
-  GRAVITY_Y_AXIS: -10,
-  FORCE_FULL_SCREEN: false,
+// URL PARAMS ----------- defaults
+SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
+MAX_BONES: isMobile() == true ? 80 : 100,
+PHYSICS_GROUND_Y: -1,
+PHYSICS_GROUND_BYX: 100,
+PHYSICS_GROUND_BYZ: 100,
+GRAVITY_Y_AXIS: -10,
+FORCE_FULL_SCREEN: false,
 
-   Use it :
-   `matrix-engine-wgpu/public/examples?demo=1&SHADOW_RES=250`
+Use it :
+`matrix-engine-wgpu/public/examples?demo=1&SHADOW_RES=250`
 
-   If you wanna full performance on mobile devices than use in constructor:
-   ```js
-     fastRender = anynumber
-   ```
-   In this case FORCE_FULL_SCREEN is true by default.
-   Pushed notification click anywhere to start the engine.
+If you wanna full performance on mobile devices than use in constructor:
 
-  Note for MAX_SPOTLIGHTS :
-  If you wanna override values from MECOnfig or even urlParam than use :
+```js
+fastRender = anynumber;
+```
 
-  
+In this case FORCE_FULL_SCREEN is true by default.
+Pushed notification click anywhere to start the engine.
+
+Note for MAX_SPOTLIGHTS :
+If you wanna override values from MECOnfig or even urlParam than use :
+
 ---
 
 ## About `main.js`

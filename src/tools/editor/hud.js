@@ -1086,7 +1086,7 @@ class SceneObjectProperty {
       } else if(propName == "itIsPhysicsBody") {
         if(!this.core.matrixPhysics) return;
         let body = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
-        for(let key in body) {
+        if (body) for(let key in body) {
           if(typeof body[key] === 'string') {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
               <div style="background:black;color:white;width:35%;">${key}</div>

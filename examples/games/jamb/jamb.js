@@ -169,7 +169,7 @@ export let myDom = {
       byId('messageBox').setAttribute('data-loaded', 'loaded');
       document.getElementById('physicsSpeed').value = app.matrixPhysics.speedUpSimulation;
       byId("physicsSpeed").addEventListener("change", (e) => {
-        app.matrixPhysics.speedUpSimulation = parseInt(e.target.value);
+        app.matrixPhysics.speedUpSimulation(parseInt(e.target.value))
       });
 
     })

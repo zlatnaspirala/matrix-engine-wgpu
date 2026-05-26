@@ -9,6 +9,7 @@ export class WASDCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = vec3.fromValues(1, 0, 0);
@@ -247,6 +248,7 @@ export class WASDCamera {
 }
 
 export class ArcballCamera {
+  invProj = new Float32Array(16);
   position = new Float32Array(3);
   right = new Float32Array(3);
   up = new Float32Array(3);
@@ -398,6 +400,7 @@ export class RPGCamera {
 
   view = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   VP = new Float32Array(16);
 
   // ===== RPG =====
@@ -686,6 +689,7 @@ export class FirstPersonCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = vec3.fromValues(1, 0, 0);
@@ -807,12 +811,23 @@ export class FirstPersonCamera {
 
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
+    // canvas.addEventListener('pointerdown', e => {
+    //   this._mouseDown = true;
+    //   this._lastX = e.clientX;
+    //   this._lastY = e.clientY;
+    //   canvas.setPointerCapture(e.pointerId);
+    //   canvas.requestPointerLock?.();
+    // }, {passive: true});
     canvas.addEventListener('pointerdown', e => {
       this._mouseDown = true;
       this._lastX = e.clientX;
       this._lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
-    }, {passive: true});
+      if(canvas.requestPointerLock) {
+        canvas.requestPointerLock();
+      } else {
+        canvas.setPointerCapture(e.pointerId);
+      }
+    }, {passive: false});
     const pointerUp = e => {this._mouseDown = false;};
     canvas.addEventListener('pointerup', pointerUp, {passive: true});
     canvas.addEventListener('pointercancel', pointerUp, {passive: true});
@@ -850,6 +865,7 @@ export class FirstPersonCamera {
       if(value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
+          this._dirtyAngle = true;
           this._applyDigitalMovement();
         }, 16);
       } else {
@@ -858,6 +874,7 @@ export class FirstPersonCamera {
           clearInterval(this._keyInterval);
           this._keyInterval = null;
           this._dirty = false;
+          this._dirtyAngle = false;
         }
       }
     };
@@ -903,13 +920,9 @@ export class FirstPersonCamera {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CinematicCamera — no input, pure programmatic control
 // Drop-in replacement alongside FirstPersonCamera — same .view / .VP / .projectionMatrix API
-// ─────────────────────────────────────────────────────────────────────────────
 export class CinematicCamera {
-
-  // ── same public fields as FirstPersonCamera ──────────────────────────────────
   pitch = 0;
   yaw = 0;
   position = new Float32Array(3);
@@ -917,12 +930,12 @@ export class CinematicCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   right = vec3.fromValues(1, 0, 0);
   up = vec3.fromValues(0, 1, 0);
   back = vec3.fromValues(0, 0, 1);
   _dirtyAngle = false;
 
-  // ── cinematic-only state ─────────────────────────────────────────────────────
   _path = null;
   _t = 0;
   _playing = false;
@@ -933,8 +946,6 @@ export class CinematicCamera {
   _shake = {active: false, amplitude: 0, frequency: 10, elapsed: 0, duration: 0};
   _shakeOffset = new Float32Array(3);
 
-  // ── "look-at target" helpers (optional, used by path playback) ───────────────
-  // When _useTarget is true, view is built from position+_target instead of pitch/yaw
   _useTarget = false;
   _target = new Float32Array(3);
 
@@ -962,7 +973,6 @@ export class CinematicCamera {
     this._recalculateViewVP();
   }
 
-  // ── same static helper as FirstPersonCamera ──────────────────────────────────
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
     const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];

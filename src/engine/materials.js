@@ -247,7 +247,7 @@ export default class Materials {
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
-    // this.setupPipeline();
+    this.setupPipeline();
   }
 
   createCheckerboardTexture(size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
@@ -613,6 +613,10 @@ export default class Materials {
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
+
+      canvas.style.width = (arg.width || 256)+ 'px';
+      canvas.style.height = (arg.height || 256) + 'px';
+
       canvas.style.position = 'absolute';
       canvas.style.left = '0px';
       canvas.style.top = '-325px';
@@ -653,6 +657,12 @@ export default class Materials {
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
       this.video = null;
+
+      this.updateVideoTexture();
+      this.createMaterialBindGroupVideo();
+      // setTimeout(() => this.setupPipeline() , 200)
+      // little strange
+      // this.isVideo = false;
       // this.video = document.createElement('video');
       // this.video.style.position = 'absolute';
       // // this.video.style.zIndex = '1';
@@ -689,6 +699,7 @@ export default class Materials {
 
   updateVideoTexture() {
     if(!this.video || this.video.readyState < 4) return;
+    // if(this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({source: this.video});
     if(!this.externalTexture) return;
     this.createMaterialBindGroupVideo();
@@ -737,6 +748,7 @@ export default class Materials {
     }
     if(this.isVideo == true) return;
     key = JSON.stringify(key);
+    // if(typeof this.material.share === 'undefined' || this.material.share == true) {
     if(typeof this.material.share !== 'undefined' && this.material.share == true) {
       if(!this.materialBindGroupCache._cache.has(key)) {
         // console.log('[CREATE NEW] materialBindGroup [key] = ', key);

@@ -308,6 +308,7 @@ export class Rotation {
     //   return degToRad(this.x);
     // }
 
+    // console.log(this.rotationSpeed.x)
     if(this.rotationSpeed.x == 0) {
       if(this.netx != this.x && this.emitX) {
         app.net.send({remoteName: this.remoteName, sceneName: this.emitX, netRotX: this.x})
@@ -440,13 +441,10 @@ export function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0)
     const overlap = minDistance - dist;
     const nx = dx / dist;
     const nz = dz / dist;
-
     // push camera 100% out — walls are immovable
     Apos[0] += nx * overlap * pushStrength;
     Apos[2] += nz * overlap * pushStrength;
-
     // sync target so WASD doesn't snap back next frame
-
     return true;
   }
 

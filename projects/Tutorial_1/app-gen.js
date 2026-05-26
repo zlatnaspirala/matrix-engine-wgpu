@@ -11,7 +11,7 @@ let app = new MatrixEngineWGPU(
   dontUsePhysics: true,
   useEditor: true,
   projectType: "created from editor",
-  projectName: 'Tutorial_1',
+  projectName: 'Tutorial-1',
   canvasSize: 'fullscreen',
   mainCameraParams: {
     type: 'WASD',

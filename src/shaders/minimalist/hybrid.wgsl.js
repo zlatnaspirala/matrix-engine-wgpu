@@ -48,9 +48,9 @@ struct SpotLight {
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
@@ -58,62 +58,57 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let L = normalize(scene.lightPos - input.fragPos);
-
-    // ===== DISTANCE BASED LOD =====
-    let dist = distance(scene.cameraPos, input.fragPos);
-
-    // tweak these!
-    let nearDist = 50.0;
-    let farDist  = 200.0;
-
-    let lodFactor = clamp((dist - nearDist) / (farDist - nearDist), 0.0, 1.0);
-
-    // ===== CHEAP =====
-    let cheapLighting = scene.globalAmbient;
-
-    // ===== MID QUALITY =====
-    let NdotL = dot(N, L);
-    let diffuse = NdotL * 0.5 + 0.5;
-
-    let H = normalize(L + V);
-    let specPower = mix(8.0, 64.0, 1.0 - material.roughnessFactor);
-    let spec = pow(max(dot(N, H), 0.0), specPower);
-
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-
-    var midLighting = scene.globalAmbient;
-    midLighting += diffuse * 0.8;
-    midLighting += spec * 0.3;
-    midLighting += fresnel * 0.2;
-
-    // ===== FINAL BLEND =====
-    let lighting = mix(midLighting, cheapLighting, lodFactor);
-
-    let finalColor = baseColor * lighting;
-
-    // ===== DISTANCE FOG (BONUS 🔥) =====
-    let fogStart = 150.0;
-    let fogEnd   = 400.0;
-
-    let fogFactor = clamp((dist - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
-    let fogColor = vec3f(0.6, 0.7, 0.8);
-
-    let colorWithFog = mix(finalColor, fogColor, fogFactor);
-
-    let alpha = texColor.a * material.baseColorFactor.a;
-    if(alpha < 0.01) {
-        discard;
-    }
-
-    return vec4f(colorWithFog, alpha);
+fn main(input: FragmentInput) -> FragOut {
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let L = normalize(scene.lightPos - input.fragPos);
+  // ===== DISTANCE BASED LOD =====
+  let dist = distance(scene.cameraPos, input.fragPos);
+  // tweak these!
+  let nearDist = 50.0;
+  let farDist  = 200.0;
+  let lodFactor = clamp((dist - nearDist) / (farDist - nearDist), 0.0, 1.0);
+  // ===== CHEAP =====
+  let cheapLighting = scene.globalAmbient;
+  // ===== MID QUALITY =====
+  let NdotL = dot(N, L);
+  let diffuse = NdotL * 0.5 + 0.5;
+  let H = normalize(L + V);
+  let specPower = mix(8.0, 64.0, 1.0 - material.roughnessFactor);
+  let spec = pow(max(dot(N, H), 0.0), specPower);
+  let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  var midLighting = scene.globalAmbient;
+  midLighting += diffuse * 0.8;
+  midLighting += spec * 0.3;
+  midLighting += fresnel * 0.2;
+  // ===== FINAL BLEND =====
+  let lighting = mix(midLighting, cheapLighting, lodFactor);
+  let finalColor = baseColor * lighting;
+  // ===== DISTANCE FOG (BONUS 🔥) =====
+  let fogStart = 150.0;
+  let fogEnd   = 400.0;
+  let fogFactor = clamp((dist - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
+  let fogColor = vec3f(0.6, 0.7, 0.8);
+  let colorWithFog = mix(finalColor, fogColor, fogFactor);
+  let alpha = texColor.a * material.baseColorFactor.a;
+  if(alpha < 0.01) {
+      discard;
+  }
+  // return vec4f(colorWithFog, alpha);
+  let alpha = 1.0;
+  return FragOut(
+    vec4f(colorWithFog, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;

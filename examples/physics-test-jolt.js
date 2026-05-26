@@ -10,7 +10,7 @@ export var testJolt = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     useJolt: true,
-    fastRender: 1,
+    fastRender: 0.7,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -25,7 +25,8 @@ export var testJolt = function() {
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
-      // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
+
+      app.matrixPhysics.speedUpSimulation(10);
 
       physicsPlayground.physicsBodiesGeneratorDeepPyramid(
         "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},

@@ -1,0 +1,296 @@
+/**
+ * @description
+ * Matrix Engine WGPU
+ * Hierarchical Z-Buffer Raytrace implementation.
+ * Postprocessing implementation.
+ * Compute shader — builds Hi-Z mip pyramid from linear depth.
+ * Nikola Lukic - May 2026
+ **/
+export const HZB_BUILD_WGSL = `
+struct Uniforms { dstSize : vec2<u32> }
+@group(0) @binding(0) var<uniform> u   : Uniforms;
+@group(0) @binding(1) var srcTex       : texture_2d<f32>;
+@group(0) @binding(2) var dstTex       : texture_storage_2d<r32float, write>;
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if (gid.x >= u.dstSize.x || gid.y >= u.dstSize.y) { return; }
+  let s  = vec2<u32>(gid.x * 2u, gid.y * 2u);
+  let d0 = textureLoad(srcTex, s + vec2(0u, 0u), 0).r;
+  let d1 = textureLoad(srcTex, s + vec2(1u, 0u), 0).r;
+  let d2 = textureLoad(srcTex, s + vec2(0u, 1u), 0).r;
+  let d3 = textureLoad(srcTex, s + vec2(1u, 1u), 0).r;
+  textureStore(dstTex, vec2<i32>(gid.xy), vec4(max(max(d0, d1), max(d2, d3))));
+}`;
+
+/**
+ * @description
+ * Copies depth attachment → r32float linear depth texture
+ * One full-screen triangle dispatch before HZB build
+*/
+export const DEPTH_BLIT_WGSL = `
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
+};
+
+// @group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(0) var depthTex       : texture_depth_2d;
+@group(0) @binding(1) var texSampler     : sampler;
+
+struct VertOut {
+  @builtin(position) pos : vec4f,
+  @location(0) uv        : vec2f,
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
+  var pos = array<vec2f, 3>(
+      vec2(-1.0, -1.0),
+      vec2( 3.0, -1.0),
+      vec2(-1.0,  3.0));
+  let p = pos[vi];
+  return VertOut(vec4(p, 0.0, 1.0), p * 0.5 + 0.5);
+}
+
+@fragment
+fn fs(in: VertOut) -> @location(0) vec4f {
+  let d = textureSample(depthTex, texSampler, in.uv);
+  return vec4f(d, 0.0, 0.0, 1.0);
+}`;
+
+export const SSR_PASS_WGSL = `
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f
+};
+
+struct SSRConfig {
+  invProj     : mat4x4f,
+  proj        : mat4x4f,
+  resolution  : vec2f,
+  maxMip      : f32,
+  thickness   : f32
+}
+
+@group(0) @binding(0) var<uniform> scene  : Scene;
+@group(0) @binding(1) var<uniform> ssrCfg : SSRConfig;
+@group(0) @binding(2) var sceneColor      : texture_2d<f32>;
+@group(0) @binding(3) var normalTex       : texture_2d<f32>;
+@group(0) @binding(4) var hzbTex          : texture_2d<f32>;
+@group(0) @binding(5) var pointSampler    : sampler;
+@group(0) @binding(6) var worldPosTex     : texture_2d<f32>;
+@group(0) @binding(7) var linearSampler   : sampler;
+
+fn edgeFade(uv: vec2f) -> f32 {
+  let e = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  return smoothstep(0.0, 0.1, e);
+}
+
+struct VertOut {
+  @builtin(position) pos : vec4f,
+  @location(0) uv        : vec2f,
+}
+
+fn hash(p: vec2f) -> f32 {
+  return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453123);
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
+  var pos = array<vec2f, 3>(
+    vec2(-1.0,  1.0),
+    vec2( 3.0,  1.0),
+    vec2(-1.0, -3.0),
+  );
+  let p = pos[vi];
+  let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+  return VertOut(vec4(p, 0.0, 1.0), uv);
+}
+
+fn worldPosFromDepth(uv: vec2f, depth: f32) -> vec3f {
+  // WebGPU NDC: X is [-1, 1], Y is [-1, 1] (top is positive), Z is [0, 1]
+  let ndc = vec4f(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+  let viewPos = ssrCfg.invProj * ndc;
+  let viewPosSpace = viewPos / viewPos.w;
+  return viewPosSpace.xyz; 
+}
+
+@fragment
+fn fs2(in: VertOut) -> @location(0) vec4f {
+  let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
+  let worldPos4 = textureLoad(worldPosTex, tc, 0);
+  if (worldPos4.w < 0.5) { return vec4f(0.0); }
+  let worldPos = worldPos4.xyz;
+  let rawNormal = textureLoad(normalTex, tc, 0).xyz;
+  if (length(rawNormal) < 0.1) { return vec4f(0.0); }
+  let normal = normalize(rawNormal);
+  let viewDir = normalize(worldPos - scene.cameraPos);
+  let reflDir = reflect(viewDir, normal);
+  let viewMatrix = scene.cameraViewProjMatrix; 
+  var rayPos     = worldPos + normal * 0.001; // Small, safe bias
+  var prevRayPos = rayPos;
+  var stepSize   = 0.04; 
+  var hit        = false;
+  var hitUV      = vec2f(0.0);
+  var minSteps   = 2u; 
+
+  for (var i = 0u; i < 80u; i++) {
+    prevRayPos = rayPos;
+    rayPos    += reflDir * stepSize;
+    let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
+    if (clip.w <= 0.0) { break; }
+    let ndc = clip.xyz / clip.w;
+    let uv  = vec2f(ndc.x * 0.5 + 0.5, 1.0 - (ndc.y * 0.5 + 0.5));
+    if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+    if (i < minSteps) { continue; }
+    let sampleTC = vec2u(uv * ssrCfg.resolution);
+    let sceneWorld4 = textureLoad(worldPosTex, sampleTC, 0);
+    if (sceneWorld4.w < 0.5) { continue; }
+    let rayLinearDepth   = (scene.cameraViewProjMatrix * vec4f(rayPos, 1.0)).w;
+    let sceneLinearDepth = (scene.cameraViewProjMatrix * vec4f(sceneWorld4.xyz, 1.0)).w;
+    let depthDiff = rayLinearDepth - sceneLinearDepth;
+    if (depthDiff > 0.0 && depthDiff < ssrCfg.thickness) {
+      let distFromOrigin = distance(worldPos, sceneWorld4.xyz);
+      if (distFromOrigin < 0.2) { continue; } // Skip self-intersections completely
+      hit   = true;
+      hitUV = uv;
+      break;
+    }
+    stepSize *= 1.015;
+  }
+  if (!hit) { return vec4f(0.0); }
+  let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
+  let confidence = edgeFade(hitUV);
+  return vec4f(color, confidence * 0.8);
+}
+ 
+@fragment
+fn fs(in: VertOut) -> @location(0) vec4f {
+  let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
+  let worldPos4 = textureLoad(worldPosTex, tc, 0);
+  if (worldPos4.w < 0.5) { return vec4f(0.0); }
+  let worldPos = worldPos4.xyz;
+  let rawNormal = textureLoad(normalTex, tc, 0).xyz;
+  if (length(rawNormal) < 0.1) { return vec4f(0.0); }
+  let normal = normalize(rawNormal);
+  let viewDir = normalize(worldPos - scene.cameraPos);
+  let reflDir = reflect(viewDir, normal);
+  // let jitter = hash(in.uv + vec2f(scene.time * 0.1));
+  let jitter = hash(in.uv); 
+  var rayPos     = worldPos + normal * 0.05; 
+  var prevRayPos = rayPos;
+  var stepSize   = 0.04; 
+  var hit        = false;
+  var hitUV      = vec2f(0.0);
+  var minSteps   = 2u; 
+
+  for (var i = 0u; i < 80u; i++) {
+    prevRayPos = rayPos;
+    let currentStep = stepSize * (1.0 + jitter * 0.05);
+    // let currentStep = stepSize * (1.0 + jitter * 0.01);
+    rayPos += reflDir * currentStep;
+    let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
+    if (clip.w <= 0.0) { break; }
+    let ndc = clip.xyz / clip.w;
+    let uv  = vec2f(ndc.x * 0.5 + 0.5, 1.0 - (ndc.y * 0.5 + 0.5));
+    // if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+    if (any(uv < vec2f(-0.05)) || any(uv > vec2f(1.05))) { break; }
+    if (i < minSteps) { continue; }
+    let sampleTC = vec2u(uv * ssrCfg.resolution);
+    let sceneWorld4 = textureLoad(worldPosTex, sampleTC, 0);
+    if (sceneWorld4.w < 0.5) { continue; }
+
+    let rayLinearDepth   = (scene.cameraViewProjMatrix * vec4f(rayPos, 1.0)).w;
+    let sceneLinearDepth = (scene.cameraViewProjMatrix * vec4f(sceneWorld4.xyz, 1.0)).w;
+    let depthDiff = rayLinearDepth - sceneLinearDepth;
+
+    // Potential Intersection Found!
+    if (depthDiff > 0.0 && depthDiff < ssrCfg.thickness) {
+      let distFromOrigin = distance(worldPos, sceneWorld4.xyz);
+      if (distFromOrigin < 0.2) { continue; } 
+      // Step back to the last empty position and halve the search interval
+      var refinePos  = prevRayPos;
+      var refineStep = stepSize * 0.5;
+      var rUV        = uv;
+      for (var j = 0u; j < 10u; j++) {
+        refinePos += reflDir * refineStep;
+        let rClip = scene.cameraViewProjMatrix * vec4f(refinePos, 1.0);
+        let rNDC  = rClip.xyz / rClip.w;
+        rUV       = vec2f(rNDC.x * 0.5 + 0.5, 1.0 - (rNDC.y * 0.5 + 0.5));
+        let rSceneWorld = textureLoad(worldPosTex, vec2u(rUV * ssrCfg.resolution), 0);
+        let rRayDepth   = (scene.cameraViewProjMatrix * vec4f(refinePos, 1.0)).w;
+        let rSceneDepth = (scene.cameraViewProjMatrix * vec4f(rSceneWorld.xyz, 1.0)).w;
+        if ((rRayDepth - rSceneDepth) > 0.0) {
+          refinePos -= reflDir * refineStep;
+        }
+        refineStep *= 0.5;
+      }
+      // Final validation of the refined coordinates
+      let finalTC = vec2u(rUV * ssrCfg.resolution);
+      let finalSceneWorld = textureLoad(worldPosTex, finalTC, 0).xyz;
+      let finalRayDepth   = (scene.cameraViewProjMatrix * vec4f(refinePos, 1.0)).w;
+      let finalSceneDepth = (scene.cameraViewProjMatrix * vec4f(finalSceneWorld, 1.0)).w;
+      if (abs(finalRayDepth - finalSceneDepth) < ssrCfg.thickness) {
+          hit   = true;
+          hitUV = rUV;
+      }
+      break;
+    }
+    stepSize *= 1.015;
+  }
+
+  if (!hit) { return vec4f(0.0); }
+  let texel = 1.0 / ssrCfg.resolution;
+  let c0 = textureSampleLevel(sceneColor, linearSampler, hitUV, 0.0).rgb;
+  let c1 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV + vec2f(texel.x, 0.0),
+    0.0).rgb;
+
+  let c2 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV - vec2f(texel.x, 0.0),
+    0.0).rgb;
+
+  let c3 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV + vec2f(0.0, texel.y),
+    0.0).rgb;
+
+  let c4 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV - vec2f(0.0, texel.y),
+    0.0).rgb;
+
+  let color = (c0 + c1 + c2 + c3 + c4) / 5.0;
+  // let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
+  var confidence = edgeFade(hitUV);
+  //     let fresnel = pow(
+  //     1.0 - max(dot(normal, -viewDir), 0.0),
+  //     5.0
+  // );
+  //       confidence *= fresnel;
+  return vec4f(color, confidence * 0.8);
+}`;

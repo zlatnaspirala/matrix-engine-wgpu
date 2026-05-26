@@ -1,6 +1,6 @@
 import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "../matrix-class";
-import {degToRad, genName, LOG_FUNNY_SMALL, MeshType} from '../utils';
+import {genName, LOG_FUNNY_SMALL, MeshType} from '../utils';
 import {fragmentVideoWGSL} from '../../shaders/fragment.video.wgsl';
 import {PointerEffect} from '../effects/pointerEffect';
 import MaterialsInstanced from './materials-instanced';
@@ -16,9 +16,10 @@ import {GenGeoTexture2} from '../effects/gen-tex2';
 import {VERTEX_ANIM_FLAGS} from '../literals';
 import {MEConfig} from '../../me-config';
 import {buildPipelineKey, PipelineManager} from '../pipelineManager';
+import {PointEffect} from '../effects/topology-point';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device, o.material, _glbFile, o.textureCache);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {this.raycast = {enabled: false, radius: 2}} else {
@@ -30,9 +31,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.dontDrag = true;
+    this.ignoreCulling = false;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
@@ -41,7 +45,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayoutInstanced = o.uniformBufferBindGroupLayoutInstanced;
-    // cache
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = mat4.create();
@@ -53,16 +56,21 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._camVP = mat4.create();
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
 
+    // EDIT INSTANCED PART
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.lerpSpeedAlpha = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 1;
+    this.floatsPerInstance = 16 + 4;
+
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
-
     if(typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
     }
-
     if(o.envMapParams !== null) {this.envMapParams = o.envMapParams;}
-
     this.material = o.material;
     this.time = 0;
     this.deltaTimeAdapter = 10;
@@ -278,7 +286,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
     this.runProgram = () => {
       return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 512; // HARDCODE REMOVE LATER !!!
+        this.shadowDepthTextureSize = MEConfig.SHADOW_RES;
         this.modelViewProjectionMatrix = mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {resolve(this)})
       })
@@ -419,14 +427,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ]
       });
 
-      // EDIT INSTANCED PART
-      this.instanceTargets = [];
-      this.lerpSpeed = 0.05;
-      this.lerpSpeedAlpha = 0.05;
-      this.maxInstances = 5;
-      this.instanceCount = 2;
-      this.floatsPerInstance = 16 + 4;
-
       for(let x = 0;x < this.maxInstances;x++) {
         this.instanceTargets.push({
           index: x,
@@ -489,6 +489,17 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           return;
         }
         this.instanceCount = newCount;
+        this.rebuildInstanceSkeletons();
+
+
+        const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
+        this.bonesBuffer = device.createBuffer({
+          label: 'bonesBuffer',
+          size: boneBufferSize,
+          usage: GPUBufferUsage.STORAGE |
+            GPUBufferUsage.COPY_DST,
+        });
+
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device.createBuffer({
           label: 'instanceBuffer in bvh mesh [instanced]',
@@ -509,7 +520,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
 
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
-
         dispatchEvent(this.buildPipelineBucketsEvent);
       };
 
@@ -537,12 +547,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
       }
       // end of instanced
-
       this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16, // 4x4 matrix
+        size: 4 * 16,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
-
 
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
         label: 'uniformBufferBindGroupLayout in mesh [regular]',
@@ -558,26 +566,28 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         return Math.ceil(n / 256) * 256;
       }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      // your total instance count
-      const TRAIL_INSTANCES = 10;
-      const BYTES_ONE_SKELETON = this.MAX_BONES * 16 * 4; // 1600 
-      const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
+      console.log('maxInstances', MEConfig.MAX_BONES);
+      console.log(
+        'INIT',
+        this.maxInstances,
+        this.instanceCount
+      );
+
+      const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device.createBuffer({
-        label: "bonesBuffer",
-        size: 64000, // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        label: 'bonesBuffer',
+        size: boneBufferSize,
+        usage: GPUBufferUsage.STORAGE |
+          GPUBufferUsage.COPY_DST,
       });
 
-      // const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
-      const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
-      for(let i = 0;i < this.MAX_BONES * TRAIL_INSTANCES;i++) {
+      const bones = new Float32Array(this.MAX_BONES * 16 * this.maxInstances);
+      for(let i = 0;i < this.MAX_BONES * this.maxInstances;i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
-      // for(let i = 0;i < this.MAX_BONES;i++) {
-      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      // }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      // vertex Anim
+
+      // VertexAnim
       this.vertexAnimParams = new Float32Array([
         0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
       ]);
@@ -751,32 +761,32 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
         if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new PointerEffect(device, pf, this, true);
+          this.effects.pointer = new PointerEffect(device, pf, 1, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.ballEffect !== 'undefined' && this.pointerEffect.ballEffect == true) {
-          this.effects.ballEffect = new GenGeo(device, pf, 'sphere');
+          this.effects.ballEffect = new GenGeo(device, pf, 'sphere', 1, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.energyBar !== 'undefined' && this.pointerEffect.energyBar == true) {
-          this.effects.energyBar = new HPBarEffect(device, pf);
-          this.effects.manaBar = new MANABarEffect(device, pf);
+          this.effects.energyBar = new HPBarEffect(device, pf, this.cameraBuffer);
+          this.effects.manaBar = new MANABarEffect(device, pf, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new FlameEffect(device, pf);
+          this.effects.flameEffect = new FlameEffect(device, pf, pf, undefined, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect(device, pf);
+          this.effects.pointEffect = new PointEffect(device, pf, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new FlameEmitter(device, pf);
+          this.effects.flameEmitter = new FlameEmitter(device, pf, 20, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.circlePlane !== 'undefined' && this.pointerEffect.circlePlane == true) {
-          this.effects.circlePlane = new GenGeo(device, pf, 'circlePlane');
+          this.effects.circlePlane = new GenGeo(device, pf, 'circlePlane', 1, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
-          this.effects.circlePlaneTex = new GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circlePlaneTex = new GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath, undefined, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
-          this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circle = new GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath, 1, this.cameraBuffer);
         }
       }
 
@@ -838,7 +848,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     const vertexCode = vertexWGSLInstanced();
     const fragmentCode = isVideo ? fragmentVideoWGSL() : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
-    // console.log('INSTANCED')
     const baseKey = {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
@@ -851,12 +860,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       normalMap: isNormalMap ? 1 : 0,
       isWater: isWater ? 1 : 0
     };
-
     let MKEY = structuredClone(baseKey);
     MKEY.texturesPaths = this.texturesPaths.join();
     this.material.pipelineKey = baseKey;
     this.material.matKey = MKEY;
-    // console.log("MKEY:", MKEY);
     this.createBindGroupForRender(MKEY);
 
     const layout = this.device.createPipelineLayout({
@@ -891,9 +898,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           module: this.device.createShaderModule({code: fragmentCode}),
           constants: fragmentConstants,
           targets: [
-            {
-              format: 'rgba16float',
-            },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'},
+            {format: 'rgba16float'}
           ],
         },
         depthStencil: {
@@ -935,6 +942,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
                 },
               },
             },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'}
           ],
         },
         depthStencil: {
@@ -1007,7 +1016,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   }
 
   drawElements = (pass) => {
-    // IN
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -1015,7 +1023,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    // instanceCount covers all instances including index 0
     pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
   }
 
@@ -1037,7 +1044,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   drawElementsAnim = (renderPass, lightContainer) => {
     if(!this.sceneBindGroupForRender || !this.modelBindGroup) {console.log(' NULL 1'); return;}
     if(!this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni]) {console.log(' NULL 2'); return;}
-
     const mesh = this.objAnim.meshList[this.objAnim.id + this.objAnim.currentAni];
     renderPass.setVertexBuffer(0, mesh.vertexBuffer);
     renderPass.setVertexBuffer(1, mesh.vertexNormalsBuffer);
@@ -1064,10 +1070,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     shadowPass.setVertexBuffer(0, this.vertexBuffer);
     shadowPass.setVertexBuffer(1, this.vertexNormalsBuffer);
     shadowPass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
-
     shadowPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     shadowPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-
     shadowPass.setIndexBuffer(this.indexBuffer, 'uint16');
     if(this instanceof BVHPlayerInstances) {
       shadowPass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
@@ -1075,4 +1079,51 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       shadowPass.drawIndexed(this.indexCount);
     }
   }
+
+  initBoundingSphere() {
+    if(!this.mesh || !this.mesh.vertices) return;
+    const pos = this.mesh.vertices;
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for(let i = 0;i < pos.length;i += 3) {
+      minX = Math.min(minX, pos[i]);
+      maxX = Math.max(maxX, pos[i]);
+      minY = Math.min(minY, pos[i + 1]);
+      maxY = Math.max(maxY, pos[i + 1]);
+      minZ = Math.min(minZ, pos[i + 2]);
+      maxZ = Math.max(maxZ, pos[i + 2]);
+    }
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    let r = 0;
+    for(let i = 0;i < pos.length;i += 3) {
+      const dx = pos[i] - cx;
+      const dy = pos[i + 1] - cy;
+      const dz = pos[i + 2] - cz;
+      r = Math.max(r, Math.sqrt(dx * dx + dy * dy + dz * dz));
+    }
+
+    this.boundingSphere = {
+      center: new Float32Array([cx, cy, cz]),
+      radius: r,
+    };
+  }
+
+  updateBoundingSphere() {
+    if(!this.boundingSphere) return;
+    const local = this.boundingSphere.center;
+    const m = this.modelMatrix;
+    const center = new Float32Array(3);
+
+    // Transform local sphere center by model matrix
+    center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
+    center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
+    center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
+
+    this.boundingSphere.center = center;  // ← Update world-space center
+  }
+
 }

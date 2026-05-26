@@ -2,9 +2,10 @@ import {mat4} from "wgpu-matrix";
 import {hpBarEffectShaders} from "../../shaders/energy-bars/energy-bar-shader.js";
 
 export class MANABarEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.progress = 1.0;
     this.color = [0.1, 0.1, 0.9, 1.0];
     this.offsetY = 45;
@@ -56,19 +57,11 @@ export class MANABarEffect {
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
 
-    // Uniforms
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // model + color + progress (64 + 16 + 4)
     this.modelBuffer = this.device.createBuffer({
       size: 64 + 16 + 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    // BindGroup
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
@@ -84,10 +77,8 @@ export class MANABarEffect {
       ]
     });
 
-    // Pipeline
     const shaderModule = this.device.createShaderModule({code: hpBarEffectShaders});
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-
     this.pipeline = this.device.createRenderPipeline({
       label: 'mana Pipeline',
       layout: pipelineLayout,
@@ -95,14 +86,14 @@ export class MANABarEffect {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [
-          {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
-          {arrayStride: 2 * 4, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
+          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: 'fsMain',
-        targets: [{format: this.format}]
+        targets: [{format: this.format}, {format: 'rgba16float'}, {format: 'rgba16float'}]
       },
       primitive: {topology: 'triangle-list'},
       depthStencil: {depthWriteEnabled: false, depthCompare: 'always', format: 'depth24plus'}

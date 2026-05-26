@@ -18,8 +18,8 @@ export const MEConfig = {
 
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
-  MAX_BONES: isMobile() == true ? 80 : 100,
-  MAX_SPOTLIGHTS: isMobile() == true ? 18 : 40,
+  MAX_BONES: isMobile() == true ? 70 : 100,
+  MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
@@ -27,7 +27,7 @@ export const MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: true,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
-  logLoopError: false,
+  logLoopError: true,
 
   construct: function(options = {}) {
     if(urlQ['GRAVITY_Y_AXIS']) {

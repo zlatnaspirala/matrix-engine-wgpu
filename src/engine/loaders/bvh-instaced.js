@@ -1,8 +1,7 @@
 // import MEBvh from "bvh-loader";
-import {mat4, quat} from "wgpu-matrix";
+import {mat4} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
 import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
-import {alignTo256, MeshType} from "../utils.js";
 import {MEConfig} from "../../me-config.js";
 
 // export var animBVH = new MEBvh();
@@ -36,8 +35,8 @@ import {MEConfig} from "../../me-config.js";
  * @credits Chatgpt assist here.
  */
 export class BVHPlayerInstances extends MEMeshObjInstances {
-  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
-    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
+  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient, cameraBuffer) {
+    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex, cameraBuffer);
     // bvh arg not actual at the moment
     this.bvh = {};
     this.glb = glb;
@@ -51,7 +50,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       enabled: false, // deplaced
       delay: 0
     };
-    // debug
+
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     this.sharedState = {
@@ -64,7 +63,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.animationIndex = 0;
     this.glbAnimEvents = {};
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      // console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ' , `animationEnd-${anim.name}` )
       this.glbAnimEvents['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
           animationName: this.glb.glbJsonData.animations[index].name,
@@ -85,6 +83,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       transform: n.transform ? n.transform.slice() : mat4.identity(),
       worldMatrix: mat4.create()
     }));
+
     this._composeMat = mat4.create();
     // Reference to the skinned node containing all bones
     this.skinnedNode = this.glb.skinnedMeshNodes[skinnedNodeIndex];
@@ -94,12 +93,33 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.inverseBindMatrices = [];             // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
+
+    this.rebuildInstanceSkeletons();
+
     this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = mat4.create();
     this.buildNodeChannelMap();
     this.buildSortedNodes();
     this.initNodeOriginals();
+  }
+
+  rebuildInstanceSkeletons() {
+    this.instanceNodes = [];
+    this.instanceBoneMatrices = [];
+    for(let i = 0;i < this.instanceCount;i++) {
+      const clonedNodes = this.nodes.map(n => ({
+        ...n,
+        translation: n.translation ? new Float32Array(n.translation) : new Float32Array([0, 0, 0]),
+        rotation: n.rotation ? new Float32Array(n.rotation) : new Float32Array([0, 0, 0, 1]),
+        scale: n.scale ? new Float32Array(n.scale) : new Float32Array([1, 1, 1]),
+        transform: n.transform ? new Float32Array(n.transform) : mat4.identity(),
+        worldMatrix: mat4.create(),
+        inverseBindMatrix: n.inverseBindMatrix ? new Float32Array(n.inverseBindMatrix) : null
+      }));
+      this.instanceNodes.push(clonedNodes);
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
+    }
   }
 
   initNodeOriginals() {
@@ -225,6 +245,48 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     }
   }
 
+  initInstanceSkeletons() {
+
+    this.instanceNodes = [];
+    this.instanceBoneMatrices = [];
+
+    for(let i = 0;i < this.instanceCount;i++) {
+
+      const clonedNodes = this.nodes.map(n => ({
+
+        ...n,
+
+        translation: n.translation
+          ? new Float32Array(n.translation)
+          : new Float32Array([0, 0, 0]),
+
+        rotation: n.rotation
+          ? new Float32Array(n.rotation)
+          : new Float32Array([0, 0, 0, 1]),
+
+        scale: n.scale
+          ? new Float32Array(n.scale)
+          : new Float32Array([1, 1, 1]),
+
+        transform: n.transform
+          ? new Float32Array(n.transform)
+          : mat4.identity(),
+
+        worldMatrix: mat4.create(),
+
+        inverseBindMatrix: n.inverseBindMatrix
+          ? new Float32Array(n.inverseBindMatrix)
+          : null
+      }));
+
+      this.instanceNodes.push(clonedNodes);
+
+      this.instanceBoneMatrices.push(
+        new Float32Array(this.MAX_BONES * 16)
+      );
+    }
+  }
+
   initInverseBindMatrices(skinIndex = 0) {
     const skin = this.glb.skins[skinIndex];
     const invBindAccessorIndex = skin.inverseBindMatrices; // number
@@ -292,44 +354,63 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   update(now) {
-    var inTime = this._animationLength;
-    if(this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
-      this.sharedState.animationStarted = true;
-      const capturedIndex = this.animationIndex ?? 0;
-      setTimeout(() => {
-        this.sharedState.animationStarted = false;
-        if(this.animationIndex == null) this.animationIndex = 0;
-        window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
-      }, inTime * 1200)
-    }
-    if(this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
 
-      if(this.sharedBones) {
-        // Forest/rocks: all instances share same skeleton pose
+    var inTime = this._animationLength;
+
+    if(
+      this.sharedState.animationStarted == false &&
+      this.sharedState.emitAnimationEvent == true
+    ) {
+
+      this.sharedState.animationStarted = true;
+
+      const capturedIndex = this.animationIndex ?? 0;
+
+      setTimeout(() => {
+
+        this.sharedState.animationStarted = false;
+
+        if(this.animationIndex == null) {
+          this.animationIndex = 0;
+        }
+
+        window.dispatchEvent(
+          this.glbAnimEvents['animEndEvent' + capturedIndex]
+        );
+
+      }, inTime * 1200);
+    }
+
+    if(
+      this.glb.glbJsonData.animations &&
+      this.glb.glbJsonData.animations.length > 0
+    ) {
+
+      if(this.sharedBones === true) {
         const currentTime = now / this.animationSpeed - this.startTime;
         this.updateSingleBoneCubeAnimation(
           this.glb.glbJsonData.animations[this.animationIndex],
-          this.nodes,
+          this.instanceNodes[0],
           currentTime,
-          this._boneMatrices,
+          this.instanceBoneMatrices[0],
           0
         );
-      } else {
 
+      } else {
         for(let i = 0;i < this.instanceCount;i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
+
           const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
+
           this.updateSingleBoneCubeAnimation(
             this.glb.glbJsonData.animations[this.animationIndex],
-            this.nodes,
+            this.instanceNodes[i],
             currentTime,
-            this._boneMatrices,
+            this.instanceBoneMatrices[i],
             i
           );
         }
-
       }
-
     }
   }
 
@@ -395,19 +476,15 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
    * @returns {ArrayBuffer} sliced array buffer
    **/
   getBufferSlice(bufferDef, byteOffset, byteLength) {
-    // GLTFBuffer instance:
     if(bufferDef instanceof GLTFBuffer) {
-      // Use .arrayBuffer + .byteOffset:
       return bufferDef.arrayBuffer.slice(
         bufferDef.byteOffset + (byteOffset || 0),
         bufferDef.byteOffset + (byteOffset || 0) + byteLength
       );
     }
-    // Already have a raw ArrayBuffer:
     if(bufferDef instanceof ArrayBuffer) {
       return bufferDef.slice(byteOffset, byteOffset + byteLength);
     }
-    // Some loaders store it as .data or ._data:
     if(bufferDef && bufferDef.data instanceof ArrayBuffer) {
       return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
     }
@@ -464,14 +541,11 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     //   m2 m6 m10 m14
     //   m3 m7 m11 m15 ]
     const t = new Float32Array([m[12], m[13], m[14]]);
-    // Extract the 3 column vectors (upper-left 3x3)
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
-    // Lengths = scales
     const len = v => Math.hypot(v[0], v[1], v[2]);
     let sx = len(cx), sy = len(cy), sz = len(cz);
-    // If any scale nearly zero, avoid divide-by-zero
     if(sx === 0) sx = 1.0;
     if(sy === 0) sy = 1.0;
     if(sz === 0) sz = 1.0;
@@ -498,25 +572,25 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     const trace = r00 + r11 + r22;
     let qx, qy, qz, qw;
     if(trace > 0.00001) {
-      const s = Math.sqrt(trace + 1.0) * 2; // s=4*qw
+      const s = Math.sqrt(trace + 1.0) * 2;
       qw = 0.25 * s;
       qx = (r21 - r12) / s;
       qy = (r02 - r20) / s;
       qz = (r10 - r01) / s;
     } else if(r00 > r11 && r00 > r22) {
-      const s = Math.sqrt(1.0 + r00 - r11 - r22) * 2; // s=4*qx
+      const s = Math.sqrt(1.0 + r00 - r11 - r22) * 2;
       qw = (r21 - r12) / s;
       qx = 0.25 * s;
       qy = (r01 + r10) / s;
       qz = (r02 + r20) / s;
     } else if(r11 > r22) {
-      const s = Math.sqrt(1.0 + r11 - r00 - r22) * 2; // s=4*qy
+      const s = Math.sqrt(1.0 + r11 - r00 - r22) * 2;
       qw = (r02 - r20) / s;
       qx = (r01 + r10) / s;
       qy = 0.25 * s;
       qz = (r12 + r21) / s;
     } else {
-      const s = Math.sqrt(1.0 + r22 - r00 - r11) * 2; // s=4*qz
+      const s = Math.sqrt(1.0 + r22 - r00 - r11) * 2;
       qw = (r10 - r01) / s;
       qx = (r02 + r20) / s;
       qy = (r12 + r21) / s;
@@ -553,7 +627,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     out[3] = s0 * aw + s1 * bw;
   }
 
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 0) {
     const animTime = time % this._animationLength;
     const skeleton = this.skeleton;
     for(let j = 0;j < skeleton.length;j++) {
@@ -565,87 +639,67 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
-      /* ── TRANSLATION CHANNELS ── */
+      // TRANSLATION
       for(let k = 0;k < tChannels.length;k++) {
         const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-
-        let i = channel._lastKeyIndex;
-        if(inputTimes[i] > animTime) i = 0;
-        while(i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
-
+        let i = 0;
+        while(i < lastFrame && inputTimes[i + 1] <= animTime) {i++;}
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const inv = 1 - factor;
-
+        const inv = 1.0 - factor;
         const base0 = i * 3;
         const base1 = next * 3;
-
         tr[0] = outputArray[base0] * inv + outputArray[base1] * factor;
         tr[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         tr[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-
-      /* ── SCALE CHANNELS ── */
+      // SCALE
       for(let k = 0;k < sChannels.length;k++) {
         const channel = sChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-
-        let i = channel._lastKeyIndex;
-        if(inputTimes[i] > animTime) i = 0;
-        while(i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
-
+        let i = 0;
+        while(i < lastFrame && inputTimes[i + 1] <= animTime) {i++;}
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const inv = 1 - factor;
-
+        const inv = 1.0 - factor;
         const base0 = i * 3;
         const base1 = next * 3;
-
         sc[0] = outputArray[base0] * inv + outputArray[base1] * factor;
         sc[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         sc[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
 
-      /* ── ROTATION CHANNELS ── */
       for(let k = 0;k < rChannels.length;k++) {
         const channel = rChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-
-        let i = channel._lastKeyIndex;
-        if(inputTimes[i] > animTime) i = 0;
-        while(i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
-
+        let i = 0;
+        while(i < lastFrame && inputTimes[i + 1] <= animTime) {i++;}
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-
         const base0 = i * 4;
         const base1 = next * 4;
-
         this.slerp(outputArray, base0, outputArray, base1, factor, rot);
       }
 
-      /* ── COMPOSE LOCAL TRANSFORM ── */
+      // BUILD LOCAL MATRIX
       this.composeTRS(tr, rot, sc, node.transform);
     }
 
-    /* ── WORLD MATRICES ── */
     const sorted = this._sortedNodes;
+
     for(let i = 0;i < sorted.length;i++) {
       const nodeIndex = sorted[i];
       const node = nodes[nodeIndex];
@@ -657,16 +711,24 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       }
     }
 
-    /* ── BONE MATRICES ── */
     for(let j = 0;j < skeleton.length;j++) {
       const jointNode = nodes[skeleton[j]];
-      mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
+      mat4.multiply(
+        jointNode.worldMatrix,
+        jointNode.inverseBindMatrix,
+        this._tempMat
+      );
       boneMatrices.set(this._tempMat, j * 16);
     }
 
-    /* ── WRITE TO GPU BUFFER ── */
-    const byteOffset = this.sharedBones ? 0 : alignTo256(64 * this.MAX_BONES) * instanceIndex;
-    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
+    const byteOffset = instanceIndex * this.MAX_BONES * 64;
+    this.device.queue.writeBuffer(
+      this.bonesBuffer,
+      byteOffset,
+      boneMatrices.buffer,
+      boneMatrices.byteOffset,
+      boneMatrices.byteLength
+    );
     return boneMatrices;
   }
 }

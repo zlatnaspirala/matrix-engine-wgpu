@@ -124,6 +124,9 @@ export var loadCinematicCamera = function() {
         cam.setZ(10);
         cam.setY(20);
 
+        console.log('sssssssssssss')
+
+
         const introPath = new CameraPath([
           {position: [0, 5, 20], target: [0, 0, 0]},
           {position: [10, 12, 10], target: [0, 1, 0]},
@@ -135,9 +138,11 @@ export var loadCinematicCamera = function() {
           onEnd: () => console.log('done'),
         });
 
-        app.buildRenderBuckets(app.mainRenderBundle);
         cam._dirtyAngle = true;
-      }, 700);
+
+        app.buildRenderBuckets(app.mainRenderBundle);
+        
+      }, 1000);
     }
 
     cinematicCamera.canvas.addEventListener("ray.hit.event", (e) => {

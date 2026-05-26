@@ -85,9 +85,10 @@ export const FlamePresets = {
 
 // FlameEffect
 export class FlameEffect {
-  constructor(device, format, colorFormat, params = {}) {
+  constructor(device, format, colorFormat, params = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.colorFormat = colorFormat ?? format;
     const config = typeof params === 'string' ? FlamePresets[params] : params;
     const defaults = FlamePresets.natural;
@@ -133,7 +134,6 @@ export class FlameEffect {
   }
 
   _initPipeline() {
-    this.cameraBuffer = this.device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.modelBuffer = this.device.createBuffer({size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
@@ -168,7 +168,9 @@ export class FlameEffect {
             color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
             alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
           }
-        }]
+        },
+        {format: 'rgba16float'},
+        {format: 'rgba16float'}]
       },
       primitive: {topology: "triangle-list"},
       depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},

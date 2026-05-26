@@ -17,6 +17,7 @@ export class PhysicsBridge {
     this._bodyIndexMap = new Map();
     this._ready = false;
     this._queue = [];
+    this.wPhysicsSteps = 2;
     this._worker.onmessage = ({data}) => this._onMessage(data);
 
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
@@ -39,7 +40,7 @@ export class PhysicsBridge {
   }
 
   getBodyByName(name) {
-    for(const [idx,meObj] of this._bodyIndexMap) if(meObj.name === name) return idx;
+    for(const [idx, meObj] of this._bodyIndexMap) if(meObj.name === name) return idx;
     console.info('[bridge] Body not found -1 :', name);
     return -1;
   }
@@ -68,7 +69,7 @@ export class PhysicsBridge {
     });
   }
 
-  updatePhysics() {
+  setKinematicTransform() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -85,9 +86,14 @@ export class PhysicsBridge {
     if(count > 0) {
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idxArr, pos: posArr});
     }
-    // if(this.c % 2 === 0) 
-    this._worker.postMessage({cmd: 'step'});
-    // this.c++;
+  }
+
+  updatePhysics() {
+    if(this.c % this.wPhysicsSteps === 0) {
+      this._worker.postMessage({cmd: 'step'}); 
+      this.c=0;
+    }
+    this.c++;
   }
 
   // MatrixJolt public API
@@ -234,7 +240,6 @@ export class PhysicsBridge {
     for(const [idx, meObj] of this._bodyIndexMap) {
       if(!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
-
       const pos = snap.subarray(b, b + 3);
       const quat = snap.subarray(b + 3, b + 7);
       mat4.fromQuat(quat, meObj.modelMatrix);

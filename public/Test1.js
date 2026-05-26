@@ -7,6 +7,28 @@ var __export = (target, all) => {
 // ../../../engine/utils.js
 var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
 var MeshType = { MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3 };
+function preventZoom() {
+  document.addEventListener("touchstart", function(e2) {
+    if (e2.touches.length > 1) {
+      e2.preventDefault();
+    }
+  }, { passive: false });
+  document.addEventListener("touchmove", function(e2) {
+    if (e2.touches.length > 1) {
+      e2.preventDefault();
+    }
+  }, { passive: false });
+  document.addEventListener("gesturestart", function(e2) {
+    e2.preventDefault();
+  });
+}
+function checkLock() {
+  if (screen.orientation && screen.orientation.lock) {
+    return true;
+  } else {
+    return false;
+  }
+}
 function isMobile() {
   if (supportsTouch == true) return true;
   const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
@@ -379,7 +401,10 @@ var MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
+  LOAD_AFTER_CLICK_MOBILE: true,
   FORCE_FULL_SCREEN: false,
+  SINGLE_CAMERA: true,
+  logLoopError: false,
   construct: function(options2 = {}) {
     if (urlQ["GRAVITY_Y_AXIS"]) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
@@ -406,7 +431,13 @@ var MEConfig = {
     console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
     if (urlQ["MAX_BONES"]) {
       this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
-      console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+    }
+    if (options2.MAX_BONES) {
+      this.MAX_BONES = options2.MAX_BONES;
+    }
+    console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+    if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
+      this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
     }
     if (urlQ["fs"] || isMobile()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
@@ -429,8 +460,10 @@ var MEConfig = {
   checkOffScreen: function() {
     if ("OffscreenCanvas" in window) {
       console.log(`$cOffscreenCanvas is supported`, LOG_FUNNY_ARCADE);
+      return true;
     } else {
       console.log(`%cOffscreenCanvas is NOT supported.`, LOG_FUNNY_ARCADE);
+      return false;
     }
   }
 };
@@ -2498,6 +2531,10 @@ var RPGCamera = class _RPGCamera {
   minY = 50.5;
   maxY = 135;
   scrollSpeed = 1;
+  _detachedFromFollow = false;
+  _digital = { forward: false, backward: false, left: false, right: false };
+  _keyInterval = null;
+  KEYBOARD_SPEED = 4.5;
   mousRollInAction = false;
   _dirty = true;
   constructor(options2 = {}) {
@@ -2508,7 +2545,7 @@ var RPGCamera = class _RPGCamera {
     }
     this.canvas = options2.canvas;
     this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
-    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 2e3);
+    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1e3);
     this._setupEvents();
     this._recalculateViewVP();
   }
@@ -2516,6 +2553,34 @@ var RPGCamera = class _RPGCamera {
     mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._dirty = true;
   }
+  setPitch = (p) => {
+    this.pitch = p;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  };
+  setYaw = (y2) => {
+    this.yaw = y2;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  };
+  setPosition = (x2, y2, z) => {
+    this.position[0] = x2;
+    this.position[1] = y2;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+  setX = (x2) => {
+    this.position[0] = x2;
+    this._dirtyAngle = true;
+  };
+  setY = (y2) => {
+    this.position[1] = y2;
+    this._dirtyAngle = true;
+  };
+  setZ = (z) => {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
     const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];
@@ -2543,13 +2608,122 @@ var RPGCamera = class _RPGCamera {
     out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
     return out;
   }
+  _applyDigitalMovement() {
+    const d = this._digital;
+    let vx = 0, vz = 0;
+    if (d.forward) {
+      vx -= this.back[0];
+      vz -= this.back[2];
+    }
+    if (d.backward) {
+      vx += this.back[0];
+      vz += this.back[2];
+    }
+    if (d.right) {
+      vx += this.right[0];
+      vz += this.right[2];
+    }
+    if (d.left) {
+      vx -= this.right[0];
+      vz -= this.right[2];
+    }
+    const len2 = Math.sqrt(vx * vx + vz * vz);
+    if (len2 < 1e-4) return;
+    const s = this.KEYBOARD_SPEED / len2;
+    this.position[0] += vx * s;
+    this.position[2] += vz * s;
+    this._dirty = true;
+  }
+  _setupKeyboard() {
+    const setDigital = (e2, value) => {
+      switch (e2.code) {
+        case "KeyW":
+          this._digital.forward = value;
+          break;
+        case "KeyS":
+          this._digital.backward = value;
+          break;
+        case "KeyA":
+          this._digital.left = value;
+          break;
+        case "KeyD":
+          this._digital.right = value;
+          break;
+      }
+      if (value && this._keyInterval === null) {
+        this._detachedFromFollow = true;
+        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
+      } else {
+        const d = this._digital;
+        if (!d.forward && !d.backward && !d.left && !d.right) {
+          clearInterval(this._keyInterval);
+          this._keyInterval = null;
+        }
+      }
+    };
+    window.addEventListener("keydown", (e2) => setDigital(e2, true), { passive: true });
+    window.addEventListener("keyup", (e2) => setDigital(e2, false), { passive: true });
+  }
+  _pinchDist(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  }
   _setupEvents() {
-    addEventListener("wheel", (e2) => {
-      this.mousRollInAction = true;
-      this.scrollY -= e2.deltaY * this.scrollSpeed * 0.01;
-      this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-      this._dirty = true;
-    });
+    if (isMobile() == false) {
+      addEventListener("wheel", (e2) => {
+        this.mousRollInAction = true;
+        this.scrollY -= e2.deltaY * this.scrollSpeed * 0.01;
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        this._dirty = true;
+      });
+      this._setupKeyboard();
+    } else {
+      let lastPinchDist;
+      let lastTouchX = null, lastTouchY = null;
+      addEventListener("touchmove", (e2) => {
+        if (e2.touches.length === 2) {
+          const dist2 = this._pinchDist(e2.touches);
+          if (lastPinchDist === null) {
+            lastPinchDist = dist2;
+            return;
+          }
+          const delta = lastPinchDist - dist2;
+          this.scrollY -= delta * this.scrollSpeed * 0.5;
+          this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+          this._dirty = true;
+          lastPinchDist = dist2;
+          return;
+        }
+        if (e2.touches.length === 1) {
+          const tx = e2.touches[0].clientX;
+          const tz = e2.touches[0].clientY;
+          if (lastTouchX === null) {
+            lastTouchX = tx;
+            lastTouchY = tz;
+            return;
+          }
+          const dx = tx - lastTouchX;
+          const dz = tz - lastTouchY;
+          lastTouchX = tx;
+          lastTouchY = tz;
+          const s = this.KEYBOARD_SPEED * 0.3;
+          this.position[0] += this.right[0] * dx * s;
+          this.position[2] -= this.right[2] * dx * s;
+          this.position[0] -= this.back[0] * dz * s;
+          this.position[2] += this.back[2] * dz * s;
+          this._detachedFromFollow = true;
+          this._dirty = true;
+        }
+      }, { passive: true });
+      addEventListener("touchend", (e2) => {
+        if (e2.touches.length < 2) lastPinchDist = null;
+        if (e2.touches.length === 0) {
+          lastTouchX = null;
+          lastTouchY = null;
+        }
+      }, { passive: true });
+    }
   }
   _updateOrientation() {
     const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
@@ -2566,6 +2740,10 @@ var RPGCamera = class _RPGCamera {
   }
   _updateFollow() {
     if (!this.followMe) return;
+    if (this.followMe.inMove === true) {
+      this._detachedFromFollow = false;
+    }
+    if (this._detachedFromFollow) return;
     if (this.followMe.inMove === true || this.mousRollInAction) {
       this.followMeOffset = this.scrollY;
       this.position[0] = this.followMe.x;
@@ -2853,7 +3031,328 @@ var FirstPersonCamera = class _FirstPersonCamera {
     this._dirtyAngle = false;
   }
 };
+var CinematicCamera = class _CinematicCamera {
+  // ── same public fields as FirstPersonCamera ──────────────────────────────────
+  pitch = 0;
+  yaw = 0;
+  position = new Float32Array(3);
+  velocity = new Float32Array(3);
+  view = new Float32Array(16);
+  VP = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+  right = vec3Impl.fromValues(1, 0, 0);
+  up = vec3Impl.fromValues(0, 1, 0);
+  back = vec3Impl.fromValues(0, 0, 1);
+  _dirtyAngle = false;
+  // ── cinematic-only state ─────────────────────────────────────────────────────
+  _path = null;
+  _t = 0;
+  _playing = false;
+  _speed = 1;
+  _loop = false;
+  _onEnd = null;
+  _shake = { active: false, amplitude: 0, frequency: 10, elapsed: 0, duration: 0 };
+  _shakeOffset = new Float32Array(3);
+  // ── "look-at target" helpers (optional, used by path playback) ───────────────
+  // When _useTarget is true, view is built from position+_target instead of pitch/yaw
+  _useTarget = false;
+  _target = new Float32Array(3);
+  constructor(options2 = {}) {
+    if (options2.position) {
+      this.position[0] = options2.position[0];
+      this.position[1] = options2.position[1];
+      this.position[2] = options2.position[2];
+    }
+    if (options2.pitch) this.pitch = options2.pitch;
+    if (options2.yaw) this.yaw = options2.yaw;
+    if (options2.target) {
+      this._target[0] = options2.target[0];
+      this._target[1] = options2.target[1];
+      this._target[2] = options2.target[2];
+      this._useTarget = true;
+    }
+    this.canvas = options2.canvas ?? null;
+    const aspect = this.canvas ? this.canvas.width / this.canvas.height : options2.aspect ?? 16 / 9;
+    this.setProjection(options2.fov ?? 2 * Math.PI / 5, aspect, options2.near ?? 0.3, options2.far ?? 200);
+    this._recalculateViewVP();
+  }
+  // ── same static helper as FirstPersonCamera ──────────────────────────────────
+  static mat4MultiplySafe(a, b, out) {
+    const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
+    const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];
+    const a20 = a[2], a21 = a[6], a22 = a[10], a23 = a[14];
+    const a30 = a[3], a31 = a[7], a32 = a[11], a33 = a[15];
+    const b00 = b[0], b01 = b[4], b02 = b[8], b03 = b[12];
+    const b10 = b[1], b11 = b[5], b12 = b[9], b13 = b[13];
+    const b20 = b[2], b21 = b[6], b22 = b[10], b23 = b[14];
+    const b30 = b[3], b31 = b[7], b32 = b[11], b33 = b[15];
+    out[0] = a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30;
+    out[1] = a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30;
+    out[2] = a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30;
+    out[3] = a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30;
+    out[4] = a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31;
+    out[5] = a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31;
+    out[6] = a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31;
+    out[7] = a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31;
+    out[8] = a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32;
+    out[9] = a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32;
+    out[10] = a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32;
+    out[11] = a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32;
+    out[12] = a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33;
+    out[13] = a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33;
+    out[14] = a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33;
+    out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
+    return out;
+  }
+  // ── same setters as FirstPersonCamera ────────────────────────────────────────
+  setPitch = (p) => {
+    this.pitch = p;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  };
+  setYaw = (y2) => {
+    this.yaw = y2;
+    this._useTarget = false;
+    this._dirtyAngle = true;
+  };
+  setPosition = (x2, y2, z) => {
+    this.position[0] = x2;
+    this.position[1] = y2;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+  setX = (x2) => {
+    this.position[0] = x2;
+    this._dirtyAngle = true;
+  };
+  setY = (y2) => {
+    this.position[1] = y2;
+    this._dirtyAngle = true;
+  };
+  setZ = (z) => {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+  setProjection = (fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) => {
+    mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._recalculateViewVP();
+  };
+  // ── cinematic-only setters ───────────────────────────────────────────────────
+  setTarget = (x2, y2, z) => {
+    this._target[0] = x2;
+    this._target[1] = y2;
+    this._target[2] = z;
+    this._useTarget = true;
+    this._dirtyAngle = true;
+  };
+  setRoll = (r2) => {
+    this._roll = r2;
+    this._dirtyAngle = true;
+  };
+  // ── path control ─────────────────────────────────────────────────────────────
+  setPath = (path2) => {
+    this._path = path2;
+    this._t = 0;
+    return this;
+  };
+  play = (options2 = {}) => {
+    if (!this._path) {
+      console.warn("CinematicCamera.play(): no path set");
+      return this;
+    }
+    this._speed = options2.speed ?? 1;
+    this._loop = options2.loop ?? false;
+    this._onEnd = options2.onEnd ?? null;
+    this._t = options2.startT ?? 0;
+    this._playing = true;
+    return this;
+  };
+  pause = () => {
+    this._playing = false;
+    return this;
+  };
+  resume = () => {
+    this._playing = true;
+    return this;
+  };
+  seekT = (t) => {
+    this._t = t;
+    return this;
+  };
+  // ── shake ────────────────────────────────────────────────────────────────────
+  shake = (amplitude, duration, frequency = 15) => {
+    this._shake = { active: true, amplitude, frequency, duration, elapsed: 0 };
+  };
+  // ── _recalculateViewVP — mirrors FirstPersonCamera exactly when not using target
+  _recalculateViewVP() {
+    if (this._useTarget) {
+      this._buildViewFromTarget();
+    } else {
+      this._buildViewFromPitchYaw();
+    }
+  }
+  _buildViewFromPitchYaw() {
+    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
+    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    this.right[0] = cy;
+    this.right[1] = 0;
+    this.right[2] = -sy;
+    this.up[0] = sy * sp;
+    this.up[1] = cp;
+    this.up[2] = cy * sp;
+    this.back[0] = sy * cp;
+    this.back[1] = -sp;
+    this.back[2] = cy * cp;
+    if (this._roll) {
+      const cr = Math.cos(this._roll), sr = Math.sin(this._roll);
+      const rx2 = this.right, uy2 = this.up;
+      const nx = cr * rx2[0] + sr * uy2[0];
+      const ny = cr * rx2[1] + sr * uy2[1];
+      const nz = cr * rx2[2] + sr * uy2[2];
+      const ux = -sr * rx2[0] + cr * uy2[0];
+      const uyy = -sr * rx2[1] + cr * uy2[1];
+      const uz = -sr * rx2[2] + cr * uy2[2];
+      this.right[0] = nx;
+      this.right[1] = ny;
+      this.right[2] = nz;
+      this.up[0] = ux;
+      this.up[1] = uyy;
+      this.up[2] = uz;
+    }
+    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
+    const vs = this.view;
+    vs[0] = rx[0];
+    vs[4] = rx[1];
+    vs[8] = rx[2];
+    vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0];
+    vs[5] = uy[1];
+    vs[9] = uy[2];
+    vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0];
+    vs[6] = bz[1];
+    vs[10] = bz[2];
+    vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    vs[3] = 0;
+    vs[7] = 0;
+    vs[11] = 0;
+    vs[15] = 1;
+    _CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+  }
+  _buildViewFromTarget() {
+    const p = this.position;
+    const sk = this._shakeOffset;
+    const ex = p[0] + sk[0], ey = p[1] + sk[1], ez = p[2] + sk[2];
+    const tx = this._target[0], ty = this._target[1], tz = this._target[2];
+    let fx = tx - ex, fy = ty - ey, fz = tz - ez;
+    const fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
+    if (fl < 1e-7) return;
+    fx /= fl;
+    fy /= fl;
+    fz /= fl;
+    let wux = 0, wuy = 1, wuz = 0;
+    if (this._roll) {
+      const cr = Math.cos(this._roll), sr = Math.sin(this._roll);
+      let rx0 = fy * 0 - fz * 1, ry0 = fz * 0 - fx * 0, rz0 = fx * 1 - fy * 0;
+      const rl2 = Math.sqrt(rx0 * rx0 + ry0 * ry0 + rz0 * rz0);
+      if (rl2 > 1e-7) {
+        rx0 /= rl2;
+        ry0 /= rl2;
+        rz0 /= rl2;
+      }
+      wux = cr * 0 - sr * rx0;
+      wuy = cr * 1 - sr * ry0;
+      wuz = cr * 0 - sr * rz0;
+    }
+    let rx = fy * wuz - fz * wuy, ry = fz * wux - fx * wuz, rz = fx * wuy - fy * wux;
+    const rl = Math.sqrt(rx * rx + ry * ry + rz * rz);
+    if (rl < 1e-7) return;
+    rx /= rl;
+    ry /= rl;
+    rz /= rl;
+    const upx = ry * fz - rz * fy, upy = rz * fx - rx * fz, upz = rx * fy - ry * fx;
+    this.back[0] = -fx;
+    this.back[1] = -fy;
+    this.back[2] = -fz;
+    this.right[0] = rx;
+    this.right[1] = ry;
+    this.right[2] = rz;
+    this.up[0] = upx;
+    this.up[1] = upy;
+    this.up[2] = upz;
+    this.yaw = Math.atan2(-fx, -fz);
+    this.pitch = Math.asin(Math.max(-1, Math.min(1, fy)));
+    const vs = this.view;
+    vs[0] = rx;
+    vs[4] = ry;
+    vs[8] = rz;
+    vs[12] = -(rx * ex + ry * ey + rz * ez);
+    vs[1] = upx;
+    vs[5] = upy;
+    vs[9] = upz;
+    vs[13] = -(upx * ex + upy * ey + upz * ez);
+    vs[2] = -fx;
+    vs[6] = -fy;
+    vs[10] = -fz;
+    vs[14] = -(-fx * ex - fy * ey - fz * ez);
+    vs[3] = 0;
+    vs[7] = 0;
+    vs[11] = 0;
+    vs[15] = 1;
+    _CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+  }
+  // ── update — same signature as FirstPersonCamera ─────────────────────────────
+  update(dt = 0.016) {
+    if (this._playing && this._path) {
+      const totalT = this._path.totalTime;
+      this._t += dt * this._speed / totalT;
+      if (this._t >= 1) {
+        if (this._loop) {
+          this._t %= 1;
+        } else {
+          this._t = 1;
+          this._playing = false;
+          this._applyPathSample();
+          if (this._onEnd) this._onEnd(this);
+        }
+      }
+      if (this._playing || this._t === 1) this._applyPathSample();
+    }
+    const sk = this._shake;
+    if (sk.active) {
+      sk.elapsed += dt;
+      const decay = Math.max(0, 1 - sk.elapsed / sk.duration);
+      const amp = sk.amplitude * decay;
+      const freq = sk.frequency * sk.elapsed;
+      this._shakeOffset[0] = Math.sin(freq * 2.1731 + 1.23) * amp;
+      this._shakeOffset[1] = Math.sin(freq * 1.7319 + 0.77) * amp;
+      this._shakeOffset[2] = Math.sin(freq * 2.4721 + 2.11) * amp;
+      if (sk.elapsed >= sk.duration) {
+        sk.active = false;
+        this._shakeOffset[0] = this._shakeOffset[1] = this._shakeOffset[2] = 0;
+      }
+      this._dirtyAngle = true;
+    }
+    if (!this._dirtyAngle) return;
+    this._recalculateViewVP();
+    this._dirtyAngle = false;
+  }
+  _applyPathSample() {
+    const s = this._path.sample(this._t);
+    this.setPosition(s.position[0], s.position[1], s.position[2]);
+    this.setTarget(s.target[0], s.target[1], s.target[2]);
+    if (s.roll !== void 0) this.setRoll(s.roll);
+    if (s.fov !== void 0) {
+      const aspect = this.canvas ? this.canvas.width / this.canvas.height : 16 / 9;
+      this.setProjection(s.fov, aspect);
+    }
+    this._dirtyAngle = true;
+  }
+};
 var MobileDOM = {
+  eventDown: null,
+  eventUp: null,
+  eventCancel: null,
   createWASD(camera, options2 = {}) {
     const size2 = options2.size ?? 60;
     const marginR = options2.marginR ?? 0;
@@ -2883,6 +3382,7 @@ var MobileDOM = {
     ];
     for (const [, label, col, row2, action] of defs) {
       const btn = document.createElement("div");
+      btn.id = label;
       Object.assign(btn.style, {
         width: `${size2}px`,
         height: `${size2}px`,
@@ -2921,21 +3421,44 @@ var MobileDOM = {
           camera._dirty = false;
         }
       };
-      btn.addEventListener("pointerdown", (e2) => {
+      MobileDOM.eventDown = (e2) => {
         e2.stopPropagation();
         press();
         btn.setPointerCapture(e2.pointerId);
-      }, { passive: true });
-      btn.addEventListener("pointerup", (e2) => {
+      };
+      MobileDOM.eventUp = (e2) => {
         release();
-      }, { passive: true });
-      btn.addEventListener("pointercancel", (e2) => {
+      };
+      MobileDOM.eventCancel = (e2) => {
         release();
-      }, { passive: true });
+      };
+      btn.addEventListener("pointerdown", MobileDOM.eventDown, { passive: true });
+      btn.addEventListener("pointerup", MobileDOM.eventUp, { passive: true });
+      btn.addEventListener("pointercancel", MobileDOM.eventCancel, { passive: true });
       wrap.appendChild(btn);
     }
     document.body.appendChild(wrap);
     return wrap;
+  },
+  destroyWASD() {
+    if (byId("mobileControls") == null) return;
+    byId("\u25B2").removeEventListener("pointerdown", MobileDOM.eventDown);
+    byId("\u25B2").removeEventListener("pointerup", MobileDOM.eventUp);
+    byId("\u25B2").removeEventListener("pointercancel", MobileDOM.eventCancel);
+    byId("\u25C0").removeEventListener("pointerdown", MobileDOM.eventDown);
+    byId("\u25C0").removeEventListener("pointerup", MobileDOM.eventUp);
+    byId("\u25C0").removeEventListener("pointercancel", MobileDOM.eventCancel);
+    byId("\u25BC").removeEventListener("pointerdown", MobileDOM.eventDown);
+    byId("\u25BC").removeEventListener("pointerup", MobileDOM.eventUp);
+    byId("\u25BC").removeEventListener("pointercancel", MobileDOM.eventCancel);
+    byId("\u25B6").removeEventListener("pointerdown", MobileDOM.eventDown);
+    byId("\u25B6").removeEventListener("pointerup", MobileDOM.eventUp);
+    byId("\u25B6").removeEventListener("pointercancel", MobileDOM.eventCancel);
+    byId("\u25B2").remove();
+    byId("\u25C0").remove();
+    byId("\u25BC").remove();
+    byId("\u25B6").remove();
+    byId("mobileControls").remove();
   },
   addButton(label, onClick, onRelease, options2 = {}) {
     document.body.style.touchAction = "none";
@@ -3599,6 +4122,435 @@ override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
+};
+
+struct SpotLight {
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
+};
+
+struct PBRMaterialData {
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
+};
+
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
+
+struct FragmentInput {
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
+  return material.baseColor * light.color * light.intensity * NdotL;
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+  if (coneAtten <= 0.0 || NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
+
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
+
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
+
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
+
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
+
+  let radiance = light.color * light.intensity;
+  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  var weight: f32 = 0.0;
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      let sampleUV = shadowUV + offsets[i] * oneOverSize;
+      let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                      sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+      let s = textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          sampleUV, layer, depthRef - bias
+      );
+      // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+      visibility += select(1.0, s, inBounds);
+      weight += 1.0;
+  }
+  return visibility / weight;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
+@fragment
+fn main(input: FragmentInput) -> FragOut {
+  let norm = normalize(input.fragNorm);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
+  // if (materialData.alpha < 0.01) {
+  //     discard;
+  // }
+  var lightContribution = vec3f(0.0);
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p  = sc.xyz / sc.w;
+      let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+      let depthRef = p.z;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let inDepth = p.z >= 0.0 && p.z <= 1.0;
+      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+      let shadowFactor = select(1.0, visibility, inDepth);
+      let contrib = computeSpotLight(
+          spotlights[i],
+          norm,
+          input.fragPos,
+          viewDir,
+          materialData
+      );
+      lightContribution += contrib * shadowFactor;
+  }
+  // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  // var ambientTerm = material.ambientColor * materialData.baseColor;
+  // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
+  // like fog interest
+  // var ambientTerm = material.ambientColor + scene.globalAmbient;
+  // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+  let alpha = texColor.a * material.baseColorFactor.a;
+  // let alpha = material.baseColorFactor.a;
+  // return vec4f(finalColor, alpha);
+    return FragOut(
+      vec4f(finalColor, alpha),
+      vec4f(norm, 0.0),
+      vec4f(input.fragPos, 1.0)
+  );
+}`;
+
+// ../../../shaders/fragment.wgsl.metal.js
+var fragmentWGSLMetal = () => `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
+};
+
+struct SpotLight {
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
+};
+
+struct PBRMaterialData {
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
+};
+
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
+
+struct FragmentInput {
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = material.metallicFactor;
+  let roughness = material.roughnessFactor;
+  let alpha = texColor.a * material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+// PCF shadow sampling
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
+  }
+  return visibility / 9.0;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
+@fragment
+fn main(input: FragmentInput) -> FragOut {
+  let materialData = getPBRMaterial(input.uv);
+  if (materialData.alpha < 0.01) {discard;}
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  var Lo = vec3f(0.0);
+
+for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+  let L = normalize(spotlights[i].position - input.fragPos);
+  let H = normalize(V + L);
+  let NdotL = max(dot(N, L), 0.0);
+  let validLight = select(0.0, 1.0, NdotL > 0.0);
+  let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+  let p  = sc.xyz / sc.w;
+  let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+  let depthRef = p.z;
+  let visibility = sampleShadow(uv,i32(i),depthRef, N, L);
+  let inFrustum = p.z >= 0.0 && p.z <= 1.0 &&
+      p.x >= -1.0 && p.x <= 1.0 &&
+      p.y >= -1.0 && p.y <= 1.0;
+  let shadowFactor = select(1.0, visibility, inFrustum);
+  // PBR
+  let NDF = distributionGGX(N, H, materialData.roughness);
+  let G   = geometrySmith(N, V, L, materialData.roughness);
+  let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+  let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+  let diffuse  = kD * materialData.baseColor / PI;
+  let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+  let radiance = spotlights[i].color * spotlights[i].intensity;
+  Lo += (diffuse + specular) * radiance * NdotL * shadowFactor * validLight;
+}
+
+  let ambient = scene.globalAmbient * materialData.baseColor;
+  var color = ambient + Lo;
+
+  // return vec4f(color, materialData.alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
+}
+`;
+
+// ../../../shaders/fragment.wgsl.normalmap.js
+var fragmentWGSLNormalMap = () => `
+override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
     lightViewProjMatrix  : mat4x4f,
     cameraViewProjMatrix : mat4x4f,
     cameraPos            : vec3f,
@@ -3658,453 +4610,6 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
 @group(1) @binding(3) var metallicRoughnessSampler: sampler;
 @group(1) @binding(4) var<uniform> material: MaterialPBR;
-@group(1) @binding(5) var normalTexture: texture_2d<f32>;
-@group(1) @binding(6) var normalSampler: sampler;
-
-struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-};
-
-fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
-}
-
-fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
-}
-
-fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
-}
-
-fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
-}
-
-fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-}
-
-fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-    return material.baseColor * light.color * light.intensity * NdotL;
-}
-
-fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
-
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
-
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
-
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
-
-    let radiance = light.color * light.intensity;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
-}
-fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    var weight: f32 = 0.0;
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        let sampleUV = shadowUV + offsets[i] * oneOverSize;
-        let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
-                       sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
-        let s = textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            sampleUV, layer, depthRef - bias
-        );
-        // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
-        visibility += select(1.0, s, inBounds);
-        weight += 1.0;
-    }
-    return visibility / weight;
-}
-
-@fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-
-    let materialData = getPBRMaterial(input.uv);
-    // if (materialData.alpha < 0.01) {
-    //     discard;
-    // }
-
-    var lightContribution = vec3f(0.0);
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-        let depthRef = p.z;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        // let inFrustum =
-        //     p.z >= 0.0 && p.z <= 1.0 &&
-        //     p.x >= -1.0 && p.x <= 1.0 &&
-        //     p.y >= -1.0 && p.y <= 1.0;
-        let inDepth = p.z >= 0.0 && p.z <= 1.0;
-        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
-        let shadowFactor = select(1.0, visibility, inDepth);
-        let contrib = computeSpotLight(
-            spotlights[i],
-            norm,
-            input.fragPos,
-            viewDir,
-            materialData
-        );
-        lightContribution += contrib * shadowFactor;
-    }
-    // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    // var ambientTerm = material.ambientColor * materialData.baseColor;
-    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
-    // -- from dark next feature
-    // var ambientTerm = material.ambientColor * materialData.baseColor;
-    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
-    // like fog interest
-    // var ambientTerm = material.ambientColor + scene.globalAmbient;
-    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    // let alpha = mix(materialData.alpha, 1.0 , 0.5);
-    let alpha = texColor.a * material.baseColorFactor.a;
-    // let alpha = material.baseColorFactor.a;
-    return vec4f(finalColor, alpha);
-}`;
-
-// ../../../shaders/fragment.wgsl.metal.js
-var fragmentWGSLMetal = () => `override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
-const PI: f32 = 3.141592653589793;
-
-struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
-};
-
-struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
-};
-
-struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
-};
-
-struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,  // \u2705 Added alpha
-};
-
-const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
-@group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(1) @binding(0) var meshTexture: texture_2d<f32>;
-@group(1) @binding(1) var meshSampler: sampler;
-@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
-@group(1) @binding(3) var metallicRoughnessSampler: sampler;
-@group(1) @binding(4) var<uniform> material: MaterialPBR;
-@group(1) @binding(5) var normalTexture: texture_2d<f32>;
-@group(1) @binding(6) var normalSampler: sampler;
-
-struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-};
-
-fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = material.metallicFactor;
-    let roughness = material.roughnessFactor;
-    // \u2705 Get alpha from texture and material factor
-    let alpha = texColor.a * material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
-}
-
-fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
-}
-
-fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
-}
-
-fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
-}
-
-fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-}
-
-// PCF shadow sampling
-fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
-    }
-    return visibility / 9.0;
-}
-
-@fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let materialData = getPBRMaterial(input.uv);
-    
-    // \u2705 Early discard for fully transparent pixels
-    if (materialData.alpha < 0.01) {
-        discard;
-    }
-    
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    var Lo = vec3f(0.0);
-    
-for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-
-    let L = normalize(spotlights[i].position - input.fragPos);
-    let H = normalize(V + L);
-
-    // let NdotL = max(dot(N, L), 0.0);
-let NdotL = max(dot(N, L), 0.0);
-let validLight = select(0.0, 1.0, NdotL > 0.0);
-
-    // ---- SHADOW SPACE ----
-    let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-    let p  = sc.xyz / sc.w;
-
-    let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-    let depthRef = p.z;
-
-    let visibility = sampleShadow(
-        uv,
-        i32(i),
-        depthRef,
-        N,
-        L
-    );
-
-    let inFrustum =
-        p.z >= 0.0 && p.z <= 1.0 &&
-        p.x >= -1.0 && p.x <= 1.0 &&
-        p.y >= -1.0 && p.y <= 1.0;
-
-    let shadowFactor = select(1.0, visibility, inFrustum);
-
-    // ---- PBR ----
-    let NDF = distributionGGX(N, H, materialData.roughness);
-    let G   = geometrySmith(N, V, L, materialData.roughness);
-
-    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-
-    let diffuse  = kD * materialData.baseColor / PI;
-    let specular = (NDF * G * F) /
-                   (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-
-    let radiance = spotlights[i].color * spotlights[i].intensity;
-
-    // Lo += (diffuse + specular) * radiance * NdotL * shadowFactor;
-    Lo += (diffuse + specular) * radiance * NdotL * shadowFactor * validLight;
-}
-
-    let ambient = scene.globalAmbient * materialData.baseColor;
-    var color = ambient + Lo;
-    
-    // \u2705 Return color with alpha from material
-    return vec4f(color, materialData.alpha);
-}
-`;
-
-// ../../../shaders/fragment.wgsl.normalmap.js
-var fragmentWGSLNormalMap = () => `
-override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
-const PI: f32 = 3.141592653589793;
-
-struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
-};
-
-struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
-};
-
-struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
-};
-
-struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-};
-
-const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
-
-@group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-@group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(1) @binding(0) var meshTexture: texture_2d<f32>;
-@group(1) @binding(1) var meshSampler: sampler;
-@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
-@group(1) @binding(3) var metallicRoughnessSampler: sampler;
-@group(1) @binding(4) var<uniform> material: MaterialPBR;
 @group(1) @binding(5) var normalTex: texture_2d<f32>;
 @group(1) @binding(6) var normalSampler: sampler;
 
@@ -4136,12 +4641,13 @@ fn getNormalMap2(uv: vec2f, N: vec3f, T: vec3f, B: vec3f) -> vec3f {
 }
     
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -4249,19 +4755,21 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    // let norm = normalize(input.fragNorm);
+fn main(input: FragmentInput) -> FragOut {
     let N = normalize(input.fragNorm);
     let T = normalize(input.tangent.xyz);
     let B = cross(N, T) * input.tangent.w; // handedness
     let norm = getNormalMap2(input.uv, N, T, B);
-
     let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    // \u2705 now we declare materialData
     let materialData = getPBRMaterial(input.uv);
-
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
@@ -4269,18 +4777,22 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let p  = sc.xyz / sc.w;
         let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
         let depthRef = p.z * 0.5 + 0.5;
-
         let lightDir = normalize(spotlights[i].position - input.fragPos);
         let bias = spotlights[i].shadowBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        // let visibility = 1.0;
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
-    return vec4f(finalColor, 1.0);
+    // return vec4f(finalColor, 1.0);
+
+    return FragOut(
+      vec4f(finalColor, materialData.alpha),
+      vec4f(N, 0.0),
+      vec4f(input.fragPos, 1.0)
+    );
 }`;
 
 // ../../../shaders/fragment.wgsl.pong.js
@@ -4333,6 +4845,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
@@ -4358,12 +4871,13 @@ struct FragmentInput {
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -4473,14 +4987,17 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
-
-    // \u2705 now we declare materialData
     let materialData = getPBRMaterial(input.uv);
-
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
@@ -4499,7 +5016,13 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
-    return vec4f(finalColor, 1.0);
+
+    return FragOut(
+      vec4f(finalColor, materialData.alpha),
+      vec4f(norm, 0.0),
+      vec4f(input.fragPos, 1.0)
+    );
+    // return vec4f(finalColor, 1.0);
 }`;
 
 // ../../../shaders/fragment.wgsl.power.js
@@ -4507,51 +5030,52 @@ var fragmentWGSLPower = () => `override shadowDepthTextureSize: f32 = ${MEConfig
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
@@ -4569,97 +5093,111 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 // @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha =  material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
 // PCF shadow sampling
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
-    }
-    return visibility / 9.0;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
+  }
+  return visibility / 9.0;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let materialData = getPBRMaterial(input.uv);
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    var Lo = vec3f(0.0);
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let L = normalize(spotlights[i].position - input.fragPos);
-        let H = normalize(V + L);
-        let distance = length(spotlights[i].position - input.fragPos);
-        let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
-        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-        let NDF = distributionGGX(N, H, materialData.roughness);
-        let G   = geometrySmith(N, V, L, materialData.roughness);
-        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-        let kS = F;
-        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-        let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
-        let NdotL = max(dot(N, L), 0.0);
-        let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-        Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
-    }
-    let ambient = scene.globalAmbient * materialData.baseColor;
-    var color = ambient + Lo;
-    return vec4f(color, 1.0);
+fn main(input: FragmentInput) -> FragOut {
+  let materialData = getPBRMaterial(input.uv);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  var Lo = vec3f(0.0);
+  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let L = normalize(spotlights[i].position - input.fragPos);
+      let H = normalize(V + L);
+      let distance = length(spotlights[i].position - input.fragPos);
+      let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+      let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+      let NDF = distributionGGX(N, H, materialData.roughness);
+      let G   = geometrySmith(N, V, L, materialData.roughness);
+      let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+      let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+      let kS = F;
+      let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+      let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
+      let NdotL = max(dot(N, L), 0.0);
+      let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+      Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
+  }
+  let ambient = scene.globalAmbient * materialData.baseColor;
+  var color = ambient + Lo;
+
+  // return vec4f(color, 1.0);
+
+  return FragOut(
+    vec4f(color, materialData.alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
@@ -4719,34 +5257,35 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
-@group(0) @binding(9) var normalTexture: texture_2d<f32>;
-@group(0) @binding(10) var normalSampler: sampler;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-    @builtin(position) position : vec4f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+  @builtin(position) position : vec4f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha     = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+  return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
@@ -4770,111 +5309,107 @@ fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
     return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
-// ===== SIMPLIFIED WORKING EFFECT =====
-
 fn calculateEffect(fragCoord: vec2f, resolution: vec2f, time: f32) -> vec3f {
-    // Normalize coordinates
-    let uv = fragCoord.xy / resolution;
-    let aspect = resolution.x / resolution.y;
-    let p = (uv * 2.0 - 1.0) * vec2f(aspect, 1.0);
+  let uv = fragCoord.xy / resolution;
+  let aspect = resolution.x / resolution.y;
+  let p = (uv * 2.0 - 1.0) * vec2f(aspect, 1.0);
+  var color = vec3f(0.0);
+  // Simplified version - 5 iterations instead of 9x7
+  for(var i: f32 = 0.0; i < 5.0; i = i + 1.0) {
+    // Rotating coordinates
+    let angle = time * 0.1 + i * 0.5;
+    let c = cos(angle);
+    let s = sin(angle);
+    var pos = vec2f(
+        p.x * c - p.y * s,
+        p.x * s + p.y * c
+    );
     
-    var color = vec3f(0.0);
+    // Add some warping
+    pos += sin(pos.yx * 3.0 + time * 0.5) * 0.1;
     
-    // Simplified version - 5 iterations instead of 9x7
-    for(var i: f32 = 0.0; i < 5.0; i = i + 1.0) {
-        // Rotating coordinates
-        let angle = time * 0.1 + i * 0.5;
-        let c = cos(angle);
-        let s = sin(angle);
-        var pos = vec2f(
-            p.x * c - p.y * s,
-            p.x * s + p.y * c
-        );
-        
-        // Add some warping
-        pos += sin(pos.yx * 3.0 + time * 0.5) * 0.1;
-        
-        // Distance field
-        let dist = length(pos) - 0.5 - i * 0.15;
-        let rings = sin(dist * 10.0 - time * 2.0) * 0.5 + 0.5;
-        
-        // Color based on iteration and distance
-        let hue = i / 5.0 + time * 0.1;
-        color += vec3f(
-            0.5 + 0.5 * sin(hue * 6.28),
-            0.5 + 0.5 * sin(hue * 6.28 + 2.09),
-            0.5 + 0.5 * sin(hue * 6.28 + 4.18)
-        ) * rings * 0.3;
-    }
+    // Distance field
+    let dist = length(pos) - 0.5 - i * 0.15;
+    let rings = sin(dist * 10.0 - time * 2.0) * 0.5 + 0.5;
     
-    // Add some glow
-    let centerDist = length(p);
-    color += vec3f(0.1) / (centerDist * centerDist + 0.1);
-    
-    return clamp(color, vec3f(0.0), vec3f(1.0));
+    // Color based on iteration and distance
+    let hue = i / 5.0 + time * 0.1;
+    color += vec3f(
+        0.5 + 0.5 * sin(hue * 6.28),
+        0.5 + 0.5 * sin(hue * 6.28 + 2.09),
+        0.5 + 0.5 * sin(hue * 6.28 + 4.18)
+    ) * rings * 0.3;
+  }
+  
+  // Add some glow
+  let centerDist = length(p);
+  color += vec3f(0.1) / (centerDist * centerDist + 0.1);
+  
+  return clamp(color, vec3f(0.0), vec3f(1.0));
 }
 
-// ===== STANDARD PBR LIGHTING =====
-
 fn calculatePBRLighting(materialData: PBRMaterialData, N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
-    var Lo = vec3f(0.0);
+  var Lo = vec3f(0.0);
+  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let L = normalize(spotlights[i].position - fragPos);
+    let H = normalize(V + L);
+    let distance = length(spotlights[i].position - fragPos);
+    let attenuation = clamp(1.0 - (distance / max(spotlights[i].range, 0.1)), 0.0, 1.0);
+    let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
     
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let L = normalize(spotlights[i].position - fragPos);
-        let H = normalize(V + L);
-        let distance = length(spotlights[i].position - fragPos);
-        let attenuation = clamp(1.0 - (distance / max(spotlights[i].range, 0.1)), 0.0, 1.0);
-        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-        
-        let NDF = distributionGGX(N, H, materialData.roughness);
-        let G   = geometrySmith(N, V, L, materialData.roughness);
-        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-        
-        let kS = F;
-        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-        let diffuse  = kD * materialData.baseColor / PI;
-        let NdotL = max(dot(N, L), 0.0);
-        let specular = (NDF * G * F) / max(4.0 * max(dot(N, V), 0.0) * NdotL + 0.001, 0.001);
-        
-        Lo += (diffuse + specular) * radiance * NdotL;
-    }
+    let NDF = distributionGGX(N, H, materialData.roughness);
+    let G   = geometrySmith(N, V, L, materialData.roughness);
+    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
     
-    return Lo;
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+    let diffuse  = kD * materialData.baseColor / PI;
+    let NdotL = max(dot(N, L), 0.0);
+    let specular = (NDF * G * F) / max(4.0 * max(dot(N, V), 0.0) * NdotL + 0.001, 0.001);
+    
+    Lo += (diffuse + specular) * radiance * NdotL;
+  }
+  return Lo;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let materialData = getPBRMaterial(input.uv);
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    
-    let resolution = vec2f(1080.0, 687.0);
-    
-    var finalColor = vec3f(0.0);
-    
-    if (material.lightingEnabled > 0.5) {
-        // Lighting enabled - calculate PBR
-        let Lo = calculatePBRLighting(materialData, N, V, input.fragPos);
-        let ambient = scene.globalAmbient * materialData.baseColor;
-        let litColor = ambient + Lo;
-        
-        if (material.effectMix > 0.01) {
-            // Blend with effect
-            let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
-            finalColor = mix(litColor, effectColor, material.effectMix);
-        } else {
-            // Pure PBR
-            finalColor = litColor;
-        }
-    } else {
-        // Pure effect mode
-        let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
-        // Modulate slightly by material color
-        finalColor = effectColor * mix(vec3f(1.0), materialData.baseColor, 0.2);
-    }
-    
-    return vec4f(finalColor, 1.0);
+fn main(input: FragmentInput) -> FragOut {
+  let materialData = getPBRMaterial(input.uv);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let resolution = vec2f(1080.0, 687.0);
+  var finalColor = vec3f(0.0);
+  if (material.lightingEnabled > 0.5) {
+      // Lighting enabled - calculate PBR
+      let Lo = calculatePBRLighting(materialData, N, V, input.fragPos);
+      let ambient = scene.globalAmbient * materialData.baseColor;
+      let litColor = ambient + Lo;
+      if (material.effectMix > 0.01) {
+          // Blend with effect
+          let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
+          finalColor = mix(litColor, effectColor, material.effectMix);
+      } else {
+          // Pure PBR
+          finalColor = litColor;
+      }
+  } else {
+      let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
+      finalColor = effectColor * mix(vec3f(1.0), materialData.baseColor, 0.2);
+  }
+
+  // return vec4f(finalColor, 1.0);
+  return FragOut(
+    vec4f(finalColor, materialData.alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
@@ -5033,11 +5568,18 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
   let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
   let metallic = mrTex.b * material.metallicFactor;
   let roughness = mrTex.g * material.roughnessFactor;
-  return PBRMaterialData(baseColor, metallic, roughness);
+  let alpha     = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
   let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
   let viewDir = normalize(scene.cameraPos - input.fragPos);
   let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
@@ -5063,7 +5605,12 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
   let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
   let alpha = mix(0.2, 0.5, fresnel);
   let vibrantColor = finalColor * 1.5;
-  return vec4f(vibrantColor, alpha);
+  // return vec4f(vibrantColor, alpha);
+  return FragOut(
+  vec4f(vibrantColor, alpha),
+  vec4f(normalize(waterNormal), 1.0),
+  vec4f(input.fragPos, 1.0)
+);
 }`;
 
 // ../../../shaders/fragment.mirror.wgsl.js
@@ -5313,58 +5860,58 @@ fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
     return vec2f(u, v);
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
+fn main(input: FragmentInput) -> FragOut {
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
+  if (materialData.alpha < 0.01) { discard; }
+  var lightContribution = vec3f(0.0);
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
+      let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p        = sc.xyz / sc.w;
+      let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
+      let depthRef = p.z;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let inFrustum = p.z >= 0.0 && p.z <= 1.0
+                    && p.x >= -1.0 && p.x <= 1.0
+                    && p.y >= -1.0 && p.y <= 1.0;
+      let vis         = sampleShadow(shadowUV, i32(i), depthRef, N, lightDir);
+      let shadowFactor = select(1.0, vis, inFrustum);
+      let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
+      lightContribution += contrib * shadowFactor;
+      // Mirror: sharp specular from each spotlight
+      let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+      let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+      lightContribution += mirrorSpec * coneFactor * shadowFactor;
+  }
 
-    let materialData = getPBRMaterial(input.uv);
-    if (materialData.alpha < 0.01) { discard; }
-
-    var lightContribution = vec3f(0.0);
-
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
-        let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p        = sc.xyz / sc.w;
-        // let shadowUV = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-        let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
-        let depthRef = p.z;
-
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let inFrustum = p.z >= 0.0 && p.z <= 1.0
-                     && p.x >= -1.0 && p.x <= 1.0
-                     && p.y >= -1.0 && p.y <= 1.0;
-
-        let vis         = sampleShadow(shadowUV, i32(i), depthRef, N, lightDir);
-        let shadowFactor = select(1.0, vis, inFrustum);
-
-        let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
-        lightContribution += contrib * shadowFactor;
-
-        // Mirror: sharp specular from each spotlight
-        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
-        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
-        lightContribution += mirrorSpec * coneFactor * shadowFactor;
-    }
-
-    let R = reflect(-V, N);
-    // var envColor: vec3f;
-    let envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
-
-    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    finalColor = mix(
-        envColor,
-        finalColor,
-        mirrorParams.baseColorMix
-    );
-
-    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
-    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
-    finalColor += illuminate;
-    let alpha = mix(materialData.alpha, 1.0, 0.5);
-    return vec4f(finalColor, alpha);
+  let R = reflect(-V, N);
+  let envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+  let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+  finalColor = mix(
+      envColor,
+      finalColor,
+      mirrorParams.baseColorMix
+  );
+  finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+  let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
+  finalColor += illuminate;
+  let alpha = mix(materialData.alpha, 1.0, 0.5);
+  // return vec4f(finalColor, alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0),
+  );
 }
 `;
 
@@ -5374,52 +5921,52 @@ override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
@@ -5437,131 +5984,142 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
 // ---------------- PBR Helpers ----------------
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 // ---------------- Spotlight ----------------
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) { return vec3f(0.0); }
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) { return vec3f(0.0); }
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-    if (coneAtten <= 0.0) { return vec3f(0.0); }
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  if (coneAtten <= 0.0) { return vec3f(0.0); }
 
-    let H = normalize(L + V);
-    let F0 = mix(vec3f(0.04), material.baseColor, material.metallic);
-    let F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-    let D = distributionGGX(N, H, material.roughness);
-    let G = geometrySmith(N, V, L, material.roughness);
-    let spec = (D * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 1e-5);
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor / PI;
+  let H = normalize(L + V);
+  let F0 = mix(vec3f(0.04), material.baseColor, material.metallic);
+  let F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+  let D = distributionGGX(N, H, material.roughness);
+  let G = geometrySmith(N, V, L, material.roughness);
+  let spec = (D * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 1e-5);
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor / PI;
 
-    let radiance = light.color * light.intensity;
-    return (diffuse + spec) * radiance * NdotL * coneAtten;
+  let radiance = light.color * light.intensity;
+  return (diffuse + spec) * radiance * NdotL * coneAtten;
 }
 
 // ---------------- PCF Shadow ----------------
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            shadowUV + offsets[i] * oneOverSize,
-            layer, depthRef - bias
-        );
-    }
-    return visibility / 9.0;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      visibility += textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          shadowUV + offsets[i] * oneOverSize,
+          layer, depthRef - bias
+      );
+  }
+  return visibility / 9.0;
 }
 
-// ---------------- Fragment ----------------
+struct FragOut {
+  @location(0) color   : vec4f,
+  @location(1) normal  : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    let materialData = getPBRMaterial(input.uv);
+fn main(input: FragmentInput) -> FragOut {
+  let norm = normalize(input.fragNorm);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
 
-    if (materialData.alpha < 0.01) {
-        discard;
-    }
+  if (materialData.alpha < 0.01) {
+      discard;
+  }
 
-    var lightContribution = vec3f(0.0);
+  var lightContribution = vec3f(0.0);
 
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p = sc.xyz / sc.w;
-        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-        let depthRef = p.z;
+  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p = sc.xyz / sc.w;
+      let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+      let depthRef = p.z;
 
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
 
-        // Only apply shadow if fragment is inside light frustum
-        let inFrustum = p.z >= 0.0 && p.z <= 1.0 &&
-                        p.x >= -1.0 && p.x <= 1.0 &&
-                        p.y >= -1.0 && p.y <= 1.0;
-        let shadowFactor = select(1.0, visibility, inFrustum);
+      // Only apply shadow if fragment is inside light frustum
+      let inFrustum = p.z >= 0.0 && p.z <= 1.0 &&
+                      p.x >= -1.0 && p.x <= 1.0 &&
+                      p.y >= -1.0 && p.y <= 1.0;
+      let shadowFactor = select(1.0, visibility, inFrustum);
 
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-        lightContribution += contrib * shadowFactor;
-    }
+      let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+      lightContribution += contrib * shadowFactor;
+  }
 
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
 
-    return vec4f(finalColor, materialData.alpha);
+  // return vec4f(finalColor, materialData.alpha);
+
+  return FragOut(
+    vec4f(finalColor, materialData.alpha),
+    vec4f(norm, 0.0)
+    vec4f(input.fragPos, 1.0),
+  );
 }
 `;
 
@@ -5571,52 +6129,52 @@ override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+lightViewProjMatrix  : mat4x4f,
+cameraViewProjMatrix : mat4x4f,
+cameraPos            : vec3f,
+padding2             : f32,
+lightPos             : vec3f,
+padding              : f32,
+globalAmbient        : vec3f,
+padding3             : f32,
+time                 : f32,
+deltaTime            : f32,
+padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+position      : vec3f,
+_pad1         : f32,
+direction     : vec3f,
+_pad2         : f32,
+innerCutoff   : f32,
+outerCutoff   : f32,
+intensity     : f32,
+_pad3         : f32,
+color         : vec3f,
+_pad4         : f32,
+range         : f32,
+ambientFactor : f32,
+shadowBias    : f32,
+_pad5         : f32,
+lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,
+  _pad            : f32,
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
@@ -5633,207 +6191,201 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+@location(0) shadowPos : vec4f,
+@location(1) fragPos   : vec3f,
+@location(2) fragNorm  : vec3f,
+@location(3) uv        : vec2f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+let texColor = textureSample(meshTexture, meshSampler, uv);
+let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+let metallic = mrTex.b * material.metallicFactor;
+let roughness = mrTex.g * material.roughnessFactor;
+let alpha = material.baseColorFactor.a;
+return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+let a = roughness * roughness;
+let a2 = a * a;
+let NdotH = max(dot(N, H), 0.0);
+let NdotH2 = NdotH * NdotH;
+let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+let r = (roughness + 1.0);
+let k = (r * r) / 8.0;
+return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+let NdotV = max(dot(N, V), 0.0);
+let NdotL = max(dot(N, L), 0.0);
+return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+let L = normalize(light.position - fragPos);
+let theta = dot(L, normalize(-light.direction));
+let epsilon = light.innerCutoff - light.outerCutoff;
+return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
 fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-    return material.baseColor * light.color * light.intensity * NdotL;
+let L = normalize(light.position - fragPos);
+let NdotL = max(dot(N, L), 0.0);
+if (NdotL <= 0.0) {
+    return vec3f(0.0);
+}
+return material.baseColor * light.color * light.intensity * NdotL;
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
+let L = normalize(light.position - fragPos);
+let NdotL = max(dot(N, L), 0.0);
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+let theta = dot(L, normalize(-light.direction));
+let epsilon = light.innerCutoff - light.outerCutoff;
+var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
-
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
-
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
-
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
-
-    let radiance = light.color * light.intensity;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+if (coneAtten <= 0.0 || NdotL <= 0.0) {
+    return vec3f(0.0);
 }
+
+let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+let H = normalize(L + V);
+let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+let alpha = material.roughness * material.roughness;
+let NdotH = max(dot(N, H), 0.0);
+let alpha2 = alpha * alpha;
+let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+let D = alpha2 / (PI * denom * denom + 1e-5);
+
+let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+let NdotV = max(dot(N, V), 0.0);
+let Gv = NdotV / (NdotV * (1.0 - k) + k);
+let Gl = NdotL / (NdotL * (1.0 - k) + k);
+let G = Gv * Gl;
+
+let numerator = D * G * F;
+let denominator = 4.0 * NdotV * NdotL + 1e-5;
+let specular = numerator / denominator;
+
+let kS = F;
+let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+let diffuse = kD * material.baseColor.rgb / PI;
+
+let radiance = light.color * light.intensity;
+  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    var weight: f32 = 0.0;
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        let sampleUV = shadowUV + offsets[i] * oneOverSize;
-        let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
-                       sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
-        let s = textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            sampleUV, layer, depthRef - bias
-        );
-        // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
-        visibility += select(1.0, s, inBounds);
-        weight += 1.0;
-    }
-    return visibility / weight;
+var visibility: f32 = 0.0;
+let biasConstant: f32 = 0.001;
+let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+let bias = biasConstant + slopeBias;
+let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+let offsets: array<vec2f, 9> = array<vec2f, 9>(
+  vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+  vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+  vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+);
+var weight: f32 = 0.0;
+for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+  let sampleUV = shadowUV + offsets[i] * oneOverSize;
+  let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                  sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+  let s = textureSampleCompare(
+      shadowMapArray, shadowSampler,
+      sampleUV, layer, depthRef - bias
+  );
+  // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+  visibility += select(1.0, s, inBounds);
+  weight += 1.0;
+}
+return visibility / weight;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-
-    let materialData = getPBRMaterial(input.uv);
-    // if (materialData.alpha < 0.01) {
-    //     discard;
-    // }
-
-    var lightContribution = vec3f(0.0);
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-        let depthRef = p.z;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        // let inFrustum =
-        //     p.z >= 0.0 && p.z <= 1.0 &&
-        //     p.x >= -1.0 && p.x <= 1.0 &&
-        //     p.y >= -1.0 && p.y <= 1.0;
-        let inDepth = p.z >= 0.0 && p.z <= 1.0;
-        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
-        let shadowFactor = select(1.0, visibility, inDepth);
-        let contrib = computeSpotLight(
-            spotlights[i],
-            norm,
-            input.fragPos,
-            viewDir,
-            materialData
-        );
-        lightContribution += contrib * shadowFactor;
-    }
-    // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    // var ambientTerm = material.ambientColor * materialData.baseColor;
-    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
-    // -- from dark next feature
-    // var ambientTerm = material.ambientColor * materialData.baseColor;
-    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
-    // like fog interest
-    // var ambientTerm = material.ambientColor + scene.globalAmbient;
-    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
-    return vec4f(finalColor, alpha);
+fn main(input: FragmentInput) -> FragOut {
+let norm = normalize(input.fragNorm);
+let viewDir = normalize(scene.cameraPos - input.fragPos);
+let materialData = getPBRMaterial(input.uv);
+var lightContribution = vec3f(0.0);
+for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+    let p  = sc.xyz / sc.w;
+    let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+    let depthRef = p.z;
+    let lightDir = normalize(spotlights[i].position - input.fragPos);
+    let inDepth = p.z >= 0.0 && p.z <= 1.0;
+    let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+    let shadowFactor = select(1.0, visibility, inDepth);
+    let contrib = computeSpotLight(
+        spotlights[i],
+        norm,
+        input.fragPos,
+        viewDir,
+        materialData
+    );
+    lightContribution += contrib * shadowFactor;
+}
+let texColor = textureSample(meshTexture, meshSampler, input.uv);
+var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+// return vec4f(finalColor, alpha);
+return FragOut(
+  vec4f(finalColor, alpha),
+  vec4f(norm, 0.0),
+  vec4f(input.fragPos, 1.0)
+);
 }`;
 
 // ../../../shaders/minimalist/mini.wgsl.js
 var miniWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position : vec3f,
-    _pad1    : f32,
+  position : vec3f,
+  _pad1    : f32,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
@@ -5844,34 +6396,46 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
 
 // dummy storage binding (not used)
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 // dummy PBR bindings
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient);
-    // alpha from material factor
-    let alpha = texColor.a * material.baseColorFactor.a;
-    if(alpha < 0.01){
-        discard;
-    }
-    return vec4f(finalColor, alpha);
+fn main(input: FragmentInput) -> FragOut {
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient);
+  // alpha from material factor
+  let alpha = texColor.a * material.baseColorFactor.a;
+  if(alpha < 0.01){
+      discard;
+  }
+  // return vec4f(finalColor, alpha);
+  let N = normalize(input.fragNorm);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
@@ -5880,45 +6444,45 @@ var miniaWGSL2 = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,   // unused (kept for layout)
-    cameraViewProjMatrix : mat4x4f,   // unused
-    cameraPos            : vec3f,     // unused
-    padding2             : f32,
-    lightPos             : vec3f,     // unused
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,   // unused (kept for layout)
+  cameraViewProjMatrix : mat4x4f,   // unused
+  cameraPos            : vec3f,     // unused
+  padding2             : f32,
+  lightPos             : vec3f,     // unused
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 // MINIMAL MATERIAL (keep layout compatibility)
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,  // unused
-    roughnessFactor : f32,  // unused
-    _pad1           : f32,
-    _pad2           : f32,
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,  // unused
+  roughnessFactor : f32,  // unused
+  _pad1           : f32,
+  _pad2           : f32,
 };
 
 // Dummy spotlight struct (not used but keeps binding valid)
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
@@ -5940,33 +6504,48 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f, // unused
-    @location(1) fragPos   : vec3f, // unused
-    @location(2) fragNorm  : vec3f, // unused
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f, // unused
+  @location(1) fragPos   : vec3f, // unused
+  @location(2) fragNorm  : vec3f, // unused
+  @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
-    // ===== TEXTURE =====
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  // ===== TEXTURE =====
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
 
-    // ===== BASIC COLOR CONTROL =====
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  // ===== BASIC COLOR CONTROL =====
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
 
-    // ===== AMBIENT ONLY =====
-    let finalColor = baseColor * scene.globalAmbient;
+  // ===== AMBIENT ONLY =====
+  let finalColor = baseColor * scene.globalAmbient;
 
-    // ===== ALPHA =====
-    let alpha = texColor.a * material.baseColorFactor.a;
+  // ===== ALPHA =====
+  let alpha = texColor.a * material.baseColorFactor.a;
 
-    // optional discard (keep if you use alpha cutout)
-    if(alpha < 0.01) {
-        discard;
-    }
+  // optional discard (keep if you use alpha cutout)
+  if(alpha < 0.01) {
+      discard;
+  }
 
-    return vec4f(finalColor, alpha);
+  // return vec4f(finalColor, alpha);
+
+  
+  let N = normalize(input.fragNorm);
+
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
@@ -6021,12 +6600,12 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -6035,8 +6614,14 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
@@ -6073,7 +6658,12 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         discard;
     }
 
-    return vec4f(finalColor, alpha);
+    // return vec4f(finalColor, alpha);
+    return FragOut(
+      vec4f(finalColor, alpha),
+      vec4f(N, 0.0),
+      vec4f(input.fragPos, 1.0)
+    );
 }
 `;
 
@@ -6126,9 +6716,9 @@ struct SpotLight {
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
@@ -6136,63 +6726,58 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let L = normalize(scene.lightPos - input.fragPos);
-
-    // ===== DISTANCE BASED LOD =====
-    let dist = distance(scene.cameraPos, input.fragPos);
-
-    // tweak these!
-    let nearDist = 50.0;
-    let farDist  = 200.0;
-
-    let lodFactor = clamp((dist - nearDist) / (farDist - nearDist), 0.0, 1.0);
-
-    // ===== CHEAP =====
-    let cheapLighting = scene.globalAmbient;
-
-    // ===== MID QUALITY =====
-    let NdotL = dot(N, L);
-    let diffuse = NdotL * 0.5 + 0.5;
-
-    let H = normalize(L + V);
-    let specPower = mix(8.0, 64.0, 1.0 - material.roughnessFactor);
-    let spec = pow(max(dot(N, H), 0.0), specPower);
-
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-
-    var midLighting = scene.globalAmbient;
-    midLighting += diffuse * 0.8;
-    midLighting += spec * 0.3;
-    midLighting += fresnel * 0.2;
-
-    // ===== FINAL BLEND =====
-    let lighting = mix(midLighting, cheapLighting, lodFactor);
-
-    let finalColor = baseColor * lighting;
-
-    // ===== DISTANCE FOG (BONUS \u{1F525}) =====
-    let fogStart = 150.0;
-    let fogEnd   = 400.0;
-
-    let fogFactor = clamp((dist - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
-    let fogColor = vec3f(0.6, 0.7, 0.8);
-
-    let colorWithFog = mix(finalColor, fogColor, fogFactor);
-
-    let alpha = texColor.a * material.baseColorFactor.a;
-    if(alpha < 0.01) {
-        discard;
-    }
-
-    return vec4f(colorWithFog, alpha);
+fn main(input: FragmentInput) -> FragOut {
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let L = normalize(scene.lightPos - input.fragPos);
+  // ===== DISTANCE BASED LOD =====
+  let dist = distance(scene.cameraPos, input.fragPos);
+  // tweak these!
+  let nearDist = 50.0;
+  let farDist  = 200.0;
+  let lodFactor = clamp((dist - nearDist) / (farDist - nearDist), 0.0, 1.0);
+  // ===== CHEAP =====
+  let cheapLighting = scene.globalAmbient;
+  // ===== MID QUALITY =====
+  let NdotL = dot(N, L);
+  let diffuse = NdotL * 0.5 + 0.5;
+  let H = normalize(L + V);
+  let specPower = mix(8.0, 64.0, 1.0 - material.roughnessFactor);
+  let spec = pow(max(dot(N, H), 0.0), specPower);
+  let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  var midLighting = scene.globalAmbient;
+  midLighting += diffuse * 0.8;
+  midLighting += spec * 0.3;
+  midLighting += fresnel * 0.2;
+  // ===== FINAL BLEND =====
+  let lighting = mix(midLighting, cheapLighting, lodFactor);
+  let finalColor = baseColor * lighting;
+  // ===== DISTANCE FOG (BONUS \u{1F525}) =====
+  let fogStart = 150.0;
+  let fogEnd   = 400.0;
+  let fogFactor = clamp((dist - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
+  let fogColor = vec3f(0.6, 0.7, 0.8);
+  let colorWithFog = mix(finalColor, fogColor, fogFactor);
+  let alpha = texColor.a * material.baseColorFactor.a;
+  if(alpha < 0.01) {
+      discard;
+  }
+  // return vec4f(colorWithFog, alpha);
+  let alpha = 1.0;
+  return FragOut(
+    vec4f(colorWithFog, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
@@ -6225,7 +6810,7 @@ struct MaterialPBR {
 };
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
@@ -6233,51 +6818,63 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let L = normalize(scene.lightPos - input.fragPos);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let L = normalize(scene.lightPos - input.fragPos);
 
-    // ===== BASE COLOR =====
-    var baseColor = material.baseColorFactor.rgb;
+  // ===== BASE COLOR =====
+  var baseColor = material.baseColorFactor.rgb;
 
-    // ===== HEIGHT GRADIENT =====
-    let heightFactor = input.fragPos.y * 0.02;
-    let gradientColor = mix(
-        baseColor * 0.5,
-        baseColor * 1.5,
-        clamp(heightFactor, 0.0, 1.0)
-    );
+  // ===== HEIGHT GRADIENT =====
+  let heightFactor = input.fragPos.y * 0.02;
+  let gradientColor = mix(
+      baseColor * 0.5,
+      baseColor * 1.5,
+      clamp(heightFactor, 0.0, 1.0)
+  );
 
-    // ===== FAKE LIGHT =====
-    let NdotL = dot(N, L);
-    let diffuse = NdotL * 0.5 + 0.5;
+  // ===== FAKE LIGHT =====
+  let NdotL = dot(N, L);
+  let diffuse = NdotL * 0.5 + 0.5;
 
-    // ===== FRESNEL EDGE GLOW \u{1F525} =====
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  // ===== FRESNEL EDGE GLOW \u{1F525} =====
+  let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
 
-    // ===== PULSE (time based) =====
-    let pulse = 0.5 + 0.5 * sin(scene.time * 2.0);
+  // ===== PULSE (time based) =====
+  let pulse = 0.5 + 0.5 * sin(scene.time * 2.0);
 
-    // ===== COLOR COMBINE =====
-    var color = gradientColor;
+  // ===== COLOR COMBINE =====
+  var color = gradientColor;
 
-    color *= (scene.globalAmbient + diffuse * 0.8);
+  color *= (scene.globalAmbient + diffuse * 0.8);
 
-    // edge glow tint (stylized)
-    let glowColor = vec3f(0.2, 0.6, 1.0);
-    color += glowColor * fresnel * (0.5 + pulse * 0.5);
+  // edge glow tint (stylized)
+  let glowColor = vec3f(0.2, 0.6, 1.0);
+  color += glowColor * fresnel * (0.5 + pulse * 0.5);
 
-    // ===== OPTIONAL: subtle spec =====
-    let H = normalize(L + V);
-    let spec = pow(max(dot(N, H), 0.0), 16.0);
-    color += spec * 0.2;
+  // ===== OPTIONAL: subtle spec =====
+  let H = normalize(L + V);
+  let spec = pow(max(dot(N, H), 0.0), 16.0);
+  color += spec * 0.2;
 
-    let alpha = material.baseColorFactor.a;
+  let alpha = material.baseColorFactor.a;
 
-    return vec4f(color, alpha);
+  // return vec4f(color, alpha);
+
+  return FragOut(
+    vec4f(color, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
@@ -6333,12 +6930,12 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
@@ -6346,18 +6943,30 @@ struct FragmentInput {
         @location(3) fragUV    : vec2f,  // need UV
 };
 
-@fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
 
-let uv = fract(input.fragUV);
-    // distance to nearest edge 0 or 1
-    let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-    let edgeWidth = 0.05;  // tweak thickness
-    let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
-    let neonColor = vec3f(0.0, 1.0, 1.0);
-    let coreColor = vec3f(0.0, 0.0, 0.0);
-    let color = mix(coreColor, neonColor, edgeFactor);
-    return vec4f(color, 1);
+@fragment
+fn main(input: FragmentInput) -> FragOut {
+  let N = normalize(input.fragNorm);
+  let uv = fract(input.fragUV);
+  let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  let edgeWidth = 0.05;  // tweak thickness
+  let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
+  let neonColor = vec3f(0.0, 1.0, 1.0);
+  let coreColor = vec3f(0.0, 0.0, 0.0);
+  let color = mix(coreColor, neonColor, edgeFactor);
+  // return vec4f(color, 1);
+  // !HARDCODE! - for now
+  let alpha = 1.0;
+  return FragOut(
+    vec4f(color, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }`;
 
 // ../../../shaders/fontana/fontana.wgsl.js
@@ -6512,132 +7121,15 @@ fn sss_lights(fragPos: vec3f, N: vec3f, V: vec3f, fresnel: f32) -> vec3f {
     return vec3f(0.08, 0.62, 0.94) * acc * 0.45;
 }
 `;
-var fountainCapFragmentWGSL = () => SHARED + `
-@fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let t  = scene.time;
-    let N  = normalize(input.fragNorm);
-    let V  = normalize(scene.cameraPos - input.fragPos);
-    let uv = input.uv;
-
-    // Circle mask \u2014 discard outside radius, sharp edge
-    let d = length(uv - vec2f(0.5)) * 2.0;
-    if (d > 1.0) { discard; }
-
-    // Distorted UV for surface detail
-    let uvD = uv + vec2f(
-        sin(uv.y*7.0 + t*1.2)*0.02 + sin(uv.x*5.0 - t*0.2)*0.015,
-        cos(uv.x*6.0 + t*1.0)*0.02 + cos(uv.y*8.0 - t*0.1)*0.012
-    );
-
-    // Water color: dark teal centre -> bright cyan rim
-    var wColor = mix(
-        vec3f(0.01, 0.17, 0.32),
-        mix(vec3f(0.05, 0.50, 0.86), vec3f(0.40, 0.92, 1.00), smoothstep(0.45, 0.95, d)),
-        smoothstep(0.0, 0.55, d)
-    );
-
-    // Caustics \u2014 two sine grids interfering
-    let c1 = sin(uvD.x*18.0 + t*1.1) * sin(uvD.y*18.0 + t*0.9);
-    let c2 = sin((uvD.x+uvD.y)*14.0 - t*1.3) * sin((uvD.x-uvD.y)*14.0 + t*0.7);
-    let caustic = pow(clamp((c1+c2)*0.5+0.5, 0.0, 1.0), 2.5);
-
-    // Ripple rings \u2014 3 expanding rings from centre
-    var rings = 0.0;
-    for (var i = 0u; i < 3u; i++) {
-        let phase = fract(t * 0.4 + f32(i) * 0.13);
-        let ring  = abs(d - phase);
-        rings    += smoothstep(0.06, 0.0, ring) * (1.0 - phase);
-    }
-
-    var mat : PBRMaterialData;
-    mat.metallic  = 0.95;
-    mat.roughness = 0.05;
-    mat.alpha     = 0.88;
-    let foam      = smoothstep(0.56, 0.74, fbm(uvD * 3.5 + vec2f(t*0.09, t*0.06)));
-    wColor        = mix(wColor, vec3f(0.76, 0.95, 1.0), foam * 0.4);
-    mat.baseColor = mix(material.baseColorFactor.rgb, wColor, 0.80);
-
-    let fresnel = fresnelPower(N, V, 2.6);
-
-    var col  = mat.baseColor * scene.globalAmbient;
-    col     += pb_shadows(input.fragPos, N, V, mat); // typo guard: see fn below
-    col     += vec3f(0.48, 0.91, 1.00) * caustic * 1.8;
-    col     += vec3f(0.58, 0.96, 1.00) * rings * 2.5;
-    col     += vec3f(0.25, 0.78, 1.00) * fresnel * 3.5;
-    col     += sss_lights(input.fragPos, N, V, fresnel);
-
-    // AA at circle edge \u2014 1 pixel soft
-    let edgeAA = 1.0 - smoothstep(0.95, 1.0, d);
-    let alpha  = clamp((mat.alpha + fresnel * 0.2) * edgeAA, 0.0, 1.0);
-    return vec4f(col, alpha);
-}
-
-// alias so the snippet above compiles (real fn is pbr_shadows)
-fn pb_shadows(fragPos: vec3f, N: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
-    return pbr_shadows(fragPos, N, V, mat);
-}
-`;
-var fountainCurtainFragmentWGSL = () => SHARED + `
-@fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let t  = scene.time;
-    let N  = normalize(input.fragNorm);
-    let V  = normalize(scene.cameraPos - input.fragPos);
-    let uv = input.uv;
-
-    // V=0 is top (column top), V=1 is bottom (basin)
-    let vPos = uv.y;
-
-    // Scrolling vertical streaks \u2014 noise columns scrolling downward
-    let scrollY  = fract(uv.y * 3.0 + t * 1.6);
-    let streakN  = noise2d(vec2f(uv.x * 10.0, scrollY * 5.0));
-    let streak   = smoothstep(0.55, 0.90, streakN);
-
-    // Secondary fast thin streaks
-    let scrollY2 = fract(uv.y * 6.0 + t * 2.4);
-    let streak2  = smoothstep(0.72, 0.95, noise2d(vec2f(uv.x * 20.0, scrollY2 * 4.0)));
-
-    // Gravity fade \u2014 water thins and disperses toward bottom
-    // let gravFade = 1.0 - vPos * 0.65;
-    let gravFade = vPos * 0.65 + 0.35;
-
-    // Horizontal wave distortion (subtle)
-    let waveOff = sin(uv.y * 12.0 + t * 2.0) * 0.008;
-    let uvW     = vec2f(uv.x + waveOff, uv.y);
-
-    // Water color: bright cyan top -> slightly transparent teal bottom
-    let wColor = mix(
-        vec3f(0.30, 0.82, 1.00),
-        vec3f(0.05, 0.40, 0.70),
-        vPos
-    );
-
-    var mat : PBRMaterialData;
-    mat.metallic  = 0.90;
-    mat.roughness = 0.08;
-    mat.alpha     = 0.0;  // fully controlled by streak alpha below
-    mat.baseColor = mix(material.baseColorFactor.rgb, wColor, 0.75);
-
-    let fresnel = fresnelPower(N, V, 2.0);
-
-    var col  = mat.baseColor * scene.globalAmbient;
-    col     += pbr_shadows(input.fragPos, N, V, mat);
-    col     += vec3f(0.40, 0.88, 1.00) * (streak + streak2 * 0.5) * 1.6;
-    col     += vec3f(0.25, 0.78, 1.00) * fresnel * 2.0;
-
-    // Alpha: streaks define where water is visible
-    let alpha = clamp((streak * 0.75 + streak2 * 0.35 + fresnel * 0.25) * gravFade, 0.0, 1.0);
-
-    // Discard nearly-invisible pixels for performance + clean look
-    if (alpha < 0.02) { discard; }
-
-    return vec4f(col, alpha);
-}
-`;
 var fountainBasinFragmentWGSL = () => SHARED + `
+
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let t  = scene.time;
     let N  = normalize(input.fragNorm);
     let V  = normalize(scene.cameraPos - input.fragPos);
@@ -6698,176 +7190,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 
     let alpha = clamp((mat.alpha + fresnel * 0.2) * ringMask, 0.0, 1.0);
     return vec4f(col, alpha);
-}
-`;
-var fountainWaterVertexWGSL = () => `
-struct Scene {
-  lightViewProjMatrix: mat4x4f,
-  cameraViewProjMatrix: mat4x4f,
-  cameraPos: vec3f,
-  padding0: f32,
-  lightPos: vec3f,
-  padding1: f32,
-}
-
-struct Model {
-  modelMatrix: mat4x4f,
-}
-
-struct VertexAnimParams {
-  time: f32,
-  flags: f32,
-  globalIntensity: f32,
-  _pad0: f32,
-
-  waveSpeed: f32,
-  waveAmplitude: f32,
-  waveFrequency: f32,
-  _pad1: f32,
-
-  windSpeed: f32,
-  windStrength: f32,
-  windHeightInfluence: f32,
-  windTurbulence: f32,
-
-  pulseSpeed: f32,
-  pulseAmount: f32,
-  pulseCenterX: f32,
-  pulseCenterY: f32,
-
-  twistSpeed: f32,
-  twistAmount: f32,
-  _pad2: f32,
-  _pad3: f32,
-
-  noiseScale: f32,
-  noiseStrength: f32,
-  noiseSpeed: f32,
-  _pad4: f32,
-
-  oceanWaveScale: f32,
-  oceanWaveHeight: f32,
-  oceanWaveSpeed: f32,
-  _pad5: f32,
-}
-
-@group(0) @binding(0) var<uniform> scene: Scene;
-@group(2) @binding(0) var<uniform> model: Model;
-@group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
-@group(2) @binding(3) var<uniform> morphBlend: f32;
-
-const ANIM_WAVE: u32 = 1u;
-const ANIM_WIND: u32 = 2u;
-const ANIM_PULSE: u32 = 4u;
-const ANIM_TWIST: u32 = 8u;
-const ANIM_NOISE: u32 = 16u;
-const ANIM_OCEAN: u32 = 32u;
-
-struct VertexInput {
-  @location(0) position:  vec3f,
-  @location(1) normal:    vec3f,
-  @location(2) uv:        vec2f,
-  @location(6) positionB: vec3f,
-  @location(7) normalB:   vec3f,
-};
-
-struct VertexOutput {
-  @location(0) shadowPos: vec4f,
-  @location(1) fragPos:   vec3f,
-  @location(2) fragNorm:  vec3f,
-  @location(3) uv:        vec2f,
-  @builtin(position) Position: vec4f,
-}
-
-fn hash(p: vec2f) -> f32 {
-  var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
-  p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
-  return fract((p3.x + p3.y) * p3.z);
-}
-
-fn noise(p: vec2f) -> f32 {
-  let i = floor(p); let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2f(0.0, 0.0)), hash(i + vec2f(1.0, 0.0)), u.x),
-    mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), u.x),
-    u.y
-  );
-}
-
-fn applyVertexAnimation(pos: vec3f) -> vec3f {
-  var p = pos;
-  let flags = u32(vertexAnim.flags);
-  let t = vertexAnim.time;
-
-  if ((flags & ANIM_WAVE) != 0u) {
-    let w = sin(p.x * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed) * 
-            cos(p.z * vertexAnim.waveFrequency + t * vertexAnim.waveSpeed);
-    p.y += w * vertexAnim.waveAmplitude;
-  }
-
-  if ((flags & ANIM_WIND) != 0u) {
-    let h = max(0.0, p.y) * vertexAnim.windHeightInfluence;
-    let d = vec2f(sin(t * vertexAnim.windSpeed), cos(t * vertexAnim.windSpeed * 0.7)) * vertexAnim.windStrength;
-    let turb = noise(p.xz * 0.5 + t * 0.3) * vertexAnim.windTurbulence;
-    p.x += d.x * h * (1.0 + turb);
-    p.z += d.y * h * (1.0 + turb);
-  }
-
-  if ((flags & ANIM_PULSE) != 0u) {
-    let s = 1.0 + sin(t * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
-    let c = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
-    p = c + (p - c) * s;
-  }
-
-  if ((flags & ANIM_TWIST) != 0u) {
-    let angle = p.y * vertexAnim.twistAmount * sin(t * vertexAnim.twistSpeed);
-    let cosA = cos(angle); let sinA = sin(angle);
-    p = vec3f(p.x * cosA - p.z * sinA, p.y, p.x * sinA + p.z);
-  }
-
-  if ((flags & ANIM_NOISE) != 0u) {
-    p.y += (noise(p.xz * vertexAnim.noiseScale + t * vertexAnim.noiseSpeed) - 0.5) * vertexAnim.noiseStrength;
-  }
-
-  if ((flags & ANIM_OCEAN) != 0u) {
-    let s = vertexAnim.oceanWaveScale;
-    let h = vertexAnim.oceanWaveHeight;
-    p.y += sin(dot(p.xz, vec2f(1.0, 0.0)) * s + t * vertexAnim.oceanWaveSpeed) * h;
-    p.y += sin(dot(p.xz, vec2f(0.7, 0.7)) * s * 1.2 + t * vertexAnim.oceanWaveSpeed * 1.3) * h * 0.7;
-  }
-
-  return mix(pos, p, vertexAnim.globalIntensity);
-}
-
-@vertex
-fn main(input: VertexInput) -> VertexOutput {
-  var output: VertexOutput;
-
-  let blendedPosition = mix(input.position, input.positionB, morphBlend);
-  let blendedNormal   = normalize(mix(input.normal, input.normalB, morphBlend));
-
-  var pos = blendedPosition;
-
-  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
-      pos = applyVertexAnimation(pos);
-  }
-
-  let worldPos = model.modelMatrix * vec4f(pos, 1.0);
-
-  let normalMatrix = mat3x3f(
-      model.modelMatrix[0].xyz,
-      model.modelMatrix[1].xyz,
-      model.modelMatrix[2].xyz
-  );
-
-  output.Position  = scene.cameraViewProjMatrix * worldPos;
-  output.fragPos   = worldPos.xyz;
-  output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm  = normalize(normalMatrix * blendedNormal);
-  output.uv        = input.uv;
-
-  return output;
 }
 `;
 
@@ -7148,15 +7470,17 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
   return visibility / weight;
 }
 
+struct FragOut {
+    @location(0) color   : vec4f,
+    @location(1) normal  : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
   let norm = normalize(input.fragNorm);
   let viewDir = normalize(scene.cameraPos - input.fragPos);
   let materialData = getPBRMaterial(input.uv);
-  // if (materialData.alpha < 0.01) {
-  //     discard;
-  // }
-
   var lightContribution = vec3f(0.0);
   for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
       let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
@@ -7164,10 +7488,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
       let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
       let depthRef = p.z;
       let lightDir = normalize(spotlights[i].position - input.fragPos);
-      // let inFrustum =
-      //     p.z >= 0.0 && p.z <= 1.0 &&
-      //     p.x >= -1.0 && p.x <= 1.0 &&
-      //     p.y >= -1.0 && p.y <= 1.0;
       let inDepth = p.z >= 0.0 && p.z <= 1.0;
       let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
       let shadowFactor = select(1.0, visibility, inDepth);
@@ -7188,7 +7508,12 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
   // var ambientTerm = material.ambientColor + scene.globalAmbient;
   // var finalColor = ambientTerm + texColor.rgb * lightContribution;
   let alpha = texColor.a * material.baseColorFactor.a;
-  return vec4f(finalColor, alpha);
+  // return vec4f(finalColor, alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(norm, 0.0),
+    vec4f(input.fragPos, 1.0),
+  );
 }`;
 
 // ../../../engine/materials.js
@@ -7338,7 +7663,6 @@ var Materials = class {
       // padding
     ]);
     this.device.queue.writeBuffer(this.waterParamsBuffer, 0, this.waterParamsData);
-    console.log(">>>>>>>>>>>>>>CREATION>>>>>>>>>>>>>>>");
     this.waterBindGroup = this.device.createBindGroup({
       label: "waterBG",
       layout: this.waterBindGroupLayout,
@@ -7404,6 +7728,7 @@ var Materials = class {
   changeMaterial(newType = "graph", graphShader) {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
+    this.setupPipeline();
   }
   createCheckerboardTexture(size2 = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
     const mipLevelCount = Math.floor(Math.log2(size2)) + 1;
@@ -7437,6 +7762,7 @@ var Materials = class {
   setBlend = (alpha) => {
     this.material.useBlend = true;
     this.setupMaterialPBR([1, 0, 0, alpha]);
+    if (app) app.buildLightShadowBuckets();
   };
   createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
     const defaults = {
@@ -7748,6 +8074,8 @@ var Materials = class {
       const canvas = document.createElement("canvas");
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
+      canvas.style.width = (arg.width || 256) + "px";
+      canvas.style.height = (arg.height || 256) + "px";
       canvas.style.position = "absolute";
       canvas.style.left = "0px";
       canvas.style.top = "-325px";
@@ -7783,6 +8111,9 @@ var Materials = class {
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       this.video = null;
+      this.updateVideoTexture();
+      this.createMaterialBindGroupVideo();
+      this.setupPipeline();
     }
     if (this.video) await new Promise((resolve) => {
       this.video.requestVideoFrameCallback(() => {
@@ -7930,40 +8261,45 @@ struct FragmentInput {
 const albedo = vec3f(0.9);
 const ambientFactor = 1.2;
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input : FragmentInput) -> @location(0) vec4f {
+fn main(input : FragmentInput) -> FragOut {
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-  let color: vec4f = vec4(textureColor.rgb * ambientFactor , textureColor.a);
-  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a);
-   switch (postFXMode) {
-    case 0: {
-      return color;
-    }
-    case 1: {
-      // Invert
-      return vec4f(1.0 - color.rgb, color.a);
-    }
-    case 2: {
-      // Grayscale
-      let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
-      return vec4f(vec3f(gray), color.a);
-    }
-    case 3: {
-      // Chroma Key
-      let keyColor = vec3f(0.0, 1.0, 0.0);
-      let threshold = 0.3;
-      let diff = distance(color.rgb, keyColor);
-      if (diff < threshold) {
-        return vec4f(0.0, 0.0, 0.0, 0.0);
-      }
-      return color;
-    }
-    default: {
-      return color;
+  let color: vec4f = vec4(textureColor.rgb * ambientFactor, textureColor.a);
+  
+  // \u2705 Apply post-FX based on mode
+  var finalColor: vec4f = color;
+  
+  if (postFXMode == 1u) {
+    // Invert
+    finalColor = vec4f(1.0 - color.rgb, color.a);
+  } else if (postFXMode == 2u) {
+    // Grayscale
+    let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
+    finalColor = vec4f(vec3f(gray), color.a);
+  } else if (postFXMode == 3u) {
+    // Chroma Key (green screen)
+    let keyColor = vec3f(0.0, 1.0, 0.0);
+    let threshold = 0.3;
+    let diff = distance(color.rgb, keyColor);
+    if (diff < threshold) {
+      finalColor = vec4f(0.0, 0.0, 0.0, 0.0);
     }
   }
+  
+  // \u2705 Return all 3 attachments
+  return FragOut(
+    finalColor,
+    vec4f(normalize(input.fragNorm), 1.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
@@ -8296,40 +8632,35 @@ var PointEffect2 = class {
 
 // ../../../shaders/gizmo/gimzoShader.js
 var gizmoEffect = `
-struct Camera {
-  viewProj : mat4x4<f32>
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
-
-struct ModelData {
-  model : mat4x4<f32>,
-};
-@group(0) @binding(1) var<uniform> modelData : ModelData;
+struct Camera {viewProj : mat4x4<f32>};
+struct ModelData {model : mat4x4<f32>};
 
 struct GizmoSettings {
   mode : u32,
   size : f32,
   selectedAxis : u32,
-  lineThickness : f32,
+  lineThickness : f32
 };
+
+@group(0) @binding(0) var<uniform> camera : Camera;
+@group(0) @binding(1) var<uniform> modelData : ModelData;
 @group(0) @binding(2) var<uniform> gizmoSettings : GizmoSettings;
 
 struct VSIn {
   @location(0) position : vec3<f32>,
-  @location(1) color : vec3<f32>,
+  @location(1) color : vec3<f32>
 };
 
 struct VSOut {
   @builtin(position) position : vec4<f32>,
   @location(0) color : vec3<f32>,
   @location(1) worldPos : vec3<f32>,
-  @location(2) axisId : f32,
+  @location(2) axisId : f32
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
   var output : VSOut;
-  
   let worldPos = modelData.model * vec4<f32>(input.position * gizmoSettings.size, 1.0);
   output.position = camera.viewProj * worldPos;
   output.worldPos = worldPos.xyz;
@@ -8339,22 +8670,29 @@ fn vsMain(input : VSIn) -> VSOut {
   if (input.color.r > 0.9) { axisId = 1.0; } // X axis
   else if (input.color.g > 0.9) { axisId = 2.0; } // Y axis
   else if (input.color.b > 0.9) { axisId = 3.0; } // Z axis
-  
   output.axisId = axisId;
-  
-  // Highlight selected axis
-  var finalColor = input.color;
+
+  var finalColor = input.color * 4.5;
   if (gizmoSettings.selectedAxis > 0u && u32(axisId) == gizmoSettings.selectedAxis) {
-    finalColor = vec3<f32>(1.0, 1.0, 0.0); // Yellow when selected
+    finalColor = vec3<f32>(8.0, 7.0, 0.5);
   }
-  
   output.color = finalColor;
   return output;
 }
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  return vec4<f32>(input.color, 1.0);
+fn fsMain(input : VSOut) -> FragOut {
+  return FragOut(
+    vec4f(input.color * 2, 1.0),
+    vec4f(normalize(input.worldPos), 1.0),
+    vec4f(input.worldPos, 1.0)
+  );
 }`;
 
 // ../../../engine/effects/gizmo.js
@@ -8368,16 +8706,39 @@ var GizmoEffect = class {
     this.selectedAxis = 0;
     this.movementScale = 0.035;
     this.isDragging = false;
-    this.dragStartPoint = null;
     this.dragAxis = 0;
     this.parentMesh = null;
-    this.initialPosition = null;
+    this.editorUpdatePosEvent = new CustomEvent("web.editor.update.pos", {
+      detail: { inputFor: "", propertyId: "position", property: "x", value: 0 }
+    });
+    this.editorUpdateRotEvent = new CustomEvent("web.editor.update.rot", {
+      detail: { inputFor: "", propertyId: "rotation", property: "y", value: 0 }
+    });
+    this.editorUpdateScaleEvent = new CustomEvent("web.editor.update.scale", {
+      detail: { inputFor: "", propertyId: "scale", property: "1", value: 0 }
+    });
+    this.gizmoSettingsCache = new Float32Array(4);
+    this.matrixResultCache = new Float32Array(16);
+    this.dragStartPointCache = new Float32Array(3);
+    this.initialPositionCache = { x: 0, y: 0, z: 0 };
+    this._axisScreenDirCache = { x: 0, y: 0 };
+    this._p2Cache = { x: 0, y: 0, z: 0 };
+    this._rayIntersectsCache = {
+      ro: new Float32Array(3),
+      rd: new Float32Array(3),
+      lineStart: new Float32Array(3),
+      lineEnd: new Float32Array(3),
+      line: new Float32Array(3),
+      w: new Float32Array(3),
+      closestOnRay: new Float32Array(3),
+      closestOnLine: new Float32Array(3)
+    };
     this._initPipeline();
     this._setupEventListeners();
-    addEventListener("editor-set-gizmo-mode", (e2) => {
-      console.log("MODE:", e2.detail.mode);
+    this._onGizmoModeChange = (e2) => {
       this.setMode(e2.detail.mode);
-    });
+    };
+    addEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
   _initPipeline() {
     this._createTranslateGizmo();
@@ -8411,26 +8772,24 @@ var GizmoEffect = class {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          {
-            arrayStride: 3 * 4,
-            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-          },
-          {
-            arrayStride: 3 * 4,
-            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
-          }
+          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] }
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-          }
-        }]
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
       },
       primitive: { topology: "line-list" },
       depthStencil: {
@@ -8441,8 +8800,8 @@ var GizmoEffect = class {
     });
   }
   _createTranslateGizmo() {
-    const axisLength = 2;
-    const arrowSize = 0.15;
+    const axisLength = 1;
+    const arrowSize = 0.05;
     const positions = new Float32Array([
       0,
       0,
@@ -8566,7 +8925,6 @@ var GizmoEffect = class {
       1,
       0,
       0,
-      // Y axis (green)
       0,
       1,
       0,
@@ -8597,7 +8955,6 @@ var GizmoEffect = class {
       0,
       1,
       0,
-      // Z axis (blue)
       0,
       0,
       1,
@@ -8639,10 +8996,13 @@ var GizmoEffect = class {
     app.canvas.addEventListener("ray.hit.mousedown", (e2) => {
       const detail = e2.detail;
       if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
+        console.log("test _handleRayHit ");
         this._handleRayHit(detail);
       } else {
         e2.detail.hitObject.effects.gizmoEffect = this;
-        this.parentMesh.effects.gizmoEffect = null;
+        if (this.parentMesh && this.parentMesh.effects) {
+          this.parentMesh.effects.gizmoEffect = null;
+        }
         this.parentMesh = e2.detail.hitObject;
         app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
       }
@@ -8650,46 +9010,36 @@ var GizmoEffect = class {
     app.canvas.addEventListener("mousemove", (e2) => {
       if (this.isDragging && e2.buttons === 1) {
         this._handleDrag(e2);
-        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if (this.isDragging && e2.buttons === 0) {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       } else {
-        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
       }
     });
     app.canvas.addEventListener("mouseup", () => {
       if (this.isDragging) {
         if (this.parentMesh._GRAPH_CACHE) return;
         if (this.mode == 0) {
-          document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "position",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z
-            }
-          }));
+          this.editorUpdatePosEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdatePosEvent.detail.propertyId = "position";
+          this.editorUpdatePosEvent.detail.property = this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z";
+          this.editorUpdatePosEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z;
+          document.dispatchEvent(this.editorUpdatePosEvent);
         } else if (this.mode == 1) {
-          document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "rotation",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
+          this.editorUpdateRotEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdateRotEvent.detail.propertyId = "rotation";
+          this.editorUpdateRotEvent.detail.property = this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z";
+          this.editorUpdateRotEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
+          document.dispatchEvent(this.editorUpdateRotEvent);
         } else if (this.mode == 2) {
-          document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "scale",
-              property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
+          this.editorUpdateScaleEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdateScaleEvent.detail.propertyId = "scale";
+          this.editorUpdateScaleEvent.detail.property = this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2";
+          this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
+          document.dispatchEvent(this.editorUpdateScaleEvent);
         }
+        console.log("this.isDragging = false;");
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
@@ -8701,56 +9051,47 @@ var GizmoEffect = class {
     const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
     if (axis > 0) {
       this.selectedAxis = axis;
-      this.dragStartPoint = [...hitPoint];
-      this.initialPosition = {
-        x: this.parentMesh.position.x,
-        y: this.parentMesh.position.y,
-        z: this.parentMesh.position.z
-      };
+      this.dragStartPointCache[0] = hitPoint[0];
+      this.dragStartPointCache[1] = hitPoint[1];
+      this.dragStartPointCache[2] = hitPoint[2];
+      this.initialPositionCache.x = this.parentMesh.position.x;
+      this.initialPositionCache.y = this.parentMesh.position.y;
+      this.initialPositionCache.z = this.parentMesh.position.z;
       this.dragAxis = axis;
       this._updateGizmoSettings();
+      console.log("this.isDragging = true;");
       this.isDragging = true;
     }
   }
-  /**
-  * Get the screen-space direction of a world axis
-  * @param {number} axisIndex - 0=X, 1=Y, 2=Z
-  * @returns {{x: number, y: number}} - Normalized 2D screen direction
-  */
   _getAxisScreenDirection(axisIndex) {
-    const worldAxis = [
-      [1, 0, 0],
-      // X
-      [0, 1, 0],
-      // Y
-      [0, 0, 1]
-      // Z
-    ][axisIndex];
+    let xDir = 0, yDir = 0, zDir = 0;
+    if (axisIndex === 0) xDir = 1;
+    else if (axisIndex === 1) yDir = 1;
+    else if (axisIndex === 2) zDir = 1;
     const viewMatrix = app.getCamera().view;
     const projMatrix = app.getCamera().projectionMatrix;
     const p1 = this.parentMesh.position;
-    const p2 = {
-      x: p1.x + worldAxis[0],
-      y: p1.y + worldAxis[1],
-      z: p1.z + worldAxis[2]
-    };
+    this._p2Cache.x = p1.x + xDir;
+    this._p2Cache.y = p1.y + yDir;
+    this._p2Cache.z = p1.z + zDir;
     const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
-    const screen2 = this._worldToScreen(p2, viewMatrix, projMatrix);
-    const dx = screen2.x - screen1.x;
-    const dy = screen2.y - screen1.y;
+    const s1X = screen1.x, s1Y = screen1.y;
+    const screen2 = this._worldToScreen(this._p2Cache, viewMatrix, projMatrix);
+    const dx = screen2.x - s1X;
+    const dy = screen2.y - s1Y;
     const length2 = Math.sqrt(dx * dx + dy * dy);
-    return {
-      x: length2 > 1e-3 ? dx / length2 : 0,
-      y: length2 > 1e-3 ? dy / length2 : 0
-    };
+    this._axisScreenDirCache.x = length2 > 1e-3 ? dx / length2 : 0;
+    this._axisScreenDirCache.y = length2 > 1e-3 ? dy / length2 : 0;
+    return this._axisScreenDirCache;
   }
   _worldToScreen(worldPos, viewMatrix, projMatrix) {
     const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
     const ndcX = clipPos.x / clipPos.w;
     const ndcY = clipPos.y / clipPos.w;
-    const screenX = (ndcX + 1) * 0.5 * app.canvas.width;
-    const screenY = (1 - ndcY) * 0.5 * app.canvas.height;
-    return { x: screenX, y: screenY };
+    return {
+      x: (ndcX + 1) * 0.5 * app.canvas.width,
+      y: (1 - ndcY) * 0.5 * app.canvas.height
+    };
   }
   _transformPoint(point, viewMatrix, projMatrix) {
     const vp = this._multiplyMatrices(projMatrix, viewMatrix);
@@ -8758,19 +9099,15 @@ var GizmoEffect = class {
     const y2 = vp[1] * point.x + vp[5] * point.y + vp[9] * point.z + vp[13];
     const z = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
     const w = vp[3] * point.x + vp[7] * point.y + vp[11] * point.z + vp[15];
-    return { x: x2, y: y2, z, w };
-  }
-  _multiplyMatrices(a, b) {
-    const result2 = new Array(16);
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        result2[i * 4 + j] = a[i * 4 + 0] * b[0 * 4 + j] + a[i * 4 + 1] * b[1 * 4 + j] + a[i * 4 + 2] * b[2 * 4 + j] + a[i * 4 + 3] * b[3 * 4 + j];
-      }
-    }
-    return result2;
+    this._p2Cache.x = x2;
+    this._p2Cache.y = y2;
+    this._p2Cache.z = z;
+    this._p2Cache.w = w;
+    return this._p2Cache;
   }
   _handleDrag(mouseEvent) {
-    if (!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
+    if (!this.parentMesh || !this.isDragging) return;
+    if (this.parentMesh.dontDrag && byId("graph-status").innerText === "\u{1F534}") return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -8783,25 +9120,21 @@ var GizmoEffect = class {
           case 2:
             this.parentMesh.position.y -= deltaY * this.movementScale;
             break;
-          // case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
           case 3:
-            const zAxisScreenDir = this._getAxisScreenDirection(2);
-            const mouseDelta = { x: deltaX, y: -deltaY };
-            const movement = mouseDelta.x * zAxisScreenDir.x + mouseDelta.y * zAxisScreenDir.y;
-            this.parentMesh.position.z += movement * this.movementScale;
+            this.parentMesh.position.z -= (deltaX - deltaY) * this.movementScale;
         }
         break;
       case 1:
-        const rotSpeed = 0.1;
+        const rotSpeed2 = 0.1;
         switch (this.dragAxis) {
           case 1:
-            this.parentMesh.rotation.x += deltaY * rotSpeed;
+            this.parentMesh.rotation.x += deltaY * rotSpeed2;
             break;
           case 2:
-            this.parentMesh.rotation.y += deltaX * rotSpeed;
+            this.parentMesh.rotation.y += deltaX * rotSpeed2;
             break;
           case 3:
-            this.parentMesh.rotation.z += direction * rotSpeed;
+            this.parentMesh.rotation.z += direction * rotSpeed2;
             break;
         }
         break;
@@ -8822,65 +9155,78 @@ var GizmoEffect = class {
     }
   }
   _raycastAxis(rayOrigin, rayDirection, mesh) {
-    const gizmoPos = [
-      mesh.position.x,
-      mesh.position.y,
-      mesh.position.z
-    ];
+    const mX = mesh.position.x, mY = mesh.position.y, mZ = mesh.position.z;
     const threshold = 0.1 * this.size;
-    const xEnd = [gizmoPos[0] + 2 * this.size, gizmoPos[1], gizmoPos[2]];
-    const xHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, xEnd, threshold);
-    if (xHit) return 1;
-    const yEnd = [gizmoPos[0], gizmoPos[1] + 2 * this.size, gizmoPos[2]];
-    const yHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, yEnd, threshold);
-    if (yHit) return 2;
-    const zEnd = [gizmoPos[0], gizmoPos[1], gizmoPos[2] + 2 * this.size];
-    const zHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, zEnd, threshold);
-    if (zHit) return 3;
+    const ext = 2 * this.size;
+    const start = this._rayIntersectsCache.lineStart;
+    start[0] = mX;
+    start[1] = mY;
+    start[2] = mZ;
+    const end = this._rayIntersectsCache.lineEnd;
+    end[0] = mX + ext;
+    end[1] = mY;
+    end[2] = mZ;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 1;
+    end[0] = mX;
+    end[1] = mY + ext;
+    end[2] = mZ;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 2;
+    end[0] = mX;
+    end[1] = mY;
+    end[2] = mZ + ext;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold * 2)) return 3;
     return 0;
   }
   _rayIntersectsLine(rayOrigin, rayDir, lineStart, lineEnd, threshold) {
-    const ro = Array.isArray(rayOrigin) ? rayOrigin : [rayOrigin[0], rayOrigin[1], rayOrigin[2]];
-    const rd = [rayDir[0], rayDir[1], rayDir[2]];
-    const rdLen = Math.sqrt(rd[0] ** 2 + rd[1] ** 2 + rd[2] ** 2);
-    const ray = [rd[0] / rdLen, rd[1] / rdLen, rd[2] / rdLen];
-    const line = [
-      lineEnd[0] - lineStart[0],
-      lineEnd[1] - lineStart[1],
-      lineEnd[2] - lineStart[2]
-    ];
-    const w = [
-      ro[0] - lineStart[0],
-      ro[1] - lineStart[1],
-      ro[2] - lineStart[2]
-    ];
-    const a = ray[0] ** 2 + ray[1] ** 2 + ray[2] ** 2;
-    const b = ray[0] * line[0] + ray[1] * line[1] + ray[2] * line[2];
-    const c = line[0] ** 2 + line[1] ** 2 + line[2] ** 2;
-    const d = ray[0] * w[0] + ray[1] * w[1] + ray[2] * w[2];
-    const e2 = line[0] * w[0] + line[1] * w[1] + line[2] * w[2];
+    const cache = this._rayIntersectsCache;
+    cache.ro[0] = rayOrigin[0];
+    cache.ro[1] = rayOrigin[1];
+    cache.ro[2] = rayOrigin[2];
+    const rd0 = rayDir[0], rd1 = rayDir[1], rd2 = rayDir[2];
+    const rdLen = Math.sqrt(rd0 * rd0 + rd1 * rd1 + rd2 * rd2);
+    cache.rd[0] = rd0 / rdLen;
+    cache.rd[1] = rd1 / rdLen;
+    cache.rd[2] = rd2 / rdLen;
+    cache.line[0] = lineEnd[0] - lineStart[0];
+    cache.line[1] = lineEnd[1] - lineStart[1];
+    cache.line[2] = lineEnd[2] - lineStart[2];
+    cache.w[0] = cache.ro[0] - lineStart[0];
+    cache.w[1] = cache.ro[1] - lineStart[1];
+    cache.w[2] = cache.ro[2] - lineStart[2];
+    const a = cache.rd[0] * cache.rd[0] + cache.rd[1] * cache.rd[1] + cache.rd[2] * cache.rd[2];
+    const b = cache.rd[0] * cache.line[0] + cache.rd[1] * cache.line[1] + cache.rd[2] * cache.line[2];
+    const c = cache.line[0] * cache.line[0] + cache.line[1] * cache.line[1] + cache.line[2] * cache.line[2];
+    const d = cache.rd[0] * cache.w[0] + cache.rd[1] * cache.w[1] + cache.rd[2] * cache.w[2];
+    const e2 = cache.line[0] * cache.w[0] + cache.line[1] * cache.w[1] + cache.line[2] * cache.w[2];
     const denom = a * c - b * b;
-    if (Math.abs(denom) < 1e-4) return false;
+    if (Math.abs(denom) < 1e-7) return false;
     const sc = (b * e2 - c * d) / denom;
     const tc = (a * e2 - b * d) / denom;
     if (tc < 0 || tc > 1) return false;
-    const closestOnRay = [
-      ro[0] + sc * ray[0],
-      ro[1] + sc * ray[1],
-      ro[2] + sc * ray[2]
-    ];
-    const closestOnLine = [
-      lineStart[0] + tc * line[0],
-      lineStart[1] + tc * line[1],
-      lineStart[2] + tc * line[2]
-    ];
-    const dist2 = Math.sqrt((closestOnRay[0] - closestOnLine[0]) ** 2 + (closestOnRay[1] - closestOnLine[1]) ** 2 + (closestOnRay[2] - closestOnLine[2]) ** 2);
+    cache.closestOnRay[0] = cache.ro[0] + sc * cache.rd[0];
+    cache.closestOnRay[1] = cache.ro[1] + sc * cache.rd[1];
+    cache.closestOnRay[2] = cache.ro[2] + sc * cache.rd[2];
+    cache.closestOnLine[0] = lineStart[0] + tc * cache.line[0];
+    cache.closestOnLine[1] = lineStart[1] + tc * cache.line[1];
+    cache.closestOnLine[2] = lineStart[2] + tc * cache.line[2];
+    const dX = cache.closestOnRay[0] - cache.closestOnLine[0];
+    const dY = cache.closestOnRay[1] - cache.closestOnLine[1];
+    const dZ = cache.closestOnRay[2] - cache.closestOnLine[2];
+    const dist2 = Math.sqrt(dX * dX + dY * dY + dZ * dZ);
     return dist2 < threshold;
   }
-  _updateGizmoSettings() {
-    const data = new Float32Array([this.mode, this.size, this.selectedAxis, 1]);
-    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, data);
+  // Lifecycle cleanup method to completely eliminate global memory retention loops
+  destroy() {
+    removeEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
+  _updateGizmoSettings() {
+    this.gizmoSettingsCache[0] = this.mode;
+    this.gizmoSettingsCache[1] = this.size;
+    this.gizmoSettingsCache[2] = this.selectedAxis;
+    this.gizmoSettingsCache[3] = 1;
+    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, this.gizmoSettingsCache);
+  }
+  // ... rest of structural binding configurations unchanged ...
   updateInstanceData(baseModelMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
   }
@@ -8894,7 +9240,7 @@ var GizmoEffect = class {
     pass.draw(this.vertexCount);
   }
   render(pass, mesh, viewProjMatrix) {
-    this.parentMesh = mesh;
+    if (mesh !== this.parentMesh) return;
     this.draw(pass, viewProjMatrix);
   }
   setMode(mode) {
@@ -9389,6 +9735,7 @@ var flameEffect = (
 struct Camera {
   viewProj : mat4x4<f32>
 };
+
 @group(0) @binding(0) var<uniform> camera : Camera;
 
 // Uniform buffer layout (112 bytes, all vec4-aligned):
@@ -9396,12 +9743,14 @@ struct Camera {
 //   offset  64 : timeSpeed    vec4<f32>     (.x = time, .y = speed)
 //   offset  80 : params       vec4<f32>     (.x = intensity, .y = turbulence, .z = stretch)
 //   offset  96 : tint         vec4<f32>     (.xyz = rgb tint colour, .w = tint strength 0..1)
+
 struct ModelData {
   model     : mat4x4<f32>,
   timeSpeed : vec4<f32>,
   params    : vec4<f32>,
   tint      : vec4<f32>,
 };
+
 @group(0) @binding(1) var<uniform> modelData : ModelData;
 
 struct VSIn {
@@ -9412,10 +9761,12 @@ struct VSIn {
 struct VSOut {
   @builtin(position) position  : vec4<f32>,
   @location(0)       uv        : vec2<f32>,
-  // Pack all scalar params into two interpolants to stay within limits
   @location(1)       p0        : vec4<f32>, // .x=time .y=speed .z=intensity .w=turbulence
   @location(2)       p1        : vec4<f32>, // .x=stretch .y=tintStrength
   @location(3)       tintColor : vec3<f32>,
+
+  @location(4) fragNorm  : vec3<f32>,
+  @location(5) fragPos   : vec3<f32>,
 };
 
 @vertex
@@ -9425,6 +9776,10 @@ fn vsMain(input : VSIn) -> VSOut {
   let worldPos     = modelData.model * vec4<f32>(input.position, 1.0);
   output.position  = camera.viewProj * worldPos;
   output.uv        = input.uv;
+
+  output.fragPos = worldPos.xyz;
+  let localNormal = vec3<f32>(0.0, 0.0, 1.0); 
+  output.fragNorm = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz) * localNormal;
 
   output.p0 = vec4<f32>(
     modelData.timeSpeed.x,  // time
@@ -9473,11 +9828,14 @@ fn fbm(p : vec2<f32>) -> f32 {
   return v;
 }
 
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VSOut) -> FragOut {
   // Unpack
   let time       = input.p0.x;
   let speed      = input.p0.y;
@@ -9533,7 +9891,13 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   let alpha = smoothstep(0.08, 0.65, n) * edgeMask * topFade;
 
   // Premultiplied alpha for additive blending
-  return vec4<f32>(finalColor * alpha, alpha);
+  // return vec4<f32>(finalColor * alpha, alpha);
+
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `
 );
@@ -9586,11 +9950,21 @@ var GeometryFactory = class _GeometryFactory {
         return _GeometryFactory.crescent(size2, options2.innerRatio || 0.5, segments);
       case "pyramidFractal":
         return _GeometryFactory.pyramidFractal(size2, options2.levels || 2);
+      // DESTRUCTION
+      case "shatter":
+        return _GeometryFactory.shatter(size2, options2.pieces || 8);
+      case "crumble":
+        return _GeometryFactory.crumble(size2, options2.detail || 4);
+      case "splinter":
+        return _GeometryFactory.splinter(size2, options2.count || 12);
+      case "implode":
+        return _GeometryFactory.implode(size2, options2.scale || 0.1);
+      case "scatter":
+        return _GeometryFactory.scatter(size2, options2.spread || 0.3);
       default:
         throw new Error(`Unknown geometry: ${type2}`);
     }
   }
-  // --- Flat normals for faceted shapes ---
   static computeFlatNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     for (let i = 0; i < indices.length; i += 3) {
@@ -9622,7 +9996,6 @@ var GeometryFactory = class _GeometryFactory {
     }
     return normals;
   }
-  // --- Smooth normals for rounded shapes ---
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     const counts = new Uint16Array(positions.length / 3);
@@ -9851,18 +10224,7 @@ var GeometryFactory = class _GeometryFactory {
           y2 + s,
           z
         ];
-        const vertUVs = [
-          0,
-          0,
-          1,
-          0,
-          1,
-          1,
-          0,
-          1,
-          0.5,
-          0.5
-        ];
+        const vertUVs = [0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0.5];
         const baseIdx = vertexIndex;
         const tris = [
           baseIdx + 0,
@@ -10204,7 +10566,6 @@ var GeometryFactory = class _GeometryFactory {
     }
     return { positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices) };
   }
-  // --- BASIC SHAPES ---------------------------------------------------------
   static quad(S = 1) {
     const positions = new Float32Array([
       -S,
@@ -10574,7 +10935,6 @@ var GeometryFactory = class _GeometryFactory {
     ]);
     return { positions: pos2, uvs: uv, indices: idx };
   }
-  // --- FANTASY & EFFECT GEOMETRIES -----------------------------------------
   static thunder(S = 1) {
     const pts = [0, 0, 0];
     for (let i = 1; i < 8; i++) {
@@ -10724,6 +11084,144 @@ var GeometryFactory = class _GeometryFactory {
       positions: new Float32Array(positions),
       uvs: new Float32Array(uvs),
       indices: new Uint16Array(indices)
+    };
+  }
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
+  static shatter(S = 1, pieces = 8) {
+    const offsets = [];
+    for (let p = 0; p < pieces; p++) {
+      const angle = p / pieces * Math.PI * 2;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
+    }
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x2 = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y2 = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+      return [x2, y2, z];
+    };
+  }
+  /**
+   * Crumble: breaks into small chunks, stays roughly in place
+   * Good for: stone/brick crumbling, dust formations
+   */
+  static crumble(S = 1, detail = 4) {
+    const chunks = [];
+    for (let ix = 0; ix < detail; ix++) {
+      for (let iy = 0; iy < detail; iy++) {
+        for (let iz = 0; iz < detail; iz++) {
+          chunks.push({
+            x: ix - detail / 2 + (Math.random() - 0.5) * 0.3,
+            y: iy - detail / 2 + (Math.random() - 0.5) * 0.3,
+            z: iz - detail / 2 + (Math.random() - 0.5) * 0.3
+          });
+        }
+      }
+    }
+    const chunkSize = 2 / detail;
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x2 = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y2 = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+      return [x2 * S * 0.5, y2 * S * 0.5, z * S * 0.5];
+    };
+  }
+  /**
+   * Splinter: thin shards radiating from center
+   * Good for: ice/glass shattering, crystalline breaks
+   */
+  static splinter(S = 1, count = 12) {
+    const shards = [];
+    for (let i = 0; i < count; i++) {
+      const angle = i / count * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
+    }
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+      const x2 = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y2 = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+      return [x2, y2, z];
+    };
+  }
+  /**
+   * Implode: shrinks to near-zero point (singularity effect)
+   * Good for: magic absorption, black hole, vortex
+   */
+  static implode(S = 1, scale4 = 0.1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x2 = scale4 * S * Math.sin(phi) * Math.cos(theta);
+      const y2 = scale4 * S * Math.cos(phi);
+      const z = scale4 * S * Math.sin(phi) * Math.sin(theta);
+      return [x2, y2, z];
+    };
+  }
+  /**
+   * Scatter: random cloud of small pieces
+   * Good for: dust, particle explosion, disintegration
+   */
+  static scatter(S = 1, spread = 0.3) {
+    const particleCount = 20;
+    const particles = [];
+    for (let p = 0; p < particleCount; p++) {
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
+    }
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r2 = particle.size;
+      const x2 = (particle.x + r2 * Math.sin(phi) * Math.cos(theta)) * S;
+      const y2 = (particle.y + r2 * Math.cos(phi)) * S;
+      const z = (particle.z + r2 * Math.sin(phi) * Math.sin(theta)) * S;
+      return [x2, y2, z];
     };
   }
   static icosahedronSubdivided(R = 1, subdivisions = 1) {
@@ -10942,13 +11440,17 @@ var FlameEffect = class {
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{
-          format: this.colorFormat,
-          blend: {
-            color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
-            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-          }
-        }]
+        targets: [
+          {
+            format: this.colorFormat,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
@@ -11045,128 +11547,143 @@ var FlameEffect = class {
 // ../../../shaders/flame-effect/flame-instanced.js
 var flameEffectInstance = `
 struct Camera {
-    viewProj : mat4x4<f32>
+  viewProj : mat4x4<f32>
 };
+
 @group(0) @binding(0) var<uniform> camera : Camera;
 
-// Exact same layout as the working shader, but in a storage array
 struct ModelData {
-    model     : mat4x4<f32>,
-    timeSpeed : vec4<f32>,
-    params    : vec4<f32>,
-    tint      : vec4<f32>,
+  model     : mat4x4<f32>,
+  timeSpeed : vec4<f32>,
+  params    : vec4<f32>,
+  tint      : vec4<f32>
 };
 @group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
 
 struct VSIn {
-    @location(0) position : vec3<f32>,
-    @location(1) uv : vec2<f32>,
-    @builtin(instance_index) instanceIdx : u32,
+  @location(0) position : vec3<f32>,
+  @location(1) uv : vec2<f32>,
+  @builtin(instance_index) instanceIdx : u32,
 };
 
 struct VSOut {
-    @builtin(position) position : vec4<f32>,
-    @location(0) uv : vec2<f32>,
-    @location(1) p0 : vec4<f32>,
-    @location(2) p1 : vec4<f32>,
-    @location(3) tintColor : vec3<f32>,
+  @builtin(position) position : vec4<f32>,
+  @location(0) uv : vec2<f32>,
+  @location(1) p0 : vec4<f32>,
+  @location(2) p1 : vec4<f32>,
+  @location(3) tintColor : vec3<f32>,
+  @location(4) fragNorm  : vec3<f32>,
+  @location(5) fragPos   : vec3<f32>,
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
-    var output : VSOut;
-    let modelData = modelDataArray[input.instanceIdx];
+  var output : VSOut;
+  let modelData = modelDataArray[input.instanceIdx];
 
-    let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
-    output.position = camera.viewProj * worldPos;
-    output.uv = input.uv;
+  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+  output.position = camera.viewProj * worldPos;
+  output.uv = input.uv;
 
-    // Pass data to fragment exactly like the working shader
-    output.p0 = vec4<f32>(
-        modelData.timeSpeed.x, // time
-        modelData.timeSpeed.y, // speed
-        modelData.params.x,    // intensity
-        modelData.params.y     // turbulence
-    );
-    output.p1 = vec4<f32>(
-        modelData.params.z,    // stretch
-        modelData.tint.w,      // tintStrength
-        0.0, 0.0
-    );
-    output.tintColor = modelData.tint.xyz;
+  output.fragPos = worldPos.xyz;
+  let localNormal = vec3<f32>(0.0, 0.0, 1.0); 
+  output.fragNorm = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz) * localNormal;
 
-    return output;
+
+  // Pass data to fragment exactly like the working shader
+  output.p0 = vec4<f32>(
+      modelData.timeSpeed.x, // time
+      modelData.timeSpeed.y, // speed
+      modelData.params.x,    // intensity
+      modelData.params.y     // turbulence
+  );
+  output.p1 = vec4<f32>(
+      modelData.params.z,    // stretch
+      modelData.tint.w,      // tintStrength
+      0.0, 0.0
+  );
+  output.tintColor = modelData.tint.xyz;
+
+  return output;
 }
 
 fn hash2(n : vec2<f32>) -> f32 {
-    return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
 fn noise(p : vec2<f32>) -> f32 {
-    let i = floor(p); let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(hash2(i + vec2<f32>(0.0, 0.0)), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
-        mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
-        u.y
-    );
+  let i = floor(p); let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash2(i + vec2<f32>(0.0, 0.0)), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
+    mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
+    u.y
+  );
 }
 
 fn fbm(p : vec2<f32>) -> f32 {
-    var v = 0.0; var a = 0.5; var pos = p;
-    for (var i = 0; i < 2; i = i + 1) {
-        v += a * noise(pos);
-        pos = pos * 2.1 + vec2<f32>(1.7, 9.2);
-        a *= 0.5;
-    }
-    return v;
+  var v = 0.0; var a = 0.5; var pos = p;
+  for (var i = 0; i < 2; i = i + 1) {
+    v += a * noise(pos);
+    pos = pos * 2.1 + vec2<f32>(1.7, 9.2);
+    a *= 0.5;
+  }
+  return v;
 }
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+  
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-    let time       = input.p0.x;
-    let speed      = input.p0.y;
-    let intensity  = input.p0.z;
-    let turbulence = input.p0.w;
-    let stretch    = input.p1.x;
-    let tintStr    = input.p1.y;
-    let tintColor  = input.tintColor;
+fn fsMain(input : VSOut) -> FragOut {
+  let time       = input.p0.x;
+  let speed      = input.p0.y;
+  let intensity  = input.p0.z;
+  let turbulence = input.p0.w;
+  let stretch    = input.p1.x;
+  let tintStr    = input.p1.y;
+  let tintColor  = input.tintColor;
 
-    let t = time * speed * 2.0;
-    var uv = input.uv;
-    uv.y = uv.y / max(stretch, 0.01);
+  let t = time * speed * 2.0;
+  var uv = input.uv;
+  uv.y = uv.y / max(stretch, 0.01);
 
-    let warpAmt = turbulence * 0.18;
-    let warpX   = noise(uv * 3.0 + vec2<f32>(0.0, t * 0.6)) - 0.5;
-    let warpY   = noise(uv * 3.0 + vec2<f32>(5.2, t * 0.4)) - 0.5;
-    var warpedUV = uv + vec2<f32>(warpX, warpY) * warpAmt;
+  let warpAmt = turbulence * 0.18;
+  let warpX   = noise(uv * 3.0 + vec2<f32>(0.0, t * 0.6)) - 0.5;
+  let warpY   = noise(uv * 3.0 + vec2<f32>(5.2, t * 0.4)) - 0.5;
+  var warpedUV = uv + vec2<f32>(warpX, warpY) * warpAmt;
 
-    warpedUV.y += t * 0.4;
-    warpedUV.x += sin(t * 0.7) * 0.08 * turbulence;
+  warpedUV.y += t * 0.4;
+  warpedUV.x += sin(t * 0.7) * 0.08 * turbulence;
 
-    var n = fbm(warpedUV * 6.0 + vec2<f32>(0.0, t * 0.8));
-    n = pow(n, 3.0 - turbulence * 1.2);
+  var n = fbm(warpedUV * 6.0 + vec2<f32>(0.0, t * 0.8));
+  n = pow(n, 3.0 - turbulence * 1.2);
 
-    let hotColor  = vec3<f32>(1.0, 0.92, 0.35);
-    let midColor  = vec3<f32>(1.0, 0.38, 0.04);
-    let coolColor = vec3<f32>(0.55, 0.04, 0.0 );
+  let hotColor  = vec3<f32>(1.0, 0.92, 0.35);
+  let midColor  = vec3<f32>(1.0, 0.38, 0.04);
+  let coolColor = vec3<f32>(0.55, 0.04, 0.0 );
 
-    let g1 = smoothstep(0.0, 0.5, n);
-    let g2 = smoothstep(0.5, 1.0, n);
-    var baseColor = mix(mix(coolColor, midColor, g1), hotColor, g2);
+  let g1 = smoothstep(0.0, 0.5, n);
+  let g2 = smoothstep(0.5, 1.0, n);
+  var baseColor = mix(mix(coolColor, midColor, g1), hotColor, g2);
 
-    let tintMask = smoothstep(0.0, 0.5, n);
-    baseColor = mix(baseColor, baseColor * tintColor * 2.0, tintStr * tintMask);
+  let tintMask = smoothstep(0.0, 0.5, n);
+  baseColor = mix(baseColor, baseColor * tintColor * 2.0, tintStr * tintMask);
 
-    let finalColor = baseColor * n * intensity;
-    let edgeMask = smoothstep(0.0, 0.15, input.uv.x) * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
-    let fadeStart = clamp(0.25 / max(stretch, 0.1), 0.1, 0.6);
-    let topFade = 1.0 - smoothstep(fadeStart, 1.0, input.uv.y);
+  let finalColor = baseColor * n * intensity;
+  let edgeMask = smoothstep(0.0, 0.15, input.uv.x) * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
+  let fadeStart = clamp(0.25 / max(stretch, 0.1), 0.1, 0.6);
+  let topFade = 1.0 - smoothstep(fadeStart, 1.0, input.uv.y);
+  let alpha = smoothstep(0.01, 0.4, n) * edgeMask * topFade;
 
-    // let alpha = smoothstep(0.25, 0.9, n) * edgeMask * topFade;
-    let alpha = smoothstep(0.01, 0.4, n) * edgeMask * topFade;
-
-    return vec4<f32>(finalColor * alpha, alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
@@ -11339,21 +11856,25 @@ var FlameEmitter = class {
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: {
+                srcFactor: "src-alpha",
+                dstFactor: "one",
+                operation: "add"
+              },
+              alpha: {
+                srcFactor: "one",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              }
             }
-          }
-        }]
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
@@ -11814,6 +12335,7 @@ var MEMeshObj = class extends Materials {
     this.entityArgPass = o2.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     if (typeof o2.material.useTextureFromGlb === "undefined" || typeof o2.material.useTextureFromGlb !== "boolean") {
@@ -12546,9 +13068,9 @@ var MEMeshObj = class extends Materials {
           module: fragmentModule,
           constants: fragmentConstants,
           targets: [
-            {
-              format: "rgba16float"
-            }
+            { format: "rgba16float" },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
           ]
         },
         depthStencil: {
@@ -12588,7 +13110,9 @@ var MEMeshObj = class extends Materials {
                   operation: "add"
                 }
               }
-            }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
           ]
         },
         depthStencil: {
@@ -18251,49 +18775,49 @@ override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
@@ -18311,148 +18835,161 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-    @location(4) colorMult : vec4f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+  @location(4) colorMult : vec4f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
 fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-    return material.baseColor * light.color * light.intensity * NdotL;
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
+  return material.baseColor * light.color * light.intensity * NdotL;
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  if (coneAtten <= 0.0 || NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
 
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
 
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
 
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
 
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
 
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
 
-    let radiance = light.color * light.intensity;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let radiance = light.color * light.intensity;
+  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            shadowUV + offsets[i] * oneOverSize,
-            layer, depthRef - bias
-        );
-    }
-    return visibility / 9.0;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      visibility += textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          shadowUV + offsets[i] * oneOverSize,
+          layer, depthRef - bias
+      );
+  }
+  return visibility / 9.0;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    let materialData = getPBRMaterial(input.uv);
-    var lightContribution = vec3f(0.0);
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let bias = spotlights[i].shadowBias;
-        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-        lightContribution += contrib * visibility;
-    }
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    finalColor *= input.colorMult.rgb;
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-    let alpha = materialData.alpha;
-    return vec4f(finalColor, alpha);
+fn main(input: FragmentInput) -> FragOut {
+  let norm = normalize(input.fragNorm);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
+  var lightContribution = vec3f(0.0);
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p  = sc.xyz / sc.w;
+      let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+      let depthRef = p.z * 0.5 + 0.5;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let bias = spotlights[i].shadowBias;
+      let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+      let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+      lightContribution += contrib * visibility;
+  }
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+  finalColor *= input.colorMult.rgb;
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  let alpha = materialData.alpha;
+  
+  
+  // return vec4f(finalColor, alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(norm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }`;
 
 // ../../../shaders/instanced/fragment.mirror.instanced.wgsl.js
@@ -18461,65 +18998,65 @@ override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 struct MirrorIlluminateParams {
-    mirrorTint         : vec3f,
-    reflectivity       : f32,
-    illuminateColor    : vec3f,
-    illuminateStrength : f32,
-    illuminatePulse    : f32,
-    fresnelPower       : f32,
-    envLodBias         : f32,
-    usePlanarReflection: f32,
-    baseColorMix       : f32,
-    _pad2              : vec3f,
+  mirrorTint         : vec3f,
+  reflectivity       : f32,
+  illuminateColor    : vec3f,
+  illuminateStrength : f32,
+  illuminatePulse    : f32,
+  fresnelPower       : f32,
+  envLodBias         : f32,
+  usePlanarReflection: f32,
+  baseColorMix       : f32,
+  _pad2              : vec3f,
 };
 
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
@@ -18542,200 +19079,212 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
 // \u2500\u2500 INSTANCED: adds colorMult at location(4) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-    @location(4) colorMult : vec4f,  // \u2190 instanced only
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+  @location(4) colorMult : vec4f,  // \u2190 instanced only
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor  = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex     = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic  = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha     = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor  = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex     = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic  = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha     = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a      = roughness * roughness;
-    let a2     = a * a;
-    let NdotH  = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom  = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a      = roughness * roughness;
+  let a2     = a * a;
+  let NdotH  = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom  = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L     = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let eps   = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+  let L     = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let eps   = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
-    let L     = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    let theta = dot(L, normalize(-light.direction));
-    let eps   = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
-    if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
-    let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
-    let H     = normalize(L + V);
-    let alpha  = mat.roughness * mat.roughness;
-    let alpha2 = alpha * alpha;
-    let NdotH  = max(dot(N, H), 0.0);
-    let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D      = alpha2 / (PI * denom * denom + 1e-5);
-    let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV  = max(dot(N, V), 0.0);
-    let Gv     = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl     = NdotL / (NdotL * (1.0 - k) + k);
-    let G      = Gv * Gl;
-    let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-    return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let L     = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  let theta = dot(L, normalize(-light.direction));
+  let eps   = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+  if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+  let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
+  let H     = normalize(L + V);
+  let alpha  = mat.roughness * mat.roughness;
+  let alpha2 = alpha * alpha;
+  let NdotH  = max(dot(N, H), 0.0);
+  let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D      = alpha2 / (PI * denom * denom + 1e-5);
+  let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV  = max(dot(N, V), 0.0);
+  let Gv     = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl     = NdotL / (NdotL * (1.0 - k) + k);
+  let G      = Gv * Gl;
+  let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+  return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
 fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f) -> vec3f {
-    let H       = normalize(lightDir + V);
-    let mirrorR = max(0.02, material.roughnessFactor * 0.15);
-    let D       = distributionGGX(N, H, mirrorR);
-    let G       = geometrySmith(N, V, lightDir, mirrorR);
-    let F0      = mix(vec3f(0.9), mirrorParams.mirrorTint, vec3f(material.metallicFactor));
-    let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
-    let NdotL   = max(dot(N, lightDir), 0.0);
-    let NdotV   = max(dot(N, V), 0.0);
-    let spec = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
-    let result = spec * lightColor * NdotL * mirrorParams.reflectivity;
-    return clamp(result, vec3f(0.0), vec3f(64.0));
+  let H       = normalize(lightDir + V);
+  let mirrorR = max(0.02, material.roughnessFactor * 0.15);
+  let D       = distributionGGX(N, H, mirrorR);
+  let G       = geometrySmith(N, V, lightDir, mirrorR);
+  let F0      = mix(vec3f(0.9), mirrorParams.mirrorTint, vec3f(material.metallicFactor));
+  let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
+  let NdotL   = max(dot(N, lightDir), 0.0);
+  let NdotV   = max(dot(N, V), 0.0);
+  let spec = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+  let result = spec * lightColor * NdotL * mirrorParams.reflectivity;
+  return clamp(result, vec3f(0.0), vec3f(64.0));
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias   = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias        = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for (var i: u32 = 0u; i < 9u; i++) {
-        visibility += textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            shadowUV + offsets[i] * oneOverSize,
-            layer, depthRef - bias
-        );
-    }
-    return visibility / 9.0;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias   = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias        = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for (var i: u32 = 0u; i < 9u; i++) {
+      visibility += textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          shadowUV + offsets[i] * oneOverSize,
+          layer, depthRef - bias
+      );
+  }
+  return visibility / 9.0;
 }
 
 fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
-    let dir   = normalize(R);
-    let phi   = atan2(dir.x, dir.z);
-    let theta = acos(clamp(dir.y, -1.0, 1.0));
-    let u     = phi / (2.0 * PI) + 0.5;
-    let v     = theta / PI;
-    return vec2f(u, v);
+  let dir   = normalize(R);
+  let phi   = atan2(dir.x, dir.z);
+  let theta = acos(clamp(dir.y, -1.0, 1.0));
+  let u     = phi / (2.0 * PI) + 0.5;
+  let v     = theta / PI;
+  return vec2f(u, v);
 }
 
 fn reflectToPlanarUV(fragPos: vec3f, N: vec3f, V: vec3f) -> vec2f {
-    let clipPos = scene.cameraViewProjMatrix * vec4f(fragPos, 1.0);
-    let ndc     = clipPos.xy / clipPos.w;
-    return vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
+  let clipPos = scene.cameraViewProjMatrix * vec4f(fragPos, 1.0);
+  let ndc     = clipPos.xy / clipPos.w;
+  return vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
 }
 
 fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32) -> vec3f {
-    var uv: vec2f;
-    if (mirrorParams.usePlanarReflection > 0.5) {
-        uv = reflectToPlanarUV(fragPos, N, V);
-    } else {
-        uv = reflectToEnvUV(R, fragPos);
-    }
-    return textureSample(mirrorEnvTex, mirrorEnvSampler, uv).rgb;
+  var uv: vec2f;
+  if (mirrorParams.usePlanarReflection > 0.5) {
+      uv = reflectToPlanarUV(fragPos, N, V);
+  } else {
+      uv = reflectToEnvUV(R, fragPos);
+  }
+  return textureSample(mirrorEnvTex, mirrorEnvSampler, uv).rgb;
 }
 
 fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
-  let NdotV = max(dot(N, V), 0.0);
-    let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
-    let pulse = mix(0.3, 1.0,
-        (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
-    );
-    let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
-    let result = mirrorParams.illuminateColor
-        * mirrorParams.illuminateStrength
-        * rim * pulse * shimmer;
-    return clamp(result, vec3f(0.0), vec3f(1.0));
+let NdotV = max(dot(N, V), 0.0);
+  let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+  let pulse = mix(0.3, 1.0,
+      (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
+  );
+  let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
+  let result = mirrorParams.illuminateColor
+      * mirrorParams.illuminateStrength
+      * rim * pulse * shimmer;
+  return clamp(result, vec3f(0.0), vec3f(1.0));
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
 
-    let materialData = getPBRMaterial(input.uv);
-    if (materialData.alpha < 0.01) { discard; }
+  let materialData = getPBRMaterial(input.uv);
+  if (materialData.alpha < 0.01) { discard; }
 
-    var lightContribution = vec3f(0.0);
+  var lightContribution = vec3f(0.0);
 
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
-        let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p        = sc.xyz / sc.w;
-        let shadowUV = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
-        let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
-        lightContribution += contrib * vis;
-        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
-        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
-        lightContribution += mirrorSpec * coneFactor * vis;
-    }
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
+      let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p        = sc.xyz / sc.w;
+      let shadowUV = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+      let depthRef = p.z * 0.5 + 0.5;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
+      let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
+      lightContribution += contrib * vis;
+      let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+      let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+      lightContribution += mirrorSpec * coneFactor * vis;
+  }
 
-    let R = reflect(-V, N);
-    var envColor: vec3f;
-    if (mirrorParams.baseColorMix < 0.01) {
-        envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
-    } else {
-        envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
-    }
+  let R = reflect(-V, N);
+  var envColor: vec3f;
+  if (mirrorParams.baseColorMix < 0.01) {
+      envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
+  } else {
+      envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+  }
 
-    let envFresn   = fresnelSchlick(max(dot(N, V), 0.0),
-                     mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
-    let texColor   = textureSample(meshTexture, meshSampler, input.uv);
-    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+  let envFresn   = fresnelSchlick(max(dot(N, V), 0.0),
+                    mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+  let texColor   = textureSample(meshTexture, meshSampler, input.uv);
+  // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
 
-    finalColor = mix(envColor, finalColor, mirrorParams.baseColorMix);
-    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+  finalColor = mix(envColor, finalColor, mirrorParams.baseColorMix);
+  finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
 
-    finalColor *= input.colorMult.rgb;
+  finalColor *= input.colorMult.rgb;
 
-    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
-    finalColor += illuminate;
+  let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
+  finalColor += illuminate;
 
-    let alpha = mix(materialData.alpha, 1.0, 0.5);
-    return vec4f(finalColor, alpha);
+  let alpha = mix(materialData.alpha, 1.0, 0.5);
+  // return vec4f(finalColor, alpha);
+
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
@@ -19015,6 +19564,7 @@ var MaterialsInstanced = class {
   setBlend = (alpha) => {
     this.material.useBlend = true;
     this.setupMaterialPBR([1, 1, 1, alpha]);
+    if (app) app.buildLightShadowBuckets();
   };
   getMaterial() {
     if (this.material.type == "standard") {
@@ -19329,7 +19879,7 @@ struct Model {
 }
 
 struct Bones {
-  boneMatrices : array<mat4x4f, 1000u>
+  boneMatrices : array<mat4x4f, MAX_BONES>
 }
 
 struct SkinResult {
@@ -19399,6 +19949,26 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
+//     var skinnedPos  = vec4f(0.0);
+//     var skinnedNorm = vec3f(0.0);
+//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+//         let jointIndex = joints[i];
+//         let w = weights[i];
+//         if (w > 0.0) {
+//             let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // \u2190 offset by instance
+//             skinnedPos  += (boneMat * pos) * w;
+//             let boneMat3 = mat3x3f(
+//                 boneMat[0].xyz,
+//                 boneMat[1].xyz,
+//                 boneMat[2].xyz
+//             );
+//             skinnedNorm += (boneMat3 * nrm) * w;
+//         }
+//     }
+//     return SkinResult(skinnedPos, skinnedNorm);
+// }
+
 fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
     var skinnedPos  = vec4f(0.0);
     var skinnedNorm = vec3f(0.0);
@@ -19406,7 +19976,7 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId:
         let jointIndex = joints[i];
         let w = weights[i];
         if (w > 0.0) {
-            let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // \u2190 offset by instance
+            let boneMat = bones.boneMatrices[jointIndex]; // \u2190 no instId offset
             skinnedPos  += (boneMat * pos) * w;
             let boneMat3 = mat3x3f(
                 boneMat[0].xyz,
@@ -19418,7 +19988,7 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId:
     }
     return SkinResult(skinnedPos, skinnedNorm);
 }
-
+    
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -20470,6 +21040,7 @@ var GenGeoTexture2 = class {
     });
   }
   updateInstanceData = (baseModelMatrix) => {
+    if (!this.instanceData) return;
     if (this.rotateEffect) {
       this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed;
       if (this.rotateAngle >= 360) {
@@ -20532,6 +21103,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     this.entityArgPass = o2.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o2.useScale || false;
@@ -20973,6 +21545,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         });
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
+        dispatchEvent(this.buildPipelineBucketsEvent);
       };
       this.updateMaxInstances = (newMax) => {
         let isBigger = false;
@@ -21014,12 +21587,13 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         return Math.ceil(n2 / 256) * 256;
       }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      const TRAIL_INSTANCES = 11;
+      const TRAIL_INSTANCES = 10;
+      const BYTES_ONE_SKELETON = this.MAX_BONES * 16 * 4;
       const BYTES_PER_INSTANCE = alignTo2562(64 * this.MAX_BONES);
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
         size: 64e3,
-        //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
+        // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
@@ -21360,9 +21934,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           module: this.device.createShaderModule({ code: fragmentCode }),
           constants: fragmentConstants,
           targets: [
-            {
-              format: "rgba16float"
-            }
+            { format: "rgba16float" },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
           ]
         },
         depthStencil: {
@@ -21402,7 +21976,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
                   operation: "add"
                 }
               }
-            }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
           ]
         },
         depthStencil: {
@@ -21416,6 +21992,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
   updateModelUniformBuffer = () => {
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
   };
   createGPUBuffer(dataArray, usage) {
     if (!dataArray || typeof dataArray.length !== "number") {
@@ -21544,6 +22122,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
+    this.sharedBones = false;
     this.trailAnimation = {
       enabled: false,
       // deplaced
@@ -21559,10 +22138,12 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       animationFinished: false
     };
     this.animationIndex = 0;
+    this.glbAnimEvents = {};
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      this.glb.glbJsonData.animations[index]["animEndEvent" + index] = new CustomEvent(`animationEnd-${anim.name}`, {
+      this.glbAnimEvents["animEndEvent" + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
-          animationName: this.glb.glbJsonData.animations[index].name
+          animationName: this.glb.glbJsonData.animations[index].name,
+          targetName: this.name
         }
       });
     });
@@ -21781,23 +22362,35 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
+      const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
         if (this.animationIndex == null) this.animationIndex = 0;
-        dispatchEvent(this.glb.glbJsonData.animations[this.animationIndex]["animEndEvent" + this.animationIndex]);
-      }, inTime * 1e3);
+        window.dispatchEvent(this.glbAnimEvents["animEndEvent" + capturedIndex]);
+      }, inTime * 1200);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      for (let i = 0; i < this.instanceCount; i++) {
-        const timeOffsetMs = i * this.trailAnimation.delay;
-        const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
+      if (this.sharedBones) {
+        const currentTime = now / this.animationSpeed - this.startTime;
         this.updateSingleBoneCubeAnimation(
           this.glb.glbJsonData.animations[this.animationIndex],
           this.nodes,
           currentTime,
           this._boneMatrices,
-          i
+          0
         );
+      } else {
+        for (let i = 0; i < this.instanceCount; i++) {
+          const timeOffsetMs = i * this.trailAnimation.delay;
+          const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
+          this.updateSingleBoneCubeAnimation(
+            this.glb.glbJsonData.animations[this.animationIndex],
+            this.nodes,
+            currentTime,
+            this._boneMatrices,
+            i
+          );
+        }
       }
     }
   }
@@ -22115,7 +22708,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
-    const byteOffset = alignTo256(64 * this.MAX_BONES) * instanceIndex;
+    const byteOffset = this.sharedBones ? 0 : alignTo256(64 * this.MAX_BONES) * instanceIndex;
     this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
     return boneMatrices;
   }
@@ -22597,13 +23190,17 @@ function graphAdapter(compilerResult, nodes) {
   const globals = /* @__PURE__ */ new Set();
   globals.add("const PI: f32 = 3.141592653589793;");
   globals.add(`override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};`);
-  const baseColor = outputs.baseColor || "vec3f(1.0)";
-  const alpha = outputs.alpha || "1.0";
-  const normal = outputs.normal || "normalize(input.fragNorm)";
-  const emissive = outputs.emissive || "vec3f(0.0)";
+  const attachmentOutputs = {
+    color: outputs.outColor || buildColorOutput(outputs),
+    normal: outputs.normal || `vec4f(normalize(input.fragNorm), 1.0)`,
+    worldPos: outputs.worldPos || `vec4f(input.fragPos, 1.0)`
+  };
+  validateAttachments(attachmentOutputs);
+  const addedNodeFunctions = /* @__PURE__ */ new Set();
   for (const node2 of nodes) {
     if (node2.type === "LightShadowNode") {
-      functions.push(`
+      if (!addedNodeFunctions.has("LightShadowNode")) {
+        functions.push(`
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
     let L = normalize(light.position - fragPos);
     let NdotL = max(dot(N, L), 0.0);
@@ -22612,7 +23209,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let epsilon = light.innerCutoff - light.outerCutoff;
     var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    // coneAtten = 1.0;
     if (coneAtten <= 0.0 || NdotL <= 0.0) {
         return vec3f(0.0);
     }
@@ -22642,7 +23238,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let diffuse = kD * material.baseColor.rgb / PI;
 
     let radiance = light.color * light.intensity;
-    // return (diffuse + specular) * radiance * NdotL * coneAtten;
     return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
@@ -22667,6 +23262,8 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 `);
+        addedNodeFunctions.add("LightShadowNode");
+      }
     }
   }
   return `
@@ -22719,8 +23316,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 // PREDEFINED
@@ -22734,16 +23331,6 @@ struct PBRMaterialData {
 // PREDEFINED
 const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 
-// // PREDEFINED
-// @group(0) @binding(0) var<uniform> scene : Scene;
-// @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-// @group(0) @binding(2) var shadowSampler: sampler_comparison;
-// @group(0) @binding(3) var meshTexture: texture_2d<f32>;
-// @group(0) @binding(4) var meshSampler: sampler;
-// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-// @group(0) @binding(7) var metallicRoughnessSampler: sampler;
-// @group(0) @binding(8) var<uniform> material: MaterialPBR;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -22764,35 +23351,55 @@ ${functions.join("\n\n")}
 
 // PREDEFINED Fragment input
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f
 };
 
-// PREDEFINED PBR helpers
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    
-    // \u2705 Get alpha from texture and material factor
-    // let alpha = texColor.a * material.baseColorFactor.a;
-    let alpha = material.baseColorFactor.a;
-    
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+// \u2705 3-Attachment output struct (explicit format metadata for deferred/SSR)
+struct FragOut {
+  @location(0) color  : vec4f,     // rgba8unorm \u2014 final color + alpha
+  @location(1) normal : vec4f,     // rgba16float \u2014 world-space normal
+  @location(2) worldPos : vec4f,   // rgba16float \u2014 world position for reconstruction
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
   // Locals
   ${locals.join("\n  ")}
   ${mainLines.join("\n  ")}
-  return ${outputs.outColor};
+  
+  return FragOut(
+    ${attachmentOutputs.color},
+    ${attachmentOutputs.normal},
+    ${attachmentOutputs.worldPos}
+  );
 }
 `;
+}
+function buildColorOutput(outputs) {
+  const baseColor = outputs.baseColor || "vec3f(1.0)";
+  const alpha = outputs.alpha || "1.0";
+  return `vec4f(${baseColor}, ${alpha})`;
+}
+function validateAttachments(attachmentOutputs) {
+  const missing = Object.entries(attachmentOutputs).filter(([_, val]) => !val || val.trim() === "").map(([key]) => key);
+  if (missing.length > 0) {
+    console.warn(
+      `\u26A0\uFE0F graphAdapter: Missing attachment outputs: ${missing.join(", ")}. Falling back to defaults.`
+    );
+  }
 }
 
 // ../flexCodexShader.js
@@ -25187,9 +25794,9 @@ var FluxCodexVertex = class {
       selectedNode: null,
       // keep for backward compat (single-select APIs)
       selectedNodes: /* @__PURE__ */ new Set(),
-      // NEW: multi-select set of node IDs
+      // multi-select set of node IDs
       rubberBand: null,
-      // NEW: { startX, startY, el } while rubber-banding
+      // { startX, startY, el } while rubber-banding
       pan: [0, 0],
       panning: false,
       panStart: [0, 0],
@@ -26022,9 +26629,7 @@ var FluxCodexVertex = class {
     outputs.forEach((pin) => right2.appendChild(this._pinElement(pin, true, nodeId2)));
     if (node2.title === "Get Scene Object" || node2.title === "Get Scene Light" || node2.title === "Get Scene Animation") {
       const select2 = el2.querySelector("select.scene-select");
-      console.log("!TEST! ??? BEFORE   ", select2);
       if (select2) {
-        console.log("!TEST! ??? exist");
       }
     } else if (node2.category === "action" && node2.title === "Function") {
       let select2 = el2.querySelector("select.method-select");
@@ -26443,6 +27048,7 @@ var FluxCodexVertex = class {
         spec.fields[0].value = name2;
         const dom2 = document.querySelector(`.node[data-id="${spec.id}"]`);
         let fields = dom2.querySelectorAll(".node-fields");
+        console.log("set shader ", name2);
         fields[0].children[0].value = name2;
       });
       el.appendChild(select);
@@ -28091,7 +28697,6 @@ LIST OF INTEREST OBJECT:
  - app.cameras.WASD (Access camera methods)
         `);
       if (AO) {
-        console.warn("Adding AO ", eval(AO));
         options.accessObject = eval(AO);
       } else {
         console.warn("Adding global access object failed...");
@@ -29084,6 +29689,7 @@ LIST OF INTEREST OBJECT:
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
+        let rotSpeed = this.getValue(nodeId, "rotSpeed");
         let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
         let rot = this.getValue(nodeId, "rot");
         let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
@@ -29107,6 +29713,7 @@ LIST OF INTEREST OBJECT:
         }
         if (typeof pos == "string") eval("pos = " + pos);
         if (typeof rot == "string") eval("rot = " + rot);
+        if (typeof rotSpeed == "string") eval("rotSpeed = " + rotSpeed);
         if (typeof scale == "string") eval("scale = " + scale);
         if (!texturePath || !path) {
           console.warn("[Generator] Missing input fields...");
@@ -29115,7 +29722,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.editorAddOBJ(path, mat, pos, rot, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj).then((object) => {
+          app.editorAddOBJ(path, mat, pos, rot, rotSpeed, texturePath, name, isPhysicsBody, raycast, scale, isInstancedObj, isPhysicsBody).then((object) => {
             object._GRAPH_CACHE = true;
             n._returnCache = object;
             this.enqueueOutputs(n, "complete");
@@ -29262,7 +29869,7 @@ LIST OF INTEREST OBJECT:
           this.enqueueOutputs(n, "execOut");
           return;
         }
-        if (typeof specialCanvas2dArg == "string") {
+        if (typeof specialCanvas2dArg === "string") {
           eval("specialCanvas2dArg = " + specialCanvas2dArg);
         }
         if (typeof canvaInlineProgram != "function") {
@@ -29279,6 +29886,7 @@ LIST OF INTEREST OBJECT:
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
+        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram,
@@ -29376,7 +29984,6 @@ LIST OF INTEREST OBJECT:
         }
         n._returnCache = n.osc.UPDATE();
       } else if (n.title === "Set Shader Graph") {
-        console.warn("[Set Shader Graph] ?????  ??input fields...");
         const objectName2 = this.getValue(nodeId, "objectName");
         let selectedShader = this.getValue(nodeId, "selectedShader");
         if (!objectName2) {
@@ -29556,7 +30163,6 @@ LIST OF INTEREST OBJECT:
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (texpath) {
-        console.log("SET TECTURE : sceneObjectName", sceneObjectName);
         let obj2 = app.getSceneObjectByName(sceneObjectName);
         obj2.loadTex0([texpath]).then((_) => {
           setTimeout(() => {
@@ -29582,6 +30188,8 @@ LIST OF INTEREST OBJECT:
       return;
     } else if (n.title === "Set Rotation") {
       const rot2 = this.getValue(nodeId, "rotation");
+      console.log("TEST RotationRotation X", rot2);
+      console.log('TEST this.getValue(nodeId, "x") X', this.getValue(nodeId, "x"));
       if (rot2?.setRotation) {
         rot2.setRotation(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
       }
@@ -29596,7 +30204,6 @@ LIST OF INTEREST OBJECT:
       return;
     } else if (n.title === "Set RotateX") {
       const rot2 = this.getValue(nodeId, "rotation");
-      console.log("TEST ROTATE X");
       if (rot2?.setRotateX) {
         rot2.setRotateX(this.getValue(nodeId, "x"));
       }
@@ -30530,7 +31137,7 @@ var EditorHud = class {
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
       features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent("cnp", {
@@ -30888,7 +31495,7 @@ var EditorHud = class {
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
       features.camera = typeOfCamera;
       document.dispatchEvent(new CustomEvent("cnp", {
         detail: { name: name2, features }
@@ -31170,7 +31777,7 @@ var SceneObjectProperty = class {
       } else if (propName == "itIsPhysicsBody") {
         if (!this.core.matrixPhysics) return;
         let body2 = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
-        for (let key in body2) {
+        if (body2) for (let key in body2) {
           if (typeof body2[key] === "string") {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
               <div style="background:black;color:white;width:35%;">${key}</div>
@@ -32364,6 +32971,7 @@ var ProceduralMeshObj = class extends Materials {
       o2.material.useBlend = false;
     }
     this.mType = MeshType.PROCEDURAL;
+    this.dontDrag = true;
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
@@ -32879,7 +33487,11 @@ var ProceduralMeshObj = class extends Materials {
         fragment: {
           entryPoint: "main",
           module: this.device.createShaderModule({ code: fragmentCode }),
-          targets: [{ format: "rgba16float" }],
+          targets: [
+            { format: "rgba16float" },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ],
           constants: fragmentConstants
         },
         depthStencil: {
@@ -32903,21 +33515,25 @@ var ProceduralMeshObj = class extends Materials {
         fragment: {
           entryPoint: "main",
           module: this.device.createShaderModule({ code: fragmentCode }),
-          targets: [{
-            format: "rgba16float",
-            blend: {
-              color: {
-                srcFactor: "src-alpha",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              },
-              alpha: {
-                srcFactor: "one",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
+          targets: [
+            {
+              format: "rgba16float",
+              blend: {
+                color: {
+                  srcFactor: "src-alpha",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                }
               }
-            }
-          }],
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ],
           constants: fragmentConstants
         },
         depthStencil: {
@@ -32953,6 +33569,40 @@ var ProceduralMeshObj = class extends Materials {
     if (this.morphAnimation.debug) {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} \u2192 ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
     }
+  }
+  async destroyGeo(destructionType = "shatter", duration = 0.8, options2 = {}) {
+    const { onComplete = null, physics = null, debris = null, velocity = 1, lifetime = 3 } = options2;
+    const destructionFunc = this._getDestructionFunction(destructionType);
+    const pair = MeshMorpher.createMatchedPair(
+      this.currentShape || MeshMorpher.sphere(this.size),
+      destructionFunc,
+      32,
+      32
+    );
+    await this.morphTo(destructionFunc, duration);
+    if (debris) {
+      this.spawnDebris(null, destructionType, { velocity, lifetime });
+    }
+    if (onComplete) onComplete();
+  }
+  /**
+   * Get destruction preset function from MeshMorpher (now parametric)
+   */
+  _getDestructionFunction(type2) {
+    const presets = {
+      shatter: () => MeshMorpher.shatter(this.size, 8),
+      crumble: () => MeshMorpher.crumble(this.size, 4),
+      splinter: () => MeshMorpher.splinter(this.size, 12),
+      implode: () => MeshMorpher.implode(this.size, 0.1),
+      scatter: () => MeshMorpher.scatter(this.size, 0.3)
+    };
+    if (!presets[type2]) throw new Error(`Unknown destruction type: ${type2}`);
+    return presets[type2]();
+  }
+  /**
+   * Spawn individual physics chunks after morph
+   */
+  spawnDebris(physicsEngine, type2, options2 = {}) {
   }
   switchMesh(specA, specB) {
     this.meshA = this._loadGeometry(specA);
@@ -33640,6 +34290,144 @@ var MeshMorpher = class {
       return [x2, y2 * scale4, z];
     };
   }
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
+  static shatter(S = 1, pieces = 8) {
+    const offsets = [];
+    for (let p = 0; p < pieces; p++) {
+      const angle = p / pieces * Math.PI * 2;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
+    }
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x2 = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y2 = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+      return [x2, y2, z];
+    };
+  }
+  /**
+   * Crumble: breaks into small chunks, stays roughly in place
+   * Good for: stone/brick crumbling, dust formations
+   */
+  static crumble(S = 1, detail = 4) {
+    const chunks = [];
+    for (let ix = 0; ix < detail; ix++) {
+      for (let iy = 0; iy < detail; iy++) {
+        for (let iz = 0; iz < detail; iz++) {
+          chunks.push({
+            x: ix - detail / 2 + (Math.random() - 0.5) * 0.3,
+            y: iy - detail / 2 + (Math.random() - 0.5) * 0.3,
+            z: iz - detail / 2 + (Math.random() - 0.5) * 0.3
+          });
+        }
+      }
+    }
+    const chunkSize = 2 / detail;
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x2 = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y2 = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+      return [x2 * S * 0.5, y2 * S * 0.5, z * S * 0.5];
+    };
+  }
+  /**
+   * Splinter: thin shards radiating from center
+   * Good for: ice/glass shattering, crystalline breaks
+   */
+  static splinter(S = 1, count = 12) {
+    const shards = [];
+    for (let i = 0; i < count; i++) {
+      const angle = i / count * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
+    }
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+      const x2 = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y2 = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+      return [x2, y2, z];
+    };
+  }
+  /**
+   * Implode: shrinks to near-zero point (singularity effect)
+   * Good for: magic absorption, black hole, vortex
+   */
+  static implode(S = 1, scale4 = 0.1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x2 = scale4 * S * Math.sin(phi) * Math.cos(theta);
+      const y2 = scale4 * S * Math.cos(phi);
+      const z = scale4 * S * Math.sin(phi) * Math.sin(theta);
+      return [x2, y2, z];
+    };
+  }
+  /**
+   * Scatter: random cloud of small pieces
+   * Good for: dust, particle explosion, disintegration
+   */
+  static scatter(S = 1, spread = 0.3) {
+    const particleCount = 20;
+    const particles = [];
+    for (let p = 0; p < particleCount; p++) {
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
+    }
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r2 = particle.size;
+      const x2 = (particle.x + r2 * Math.sin(phi) * Math.cos(theta)) * S;
+      const y2 = (particle.y + r2 * Math.cos(phi)) * S;
+      const z = (particle.z + r2 * Math.sin(phi) * Math.sin(theta)) * S;
+      return [x2, y2, z];
+    };
+  }
 };
 
 // ../../../engine/generators/generator.js
@@ -33905,6 +34693,7 @@ function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed2 = { x: 
         raycast: RAY
       });
       const o2 = app.getSceneObjectByName(name2);
+      console.log(o2.name);
       runtimeCacheObjs.push(o2);
       resolve(o2);
     }
@@ -34544,24 +35333,6 @@ function compositeFragWGSL() {
   );
 }
 
-// ../../../engine/procedures/fontana.js
-function fountainStructureConfig(MeshMorpher2) {
-  return { meshA: MeshMorpher2.cylinder(0.15, 2.5), meshB: MeshMorpher2.cylinder(0.15, 2.5), resolutionU: 32, resolutionV: 1 };
-}
-function fountainBasinStoneConfig(MeshMorpher2) {
-  return { meshA: MeshMorpher2.plane(2.5), meshB: MeshMorpher2.plane(2.5), resolutionU: 1, resolutionV: 1 };
-}
-function fountainCapConfig(MeshMorpher2) {
-  return { meshA: MeshMorpher2.plane(1), meshB: MeshMorpher2.plane(1.4), resolutionU: 1, resolutionV: 1 };
-}
-function fountainCurtainConfig(MeshMorpher2) {
-  return { meshA: MeshMorpher2.cylinder(0.5, 2), meshB: MeshMorpher2.cylinder(0.6, 2), resolutionU: 48, resolutionV: 32 };
-}
-function fountainBasinWaterConfig(MeshMorpher2) {
-  return { meshA: MeshMorpher2.plane(2), meshB: MeshMorpher2.plane(2), resolutionU: 1, resolutionV: 1 };
-}
-var FOUNTAIN_COLUMN_TOP = 1.25;
-
 // ../../../engine/overrides/min-render.js
 var zeroPass = function() {
   const now2 = performance.now();
@@ -34759,7 +35530,7 @@ var PhysicsBridge = class {
       this._bodyIndexMap.set(idx, MEObject);
     });
   }
-  updatePhysics() {
+  setKinematicTransform() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -34776,7 +35547,11 @@ var PhysicsBridge = class {
     if (count > 0) {
       this._worker.postMessage({ cmd: "setKinematicTransform", count, idx: idxArr, pos: posArr });
     }
-    this._worker.postMessage({ cmd: "step" });
+  }
+  updatePhysics() {
+    if (this.c % 4 === 0) this._worker.postMessage({ cmd: "step" });
+    this.c = 0;
+    this.c++;
   }
   // MatrixJolt public API
   setGravity(x2, y2, z) {
@@ -35043,6 +35818,542 @@ var mobile1 = function() {
   }
 };
 
+// ../../../shaders/hzb/hzb.wgsl.js
+var HZB_BUILD_WGSL = `
+struct Uniforms { dstSize : vec2<u32> }
+@group(0) @binding(0) var<uniform> u   : Uniforms;
+@group(0) @binding(1) var srcTex       : texture_2d<f32>;
+@group(0) @binding(2) var dstTex       : texture_storage_2d<r32float, write>;
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if (gid.x >= u.dstSize.x || gid.y >= u.dstSize.y) { return; }
+  let s  = vec2<u32>(gid.x * 2u, gid.y * 2u);
+  let d0 = textureLoad(srcTex, s + vec2(0u, 0u), 0).r;
+  let d1 = textureLoad(srcTex, s + vec2(1u, 0u), 0).r;
+  let d2 = textureLoad(srcTex, s + vec2(0u, 1u), 0).r;
+  let d3 = textureLoad(srcTex, s + vec2(1u, 1u), 0).r;
+  textureStore(dstTex, vec2<i32>(gid.xy), vec4(max(max(d0, d1), max(d2, d3))));
+}`;
+var DEPTH_BLIT_WGSL = `
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
+};
+
+// @group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(0) var depthTex       : texture_depth_2d;
+@group(0) @binding(1) var texSampler     : sampler;
+
+struct VertOut {
+  @builtin(position) pos : vec4f,
+  @location(0) uv        : vec2f,
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
+  var pos = array<vec2f, 3>(
+      vec2(-1.0, -1.0),
+      vec2( 3.0, -1.0),
+      vec2(-1.0,  3.0));
+  let p = pos[vi];
+  return VertOut(vec4(p, 0.0, 1.0), p * 0.5 + 0.5);
+}
+
+@fragment
+fn fs(in: VertOut) -> @location(0) vec4f {
+  let d = textureSample(depthTex, texSampler, in.uv);
+  return vec4f(d, 0.0, 0.0, 1.0);
+}`;
+var SSR_PASS_WGSL = `
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f
+};
+
+struct SSRConfig {
+  invProj     : mat4x4f,
+  proj        : mat4x4f,
+  resolution  : vec2f,
+  maxMip      : f32,
+  thickness   : f32
+}
+
+@group(0) @binding(0) var<uniform> scene  : Scene;
+@group(0) @binding(1) var<uniform> ssrCfg : SSRConfig;
+@group(0) @binding(2) var sceneColor      : texture_2d<f32>;
+@group(0) @binding(3) var normalTex       : texture_2d<f32>;
+@group(0) @binding(4) var hzbTex          : texture_2d<f32>;
+@group(0) @binding(5) var pointSampler    : sampler;
+@group(0) @binding(6) var worldPosTex     : texture_2d<f32>;
+@group(0) @binding(7) var linearSampler   : sampler;
+
+fn edgeFade(uv: vec2f) -> f32 {
+  let e = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  return smoothstep(0.0, 0.1, e);
+}
+
+struct VertOut {
+  @builtin(position) pos : vec4f,
+  @location(0) uv        : vec2f,
+}
+
+fn hash(p: vec2f) -> f32 {
+  return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453123);
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
+  var pos = array<vec2f, 3>(
+    vec2(-1.0,  1.0),
+    vec2( 3.0,  1.0),
+    vec2(-1.0, -3.0),
+  );
+  let p = pos[vi];
+  let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+  return VertOut(vec4(p, 0.0, 1.0), uv);
+}
+
+fn worldPosFromDepth(uv: vec2f, depth: f32) -> vec3f {
+  // WebGPU NDC: X is [-1, 1], Y is [-1, 1] (top is positive), Z is [0, 1]
+  let ndc = vec4f(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+  let viewPos = ssrCfg.invProj * ndc;
+  let viewPosSpace = viewPos / viewPos.w;
+  return viewPosSpace.xyz; 
+}
+
+@fragment
+fn fs2(in: VertOut) -> @location(0) vec4f {
+  let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
+  let worldPos4 = textureLoad(worldPosTex, tc, 0);
+  if (worldPos4.w < 0.5) { return vec4f(0.0); }
+  let worldPos = worldPos4.xyz;
+  let rawNormal = textureLoad(normalTex, tc, 0).xyz;
+  if (length(rawNormal) < 0.1) { return vec4f(0.0); }
+  let normal = normalize(rawNormal);
+  let viewDir = normalize(worldPos - scene.cameraPos);
+  let reflDir = reflect(viewDir, normal);
+  let viewMatrix = scene.cameraViewProjMatrix; 
+  var rayPos     = worldPos + normal * 0.001; // Small, safe bias
+  var prevRayPos = rayPos;
+  var stepSize   = 0.04; 
+  var hit        = false;
+  var hitUV      = vec2f(0.0);
+  var minSteps   = 2u; 
+
+  for (var i = 0u; i < 80u; i++) {
+    prevRayPos = rayPos;
+    rayPos    += reflDir * stepSize;
+    let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
+    if (clip.w <= 0.0) { break; }
+    let ndc = clip.xyz / clip.w;
+    let uv  = vec2f(ndc.x * 0.5 + 0.5, 1.0 - (ndc.y * 0.5 + 0.5));
+    if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+    if (i < minSteps) { continue; }
+    let sampleTC = vec2u(uv * ssrCfg.resolution);
+    let sceneWorld4 = textureLoad(worldPosTex, sampleTC, 0);
+    if (sceneWorld4.w < 0.5) { continue; }
+    let rayLinearDepth   = (scene.cameraViewProjMatrix * vec4f(rayPos, 1.0)).w;
+    let sceneLinearDepth = (scene.cameraViewProjMatrix * vec4f(sceneWorld4.xyz, 1.0)).w;
+    let depthDiff = rayLinearDepth - sceneLinearDepth;
+    if (depthDiff > 0.0 && depthDiff < ssrCfg.thickness) {
+      let distFromOrigin = distance(worldPos, sceneWorld4.xyz);
+      if (distFromOrigin < 0.2) { continue; } // Skip self-intersections completely
+      hit   = true;
+      hitUV = uv;
+      break;
+    }
+    stepSize *= 1.015;
+  }
+  if (!hit) { return vec4f(0.0); }
+  let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
+  let confidence = edgeFade(hitUV);
+  return vec4f(color, confidence * 0.8);
+}
+ 
+@fragment
+fn fs(in: VertOut) -> @location(0) vec4f {
+  let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
+  let worldPos4 = textureLoad(worldPosTex, tc, 0);
+  if (worldPos4.w < 0.5) { return vec4f(0.0); }
+  let worldPos = worldPos4.xyz;
+  let rawNormal = textureLoad(normalTex, tc, 0).xyz;
+  if (length(rawNormal) < 0.1) { return vec4f(0.0); }
+  let normal = normalize(rawNormal);
+  let viewDir = normalize(worldPos - scene.cameraPos);
+  let reflDir = reflect(viewDir, normal);
+  // let jitter = hash(in.uv + vec2f(scene.time * 0.1));
+  let jitter = hash(in.uv); 
+  var rayPos     = worldPos + normal * 0.05; 
+  var prevRayPos = rayPos;
+  var stepSize   = 0.04; 
+  var hit        = false;
+  var hitUV      = vec2f(0.0);
+  var minSteps   = 2u; 
+
+  for (var i = 0u; i < 80u; i++) {
+    prevRayPos = rayPos;
+    let currentStep = stepSize * (1.0 + jitter * 0.05);
+    // let currentStep = stepSize * (1.0 + jitter * 0.01);
+    rayPos += reflDir * currentStep;
+    let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
+    if (clip.w <= 0.0) { break; }
+    let ndc = clip.xyz / clip.w;
+    let uv  = vec2f(ndc.x * 0.5 + 0.5, 1.0 - (ndc.y * 0.5 + 0.5));
+    // if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+    if (any(uv < vec2f(-0.05)) || any(uv > vec2f(1.05))) { break; }
+    if (i < minSteps) { continue; }
+    let sampleTC = vec2u(uv * ssrCfg.resolution);
+    let sceneWorld4 = textureLoad(worldPosTex, sampleTC, 0);
+    if (sceneWorld4.w < 0.5) { continue; }
+
+    let rayLinearDepth   = (scene.cameraViewProjMatrix * vec4f(rayPos, 1.0)).w;
+    let sceneLinearDepth = (scene.cameraViewProjMatrix * vec4f(sceneWorld4.xyz, 1.0)).w;
+    let depthDiff = rayLinearDepth - sceneLinearDepth;
+
+    // Potential Intersection Found!
+    if (depthDiff > 0.0 && depthDiff < ssrCfg.thickness) {
+      let distFromOrigin = distance(worldPos, sceneWorld4.xyz);
+      if (distFromOrigin < 0.2) { continue; } 
+      // Step back to the last empty position and halve the search interval
+      var refinePos  = prevRayPos;
+      var refineStep = stepSize * 0.5;
+      var rUV        = uv;
+      for (var j = 0u; j < 10u; j++) {
+        refinePos += reflDir * refineStep;
+        let rClip = scene.cameraViewProjMatrix * vec4f(refinePos, 1.0);
+        let rNDC  = rClip.xyz / rClip.w;
+        rUV       = vec2f(rNDC.x * 0.5 + 0.5, 1.0 - (rNDC.y * 0.5 + 0.5));
+        let rSceneWorld = textureLoad(worldPosTex, vec2u(rUV * ssrCfg.resolution), 0);
+        let rRayDepth   = (scene.cameraViewProjMatrix * vec4f(refinePos, 1.0)).w;
+        let rSceneDepth = (scene.cameraViewProjMatrix * vec4f(rSceneWorld.xyz, 1.0)).w;
+        if ((rRayDepth - rSceneDepth) > 0.0) {
+          refinePos -= reflDir * refineStep;
+        }
+        refineStep *= 0.5;
+      }
+      // Final validation of the refined coordinates
+      let finalTC = vec2u(rUV * ssrCfg.resolution);
+      let finalSceneWorld = textureLoad(worldPosTex, finalTC, 0).xyz;
+      let finalRayDepth   = (scene.cameraViewProjMatrix * vec4f(refinePos, 1.0)).w;
+      let finalSceneDepth = (scene.cameraViewProjMatrix * vec4f(finalSceneWorld, 1.0)).w;
+      if (abs(finalRayDepth - finalSceneDepth) < ssrCfg.thickness) {
+          hit   = true;
+          hitUV = rUV;
+      }
+      break;
+    }
+    stepSize *= 1.015;
+  }
+
+  if (!hit) { return vec4f(0.0); }
+  let texel = 1.0 / ssrCfg.resolution;
+  let c0 = textureSampleLevel(sceneColor, linearSampler, hitUV, 0.0).rgb;
+  let c1 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV + vec2f(texel.x, 0.0),
+    0.0).rgb;
+
+  let c2 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV - vec2f(texel.x, 0.0),
+    0.0).rgb;
+
+  let c3 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV + vec2f(0.0, texel.y),
+    0.0).rgb;
+
+  let c4 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV - vec2f(0.0, texel.y),
+    0.0).rgb;
+
+  let color = (c0 + c1 + c2 + c3 + c4) / 5.0;
+  // let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
+  var confidence = edgeFade(hitUV);
+  //     let fresnel = pow(
+  //     1.0 - max(dot(normal, -viewDir), 0.0),
+  //     5.0
+  // );
+  //       confidence *= fresnel;
+  return vec4f(color, confidence * 0.8);
+}`;
+
+// ../../../engine/postprocessing/hzb.js
+var SSRPass = class {
+  constructor(device2, width, height, globalSceneUniformBuffer, mainDepthView) {
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.mipCount = Math.floor(Math.log2(Math.max(width, height)));
+    this.enabled = true;
+    this._globalSceneUniformBuffer = globalSceneUniformBuffer;
+    this.ssrOutputTexture = device2.createTexture({
+      label: "SSR output",
+      size: [width, height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.ssrOutputView = this.ssrOutputTexture.createView();
+    this.depthBlitBindGroup = null;
+    this._createHZB();
+    this._createSSRConfig();
+    this._createPipelines();
+    this._createHZBResources();
+    this._createDepthBlitBindGroup(mainDepthView);
+  }
+  _createDepthBlitBindGroup(depthView) {
+    this.depthBlitBindGroup = this.device.createBindGroup({
+      layout: this.blitPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: depthView },
+        { binding: 1, resource: this.pointSampler }
+      ]
+    });
+  }
+  _createHZB() {
+    this.hzbTexture = this.device.createTexture({
+      label: "HZB",
+      size: [this.width, this.height],
+      mipLevelCount: this.mipCount,
+      format: "r32float",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.hzbMipWriteViews = Array.from(
+      { length: this.mipCount },
+      (_, i) => this.hzbTexture.createView({
+        label: `HZB Mip ${i}`,
+        baseMipLevel: i,
+        mipLevelCount: 1
+      })
+    );
+    this.hzbMipReadViews = Array.from(
+      { length: this.mipCount },
+      (_, i) => this.hzbTexture.createView({
+        label: `HZB Read Mip ${i}`,
+        baseMipLevel: i,
+        mipLevelCount: 1
+      })
+    );
+    this.hzbFullView = this.hzbTexture.createView();
+    this.hzbMipBuffers = [];
+    this.hzbMipBindGroups = [];
+  }
+  _createHZBResources() {
+    for (let mip = 1; mip < this.mipCount; mip++) {
+      const dstW = Math.max(1, this.width >> mip);
+      const dstH = Math.max(1, this.height >> mip);
+      const buffer = this.device.createBuffer({
+        size: 16,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.device.queue.writeBuffer(
+        buffer,
+        0,
+        new Uint32Array([dstW, dstH, 0, 0])
+      );
+      const bindGroup = this.device.createBindGroup({
+        label: `HZB Build BG ${mip}`,
+        layout: this.hzbPipeline.getBindGroupLayout(0),
+        entries: [
+          {
+            binding: 0,
+            resource: { buffer }
+          },
+          {
+            binding: 1,
+            resource: this.hzbMipReadViews[mip - 1]
+          },
+          {
+            binding: 2,
+            resource: this.hzbMipWriteViews[mip]
+          }
+        ]
+      });
+      this.hzbMipBuffers.push(buffer);
+      this.hzbMipBindGroups.push(bindGroup);
+    }
+  }
+  _createSSRConfig() {
+    this.ssrConfigBuffer = this.device.createBuffer({
+      label: "SSR config",
+      size: 160,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+  }
+  updateConfig(invProjMatrix, projMatrix) {
+    const data = new Float32Array(40);
+    data.set(invProjMatrix, 0);
+    data.set(projMatrix, 16);
+    data[32] = this.width;
+    data[33] = this.height;
+    data[34] = this.mipCount - 1;
+    data[35] = 0.04;
+    this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, data);
+  }
+  _createPipelines() {
+    const hzbModule = this.device.createShaderModule({
+      label: "HZB build",
+      code: HZB_BUILD_WGSL
+    });
+    this.hzbPipeline = this.device.createComputePipeline({
+      label: "HZB build",
+      layout: "auto",
+      compute: { module: hzbModule, entryPoint: "main" }
+    });
+    const blitModule = this.device.createShaderModule({
+      label: "Depth blit",
+      code: DEPTH_BLIT_WGSL
+    });
+    this.blitPipeline = this.device.createRenderPipeline({
+      label: "Depth blit",
+      layout: "auto",
+      vertex: { module: blitModule, entryPoint: "vs" },
+      fragment: {
+        module: blitModule,
+        entryPoint: "fs",
+        targets: [{ format: "r32float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this.linearSampler = this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear",
+      mipmapFilter: "linear"
+    });
+    const ssrModule = this.device.createShaderModule({
+      label: "SSR",
+      code: SSR_PASS_WGSL
+    });
+    this.bindGroupLayout = this.device.createBindGroupLayout({
+      label: "SSR LAYOUT GROUP",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+        {
+          binding: 4,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: "unfilterable-float",
+            viewDimension: "2d"
+          }
+        },
+        { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+        { binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 7, visibility: GPUShaderStage.FRAGMENT, sampler: {} }
+      ]
+    });
+    this.ssrPipeline = this.device.createRenderPipeline({
+      label: "SSR",
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      }),
+      vertex: { module: ssrModule, entryPoint: "vs" },
+      fragment: {
+        module: ssrModule,
+        entryPoint: "fs",
+        targets: [{
+          format: "rgba16float",
+          blend: {
+            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "zero", operation: "add" }
+          }
+        }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this.pointSampler = this.device.createSampler({
+      magFilter: "nearest",
+      minFilter: "nearest"
+    });
+  }
+  render(commandEncoder, { sceneTextureView, normalTextureView, mainDepthView, mainDepthTexture, worldPosTextureView }) {
+    this._blitDepth(commandEncoder, mainDepthTexture, mainDepthView);
+    this._buildHZB(commandEncoder);
+    this._renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView);
+  }
+  _blitDepth(commandEncoder, depthTexture, depthView) {
+    const pass = commandEncoder.beginRenderPass({
+      label: "Depth blit Pass",
+      colorAttachments: [{
+        view: this.hzbMipWriteViews[0],
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: [1, 0, 0, 1]
+        // Clear with maximum depth standard configuration
+      }]
+    });
+    pass.setPipeline(this.blitPipeline);
+    pass.setBindGroup(0, this.depthBlitBindGroup);
+    pass.draw(3);
+    pass.end();
+  }
+  _buildHZB(commandEncoder) {
+    for (let mip = 1; mip < this.mipCount; mip++) {
+      const dstW = Math.max(1, this.width >> mip);
+      const dstH = Math.max(1, this.height >> mip);
+      const pass = commandEncoder.beginComputePass({ label: `HZB compute level ${mip}` });
+      pass.setPipeline(this.hzbPipeline);
+      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
+      pass.dispatchWorkgroups(Math.ceil(dstW / 8), Math.ceil(dstH / 8));
+      pass.end();
+    }
+  }
+  _renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView) {
+    const bg = this.device.createBindGroup({
+      layout: this.ssrPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this._globalSceneUniformBuffer } },
+        { binding: 1, resource: { buffer: this.ssrConfigBuffer } },
+        { binding: 2, resource: sceneTextureView },
+        { binding: 3, resource: normalTextureView },
+        { binding: 4, resource: this.hzbFullView },
+        // Samples complete structural HZB map cleanly
+        { binding: 5, resource: this.pointSampler },
+        { binding: 6, resource: worldPosTextureView },
+        { binding: 7, resource: this.linearSampler }
+      ]
+    });
+    const pass = commandEncoder.beginRenderPass({
+      label: "SSR Composite Pass",
+      colorAttachments: [{
+        view: this.ssrOutputView,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: [0, 0, 0, 0]
+      }]
+    });
+    pass.setPipeline(this.ssrPipeline);
+    pass.setBindGroup(0, bg);
+    pass.draw(3);
+    pass.end();
+  }
+};
+
 // ../../../world.js
 var MatrixEngineWGPU = class {
   // Save class reference
@@ -35080,11 +36391,7 @@ var MatrixEngineWGPU = class {
   flagPreventRebuildMap = false;
   opaqueBuckets = /* @__PURE__ */ new Map();
   transparentBuckets = /* @__PURE__ */ new Map();
-  shadowBuckets = {
-    default: [],
-    instanced: [],
-    procedural: []
-  };
+  shadowBuckets = { default: [], instanced: [], procedural: [] };
   constructor(options2, callback) {
     if (typeof options2 == "undefined" || typeof options2 == "function") {
       this.options = {
@@ -35121,7 +36428,7 @@ var MatrixEngineWGPU = class {
     this.MEConfig.construct(options2);
     this.label = new MultiLang();
     this.now = 0;
-    this.logLoopError = true;
+    this.logLoopError = this.MEConfig.logLoopError;
     if (typeof options2.alphaMode == "undefined") {
       options2.alphaMode = "no";
     } else if (options2.alphaMode != "opaque" && options2.alphaMode != "premultiplied") {
@@ -35202,6 +36509,7 @@ var MatrixEngineWGPU = class {
         return false;
       }
     }, { passive: true });
+    if (isMobile() == true) preventZoom();
     this.activateEditor = () => {
       if (this.editor == null || typeof this.editor === "undefined") {
         if (typeof options2.projectType !== "undefined" && options2.projectType == "created from editor") {
@@ -35228,11 +36536,7 @@ var MatrixEngineWGPU = class {
     if (this.options.canvasSize == "fullscreen") {
       if (this.options.fastRender && !isNaN(this.options.fastRender)) {
         console.log("FastRender : ", this.options.fastRender);
-        if (isMobile() == false) {
-          this.applyCanvasSize(this.options.fastRender);
-        } else {
-          this.applyCanvasSizeMobile(this.options.fastRender);
-        }
+        this.applyCanvasSize(this.options.fastRender);
       } else if (isMobile() == true) {
         canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
         canvas.height = isMobile() == false ? window.innerHeight : screen.availHeight * 0.98;
@@ -35256,11 +36560,32 @@ var MatrixEngineWGPU = class {
       type: this.options.mainCameraParams.type,
       responseCoef: this.options.mainCameraParams.responseCoef
     };
-    this.cameras = {
-      firstPersonCamera: new FirstPersonCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "firstPersonCamera" == this.options.mainCameraParams.type ? "init active cam" : null }),
-      WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "WASD" == this.options.mainCameraParams.type ? "init active cam" : null }),
-      RPG: new RPGCamera({ position: initialCameraPosition, canvas, isActive: "RPG" == this.options.mainCameraParams.type ? "init active cam" : null })
-    };
+    if (MEConfig.SINGLE_CAMERA == true) {
+      if ("firstPersonCamera" == this.options.mainCameraParams.type) {
+        this.cameras = {
+          firstPersonCamera: new FirstPersonCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "firstPersonCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
+        };
+      } else if ("WASD" == this.options.mainCameraParams.type) {
+        this.cameras = {
+          WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "WASD" == this.options.mainCameraParams.type ? "init active cam" : null })
+        };
+      } else if ("RPG" == this.options.mainCameraParams.type) {
+        this.cameras = {
+          RPG: new RPGCamera({ position: initialCameraPosition, canvas, isActive: "RPG" == this.options.mainCameraParams.type ? "init active cam" : null })
+        };
+      } else if ("cinematicCamera" == this.options.mainCameraParams.type) {
+        this.cameras = {
+          cinematicCamera: new CinematicCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "cinematicCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
+        };
+      }
+    } else {
+      this.cameras = {
+        firstPersonCamera: new FirstPersonCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "firstPersonCamera" == this.options.mainCameraParams.type ? "init active cam" : null }),
+        WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "WASD" == this.options.mainCameraParams.type ? "init active cam" : null }),
+        RPG: new RPGCamera({ position: initialCameraPosition, canvas, isActive: "RPG" == this.options.mainCameraParams.type ? "init active cam" : null }),
+        cinematicCamera: new CinematicCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "cinematicCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
+      };
+    }
     if (urlQuery.lang != null) {
       this.label.loadMultilang(urlQuery.lang).then((r2) => {
         this.label.get = r2;
@@ -35276,20 +36601,33 @@ var MatrixEngineWGPU = class {
     }
     if (this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
       if (byId("msgBox")) byId("msgBox").style.left = "30%";
-      mb.show("CLICK ANYWHERE TO START ENGINE", "spacial-case-mob", 1200);
+      if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
+        console.log("GOT DIRECT WHAT EVER");
+        this.applyCanvasSize(this.options.fastRender);
+        this.init({ canvas, callback });
+        this.MEConfig.fsManager.onChange((isFS, target2) => {
+          console.log("GOT to FS", isFS);
+          if (isFS == false) {
+            setTimeout(() => this.applyCanvasSize(this.options.fastRender), 100);
+          }
+        });
+        addEventListener("run_mobile_fs", () => {
+          if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+            console.log("got to first in fs : ", this.options.fastRender);
+            this.applyCanvasSizeMobile(this.options.fastRender);
+          }
+        });
+        return;
+      }
       meLoader.create();
       this.MEConfig.fsManager.onChange((isFS, target2) => {
         console.log("GOT BACK FROM FS", isFS);
-        this.applyCanvasSizeMobile(this.options.fastRender);
+        setTimeout(() => this.applyCanvasSizeMobile(this.options.fastRender), 100);
       });
       addEventListener("run_mobile_fs", () => {
         if (this.options.fastRender && !isNaN(this.options.fastRender)) {
           console.log("FastRender : ", this.options.fastRender);
-          if (isMobile() == false) {
-            this.applyCanvasSize(this.options.fastRender);
-          } else {
-            this.applyCanvasSizeMobile(this.options.fastRender);
-          }
+          this.applyCanvasSize(this.options.fastRender);
         }
         this.init({ canvas, callback });
         meLoader.destroy();
@@ -35352,8 +36690,6 @@ var MatrixEngineWGPU = class {
   applyCanvasSizeMobile(scale4) {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    this.canvas.width = screenWidth * scale4;
-    this.canvas.height = screenHeight * scale4;
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
@@ -35378,6 +36714,19 @@ var MatrixEngineWGPU = class {
       format: presentationFormat,
       alphaMode: "premultiplied"
     });
+    if (typeof this.options.lock !== "undefined") {
+      if (this.options.lock != "landscape" && this.options.lock != "portrait") {
+        this.options.lock = "portrait";
+      }
+      if (checkLock() && isMobile() == true) {
+        screen.orientation.lock(this.options.lock).then(() => {
+          console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
+          this.applyCanvasSize(this.options.fastRender);
+        }).catch(function(error) {
+          console.error("Orientation lock failed: ", error);
+        });
+      }
+    }
     this.globalAmbient = vec3Impl.create(1, 1, 1);
     if (this.options.MAX_SPOTLIGHTS) {
       this.MAX_SPOTLIGHTS = this.options.MAX_SPOTLIGHTS;
@@ -35394,7 +36743,7 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.11.2 [FasterThanARabbit] ", LOG_FUNNY);
+    console.log("%c Version 1.12.0 [The beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}  ", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\nCreative power with intuitive visual scripting work flow.\nNo tracking. No hype. Just solutions and high performance. \u{1F525}",
@@ -35478,6 +36827,9 @@ var MatrixEngineWGPU = class {
       setThreshold: (v) => {
       }
     };
+    this.ssrPass = {
+      enabled: false
+    };
     this.volumetricPass = { enabled: false };
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -35511,21 +36863,25 @@ var MatrixEngineWGPU = class {
       fragment: {
         module: this.device.createShaderModule({
           code: `
-        @group(0) @binding(0) var hdrTex : texture_2d<f32>;
-        @group(0) @binding(1) var samp : sampler;
+        @group(0) @binding(0) var hdrTex  : texture_2d<f32>;
+        @group(0) @binding(1) var samp    : sampler;
+        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;  // NEW
+
         @fragment
         fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
-          let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
-          let hdr = textureSample(hdrTex, samp, uv).rgb;
-          // simple tonemap
-          let ldr = hdr / (hdr + vec3(1.0));
-          return vec4<f32>(ldr, 1.0);
+            let uv  = pos.xy / vec2<f32>(textureDimensions(hdrTex));
+            let hdr = textureSample(hdrTex, samp, uv).rgb;
+            let ssr = textureSample(ssrTex, samp, uv);          // NEW
+
+            let composited = mix(hdr, ssr.rgb, ssr.a);           // NEW
+            let ldr = composited / (composited + vec3(1.0));
+            return vec4<f32>(ldr, 1.0);
+            // return vec4<f32>(ssr.rgb, 1.0);
         }
       `
         }),
         entryPoint: "main",
         targets: [{ format: isMobile() == true ? "rgba8unorm" : "bgra8unorm" }]
-        // rgba16float  bgra8unorm rgba8unorm
       }
     });
     this.createBloomBindGroup();
@@ -35586,14 +36942,37 @@ var MatrixEngineWGPU = class {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
     this.mainDepthView = this.mainDepthTexture.createView();
+    this.normalTexture = this.device.createTexture({
+      label: "GBuffer normals",
+      size: [this.canvas.width, this.canvas.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.normalTextureView = this.normalTexture.createView();
+    this.worldPosTexture = this.device.createTexture({
+      label: "GBuffer worldPos",
+      size: [this.canvas.width, this.canvas.height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.worldPosTextureView = this.worldPosTexture.createView();
     this.mainRenderPassDesc = {
       label: "mainRenderPassDesc",
-      colorAttachments: [{
-        view: void 0,
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: [0, 0, 0, 1]
-      }],
+      colorAttachments: [
+        {
+          view: void 0,
+          loadOp: "clear",
+          storeOp: "store",
+          clearValue: [0, 0, 0, 1]
+        },
+        {
+          view: this.normalTextureView,
+          loadOp: "clear",
+          storeOp: "store",
+          clearValue: [0, 0, 0, 0]
+        },
+        { view: this.worldPosTextureView, loadOp: "clear", storeOp: "store", clearValue: [0, 0, 0, 0] }
+      ],
       depthStencilAttachment: {
         view: this.mainDepthView,
         depthLoadOp: "clear",
@@ -35927,127 +37306,26 @@ var MatrixEngineWGPU = class {
     if (typeof this.editor !== "undefined") this.editor.editorHud.updateSceneContainer();
     return myMesh;
   };
-  // THIS MUST BE ELIMINATED FROM WORLD.JS
-  addFontana = (o2, clearColor = this.options.clearColor) => {
-    const px = o2.position.x;
-    const py = o2.position.y;
-    const pz = o2.position.z;
-    const TOP = FOUNTAIN_COLUMN_TOP;
-    const geo1 = fountainStructureConfig(MeshMorpher);
-    let m1 = this.addProceduralMeshObj({
-      material: { type: "free" },
-      name: "fontana_column",
-      position: { x: px, y: py, z: pz },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: [o2.scale[0], o2.scale[1], o2.scale[2]],
-      rotationSpeed: { x: 0, y: 0, z: 0 },
-      texturesPaths: ["./res/textures/cube-g1_low.webp"],
-      physics: { enabled: false, geometry: "Sphere" },
-      raycast: { enabled: true, radius: 1.5 },
-      meshA: geo1.meshA,
-      meshB: geo1.meshB,
-      resolutionU: geo1.resolutionU,
-      resolutionV: geo1.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL(),
-      vertexWGSL: fountainWaterVertexWGSL()
-      // pointerEffect: {
-      //   enabled: true,
-      //   flameEmitter: true,
-      // }
-    });
-    const geo2 = fountainBasinStoneConfig(MeshMorpher);
-    let m2 = this.addProceduralMeshObj({
-      material: { type: "free" },
-      name: "fontana_basin_stone",
-      position: { x: px, y: py, z: pz },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: [o2.scale[0], o2.scale[1], o2.scale[2]],
-      rotationSpeed: { x: 0, y: 0, z: 0 },
-      texturesPaths: ["./res/textures/cube-g1_low.webp"],
-      physics: { enabled: false, geometry: "Sphere" },
-      raycast: { enabled: true, radius: 1.5 },
-      meshA: geo2.meshA,
-      meshB: geo2.meshB,
-      resolutionU: geo2.resolutionU,
-      resolutionV: geo2.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL(),
-      vertexWGSL: fountainWaterVertexWGSL()
-    });
-    const geo3 = fountainCapConfig(MeshMorpher);
-    let m3 = this.addProceduralMeshObj({
-      material: { type: "fontana" },
-      name: "fontana_cap",
-      globalAmbient: [0.15, 0.72, 0.96, 1],
-      position: { x: px, y: py + TOP * 0.8, z: pz },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: [o2.scale[0], o2.scale[1], o2.scale[2]],
-      rotationSpeed: { x: 0, y: 0, z: 0 },
-      texturesPaths: ["./res/textures/cube-g1_low.webp"],
-      physics: { enabled: false, geometry: "Sphere" },
-      raycast: { enabled: true, radius: 1.5 },
-      meshA: geo3.meshA,
-      meshB: geo3.meshB,
-      resolutionU: geo3.resolutionU,
-      resolutionV: geo3.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL(),
-      vertexWGSL: fountainWaterVertexWGSL()
-    });
-    const geo4 = fountainCurtainConfig(MeshMorpher);
-    let m4 = this.addProceduralMeshObj({
-      material: { type: "fontana" },
-      name: "fontana_curtain",
-      globalAmbient: [0.12, 0.68, 0.94, 1],
-      position: { x: px, y: py, z: pz },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: [o2.scale[0], o2.scale[1], o2.scale[2]],
-      rotationSpeed: { x: 0, y: 0, z: 0 },
-      texturesPaths: ["./res/textures/cube-g1_low.webp"],
-      physics: { enabled: false, geometry: "Sphere" },
-      raycast: { enabled: true, radius: 1.5 },
-      meshA: geo4.meshA,
-      meshB: geo4.meshB,
-      resolutionU: geo4.resolutionU,
-      resolutionV: geo4.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL(),
-      vertexWGSL: fountainWaterVertexWGSL()
-    });
-    const geo5 = fountainBasinWaterConfig(MeshMorpher);
-    let m5 = this.addProceduralMeshObj({
-      material: { type: "fontana" },
-      name: "fontana_basin_water",
-      globalAmbient: [0.08, 0.55, 0.9, 1],
-      position: { x: px, y: py + 0.01, z: pz },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: [o2.scale[0], o2.scale[1], o2.scale[2]],
-      rotationSpeed: { x: 0, y: 0, z: 0 },
-      texturesPaths: ["./res/textures/cube-g1_low.webp"],
-      physics: { enabled: false, geometry: "Sphere" },
-      raycast: { enabled: true, radius: 1.5 },
-      meshA: geo5.meshA,
-      meshB: geo5.meshB,
-      resolutionU: geo5.resolutionU,
-      resolutionV: geo5.resolutionV,
-      fragmentWGSL: fountainBasinFragmentWGSL(),
-      vertexWGSL: fountainWaterVertexWGSL()
-    });
-    m1.rotation.setRotateY(1e3);
-    m4.setBlend(0.1);
-    setTimeout(() => {
-    }, 1e3);
-  };
   createBloomBindGroup() {
+    this.dummySSRTexture = this.device.createTexture({
+      size: [1, 1],
+      format: "rgba16float",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
+    });
     this.bloomBindGroup = this.device.createBindGroup({
       layout: this.presentPipeline.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: this.bloomOutputTex },
-        { binding: 1, resource: this.presentSampler }
+        { binding: 1, resource: this.presentSampler },
+        { binding: 2, resource: this.dummySSRTexture.createView() }
       ]
     });
     this.noBloomBindGroup = this.device.createBindGroup({
       layout: this.presentPipeline.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: this.sceneTexture.createView() },
-        { binding: 1, resource: this.presentSampler }
+        { binding: 1, resource: this.presentSampler },
+        { binding: 2, resource: this.dummySSRTexture.createView() }
       ]
     });
   }
@@ -36131,7 +37409,7 @@ var MatrixEngineWGPU = class {
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
+      if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
       camera.update();
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -36167,8 +37445,8 @@ var MatrixEngineWGPU = class {
         const mesh = this.mainRenderBundle[i];
         if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
         if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
-        mesh.updateModelUniformBuffer(i);
         mesh.position.update();
+        mesh.updateModelUniformBuffer(i);
         if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if (mesh.update) mesh.update(now2);
         if (mesh.isVideo) mesh.updateVideoTexture();
@@ -36213,6 +37491,21 @@ var MatrixEngineWGPU = class {
         }
       }
       pass.end();
+      if (this.ssrPass.enabled == true) {
+        const invProj = new Float32Array(16);
+        mat4Impl.invert(camera.projectionMatrix, invProj);
+        this.ssrPass.updateConfig(
+          invProj,
+          camera.projectionMatrix
+        );
+        this.ssrPass.render(commandEncoder, {
+          sceneTextureView: this.sceneTextureView,
+          normalTextureView: this.normalTextureView,
+          mainDepthView: this.mainDepthView,
+          mainDepthTexture: this.mainDepthTexture,
+          worldPosTextureView: this.worldPosTextureView
+        });
+      }
       if (this.volumetricPass.enabled === true) {
         mat4Impl.invert(camera.VP, this._invViewProj);
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
@@ -36504,6 +37797,34 @@ var MatrixEngineWGPU = class {
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
     }
   };
+  activateHZB = () => {
+    if (this.ssrPass.enabled != true) {
+      this.ssrPass = new SSRPass(this.device, this.canvas.width, this.canvas.height, this.globalSceneUniformBuffer, this.mainDepthView);
+      this.ssrPass.enabled = true;
+      this.bloomBindGroup = this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: this.bloomOutputTex },
+          { binding: 1, resource: this.presentSampler },
+          { binding: 2, resource: this.ssrPass.ssrOutputView }
+        ]
+      });
+      this.noBloomBindGroup = this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: this.sceneTexture.createView() },
+          { binding: 1, resource: this.presentSampler },
+          { binding: 2, resource: this.ssrPass.ssrOutputView }
+          // real
+        ]
+      });
+      this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+      PipelineManager.invalidateAll();
+      for (const mesh of this.mainRenderBundle) {
+        mesh.setupPipeline();
+      }
+    }
+  };
   activateVolumetricEffect = (arg) => {
     if (this.bloomPass.enabled != true) {
       console.warn(`%cMEW: You must enable bloom before volumetric.`);
@@ -36530,33 +37851,33 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test1/graph.js
-var graph_default = { "nodes": { "node_2": { "noExec": true, "id": "node_2", "title": "Get Scene Light", "x": 372.15625, "y": 416.046875, "category": "scene", "inputs": [], "outputs": [{ "name": "ambientFactor", "type": "value" }, { "name": "setPosX", "type": "object" }, { "name": "setPosY", "type": "object" }, { "name": "setPosZ", "type": "object" }, { "name": "setIntensity", "type": "object" }, { "name": "setInnerCutoff", "type": "object" }, { "name": "setOuterCutoff", "type": "object" }, { "name": "setColor", "type": "object" }, { "name": "setColorR", "type": "object" }, { "name": "setColorB", "type": "object" }, { "name": "setColorG", "type": "object" }, { "name": "setRange", "type": "object" }, { "name": "setAmbientFactor", "type": "object" }, { "name": "setShadowBias", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "light0" }], "builtIn": true, "accessObjectLiteral": "window.app?.lightContainer", "exposeProps": ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"] }, "node_3": { "id": "node_3", "title": "reffunctions", "x": 977.34375, "y": 357.4375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "intensity", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_4": { "id": "node_4", "title": "Get Number", "x": 686.953125, "y": 400.53125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_POWER" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_5": { "id": "node_5", "title": "Get Number", "x": 682.8125, "y": 602.140625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_7": { "id": "node_7", "title": "reffunctions", "x": 988.78125, "y": 557.28125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_10": { "id": "node_10", "title": "reffunctions", "x": 989.671875, "y": 731.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorR", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_11": { "id": "node_11", "title": "Get Number", "x": 698.609375, "y": 789.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_RED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_12": { "id": "node_12", "title": "reffunctions", "x": 1005.078125, "y": 947.953125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorB", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_13": { "id": "node_13", "title": "Get Number", "x": 713.515625, "y": 995.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_BLUE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_14": { "id": "node_14", "title": "reffunctions", "x": 989.984375, "y": 1199.3125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorG", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_15": { "id": "node_15", "title": "Get Number", "x": 740.1006469726562, "y": 1241.9687805175781, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_GREEN" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_16": { "noExec": true, "id": "node_16", "title": "Get Scene Object", "x": 1323.5625, "y": 1496.8125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_17": { "id": "node_17", "x": 1603.234375, "y": 1239.390625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_18": { "id": "node_18", "title": "Get String", "x": 1295.5625, "y": 1325.265625, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_20": { "id": "node_20", "title": "functions", "x": -17.28125, "y": 17.765625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "activateBloomEffect" }], "accessObjectLiteral": "app", "fnName": "activateBloomEffect", "descFunc": "activateBloomEffect" }, "node_22": { "id": "node_22", "title": "Get Number", "x": 128.828125, "y": 221.390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "bloomPower" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_24": { "id": "node_24", "x": 2020.515625, "y": 1696.265625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_25": { "id": "node_25", "title": "Get String", "x": 1322.40625, "y": 1839.234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_26": { "noExec": true, "id": "node_26", "title": "Get Scene Object", "x": 1706.9375, "y": 1755.78125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_42": { "noExec": true, "id": "node_42", "title": "Get Scene Object", "x": 3181.890625, "y": 1338.546875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_43": { "id": "node_43", "x": 3566.53125, "y": 1326.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_44": { "id": "node_44", "title": "Get Number", "x": 3215.9375, "y": 1842.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SMALL_INV_ROT_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_45": { "noExec": true, "id": "node_45", "title": "Get Scene Object", "x": 3187.828125, "y": 1599.359375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_46": { "noExec": true, "id": "node_46", "title": "Get Scene Object", "x": 3195.609375, "y": 2016.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_48": { "id": "node_48", "x": 3566.46875, "y": 1701, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_49": { "id": "node_49", "x": 3574.5625, "y": 2060.640625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_50": { "id": "node_50", "title": "SetTimeout", "x": 3579.765625, "y": 1884.234375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_65": { "id": "node_65", "title": "if", "x": 3154.484375, "y": 719.640625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }] }, "node_69": { "noExec": true, "id": "node_69", "title": "Get Scene Object", "x": 1705.015625, "y": 1972.59375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_70": { "noExec": true, "id": "node_70", "title": "Get Scene Object", "x": 1706.4375, "y": 2193.75, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_71": { "id": "node_71", "x": 2023.84375, "y": 1928.5625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_72": { "id": "node_72", "x": 2021.96875, "y": 2152.53125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_77": { "id": "node_77", "title": "Set Object", "x": -272.625, "y": 9.171875, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_78": { "id": "node_78", "title": "Get Object", "x": -271.75, "y": 168.84375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_84": { "id": "node_84", "title": "Print", "x": 3437.34375, "y": 797.8125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS IS FREE TO PLAY" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_85": { "id": "node_85", "title": "SetTimeout", "x": 3554.40625, "y": 1527.28125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_86": { "id": "node_86", "title": "Get Number", "x": 4025.125, "y": 1846.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPIN_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_87": { "id": "node_87", "x": 4277.9375, "y": 1504.921875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_89": { "id": "node_89", "x": 4306.96875, "y": 2103.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_97": { "id": "node_97", "title": "Function", "x": 5406.890625, "y": 1280.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_98": { "id": "node_98", "title": "GenRandInt", "x": 5180.90625, "y": 1401.8125, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_99": { "id": "node_99", "title": "Get Number", "x": 4982.109375, "y": 2194.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_100": { "id": "node_100", "title": "SetTimeout", "x": 4716.15625, "y": 1556.875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_102": { "id": "node_102", "x": 4921.765625, "y": 1272.671875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_104": { "noExec": true, "id": "node_104", "title": "Get Scene Object", "x": 5421.203125, "y": 1565.96875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_109": { "id": "node_109", "title": "Get Number", "x": 6485.46875, "y": 3241.625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_113": { "noExec": true, "id": "node_113", "title": "Get Scene Object", "x": 5766.765625, "y": 2410.46875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_115": { "id": "node_115", "title": "GenRandInt", "x": 5769.71875, "y": 2238.890625, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_116": { "id": "node_116", "title": "Function", "x": 6041.734375, "y": 2172.59375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_118": { "id": "node_118", "title": "GenRandInt", "x": 5941.5, "y": 3064.875, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_119": { "id": "node_119", "title": "Function", "x": 6183.046875, "y": 2990.25, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_120": { "noExec": true, "id": "node_120", "title": "Get Scene Object", "x": 6205.84375, "y": 3181.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_121": { "id": "node_121", "x": 6522.609375, "y": 3010.75, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_126": { "id": "node_126", "title": "functions", "x": -718.80908203125, "y": -307.0694580078125, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_128": { "id": "node_128", "title": "Get Number", "x": -1016.638916015625, "y": -180.72222900390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_INIT_PITCH" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_130": { "id": "node_130", "title": "Get Number", "x": -1005.2430419921875, "y": 24.24652099609375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_131": { "id": "node_131", "title": "Get Number", "x": -998.861083984375, "y": 238.2430419921875, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Z" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_132": { "id": "node_132", "title": "functions", "x": -686.140625, "y": -41.90625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setY" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setY", "descFunc": "setY" }, "node_137": { "id": "node_137", "title": "functions", "x": -688.15625, "y": 181.71875, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "z", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setZ" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setZ", "descFunc": "setZ" }, "node_139": { "id": "node_139", "title": "Get Number", "x": 5417.203125, "y": 1811.234375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_142": { "id": "node_142", "x": 6625.296875, "y": 2309.84375, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_144": { "id": "node_144", "title": "Get Number", "x": 6347.265625, "y": 2632.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_146": { "id": "node_146", "title": "onLoad", "x": -1718.1807250976562, "y": -728.7395935058594, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_149": { "id": "node_149", "x": 3850.359375, "y": 1616.234375, "title": "Play MP3", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "key", "type": "string", "default": "audio" }, { "name": "src", "type": "string", "default": "" }, { "name": "clones", "type": "value", "default": 1 }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "created", "value": true }, { "key": "key", "value": "start_spin" }, { "key": "src", "value": "res/audios/spin.mp3" }], "noselfExec": "true" }, "node_150": { "id": "node_150", "title": "SetTimeout", "x": 3818.0625, "y": 1951.421875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_157": { "id": "node_157", "x": 2469.03125, "y": 594.109375, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObject", "type": "object" }], "noselfExec": "true", "_listenerAttached": false }, "node_160": { "id": "node_160", "title": "Set Object", "x": 3442.03125, "y": 996.734375, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": "" }], "finished": true }, "node_161": { "id": "node_161", "title": "Get Object", "x": 3155.234375, "y": 1053.75, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "USED_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_162": { "id": "node_162", "title": "Get Object", "x": 2519.8125, "y": 930.875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_164": { "id": "node_164", "title": "Get Object", "x": 2523.875, "y": 781.109375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_165": { "id": "node_165", "title": "A != B", "x": 2857.375, "y": 897.234375, "category": "compare", "inputs": [{ "name": "A", "type": "any" }, { "name": "B", "type": "any" }], "outputs": [{ "name": "result", "type": "boolean" }] }, "node_167": { "id": "node_167", "title": "Set Object", "x": 7844.84375, "y": 2837.28125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_168": { "id": "node_168", "title": "Get Object", "x": 7966.9375, "y": 3035.078125, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_169": { "id": "node_169", "title": "Print", "x": 8093.671875, "y": 2833.359375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "MASHINE IS FREE " }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_170": { "id": "node_170", "title": "Comment", "x": 2790.890625, "y": 748.046875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "Equal and NoEqual only compare nodes \nwho works with objects !!!" }] }, "node_172": { "id": "node_172", "x": 5779.578125, "y": 2084.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_174": { "id": "node_174", "x": 5936.875, "y": 2901.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_176": { "id": "node_176", "title": "Get Number", "x": 5707.625, "y": 1612.859375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_177": { "id": "node_177", "x": 5950.9375, "y": 1361.5, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_178": { "id": "node_178", "x": 6219.546875, "y": 1502.609375, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_179": { "id": "node_179", "title": "Mul", "x": 5970.328125, "y": 1681.34375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_180": { "id": "node_180", "title": "Get Number", "x": 5706.21875, "y": 1780.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_181": { "id": "node_181", "title": "SetTimeout", "x": 6219.046875, "y": 1674.140625, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_183": { "id": "node_183", "x": 6224.515625, "y": 1825.296875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_184": { "id": "node_184", "title": "Get Number", "x": 6065.84375, "y": 2406.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_185": { "id": "node_185", "title": "Mul", "x": 6293.59375, "y": 2485.90625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_186": { "id": "node_186", "title": "Get Number", "x": 6055.53125, "y": 2574.125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_187": { "id": "node_187", "x": 6631.390625, "y": 2491.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_188": { "id": "node_188", "title": "SetTimeout", "x": 6638.84375, "y": 2652.09375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_189": { "id": "node_189", "x": 6655.71875, "y": 2798.484375, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_190": { "id": "node_190", "title": "Get Number", "x": 6743.9375, "y": 3179.015625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_191": { "id": "node_191", "title": "Get Number", "x": 6757.0625, "y": 3335.703125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_192": { "id": "node_192", "title": "Mul", "x": 6969.84375, "y": 3254.84375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_193": { "id": "node_193", "x": 6755.296875, "y": 3012.375, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_194": { "id": "node_194", "title": "SetTimeout", "x": 7510.78125, "y": 2875.953125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_195": { "id": "node_195", "title": "SetTimeout", "x": 6997.125, "y": 3065.046875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_196": { "id": "node_196", "x": 7210.9375, "y": 3164.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_197": { "id": "node_197", "title": "SetTimeout", "x": 4286.1875, "y": 1649.359375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_198": { "id": "node_198", "x": 4300.8125, "y": 1804.625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_199": { "id": "node_199", "title": "SetTimeout", "x": 4303.109375, "y": 1959.21875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_200": { "id": "node_200", "title": "Print", "x": 3452.515625, "y": 594.296875, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS USED" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_205": { "id": "node_205", "title": "Get Number", "x": 409.59375, "y": 217.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLUR_EFFECT" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_206": { "id": "node_206", "title": "Comment", "x": 7031.359375, "y": 2832.375, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "NOW STOP SPINING" }] }, "node_207": { "id": "node_207", "title": "functions", "x": 984.359375, "y": 62.625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setKnee" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setKnee", "descFunc": "setKnee" }, "node_208": { "id": "node_208", "title": "functions", "x": 709.546875, "y": 63.234375, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setBlurRadius" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setBlurRadius", "descFunc": "setBlurRadius" }, "node_209": { "id": "node_209", "title": "Get Number", "x": 743.1875, "y": 238.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLOOM_KNEE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_211": { "id": "node_211", "title": "functions", "x": 431.140625, "y": 28.140625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setIntensity" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setIntensity", "descFunc": "setIntensity" }, "node_215": { "id": "node_215", "title": "Function", "x": 305.7292175292969, "y": 2023.8612670898438, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "ctx", "type": "value" }, { "name": "canvas", "type": "value" }, { "name": "arg", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "neonTextEffect" }, "node_219": { "id": "node_219", "title": "SetTimeout", "x": 754.0416870117188, "y": 1783.1425170898438, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "2000" }], "builtIn": true }, "node_221": { "id": "node_221", "x": 669.7327270507812, "y": 1990.350830078125, "title": "Set CanvasInline", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "canvaInlineProgram", "type": "function" }, { "name": "specialCanvas2dArg", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "BANNER1" }, { "key": "canvaInlineProgram", "value": "function (ctx, canvas) {}" }, { "key": "specialCanvas2dArg", "value": '{ hue: 200, glow: 10, text: "Roll Baby Roll\\n \u{1F47D}\u{1F47D}\u{1F47D}" , fontSize: 25, flicker: 0.05 , middle : true}' }], "noselfExec": "true" }, "node_231": { "id": "node_231", "x": 992.65625, "y": 3119.546875, "title": "Curve", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "name", "type": "string" }, { "name": "delta", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "name", "value": "Curve1" }], "curve": { "name": "node_231", "keys": [{ "time": 0, "value": 0, "inTangent": 0, "outTangent": 0 }, { "time": 1, "value": 1, "inTangent": 0, "outTangent": 0 }], "length": 1, "loop": true, "samples": 128, "baked": null }, "noselfExec": "true" }, "node_233": { "noExec": true, "id": "node_233", "title": "Get Scene Object", "x": 1247.1875, "y": 2880.078125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "BANNER1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_236": { "id": "node_236", "title": "Mul", "x": 1363.453125, "y": 3296.296875, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_237": { "id": "node_237", "title": "Get Number", "x": 1038.3125, "y": 3386.328125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "MULTIPLY_CURVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_239": { "id": "node_239", "title": "Get Number", "x": 1357.515625, "y": 3480.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_241": { "id": "node_241", "x": 1727.015625, "y": 3126.765625, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_243": { "id": "node_243", "title": "getNumberLiteral", "x": 1351.953125, "y": 3126.109375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "90" }], "noselfExec": "true" }, "node_252": { "noExec": true, "id": "node_252", "title": "Get Scene Object", "x": 3139.484375, "y": 3452.890625, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "CAMERA_JUMPER" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_254": { "id": "node_254", "title": "Get Object", "x": 3141, "y": 3715.921875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_255": { "id": "node_255", "x": 3489.953125, "y": 3351.296875, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_258": { "id": "node_258", "title": "getNumberLiteral", "x": 3089.09375, "y": 3074.984375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "0.03" }], "noselfExec": "true" }, "node_261": { "id": "node_261", "title": "if", "x": 2792.125, "y": 3138.71875, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "true" }], "noselfExec": "true" }, "node_269": { "id": "node_269", "title": "Mul", "x": 3153.6875, "y": 3274.625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_271": { "id": "node_271", "x": 2370.59375, "y": 3180.625, "title": "Audio Reactive Node", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "audioSrc", "type": "string" }, { "name": "loop", "type": "boolean" }, { "name": "thresholdBeat", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "low", "type": "value" }, { "name": "mid", "type": "value" }, { "name": "high", "type": "value" }, { "name": "energy", "type": "value" }, { "name": "beat", "type": "boolean" }], "fields": [{ "key": "audioSrc", "value": "audionautix-black-fly.mp3" }, { "key": "loop", "value": true }, { "key": "thresholdBeat", "value": 0.7 }, { "key": "created", "value": true, "disabled": true }], "noselfExec": "true", "_loading": false, "_beatCooldown": 0 }, "node_275": { "id": "node_275", "title": "Get Boolean", "x": 3489.921875, "y": 3641.328125, "category": "value", "outputs": [{ "name": "result", "type": "boolean" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_276": { "id": "node_276", "title": "Set Boolean", "x": 2913.078125, "y": 2589.90625, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": "true" }], "finished": true }, "node_280": { "id": "node_280", "x": 2458.84375, "y": 2502.921875, "title": "Generator Pyramid", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "levels", "type": "value" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "objectNames", "type": "object" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/cube-g1.webp" }, { "key": "name", "value": "TEST" }, { "key": "levels", "value": "5" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": 10 }, { "key": "delay", "value": "50" }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_281": { "id": "node_281", "type": "getArray", "title": "Get Array", "x": 4353.375, "y": 3439.109375, "fields": [{ "key": "array", "value": [] }], "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "array", "type": "any" }] }, "node_282": { "id": "node_282", "title": "For Each", "type": "forEach", "x": 4596.390625, "y": 3454.578125, "state": { "item": "TEST_54", "index": 54 }, "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "loop", "type": "action" }, { "name": "completed", "type": "action" }, { "name": "item", "type": "any" }, { "name": "index", "type": "value" }] }, "node_284": { "id": "node_284", "x": 4928.7606201171875, "y": 3606.062744140625, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_286": { "id": "node_286", "title": "Mul", "x": 4376.5625, "y": 3749.234375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_287": { "id": "node_287", "title": "getNumberLiteral", "x": 4052.7466430664062, "y": 3551.3613891601562, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": "0.02" }], "noselfExec": "true" }, "node_288": { "id": "node_288", "title": "if", "x": 3794.234375, "y": 3402.265625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }], "noselfExec": "true" }, "node_289": { "id": "node_289", "title": "Get Object", "x": 4691.159912109375, "y": 3881.0072021484375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_290": { "id": "node_290", "title": "Set Boolean", "x": 2114.84375, "y": 2644.125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": false }], "finished": true }, "node_308": { "noExec": true, "id": "node_308", "title": "Get Scene Object", "x": 2356.765625, "y": 1721.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "L_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_309": { "id": "node_309", "x": 2723.4375, "y": 1888.484375, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_310": { "id": "node_310", "title": "Get String", "x": 2483.796875, "y": 2028.75, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "CUBE_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_311": { "noExec": true, "id": "node_311", "title": "Get Scene Object", "x": 2349.734375, "y": 2185, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "R_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_312": { "id": "node_312", "x": 2715.484375, "y": 2184.0625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_313": { "id": "node_313", "title": "Comment", "x": 1832.203125, "y": 2625.671875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON LOAD TEST CASE \n" }] }, "node_314": { "id": "node_314", "title": "Comment", "x": 710.796875, "y": 3127.1875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON DRAW \n" }] }, "node_346": { "noExec": true, "id": "node_346", "title": "Set Shader Graph", "x": 479.16668701171875, "y": 1404.8785095214844, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "objectName": "objectName", "type": "string" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "selectedShader", "value": "ScrollTex" }, { "key": "objectName", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.shaderGraph" }, "node_349": { "noExec": true, "id": "node_349", "title": "Get Scene Object", "x": -124.2569580078125, "y": 1362.0798950195312, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_TOP" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_350": { "id": "node_350", "x": 210.10760498046875, "y": 1170.34033203125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_351": { "id": "node_351", "title": "onLoad", "x": -138.65625, "y": 1077.5, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_352": { "id": "node_352", "title": "Get String", "x": -137.607666015625, "y": 1198.6771240234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_363": { "id": "node_363", "title": "getNumberLiteral", "x": -1410.1007080078125, "y": -269.3333740234375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 1 }], "noselfExec": "true" }, "node_367": { "id": "node_367", "title": "functions", "x": -1021.892578125, "y": -538.3471984863281, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "yaw", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setYaw" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setYaw", "descFunc": "setYaw" }, "node_370": { "id": "node_370", "title": "Get Number", "x": -1736.3228759765625, "y": -465.6805725097656, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_371": { "id": "node_371", "title": "functions", "x": -1355.045166015625, "y": -740.0625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "p", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_372": { "id": "node_372", "x": 1048.2396850585938, "y": 2349.2640380859375, "title": "Set Vertex Wave", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "intensity", "type": "value" }, { "name": "enableWave", "type": "boolean" }, { "name": "Wave Speed", "type": "value" }, { "name": "Wave Amplitude", "type": "value" }, { "name": "Wave Frequency", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableWave", "value": "true" }, { "key": "Wave Speed", "value": "4.5" }, { "key": "Wave Amplitude", "value": "0.6" }, { "key": "Wave Frequency", "value": 1.5 }] } }, "links": [{ "id": "link_1", "from": { "node": "node_2", "pin": "setIntensity", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "reference" }, "type": "any" }, { "id": "link_3", "from": { "node": "node_4", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "intensity" }, "type": "value" }, { "id": "link_4", "from": { "node": "node_2", "pin": "setPosY", "type": "object", "out": true }, "to": { "node": "node_7", "pin": "reference" }, "type": "any" }, { "id": "link_5", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_6", "from": { "node": "node_5", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_7", "pin": "y2" }, "type": "value" }, { "id": "link_9", "from": { "node": "node_2", "pin": "setColorR", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "reference" }, "type": "any" }, { "id": "link_10", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_11", "from": { "node": "node_11", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_10", "pin": "colorR" }, "type": "value" }, { "id": "link_12", "from": { "node": "node_10", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_13", "from": { "node": "node_2", "pin": "setColorB", "type": "object", "out": true }, "to": { "node": "node_12", "pin": "reference" }, "type": "any" }, { "id": "link_14", "from": { "node": "node_13", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_12", "pin": "colorB" }, "type": "value" }, { "id": "link_15", "from": { "node": "node_2", "pin": "setColorG", "type": "object", "out": true }, "to": { "node": "node_14", "pin": "reference" }, "type": "any" }, { "id": "link_16", "from": { "node": "node_12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_14", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_15", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_14", "pin": "colorG" }, "type": "value" }, { "id": "link_18", "from": { "node": "node_16", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_17", "pin": "exec" }, "type": "action" }, { "id": "link_20", "from": { "node": "node_18", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "texturePath" }, "type": "any" }, { "id": "link_26", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "texturePath" }, "type": "any" }, { "id": "link_27", "from": { "node": "node_17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_24", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_26", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_52", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_43", "pin": "rotation" }, "type": "any" }, { "id": "link_53", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_43", "pin": "x" }, "type": "any" }, { "id": "link_55", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_48", "pin": "rotation" }, "type": "any" }, { "id": "link_57", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_48", "pin": "x" }, "type": "any" }, { "id": "link_58", "from": { "node": "node_48", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_50", "pin": "exec" }, "type": "action" }, { "id": "link_59", "from": { "node": "node_50", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_49", "pin": "exec" }, "type": "action" }, { "id": "link_60", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_49", "pin": "rotation" }, "type": "any" }, { "id": "link_61", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_49", "pin": "x" }, "type": "any" }, { "id": "link_95", "from": { "node": "node_69", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_96", "from": { "node": "node_24", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_71", "pin": "exec" }, "type": "action" }, { "id": "link_97", "from": { "node": "node_71", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_72", "pin": "exec" }, "type": "action" }, { "id": "link_98", "from": { "node": "node_70", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_99", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "texturePath" }, "type": "any" }, { "id": "link_100", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "texturePath" }, "type": "any" }, { "id": "link_104", "from": { "node": "node_77", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_105", "from": { "node": "node_78", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_77", "pin": "value" }, "type": "object" }, { "id": "link_113", "from": { "node": "node_65", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_84", "pin": "exec" }, "type": "action" }, { "id": "link_115", "from": { "node": "node_43", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_85", "pin": "exec" }, "type": "action" }, { "id": "link_116", "from": { "node": "node_85", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_48", "pin": "exec" }, "type": "action" }, { "id": "link_117", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_87", "pin": "rotation" }, "type": "any" }, { "id": "link_119", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_89", "pin": "rotation" }, "type": "any" }, { "id": "link_120", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_87", "pin": "x" }, "type": "any" }, { "id": "link_122", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_89", "pin": "x" }, "type": "any" }, { "id": "link_134", "from": { "node": "node_98", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_97", "pin": "input" }, "type": "value" }, { "id": "link_137", "from": { "node": "node_89", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_100", "pin": "exec" }, "type": "action" }, { "id": "link_138", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_102", "pin": "rotation" }, "type": "any" }, { "id": "link_143", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_102", "pin": "x" }, "type": "any" }, { "id": "link_144", "from": { "node": "node_100", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_102", "pin": "exec" }, "type": "action" }, { "id": "link_166", "from": { "node": "node_115", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_116", "pin": "input" }, "type": "value" }, { "id": "link_172", "from": { "node": "node_118", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_119", "pin": "input" }, "type": "value" }, { "id": "link_174", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_121", "pin": "rotation" }, "type": "any" }, { "id": "link_175", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "y" }, "type": "any" }, { "id": "link_176", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "z" }, "type": "any" }, { "id": "link_178", "from": { "node": "node_119", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "x" }, "type": "any" }, { "id": "link_179", "from": { "node": "node_119", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_121", "pin": "exec" }, "type": "action" }, { "id": "link_182", "from": { "node": "node_128", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_126", "pin": "pitch" }, "type": "value" }, { "id": "link_186", "from": { "node": "node_126", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_132", "pin": "exec" }, "type": "action" }, { "id": "link_188", "from": { "node": "node_130", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_132", "pin": "y2" }, "type": "value" }, { "id": "link_193", "from": { "node": "node_131", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_137", "pin": "z" }, "type": "value" }, { "id": "link_194", "from": { "node": "node_132", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_137", "pin": "exec" }, "type": "action" }, { "id": "link_195", "from": { "node": "node_137", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_77", "pin": "exec" }, "type": "action" }, { "id": "link_207", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_142", "pin": "rotation" }, "type": "any" }, { "id": "link_208", "from": { "node": "node_116", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_142", "pin": "exec" }, "type": "action" }, { "id": "link_211", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "y" }, "type": "any" }, { "id": "link_212", "from": { "node": "node_116", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "x" }, "type": "any" }, { "id": "link_213", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "z" }, "type": "any" }, { "id": "link_218", "from": { "node": "node_49", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_150", "pin": "exec" }, "type": "action" }, { "id": "link_219", "from": { "node": "node_150", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_149", "pin": "exec" }, "type": "action" }, { "id": "link_220", "from": { "node": "node_149", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_87", "pin": "exec" }, "type": "action" }, { "id": "link_235", "from": { "node": "node_84", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_160", "pin": "exec" }, "type": "action" }, { "id": "link_236", "from": { "node": "node_160", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_43", "pin": "exec" }, "type": "action" }, { "id": "link_237", "from": { "node": "node_161", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_160", "pin": "value" }, "type": "object" }, { "id": "link_239", "from": { "node": "node_157", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_65", "pin": "exec" }, "type": "action" }, { "id": "link_243", "from": { "node": "node_164", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "A" }, "type": "any" }, { "id": "link_244", "from": { "node": "node_162", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "B" }, "type": "any" }, { "id": "link_245", "from": { "node": "node_165", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_65", "pin": "condition" }, "type": "boolean" }, { "id": "link_248", "from": { "node": "node_168", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_167", "pin": "value" }, "type": "object" }, { "id": "link_249", "from": { "node": "node_167", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_169", "pin": "exec" }, "type": "action" }, { "id": "link_250", "from": { "node": "node_102", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_97", "pin": "exec" }, "type": "action" }, { "id": "link_251", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_172", "pin": "rotation" }, "type": "any" }, { "id": "link_252", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_172", "pin": "x" }, "type": "any" }, { "id": "link_255", "from": { "node": "node_172", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_116", "pin": "exec" }, "type": "action" }, { "id": "link_256", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_174", "pin": "x" }, "type": "any" }, { "id": "link_259", "from": { "node": "node_174", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_119", "pin": "exec" }, "type": "action" }, { "id": "link_260", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_174", "pin": "rotation" }, "type": "any" }, { "id": "link_261", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_177", "pin": "rotation" }, "type": "any" }, { "id": "link_262", "from": { "node": "node_97", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_177", "pin": "exec" }, "type": "action" }, { "id": "link_267", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "y" }, "type": "any" }, { "id": "link_268", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "z" }, "type": "any" }, { "id": "link_269", "from": { "node": "node_176", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "a" }, "type": "value" }, { "id": "link_270", "from": { "node": "node_180", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "b" }, "type": "value" }, { "id": "link_271", "from": { "node": "node_179", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_178", "pin": "x" }, "type": "any" }, { "id": "link_272", "from": { "node": "node_177", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_178", "pin": "exec" }, "type": "action" }, { "id": "link_273", "from": { "node": "node_178", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_181", "pin": "exec" }, "type": "action" }, { "id": "link_274", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_178", "pin": "rotation" }, "type": "any" }, { "id": "link_278", "from": { "node": "node_181", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_183", "pin": "exec" }, "type": "action" }, { "id": "link_279", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_183", "pin": "x" }, "type": "any" }, { "id": "link_280", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_183", "pin": "rotation" }, "type": "any" }, { "id": "link_281", "from": { "node": "node_183", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_172", "pin": "exec" }, "type": "action" }, { "id": "link_282", "from": { "node": "node_97", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "x" }, "type": "any" }, { "id": "link_283", "from": { "node": "node_184", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "a" }, "type": "value" }, { "id": "link_284", "from": { "node": "node_186", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "b" }, "type": "value" }, { "id": "link_285", "from": { "node": "node_142", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_187", "pin": "exec" }, "type": "action" }, { "id": "link_286", "from": { "node": "node_185", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_187", "pin": "x" }, "type": "any" }, { "id": "link_287", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_187", "pin": "rotation" }, "type": "any" }, { "id": "link_288", "from": { "node": "node_187", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_188", "pin": "exec" }, "type": "action" }, { "id": "link_289", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_189", "pin": "x" }, "type": "any" }, { "id": "link_290", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_189", "pin": "rotation" }, "type": "any" }, { "id": "link_291", "from": { "node": "node_188", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_189", "pin": "exec" }, "type": "action" }, { "id": "link_292", "from": { "node": "node_189", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_174", "pin": "exec" }, "type": "action" }, { "id": "link_293", "from": { "node": "node_190", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_192", "pin": "a" }, "type": "value" }, { "id": "link_294", "from": { "node": "node_191", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_192", "pin": "b" }, "type": "value" }, { "id": "link_295", "from": { "node": "node_192", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_193", "pin": "x" }, "type": "any" }, { "id": "link_296", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_193", "pin": "rotation" }, "type": "any" }, { "id": "link_297", "from": { "node": "node_194", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_167", "pin": "exec" }, "type": "action" }, { "id": "link_298", "from": { "node": "node_121", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_193", "pin": "exec" }, "type": "action" }, { "id": "link_299", "from": { "node": "node_193", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_195", "pin": "exec" }, "type": "action" }, { "id": "link_300", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_196", "pin": "x" }, "type": "any" }, { "id": "link_301", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_196", "pin": "rotation" }, "type": "any" }, { "id": "link_302", "from": { "node": "node_195", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_196", "pin": "exec" }, "type": "action" }, { "id": "link_303", "from": { "node": "node_196", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_194", "pin": "exec" }, "type": "action" }, { "id": "link_304", "from": { "node": "node_87", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_197", "pin": "exec" }, "type": "action" }, { "id": "link_305", "from": { "node": "node_197", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_198", "pin": "exec" }, "type": "action" }, { "id": "link_306", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_198", "pin": "x" }, "type": "any" }, { "id": "link_307", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_198", "pin": "rotation" }, "type": "any" }, { "id": "link_308", "from": { "node": "node_198", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_199", "pin": "exec" }, "type": "action" }, { "id": "link_309", "from": { "node": "node_199", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_89", "pin": "exec" }, "type": "action" }, { "id": "link_310", "from": { "node": "node_65", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_200", "pin": "exec" }, "type": "action" }, { "id": "link_316", "from": { "node": "node_205", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_208", "pin": "v" }, "type": "value" }, { "id": "link_318", "from": { "node": "node_208", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_207", "pin": "exec" }, "type": "action" }, { "id": "link_319", "from": { "node": "node_207", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_320", "from": { "node": "node_209", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_207", "pin": "v" }, "type": "value" }, { "id": "link_321", "from": { "node": "node_20", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_211", "pin": "exec" }, "type": "action" }, { "id": "link_322", "from": { "node": "node_22", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_211", "pin": "v" }, "type": "value" }, { "id": "link_323", "from": { "node": "node_211", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_208", "pin": "exec" }, "type": "action" }, { "id": "link_331", "from": { "node": "node_215", "pin": "reference", "type": "function", "out": true }, "to": { "node": "node_221", "pin": "canvaInlineProgram" }, "type": "function" }, { "id": "link_332", "from": { "node": "node_219", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_221", "pin": "exec" }, "type": "action" }, { "id": "link_352", "from": { "node": "node_231", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "a" }, "type": "value" }, { "id": "link_355", "from": { "node": "node_237", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "b" }, "type": "value" }, { "id": "link_362", "from": { "node": "node_233", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_241", "pin": "rotation" }, "type": "any" }, { "id": "link_363", "from": { "node": "node_236", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "y" }, "type": "any" }, { "id": "link_365", "from": { "node": "node_239", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "z" }, "type": "any" }, { "id": "link_366", "from": { "node": "node_231", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_243", "pin": "exec" }, "type": "action" }, { "id": "link_367", "from": { "node": "node_243", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "x" }, "type": "any" }, { "id": "link_368", "from": { "node": "node_243", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_241", "pin": "exec" }, "type": "action" }, { "id": "link_380", "from": { "node": "node_254", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_255", "pin": "rayDirection" }, "type": "object" }, { "id": "link_382", "from": { "node": "node_252", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_255", "pin": "objectName" }, "type": "string" }, { "id": "link_392", "from": { "node": "node_258", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_255", "pin": "exec" }, "type": "action" }, { "id": "link_402", "from": { "node": "node_261", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_258", "pin": "exec" }, "type": "action" }, { "id": "link_409", "from": { "node": "node_258", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "a" }, "type": "value" }, { "id": "link_411", "from": { "node": "node_269", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_255", "pin": "strength" }, "type": "value" }, { "id": "link_414", "from": { "node": "node_271", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_261", "pin": "exec" }, "type": "action" }, { "id": "link_415", "from": { "node": "node_271", "pin": "mid", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "b" }, "type": "value" }, { "id": "link_416", "from": { "node": "node_271", "pin": "beat", "type": "boolean", "out": true }, "to": { "node": "node_261", "pin": "condition" }, "type": "boolean" }, { "id": "link_426", "from": { "node": "node_280", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_276", "pin": "exec" }, "type": "action" }, { "id": "link_427", "from": { "node": "node_280", "pin": "objectNames", "type": "object", "out": true }, "to": { "node": "node_281", "pin": "array" }, "type": "any" }, { "id": "link_429", "from": { "node": "node_281", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_282", "pin": "exec" }, "type": "action" }, { "id": "link_430", "from": { "node": "node_281", "pin": "array", "type": "any", "out": true }, "to": { "node": "node_282", "pin": "array" }, "type": "any" }, { "id": "link_431", "from": { "node": "node_282", "pin": "loop", "type": "action", "out": true }, "to": { "node": "node_284", "pin": "exec" }, "type": "action" }, { "id": "link_432", "from": { "node": "node_282", "pin": "item", "type": "any", "out": true }, "to": { "node": "node_284", "pin": "objectName" }, "type": "string" }, { "id": "link_434", "from": { "node": "node_271", "pin": "high", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "a" }, "type": "value" }, { "id": "link_435", "from": { "node": "node_255", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_288", "pin": "exec" }, "type": "action" }, { "id": "link_436", "from": { "node": "node_275", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_288", "pin": "condition" }, "type": "boolean" }, { "id": "link_437", "from": { "node": "node_288", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_287", "pin": "exec" }, "type": "action" }, { "id": "link_438", "from": { "node": "node_287", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_281", "pin": "exec" }, "type": "action" }, { "id": "link_439", "from": { "node": "node_287", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "b" }, "type": "value" }, { "id": "link_440", "from": { "node": "node_286", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_284", "pin": "strength" }, "type": "value" }, { "id": "link_441", "from": { "node": "node_289", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_284", "pin": "rayDirection" }, "type": "object" }, { "id": "link_443", "from": { "node": "node_290", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_280", "pin": "exec" }, "type": "action" }, { "id": "link_450", "from": { "node": "node_241", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_271", "pin": "exec" }, "type": "action" }, { "id": "link_462", "from": { "node": "node_72", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_309", "pin": "exec" }, "type": "action" }, { "id": "link_463", "from": { "node": "node_308", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_464", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "texturePath" }, "type": "any" }, { "id": "link_465", "from": { "node": "node_311", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_466", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "texturePath" }, "type": "any" }, { "id": "link_467", "from": { "node": "node_309", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_312", "pin": "exec" }, "type": "action" }, { "id": "link_505", "from": { "node": "node_349", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_506", "from": { "node": "node_351", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_350", "pin": "exec" }, "type": "action" }, { "id": "link_507", "from": { "node": "node_352", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "texturePath" }, "type": "any" }, { "id": "link_508", "from": { "node": "node_350", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_346", "pin": "exec" }, "type": "action" }, { "id": "link_509", "from": { "node": "node_346", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_219", "pin": "exec" }, "type": "action" }, { "id": "link_518", "from": { "node": "node_367", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_126", "pin": "exec" }, "type": "action" }, { "id": "link_521", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_367", "pin": "yaw" }, "type": "any" }, { "id": "link_522", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "x2" }, "type": "any" }, { "id": "link_523", "from": { "node": "node_146", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_371", "pin": "exec" }, "type": "action" }, { "id": "link_524", "from": { "node": "node_371", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_367", "pin": "exec" }, "type": "action" }, { "id": "link_526", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "p" }, "type": "any" }], "nodeCounter": 373, "linkCounter": 527, "pan": [-424, -1879], "variables": { "number": { "LIGHT_POWER": 8, "LIGHT_Y": 65, "COLOR_RED": 1, "COLOR_BLUE": 1, "COLOR_GREEN": 1, "bloomPower": 1, "SMALL_INV_ROT_SPEED": -100, "SPIN_SPEED": 1e4, "ZERO": 0, "RESULT_ANGLE": null, "CAMERA_INIT_PITCH": -0.1, "CAMERA_Y": 3.5, "CAMERA_Z": -12, "DELTA_INV_ON_STOP": 1e3, "NEGATIVE": -1, "BLUR_EFFECT": 3, "BLOOM_KNEE": 1, "MULTIPLY_CURVE": 20 }, "boolean": { "DINAMIC_OBJS_READY": true, "WAVE_EFFECT": true }, "string": { "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.webp", "REEL_TEX": "res/textures/slot/reel1.png", "START_SPIN": "start-spin", "CUBE_TEX": "res/textures/cube-g1.webp" }, "object": { "SPIN_STATUS": { "status": "free" }, "FREE": { "status": "free" }, "USED_STATUS": { "status": "used" }, "RAY_DIR": [1, 0, 0] } } };
+var graph_default = { "nodes": { "node_2": { "noExec": true, "id": "node_2", "title": "Get Scene Light", "x": 372.15625, "y": 416.046875, "category": "scene", "inputs": [], "outputs": [{ "name": "ambientFactor", "type": "value" }, { "name": "setPosX", "type": "object" }, { "name": "setPosY", "type": "object" }, { "name": "setPosZ", "type": "object" }, { "name": "setIntensity", "type": "object" }, { "name": "setInnerCutoff", "type": "object" }, { "name": "setOuterCutoff", "type": "object" }, { "name": "setColor", "type": "object" }, { "name": "setColorR", "type": "object" }, { "name": "setColorB", "type": "object" }, { "name": "setColorG", "type": "object" }, { "name": "setRange", "type": "object" }, { "name": "setAmbientFactor", "type": "object" }, { "name": "setShadowBias", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "light0" }], "builtIn": true, "accessObjectLiteral": "window.app?.lightContainer", "exposeProps": ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"] }, "node_3": { "id": "node_3", "title": "reffunctions", "x": 977.34375, "y": 357.4375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "intensity", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_4": { "id": "node_4", "title": "Get Number", "x": 686.953125, "y": 400.53125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_POWER" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_5": { "id": "node_5", "title": "Get Number", "x": 682.8125, "y": 602.140625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_7": { "id": "node_7", "title": "reffunctions", "x": 988.78125, "y": 557.28125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_10": { "id": "node_10", "title": "reffunctions", "x": 989.671875, "y": 731.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorR", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_11": { "id": "node_11", "title": "Get Number", "x": 698.609375, "y": 789.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_RED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_12": { "id": "node_12", "title": "reffunctions", "x": 1005.078125, "y": 947.953125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorB", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_13": { "id": "node_13", "title": "Get Number", "x": 713.515625, "y": 995.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_BLUE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_14": { "id": "node_14", "title": "reffunctions", "x": 989.984375, "y": 1199.3125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorG", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_15": { "id": "node_15", "title": "Get Number", "x": 740.1006469726562, "y": 1241.9687805175781, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_GREEN" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_16": { "noExec": true, "id": "node_16", "title": "Get Scene Object", "x": 1323.5625, "y": 1496.8125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_17": { "id": "node_17", "x": 1603.234375, "y": 1239.390625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_18": { "id": "node_18", "title": "Get String", "x": 1295.5625, "y": 1325.265625, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_20": { "id": "node_20", "title": "functions", "x": -17.28125, "y": 17.765625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "activateBloomEffect" }], "accessObjectLiteral": "app", "fnName": "activateBloomEffect", "descFunc": "activateBloomEffect" }, "node_22": { "id": "node_22", "title": "Get Number", "x": 128.828125, "y": 221.390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "bloomPower" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_24": { "id": "node_24", "x": 2020.515625, "y": 1696.265625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_25": { "id": "node_25", "title": "Get String", "x": 1221.40625, "y": 1987.234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_26": { "noExec": true, "id": "node_26", "title": "Get Scene Object", "x": 1706.9375, "y": 1755.78125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_42": { "noExec": true, "id": "node_42", "title": "Get Scene Object", "x": 3181.890625, "y": 1338.546875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_43": { "id": "node_43", "x": 3566.53125, "y": 1326.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_44": { "id": "node_44", "title": "Get Number", "x": 3215.9375, "y": 1842.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SMALL_INV_ROT_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_45": { "noExec": true, "id": "node_45", "title": "Get Scene Object", "x": 3187.828125, "y": 1599.359375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_46": { "noExec": true, "id": "node_46", "title": "Get Scene Object", "x": 3195.609375, "y": 2016.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_48": { "id": "node_48", "x": 3566.46875, "y": 1701, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_49": { "id": "node_49", "x": 3574.5625, "y": 2060.640625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_50": { "id": "node_50", "title": "SetTimeout", "x": 3579.765625, "y": 1884.234375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_65": { "id": "node_65", "title": "if", "x": 3154.484375, "y": 719.640625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }] }, "node_69": { "noExec": true, "id": "node_69", "title": "Get Scene Object", "x": 1705.015625, "y": 1972.59375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_70": { "noExec": true, "id": "node_70", "title": "Get Scene Object", "x": 1706.4375, "y": 2193.75, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_71": { "id": "node_71", "x": 2023.84375, "y": 1928.5625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_72": { "id": "node_72", "x": 2021.96875, "y": 2152.53125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_77": { "id": "node_77", "title": "Set Object", "x": -272.625, "y": 9.171875, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_78": { "id": "node_78", "title": "Get Object", "x": -271.75, "y": 168.84375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_84": { "id": "node_84", "title": "Print", "x": 3437.34375, "y": 797.8125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS IS FREE TO PLAY" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_85": { "id": "node_85", "title": "SetTimeout", "x": 3554.40625, "y": 1527.28125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_86": { "id": "node_86", "title": "Get Number", "x": 4025.125, "y": 1846.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPIN_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_87": { "id": "node_87", "x": 4277.9375, "y": 1504.921875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_89": { "id": "node_89", "x": 4306.96875, "y": 2103.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_97": { "id": "node_97", "title": "Function", "x": 5406.890625, "y": 1280.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_98": { "id": "node_98", "title": "GenRandInt", "x": 5180.90625, "y": 1401.8125, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_99": { "id": "node_99", "title": "Get Number", "x": 5091.109375, "y": 2146.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_100": { "id": "node_100", "title": "SetTimeout", "x": 4716.15625, "y": 1556.875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_102": { "id": "node_102", "x": 4921.765625, "y": 1272.671875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_104": { "noExec": true, "id": "node_104", "title": "Get Scene Object", "x": 5421.203125, "y": 1565.96875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_109": { "id": "node_109", "title": "Get Number", "x": 6485.46875, "y": 3241.625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_113": { "noExec": true, "id": "node_113", "title": "Get Scene Object", "x": 5486.765625, "y": 2273.46875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_115": { "id": "node_115", "title": "GenRandInt", "x": 5819.71875, "y": 2246.890625, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_116": { "id": "node_116", "title": "Function", "x": 6078.734375, "y": 2163.59375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_118": { "id": "node_118", "title": "GenRandInt", "x": 5855.5, "y": 3006.875, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_119": { "id": "node_119", "title": "Function", "x": 6183.046875, "y": 2990.25, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_120": { "noExec": true, "id": "node_120", "title": "Get Scene Object", "x": 5513.84375, "y": 3075.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_121": { "id": "node_121", "x": 6522.609375, "y": 3010.75, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_126": { "id": "node_126", "title": "functions", "x": -718.80908203125, "y": -307.0694580078125, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_128": { "id": "node_128", "title": "Get Number", "x": -1016.638916015625, "y": -180.72222900390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_INIT_PITCH" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_130": { "id": "node_130", "title": "Get Number", "x": -1005.2430419921875, "y": 24.24652099609375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_131": { "id": "node_131", "title": "Get Number", "x": -998.861083984375, "y": 238.2430419921875, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Z" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_132": { "id": "node_132", "title": "functions", "x": -686.140625, "y": -41.90625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setY" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setY", "descFunc": "setY" }, "node_137": { "id": "node_137", "title": "functions", "x": -688.15625, "y": 181.71875, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "z", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setZ" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setZ", "descFunc": "setZ" }, "node_139": { "id": "node_139", "title": "Get Number", "x": 5417.203125, "y": 1811.234375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_142": { "id": "node_142", "x": 6558.296875, "y": 2190.84375, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_144": { "id": "node_144", "title": "Get Number", "x": 6347.265625, "y": 2632.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_146": { "id": "node_146", "title": "onLoad", "x": -1718.1807250976562, "y": -728.7395935058594, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_149": { "id": "node_149", "x": 3850.359375, "y": 1616.234375, "title": "Play MP3", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "key", "type": "string", "default": "audio" }, { "name": "src", "type": "string", "default": "" }, { "name": "clones", "type": "value", "default": 1 }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "created", "value": true }, { "key": "key", "value": "start_spin" }, { "key": "src", "value": "res/audios/spin.mp3" }], "noselfExec": "true" }, "node_150": { "id": "node_150", "title": "SetTimeout", "x": 3818.0625, "y": 1951.421875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_160": { "id": "node_160", "title": "Set Object", "x": 3442.03125, "y": 996.734375, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": "" }], "finished": true }, "node_161": { "id": "node_161", "title": "Get Object", "x": 3155.234375, "y": 1053.75, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "USED_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_162": { "id": "node_162", "title": "Get Object", "x": 2519.8125, "y": 930.875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_164": { "id": "node_164", "title": "Get Object", "x": 2523.875, "y": 781.109375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_165": { "id": "node_165", "title": "A != B", "x": 2857.375, "y": 897.234375, "category": "compare", "inputs": [{ "name": "A", "type": "any" }, { "name": "B", "type": "any" }], "outputs": [{ "name": "result", "type": "boolean" }] }, "node_167": { "id": "node_167", "title": "Set Object", "x": 7844.84375, "y": 2837.28125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_168": { "id": "node_168", "title": "Get Object", "x": 7966.9375, "y": 3035.078125, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_169": { "id": "node_169", "title": "Print", "x": 8093.671875, "y": 2833.359375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "MASHINE IS FREE " }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_170": { "id": "node_170", "title": "Comment", "x": 2790.890625, "y": 748.046875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "Equal and NoEqual only compare nodes \nwho works with objects !!!" }] }, "node_172": { "id": "node_172", "x": 5761.578125, "y": 2051.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_174": { "id": "node_174", "x": 5978.875, "y": 2834.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_176": { "id": "node_176", "title": "Get Number", "x": 5711.625, "y": 1683.859375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_177": { "id": "node_177", "x": 5950.9375, "y": 1361.5, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_179": { "id": "node_179", "title": "Mul", "x": 5988.328125, "y": 1788.34375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_180": { "id": "node_180", "title": "Get Number", "x": 5738.21875, "y": 1860.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_181": { "id": "node_181", "title": "SetTimeout", "x": 6245.046875, "y": 1577.140625, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_184": { "id": "node_184", "title": "Get Number", "x": 6065.84375, "y": 2406.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_185": { "id": "node_185", "title": "Mul", "x": 6293.59375, "y": 2485.90625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_186": { "id": "node_186", "title": "Get Number", "x": 6055.53125, "y": 2574.125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_188": { "id": "node_188", "title": "SetTimeout", "x": 6662.84375, "y": 2619.09375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_194": { "id": "node_194", "title": "SetTimeout", "x": 7510.78125, "y": 2875.953125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_195": { "id": "node_195", "title": "SetTimeout", "x": 6881.125, "y": 3011.046875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_196": { "id": "node_196", "x": 7210.9375, "y": 3164.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_197": { "id": "node_197", "title": "SetTimeout", "x": 4286.1875, "y": 1649.359375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_198": { "id": "node_198", "x": 4300.8125, "y": 1804.625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_199": { "id": "node_199", "title": "SetTimeout", "x": 4303.109375, "y": 1959.21875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_200": { "id": "node_200", "title": "Print", "x": 3452.515625, "y": 594.296875, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS USED" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_205": { "id": "node_205", "title": "Get Number", "x": 409.59375, "y": 217.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLUR_EFFECT" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_206": { "id": "node_206", "title": "Comment", "x": 7031.359375, "y": 2832.375, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "NOW STOP SPINING" }] }, "node_207": { "id": "node_207", "title": "functions", "x": 984.359375, "y": 62.625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setKnee" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setKnee", "descFunc": "setKnee" }, "node_208": { "id": "node_208", "title": "functions", "x": 709.546875, "y": 63.234375, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setBlurRadius" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setBlurRadius", "descFunc": "setBlurRadius" }, "node_209": { "id": "node_209", "title": "Get Number", "x": 743.1875, "y": 238.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLOOM_KNEE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_211": { "id": "node_211", "title": "functions", "x": 431.140625, "y": 28.140625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setIntensity" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setIntensity", "descFunc": "setIntensity" }, "node_215": { "id": "node_215", "title": "Function", "x": 369.7292175292969, "y": 2556.8612670898438, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "ctx", "type": "value" }, { "name": "canvas", "type": "value" }, { "name": "arg", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "neonTextEffect" }, "node_231": { "id": "node_231", "x": 992.65625, "y": 3119.546875, "title": "Curve", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "name", "type": "string" }, { "name": "delta", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "name", "value": "Curve1" }], "curve": { "name": "node_231", "keys": [{ "time": 0, "value": 0, "inTangent": 0, "outTangent": 0 }, { "time": 1, "value": 1, "inTangent": 0, "outTangent": 0 }], "length": 1, "loop": true, "samples": 128, "baked": null }, "noselfExec": "true" }, "node_233": { "noExec": true, "id": "node_233", "title": "Get Scene Object", "x": 1247.1875, "y": 2880.078125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "BANNER1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_236": { "id": "node_236", "title": "Mul", "x": 1363.453125, "y": 3296.296875, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_237": { "id": "node_237", "title": "Get Number", "x": 1038.3125, "y": 3386.328125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "MULTIPLY_CURVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_239": { "id": "node_239", "title": "Get Number", "x": 1357.515625, "y": 3480.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_241": { "id": "node_241", "x": 1727.015625, "y": 3126.765625, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_243": { "id": "node_243", "title": "getNumberLiteral", "x": 1351.953125, "y": 3126.109375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "90" }], "noselfExec": "true" }, "node_252": { "noExec": true, "id": "node_252", "title": "Get Scene Object", "x": 3139.484375, "y": 3452.890625, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "CAMERA_JUMPER" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_254": { "id": "node_254", "title": "Get Object", "x": 3141, "y": 3715.921875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_255": { "id": "node_255", "x": 3489.953125, "y": 3351.296875, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_258": { "id": "node_258", "title": "getNumberLiteral", "x": 3089.09375, "y": 3074.984375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "0.03" }], "noselfExec": "true" }, "node_261": { "id": "node_261", "title": "if", "x": 2792.125, "y": 3138.71875, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "true" }], "noselfExec": "true" }, "node_269": { "id": "node_269", "title": "Mul", "x": 3153.6875, "y": 3274.625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_271": { "id": "node_271", "x": 2370.59375, "y": 3180.625, "title": "Audio Reactive Node", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "audioSrc", "type": "string" }, { "name": "loop", "type": "boolean" }, { "name": "thresholdBeat", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "low", "type": "value" }, { "name": "mid", "type": "value" }, { "name": "high", "type": "value" }, { "name": "energy", "type": "value" }, { "name": "beat", "type": "boolean" }], "fields": [{ "key": "audioSrc", "value": "audionautix-black-fly.mp3" }, { "key": "loop", "value": true }, { "key": "thresholdBeat", "value": 0.7 }, { "key": "created", "value": true, "disabled": true }], "noselfExec": "true", "_loading": false, "_beatCooldown": 0 }, "node_275": { "id": "node_275", "title": "Get Boolean", "x": 3489.921875, "y": 3641.328125, "category": "value", "outputs": [{ "name": "result", "type": "boolean" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_276": { "id": "node_276", "title": "Set Boolean", "x": 2913.078125, "y": 2589.90625, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": "true" }], "finished": true }, "node_280": { "id": "node_280", "x": 2458.84375, "y": 2502.921875, "title": "Generator Pyramid", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "levels", "type": "value" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "objectNames", "type": "object" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/cube-g1.webp" }, { "key": "name", "value": "TEST" }, { "key": "levels", "value": "5" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": 10 }, { "key": "delay", "value": "50" }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_281": { "id": "node_281", "type": "getArray", "title": "Get Array", "x": 4353.375, "y": 3439.109375, "fields": [{ "key": "array", "value": [] }], "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "array", "type": "any" }] }, "node_282": { "id": "node_282", "title": "For Each", "type": "forEach", "x": 4596.390625, "y": 3454.578125, "state": { "item": "TEST_54", "index": 54 }, "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "loop", "type": "action" }, { "name": "completed", "type": "action" }, { "name": "item", "type": "any" }, { "name": "index", "type": "value" }] }, "node_284": { "id": "node_284", "x": 4928.7606201171875, "y": 3606.062744140625, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_286": { "id": "node_286", "title": "Mul", "x": 4376.5625, "y": 3749.234375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_287": { "id": "node_287", "title": "getNumberLiteral", "x": 4052.7466430664062, "y": 3551.3613891601562, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": "0.02" }], "noselfExec": "true" }, "node_288": { "id": "node_288", "title": "if", "x": 3794.234375, "y": 3402.265625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }], "noselfExec": "true" }, "node_289": { "id": "node_289", "title": "Get Object", "x": 4691.159912109375, "y": 3881.0072021484375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_290": { "id": "node_290", "title": "Set Boolean", "x": 2114.84375, "y": 2644.125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": false }], "finished": true }, "node_308": { "noExec": true, "id": "node_308", "title": "Get Scene Object", "x": 2356.765625, "y": 1721.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "L_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_309": { "id": "node_309", "x": 2723.4375, "y": 1888.484375, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_310": { "id": "node_310", "title": "Get String", "x": 2483.796875, "y": 2028.75, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "CUBE_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_311": { "noExec": true, "id": "node_311", "title": "Get Scene Object", "x": 2349.734375, "y": 2185, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "R_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_312": { "id": "node_312", "x": 2715.484375, "y": 2184.0625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_313": { "id": "node_313", "title": "Comment", "x": 1832.203125, "y": 2625.671875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON LOAD TEST CASE \n" }] }, "node_314": { "id": "node_314", "title": "Comment", "x": 710.796875, "y": 3127.1875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON DRAW \n" }] }, "node_349": { "noExec": true, "id": "node_349", "title": "Get Scene Object", "x": -124.2569580078125, "y": 1362.0798950195312, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_TOP" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_350": { "id": "node_350", "x": 210.10760498046875, "y": 1170.34033203125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_352": { "id": "node_352", "title": "Get String", "x": -137.607666015625, "y": 1198.6771240234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_363": { "id": "node_363", "title": "getNumberLiteral", "x": -1410.1007080078125, "y": -269.3333740234375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 1 }], "noselfExec": "true" }, "node_367": { "id": "node_367", "title": "functions", "x": -1021.892578125, "y": -538.3471984863281, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "yaw", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setYaw" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setYaw", "descFunc": "setYaw" }, "node_370": { "id": "node_370", "title": "Get Number", "x": -1736.3228759765625, "y": -465.6805725097656, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_371": { "id": "node_371", "title": "functions", "x": -1355.045166015625, "y": -740.0625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "p", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_373": { "noExec": true, "id": "node_373", "title": "Set Shader Graph", "x": 437.08539681682487, "y": 1545.4947693566085, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "objectName": "objectName", "type": "string" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "selectedShader", "value": "ScrollTex" }, { "key": "objectName", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.shaderGraph" }, "node_375": { "id": "node_375", "title": "SetTimeout", "x": -103.77256028580496, "y": 946.6400761224659, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_377": { "id": "node_377", "title": "onLoad", "x": -364.1959955202632, "y": 855.4715120458612, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_378": { "id": "node_378", "x": 665.8666738935068, "y": 1803.8184464830729, "title": "Set Vertex Wave", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "intensity", "type": "value" }, { "name": "enableWave", "type": "boolean" }, { "name": "Wave Speed", "type": "value" }, { "name": "Wave Amplitude", "type": "value" }, { "name": "Wave Frequency", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "L_BOX" }, { "key": "enableWave", "value": "true" }, { "key": "Wave Speed", "value": "0.01" }, { "key": "Wave Amplitude", "value": "0.01" }, { "key": "Wave Frequency", "value": "1.0" }] }, "node_379": { "id": "node_379", "x": 675.2020112430201, "y": 2156.397546517089, "title": "Set Vertex Wind", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableWind", "type": "boolean" }, { "name": "Wind Speed", "type": "value" }, { "name": "Wind Strength", "type": "value" }, { "name": "Wind HeightInfluence", "type": "value" }, { "name": "Wind Turbulence", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "R_BOX" }, { "key": "enableWind", "value": "true" }, { "key": "Wind Speed", "value": "0.1" }, { "key": "Wind Strength", "value": "0.1" }, { "key": "Wind HeightInfluence", "value": "0.1" }, { "key": "Wind Turbulence", "value": "0.1" }] }, "node_380": { "id": "node_380", "x": 552.1799804123478, "y": 2803.3450515604704, "title": "Set CanvasInline", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "canvaInlineProgram", "type": "function" }, { "name": "specialCanvas2dArg", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "BANNER1" }, { "key": "canvaInlineProgram", "value": "function (ctx, canvas) {}" }, { "key": "specialCanvas2dArg", "value": "{ hue: 100, glow: 1, text: 'Balance : 1000', fontSize: 30, flicker: 0.01,  middle: true}" }], "noselfExec": "true" }, "node_382": { "id": "node_382", "x": 2677.2700073026435, "y": 231.24250636550374, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_383": { "id": "node_383", "title": "Get String", "x": 2780.999977204145, "y": 553.118674995782, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL1" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_384": { "id": "node_384", "title": "Starts With [string]", "x": 3132.9308460640964, "y": 370.21204215496925, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_385": { "id": "node_385", "title": "if", "x": 3158.974776623208, "y": 527.616542933595, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_2", "pin": "setIntensity", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "reference" }, "type": "any" }, { "id": "link_3", "from": { "node": "node_4", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "intensity" }, "type": "value" }, { "id": "link_4", "from": { "node": "node_2", "pin": "setPosY", "type": "object", "out": true }, "to": { "node": "node_7", "pin": "reference" }, "type": "any" }, { "id": "link_5", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_6", "from": { "node": "node_5", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_7", "pin": "y2" }, "type": "value" }, { "id": "link_9", "from": { "node": "node_2", "pin": "setColorR", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "reference" }, "type": "any" }, { "id": "link_10", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_11", "from": { "node": "node_11", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_10", "pin": "colorR" }, "type": "value" }, { "id": "link_12", "from": { "node": "node_10", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_13", "from": { "node": "node_2", "pin": "setColorB", "type": "object", "out": true }, "to": { "node": "node_12", "pin": "reference" }, "type": "any" }, { "id": "link_14", "from": { "node": "node_13", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_12", "pin": "colorB" }, "type": "value" }, { "id": "link_15", "from": { "node": "node_2", "pin": "setColorG", "type": "object", "out": true }, "to": { "node": "node_14", "pin": "reference" }, "type": "any" }, { "id": "link_16", "from": { "node": "node_12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_14", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_15", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_14", "pin": "colorG" }, "type": "value" }, { "id": "link_18", "from": { "node": "node_16", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_17", "pin": "exec" }, "type": "action" }, { "id": "link_20", "from": { "node": "node_18", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "texturePath" }, "type": "any" }, { "id": "link_26", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "texturePath" }, "type": "any" }, { "id": "link_27", "from": { "node": "node_17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_24", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_26", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_52", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_43", "pin": "rotation" }, "type": "any" }, { "id": "link_53", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_43", "pin": "x" }, "type": "any" }, { "id": "link_55", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_48", "pin": "rotation" }, "type": "any" }, { "id": "link_57", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_48", "pin": "x" }, "type": "any" }, { "id": "link_58", "from": { "node": "node_48", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_50", "pin": "exec" }, "type": "action" }, { "id": "link_59", "from": { "node": "node_50", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_49", "pin": "exec" }, "type": "action" }, { "id": "link_60", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_49", "pin": "rotation" }, "type": "any" }, { "id": "link_61", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_49", "pin": "x" }, "type": "any" }, { "id": "link_95", "from": { "node": "node_69", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_96", "from": { "node": "node_24", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_71", "pin": "exec" }, "type": "action" }, { "id": "link_97", "from": { "node": "node_71", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_72", "pin": "exec" }, "type": "action" }, { "id": "link_98", "from": { "node": "node_70", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_99", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "texturePath" }, "type": "any" }, { "id": "link_100", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "texturePath" }, "type": "any" }, { "id": "link_104", "from": { "node": "node_77", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_105", "from": { "node": "node_78", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_77", "pin": "value" }, "type": "object" }, { "id": "link_113", "from": { "node": "node_65", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_84", "pin": "exec" }, "type": "action" }, { "id": "link_115", "from": { "node": "node_43", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_85", "pin": "exec" }, "type": "action" }, { "id": "link_116", "from": { "node": "node_85", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_48", "pin": "exec" }, "type": "action" }, { "id": "link_117", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_87", "pin": "rotation" }, "type": "any" }, { "id": "link_119", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_89", "pin": "rotation" }, "type": "any" }, { "id": "link_120", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_87", "pin": "x" }, "type": "any" }, { "id": "link_122", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_89", "pin": "x" }, "type": "any" }, { "id": "link_134", "from": { "node": "node_98", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_97", "pin": "input" }, "type": "value" }, { "id": "link_137", "from": { "node": "node_89", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_100", "pin": "exec" }, "type": "action" }, { "id": "link_138", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_102", "pin": "rotation" }, "type": "any" }, { "id": "link_143", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_102", "pin": "x" }, "type": "any" }, { "id": "link_144", "from": { "node": "node_100", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_102", "pin": "exec" }, "type": "action" }, { "id": "link_166", "from": { "node": "node_115", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_116", "pin": "input" }, "type": "value" }, { "id": "link_172", "from": { "node": "node_118", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_119", "pin": "input" }, "type": "value" }, { "id": "link_174", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_121", "pin": "rotation" }, "type": "any" }, { "id": "link_175", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "y" }, "type": "any" }, { "id": "link_176", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "z" }, "type": "any" }, { "id": "link_178", "from": { "node": "node_119", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "x" }, "type": "any" }, { "id": "link_179", "from": { "node": "node_119", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_121", "pin": "exec" }, "type": "action" }, { "id": "link_182", "from": { "node": "node_128", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_126", "pin": "pitch" }, "type": "value" }, { "id": "link_186", "from": { "node": "node_126", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_132", "pin": "exec" }, "type": "action" }, { "id": "link_188", "from": { "node": "node_130", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_132", "pin": "y2" }, "type": "value" }, { "id": "link_193", "from": { "node": "node_131", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_137", "pin": "z" }, "type": "value" }, { "id": "link_194", "from": { "node": "node_132", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_137", "pin": "exec" }, "type": "action" }, { "id": "link_195", "from": { "node": "node_137", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_77", "pin": "exec" }, "type": "action" }, { "id": "link_207", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_142", "pin": "rotation" }, "type": "any" }, { "id": "link_208", "from": { "node": "node_116", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_142", "pin": "exec" }, "type": "action" }, { "id": "link_211", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "y" }, "type": "any" }, { "id": "link_212", "from": { "node": "node_116", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "x" }, "type": "any" }, { "id": "link_213", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "z" }, "type": "any" }, { "id": "link_218", "from": { "node": "node_49", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_150", "pin": "exec" }, "type": "action" }, { "id": "link_219", "from": { "node": "node_150", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_149", "pin": "exec" }, "type": "action" }, { "id": "link_220", "from": { "node": "node_149", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_87", "pin": "exec" }, "type": "action" }, { "id": "link_235", "from": { "node": "node_84", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_160", "pin": "exec" }, "type": "action" }, { "id": "link_236", "from": { "node": "node_160", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_43", "pin": "exec" }, "type": "action" }, { "id": "link_237", "from": { "node": "node_161", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_160", "pin": "value" }, "type": "object" }, { "id": "link_243", "from": { "node": "node_164", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "A" }, "type": "any" }, { "id": "link_244", "from": { "node": "node_162", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "B" }, "type": "any" }, { "id": "link_245", "from": { "node": "node_165", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_65", "pin": "condition" }, "type": "boolean" }, { "id": "link_248", "from": { "node": "node_168", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_167", "pin": "value" }, "type": "object" }, { "id": "link_249", "from": { "node": "node_167", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_169", "pin": "exec" }, "type": "action" }, { "id": "link_250", "from": { "node": "node_102", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_97", "pin": "exec" }, "type": "action" }, { "id": "link_251", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_172", "pin": "rotation" }, "type": "any" }, { "id": "link_252", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_172", "pin": "x" }, "type": "any" }, { "id": "link_255", "from": { "node": "node_172", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_116", "pin": "exec" }, "type": "action" }, { "id": "link_256", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_174", "pin": "x" }, "type": "any" }, { "id": "link_259", "from": { "node": "node_174", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_119", "pin": "exec" }, "type": "action" }, { "id": "link_260", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_174", "pin": "rotation" }, "type": "any" }, { "id": "link_261", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_177", "pin": "rotation" }, "type": "any" }, { "id": "link_262", "from": { "node": "node_97", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_177", "pin": "exec" }, "type": "action" }, { "id": "link_267", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "y" }, "type": "any" }, { "id": "link_268", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "z" }, "type": "any" }, { "id": "link_269", "from": { "node": "node_176", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "a" }, "type": "value" }, { "id": "link_270", "from": { "node": "node_180", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "b" }, "type": "value" }, { "id": "link_282", "from": { "node": "node_97", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "x" }, "type": "any" }, { "id": "link_283", "from": { "node": "node_184", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "a" }, "type": "value" }, { "id": "link_284", "from": { "node": "node_186", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "b" }, "type": "value" }, { "id": "link_297", "from": { "node": "node_194", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_167", "pin": "exec" }, "type": "action" }, { "id": "link_300", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_196", "pin": "x" }, "type": "any" }, { "id": "link_301", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_196", "pin": "rotation" }, "type": "any" }, { "id": "link_302", "from": { "node": "node_195", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_196", "pin": "exec" }, "type": "action" }, { "id": "link_303", "from": { "node": "node_196", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_194", "pin": "exec" }, "type": "action" }, { "id": "link_304", "from": { "node": "node_87", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_197", "pin": "exec" }, "type": "action" }, { "id": "link_305", "from": { "node": "node_197", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_198", "pin": "exec" }, "type": "action" }, { "id": "link_306", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_198", "pin": "x" }, "type": "any" }, { "id": "link_307", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_198", "pin": "rotation" }, "type": "any" }, { "id": "link_308", "from": { "node": "node_198", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_199", "pin": "exec" }, "type": "action" }, { "id": "link_309", "from": { "node": "node_199", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_89", "pin": "exec" }, "type": "action" }, { "id": "link_310", "from": { "node": "node_65", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_200", "pin": "exec" }, "type": "action" }, { "id": "link_316", "from": { "node": "node_205", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_208", "pin": "v" }, "type": "value" }, { "id": "link_318", "from": { "node": "node_208", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_207", "pin": "exec" }, "type": "action" }, { "id": "link_319", "from": { "node": "node_207", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_320", "from": { "node": "node_209", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_207", "pin": "v" }, "type": "value" }, { "id": "link_321", "from": { "node": "node_20", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_211", "pin": "exec" }, "type": "action" }, { "id": "link_322", "from": { "node": "node_22", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_211", "pin": "v" }, "type": "value" }, { "id": "link_323", "from": { "node": "node_211", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_208", "pin": "exec" }, "type": "action" }, { "id": "link_352", "from": { "node": "node_231", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "a" }, "type": "value" }, { "id": "link_355", "from": { "node": "node_237", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "b" }, "type": "value" }, { "id": "link_362", "from": { "node": "node_233", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_241", "pin": "rotation" }, "type": "any" }, { "id": "link_363", "from": { "node": "node_236", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "y" }, "type": "any" }, { "id": "link_365", "from": { "node": "node_239", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "z" }, "type": "any" }, { "id": "link_366", "from": { "node": "node_231", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_243", "pin": "exec" }, "type": "action" }, { "id": "link_367", "from": { "node": "node_243", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "x" }, "type": "any" }, { "id": "link_368", "from": { "node": "node_243", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_241", "pin": "exec" }, "type": "action" }, { "id": "link_380", "from": { "node": "node_254", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_255", "pin": "rayDirection" }, "type": "object" }, { "id": "link_382", "from": { "node": "node_252", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_255", "pin": "objectName" }, "type": "string" }, { "id": "link_392", "from": { "node": "node_258", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_255", "pin": "exec" }, "type": "action" }, { "id": "link_402", "from": { "node": "node_261", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_258", "pin": "exec" }, "type": "action" }, { "id": "link_409", "from": { "node": "node_258", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "a" }, "type": "value" }, { "id": "link_411", "from": { "node": "node_269", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_255", "pin": "strength" }, "type": "value" }, { "id": "link_414", "from": { "node": "node_271", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_261", "pin": "exec" }, "type": "action" }, { "id": "link_415", "from": { "node": "node_271", "pin": "mid", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "b" }, "type": "value" }, { "id": "link_416", "from": { "node": "node_271", "pin": "beat", "type": "boolean", "out": true }, "to": { "node": "node_261", "pin": "condition" }, "type": "boolean" }, { "id": "link_426", "from": { "node": "node_280", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_276", "pin": "exec" }, "type": "action" }, { "id": "link_427", "from": { "node": "node_280", "pin": "objectNames", "type": "object", "out": true }, "to": { "node": "node_281", "pin": "array" }, "type": "any" }, { "id": "link_429", "from": { "node": "node_281", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_282", "pin": "exec" }, "type": "action" }, { "id": "link_430", "from": { "node": "node_281", "pin": "array", "type": "any", "out": true }, "to": { "node": "node_282", "pin": "array" }, "type": "any" }, { "id": "link_431", "from": { "node": "node_282", "pin": "loop", "type": "action", "out": true }, "to": { "node": "node_284", "pin": "exec" }, "type": "action" }, { "id": "link_432", "from": { "node": "node_282", "pin": "item", "type": "any", "out": true }, "to": { "node": "node_284", "pin": "objectName" }, "type": "string" }, { "id": "link_434", "from": { "node": "node_271", "pin": "high", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "a" }, "type": "value" }, { "id": "link_435", "from": { "node": "node_255", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_288", "pin": "exec" }, "type": "action" }, { "id": "link_436", "from": { "node": "node_275", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_288", "pin": "condition" }, "type": "boolean" }, { "id": "link_437", "from": { "node": "node_288", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_287", "pin": "exec" }, "type": "action" }, { "id": "link_438", "from": { "node": "node_287", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_281", "pin": "exec" }, "type": "action" }, { "id": "link_439", "from": { "node": "node_287", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "b" }, "type": "value" }, { "id": "link_440", "from": { "node": "node_286", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_284", "pin": "strength" }, "type": "value" }, { "id": "link_441", "from": { "node": "node_289", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_284", "pin": "rayDirection" }, "type": "object" }, { "id": "link_443", "from": { "node": "node_290", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_280", "pin": "exec" }, "type": "action" }, { "id": "link_450", "from": { "node": "node_241", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_271", "pin": "exec" }, "type": "action" }, { "id": "link_462", "from": { "node": "node_72", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_309", "pin": "exec" }, "type": "action" }, { "id": "link_463", "from": { "node": "node_308", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_464", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "texturePath" }, "type": "any" }, { "id": "link_465", "from": { "node": "node_311", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_466", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "texturePath" }, "type": "any" }, { "id": "link_467", "from": { "node": "node_309", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_312", "pin": "exec" }, "type": "action" }, { "id": "link_505", "from": { "node": "node_349", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_507", "from": { "node": "node_352", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "texturePath" }, "type": "any" }, { "id": "link_518", "from": { "node": "node_367", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_126", "pin": "exec" }, "type": "action" }, { "id": "link_521", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_367", "pin": "yaw" }, "type": "any" }, { "id": "link_522", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "x2" }, "type": "any" }, { "id": "link_523", "from": { "node": "node_146", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_371", "pin": "exec" }, "type": "action" }, { "id": "link_524", "from": { "node": "node_371", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_367", "pin": "exec" }, "type": "action" }, { "id": "link_526", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "p" }, "type": "any" }, { "id": "link_527", "from": { "node": "node_350", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_373", "pin": "exec" }, "type": "action" }, { "id": "link_533", "from": { "node": "node_377", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_375", "pin": "exec" }, "type": "action" }, { "id": "link_534", "from": { "node": "node_375", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_350", "pin": "exec" }, "type": "action" }, { "id": "link_536", "from": { "node": "node_373", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_378", "pin": "exec" }, "type": "action" }, { "id": "link_537", "from": { "node": "node_378", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_379", "pin": "exec" }, "type": "action" }, { "id": "link_538", "from": { "node": "node_215", "pin": "reference", "type": "function", "out": true }, "to": { "node": "node_380", "pin": "canvaInlineProgram" }, "type": "function" }, { "id": "link_539", "from": { "node": "node_379", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_380", "pin": "exec" }, "type": "action" }, { "id": "link_541", "from": { "node": "node_383", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_384", "pin": "prefix" }, "type": "string" }, { "id": "link_542", "from": { "node": "node_382", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_384", "pin": "input" }, "type": "string" }, { "id": "link_543", "from": { "node": "node_384", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_385", "pin": "condition" }, "type": "boolean" }, { "id": "link_544", "from": { "node": "node_382", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_385", "pin": "exec" }, "type": "action" }, { "id": "link_545", "from": { "node": "node_385", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_65", "pin": "exec" }, "type": "action" }, { "id": "link_546", "from": { "node": "node_177", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_181", "pin": "exec" }, "type": "action" }, { "id": "link_547", "from": { "node": "node_181", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_172", "pin": "exec" }, "type": "action" }, { "id": "link_548", "from": { "node": "node_142", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_188", "pin": "exec" }, "type": "action" }, { "id": "link_549", "from": { "node": "node_188", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_174", "pin": "exec" }, "type": "action" }, { "id": "link_550", "from": { "node": "node_121", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_195", "pin": "exec" }, "type": "action" }], "nodeCounter": 386, "linkCounter": 551, "pan": [-6861, -2577], "variables": { "number": { "LIGHT_POWER": 8, "LIGHT_Y": 65, "COLOR_RED": 1, "COLOR_BLUE": 1, "COLOR_GREEN": 1, "bloomPower": 1, "SMALL_INV_ROT_SPEED": -100, "SPIN_SPEED": 1e4, "ZERO": 0, "RESULT_ANGLE": null, "CAMERA_INIT_PITCH": -0.1, "CAMERA_Y": 3.5, "CAMERA_Z": -12, "DELTA_INV_ON_STOP": 1e3, "NEGATIVE": -1, "BLUR_EFFECT": 3, "BLOOM_KNEE": 1, "MULTIPLY_CURVE": 20 }, "boolean": { "DINAMIC_OBJS_READY": true, "WAVE_EFFECT": true }, "string": { "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.webp", "REEL_TEX": "res/textures/slot/reel1.png", "START_SPIN": "start-spin", "CUBE_TEX": "res/textures/cube-g1.webp", "REEL1": "REEL_2" }, "object": { "SPIN_STATUS": { "status": "free" }, "FREE": { "status": "free" }, "USED_STATUS": { "status": "used" }, "RAY_DIR": [1, 0, 0] } } };
 
 // ../../../../projects/Test1/shader-graphs.js
 var shaderGraphsProdc = [
   {
     "name": "fragShader",
-    "content": '{"nodes":[{"id":"N0","type":"FragmentOutput","x":482,"y":368,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N1","type":"LightShadowNode","x":180,"y":220,"inputs":{"intensity":{"default":"1"}}}],"connections":[{"from":"N1","fromPin":"out","to":"N0","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  \\n  return t0;\\n}\\n"}'
+    "content": '{"nodes":[{"id":"N0","type":"FragmentOutput","x":482,"y":368,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N1","type":"LightShadowNode","x":180,"y":220,"inputs":{"intensity":{"default":"1"}}}],"connections":[{"from":"N1","fromPin":"out","to":"N0","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(1) @binding(0) var meshTexture: texture_2d<f32>;\\n@group(1) @binding(1) var meshSampler: sampler;\\n@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;\\n@group(1) @binding(3) var metallicRoughnessSampler: sampler;\\n@group(1) @binding(4) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n struct FragOut {@location(0) color   : vec4f,@location(1) normal  : vec4f,@location(2) worldPos : vec4f,}\\n@fragment\\nfn main(input: FragmentInput) -> FragOut {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  \\n  return FragOut(\\n    t0,\\n    vec4f(normalize(input.fragNorm), 1.0),\\n    vec4f(input.fragPos, 1.0)\\n  );\\n}\\n"}'
   },
   {
     "name": "Test1",
-    "content": '{"nodes":[{"id":"N15","type":"FragmentOutput","x":981,"y":483,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N18","type":"LightShadowNode","x":217,"y":120,"inputs":{"intensity":{"default":"1"}}},{"id":"N19","type":"LightToColor","x":421,"y":131,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N20","type":"MultiplyColor","x":652,"y":271,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N10","type":"TextureSampler","x":246,"y":504,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N11","type":"MultiplyColor","x":730,"y":467,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N12","type":"Color","x":186,"y":242,"r":21,"g":0,"b":0,"a":1,"inputs":{}}],"connections":[{"from":"N18","fromPin":"out","to":"N19","toPin":"light"},{"from":"N19","fromPin":"out","to":"N20","toPin":"a"},{"from":"N20","fromPin":"out","to":"N11","toPin":"a"},{"from":"N11","fromPin":"out","to":"N15","toPin":"color"},{"from":"N12","fromPin":"out","to":"N20","toPin":"b"},{"from":"N10","fromPin":"out","to":"N11","toPin":"b"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: vec4f = t0 * vec4f(21, 0, 0, 1);\\n  let t2: vec4f = textureSample(meshTexture, meshSampler, input.uv);\\n  let t3: vec4f = t1 * t2;\\n  \\n  return t3;\\n}\\n"}'
+    "content": '{"nodes":[{"id":"N15","type":"FragmentOutput","x":981,"y":483,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N18","type":"LightShadowNode","x":217,"y":120,"inputs":{"intensity":{"default":"1"}}},{"id":"N19","type":"LightToColor","x":421,"y":131,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N20","type":"MultiplyColor","x":652,"y":271,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N10","type":"TextureSampler","x":246,"y":504,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N11","type":"MultiplyColor","x":730,"y":467,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N12","type":"Color","x":186,"y":242,"r":21,"g":0,"b":0,"a":1,"inputs":{}}],"connections":[{"from":"N18","fromPin":"out","to":"N19","toPin":"light"},{"from":"N19","fromPin":"out","to":"N20","toPin":"a"},{"from":"N20","fromPin":"out","to":"N11","toPin":"a"},{"from":"N11","fromPin":"out","to":"N15","toPin":"color"},{"from":"N12","fromPin":"out","to":"N20","toPin":"b"},{"from":"N10","fromPin":"out","to":"N11","toPin":"b"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(1) @binding(0) var meshTexture: texture_2d<f32>;\\n@group(1) @binding(1) var meshSampler: sampler;\\n@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;\\n@group(1) @binding(3) var metallicRoughnessSampler: sampler;\\n@group(1) @binding(4) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n struct FragOut {@location(0) color   : vec4f,@location(1) normal  : vec4f,@location(2) worldPos : vec4f,}\\n@fragment\\nfn main(input: FragmentInput) -> FragOut {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: vec4f = t0 * vec4f(21, 0, 0, 1);\\n  let t2: vec4f = textureSample(meshTexture, meshSampler, input.uv);\\n  let t3: vec4f = t1 * t2;\\n  \\n  return FragOut(\\n    t3,\\n    vec4f(normalize(input.fragNorm), 1.0),\\n    vec4f(input.fragPos, 1.0)\\n  );\\n}\\n"}'
   },
   {
     "name": "ScrollTex",
-    "content": '{"nodes":[{"id":"N3","type":"Time","x":-573,"y":481,"inputs":{}},{"id":"N4","type":"Float","x":-576,"y":308,"value":0.01,"inputs":{}},{"id":"N5","type":"Multiply","x":-320,"y":419,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N7","type":"MultiplyVec2","x":-153,"y":519,"inputs":{"a":{"default":"vec2f(1.0)"},"b":{"default":"1.0"}}},{"id":"N12","type":"TextureSampler","x":351,"y":604,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N17","type":"Vec2","x":-492,"y":627,"inputs":{},"valueX":0,"valueY":1},{"id":"N18","type":"AddVec2","x":75,"y":516,"inputs":{"a":{"default":"vec2f(0.0)"},"b":{"default":"vec2f(0.0)"}}},{"id":"N11","type":"UV","x":-159,"y":711,"inputs":{}},{"id":"N30","type":"LightShadowNode","x":194,"y":269,"inputs":{"intensity":{"default":"1"}}},{"id":"N32","type":"LightToColor","x":384,"y":268,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N34","type":"FragmentOutput","x":722,"y":539,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N35","type":"MultiplyColor","x":524,"y":427,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}}],"connections":[{"from":"N4","fromPin":"out","to":"N5","toPin":"a"},{"from":"N3","fromPin":"out","to":"N5","toPin":"b"},{"from":"N5","fromPin":"out","to":"N7","toPin":"a"},{"from":"N17","fromPin":"out","to":"N7","toPin":"b"},{"from":"N7","fromPin":"out","to":"N18","toPin":"a"},{"from":"N18","fromPin":"out","to":"N12","toPin":"uv"},{"from":"N11","fromPin":"out","to":"N18","toPin":"b"},{"from":"N30","fromPin":"out","to":"N32","toPin":"light"},{"from":"N32","fromPin":"out","to":"N35","toPin":"a"},{"from":"N12","fromPin":"out","to":"N35","toPin":"b"},{"from":"N35","fromPin":"out","to":"N34","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = 0.01 * scene.time;\\n  let t2: vec2f = t1 * vec2f(0, 1);\\n  let t3: vec2f = t2 + input.uv;\\n  let t4: vec4f = textureSample(meshTexture, meshSampler, t3);\\n  let t5: vec4f = t0 * t4;\\n  \\n  return t5;\\n}\\n"}'
+    "content": '{"nodes":[{"id":"N3","type":"Time","x":-573,"y":481,"inputs":{}},{"id":"N4","type":"Float","x":-576,"y":308,"value":0.01,"inputs":{}},{"id":"N5","type":"Multiply","x":-320,"y":419,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N7","type":"MultiplyVec2","x":-153,"y":519,"inputs":{"a":{"default":"vec2f(1.0)"},"b":{"default":"1.0"}}},{"id":"N12","type":"TextureSampler","x":351,"y":604,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N17","type":"Vec2","x":-492,"y":627,"inputs":{},"valueX":0,"valueY":1},{"id":"N18","type":"AddVec2","x":75,"y":516,"inputs":{"a":{"default":"vec2f(0.0)"},"b":{"default":"vec2f(0.0)"}}},{"id":"N11","type":"UV","x":-159,"y":711,"inputs":{}},{"id":"N30","type":"LightShadowNode","x":194,"y":269,"inputs":{"intensity":{"default":"1"}}},{"id":"N32","type":"LightToColor","x":384,"y":268,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N34","type":"FragmentOutput","x":722,"y":539,"inputs":{"color":{"default":"vec4f(1.0)"}}},{"id":"N35","type":"MultiplyColor","x":524,"y":427,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}}],"connections":[{"from":"N4","fromPin":"out","to":"N5","toPin":"a"},{"from":"N3","fromPin":"out","to":"N5","toPin":"b"},{"from":"N5","fromPin":"out","to":"N7","toPin":"a"},{"from":"N17","fromPin":"out","to":"N7","toPin":"b"},{"from":"N7","fromPin":"out","to":"N18","toPin":"a"},{"from":"N18","fromPin":"out","to":"N12","toPin":"uv"},{"from":"N11","fromPin":"out","to":"N18","toPin":"b"},{"from":"N30","fromPin":"out","to":"N32","toPin":"light"},{"from":"N32","fromPin":"out","to":"N35","toPin":"a"},{"from":"N12","fromPin":"out","to":"N35","toPin":"b"},{"from":"N35","fromPin":"out","to":"N34","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(1) @binding(0) var meshTexture: texture_2d<f32>;\\n@group(1) @binding(1) var meshSampler: sampler;\\n@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;\\n@group(1) @binding(3) var metallicRoughnessSampler: sampler;\\n@group(1) @binding(4) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n struct FragOut {@location(0) color   : vec4f,@location(1) normal  : vec4f,@location(2) worldPos : vec4f,}\\n@fragment\\nfn main(input: FragmentInput) -> FragOut {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = 0.01 * scene.time;\\n  let t2: vec2f = t1 * vec2f(0, 1);\\n  let t3: vec2f = t2 + input.uv;\\n  let t4: vec4f = textureSample(meshTexture, meshSampler, t3);\\n  let t5: vec4f = t0 * t4;\\n  \\n  return FragOut(\\n    t5,\\n    vec4f(normalize(input.fragNorm), 1.0),\\n    vec4f(input.fragPos, 1.0)\\n  );\\n}\\n"}'
   },
   {
     "name": "PULS",
-    "content": '{"nodes":[{"id":"N1","type":"Time","x":-400,"y":100,"inputs":{}},{"id":"N2","type":"Sin","x":-200,"y":100,"inputs":{"value":{"default":"0.0"}}},{"id":"N3","type":"Float","x":-200,"y":200,"value":0.3,"inputs":{}},{"id":"N4","type":"Multiply","x":0,"y":150,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N5","type":"Float","x":0,"y":250,"value":0.8,"inputs":{}},{"id":"N6","type":"Add","x":200,"y":200,"inputs":{"a":{"default":"0.0"},"b":{"default":"0.0"}}},{"id":"N7","type":"CombineVec4","x":400,"y":200,"inputs":{"x":{"default":"0.0"},"y":{"default":"0.0"},"z":{"default":"0.0"},"w":{"default":"1.0"}}},{"id":"N8","type":"UV","x":0,"y":450,"inputs":{}},{"id":"N9","type":"TextureSampler","x":200,"y":450,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N10","type":"LightShadowNode","x":200,"y":-100,"inputs":{"intensity":{"default":"1"}}},{"id":"N11","type":"LightToColor","x":400,"y":-100,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N12","type":"MultiplyColor","x":600,"y":50,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N13","type":"MultiplyColor","x":800,"y":250,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N14","type":"FragmentOutput","x":1000,"y":250,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N1","fromPin":"out","to":"N2","toPin":"value"},{"from":"N2","fromPin":"out","to":"N4","toPin":"a"},{"from":"N3","fromPin":"out","to":"N4","toPin":"b"},{"from":"N5","fromPin":"out","to":"N6","toPin":"a"},{"from":"N4","fromPin":"out","to":"N6","toPin":"b"},{"from":"N6","fromPin":"out","to":"N7","toPin":"x"},{"from":"N6","fromPin":"out","to":"N7","toPin":"y"},{"from":"N6","fromPin":"out","to":"N7","toPin":"z"},{"from":"N8","fromPin":"out","to":"N9","toPin":"uv"},{"from":"N10","fromPin":"out","to":"N11","toPin":"light"},{"from":"N11","fromPin":"out","to":"N12","toPin":"a"},{"from":"N7","fromPin":"out","to":"N12","toPin":"b"},{"from":"N12","fromPin":"out","to":"N13","toPin":"a"},{"from":"N9","fromPin":"out","to":"N13","toPin":"b"},{"from":"N13","fromPin":"out","to":"N14","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = sin(scene.time);\\n  let t2: f32 = t1 * 0.3;\\n  let t3: f32 = 0.8 + t2;\\n  let t4: vec4f = vec4f(t3, t3, t3, 1.0);\\n  let t5: vec4f = t0 * t4;\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, input.uv);\\n  let t7: vec4f = t5 * t6;\\n  \\n  return t7;\\n}\\n"}'
+    "content": '{"nodes":[{"id":"N1","type":"Time","x":-400,"y":100,"inputs":{}},{"id":"N2","type":"Sin","x":-200,"y":100,"inputs":{"value":{"default":"0.0"}}},{"id":"N3","type":"Float","x":-200,"y":200,"value":0.3,"inputs":{}},{"id":"N4","type":"Multiply","x":0,"y":150,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N5","type":"Float","x":0,"y":250,"value":0.8,"inputs":{}},{"id":"N6","type":"Add","x":200,"y":200,"inputs":{"a":{"default":"0.0"},"b":{"default":"0.0"}}},{"id":"N7","type":"CombineVec4","x":400,"y":200,"inputs":{"x":{"default":"0.0"},"y":{"default":"0.0"},"z":{"default":"0.0"},"w":{"default":"1.0"}}},{"id":"N8","type":"UV","x":0,"y":450,"inputs":{}},{"id":"N9","type":"TextureSampler","x":200,"y":450,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N10","type":"LightShadowNode","x":200,"y":-100,"inputs":{"intensity":{"default":"1"}}},{"id":"N11","type":"LightToColor","x":400,"y":-100,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N12","type":"MultiplyColor","x":600,"y":50,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N13","type":"MultiplyColor","x":800,"y":250,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N14","type":"FragmentOutput","x":1000,"y":250,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N1","fromPin":"out","to":"N2","toPin":"value"},{"from":"N2","fromPin":"out","to":"N4","toPin":"a"},{"from":"N3","fromPin":"out","to":"N4","toPin":"b"},{"from":"N5","fromPin":"out","to":"N6","toPin":"a"},{"from":"N4","fromPin":"out","to":"N6","toPin":"b"},{"from":"N6","fromPin":"out","to":"N7","toPin":"x"},{"from":"N6","fromPin":"out","to":"N7","toPin":"y"},{"from":"N6","fromPin":"out","to":"N7","toPin":"z"},{"from":"N8","fromPin":"out","to":"N9","toPin":"uv"},{"from":"N10","fromPin":"out","to":"N11","toPin":"light"},{"from":"N11","fromPin":"out","to":"N12","toPin":"a"},{"from":"N7","fromPin":"out","to":"N12","toPin":"b"},{"from":"N12","fromPin":"out","to":"N13","toPin":"a"},{"from":"N9","fromPin":"out","to":"N13","toPin":"b"},{"from":"N13","fromPin":"out","to":"N14","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(1) @binding(0) var meshTexture: texture_2d<f32>;\\n@group(1) @binding(1) var meshSampler: sampler;\\n@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;\\n@group(1) @binding(3) var metallicRoughnessSampler: sampler;\\n@group(1) @binding(4) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n struct FragOut {@location(0) color   : vec4f,@location(1) normal  : vec4f,@location(2) worldPos : vec4f,}\\n@fragment\\nfn main(input: FragmentInput) -> FragOut {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = sin(scene.time);\\n  let t2: f32 = t1 * 0.3;\\n  let t3: f32 = 0.8 + t2;\\n  let t4: vec4f = vec4f(t3, t3, t3, 1.0);\\n  let t5: vec4f = t0 * t4;\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, input.uv);\\n  let t7: vec4f = t5 * t6;\\n  \\n  return FragOut(\\n    t7,\\n    vec4f(normalize(input.fragNorm), 1.0),\\n    vec4f(input.fragPos, 1.0)\\n  );\\n}\\n"}'
   },
   {
     "name": "DIS1",
-    "content": '{"nodes":[{"id":"N1","type":"UV","x":-589,"y":362,"inputs":{}},{"id":"N2","type":"SplitVec4","x":-389,"y":312,"inputs":{"vector":{"default":"vec4f(0.0)"}}},{"id":"N3","type":"Time","x":-589,"y":562,"inputs":{}},{"id":"N4","type":"Float","x":-589,"y":662,"value":5,"inputs":{}},{"id":"N5","type":"Multiply","x":-389,"y":612,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N6","type":"Add","x":-189,"y":462,"inputs":{"a":{"default":"0.0"},"b":{"default":"0.0"}}},{"id":"N7","type":"Sin","x":11,"y":462,"inputs":{"value":{"default":"0.0"}}},{"id":"N8","type":"Float","x":11,"y":562,"value":0.1,"inputs":{}},{"id":"N9","type":"Multiply","x":211,"y":512,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N10","type":"CombineVec4","x":411,"y":412,"inputs":{"x":{"default":"0.0"},"y":{"default":"0.0"},"z":{"default":"0.0"},"w":{"default":"1.0"}}},{"id":"N11","type":"TextureSampler","x":611,"y":412,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N12","type":"LightShadowNode","x":411,"y":162,"inputs":{"intensity":{"default":"1"}}},{"id":"N13","type":"LightToColor","x":611,"y":162,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N14","type":"MultiplyColor","x":811,"y":287,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N15","type":"FragmentOutput","x":1011,"y":287,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N1","fromPin":"out","to":"N2","toPin":"vector"},{"from":"N2","fromPin":"y","to":"N6","toPin":"a"},{"from":"N3","fromPin":"out","to":"N5","toPin":"a"},{"from":"N4","fromPin":"out","to":"N5","toPin":"b"},{"from":"N5","fromPin":"out","to":"N6","toPin":"b"},{"from":"N6","fromPin":"out","to":"N7","toPin":"value"},{"from":"N7","fromPin":"out","to":"N9","toPin":"a"},{"from":"N8","fromPin":"out","to":"N9","toPin":"b"},{"from":"N2","fromPin":"x","to":"N10","toPin":"x"},{"from":"N9","fromPin":"out","to":"N10","toPin":"y"},{"from":"N10","fromPin":"out","to":"N11","toPin":"uv"},{"from":"N12","fromPin":"out","to":"N13","toPin":"light"},{"from":"N13","fromPin":"out","to":"N14","toPin":"a"},{"from":"N11","fromPin":"out","to":"N14","toPin":"b"},{"from":"N14","fromPin":"out","to":"N15","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = scene.time * 5;\\n  let t2: f32 = t1.y + t1;\\n  let t3: f32 = sin(t2);\\n  let t4: f32 = t3 * 0.1;\\n  let t5: vec4f = vec4f(t1.x, t4, 0.0, 1.0);\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, t5);\\n  let t7: vec4f = t0 * t6;\\n  \\n  return t7;\\n}\\n"}'
+    "content": '{"nodes":[{"id":"N1","type":"UV","x":-589,"y":362,"inputs":{}},{"id":"N2","type":"SplitVec4","x":-389,"y":312,"inputs":{"vector":{"default":"vec4f(0.0)"}}},{"id":"N3","type":"Time","x":-589,"y":562,"inputs":{}},{"id":"N4","type":"Float","x":-589,"y":662,"value":5,"inputs":{}},{"id":"N5","type":"Multiply","x":-389,"y":612,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N6","type":"Add","x":-189,"y":462,"inputs":{"a":{"default":"0.0"},"b":{"default":"0.0"}}},{"id":"N7","type":"Sin","x":11,"y":462,"inputs":{"value":{"default":"0.0"}}},{"id":"N8","type":"Float","x":11,"y":562,"value":0.1,"inputs":{}},{"id":"N9","type":"Multiply","x":211,"y":512,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N10","type":"CombineVec4","x":411,"y":412,"inputs":{"x":{"default":"0.0"},"y":{"default":"0.0"},"z":{"default":"0.0"},"w":{"default":"1.0"}}},{"id":"N11","type":"TextureSampler","x":611,"y":412,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N12","type":"LightShadowNode","x":411,"y":162,"inputs":{"intensity":{"default":"1"}}},{"id":"N13","type":"LightToColor","x":611,"y":162,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N14","type":"MultiplyColor","x":811,"y":287,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N15","type":"FragmentOutput","x":1011,"y":287,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N1","fromPin":"out","to":"N2","toPin":"vector"},{"from":"N2","fromPin":"y","to":"N6","toPin":"a"},{"from":"N3","fromPin":"out","to":"N5","toPin":"a"},{"from":"N4","fromPin":"out","to":"N5","toPin":"b"},{"from":"N5","fromPin":"out","to":"N6","toPin":"b"},{"from":"N6","fromPin":"out","to":"N7","toPin":"value"},{"from":"N7","fromPin":"out","to":"N9","toPin":"a"},{"from":"N8","fromPin":"out","to":"N9","toPin":"b"},{"from":"N2","fromPin":"x","to":"N10","toPin":"x"},{"from":"N9","fromPin":"out","to":"N10","toPin":"y"},{"from":"N10","fromPin":"out","to":"N11","toPin":"uv"},{"from":"N12","fromPin":"out","to":"N13","toPin":"light"},{"from":"N13","fromPin":"out","to":"N14","toPin":"a"},{"from":"N11","fromPin":"out","to":"N14","toPin":"b"},{"from":"N14","fromPin":"out","to":"N15","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(1) @binding(0) var meshTexture: texture_2d<f32>;\\n@group(1) @binding(1) var meshSampler: sampler;\\n@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;\\n@group(1) @binding(3) var metallicRoughnessSampler: sampler;\\n@group(1) @binding(4) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n struct FragOut {@location(0) color   : vec4f,@location(1) normal  : vec4f,@location(2) worldPos : vec4f,}\\n@fragment\\nfn main(input: FragmentInput) -> FragOut {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = scene.time * 5;\\n  let t2: f32 = t1.y + t1;\\n  let t3: f32 = sin(t2);\\n  let t4: f32 = t3 * 0.1;\\n  let t5: vec4f = vec4f(t1.x, t4, 0.0, 1.0);\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, t5);\\n  let t7: vec4f = t0 * t6;\\n  \\n  return FragOut(\\n    t7,\\n    vec4f(normalize(input.fragNorm), 1.0),\\n    vec4f(input.fragPos, 1.0)\\n  );\\n}\\n"}'
   },
   {
     "name": "asd1",
-    "content": '{"nodes":[{"id":"N1","type":"UV","x":152,"y":236,"inputs":{}},{"id":"N2","type":"Time","x":152,"y":436,"inputs":{}},{"id":"N3","type":"Float","x":152,"y":536,"value":0.05,"inputs":{}},{"id":"N4","type":"Multiply","x":352,"y":486,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N5","type":"Sin","x":552,"y":486,"inputs":{"value":{"default":"0.0"}}},{"id":"N6","type":"Float","x":552,"y":586,"value":0.08,"inputs":{}},{"id":"N7","type":"Multiply","x":752,"y":536,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N8","type":"Vec2","x":752,"y":636,"inputs":{},"valueX":1,"valueY":0},{"id":"N9","type":"MultiplyVec2","x":952,"y":586,"inputs":{"a":{"default":"vec2f(1.0)"},"b":{"default":"1.0"}}},{"id":"N10","type":"AddVec2","x":1079,"y":350,"inputs":{"a":{"default":"vec2f(0.0)"},"b":{"default":"vec2f(0.0)"}}},{"id":"N11","type":"TextureSampler","x":1352,"y":411,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N12","type":"LightShadowNode","x":1152,"y":86,"inputs":{"intensity":{"default":"1"}}},{"id":"N13","type":"LightToColor","x":1352,"y":86,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N14","type":"MultiplyColor","x":1552,"y":248,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N15","type":"FragmentOutput","x":1752,"y":248,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N2","fromPin":"out","to":"N4","toPin":"a"},{"from":"N3","fromPin":"out","to":"N4","toPin":"b"},{"from":"N4","fromPin":"out","to":"N5","toPin":"value"},{"from":"N5","fromPin":"out","to":"N7","toPin":"a"},{"from":"N6","fromPin":"out","to":"N7","toPin":"b"},{"from":"N7","fromPin":"out","to":"N9","toPin":"a"},{"from":"N8","fromPin":"out","to":"N9","toPin":"b"},{"from":"N1","fromPin":"out","to":"N10","toPin":"a"},{"from":"N9","fromPin":"out","to":"N10","toPin":"b"},{"from":"N10","fromPin":"out","to":"N11","toPin":"uv"},{"from":"N12","fromPin":"out","to":"N13","toPin":"light"},{"from":"N13","fromPin":"out","to":"N14","toPin":"a"},{"from":"N11","fromPin":"out","to":"N14","toPin":"b"},{"from":"N14","fromPin":"out","to":"N15","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(0) @binding(3) var meshTexture: texture_2d<f32>;\\n@group(0) @binding(4) var meshSampler: sampler;\\n@group(0) @binding(5) var<uniform> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;\\n@group(0) @binding(7) var metallicRoughnessSampler: sampler;\\n@group(0) @binding(8) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n\\n@fragment\\nfn main(input: FragmentInput) -> @location(0) vec4f {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = scene.time * 0.05;\\n  let t2: f32 = sin(t1);\\n  let t3: f32 = t2 * 0.08;\\n  let t4: vec2f = t3 * vec2f(1, 0);\\n  let t5: vec2f = input.uv + t4;\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, t5);\\n  let t7: vec4f = t0 * t6;\\n  \\n  return t7;\\n}\\n"}'
+    "content": '{"nodes":[{"id":"N1","type":"UV","x":152,"y":236,"inputs":{}},{"id":"N2","type":"Time","x":152,"y":436,"inputs":{}},{"id":"N3","type":"Float","x":152,"y":536,"value":0.05,"inputs":{}},{"id":"N4","type":"Multiply","x":352,"y":486,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N5","type":"Sin","x":552,"y":486,"inputs":{"value":{"default":"0.0"}}},{"id":"N6","type":"Float","x":552,"y":586,"value":0.08,"inputs":{}},{"id":"N7","type":"Multiply","x":752,"y":536,"inputs":{"a":{"default":"1.0"},"b":{"default":"1.0"}}},{"id":"N8","type":"Vec2","x":752,"y":636,"inputs":{},"valueX":1,"valueY":0},{"id":"N9","type":"MultiplyVec2","x":952,"y":586,"inputs":{"a":{"default":"vec2f(1.0)"},"b":{"default":"1.0"}}},{"id":"N10","type":"AddVec2","x":1079,"y":350,"inputs":{"a":{"default":"vec2f(0.0)"},"b":{"default":"vec2f(0.0)"}}},{"id":"N11","type":"TextureSampler","x":1352,"y":411,"name":"tex0","inputs":{"uv":{"default":"input.uv"}}},{"id":"N12","type":"LightShadowNode","x":1152,"y":86,"inputs":{"intensity":{"default":"1"}}},{"id":"N13","type":"LightToColor","x":1352,"y":86,"inputs":{"light":{"default":"vec3f(1.0)"}}},{"id":"N14","type":"MultiplyColor","x":1552,"y":248,"inputs":{"a":{"default":"vec4(1.0)"},"b":{"default":"vec4(1.0)"}}},{"id":"N15","type":"FragmentOutput","x":1752,"y":248,"inputs":{"color":{"default":"vec4f(1.0)"}}}],"connections":[{"from":"N2","fromPin":"out","to":"N4","toPin":"a"},{"from":"N3","fromPin":"out","to":"N4","toPin":"b"},{"from":"N4","fromPin":"out","to":"N5","toPin":"value"},{"from":"N5","fromPin":"out","to":"N7","toPin":"a"},{"from":"N6","fromPin":"out","to":"N7","toPin":"b"},{"from":"N7","fromPin":"out","to":"N9","toPin":"a"},{"from":"N8","fromPin":"out","to":"N9","toPin":"b"},{"from":"N1","fromPin":"out","to":"N10","toPin":"a"},{"from":"N9","fromPin":"out","to":"N10","toPin":"b"},{"from":"N10","fromPin":"out","to":"N11","toPin":"uv"},{"from":"N12","fromPin":"out","to":"N13","toPin":"light"},{"from":"N13","fromPin":"out","to":"N14","toPin":"a"},{"from":"N11","fromPin":"out","to":"N14","toPin":"b"},{"from":"N14","fromPin":"out","to":"N15","toPin":"color"}],"final":"\\n/* === Engine uniforms === */\\n\\n// DINAMIC GLOBALS\\nconst PI: f32 = 3.141592653589793;\\noverride shadowDepthTextureSize: f32 = 1024.0;\\n\\n// DINAMIC STRUCTS\\n\\n\\n// PREDEFINED\\nstruct Scene {\\n    lightViewProjMatrix  : mat4x4f,\\n    cameraViewProjMatrix : mat4x4f,\\n    cameraPos            : vec3f,\\n    padding2             : f32,\\n    lightPos             : vec3f,\\n    padding              : f32,\\n    globalAmbient        : vec3f,\\n    padding3             : f32,\\n    time                 : f32,\\n    deltaTime            : f32,\\n    padding4             : vec2f,\\n};\\n\\n// PREDEFINED\\nstruct SpotLight {\\n    position      : vec3f,\\n    _pad1         : f32,\\n    direction     : vec3f,\\n    _pad2         : f32,\\n    innerCutoff   : f32,\\n    outerCutoff   : f32,\\n    intensity     : f32,\\n    _pad3         : f32,\\n    color         : vec3f,\\n    _pad4         : f32,\\n    range         : f32,\\n    ambientFactor : f32,\\n    shadowBias    : f32,\\n    _pad5         : f32,\\n    lightViewProj : mat4x4<f32>,\\n};\\n\\n// PREDEFINED\\nstruct MaterialPBR {\\n    baseColorFactor : vec4f,\\n    metallicFactor  : f32,\\n    roughnessFactor : f32,\\n    _pad1           : f32,\\n    _pad2           : f32,\\n};\\n\\n// PREDEFINED\\nstruct PBRMaterialData {\\n    baseColor : vec3f,\\n    metallic  : f32,\\n    roughness : f32,\\n    alpha     : f32\\n};\\n\\n// PREDEFINED\\nconst MAX_SPOTLIGHTS = 20u;\\n\\n// PREDEFINED\\n@group(0) @binding(0) var<uniform> scene : Scene;\\n@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;\\n@group(0) @binding(2) var shadowSampler: sampler_comparison;\\n@group(1) @binding(0) var meshTexture: texture_2d<f32>;\\n@group(1) @binding(1) var meshSampler: sampler;\\n@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;\\n@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;\\n@group(1) @binding(3) var metallicRoughnessSampler: sampler;\\n@group(1) @binding(4) var<uniform> material: MaterialPBR;\\n\\n// \u2705 Graph custom uniforms\\n\\n\\n// \u2705 Graph custom functions\\n\\nfn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {\\n    let L = normalize(light.position - fragPos);\\n    let NdotL = max(dot(N, L), 0.0);\\n\\n    let theta = dot(L, normalize(-light.direction));\\n    let epsilon = light.innerCutoff - light.outerCutoff;\\n    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);\\n\\n    // coneAtten = 1.0;\\n    if (coneAtten <= 0.0 || NdotL <= 0.0) {\\n        return vec3f(0.0);\\n    }\\n\\n    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));\\n    let H = normalize(L + V);\\n    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);\\n\\n    let alpha = material.roughness * material.roughness;\\n    let NdotH = max(dot(N, H), 0.0);\\n    let alpha2 = alpha * alpha;\\n    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);\\n    let D = alpha2 / (PI * denom * denom + 1e-5);\\n\\n    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;\\n    let NdotV = max(dot(N, V), 0.0);\\n    let Gv = NdotV / (NdotV * (1.0 - k) + k);\\n    let Gl = NdotL / (NdotL * (1.0 - k) + k);\\n    let G = Gv * Gl;\\n\\n    let numerator = D * G * F;\\n    let denominator = 4.0 * NdotV * NdotL + 1e-5;\\n    let specular = numerator / denominator;\\n\\n    let kS = F;\\n    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);\\n    let diffuse = kD * material.baseColor.rgb / PI;\\n\\n    let radiance = light.color * light.intensity;\\n    // return (diffuse + specular) * radiance * NdotL * coneAtten;\\n    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;\\n}\\n\\nfn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {\\n    var visibility: f32 = 0.0;\\n    let biasConstant: f32 = 0.001;\\n    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);\\n    let bias = biasConstant + slopeBias;\\n    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);\\n    let offsets: array<vec2f, 9> = array<vec2f, 9>(\\n        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),\\n        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),\\n        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)\\n    );\\n    for(var i: u32 = 0u; i < 9u; i = i + 1u) {\\n        visibility += textureSampleCompare(\\n            shadowMapArray, shadowSampler,\\n            shadowUV + offsets[i] * oneOverSize,\\n            layer, depthRef - bias\\n        );\\n    }\\n    return visibility / 9.0;\\n}\\n\\n\\n// PREDEFINED Fragment input\\nstruct FragmentInput {\\n    @location(0) shadowPos : vec4f,\\n    @location(1) fragPos   : vec3f,\\n    @location(2) fragNorm  : vec3f,\\n    @location(3) uv        : vec2f,\\n};\\n\\n// PREDEFINED PBR helpers\\nfn getPBRMaterial(uv: vec2f) -> PBRMaterialData {\\n    let texColor = textureSample(meshTexture, meshSampler, uv);\\n    let baseColor = texColor.rgb * material.baseColorFactor.rgb;\\n    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);\\n    let metallic = mrTex.b * material.metallicFactor;\\n    let roughness = mrTex.g * material.roughnessFactor;\\n    \\n    // \u2705 Get alpha from texture and material factor\\n    // let alpha = texColor.a * material.baseColorFactor.a;\\n    let alpha = material.baseColorFactor.a;\\n    \\n    return PBRMaterialData(baseColor, metallic, roughness, alpha);\\n}\\n struct FragOut {@location(0) color   : vec4f,@location(1) normal  : vec4f,@location(2) worldPos : vec4f,}\\n@fragment\\nfn main(input: FragmentInput) -> FragOut {\\n  // Locals\\n  \\n    let norm = normalize(input.fragNorm);\\n    let viewDir = normalize(scene.cameraPos - input.fragPos);\\n    let materialData = getPBRMaterial(input.uv);\\n    var lightContribution = vec3f(0.0);\\n    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {\\n        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);\\n        let p  = sc.xyz / sc.w;\\n        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));\\n        let depthRef = p.z * 0.5 + 0.5;\\n        let lightDir = normalize(spotlights[i].position - input.fragPos);\\n        let bias = spotlights[i].shadowBias;\\n        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);\\n        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);\\n        lightContribution += contrib * visibility;\\n    }\\n  let t0: vec4f = vec4f(lightContribution, 1.0);\\n  let t1: f32 = scene.time * 0.05;\\n  let t2: f32 = sin(t1);\\n  let t3: f32 = t2 * 0.08;\\n  let t4: vec2f = t3 * vec2f(1, 0);\\n  let t5: vec2f = input.uv + t4;\\n  let t6: vec4f = textureSample(meshTexture, meshSampler, t5);\\n  let t7: vec4f = t0 * t6;\\n  \\n  return FragOut(\\n    t7,\\n    vec4f(normalize(input.fragNorm), 1.0),\\n    vec4f(input.fragPos, 1.0)\\n  );\\n}\\n"}'
   },
   {
     "name": "MyShader1",
@@ -36574,8 +37895,10 @@ var app2 = new MatrixEngineWGPU(
     useEditor: true,
     projectType: "created from editor",
     projectName: "Test1",
-    useSingleRenderPass: true,
     canvasSize: "fullscreen",
+    useCannon: true,
+    // MAX_SPOTLIGHTS: 8,
+    MAX_BONES: 10,
     mainCameraParams: {
       type: "WASD",
       responseCoef: 1e3
@@ -36635,9 +37958,6 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("L_BOX").position.SetX(-4);
-      }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
         const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
@@ -36659,9 +37979,6 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("REEL_1").scale[2] = 2;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("R_BOX").position.SetX(4);
       }, 800);
       downloadMeshes({ cube: "res/meshes/obj/reel.obj" }, (m) => {
         const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
@@ -36708,9 +38025,6 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_3").scale[2] = 2;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_3").position.SetX(2);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("L_BOX").scale[0] = 1;
       }, 800);
       setTimeout(() => {
@@ -36718,18 +38032,6 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("R_BOX").scale[1] = 4;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_3").position.SetY(3);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("R_BOX").position.SetY(1);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_1").position.SetX(-2);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_1").position.SetY(3);
       }, 800);
       downloadMeshes({ cube: "res/meshes/blender/plane.obj" }, (m) => {
         const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
@@ -36744,12 +38046,6 @@ var app2 = new MatrixEngineWGPU(
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
-      setTimeout(() => {
-        app3.getSceneObjectByName("BANNER1").rotation.x = 90;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("BANNER1").position.SetX(0);
-      }, 800);
       downloadMeshes({ cube: "res/meshes/blender/plane.obj" }, (m) => {
         const texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
         app3.addMeshObj({
@@ -36771,9 +38067,6 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("BANNER2").scale[2] = 3;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("BANNER2").position.SetY(9);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("BANNER2").rotation.y = 0;
@@ -36817,9 +38110,6 @@ var app2 = new MatrixEngineWGPU(
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("BANNER3").scale[2] = 3;
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("BANNER3").position.SetX(8);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("BANNER3").rotation.z = 30;
@@ -36889,52 +38179,109 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("REEL_TOP").scale[0] = 2.1;
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("BANNER1").position.SetY(9);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("BANNER1").position.SetZ(-18);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("BANNER2").position.SetZ(-20);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(-2.4500000000000046);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("BANNER2").position.SetX(-9);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("L_BOX").position.SetY(0.6600000000000011);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").position.SetX(0.03);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("REEL_TOP").position.SetY(2.3800000000000012);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetZ(-20.000094540456008);
-      }, 800);
-      setTimeout(() => {
         app3.getSceneObjectByName("REEL_2").position.SetZ(-20);
-      }, 800);
-      setTimeout(() => {
-        app3.getSceneObjectByName("BANNER3").position.SetY(9);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("REEL_TOP").position.SetX(0.08000000000000052);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_2").position.SetY(3);
+        app3.getSceneObjectByName("FLOOR").position.SetZ(-20.805094540456007);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER1").position.SetZ(-22.2975707408788);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER2").position.SetZ(-19.58);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("L_BOX").position.SetX(-3.8249999999999975);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetX(0.3149999999999994);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER1").position.SetY(10.960000000000004);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER2").position.SetY(9.805000000000003);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER2").position.SetX(-9.490000000000002);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("R_BOX").position.SetY(1.1399999999999995);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("R_BOX").position.SetX(3.930000000000001);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("R_BOX").position.SetZ(-20);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("REEL_TOP").position.SetZ(-20);
+        app3.getSceneObjectByName("L_BOX").position.SetZ(-19.965);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER1").position.SetX(-0.8749999999999989);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER3").position.SetZ(-19.74273526332103);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER3").position.SetY(9.700000000000003);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER3").position.SetX(6.390000000000017);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("L_BOX").position.SetY(0.8350000000000005);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetY(-2.414999999999989);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_TOP").rotation.y = 0;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER1").rotation.x = 90;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("BANNER1").rotation.y = 0;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_3").position.SetX(2);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").position.SetZ(-20);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_3").position.SetY(3);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").position.SetY(3);
       }, 800);
       setTimeout(() => {
         app3.getSceneObjectByName("REEL_3").position.SetZ(-20);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").rotation.x = 150;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").position.SetY(3);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_TOP").position.SetY(3.0350000000000033);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_TOP").rotation.x = 38.3;
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_TOP").position.SetZ(-20.10205523889556);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_1").position.SetX(-1.8949999999999998);
+      }, 800);
+      setTimeout(() => {
+        app3.getSceneObjectByName("REEL_2").position.SetX(0.07);
       }, 800);
     });
   }

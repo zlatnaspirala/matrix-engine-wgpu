@@ -7,6 +7,8 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 export var procMesh = function() {
   let procMesh = new MatrixEngineWGPU({
     fastRender: 0.9,
+    MAX_SPOTLIGHTS : 1,
+    MAX_BONES: 1,
     dontUsePhysics: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -91,7 +93,7 @@ export var procMesh = function() {
           meshB: MeshMorpher[typeB](1),
           name: `morph_${typeA}_to_${typeB}`,
           physics: {enabled: false, geometry: "Sphere"},
-          raycast: {enabled: true, radius: 1.5}
+          raycast: {enabled: true, radius: 1}
         });
         meshObjects.push(obj);
         col++;
@@ -118,11 +120,12 @@ export var procMesh = function() {
       procMesh.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        app.cameras.WASD.setYaw(-0.03);
-        app.cameras.WASD.setPitch(-0.49);
-        app.cameras.WASD.setZ(0);
-        app.cameras.WASD.setY(5);
-        app.cameras.WASD._dirtyAngle = true;
+        let cam = procMesh.getCamera();
+        cam.setYaw(-0.03);
+        cam.setPitch(-0.49);
+        cam.setZ(0);
+        cam.setY(5);
+        cam._dirtyAngle = true;
       }, 800);
     }
 

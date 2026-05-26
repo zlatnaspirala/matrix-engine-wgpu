@@ -1,15 +1,16 @@
-import { mat4 } from "wgpu-matrix";
+import {mat4} from "wgpu-matrix";
 import {kaleidoscopeEffectInstance} from "../../shaders/kale/kale.wgsl";
-import { LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo } from "../utils";
+import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
 /**
  * @description
  * KaleidoscopeEmitter
  * procedural kaleidoscope particles with vertex animation
  */
 export class KaleidoscopeEmitter {
-  constructor(device, format, maxParticles = 20) {
+  constructor(device, format, maxParticles = 20, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.time = 0;
     this.intensity = 1.0;
     this.enabled = true;
@@ -38,7 +39,7 @@ export class KaleidoscopeEmitter {
     this._finalMatrix = mat4.create();
     this._scratch4 = new Float32Array(4);
 
-    for (let i = 0; i < maxParticles; i++) {
+    for(let i = 0;i < maxParticles;i++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
         currentPosition: [0, 0, 0],
@@ -74,7 +75,7 @@ export class KaleidoscopeEmitter {
       -randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
       randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
     ]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
   }
 
@@ -95,7 +96,7 @@ export class KaleidoscopeEmitter {
       memory12, memory22, 0.0,
       memory13, memory23, 0.0,
     ]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
   }
 
@@ -116,7 +117,7 @@ export class KaleidoscopeEmitter {
       memory12, memory22, 0.0,
       memory13, memory23, 0.0,
     ]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
   }
 
@@ -128,7 +129,7 @@ export class KaleidoscopeEmitter {
       data[2], data[6], 0.0,
       data[3], data[7], 0.0,
     ]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
   }
 
@@ -156,22 +157,17 @@ export class KaleidoscopeEmitter {
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
 
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
     this.modelBuffer = this.device.createBuffer({
-      label: 'kaleidoscope-emitter modelBuffer',
+      label: 'kale-emitter modelBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
 
     const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'kaleidoscope-emitter bindGroupLayout',
+      label: 'kale-emitter layout',
       entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
       ]
     });
 
@@ -179,13 +175,13 @@ export class KaleidoscopeEmitter {
       label: 'kaleidoscope-emitter bindGroup',
       layout: bindGroupLayout,
       entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } },
+        {binding: 0, resource: {buffer: this.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
 
-    const shaderModule = this.device.createShaderModule({ code: kaleidoscopeEffectInstance });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    const shaderModule = this.device.createShaderModule({code: kaleidoscopeEffectInstance});
+    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
 
     this.pipeline = this.device.createRenderPipeline({
       label: 'kaleidoscope-emitter pipeline',
@@ -194,8 +190,8 @@ export class KaleidoscopeEmitter {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
         ]
       },
       fragment: {
@@ -214,11 +210,16 @@ export class KaleidoscopeEmitter {
               dstFactor: 'one-minus-src-alpha',
               operation: 'add',
             },
-          }
-        }]
+          },
+          writeMask: 0xF
+        },
+        {format: this.format},
+        {format: this.format}
+        
+        ]
       },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
+      primitive: {topology: "triangle-list"},
+      depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}
     });
   }
 
@@ -226,11 +227,11 @@ export class KaleidoscopeEmitter {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
     const floatsPerInstance = 28;
 
-    for (let i = 0; i < count; i++) {
+    for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
 
       // Smooth position lerp
-      for (let j = 0; j < 3; j++) {
+      for(let j = 0;j < 3;j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
       }
 
@@ -270,7 +271,7 @@ export class KaleidoscopeEmitter {
   render(pass, mesh, viewProjMatrix, dt = 0.1) {
     this.time += dt;
 
-    for (const p of this.instanceTargets) {
+    for(const p of this.instanceTargets) {
       p.time = (p.time ?? 0) + dt;
       p.colorShift = (p.colorShift ?? 0) + dt * this.globalColorShiftSpeed;
 
@@ -279,7 +280,7 @@ export class KaleidoscopeEmitter {
         ? p.position[this.swap1] > this.maxBound
         : p.position[this.swap1] < this.minBound;
 
-      if (resetCondition) {
+      if(resetCondition) {
         p.position[this.swap1] = this.riseDirection > 0
           ? this.minBound + Math.random() * 0.5
           : this.maxBound - Math.random() * 0.5;
@@ -321,7 +322,7 @@ export class KaleidoscopeEmitter {
   setDirection(direction) {
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
-    switch (direction) {
+    switch(direction) {
       case 'up':
         this.swap0 = 0; this.swap1 = 1; this.swap2 = 2;
         break;

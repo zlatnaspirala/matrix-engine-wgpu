@@ -27,6 +27,8 @@ import {canvasInline} from "./examples/canvas-inline.js";
 import {loadCinematicCamera} from "./examples/cinematic-camera.js";
 import {loadDestructionProcedural} from "./examples/destruction-procedural.js";
 import {loadKale} from "./examples/kale.js";
+import {loadHZB} from "./examples/hzb-ray.js";
+import {loadKinematicCollision} from "./examples/kinematic-collision.js";
 
 window.urlQ = urlQuery;
 
@@ -53,7 +55,7 @@ byId('video-texture').addEventListener("click", () => switchDemo('4'));
 byId('objs-anim').addEventListener("click", () => switchDemo('5'));
 byId('glb-loader').addEventListener("click", () => switchDemo('6'));
 byId('procedural-mesh').addEventListener("click", () => switchDemo('7'));
-byId('fontana').addEventListener("click", () => switchDemo('8'));
+// byId('fontana').addEventListener("click", () => switchDemo('8'));
 byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
@@ -66,6 +68,8 @@ byId('canvas-inline').addEventListener("click", () => switchDemo('17'));
 byId('cinematicCamera').addEventListener("click", () => switchDemo('18'));
 byId('destruction-procedure').addEventListener("click", () => switchDemo('19'));
 byId('loadkale').addEventListener("click", () => switchDemo('20'));
+byId('loadhzb').addEventListener("click", () => switchDemo('21'));
+byId('loadKCollision').addEventListener("click", () => switchDemo('22'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
@@ -112,6 +116,10 @@ if(urlQ['demo'] === '1') {
   loadDestructionProcedural();
 } else if(urlQ['demo'] === '20') {
   loadKale();
+} else if (urlQ['demo'] === '21') {
+  loadHZB();
+}  else if (urlQ['demo'] === '22') {
+  loadKinematicCollision();
 } else {
   flipperJolt();
 }

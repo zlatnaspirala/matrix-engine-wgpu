@@ -10,8 +10,10 @@ let app = new MatrixEngineWGPU(
     useEditor: true,
     projectType: "created from editor",
     projectName: 'Test1',
-    useSingleRenderPass: true,
     canvasSize: 'fullscreen',
+    useCannon: true,
+    // MAX_SPOTLIGHTS: 8,
+    MAX_BONES: 10,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -80,12 +82,6 @@ let app = new MatrixEngineWGPU(
       // ME END R_BOX addCube
 
 
-      // ME START L_BOX updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('L_BOX').position.SetX(-4);
-      }, 800);
-      // ME END L_BOX updatePosx
-
       // ME START REEL_1
       downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => {
         const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
@@ -118,12 +114,6 @@ let app = new MatrixEngineWGPU(
         app.getSceneObjectByName('REEL_1').scale[2] = 2;
       }, 800);
       // ME END REEL_1 updateScale2
-
-      // ME START R_BOX updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('R_BOX').position.SetX(4);
-      }, 800);
-      // ME END R_BOX updatePosx
 
       // ME START REEL_2
       downloadMeshes({cube: "res/meshes/obj/reel.obj"}, (m) => {
@@ -191,12 +181,6 @@ let app = new MatrixEngineWGPU(
       }, 800);
       // ME END REEL_3 updateScale2
 
-      // ME START REEL_3 updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('REEL_3').position.SetX(2);
-      }, 800);
-      // ME END REEL_3 updatePosx
-
       // ME START L_BOX updateScale0
       setTimeout(() => {
         app.getSceneObjectByName('L_BOX').scale[0] = 1;
@@ -215,32 +199,6 @@ let app = new MatrixEngineWGPU(
       }, 800);
       // ME END R_BOX updateScale1
 
-      // ME START REEL_3 updatePosy
-      setTimeout(() => {
-        app.getSceneObjectByName('REEL_3').position.SetY(3);
-      }, 800);
-      // ME END REEL_3 updatePosy
-
-      // ME START R_BOX updatePosy
-      setTimeout(() => {
-        app.getSceneObjectByName('R_BOX').position.SetY(1);
-      }, 800);
-      // ME END R_BOX updatePosy
-
-      // ME START REEL_1 updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('REEL_1').position.SetX(-2);
-      }, 800);
-      // ME END REEL_1 updatePosx
-
-      // ME START REEL_1 updatePosy
-      setTimeout(() => {
-        app.getSceneObjectByName('REEL_1').position.SetY(3);
-      }, 800);
-      // ME END REEL_1 updatePosy
-
-
-
       // ME START BANNER1
       downloadMeshes({cube: "res/meshes/blender/plane.obj"}, (m) => {
         const texturesPaths = ['./res/textures/cube-g1-extra_low.png'];
@@ -255,18 +213,6 @@ let app = new MatrixEngineWGPU(
       }, {scale: [1, 1, 1]});
       // ME END BANNER1
 
-
-      // ME START BANNER1 updateRotx
-      setTimeout(() => {
-        app.getSceneObjectByName('BANNER1').rotation.x = 90;
-      }, 800);
-      // ME END BANNER1 updateRotx
-
-      // ME START BANNER1 updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('BANNER1').position.SetX(0);
-      }, 800);
-      // ME END BANNER1 updatePosx
 
       // ME START BANNER2
       downloadMeshes({cube: "res/meshes/blender/plane.obj"}, (m) => {
@@ -300,12 +246,6 @@ let app = new MatrixEngineWGPU(
         app.getSceneObjectByName('BANNER2').scale[2] = 3;
       }, 800);
       // ME END BANNER2 updateScale2
-
-      // ME START BANNER2 updatePosy
-      setTimeout(() => {
-        app.getSceneObjectByName('BANNER2').position.SetY(9);
-      }, 800);
-      // ME END BANNER2 updatePosy
 
       // ME START BANNER2 updateRoty
       setTimeout(() => {
@@ -381,12 +321,6 @@ let app = new MatrixEngineWGPU(
         app.getSceneObjectByName('BANNER3').scale[2] = 3;
       }, 800);
       // ME END BANNER3 updateScale2
-
-      // ME START BANNER3 updatePosx
-      setTimeout(() => {
-        app.getSceneObjectByName('BANNER3').position.SetX(8);
-      }, 800);
-      // ME END BANNER3 updatePosx
 
       // ME START BANNER3 updateRotz
       setTimeout(() => {
@@ -516,77 +450,179 @@ let app = new MatrixEngineWGPU(
       }, 800);
       // ME END REEL_TOP updateScale0
 
-       // ME START BANNER1 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('BANNER1').position.SetY(9);
- }, 800);
- // ME END BANNER1 updatePosy
- 
-   // ME START BANNER1 updatePosz
- setTimeout(() => {
-  app.getSceneObjectByName('BANNER1').position.SetZ(-18);
- }, 800);
- // ME END BANNER1 updatePosz
- 
-  // ME START BANNER2 updatePosz
- setTimeout(() => {
-  app.getSceneObjectByName('BANNER2').position.SetZ(-20);
- }, 800);
- // ME END BANNER2 updatePosz
- 
-    // ME START FLOOR updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(-2.4500000000000046);
- }, 800);
- // ME END FLOOR updatePosy
- 
-  // ME START BANNER2 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('BANNER2').position.SetX(-9);
- }, 800);
- // ME END BANNER2 updatePosx
- 
-  // ME START L_BOX updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('L_BOX').position.SetY(0.6600000000000011);
- }, 800);
- // ME END L_BOX updatePosy
- 
-   // ME START REEL_2 updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('REEL_2').position.SetX(0.03);
- }, 800);
- // ME END REEL_2 updatePosx
- 
-   // ME START REEL_TOP updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('REEL_TOP').position.SetY(2.3800000000000012);
- }, 800);
- // ME END REEL_TOP updatePosy
- 
-  // ME START FLOOR updatePosz
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetZ(-20.000094540456008);
- }, 800);
- // ME END FLOOR updatePosz
- 
-      // ME START REEL_2 updatePosz
+       // ME START REEL_2 updatePosz
  setTimeout(() => {
   app.getSceneObjectByName('REEL_2').position.SetZ(-20);
  }, 800);
  // ME END REEL_2 updatePosz
  
-  // ME START BANNER3 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('BANNER3').position.SetY(9);
- }, 800);
- // ME END BANNER3 updatePosy
- 
-  // ME START REEL_TOP updatePosx
+   // ME START REEL_TOP updatePosx
  setTimeout(() => {
   app.getSceneObjectByName('REEL_TOP').position.SetX(0.08000000000000052);
  }, 800);
  // ME END REEL_TOP updatePosx
+ 
+    // ME START FLOOR updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetZ(-20.805094540456007);
+ }, 800);
+ // ME END FLOOR updatePosz
+ 
+  // ME START BANNER1 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').position.SetZ(-22.2975707408788);
+ }, 800);
+ // ME END BANNER1 updatePosz
+ 
+   // ME START BANNER2 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').position.SetZ(-19.58);
+ }, 800);
+ // ME END BANNER2 updatePosz
+ 
+  // ME START L_BOX updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').position.SetX(-3.8249999999999975);
+ }, 800);
+ // ME END L_BOX updatePosx
+ 
+  // ME START FLOOR updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetX(0.3149999999999994);
+ }, 800);
+ // ME END FLOOR updatePosx
+ 
+  // ME START BANNER1 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').position.SetY(10.960000000000004);
+ }, 800);
+ // ME END BANNER1 updatePosy
+ 
+  // ME START BANNER2 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').position.SetY(9.805000000000003);
+ }, 800);
+ // ME END BANNER2 updatePosy
+ 
+  // ME START BANNER2 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER2').position.SetX(-9.490000000000002);
+ }, 800);
+ // ME END BANNER2 updatePosx
+ 
+  // ME START R_BOX updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('R_BOX').position.SetY(1.1399999999999995);
+ }, 800);
+ // ME END R_BOX updatePosy
+ 
+   // ME START R_BOX updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('R_BOX').position.SetX(3.930000000000001);
+ }, 800);
+ // ME END R_BOX updatePosx
+ 
+   // ME START R_BOX updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('R_BOX').position.SetZ(-20);
+ }, 800);
+ // ME END R_BOX updatePosz
+ 
+  // ME START L_BOX updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').position.SetZ(-19.965);
+ }, 800);
+ // ME END L_BOX updatePosz
+ 
+    // ME START BANNER1 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').position.SetX(-0.8749999999999989);
+ }, 800);
+ // ME END BANNER1 updatePosx
+ 
+  // ME START BANNER3 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').position.SetZ(-19.74273526332103);
+ }, 800);
+ // ME END BANNER3 updatePosz
+ 
+  // ME START BANNER3 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').position.SetY(9.700000000000003);
+ }, 800);
+ // ME END BANNER3 updatePosy
+ 
+  // ME START BANNER3 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER3').position.SetX(6.390000000000017);
+ }, 800);
+ // ME END BANNER3 updatePosx
+ 
+  // ME START L_BOX updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('L_BOX').position.SetY(0.8350000000000005);
+ }, 800);
+ // ME END L_BOX updatePosy
+ 
+  // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(-2.414999999999989);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
+   // ME START REEL_TOP updateRoty
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').rotation.y = 0;
+ }, 800);
+ // ME END REEL_TOP updateRoty
+ 
+  // ME START BANNER1 updateRotx
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').rotation.x = 90;
+ }, 800);
+ // ME END BANNER1 updateRotx
+ 
+   // ME START BANNER1 updateRoty
+ setTimeout(() => {
+  app.getSceneObjectByName('BANNER1').rotation.y = 0;
+ }, 800);
+ // ME END BANNER1 updateRoty
+ 
+  // ME START REEL_3 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_3').position.SetX(2);
+ }, 800);
+ // ME END REEL_3 updatePosx
+ 
+  // ME START REEL_1 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_1').position.SetZ(-20);
+ }, 800);
+ // ME END REEL_1 updatePosz
+ 
+   // ME START REEL_3 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_3').position.SetY(3);
+ }, 800);
+ // ME END REEL_3 updatePosy
+ 
+    // ME START REEL_1 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_1').position.SetY(3);
+ }, 800);
+ // ME END REEL_1 updatePosy
+ 
+   // ME START REEL_3 updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_3').position.SetZ(-20);
+ }, 800);
+ // ME END REEL_3 updatePosz
+ 
+  // ME START REEL_1 updateRotx
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_1').rotation.x = 150;
+ }, 800);
+ // ME END REEL_1 updateRotx
  
   // ME START REEL_2 updatePosy
  setTimeout(() => {
@@ -594,23 +630,35 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END REEL_2 updatePosy
  
-  // ME START R_BOX updatePosz
+  // ME START REEL_TOP updatePosy
  setTimeout(() => {
-  app.getSceneObjectByName('R_BOX').position.SetZ(-20);
+  app.getSceneObjectByName('REEL_TOP').position.SetY(3.0350000000000033);
  }, 800);
- // ME END R_BOX updatePosz
+ // ME END REEL_TOP updatePosy
+ 
+      // ME START REEL_TOP updateRotx
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_TOP').rotation.x = 38.3;
+ }, 800);
+ // ME END REEL_TOP updateRotx
  
   // ME START REEL_TOP updatePosz
  setTimeout(() => {
-  app.getSceneObjectByName('REEL_TOP').position.SetZ(-20);
+  app.getSceneObjectByName('REEL_TOP').position.SetZ(-20.10205523889556);
  }, 800);
  // ME END REEL_TOP updatePosz
  
-  // ME START REEL_3 updatePosz
+  // ME START REEL_1 updatePosx
  setTimeout(() => {
-  app.getSceneObjectByName('REEL_3').position.SetZ(-20);
+  app.getSceneObjectByName('REEL_1').position.SetX(-1.8949999999999998);
  }, 800);
- // ME END REEL_3 updatePosz
+ // ME END REEL_1 updatePosx
+ 
+  // ME START REEL_2 updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_2').position.SetX(0.07);
+ }, 800);
+ // ME END REEL_2 updatePosx
  
  // [MAIN_REPLACE2]
 

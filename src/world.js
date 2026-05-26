@@ -23,15 +23,17 @@ import {HPBarEffect} from "./engine/effects/energy-bar.js";
 import {MANABarEffect} from "./engine/effects/mana-bar.js";
 import {PointerEffect} from "./engine/effects/pointerEffect.js";
 import {FlameEffect} from "./engine/effects/flame.js";
-import ProceduralMeshObj, {MeshMorpher} from "./engine/procedural-mesh.js";
-import {FOUNTAIN_COLUMN_TOP, fountainBasinStoneConfig, fountainBasinWaterConfig, fountainCapConfig, fountainCurtainConfig, fountainStructureConfig} from "./engine/procedures/fontana.js";
-import {fountainBasinFragmentWGSL, fountainCapFragmentWGSL, fountainCurtainFragmentWGSL, fountainWaterVertexWGSL} from "./shaders/fontana/fontana.wgsl.js";
+import ProceduralMeshObj from "./engine/procedural-mesh.js";
 import {zeroPass} from "./engine/overrides/min-render.js";
-import {noShadowPass} from "./engine/overrides/noshadow-render.js";
+import {cullingPass, noShadowPass} from "./engine/overrides/culling.js";
 import {MaterialBindGroupCache, PipelineManager} from './engine/pipelineManager.js';
 import {nanoPass} from "./engine/overrides/nano-render.js";
 import {PhysicsBridge} from "./engine/physics/bridge.js";
 import {mobile1} from "./engine/overrides/mobile-1.js";
+import {SSRPass} from "./engine/postprocessing/hzb.js";
+import {KaleidoscopeEffect} from "./engine/effects/KaleidoscopeEffect.js";
+import {CulledRenderPass, CulledRenderPassDisabled} from "./engine/culling/culling.js";
+
 /**
  * @description
  * Main engine root class.
@@ -56,6 +58,7 @@ export default class MatrixEngineWGPU {
       PointerEffect,
       HPBarEffect,
       MANABarEffect,
+      KaleidoscopeEffect
     }
   }
 
@@ -161,6 +164,8 @@ export default class MatrixEngineWGPU {
     this._volumetricUniforms = {invViewProjectionMatrix: null};
     this._volumetricLightUniforms = {viewProjectionMatrix: null, direction: null};
     this.usEvent = new CustomEvent('updateSceneContainer', {detail: {}});
+    this.culledRenderPass = new CulledRenderPass();
+    // this.culledRenderPass = new CulledRenderPassDisabled();
 
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
@@ -182,6 +187,8 @@ export default class MatrixEngineWGPU {
         this.overrideRender = noShadowPass.bind(this);
       } else if(options.render == 'mobile1') {
         this.overrideRender = mobile1.bind(this);
+      } else if(options.render == 'culling') {
+        this.overrideRender = cullingPass.bind(this);
       }
     }
     window.addEventListener('keydown', e => {
@@ -193,7 +200,7 @@ export default class MatrixEngineWGPU {
       }
     }, {passive: true});
 
-    if (isMobile()== true) preventZoom();
+    if(isMobile() == true) preventZoom();
 
     this.activateEditor = () => {
       if(this.editor == null || typeof this.editor === 'undefined') {
@@ -373,7 +380,7 @@ export default class MatrixEngineWGPU {
       label: 'uniformBufferBindGroupLayout in mesh [instanced]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ],
@@ -544,6 +551,10 @@ export default class MatrixEngineWGPU {
       setThreshold: (v) => {},
     };
 
+    this.ssrPass = {
+      enabled: false,
+    };
+
     this.volumetricPass = {enabled: false};
 
     this.bloomOutputTex = this.device.createTexture({
@@ -572,7 +583,6 @@ export default class MatrixEngineWGPU {
         GPUTextureUsage.RENDER_ATTACHMENT |
         GPUTextureUsage.TEXTURE_BINDING
     });
-
     this.postProcessInputView = this.postProcessInputTex.createView();
 
     this.presentPipeline = this.device.createRenderPipeline({
@@ -585,25 +595,28 @@ export default class MatrixEngineWGPU {
       fragment: {
         module: this.device.createShaderModule({
           code: `
-        @group(0) @binding(0) var hdrTex : texture_2d<f32>;
-        @group(0) @binding(1) var samp : sampler;
+        @group(0) @binding(0) var hdrTex  : texture_2d<f32>;
+        @group(0) @binding(1) var samp    : sampler;
+        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;
         @fragment
         fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
-          let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
-          let hdr = textureSample(hdrTex, samp, uv).rgb;
-          // simple tonemap
-          let ldr = hdr / (hdr + vec3(1.0));
-          return vec4<f32>(ldr, 1.0);
+            let uv  = pos.xy / vec2<f32>(textureDimensions(hdrTex));
+            let hdr = textureSample(hdrTex, samp, uv).rgb;
+            let ssr = textureSample(ssrTex, samp, uv);
+            let composited = mix(hdr, ssr.rgb, ssr.a);
+            let ldr = composited / (composited + vec3(1.0));
+            return vec4<f32>(ldr, 1.0);
+            // return vec4<f32>(ssr.rgb, 1.0);
         }
       `
         }),
         entryPoint: 'main',
-        targets: [{format: isMobile() == true ? 'rgba8unorm' : 'bgra8unorm'}], // rgba16float  bgra8unorm rgba8unorm
+        targets: [{format: isMobile() == true ? 'rgba8unorm' : 'bgra8unorm'}],
       },
     });
 
     this.createBloomBindGroup();
-    // global
+    // Global
     this.globalSceneUniformBuffer = this.device.createBuffer({
       label: 'Shared[sceneUniformBuffer]',
       size: 192,
@@ -613,29 +626,10 @@ export default class MatrixEngineWGPU {
     this.sceneBGL = this.device.createBindGroupLayout({
       label: 'SceneBGL',
       entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {type: 'uniform'}
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "depth",
-            viewDimension: "2d-array"
-          }
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: 'comparison'}
-        },
-        {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: {type: 'read-only-storage'}
-        }
+        {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: "depth", viewDimension: "2d-array"}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'comparison'}},
+        {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'read-only-storage'}}
       ]
     });
 
@@ -663,6 +657,24 @@ export default class MatrixEngineWGPU {
     });
 
     this.mainDepthView = this.mainDepthTexture.createView();
+
+    // Dummy for initial attacment[1] This is HZB
+    this.normalTexture = this.device.createTexture({
+      label: 'GBuffer normals',
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
+    this.normalTextureView = this.normalTexture.createView();
+
+    this.worldPosTexture = this.device.createTexture({
+      label: 'GBuffer worldPos',
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
+    this.worldPosTextureView = this.worldPosTexture.createView();
+
     this.mainRenderPassDesc = {
       label: 'mainRenderPassDesc',
       colorAttachments: [{
@@ -670,7 +682,14 @@ export default class MatrixEngineWGPU {
         loadOp: 'clear',
         storeOp: 'store',
         clearValue: [0.0, 0.0, 0.0, 1],
-      }],
+      },
+      {
+        view: this.normalTextureView,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [0.0, 0.0, 0.0, 0],
+      },
+      {view: this.worldPosTextureView, loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0]},],
       depthStencilAttachment: {
         view: this.mainDepthView,
         depthLoadOp: 'clear',
@@ -694,6 +713,12 @@ export default class MatrixEngineWGPU {
     };
 
     this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
 
     this.run(callback);
   }
@@ -905,7 +930,10 @@ export default class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
+    let myMesh1 = new MEMeshObj(
+      this.canvas, this.device, this.context, o, this.inputHandler, AM,
+      null, null, null,
+      this.cameraBuffer);
     myMesh1.clearColor = clearColor;
     if(o.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
@@ -967,7 +995,7 @@ export default class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
+    let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM, this.cameraBuffer);
     myMesh.clearColor = clearColor;
     if(o.physics.enabled === true) {
       myMesh.itIsPhysicsBody = true;
@@ -981,88 +1009,28 @@ export default class MatrixEngineWGPU {
     return myMesh;
   }
 
-  // THIS MUST BE ELIMINATED FROM WORLD.JS
-  addFontana = (o, clearColor = this.options.clearColor) => {
-    const px = o.position.x;
-    const py = o.position.y;
-    const pz = o.position.z;
-    const TOP = FOUNTAIN_COLUMN_TOP;
-
-    const geo1 = fountainStructureConfig(MeshMorpher);
-    let m1 = this.addProceduralMeshObj({
-      material: {type: 'free'}, name: 'fontana_column',
-      position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
-      meshA: geo1.meshA, meshB: geo1.meshB, resolutionU: geo1.resolutionU, resolutionV: geo1.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
-      // pointerEffect: {
-      //   enabled: true,
-      //   flameEmitter: true,
-      // }
-    });
-
-    const geo2 = fountainBasinStoneConfig(MeshMorpher);
-    let m2 = this.addProceduralMeshObj({
-      material: {type: 'free'}, name: 'fontana_basin_stone',
-      position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
-      meshA: geo2.meshA, meshB: geo2.meshB, resolutionU: geo2.resolutionU, resolutionV: geo2.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
-    });
-
-    const geo3 = fountainCapConfig(MeshMorpher);
-    let m3 = this.addProceduralMeshObj({
-      material: {type: 'fontana'}, name: 'fontana_cap',
-      globalAmbient: [0.15, 0.72, 0.96, 1.0],
-      position: {x: px, y: py + TOP * 0.8, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
-      meshA: geo3.meshA, meshB: geo3.meshB, resolutionU: geo3.resolutionU, resolutionV: geo3.resolutionV,
-      fragmentWGSL: fountainCapFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
-    });
-
-    const geo4 = fountainCurtainConfig(MeshMorpher);
-    let m4 = this.addProceduralMeshObj({
-      material: {type: 'fontana'}, name: 'fontana_curtain',
-      globalAmbient: [0.12, 0.68, 0.94, 1.0],
-      position: {x: px, y: py, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
-      meshA: geo4.meshA, meshB: geo4.meshB, resolutionU: geo4.resolutionU, resolutionV: geo4.resolutionV,
-      fragmentWGSL: fountainCurtainFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL()
-    });
-
-    const geo5 = fountainBasinWaterConfig(MeshMorpher);
-    let m5 = this.addProceduralMeshObj({
-      material: {type: 'fontana'}, name: 'fontana_basin_water',
-      globalAmbient: [0.08, 0.55, 0.90, 1.0],
-      position: {x: px, y: py + 0.01, z: pz}, rotation: {x: 0, y: 0, z: 0}, scale: [o.scale[0], o.scale[1], o.scale[2]], rotationSpeed: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/textures/cube-g1_low.webp'], physics: {enabled: false, geometry: 'Sphere'}, raycast: {enabled: true, radius: 1.5},
-      meshA: geo5.meshA, meshB: geo5.meshB, resolutionU: geo5.resolutionU, resolutionV: geo5.resolutionV,
-      fragmentWGSL: fountainBasinFragmentWGSL(), vertexWGSL: fountainWaterVertexWGSL(),
-    });
-
-    m1.rotation.setRotateY(1000);
-    m4.setBlend(0.1);
-
-    setTimeout(() => {
-      // m4.effects.flameEmitter.instanceTargets.forEach((i) => {
-      //   i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
-      // })
-    }, 1000)
-  }
-
   createBloomBindGroup() {
+    this.dummySSRTexture = this.device.createTexture({
+      size: [1, 1],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
     this.bloomBindGroup = this.device.createBindGroup({
       layout: this.presentPipeline.getBindGroupLayout(0),
       entries: [
         {binding: 0, resource: this.bloomOutputTex},
-        {binding: 1, resource: this.presentSampler}
+        {binding: 1, resource: this.presentSampler},
+        {binding: 2, resource: this.dummySSRTexture.createView()},
       ]
-    })
+    });
+
     this.noBloomBindGroup = this.device.createBindGroup({
       layout: this.presentPipeline.getBindGroupLayout(0),
       entries: [
         {binding: 0, resource: this.sceneTexture.createView()},
-        {binding: 1, resource: this.presentSampler}
+        {binding: 1, resource: this.presentSampler},
+        {binding: 2, resource: this.dummySSRTexture.createView()},
       ]
     })
   }
@@ -1155,51 +1123,49 @@ export default class MatrixEngineWGPU {
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
-
       if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
-
       this.updateLights();
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if(camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
-      //this.getTransformationMatrix(camera, now2);
-      camera.update();
-
+      if(camera._dirtyAngle || camera._dirty) {
+        this.getTransformationMatrix(camera, now2);
+        camera.update();
+      }
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
-        const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+        const p = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
         if(this.shadowBuckets.default.length) {
-          pass.setPipeline(light.shadowPipeline);
+          p.setPipeline(light.shadowPipeline);
           for(let m of this.shadowBuckets.default) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if(this.shadowBuckets.instanced.length) {
-          pass.setPipeline(light.shadowPipelineInstanced);
+          p.setPipeline(light.shadowPipelineInstanced);
           for(let m of this.shadowBuckets.instanced) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if(this.shadowBuckets.procedural.length) {
-          pass.setPipeline(light.shadowPipelineMorph);
+          p.setPipeline(light.shadowPipelineMorph);
           for(let m of this.shadowBuckets.procedural) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
-        pass.end();
+        p.end();
       }
 
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
-        if(mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
+        mesh.updateInstanceData?.(mesh.modelMatrix);
         if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
         // if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
@@ -1222,8 +1188,8 @@ export default class MatrixEngineWGPU {
             l = mesh.materialBindGroup;
           }
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -1241,8 +1207,8 @@ export default class MatrixEngineWGPU {
         for(const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if(mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if(mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -1252,21 +1218,31 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if(effect == null || effect.enabled === false) continue;
+            if(effect === null || effect.enabled === false) continue;
             if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(pass, mesh, camera.VP);
           }
         }
       }
-
       pass.end();
 
-      if(this.volumetricPass.enabled === true) {
+      if(this.ssrPass.enabled === true) {
         mat4.invert(camera.VP, this._invViewProj);
+        this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
+        this.ssrPass.render(commandEncoder, {
+          sceneTextureView: this.sceneTextureView,
+          normalTextureView: this.normalTextureView,
+          mainDepthView: this.mainDepthView,
+          mainDepthTexture: this.mainDepthTexture,
+          worldPosTextureView: this.worldPosTextureView
+        });
+      }
+
+      if(this.volumetricPass.enabled === true) {
+        if(this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
         for(let i = 0;i < this.lightContainer.length;i++) {
           const light = this.lightContainer[i];
-          // if(!light.viewProjMatrix || !light.direction) continue;
           this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
           this._volumetricLightUniforms.direction = light.direction;
           this.volumetricPass.render(commandEncoder,
@@ -1284,10 +1260,7 @@ export default class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if(this.bloomPass.enabled == true) {
-        // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-        this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
-      }
+      if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
       this.finalPS.colorAttachments[0].view = this._canvasView;
       pass = commandEncoder.beginRenderPass(this.finalPS);
       pass.setPipeline(this.presentPipeline);
@@ -1372,9 +1345,8 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice());
-        // bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
-        bvhPlayer.clearColor = clearColor;
 
+        bvhPlayer.clearColor = clearColor;
         bvhPlayer.itIsPhysicsBody = false;
         // make it soft
         this.mainRenderBundle.push(bvhPlayer);
@@ -1466,7 +1438,7 @@ export default class MatrixEngineWGPU {
           this.device,
           this.context,
           this.inputHandler,
-          this.globalAmbient.slice());
+          this.globalAmbient.slice(), this.cameraBuffer);
 
         bvhPlayer.clearColor = clearColor;
 
@@ -1501,6 +1473,33 @@ export default class MatrixEngineWGPU {
       this.bloomPass = new BloomPass(this.canvas.width, this.canvas.height, this.device, this.sceneTextureView, 1.5);
       this.bloomPass.enabled = true;
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+    }
+  }
+
+  activateHZB = () => {
+    if(this.ssrPass.enabled != true) {
+      this.ssrPass = new SSRPass(this.device, this.canvas.width, this.canvas.height, this.globalSceneUniformBuffer, this.mainDepthView);
+      this.ssrPass.enabled = true;
+      this.bloomBindGroup = this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [
+          {binding: 0, resource: this.bloomOutputTex},
+          {binding: 1, resource: this.presentSampler},
+          {binding: 2, resource: this.ssrPass.ssrOutputView},
+        ]
+      });
+      this.noBloomBindGroup = this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [
+          {binding: 0, resource: this.sceneTexture.createView()},
+          {binding: 1, resource: this.presentSampler},
+          {binding: 2, resource: this.ssrPass.ssrOutputView}, // real
+        ]
+      });
+      this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup
+      // Rebuild all mesh pipelines with 2 targets
+      PipelineManager.invalidateAll();
+      for(const mesh of this.mainRenderBundle) {mesh.setupPipeline()}
     }
   }
 

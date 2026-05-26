@@ -9,7 +9,8 @@ import {PVector} from "../src/engine/matrix-class.js";
 export var physicsPlayground = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 1,
+    // Ammojs is default no need flag
+    fastRender: 0.7,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -23,8 +24,9 @@ export var physicsPlayground = function() {
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
-      }, onGround, {scale: [1, 1, 1]})
-      // physicsPlayground.matrixPhysics.speedUpSimulation = 4;
+      }, onGround, {scale: [1, 1, 1]});
+
+      physicsPlayground.matrixPhysics.speedUpSimulation(11);
 
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",

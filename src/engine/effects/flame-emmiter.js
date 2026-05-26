@@ -1,6 +1,6 @@
 import {mat4} from "wgpu-matrix";
 import {flameEffectInstance} from "../../shaders/flame-effect/flame-instanced";
-import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
+import {LOG_FUNNY_ARCADE, randomFloatFromTo} from "../utils";
 
 /**
  * @description
@@ -8,7 +8,7 @@ import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
  * transformed vertex particle, posible to choose dir also...
  */
 export class FlameEmitter {
-  constructor(device, format, maxParticles = 20) {
+  constructor(device, format, maxParticles = 20, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.time = 0;
@@ -29,6 +29,7 @@ export class FlameEmitter {
     this.scaleCoeficient = 0.12;
     this.rotSpeed = 0.1;
     // cache
+    this.cameraBuffer = cameraBuffer;
     this._localMatrix = mat4.create();
     this._finalMatrix = mat4.create();
     this._scratch4 = new Float32Array(4);
@@ -93,7 +94,7 @@ export class FlameEmitter {
   }
 
   recreateVertexDataFromData(data) {
-    console.info(`%c Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
+    // console.info(`%c Crazzy flame emitter : ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([
       data[0], data[4], 0.0,
       data[1], data[5], 0.0,
@@ -116,7 +117,6 @@ export class FlameEmitter {
     this.indexBuffer = this.device.createBuffer({size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.modelBuffer = this.device.createBuffer({label: 'flame-emmiter modeBuffer', size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST});
     const bindGroupLayout = this.device.createBindGroupLayout({
       label: 'flame-emmiter bindGroupLayout',
@@ -142,8 +142,8 @@ export class FlameEmitter {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 2 * 4, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
+          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
         ]
       },
       fragment: {
@@ -164,7 +164,9 @@ export class FlameEmitter {
             },
 
           }
-        }]
+        },
+        {format: 'rgba16float'},
+        {format: 'rgba16float'}]
       },
       primitive: {topology: "triangle-list"},
       depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}

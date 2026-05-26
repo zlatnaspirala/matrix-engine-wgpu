@@ -77,15 +77,13 @@ class MatrixCannon {
     this._initPhysics(options.groundY ?? 0, options.iterations ?? 7, options.tolerance ?? 0.1);
   }
 
-  _initPhysics(GROUND_Y, iterations, tolerance) {
+  _initPhysics(GROUND_Y, iterations = 5, tolerance) {
     const CANNON = this.CANNON;
     this.world = new CANNON.World();
     this.world.gravity.set(0, -this.options.gravity, 0);
     // Tweak contact properties. Contact stiffness - use to make softer/harder contacts
     this.world.defaultContactMaterial.contactEquationStiffness = 1e9
-    // Stabilization time in number of timesteps
     this.world.defaultContactMaterial.contactEquationRelaxation = 4;
-    // // Since we have many bodies and they don't move very much, we can use the less accurate quaternion normalization
     // world.quatNormalizeFast = true
     // world.quatNormalizeSkip = 8    // ...and we do not have to normalize every step.
     const solver = new CANNON.GSSolver()
@@ -104,11 +102,8 @@ class MatrixCannon {
     groundBody.collisionFilterGroup = LAYER_WORLD;
     groundBody.collisionFilterMask = LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING;
 
-    this.world.solver.iterations = 5;
-
     this.world.addBody(groundBody);
     this.world.addEventListener('beginContact', (e) => {
-      // console.log(`Collision ...`);
       const b1Idx = this.bodyMap.get(e.body);
       const b2Idx = this.bodyMap.get(e.target);
       if(b1Idx !== undefined && b2Idx !== undefined) {
@@ -125,7 +120,6 @@ class MatrixCannon {
         });
       }
     });
-
     // ets helper - tried hingle control in kinematic manir [wip]
     this.restQuaternion = new CANNON.Quaternion();
     this.restQuaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -15);
@@ -215,9 +209,7 @@ class MatrixCannon {
     const halfHeight = (pOptions.height || 1) * 0.5;
     const radius = pOptions.radius || 1;
     // Cannon doesn't have native capsule, use compound body
-    const body = new CANNON.Body({
-      mass: pOptions.mass || 1
-    });
+    const body = new CANNON.Body({mass: pOptions.mass || 1});
     // Sphere at top
     body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, halfHeight, 0));
     // Sphere at bottom
@@ -460,9 +452,8 @@ class MatrixCannon {
     bodyA.angularVelocity.set(0, 0, 0);
     bodyA.angularDamping = 0.9;
     bodyA.linearDamping = 0.2;
-    const pivotA = new CANNON.Vec3(...opts.pivotA); // local to bodyA
-    const pivotB = new CANNON.Vec3(...opts.pivotB); // local to bodyB
-
+    // const pivotA = new CANNON.Vec3(...opts.pivotA); // local to bodyA
+    // const pivotB = new CANNON.Vec3(...opts.pivotB); // local to bodyB
     const constraint = new CANNON.PointToPointConstraint(
       bodyA,
       new CANNON.Vec3(0, 0, 0),
@@ -472,18 +463,7 @@ class MatrixCannon {
         collideConnected: false
       }
     );
-    // const constraint = new CANNON.HingeConstraint(bodyA, bodyB, {
-    //   pivotA: new CANNON.Vec3(0, 0, 0),
-    //   pivotB: new CANNON.Vec3(0, 0, 0),
-    //   axisA: new CANNON.Vec3(0, 1, 0),
-    //   axisB: new CANNON.Vec3(0, 1, 0),
-    //   collideConnected: false,
-    // });
-    // constraint.enableMotor();
-    // constraint.setMotorMaxForce(1000);
-    // constraint.setMotorSpeed(5);
     this.world.addConstraint(constraint);
-    console.log('HINGLE constraint.setMotorMaxForce ', constraint.setMotorMaxForce)
     this.constraints.push(constraint);
     self.postMessage({cmd: 'constraintAdded', id: msgID, idx: this.constraints.length - 1});
   }
@@ -509,7 +489,6 @@ class MatrixCannon {
       return;
     }
     const pos = body.position;
-    console.info('get pos x:', pos.x, 'y:', pos.y, 'z:', pos.z);
     self.postMessage({
       cmd: 'getPosition',
       id: msgID,
@@ -517,14 +496,11 @@ class MatrixCannon {
     });
   }
 
-  speedUpSimulation(v) {
-    this.speedUpSimulation = v;
-  }
+  speedUpSimulation(v) {this.speedUpSimulation = v}
 
   createChain(ids, size = 0.5, marginSpace = 0.05) {
     const CANNON = this.CANNON;
     const space = marginSpace * size;
-
     for(let i = 1;i < ids.length;i++) {
       const bodyA = this.rigidBodies[ids[i]];
       const bodyB = this.rigidBodies[ids[i - 1]];
@@ -541,7 +517,6 @@ class MatrixCannon {
       this.world.addConstraint(c2);
       this.constraints.push(c1, c2);
     }
-
     // ids[0] = top anchor (spawned at highest Y), make it static
     const anchor = this.rigidBodies[ids[0]];
     if(anchor) {
@@ -555,7 +530,6 @@ class MatrixCannon {
 
   createBoundedSpace(ids, pos, size) {
     const CANNON = this.CANNON;
-
     // Assign a unique group bit for this bounded space
     const wallGroup = 1 << this._boundedSpaceCount || 1;
     this._boundedSpaceCount = (this._boundedSpaceCount || 0) + 1;

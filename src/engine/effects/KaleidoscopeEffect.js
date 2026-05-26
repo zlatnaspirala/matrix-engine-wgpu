@@ -97,10 +97,11 @@ export const KaleidoscopePresets = {
 };
 
 export class KaleidoscopeEffect {
-  constructor(device, format, shape = "quad", params = {}) {
+  constructor(device, format, shape = "quad", params = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.colorFormat = format;
+    this.cameraBuffer = cameraBuffer;
     const config = typeof params === 'string' ? KaleidoscopePresets[params] : params;
     const defaults = KaleidoscopePresets.classic;
     this.intensity = config.intensity ?? defaults.intensity;
@@ -152,11 +153,6 @@ export class KaleidoscopeEffect {
   }
 
   _initPipeline() {
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
     this.modelBuffer = this.device.createBuffer({
       size: 128,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -197,7 +193,8 @@ export class KaleidoscopeEffect {
             color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
             alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
           }
-        }]
+        },
+        {format: this.colorFormat},{format: this.colorFormat}]
       },
       primitive: {topology: "triangle-list"},
       depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},

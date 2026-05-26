@@ -1,9 +1,10 @@
 import {pointEffectShader} from "../../shaders/topology-point/pointEffect";
 
 export class PointEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.pointSize = 8.0;
     this.enabled = true;
     this._pointSettingsScratch = new Float32Array(4);
@@ -11,19 +12,11 @@ export class PointEffect {
   }
 
   _initPipeline() {
-    // Camera uniform buffer
-    this.cameraBuffer = this.device.createBuffer({
+    this.modelBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    // Model buffer
-    this.modelBuffer = this.device.createBuffer({
-      size: 64, // mat4x4
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // Point settings buffer
     this.pointSettingsBuffer = this.device.createBuffer({
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -31,7 +24,7 @@ export class PointEffect {
 
     this._pointSettingsScratch[0] = this.pointSize;
     this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
-    
+
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
@@ -82,7 +75,7 @@ export class PointEffect {
             color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
             alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
           }
-        }]
+        }, {format: 'rgba16float'}, {format: 'rgba16float'}]
       },
       primitive: {topology: "triangle-strip"},
       depthStencil: {
@@ -93,7 +86,6 @@ export class PointEffect {
     });
   }
 
-  // ✅ THIS MATCHES FlameEffect PATTERN
   updateInstanceData(baseModelMatrix) {
     // You can apply additional transforms here if needed
     // For now, just use the parent's model matrix directly
@@ -102,19 +94,15 @@ export class PointEffect {
 
   draw(pass, cameraMatrix, vertexBuffer, colorBuffer, vertexCount) {
     if(!this.enabled) return;
-
     if(!vertexCount || typeof vertexCount !== 'number' || vertexCount <= 0) {
       console.warn('PointEffect: invalid vertexCount', vertexCount);
       return;
     }
-
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, vertexBuffer);
     pass.setVertexBuffer(1, colorBuffer);
-
     pass.draw(4, vertexCount, 0, 0);
   }
 
@@ -123,29 +111,22 @@ export class PointEffect {
       console.warn('PointEffect: mesh has no vertexBuffer');
       return;
     }
-
     let vertexCount = mesh.vertexCount;
-
     if(!vertexCount && mesh.vertexBuffer.size) {
       vertexCount = mesh.vertexBuffer.size / (3 * 4);
     }
-
     if(!vertexCount && mesh.geometry?.positions) {
       vertexCount = mesh.geometry.positions.length / 3;
     }
-
     if(!vertexCount || vertexCount <= 0) {
       console.warn('PointEffect: could not determine vertexCount', mesh);
       return;
     }
-
     const colorBuffer = mesh.vertexNormalsBuffer;
-
     if(!colorBuffer) {
       console.warn('PointEffect: mesh has no vertexNormalsBuffer');
       return;
     }
-
     this.draw(pass, viewProjMatrix, mesh.vertexBuffer, colorBuffer, vertexCount);
   }
 

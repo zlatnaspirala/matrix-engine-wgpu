@@ -26,7 +26,7 @@ struct MaterialPBR {
 };
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
@@ -34,50 +34,62 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let L = normalize(scene.lightPos - input.fragPos);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let L = normalize(scene.lightPos - input.fragPos);
 
-    // ===== BASE COLOR =====
-    var baseColor = material.baseColorFactor.rgb;
+  // ===== BASE COLOR =====
+  var baseColor = material.baseColorFactor.rgb;
 
-    // ===== HEIGHT GRADIENT =====
-    let heightFactor = input.fragPos.y * 0.02;
-    let gradientColor = mix(
-        baseColor * 0.5,
-        baseColor * 1.5,
-        clamp(heightFactor, 0.0, 1.0)
-    );
+  // ===== HEIGHT GRADIENT =====
+  let heightFactor = input.fragPos.y * 0.02;
+  let gradientColor = mix(
+      baseColor * 0.5,
+      baseColor * 1.5,
+      clamp(heightFactor, 0.0, 1.0)
+  );
 
-    // ===== FAKE LIGHT =====
-    let NdotL = dot(N, L);
-    let diffuse = NdotL * 0.5 + 0.5;
+  // ===== FAKE LIGHT =====
+  let NdotL = dot(N, L);
+  let diffuse = NdotL * 0.5 + 0.5;
 
-    // ===== FRESNEL EDGE GLOW 🔥 =====
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  // ===== FRESNEL EDGE GLOW 🔥 =====
+  let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
 
-    // ===== PULSE (time based) =====
-    let pulse = 0.5 + 0.5 * sin(scene.time * 2.0);
+  // ===== PULSE (time based) =====
+  let pulse = 0.5 + 0.5 * sin(scene.time * 2.0);
 
-    // ===== COLOR COMBINE =====
-    var color = gradientColor;
+  // ===== COLOR COMBINE =====
+  var color = gradientColor;
 
-    color *= (scene.globalAmbient + diffuse * 0.8);
+  color *= (scene.globalAmbient + diffuse * 0.8);
 
-    // edge glow tint (stylized)
-    let glowColor = vec3f(0.2, 0.6, 1.0);
-    color += glowColor * fresnel * (0.5 + pulse * 0.5);
+  // edge glow tint (stylized)
+  let glowColor = vec3f(0.2, 0.6, 1.0);
+  color += glowColor * fresnel * (0.5 + pulse * 0.5);
 
-    // ===== OPTIONAL: subtle spec =====
-    let H = normalize(L + V);
-    let spec = pow(max(dot(N, H), 0.0), 16.0);
-    color += spec * 0.2;
+  // ===== OPTIONAL: subtle spec =====
+  let H = normalize(L + V);
+  let spec = pow(max(dot(N, H), 0.0), 16.0);
+  color += spec * 0.2;
 
-    let alpha = material.baseColorFactor.a;
+  let alpha = material.baseColorFactor.a;
 
-    return vec4f(color, alpha);
+  // return vec4f(color, alpha);
+
+  return FragOut(
+    vec4f(color, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;

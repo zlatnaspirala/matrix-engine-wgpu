@@ -2,13 +2,16 @@ import MatrixEngineWGPU from '../src/world.js';
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {CollisionSystem} from '../src/engine/collision-sub-system.js';
+import {isMobile} from '../src/engine/utils.js';
 
 export var mazeGame = function() {
   let maze = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
-    render: 'nano', //'zero', // test
+    render: 'culling',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: isMobile() ? 1 : 1,
+    MAX_BONES: 1,
     mainCameraParams: {
       type: 'firstPersonCamera',
       // type: 'WASD',
@@ -25,7 +28,35 @@ export var mazeGame = function() {
     // 1. Load the Cube Mesh
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
       generateMazeLogic(m);
+
+      let floor = maze.addMeshObj({
+        shadowsCast: false,
+        material: {type: 'standard', share: false},
+        position: {x: 0, y: 0, z: 0},
+        scale: [80, 0.1, 80],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
+        // becouse nano render use single mat per objectScene entity text not changed!
+        name: 'floor',
+        mesh: m.cube,
+        physics: {enabled: false, mass: 0, geometry: "Cube"}
+      });
+      floor.ignoreCulling = true;
+
+      setTimeout(() => {
+        const checker2 = floor.createCheckerboardTexture(256, 128, [110, 150, 50, 255], [0, 0, 0, 1]);
+        let samplerTest = maze.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat',
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(12, 12);
+
+      }, 500)
+
     }, {scale: [1, 1, 1]});
+
 
     function generateMazeLogic(meshes) {
       if(mazeSize % 2 === 0) mazeSize += 1;
@@ -59,13 +90,14 @@ export var mazeGame = function() {
             const wallName = `wall_${x}_${y}`;
             let test = maze.addMeshObj({
               shadowsCast: false,
-              material: {type: 'standard'},
+              material: {type: 'dark', shared: true},
               position: {
                 x: x * spacing - (mazeSize * spacing) / 2,
                 y: 0,
                 z: y * spacing - (mazeSize * spacing) / 2
               },
-              texturesPaths: ['./res/textures/tex02.webp'],
+              scale: [1, 3, 1],
+              texturesPaths: ['./res/textures/blankgray2.webp'],
               name: wallName,
               mesh: meshes.cube,
               physics: {enabled: false, mass: 0, geometry: "Cube"}
@@ -75,13 +107,15 @@ export var mazeGame = function() {
         }
       }
 
-      console.log('__________________')
-      maze.cameras.firstPersonCamera.movementSpeed = 0.03;
+      // console.log('__________________')
+
+      const light = maze.lightContainer[0];
+      light.setPosition(0, 200, 0)
+      light.setIntensity(8.5);
+
+      maze.cameras.firstPersonCamera.movementSpeed = 0.1;
       maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
-
-      maze.cameras.firstPersonCamera.setPosition(-49, 0.40, -49);
-      maze.cameras.WASD.setPosition(-49, 0.40, -49);
-
+      maze.cameras.firstPersonCamera.setPosition(-49, 10.40, -49);
       // close space
       let test2 = maze.addMeshObj({
         shadowsCast: false,
@@ -91,19 +125,14 @@ export var mazeGame = function() {
           y: 0,
           z: -49
         },
-        texturesPaths: ['./res/textures/floor1.webp'], 
+        texturesPaths: ['./res/textures/floor1.webp'],
         // becouse nano render use single mat per objectScene entity text not changed!
         name: 'enter',
         mesh: meshes.cube,
         physics: {enabled: false, mass: 0, geometry: "Cube"}
       });
       maze.collisionSystem.registerStatic((test2.name), test2.position, 1.2, 'walls');
-
     }
-
-
-
-
   })
   window.app = maze;
 }

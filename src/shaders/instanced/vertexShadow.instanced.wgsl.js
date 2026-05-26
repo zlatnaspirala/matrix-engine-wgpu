@@ -14,7 +14,7 @@ struct InstanceData {
 };
 
 struct Bones {
-  boneMatrices: array<mat4x4f, MAX_BONES>
+  boneMatrices: array<mat4x4f>
 }
 
 struct VertexAnimParams {
@@ -54,7 +54,8 @@ struct VertexAnimParams {
 
 @group(0) @binding(0) var<uniform>      scene      : Scene;
 @group(1) @binding(0) var<storage,read> instances  : array<InstanceData>;
-@group(1) @binding(1) var<uniform>      bones      : Bones;
+// @group(1) @binding(1) var<uniform>      bones      : Bones;
+@group(1) @binding(1) var<storage, read> bones : Bones;
 @group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
 
 
@@ -87,17 +88,40 @@ fn noise(p: vec2f) -> f32 {
   );
 }
 
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+//   var skinnedPos  = vec4f(0.0);
+//   var skinnedNorm = vec3f(0.0);
+//   for (var i: u32 = 0u; i < 4u; i++) {
+//     let w = weights[i];
+//     if (w > 0.0) {
+//       let boneMat  = bones.boneMatrices[joints[i]];
+//       skinnedPos  += (boneMat * pos) * w;
+//       skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+//     }
+//   }
+//   return SkinResult(skinnedPos, skinnedNorm);
+// }
+
+fn skinVertex( pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
   var skinnedPos  = vec4f(0.0);
   var skinnedNorm = vec3f(0.0);
+  let bonesPerInstance = MAX_BONES;
   for (var i: u32 = 0u; i < 4u; i++) {
     let w = weights[i];
     if (w > 0.0) {
-      let boneMat  = bones.boneMatrices[joints[i]];
-      skinnedPos  += (boneMat * pos) * w;
-      skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+      let jointIndex = joints[i];
+      let boneIndex = instId * bonesPerInstance + jointIndex;
+      let boneMat = bones.boneMatrices[boneIndex];
+      skinnedPos += (boneMat * pos) * w;
+
+      skinnedNorm += ( mat3x3f(
+          boneMat[0].xyz,
+          boneMat[1].xyz,
+          boneMat[2].xyz) * nrm
+      ) * w;
     }
   }
+
   return SkinResult(skinnedPos, skinnedNorm);
 }
 
@@ -190,7 +214,8 @@ fn main(
 ) -> @builtin(position) vec4f {
 
   // Skinning
-  let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  // let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  let skinned = skinVertex(  vec4f(position, 1.0),  normal,  joints,  weights,  instId);
   var finalPos = skinned.position.xyz;
 
   // Vertex animation

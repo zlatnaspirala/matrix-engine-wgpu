@@ -50,12 +50,12 @@ const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -64,8 +64,14 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
@@ -102,6 +108,11 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         discard;
     }
 
-    return vec4f(finalColor, alpha);
+    // return vec4f(finalColor, alpha);
+    return FragOut(
+      vec4f(finalColor, alpha),
+      vec4f(N, 0.0),
+      vec4f(input.fragPos, 1.0)
+    );
 }
 `;

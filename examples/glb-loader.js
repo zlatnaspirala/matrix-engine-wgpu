@@ -61,7 +61,7 @@ export function loadGLBLoader() {
       material: {type: 'power', useTextureFromGlb: true},
       useScale: true,
       scale: [20, 20, 20],
-      position: {x: -40, y: -4, z: -70},
+      position: {x: -30, y: -4, z: -70},
       name: 'firstGlb',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
     }, null, glbFile01);
@@ -70,12 +70,12 @@ export function loadGLBLoader() {
       material: {type: 'pong', useTextureFromGlb: true},
       useScale: true,
       scale: [20, 20, 20],
-      position: {x: 40, y: -4, z: -70},
+      position: {x: 30, y: -4, z: -70},
       name: 'firstGlb',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
     }, null, glbFile01);
 
-    // woman
+    // // woman
     var glbFile11 = await fetch("./res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, TEST_ANIM.device)));
     TEST_ANIM.addGlbObjInctance({
       material: {type: 'mirror', useTextureFromGlb: true},
@@ -101,7 +101,7 @@ export function loadGLBLoader() {
       material: {type: 'power', useTextureFromGlb: true},
       useScale: true,
       scale: [20, 20, 20],
-      position: {x: -40, y: -4, z: -20},
+      position: {x: -30, y: -4, z: -20},
       name: 'woman1',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
     }, null, glbFile11);
@@ -110,7 +110,7 @@ export function loadGLBLoader() {
       material: {type: 'pong', useTextureFromGlb: true},
       useScale: true,
       scale: [20, 20, 20],
-      position: {x: 40, y: -4, z: -20},
+      position: {x: 30, y: -4, z: -20},
       name: 'woman1',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
     }, null, glbFile11);

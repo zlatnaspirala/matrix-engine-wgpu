@@ -9,6 +9,8 @@ export var canvasInline = function() {
     canvasSize: 'fullscreen',
     fastRender: 0.85,
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: isMobile() ? 1 : 2,
+    MAX_BONES: 1,
     mainCameraParams: {
       type: 'WASD',
       // type: 'firstPersonCamera',

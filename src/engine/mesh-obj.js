@@ -18,7 +18,7 @@ import {buildPipelineKey, PipelineManager} from './pipelineManager';
 import {MSDFTextEffect} from './effects/msdfText';
 
 export default class MEMeshObj extends Materials {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device, o.material, _glbFile, o.textureCache, o.isVideo);
     if(typeof o.name === 'undefined') o.name = genName(3);
     if(typeof o.raycast === 'undefined') {
@@ -34,15 +34,21 @@ export default class MEMeshObj extends Materials {
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.ignoreCulling = false;
+    this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     if(typeof o.material.useTextureFromGlb === 'undefined' ||
       typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
+
+    this.texturesPaths = [];
+    o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
 
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
@@ -280,7 +286,7 @@ export default class MEMeshObj extends Materials {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if(typeof o.isVideo !== 'undefined') {
-      console.log('MESH what i s isvideo ', o.isVideo)
+      // console.log('isvideo ', o.isVideo)
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
     } else if(this.material.type != 'mirror' && this.material.type != 'water') {
@@ -293,8 +299,6 @@ export default class MEMeshObj extends Materials {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-    this.texturesPaths = [];
-    o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new Position(o.position.x, o.position.y, o.position.z);
     this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
@@ -664,29 +668,29 @@ export default class MEMeshObj extends Materials {
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new PointerEffect(device, 'rgba16float', 1);
+          this.effects.pointer = new PointerEffect(device, 'rgba16float', 1, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect(device, 'rgba16float');
+          this.effects.pointEffect = new PointEffect(device, 'rgba16float', this.cameraBuffer);
         }
         if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
-          this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float');
+          this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float', this.cameraBuffer);
         }
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new FlameEffect(device, pf, "rgba16float", 'torch');
+          this.effects.flameEffect = new FlameEffect(device, pf, "rgba16float", 'torch', this.cameraBuffer);
         }
         if(typeof this.pointerEffect.gpuText !== 'undefined' && this.pointerEffect.gpuText == true) {
-          this.effects.gpuText = new MSDFTextEffect(device, pf, "rgba16float", 'torch');
+          this.effects.gpuText = new MSDFTextEffect(device, pf, "rgba16float", 'torch', this.cameraBuffer);
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new FlameEmitter(device, "rgba16float");
+          this.effects.flameEmitter = new FlameEmitter(device, "rgba16float", 20, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect(device, 'rgba16float', {
             particleCount: 100,
             duration: 2.5,
             color: [0.6, 0.5, 0.4, 1.0]
-          });
+          }, this.cameraBuffer);
         }
       }
 
@@ -816,9 +820,9 @@ export default class MEMeshObj extends Materials {
           module: fragmentModule,
           constants: fragmentConstants,
           targets: [
-            {
-              format: 'rgba16float',
-            },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'},
+            {format: 'rgba16float'},
           ],
         },
         depthStencil: {
@@ -860,6 +864,8 @@ export default class MEMeshObj extends Materials {
                 },
               },
             },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'},
           ],
         },
         depthStencil: {
@@ -870,6 +876,9 @@ export default class MEMeshObj extends Materials {
         primitive: this.primitive,
       },
     });
+
+    // test 
+    this.initBoundingSphere();
 
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
@@ -1079,5 +1088,51 @@ export default class MEMeshObj extends Materials {
       }
     }
     // console.info(`🧹Destroyed: ${this.name}`);
+  }
+
+  initBoundingSphere() {
+    if(!this.mesh || !this.mesh.vertices) return;
+    const pos = this.mesh.vertices;
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for(let i = 0;i < pos.length;i += 3) {
+      minX = Math.min(minX, pos[i]);
+      maxX = Math.max(maxX, pos[i]);
+      minY = Math.min(minY, pos[i + 1]);
+      maxY = Math.max(maxY, pos[i + 1]);
+      minZ = Math.min(minZ, pos[i + 2]);
+      maxZ = Math.max(maxZ, pos[i + 2]);
+    }
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    let r = 0;
+    for(let i = 0;i < pos.length;i += 3) {
+      const dx = pos[i] - cx;
+      const dy = pos[i + 1] - cy;
+      const dz = pos[i + 2] - cz;
+      r = Math.max(r, Math.sqrt(dx * dx + dy * dy + dz * dz));
+    }
+
+    this.boundingSphere = {
+      center: new Float32Array([cx, cy, cz]),
+      radius: r,
+    };
+  }
+
+  updateBoundingSphere() {
+    if(!this.boundingSphere) return;
+    const local = this.boundingSphere.center;
+    const m = this.modelMatrix;
+    const center = new Float32Array(3);
+
+    // Transform local sphere center by model matrix
+    center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
+    center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
+    center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
+
+    this.boundingSphere.center = center;  // ← Update world-space center
   }
 }
