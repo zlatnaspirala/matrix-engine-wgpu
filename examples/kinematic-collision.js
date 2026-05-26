@@ -2,11 +2,11 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener, touchCoordinate} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
-// import {CollisionSystem} from "../src/engine/collision-sub-system.js";
+import {CollisionSystem} from "../src/engine/collision-sub-system.js";
 
-export var loadHZB = function() {
+export var loadKinematicCollision = function() {
 
-  let HZB = new MatrixEngineWGPU({
+  let collision = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     dontUsePhysics: true,
@@ -14,13 +14,15 @@ export var loadHZB = function() {
     MAX_SPOTLIGHTS: 1,
     dontUsePhysics: true,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
-    HZB.addLight();
+    collision.addLight();
+
+    collision.collisionSystem = new CollisionSystem(collision);
 
     touchCoordinate.stopOnFirstDetectedHit = true;
 
@@ -35,7 +37,7 @@ export var loadHZB = function() {
     const totalCubesInGrid = 9; // 3x3 grid
 
     function onGround(m) {
-      HZB.addMeshObj({
+      collision.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: -1.1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -48,7 +50,7 @@ export var loadHZB = function() {
     }
 
     function createCube(mesh, options = {}) {
-      return HZB.addMeshObj({
+      return collision.addMeshObj({
         material: {type: options.materialType || 'dark'},
         position: {x: options.x || 0, y: options.y || 3, z: options.z || -15},
         rotation: {x: 0, y: 0, z: 0},
@@ -145,7 +147,7 @@ export var loadHZB = function() {
       });
     }
 
-    HZB.triggerEntireGridSequence = triggerEntireGridSequence;
+    collision.triggerEntireGridSequence = triggerEntireGridSequence;
 
     function generateCubeGrid(mesh, rows = 3, cols = 3, spacing = 12) {
       const startX = -((cols - 1) * spacing) / 2;
@@ -164,6 +166,8 @@ export var loadHZB = function() {
             name: cubeName
           });
 
+          collision.collisionSystem.registerStatic(newCube.name, newCube.position, 4.5 , 'walls');
+          // Cache references and spatial anchors to play again safely later
           activeGridCubes.push({
             cube: newCube,
             startX: posX,
@@ -177,7 +181,7 @@ export var loadHZB = function() {
 
     async function onLoadObj(m) {
       // Skybox sphere
-      HZB.addMeshObj({
+      collision.addMeshObj({
         material: {type: 'dark', share: true},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0.1, z: 0},
@@ -193,37 +197,42 @@ export var loadHZB = function() {
       generateCubeGrid(m.cube, 3, 3, 12);
 
       setTimeout(() => {
-        HZB.lightContainer[0].setIntensity(14);
-        HZB.activateBloomEffect();
-        HZB.bloomPass.setBlurRadius(16);
-        HZB.activateVolumetricEffect({
+        collision.lightContainer[0].setIntensity(14);
+        collision.activateBloomEffect();
+        collision.bloomPass.setBlurRadius(16);
+        collision.activateVolumetricEffect({
           density: 0.03,
           steps: 32,
           scatterStrength: 0.8,
           heightFollowoff: 0.08,
           lightColor: [2.0, 0.8, 0.5],
         });
-        HZB.activateHZB();
+        collision.activateHZB();
 
-        HZB.lightContainer[0].setPosition(0, 45, -10);
-        HZB.lightContainer[0].setTarget(0, 0, -10);
+        collision.lightContainer[0].setPosition(0, 45, -10);
+        collision.lightContainer[0].setTarget(0, 0, -10);
 
         app.buildLightShadowBuckets();
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+
         let cam = app.getCamera();
         cam.setYaw(-0.0);
         cam.setPitch(-0.29);
         cam.setZ(25);
         cam.setY(5);
-        HZB.getCamera().setPosition(0, 3, 10);
+
+        collision.getCamera().setPosition(0, 3, 10);
+        collision.collisionSystem.registerCamera(collision.getCamera().position, 2.0);
+        
+
         // app.buildRenderBuckets(app.mainRenderBundle);
         // 🚀 First main playback run trigger
-        triggerEntireGridSequence();
+        // triggerEntireGridSequence();
         cam._dirtyAngle = true;
       }, 700);
     }
 
-    HZB.canvas.addEventListener("ray.hit.event", (e) => {
+    collision.canvas.addEventListener("ray.hit.event", (e) => {
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
         app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
@@ -231,5 +240,5 @@ export var loadHZB = function() {
     });
 
   })
-  window.app = HZB;
+  window.app = collision;
 }

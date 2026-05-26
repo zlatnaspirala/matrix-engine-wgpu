@@ -40,6 +40,7 @@ export class CollisionSystem {
     this.entries = [];
     this.staticEntries = [];
     this.cameraEntry = null;
+    this.cameraVsStaticDist = 1.5;
     this.cellSize = 100;
     this._grid = new Map();
     this._staticGrid = new Map();
@@ -50,12 +51,12 @@ export class CollisionSystem {
   }
 
   // existing register — dynamic entities (enemies, players)
-  register(id, positionInstance, radius = 0.6, group = "default") {
+  register(id, positionInstance, radius = 1, group = "default") {
     this.entries.push({id, pos: positionInstance, radius, group});
   }
 
   // new: walls, maze geometry — built into _staticGrid once
-  registerStatic(id, positionInstance, radius = 0.6, group = "default") {
+  registerStatic(id, positionInstance, radius = 1, group = "default") {
     const entry = {id, pos: positionInstance, radius, group};
     this.staticEntries.push(entry);
     // insert directly into static grid
@@ -137,7 +138,6 @@ export class CollisionSystem {
         }
       }
     }
-
     // camera vs static walls — query _staticGrid only
     if(this.cameraEntry) {
       const cam = this.cameraEntry;
@@ -148,7 +148,7 @@ export class CollisionSystem {
         this._lastCamZ = camZ;
         const neighbors = this._getNeighborCells(camX, camZ, this._staticGrid, this._staticNeighbors);
         for(let i = 0;i < neighbors.length;i++) {
-          pairRepulsion(cam.pos, neighbors[i].pos, 1 + 0.5, 1.1);
+          pairRepulsion(cam.pos, neighbors[i].pos, neighbors[i].radius, this.cameraVsStaticDist);
         }
       }
     }

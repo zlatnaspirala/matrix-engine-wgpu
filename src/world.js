@@ -995,7 +995,7 @@ export default class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM);
+    let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM, this.cameraBuffer);
     myMesh.clearColor = clearColor;
     if(o.physics.enabled === true) {
       myMesh.itIsPhysicsBody = true;

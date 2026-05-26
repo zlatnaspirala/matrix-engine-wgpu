@@ -10,6 +10,9 @@ import {GizmoEffect} from './effects/gizmo';
 import {FlameEffect} from './effects/flame';
 import {buildPipelineKey, PipelineManager} from './pipelineManager';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
+import {MSDFTextEffect} from './effects/msdfText';
+import {PointEffect} from './effects/topology-point';
+import {PointerEffect} from './effects/pointerEffect';
 
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
@@ -24,13 +27,14 @@ import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
  * - GPU-accelerated vertex morphing
  */
 export default class ProceduralMeshObj extends Materials {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, cameraBuffer) {
     super(device, o.material, null, o.textureCache);
     this.name = o.name || genName(3);
     this.done = false;
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.globalAmbient = [...globalAmbient];
     if(typeof o.material.useBlend === 'undefined' ||
       typeof o.material.useBlend !== "boolean") {
@@ -328,14 +332,30 @@ export default class ProceduralMeshObj extends Materials {
     this.effects = {};
     if(this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
-      if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-        this.effects.flameEmitter = new FlameEmitter(this.device, 'rgba16float');
+      if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
+        this.effects.pointer = new PointerEffect(this.device, 'rgba16float', 1, this.cameraBuffer);
+      }
+      if(typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
+        this.effects.pointEffect = new PointEffect(this.device, 'rgba16float', this.cameraBuffer);
       }
       if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
-        this.effects.gizmoEffect = new GizmoEffect(this.device, 'rgba16float');
+        this.effects.gizmoEffect = new GizmoEffect(this.device, 'rgba16float', this.cameraBuffer);
       }
       if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-        this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", 'torch');
+        this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", 'torch', this.cameraBuffer);
+      }
+      if(typeof this.pointerEffect.gpuText !== 'undefined' && this.pointerEffect.gpuText == true) {
+        this.effects.gpuText = new MSDFTextEffect(this.device, pf, "rgba16float", 'torch', this.cameraBuffer);
+      }
+      if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
+        this.effects.flameEmitter = new FlameEmitter(this.device, "rgba16float", 20, this.cameraBuffer);
+      }
+      if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
+        this.effects.destructionEffect = new DestructionEffect(this.device, 'rgba16float', {
+          particleCount: 100,
+          duration: 2.5,
+          color: [0.6, 0.5, 0.4, 1.0]
+        }, this.cameraBuffer);
       }
     }
     this.modelUniformBuffer = this.device.createBuffer({size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
