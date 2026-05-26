@@ -43782,8 +43782,16 @@ const _clip = new Float32Array([0, 0, 1, 1]);
 const _rayOrigin = new Float32Array(3);
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
-  const x = (event.clientX - rect.left) / rect.width * 2 - 1;
-  const y = -((event.clientY - rect.top) / rect.height * 2 - 1);
+  let x, y;
+  if (document.pointerLockElement === canvas) {
+    // Locked: always rayccast from center
+    x = 0;
+    y = 0;
+  } else {
+    // Unlocked: use event coordinates
+    x = (event.clientX - rect.left) / rect.width * 2 - 1;
+    y = -((event.clientY - rect.top) / rect.height * 2 - 1);
+  }
   _wgpuMatrix.mat4.inverse(camera.projectionMatrix, _invProj);
   _wgpuMatrix.mat4.inverse(camera.view, _invView);
   _clip[0] = x;
