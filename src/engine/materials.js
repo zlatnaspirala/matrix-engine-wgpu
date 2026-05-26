@@ -660,7 +660,7 @@ export default class Materials {
 
       this.updateVideoTexture();
       this.createMaterialBindGroupVideo();
-      this.setupPipeline();
+      // setTimeout(() => this.setupPipeline() , 200)
       // little strange
       // this.isVideo = false;
       // this.video = document.createElement('video');

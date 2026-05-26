@@ -1,7 +1,5 @@
 import {MEConfig} from "../me-config";
-
-console.log('TEST MAX_SPOTLIGHTS FROM SHADER', MEConfig.MAX_SPOTLIGHTS);
-
+// console.log('TEST MAX_SPOTLIGHTS FROM SHADER', MEConfig.MAX_SPOTLIGHTS);
 export let fragmentDarkWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.14159;

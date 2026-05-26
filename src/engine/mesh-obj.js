@@ -47,6 +47,9 @@ export default class MEMeshObj extends Materials {
       o.material.useTextureFromGlb = false;
     }
 
+    this.texturesPaths = [];
+    o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
+
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
@@ -283,7 +286,7 @@ export default class MEMeshObj extends Materials {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if(typeof o.isVideo !== 'undefined') {
-      console.log('MESH what i s isvideo ', o.isVideo)
+      // console.log('isvideo ', o.isVideo)
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
     } else if(this.material.type != 'mirror' && this.material.type != 'water') {
@@ -296,8 +299,6 @@ export default class MEMeshObj extends Materials {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-    this.texturesPaths = [];
-    o.texturesPaths.forEach((t) => {this.texturesPaths.push(t)})
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new Position(o.position.x, o.position.y, o.position.z);
     this.rotation = new Rotation(o.rotation.x, o.rotation.y, o.rotation.z);

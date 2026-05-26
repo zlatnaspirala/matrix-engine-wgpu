@@ -1895,6 +1895,7 @@ var flipperJolt = function () {
     flipper.matrixSounds.play('music');
     addEventListener('PhysicsReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
+      flipper.matrixSounds.speedUpSimulation(1);
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
@@ -2243,7 +2244,7 @@ var flipperJolt = function () {
       TEST = flipper.addMeshObj({
         material: {
           type: 'standard',
-          share: true
+          share: false
         },
         position: {
           x: 0,
@@ -3180,10 +3181,9 @@ function loadGLBLoader() {
     fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
-    MAX_SPOTLIGHTS: 4,
+    MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
-      // type: 'cinematicCamera',
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     clearColor: {
@@ -3226,45 +3226,64 @@ function loadGLBLoader() {
       }], {
         parameterization: 'arc'
       });
-      if (cam.setPath) cam.setPath(bankTurn).play({
+      cam.setPath(bankTurn).play({
         speed: 0.25
       });
     }, 1000);
 
     // Monster1
     var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
-    // TEST_ANIM.addGlbObj({
-    //   material: {type: 'standard', useTextureFromGlb: true},
-    //   useScale: true,
-    //   scale: [20, 20, 20],
-    //   position: {x: 0, y: -4, z: -70},
-    //   name: 'firstGlb',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    // }, null, glbFile01);
-
-    // TEST_ANIM.addGlbObj({
-    //   material: {type: 'power', useTextureFromGlb: true},
-    //   useScale: true,
-    //   scale: [20, 20, 20],
-    //   position: {x: -40, y: -4, z: -70},
-    //   name: 'firstGlb',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    // }, null, glbFile01);
-
-    // TEST_ANIM.addGlbObj({
-    //   material: {type: 'pong', useTextureFromGlb: true},
-    //   useScale: true,
-    //   scale: [20, 20, 20],
-    //   position: {x: 40, y: -4, z: -70},
-    //   name: 'firstGlb',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    // }, null, glbFile01);
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'standard',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: 0,
+        y: -4,
+        z: -70
+      },
+      name: 'firstGlb',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+    }, null, glbFile01);
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'power',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: -30,
+        y: -4,
+        z: -70
+      },
+      name: 'firstGlb',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+    }, null, glbFile01);
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'pong',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: 30,
+        y: -4,
+        z: -70
+      },
+      name: 'firstGlb',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+    }, null, glbFile01);
 
     // // woman
     var glbFile11 = await fetch("./res/meshes/glb/woman1.glb").then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, TEST_ANIM.device)));
     TEST_ANIM.addGlbObjInctance({
       material: {
-        type: 'dark',
+        type: 'mirror',
         useTextureFromGlb: true
       },
       envMapParams: {
@@ -3294,24 +3313,36 @@ function loadGLBLoader() {
       name: 'woman1',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp', './res/textures/env-maps/sky1.webp']
     }, null, glbFile11);
-
-    // TEST_ANIM.addGlbObj({
-    //   material: {type: 'power', useTextureFromGlb: true},
-    //   useScale: true,
-    //   scale: [20, 20, 20],
-    //   position: {x: -40, y: -4, z: -20},
-    //   name: 'woman1',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    // }, null, glbFile11);
-
-    // TEST_ANIM.addGlbObj({
-    //   material: {type: 'pong', useTextureFromGlb: true},
-    //   useScale: true,
-    //   scale: [20, 20, 20],
-    //   position: {x: 40, y: -4, z: -20},
-    //   name: 'woman1',
-    //   texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
-    // }, null, glbFile11);
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'power',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: -30,
+        y: -4,
+        z: -20
+      },
+      name: 'woman1',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+    }, null, glbFile11);
+    TEST_ANIM.addGlbObj({
+      material: {
+        type: 'pong',
+        useTextureFromGlb: true
+      },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: {
+        x: 30,
+        y: -4,
+        z: -20
+      },
+      name: 'woman1',
+      texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+    }, null, glbFile11);
 
     // this is future load and replace skeletal anim.
     // const path = 'https://raw.githubusercontent.com/zlatnaspirala/Matrix-Engine-BVH-test/main/javascript-bvh/example.bvh';
@@ -37741,7 +37772,7 @@ class Materials {
       this.video = null;
       this.updateVideoTexture();
       this.createMaterialBindGroupVideo();
-      this.setupPipeline();
+      // setTimeout(() => this.setupPipeline() , 200)
       // little strange
       // this.isVideo = false;
       // this.video = document.createElement('video');
@@ -38487,6 +38518,10 @@ class MEMeshObj extends _materials.default {
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
+    this.texturesPaths = [];
+    o.texturesPaths.forEach(t => {
+      this.texturesPaths.push(t);
+    });
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
@@ -38708,7 +38743,7 @@ class MEMeshObj extends _materials.default {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if (typeof o.isVideo !== 'undefined') {
-      console.log('MESH what i s isvideo ', o.isVideo);
+      // console.log('isvideo ', o.isVideo)
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
     } else if (this.material.type != 'mirror' && this.material.type != 'water') {
@@ -38720,10 +38755,6 @@ class MEMeshObj extends _materials.default {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-    this.texturesPaths = [];
-    o.texturesPaths.forEach(t => {
-      this.texturesPaths.push(t);
-    });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
     this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
@@ -40089,6 +40120,7 @@ class PhysicsBridge {
     this._bodyIndexMap = new Map();
     this._ready = false;
     this._queue = [];
+    this.wPhysicsSteps = 2;
     this._worker.onmessage = ({
       data
     }) => this._onMessage(data);
@@ -40175,7 +40207,7 @@ class PhysicsBridge {
     }
   }
   updatePhysics() {
-    if (this.c % 4 === 0) {
+    if (this.c % this.wPhysicsSteps === 0) {
       this._worker.postMessage({
         cmd: 'step'
       });
@@ -45735,8 +45767,8 @@ window.urlQ = _utils.urlQuery;
 const MEConfig = exports.MEConfig = {
   fsManager: new _utils.FullScreenManagerElement(),
   SHADOW_RES: (0, _utils.isMobile)() == true ? 128.0 : 512.0,
-  MAX_BONES: (0, _utils.isMobile)() == true ? 80 : 100,
-  MAX_SPOTLIGHTS: (0, _utils.isMobile)() == true ? 18 : 40,
+  MAX_BONES: (0, _utils.isMobile)() == true ? 70 : 100,
+  MAX_SPOTLIGHTS: (0, _utils.isMobile)() == true ? 18 : 20,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
@@ -46965,7 +46997,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentDarkWGSL = void 0;
 var _meConfig = require("../me-config");
-console.log('TEST MAX_SPOTLIGHTS FROM SHADER', _meConfig.MEConfig.MAX_SPOTLIGHTS);
+// console.log('TEST MAX_SPOTLIGHTS FROM SHADER', MEConfig.MAX_SPOTLIGHTS);
 let fragmentDarkWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.14159;

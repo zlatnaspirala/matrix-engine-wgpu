@@ -41,6 +41,9 @@ export var flipperJolt = function() {
 
     addEventListener('PhysicsReady', () => {
       addRaycastsAABBListener();
+
+      flipper.matrixSounds.speedUpSimulation(1);
+
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
@@ -373,7 +376,7 @@ export var flipperJolt = function() {
       let TEST;
       // if(isMobile() == false) 
       TEST = flipper.addMeshObj({
-        material: {type: 'standard', share: true},
+        material: {type: 'standard', share: false},
         position: {x: 0, y: 10, z: -35},
         scale: [7.5, 7.5, 7.5],
         rotation: {x: 90, y: 0, z: 0},

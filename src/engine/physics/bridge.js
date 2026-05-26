@@ -17,6 +17,7 @@ export class PhysicsBridge {
     this._bodyIndexMap = new Map();
     this._ready = false;
     this._queue = [];
+    this.wPhysicsSteps = 2;
     this._worker.onmessage = ({data}) => this._onMessage(data);
 
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
@@ -88,7 +89,7 @@ export class PhysicsBridge {
   }
 
   updatePhysics() {
-    if(this.c % 4 === 0) {
+    if(this.c % this.wPhysicsSteps === 0) {
       this._worker.postMessage({cmd: 'step'}); 
       this.c=0;
     }
@@ -239,7 +240,6 @@ export class PhysicsBridge {
     for(const [idx, meObj] of this._bodyIndexMap) {
       if(!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
-
       const pos = snap.subarray(b, b + 3);
       const quat = snap.subarray(b + 3, b + 7);
       mat4.fromQuat(quat, meObj.modelMatrix);
