@@ -71,7 +71,7 @@ export class PointerEffect {
       ]
     });
 
-    const shaderModule = this.device.createShaderModule({code: pointerEffect});
+    const shaderModule = this.device.createShaderModule({code: pointerEffect()});
 
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
     this.pipeline = this.device.createRenderPipeline({

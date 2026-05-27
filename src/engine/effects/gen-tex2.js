@@ -138,7 +138,7 @@ export class GenGeoTexture2 {
       ]
     });
 
-    const shaderModule = this.device.createShaderModule({code: geoInstancedTexEffect});
+    const shaderModule = this.device.createShaderModule({code: geoInstancedTexEffect()});
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
     this.pipeline = this.device.createRenderPipeline({
       label: 'geo tex 2 Pipeline',

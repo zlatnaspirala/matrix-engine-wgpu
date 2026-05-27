@@ -11,12 +11,16 @@
  * From socound refresh new update will come in right pass(load from worker)
  * For DEV regime (when debugger is opened) use CTRL+F5
  * @param cacheVersion
+ * 
+ * Upgrade - multi endpoint cache.
+ * But resouces must be shared if both on same domain.
  */
 
 var cacheVersion = 34;
 var prefixMOBA = 'matrix-engine-fohb';
 var prefix = 'matrix-engine-examples';
 var cacheName = prefix + cacheVersion;
+var cacheNameMOBA = prefix + cacheVersion;
 
 try {
   for(var j = 0;j < cacheVersion;j++) {
@@ -63,6 +67,30 @@ self.addEventListener('fetch', function(event) {
   }
   event.respondWith(
     caches.open(cacheName).then(function(cache) {
+      return cache.match(event.request).then(function(response) {
+        return (
+          response ||
+          fetch(event.request).then(function(response) {
+            if(response.status == 206) {
+              // statusText: "Partial Content"
+              return response;
+            } else {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          })
+        );
+      });
+    })
+  );
+});
+
+self.addEventListener('fetch', function(event) {
+  if(event.request.method === 'POST') {
+    return;
+  }
+  event.respondWith(
+    caches.open(cacheNameMOBA).then(function(cache) {
       return cache.match(event.request).then(function(response) {
         return (
           response ||

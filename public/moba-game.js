@@ -767,7 +767,7 @@ class Character extends _hero.Hero {
 }
 exports.Character = Character;
 
-},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/procedures/fireball":74,"../../../src/engine/utils":78,"./creep-character":3,"./friendly-character":7,"./hero":8,"./nav-mesh":13,"./static":15,"wgpu-matrix":31}],2:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":60,"../../../src/engine/procedures/fireball":77,"../../../src/engine/utils":80,"./creep-character":3,"./friendly-character":7,"./hero":8,"./nav-mesh":13,"./static":15,"wgpu-matrix":31}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1079,7 +1079,7 @@ class Controller {
 }
 exports.Controller = Controller;
 
-},{"../../../src/engine/raycast.js":77,"../../../src/engine/utils.js":78,"./nav-mesh.js":13,"wgpu-matrix":31}],3:[function(require,module,exports){
+},{"../../../src/engine/raycast.js":79,"../../../src/engine/utils.js":80,"./nav-mesh.js":13,"wgpu-matrix":31}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1354,7 +1354,7 @@ class Creep extends _hero.Hero {
 }
 exports.Creep = Creep;
 
-},{"../../../src/engine/utils":78,"./hero":8,"./static":15}],4:[function(require,module,exports){
+},{"../../../src/engine/utils":80,"./hero":8,"./static":15}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1435,7 +1435,7 @@ class EnemiesManager {
 }
 exports.EnemiesManager = EnemiesManager;
 
-},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/utils":78,"./creep-character":3,"./enemy-character":5}],5:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":60,"../../../src/engine/utils":80,"./creep-character":3,"./enemy-character":5}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1578,7 +1578,7 @@ class Enemie extends _hero.Hero {
 }
 exports.Enemie = Enemie;
 
-},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/utils":78,"./hero":8,"./nav-mesh":13,"./static":15}],6:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":60,"../../../src/engine/utils":80,"./hero":8,"./nav-mesh":13,"./static":15}],6:[function(require,module,exports){
 "use strict";
 
 var _world = _interopRequireDefault(require("../../../src/world.js"));
@@ -2039,7 +2039,7 @@ let forestOfHollowBlood = new _world.default({
 });
 window.app = forestOfHollowBlood;
 
-},{"../../../public/res/multilang/en-backup.js":32,"../../../src/engine/collision-sub-system.js":35,"../../../src/engine/networking/matrix-stream.js":62,"../../../src/engine/networking/net.js":63,"../../../src/engine/utils.js":78,"../../../src/world.js":129,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":9,"./invertoryManager.js":10,"./map-loader.js":11,"./marketplace.js":12,"./rocket-crafting-account.js":14,"./static.js":15,"./tts.js":16}],7:[function(require,module,exports){
+},{"../../../public/res/multilang/en-backup.js":32,"../../../src/engine/collision-sub-system.js":35,"../../../src/engine/networking/matrix-stream.js":64,"../../../src/engine/networking/net.js":65,"../../../src/engine/utils.js":80,"../../../src/world.js":133,"./character-base.js":1,"./controller.js":2,"./enemies-manager.js":4,"./hud.js":9,"./invertoryManager.js":10,"./map-loader.js":11,"./marketplace.js":12,"./rocket-crafting-account.js":14,"./static.js":15,"./tts.js":16}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2187,7 +2187,7 @@ class FriendlyHero extends _hero.Hero {
 }
 exports.FriendlyHero = FriendlyHero;
 
-},{"../../../src/engine/loaders/webgpu-gltf":58,"../../../src/engine/utils":78,"./hero":8,"./static":15}],8:[function(require,module,exports){
+},{"../../../src/engine/loaders/webgpu-gltf":60,"../../../src/engine/utils":80,"./hero":8,"./static":15}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3463,7 +3463,7 @@ class HUD {
 }
 exports.HUD = HUD;
 
-},{"../../../src/engine/utils.js":78}],10:[function(require,module,exports){
+},{"../../../src/engine/utils.js":80}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4088,7 +4088,7 @@ class MEMapLoader {
 }
 exports.MEMapLoader = MEMapLoader;
 
-},{"../../../src/engine/effects/gen-tex2.js":42,"../../../src/engine/effects/gen.js":43,"../../../src/engine/loader-obj.js":55,"../../../src/engine/loaders/webgpu-gltf.js":58,"../../../src/engine/utils.js":78,"./nav-mesh.js":13,"./static.js":15}],12:[function(require,module,exports){
+},{"../../../src/engine/effects/gen-tex2.js":44,"../../../src/engine/effects/gen.js":45,"../../../src/engine/loader-obj.js":57,"../../../src/engine/loaders/webgpu-gltf.js":60,"../../../src/engine/utils.js":80,"./nav-mesh.js":13,"./static.js":15}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4655,7 +4655,7 @@ class Marketplace {
 }
 exports.Marketplace = Marketplace;
 
-},{"../../../src/engine/utils":78}],13:[function(require,module,exports){
+},{"../../../src/engine/utils":80}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5179,7 +5179,7 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
   return false;
 }
 
-},{"../../../src/engine/utils.js":78}],14:[function(require,module,exports){
+},{"../../../src/engine/utils.js":80}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5676,7 +5676,7 @@ var ROCK_RANK = exports.ROCK_RANK = {
   }
 };
 
-},{"../../../src/engine/utils.js":78}],15:[function(require,module,exports){
+},{"../../../src/engine/utils.js":80}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23844,7 +23844,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":78}],34:[function(require,module,exports){
+},{"./utils":80}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -23861,6 +23861,7 @@ class WASDCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
@@ -24035,8 +24036,8 @@ class WASDCamera {
           dx = ce.movementX * this.MOUSE_SENS;
           dy = ce.movementY * this.MOUSE_SENS;
         } else {
-          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
+          dx = (ce.clientX - this._pointerLastScratch.x) * this.TOUCH_SENS;
+          dy = (ce.clientY - this._pointerLastScratch.y) * this.TOUCH_SENS;
           this._lastX = ce.clientX;
           this._lastY = ce.clientY;
         }
@@ -24189,6 +24190,7 @@ class WASDCamera {
 }
 exports.WASDCamera = WASDCamera;
 class ArcballCamera {
+  invProj = new Float32Array(16);
   position = new Float32Array(3);
   right = new Float32Array(3);
   up = new Float32Array(3);
@@ -24337,6 +24339,7 @@ class RPGCamera {
   back = new Float32Array(3);
   view = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   VP = new Float32Array(16);
 
   // ===== RPG =====
@@ -24664,6 +24667,7 @@ class FirstPersonCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
@@ -24701,6 +24705,7 @@ class FirstPersonCamera {
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
+    console.log('___________________________' + this.canvas);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if ((0, _utils.isMobile)() == true && options.isActive == 'init active cam') {
@@ -24830,43 +24835,65 @@ class FirstPersonCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
-    canvas.addEventListener('pointerdown', e => {
-      this._mouseDown = true;
-      this._lastX = e.clientX;
-      this._lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
+    let touchStartX = 0,
+      touchStartY = 0;
+    if ((0, _utils.isMobile)() === true) canvas.addEventListener('touchstart', e => {
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        console.log('touchstart:', touchStartX, touchStartY);
+      }
     }, {
-      passive: true
+      passive: false
     });
-    const pointerUp = e => {
-      this._mouseDown = false;
-    };
-    canvas.addEventListener('pointerup', pointerUp, {
-      passive: true
-    });
-    canvas.addEventListener('pointercancel', pointerUp, {
-      passive: true
-    });
-    canvas.addEventListener('pointermove', e => {
-      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-      for (const ce of events) {
-        let dx = 0,
-          dy = 0;
-        if (ce.pointerType === 'mouse') {
-          // if((ce.buttons & 1) === 0) continue;
-          dx = ce.movementX * this.MOUSE_SENS;
-          dy = ce.movementY * this.MOUSE_SENS;
-        } else {
-          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
-          this._lastX = ce.clientX;
-          this._lastY = ce.clientY;
-        }
+    if ((0, _utils.isMobile)() === true) canvas.addEventListener('touchmove', e => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+        const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+        console.log('touchmove dx=', dx, 'dy=', dy);
         this.yaw -= dx * this.rotationSpeed;
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
         this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
         this._dirtyAngle = true;
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }
+      e.preventDefault();
+    }, {
+      passive: false
+    });
+
+    // MOUSE
+    if ((0, _utils.isMobile)() === false) canvas.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse') {
+        this._mouseDown = true;
+        if (canvas.requestPointerLock) {
+          canvas.requestPointerLock();
+        } else {
+          canvas.setPointerCapture(e.pointerId);
+        }
+      }
+    }, {
+      passive: false
+    });
+    if ((0, _utils.isMobile)() === false) canvas.addEventListener('pointermove', e => {
+      if (e.pointerType === 'mouse' && this._mouseDown) {
+        const dx = e.movementX * this.MOUSE_SENS;
+        const dy = e.movementY * this.MOUSE_SENS;
+        this.yaw -= dx * this.rotationSpeed;
+        this.pitch -= dy * this.rotationSpeed;
+        this.yaw %= Math.PI * 2;
+        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this._dirtyAngle = true;
+      }
+    }, {
+      passive: true
+    });
+    if ((0, _utils.isMobile)() === false) canvas.addEventListener('pointerup', e => {
+      if (e.pointerType === 'mouse') {
+        this._mouseDown = false;
       }
     }, {
       passive: true
@@ -24886,11 +24913,11 @@ class FirstPersonCamera {
         case 'KeyD':
           this._digital.right = value;
           break;
-        // no V/C
       }
       if (value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
+          this._dirtyAngle = true;
           this._applyDigitalMovement();
         }, 16);
       } else {
@@ -24899,6 +24926,7 @@ class FirstPersonCamera {
           clearInterval(this._keyInterval);
           this._keyInterval = null;
           this._dirty = false;
+          this._dirtyAngle = false;
         }
       }
     };
@@ -24958,13 +24986,10 @@ class FirstPersonCamera {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CinematicCamera — no input, pure programmatic control
 // Drop-in replacement alongside FirstPersonCamera — same .view / .VP / .projectionMatrix API
-// ─────────────────────────────────────────────────────────────────────────────
 exports.FirstPersonCamera = FirstPersonCamera;
 class CinematicCamera {
-  // ── same public fields as FirstPersonCamera ──────────────────────────────────
   pitch = 0;
   yaw = 0;
   position = new Float32Array(3);
@@ -24972,12 +24997,11 @@ class CinematicCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   right = _wgpuMatrix.vec3.fromValues(1, 0, 0);
   up = _wgpuMatrix.vec3.fromValues(0, 1, 0);
   back = _wgpuMatrix.vec3.fromValues(0, 0, 1);
   _dirtyAngle = false;
-
-  // ── cinematic-only state ─────────────────────────────────────────────────────
   _path = null;
   _t = 0;
   _playing = false;
@@ -24992,9 +25016,6 @@ class CinematicCamera {
     duration: 0
   };
   _shakeOffset = new Float32Array(3);
-
-  // ── "look-at target" helpers (optional, used by path playback) ───────────────
-  // When _useTarget is true, view is built from position+_target instead of pitch/yaw
   _useTarget = false;
   _target = new Float32Array(3);
   constructor(options = {}) {
@@ -25016,8 +25037,6 @@ class CinematicCamera {
     this.setProjection(options.fov ?? 2 * Math.PI / 5, aspect, options.near ?? 0.3, options.far ?? 200);
     this._recalculateViewVP();
   }
-
-  // ── same static helper as FirstPersonCamera ──────────────────────────────────
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0],
       a01 = a[4],
@@ -25534,7 +25553,7 @@ const MobileDOM = exports.MobileDOM = {
   }
 };
 
-},{"./utils":78,"wgpu-matrix":31}],35:[function(require,module,exports){
+},{"./utils":80,"wgpu-matrix":31}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25565,7 +25584,6 @@ function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5
     // Apos.targetZ = Apos.z;
     // Bpos.targetX = Bpos.x;
     // Bpos.targetZ = Bpos.z;
-
     return true;
   }
   // exact overlap (practically same point) -> small jitter to separate
@@ -25584,6 +25602,7 @@ class CollisionSystem {
     this.entries = [];
     this.staticEntries = [];
     this.cameraEntry = null;
+    this.cameraVsStaticDist = 1.5;
     this.cellSize = 100;
     this._grid = new Map();
     this._staticGrid = new Map();
@@ -25598,7 +25617,7 @@ class CollisionSystem {
   }
 
   // existing register — dynamic entities (enemies, players)
-  register(id, positionInstance, radius = 0.6, group = "default") {
+  register(id, positionInstance, radius = 1, group = "default") {
     this.entries.push({
       id,
       pos: positionInstance,
@@ -25608,7 +25627,7 @@ class CollisionSystem {
   }
 
   // new: walls, maze geometry — built into _staticGrid once
-  registerStatic(id, positionInstance, radius = 0.6, group = "default") {
+  registerStatic(id, positionInstance, radius = 1, group = "default") {
     const entry = {
       id,
       pos: positionInstance,
@@ -25700,7 +25719,6 @@ class CollisionSystem {
         }
       }
     }
-
     // camera vs static walls — query _staticGrid only
     if (this.cameraEntry) {
       const cam = this.cameraEntry;
@@ -25711,7 +25729,7 @@ class CollisionSystem {
         this._lastCamZ = camZ;
         const neighbors = this._getNeighborCells(camX, camZ, this._staticGrid, this._staticNeighbors);
         for (let i = 0; i < neighbors.length; i++) {
-          (0, _matrixClass.pairRepulsion)(cam.pos, neighbors[i].pos, 1 + 0.5, 1.1);
+          (0, _matrixClass.pairRepulsion)(cam.pos, neighbors[i].pos, neighbors[i].radius, this.cameraVsStaticDist);
         }
       }
     }
@@ -25719,7 +25737,7 @@ class CollisionSystem {
 }
 exports.CollisionSystem = CollisionSystem;
 
-},{"./matrix-class":60}],36:[function(require,module,exports){
+},{"./matrix-class":62}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -25831,6 +25849,509 @@ exports.TextureCache = TextureCache;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.CulledRenderPass = void 0;
+/**
+ * @description
+ * MEWGPU - Scene Culling System for massive scenes.
+ */
+/**
+ * @description
+ * MEWGPU - Scene Culling System for massive scenes.
+ * Optimized with static array caching to eliminate runtime memory allocation.
+ */
+class CulledRenderPass {
+  constructor() {
+    this.visibleOpaqueMeshes = new Map();
+    this.visibleTransparentMeshes = new Map();
+    this.cullStats = {
+      total: 0,
+      visible: 0,
+      culled: 0
+    };
+    this.range = 500.0;
+    this._camPos = new Float32Array(3);
+    this._camForward = new Float32Array(3);
+
+    // --- REUSEABLE MEMORY POOLS ---
+    // Cache arrays per pipeline key so we don't allocate [] inside loops
+    this._opaqueArrayCache = new Map();
+    this._transparentArrayCache = new Map();
+  }
+  cullAndGroup(camera, opaqueBuckets, transparentBuckets) {
+    this.visibleOpaqueMeshes.clear();
+    this.visibleTransparentMeshes.clear();
+    this.cullStats = {
+      total: 0,
+      visible: 0,
+      culled: 0
+    };
+    if (!camera || !camera.position || !camera.back) {
+      this.visibleOpaqueMeshes = new Map(opaqueBuckets);
+      this.visibleTransparentMeshes = new Map(transparentBuckets);
+      return;
+    }
+    this._camPos[0] = camera.position[0];
+    this._camPos[1] = camera.position[1];
+    this._camPos[2] = camera.position[2];
+    this._camForward[0] = -camera.back[0];
+    this._camForward[1] = -camera.back[1];
+    this._camForward[2] = -camera.back[2];
+
+    // --- PROCESS OPAQUE BUCKETS ---
+    if (opaqueBuckets) {
+      for (const [pipeline, meshes] of opaqueBuckets) {
+        // Retrieve or initialize cached array pool for this specific pipeline pipeline
+        let visibleMeshes = this._opaqueArrayCache.get(pipeline);
+        if (!visibleMeshes) {
+          visibleMeshes = [];
+          this._opaqueArrayCache.set(pipeline, visibleMeshes);
+        }
+        visibleMeshes.length = 0; // RESET LENGTH WITHOUT DROPPING MEMORY
+
+        const len = meshes.length;
+        for (let i = 0; i < len; i++) {
+          const mesh = meshes[i];
+          this.cullStats.total++;
+          if (!mesh || !mesh._modelMatrix || mesh.ignoreCulling === true) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          const m = mesh._modelMatrix;
+          const toObjX = m[12] - this._camPos[0];
+          const toObjY = m[13] - this._camPos[1];
+          const toObjZ = m[14] - this._camPos[2];
+          const distanceSq = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
+          if (distanceSq < 4.0) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          if (distanceSq > this.range) {
+            this.cullStats.culled++;
+            continue;
+          }
+          const distance = Math.sqrt(distanceSq);
+          if (distance <= 0.0001) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          const dot = toObjX / distance * this._camForward[0] + toObjY / distance * this._camForward[1] + toObjZ / distance * this._camForward[2];
+          if (dot > 0.2) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+          } else {
+            this.cullStats.culled++;
+          }
+        }
+        if (visibleMeshes.length > 0) {
+          this.visibleOpaqueMeshes.set(pipeline, visibleMeshes);
+        }
+      }
+    }
+
+    // --- PROCESS TRANSPARENT BUCKETS ---
+    if (transparentBuckets) {
+      for (const [pipeline, meshes] of transparentBuckets) {
+        // Retrieve or initialize cached array pool for this specific pipeline pipeline
+        let visibleMeshes = this._transparentArrayCache.get(pipeline);
+        if (!visibleMeshes) {
+          visibleMeshes = [];
+          this._transparentArrayCache.set(pipeline, visibleMeshes);
+        }
+        visibleMeshes.length = 0; // RESET LENGTH WITHOUT DROPPING MEMORY
+
+        const len = meshes.length;
+        for (let i = 0; i < len; i++) {
+          const mesh = meshes[i];
+          this.cullStats.total++;
+          if (!mesh || !mesh._modelMatrix) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          const m = mesh._modelMatrix;
+          const toObjX = m[12] - this._camPos[0];
+          const toObjY = m[13] - this._camPos[1];
+          const toObjZ = m[14] - this._camPos[2];
+          const distanceSq = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
+          if (distanceSq < 4.0) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          if (distanceSq > this.range) {
+            this.cullStats.culled++;
+            continue;
+          }
+          const distance = Math.sqrt(distanceSq);
+          if (distance <= 0.0001) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          const dot = toObjX / distance * this._camForward[0] + toObjY / distance * this._camForward[1] + toObjZ / distance * this._camForward[2];
+          if (dot > 0.2) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+          } else {
+            this.cullStats.culled++;
+          }
+        }
+        if (visibleMeshes.length > 0) {
+          this.visibleTransparentMeshes.set(pipeline, visibleMeshes);
+        }
+      }
+    }
+  }
+  getStats() {
+    const cullRate = this.cullStats.total > 0 ? (this.cullStats.culled / this.cullStats.total * 100).toFixed(1) : 0;
+    return {
+      total: this.cullStats.total,
+      visible: this.cullStats.visible,
+      culled: this.cullStats.culled,
+      cullRate: `${cullRate}%`
+    };
+  }
+}
+exports.CulledRenderPass = CulledRenderPass;
+
+},{}],38:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.KaleidoscopePresets = exports.KaleidoscopeEffect = void 0;
+var _wgpuMatrix = require("wgpu-matrix");
+var _geometryFactory = require("../geometry-factory");
+var _kale = require("../../shaders/kale/kale.wgsl");
+// import {kaleidoscopeEffectShader} from "../../shaders/kaleidoscope-effect/kaleidoscopeEffect";
+
+const KaleidoscopePresets = exports.KaleidoscopePresets = {
+  // Classic symmetric kaleidoscope
+  classic: {
+    intensity: 1.0,
+    speed: 0.5,
+    segments: 6,
+    zoom: 1.0,
+    colorShift: 0.0,
+    colorShiftSpeed: 0.3,
+    tint: [1.0, 1.0, 1.0],
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  },
+  // Fast rotating 8-segment
+  fast: {
+    intensity: 1.2,
+    speed: 1.0,
+    segments: 8,
+    zoom: 1.2,
+    colorShift: 0.0,
+    colorShiftSpeed: 0.6,
+    tint: [1.0, 1.0, 1.0],
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0.5, 0]
+  },
+  // Slow, deep zoom
+  deep: {
+    intensity: 0.8,
+    speed: 0.3,
+    segments: 12,
+    zoom: 2.5,
+    colorShift: 0.0,
+    colorShiftSpeed: 0.15,
+    tint: [1.0, 1.0, 1.0],
+    tintStrength: 0.0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  },
+  // Psychedelic cyan/magenta
+  psycho: {
+    intensity: 1.5,
+    speed: 1.4,
+    segments: 7,
+    zoom: 1.3,
+    colorShift: 0.0,
+    colorShiftSpeed: 1.2,
+    tint: [0.0, 1.0, 1.0],
+    tintStrength: 0.7,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0.3, 0.2, 0]
+  },
+  // Cool blues
+  cool: {
+    intensity: 1.0,
+    speed: 0.7,
+    segments: 10,
+    zoom: 1.5,
+    colorShift: 0.0,
+    colorShiftSpeed: 0.4,
+    tint: [0.2, 0.6, 1.0],
+    tintStrength: 0.8,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0.3, 0]
+  },
+  // Warm fire-like
+  warm: {
+    intensity: 1.3,
+    speed: 0.6,
+    segments: 5,
+    zoom: 0.9,
+    colorShift: 0.0,
+    colorShiftSpeed: 0.25,
+    tint: [1.0, 0.6, 0.2],
+    tintStrength: 0.85,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0.2, 0]
+  }
+};
+class KaleidoscopeEffect {
+  constructor(device, format, shape = "quad", params = {}, cameraBuffer) {
+    this.device = device;
+    this.format = format;
+    this.colorFormat = format;
+    this.cameraBuffer = cameraBuffer;
+    const config = typeof params === 'string' ? KaleidoscopePresets[params] : params;
+    const defaults = KaleidoscopePresets.classic;
+    this.intensity = config.intensity ?? defaults.intensity;
+    this.speed = config.speed ?? defaults.speed;
+    this.segments = config.segments ?? defaults.segments;
+    this.zoom = config.zoom ?? defaults.zoom;
+    this.colorShift = config.colorShift ?? defaults.colorShift;
+    this.colorShiftSpeed = config.colorShiftSpeed ?? defaults.colorShiftSpeed;
+    this.tint = config.tint ?? defaults.tint;
+    this.tintStrength = config.tintStrength ?? defaults.tintStrength;
+    this.scale = config.scale ?? defaults.scale;
+    this.time = 0;
+    this.enabled = true;
+    this.localOffset = config.localOffset ?? defaults.localOffset;
+    this.localRotation = config.localRotation ?? defaults.localRotation;
+    this.activeRotate = config.activeRotate ?? defaults.activeRotate;
+    this._initPipeline();
+    this.setGeometry("quad", this.scale);
+    this._localMatrix = _wgpuMatrix.mat4.create();
+    this._finalMatrix = _wgpuMatrix.mat4.create();
+    this._uniformData = new Float32Array(32);
+  }
+  setGeometry(type, size = 1, segments = 32) {
+    const geo = _geometryFactory.GeometryFactory.create(type, size, segments);
+    this.vertexBuffer = this._uploadVertex(geo.positions);
+    this.uvBuffer = this._uploadVertex(geo.uvs);
+    const byteLen = geo.indices.byteLength;
+    const paddedByteLen = Math.ceil(byteLen / 4) * 4;
+    this.indexBuffer = this.device.createBuffer({
+      size: paddedByteLen,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    if (byteLen % 4 !== 0) {
+      const paddedData = new Uint8Array(paddedByteLen);
+      paddedData.set(new Uint8Array(geo.indices.buffer, geo.indices.byteOffset, byteLen));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedData);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, geo.indices);
+    }
+    this.indexCount = geo.indices.length;
+    this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
+  }
+  _initPipeline() {
+    this.modelBuffer = this.device.createBuffer({
+      size: 128,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: "uniform"
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "uniform"
+        }
+      }]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this.cameraBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }]
+    });
+    const shaderModule = this.device.createShaderModule({
+      code: _kale.kaleidoscopeEffectShader
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [bindGroupLayout]
+      }),
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [{
+          arrayStride: 12,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x3"
+          }]
+        }, {
+          arrayStride: 8,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x2"
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.colorFormat,
+          blend: {
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            }
+          }
+        }, {
+          format: this.colorFormat
+        }, {
+          format: this.colorFormat
+        }]
+      },
+      primitive: {
+        topology: "triangle-list"
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "less",
+        format: "depth24plus"
+      }
+    });
+  }
+  _uploadVertex(data) {
+    const buf = this.device.createBuffer({
+      size: data.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(buf, 0, data);
+    return buf;
+  }
+  updateInstanceData(baseModelMatrix) {
+    const local = this._localMatrix;
+    const finalMat = this._finalMatrix;
+    _wgpuMatrix.mat4.identity(local);
+    _wgpuMatrix.mat4.identity(finalMat);
+    _wgpuMatrix.mat4.translate(local, this.localOffset, local);
+    _wgpuMatrix.mat4.rotateX(local, this.localRotation[0], local);
+    _wgpuMatrix.mat4.rotateY(local, this.localRotation[1], local);
+    _wgpuMatrix.mat4.rotateZ(local, this.localRotation[2], local);
+    if (this.activeRotate[0] !== 0) {
+      _wgpuMatrix.mat4.rotateX(local, this.activeRotate[0] * this.time, local);
+    }
+    if (this.activeRotate[1] !== 0) {
+      _wgpuMatrix.mat4.rotateY(local, this.activeRotate[1] * this.time, local);
+    }
+    if (this.activeRotate[2] !== 0) {
+      _wgpuMatrix.mat4.rotateZ(local, this.activeRotate[2] * this.time, local);
+    }
+    _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+
+    // Pack uniforms: model matrix (16) + time/speed (2) + segments/zoom (2) + intensity/colorShift/colorShiftSpeed (3) + tint (3) + tintStrength (1) + padding
+    this._uniformData.set(finalMat, 0); // 0-15: mat4
+    this._uniformData[16] = this.time;
+    this._uniformData[17] = this.speed;
+    this._uniformData[18] = this.segments;
+    this._uniformData[19] = this.zoom;
+    this._uniformData[20] = this.intensity;
+    this._uniformData[21] = this.colorShift;
+    this._uniformData[22] = this.colorShiftSpeed;
+    this._uniformData[23] = 0; // padding
+    this._uniformData[24] = this.tint[0];
+    this._uniformData[25] = this.tint[1];
+    this._uniformData[26] = this.tint[2];
+    this._uniformData[27] = this.tintStrength;
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this._uniformData);
+  }
+  draw(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
+    pass.drawIndexed(this.indexCount);
+  }
+  render(pass, mesh, viewProjMatrix) {
+    this.time += 0.016;
+    this.colorShift = (this.colorShift + 0.016 * this.colorShiftSpeed) % (Math.PI * 2);
+    this.draw(pass, viewProjMatrix);
+  }
+
+  // Control setters
+  setIntensity(intensity) {
+    this.intensity = Math.max(0.1, intensity);
+  }
+  setSpeed(speed) {
+    this.speed = Math.max(0.1, speed);
+  }
+  setSegments(segments) {
+    this.segments = Math.max(3, Math.round(segments));
+  }
+  setZoom(zoom) {
+    this.zoom = Math.max(0.1, zoom);
+  }
+  setColorShiftSpeed(speed) {
+    this.colorShiftSpeed = Math.max(0, speed);
+  }
+  setTint(r, g, b) {
+    this.tint = [r, g, b];
+  }
+  setTintStrength(strength) {
+    this.tintStrength = Math.max(0, Math.min(1, strength));
+  }
+}
+exports.KaleidoscopeEffect = KaleidoscopeEffect;
+
+},{"../../shaders/kale/kale.wgsl":104,"../geometry-factory":52,"wgpu-matrix":31}],39:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.DestructionEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _dustShaderWgsl = require("../../shaders/desctruction/dust-shader.wgsl.js");
@@ -25851,7 +26372,7 @@ var _dustShaderWgsl = require("../../shaders/desctruction/dust-shader.wgsl.js");
  */
 
 class DestructionEffect {
-  constructor(device, format, config = {}) {
+  constructor(device, format, config = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
 
@@ -25868,6 +26389,9 @@ class DestructionEffect {
     // Visual properties
     this.color = config.color || [0.6, 0.5, 0.4, 1.0]; // Brownish dust
     this.intensity = 1.0;
+
+    // Uniform buffers
+    this.cameraBuffer = cameraBuffer;
     this._initPipeline();
     this._initParticles();
   }
@@ -25922,13 +26446,6 @@ class DestructionEffect {
     this.instanceBuffer = this.device.createBuffer({
       size: instanceDataSize,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-
-    // Uniform buffers
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      // mat4x4
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.modelBuffer = this.device.createBuffer({
       size: 64 + 16 + 16,
@@ -26044,6 +26561,10 @@ class DestructionEffect {
               operation: "add"
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -26262,7 +26783,7 @@ class DestructionEffect {
 }
 exports.DestructionEffect = DestructionEffect;
 
-},{"../../shaders/desctruction/dust-shader.wgsl.js":81,"wgpu-matrix":31}],38:[function(require,module,exports){
+},{"../../shaders/desctruction/dust-shader.wgsl.js":83,"wgpu-matrix":31}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26272,15 +26793,16 @@ exports.HPBarEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _energyBarShader = require("../../shaders/energy-bars/energy-bar-shader.js");
 class HPBarEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.progress = 1.0;
     this.color = [0.1, 0.9, 0.1, 1.0];
     this.offsetY = 48;
     this.enabled = true;
-
-    // scratch buffers — no allocs per frame
+    this._colorDirty = true;
+    this._progressDirty = true;
     this._modelMatrix = new Float32Array(16);
     this._colorScratch = new Float32Array(4);
     this._progressScratch = new Float32Array(1);
@@ -26288,54 +26810,61 @@ class HPBarEffect {
     this._initPipeline();
   }
   _initPipeline() {
-    // Simple flat bar (width 100, height 10)
-    const W = 40;
-    const H = 3;
-    const vertexData = new Float32Array([-0.5 * W, 0.5 * H, 0.0, 0.5 * W, 0.5 * H, 0.0, -0.5 * W, -0.5 * H, 0.0, 0.5 * W, -0.5 * H, 0.0]);
+    const W = 20; // 0.5 * 40
+    const H = 1.5; // 0.5 * 3
+    // Use typed array directly instead of creating intermediate arrays
+    const vertexData = new Float32Array([-W, H, 0.0, W, H, 0.0, -W, -H, 0.0, W, -H, 0.0]);
+
+    // Static UV data - could be shared across instances
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
 
-    // Buffers
+    // Buffers with optimized sizing
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
+    this.vertexBuffer.unmap();
     this.uvBuffer = this.device.createBuffer({
       size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
+    this.uvBuffer.unmap();
+
+    // Index buffer with exact size (already multiple of 4)
     this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+      size: 12,
+      // 6 indices * 2 bytes (Uint16)
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
+    new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
+    this.indexBuffer.unmap();
+    this.indexCount = 6;
 
-    // Uniforms
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // model + color + progress (64 + 16 + 4)
+    // model (64) + color (16) + progress (4) = 84, padded to 96
     this.modelBuffer = this.device.createBuffer({
-      size: 64 + 16 + 16,
+      size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // BindGroup
     const bindGroupLayout = this.device.createBindGroupLayout({
       label: 'energy-bar bindGroupLayout',
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
-        buffer: {}
+        buffer: {
+          type: 'uniform'
+        }
       }, {
         binding: 1,
         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {}
+        buffer: {
+          type: 'uniform'
+        }
       }]
     });
     this.bindGroup = this.device.createBindGroup({
@@ -26354,7 +26883,7 @@ class HPBarEffect {
       }]
     });
 
-    // Pipeline
+    // Pipeline - specify all target formats upfront
     const shaderModule = this.device.createShaderModule({
       code: _energyBarShader.hpBarEffectShaders
     });
@@ -26368,14 +26897,14 @@ class HPBarEffect {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: 'float32x3'
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -26387,7 +26916,11 @@ class HPBarEffect {
         module: shaderModule,
         entryPoint: 'fsMain',
         targets: [{
-          format: this.format
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -26401,21 +26934,44 @@ class HPBarEffect {
     });
   }
   setProgress(value) {
-    this.progress = Math.max(0.0, Math.min(1.0, value));
+    // Clamp without Math calls - micro-optimization
+    const clamped = value < 0.0 ? 0.0 : value > 1.0 ? 1.0 : value;
+    if (this.progress !== clamped) {
+      this.progress = clamped;
+      this._progressDirty = true;
+    }
   }
   setColor(r, g, b, a = 1.0) {
-    this.color = [r, g, b, a];
+    // Check if color actually changed before marking dirty
+    if (this.color[0] !== r || this.color[1] !== g || this.color[2] !== b || this.color[3] !== a) {
+      this.color[0] = r;
+      this.color[1] = g;
+      this.color[2] = b;
+      this.color[3] = a;
+      this._colorDirty = true;
+    }
   }
   draw(pass, cameraMatrix, modelMatrix) {
-    this._colorScratch[0] = this.color[0];
-    this._colorScratch[1] = this.color[1];
-    this._colorScratch[2] = this.color[2];
-    this._colorScratch[3] = this.color[3];
-    this._progressScratch[0] = this.progress;
+    // Only update camera if needed (caller should track this)
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
-    this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
+
+    // Only write color if it changed
+    if (this._colorDirty) {
+      this._colorScratch[0] = this.color[0];
+      this._colorScratch[1] = this.color[1];
+      this._colorScratch[2] = this.color[2];
+      this._colorScratch[3] = this.color[3];
+      this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
+      this._colorDirty = false;
+    }
+
+    // Only write progress if it changed
+    if (this._progressDirty) {
+      this._progressScratch[0] = this.progress;
+      this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
+      this._progressDirty = false;
+    }
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -26435,7 +26991,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":82,"wgpu-matrix":31}],39:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":84,"wgpu-matrix":31}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26451,7 +27007,7 @@ var _utils = require("../utils");
  * transformed vertex particle, posible to choose dir also...
  */
 class FlameEmitter {
-  constructor(device, format, maxParticles = 20) {
+  constructor(device, format, maxParticles = 20, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.time = 0;
@@ -26472,6 +27028,7 @@ class FlameEmitter {
     this.scaleCoeficient = 0.12;
     this.rotSpeed = 0.1;
     // cache
+    this.cameraBuffer = cameraBuffer;
     this._localMatrix = _wgpuMatrix.mat4.create();
     this._finalMatrix = _wgpuMatrix.mat4.create();
     this._scratch4 = new Float32Array(4);
@@ -26516,7 +27073,7 @@ class FlameEmitter {
     return vertexData;
   }
   recreateVertexDataFromData(data) {
-    console.info(`%c Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, _utils.LOG_FUNNY_ARCADE);
+    // console.info(`%c Crazzy flame emitter : ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([data[0], data[4], 0.0, data[1], data[5], 0.0, data[2], data[6], 0.0, data[3], data[7], 0.0]);
     if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
@@ -26542,10 +27099,6 @@ class FlameEmitter {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       label: 'flame-emmiter modeBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
@@ -26593,14 +27146,14 @@ class FlameEmitter {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: "float32x3"
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -26625,6 +27178,10 @@ class FlameEmitter {
               operation: 'add'
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -26740,7 +27297,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":83,"../utils":78,"wgpu-matrix":31}],40:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":85,"../utils":80,"wgpu-matrix":31}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26833,9 +27390,10 @@ const FlamePresets = exports.FlamePresets = {
 
 // FlameEffect
 class FlameEffect {
-  constructor(device, format, colorFormat, params = {}) {
+  constructor(device, format, colorFormat, params = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.colorFormat = colorFormat ?? format;
     const config = typeof params === 'string' ? FlamePresets[params] : params;
     const defaults = FlamePresets.natural;
@@ -26881,10 +27439,6 @@ class FlameEffect {
     this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
   }
   _initPipeline() {
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 112,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -26961,6 +27515,10 @@ class FlameEffect {
               operation: "add"
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -27062,7 +27620,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":84,"../geometry-factory":50,"wgpu-matrix":31}],41:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":86,"../geometry-factory":52,"wgpu-matrix":31}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27073,9 +27631,10 @@ var _geoTex = require("../../shaders/standalone/geo.tex.js");
 var _geometryFactory = require("../geometry-factory.js");
 var _wgpuMatrix = require("wgpu-matrix");
 class GenGeoTexture {
-  constructor(device, format, type = "sphere", path, scale = 1) {
+  constructor(device, format, type = "sphere", path, scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = _geometryFactory.GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -27137,10 +27696,6 @@ class GenGeoTexture {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
@@ -27203,7 +27758,7 @@ class GenGeoTexture {
       }]
     });
     const shaderModule = this.device.createShaderModule({
-      code: _geoTex.geoInstancedTexEffect
+      code: (0, _geoTex.geoInstancedTexEffect)()
     });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
@@ -27215,14 +27770,14 @@ class GenGeoTexture {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: 'float32x3'
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -27247,6 +27802,10 @@ class GenGeoTexture {
               operation: 'add'
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -27307,7 +27866,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":109,"../geometry-factory.js":50,"wgpu-matrix":31}],42:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":113,"../geometry-factory.js":52,"wgpu-matrix":31}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27318,9 +27877,10 @@ var _geoTex = require("../../shaders/standalone/geo.tex.js");
 var _geometryFactory = require("../geometry-factory.js");
 var _wgpuMatrix = require("wgpu-matrix");
 class GenGeoTexture2 {
-  constructor(device, format, type = "sphere", path, scale = 1) {
+  constructor(device, format, type = "sphere", path, scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = _geometryFactory.GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -27329,34 +27889,41 @@ class GenGeoTexture2 {
     this.rotateEffect = true;
     this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
+
+    // Mobile optimization: track dirty state to avoid redundant GPU uploads
+    this.isDirty = false;
+    this.cameraMatrixDirty = false;
+    this.lastCameraMatrix = null;
+
+    // Reusable matrix buffers to reduce allocations
+    this.localMatrix = _wgpuMatrix.mat4.identity();
+    this.finalMatrix = _wgpuMatrix.mat4.identity();
     this.loadTexture(path).then(() => {
       this._initPipeline();
     });
   }
   async loadTexture(url) {
-    return new Promise(async (resolve, reject) => {
-      const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
-      const texture = this.device.createTexture({
-        size: [img.width, img.height, 1],
-        format: 'rgba16float',
-        // "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.device.queue.copyExternalImageToTexture({
-        source: img
-      }, {
-        texture
-      }, [img.width, img.height]);
-      const sampler = this.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear",
-        addressModeU: "repeat",
-        addressModeV: "repeat"
-      });
-      this.texture = texture;
-      this.sampler = sampler;
-      resolve();
+    const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
+    const texture = this.device.createTexture({
+      size: [img.width, img.height, 1],
+      // Mobile optimization: use rgba8unorm instead of rgba16float
+      // Reduces memory bandwidth by 50% on mobile GPUs
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
     });
+    this.device.queue.copyExternalImageToTexture({
+      source: img
+    }, {
+      texture
+    }, [img.width, img.height]);
+    const sampler = this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "repeat",
+      addressModeV: "repeat"
+    });
+    this.texture = texture;
+    this.sampler = sampler;
   }
   _initPipeline() {
     const {
@@ -27366,46 +27933,45 @@ class GenGeoTexture2 {
     } = this;
 
     // --- POSITION BUFFER (aligned)
+    const alignedVertexSize = Math.ceil(vertexData.byteLength / 4) * 4;
     this.vertexBuffer = this.device.createBuffer({
-      size: Math.ceil(vertexData.byteLength / 4) * 4,
+      size: alignedVertexSize,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
 
     // --- UV BUFFER (aligned)
+    const alignedUVSize = Math.ceil(uvData.byteLength / 4) * 4;
     this.uvBuffer = this.device.createBuffer({
-      size: Math.ceil(uvData.byteLength / 4) * 4,
+      size: alignedUVSize,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
 
-    // --- INDEX BUFFER (aligned)
+    // --- INDEX BUFFER (aligned, mobile optimization)
     const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
     this.indexBuffer = this.device.createBuffer({
       size: alignedIndexSize,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
 
-    // Create a temporary padded buffer if necessary
+    // Mobile optimization: create aligned buffer once, reuse for all writes
     if (indexData.byteLength !== alignedIndexSize) {
-      const tmp = new Uint8Array(alignedIndexSize);
-      tmp.set(new Uint8Array(indexData.buffer));
-      this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
+      const paddedIndexData = new Uint8Array(alignedIndexSize);
+      paddedIndexData.set(new Uint8Array(indexData.buffer));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedIndexData);
     } else {
       this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     }
     this.indexCount = indexData.length;
-
-    // --- rest of your setup (no change)
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
     this.instanceCount = 2;
     this.floatsPerInstance = 16 + 4;
+    // Mobile optimization: track frame time for frame-rate independent animation
+    this.lastFrameTime = performance.now();
+    this.frameTimeMs = 16; // default 60fps
     for (let x = 0; x < this.maxInstances; x++) {
       this.instanceTargets.push({
         index: x,
@@ -27413,7 +27979,8 @@ class GenGeoTexture2 {
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
         currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1.0, 0.4]
+        color: [0.6, 0.8, 1.0, 0.4],
+        isDirty: false // track which instances changed
       });
     }
     this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
@@ -27463,7 +28030,7 @@ class GenGeoTexture2 {
       }]
     });
     const shaderModule = this.device.createShaderModule({
-      code: _geoTex.geoInstancedTexEffect
+      code: (0, _geoTex.geoInstancedTexEffect)()
     });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
@@ -27475,14 +28042,14 @@ class GenGeoTexture2 {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: 'float32x3'
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -27507,6 +28074,10 @@ class GenGeoTexture2 {
               operation: 'add'
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -27521,39 +28092,73 @@ class GenGeoTexture2 {
   }
   updateInstanceData = baseModelMatrix => {
     if (!this.instanceData) return;
+
+    // Mobile optimization: track frame time for frame-rate independent animation
+    const now = performance.now();
+    this.frameTimeMs = now - this.lastFrameTime;
+    this.lastFrameTime = now;
+
+    // Clamp frame time to prevent huge jumps (e.g., when tab is unfocused)
+    const clampedFrameTime = Math.min(this.frameTimeMs, 50) / 1000; // ms to seconds
+
     if (this.rotateEffect) {
-      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed; // accumulate rotation
+      // Frame-time aware rotation
+      this.rotateAngle += this.rotateEffectSpeed * clampedFrameTime;
       if (this.rotateAngle >= 360) {
-        this.rotateAngle = 0;
+        this.rotateAngle -= 360;
       }
     }
     const count = Math.min(this.instanceCount, this.maxInstances);
+    let anyInstanceDirty = false;
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
-      // smooth interpolation of position & scale
+      let instanceUpdated = false;
+
+      // Mobile optimization: smooth interpolation with frame-time awareness
+      const frameAwareLerpSpeed = this.lerpSpeed * clampedFrameTime * 60; // normalize to 60fps
+
       for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+        const oldPos = t.currentPosition[j];
+        const oldScale = t.currentScale[j];
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * frameAwareLerpSpeed;
+        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * frameAwareLerpSpeed;
+        if (Math.abs(t.currentPosition[j] - oldPos) > 0.0001 || Math.abs(t.currentScale[j] - oldScale) > 0.0001) {
+          instanceUpdated = true;
+        }
       }
-      const local = _wgpuMatrix.mat4.identity();
-      if (this.rotateEffect == true) {
-        _wgpuMatrix.mat4.rotateY(local, this.rotateAngle, local);
+      if (!instanceUpdated && t.isDirty === false) {
+        continue; // Skip GPU upload for unchanged instances
       }
-      _wgpuMatrix.mat4.translate(local, t.currentPosition, local);
-      _wgpuMatrix.mat4.scale(local, t.currentScale, local);
-      const finalMat = _wgpuMatrix.mat4.identity();
-      _wgpuMatrix.mat4.multiply(baseModelMatrix, local, finalMat);
+      anyInstanceDirty = true;
+      t.isDirty = true;
+
+      // Mobile optimization: reuse matrix buffer to reduce allocations
+      _wgpuMatrix.mat4.identity(this.localMatrix);
+      if (this.rotateEffect === true) {
+        _wgpuMatrix.mat4.rotateY(this.localMatrix, this.rotateAngle, this.localMatrix);
+      }
+      _wgpuMatrix.mat4.translate(this.localMatrix, t.currentPosition, this.localMatrix);
+      _wgpuMatrix.mat4.scale(this.localMatrix, t.currentScale, this.localMatrix);
+
+      // Combine matrices in-place to reduce allocations
+      _wgpuMatrix.mat4.multiply(baseModelMatrix, this.localMatrix, this.finalMatrix);
       const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
+      this.instanceData.set(this.finalMatrix, offset);
       this.instanceData.set(t.color, offset + 16);
     }
-    // IMPORTANT: upload ONLY the active range of floats to GPU to avoid leftover instances
-    const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+
+    // Mobile optimization: only upload changed data to GPU
+    if (anyInstanceDirty) {
+      const activeFloatCount = count * this.floatsPerInstance;
+      this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+    }
   };
   draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    // Mobile optimization: cache camera matrix to avoid redundant uploads
+    if (!this.lastCameraMatrix || !this._matricesEqual(this.lastCameraMatrix, cameraMatrix)) {
+      this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+      this.lastCameraMatrix = new Float32Array(cameraMatrix);
+    }
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -27564,10 +28169,20 @@ class GenGeoTexture2 {
   render(transPass, mesh, viewProjMatrix) {
     this.draw(transPass, viewProjMatrix);
   }
+
+  // Mobile optimization: quick matrix comparison to avoid redundant GPU uploads
+  _matricesEqual(m1, m2) {
+    for (let i = 0; i < 16; i++) {
+      if (Math.abs(m1[i] - m2[i]) > 0.0001) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":109,"../geometry-factory.js":50,"wgpu-matrix":31}],43:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":113,"../geometry-factory.js":52,"wgpu-matrix":31}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27578,9 +28193,10 @@ var _geometryFactory = require("../geometry-factory.js");
 var _wgpuMatrix = require("wgpu-matrix");
 var _geoInstanced = require("../../shaders/standalone/geo.instanced.js");
 class GenGeo {
-  constructor(device, format, type = "sphere", scale = 1) {
+  constructor(device, format, type = "sphere", scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = _geometryFactory.GeometryFactory.create(type, scale);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -27611,10 +28227,6 @@ class GenGeo {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
@@ -27639,7 +28251,9 @@ class GenGeo {
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
-        buffer: {}
+        buffer: {
+          type: "uniform"
+        }
       }, {
         binding: 1,
         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -27663,7 +28277,7 @@ class GenGeo {
       }]
     });
     const shaderModule = this.device.createShaderModule({
-      code: _geoInstanced.geoInstancedEffect
+      code: (0, _geoInstanced.geoInstancedEffect)()
     });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
@@ -27675,14 +28289,14 @@ class GenGeo {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: 'float32x3'
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -27707,6 +28321,10 @@ class GenGeo {
               operation: 'add'
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -27758,7 +28376,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":108,"../geometry-factory.js":50,"wgpu-matrix":31}],44:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":112,"../geometry-factory.js":52,"wgpu-matrix":31}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -27766,33 +28384,88 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.GizmoEffect = void 0;
 var _gimzoShader = require("../../shaders/gizmo/gimzoShader");
+var _utils = require("../utils");
 class GizmoEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.enabled = true;
     this.mode = 0;
     this.size = 3;
     this.selectedAxis = 0;
     this.movementScale = 0.035;
     this.isDragging = false;
-    this.dragStartPoint = null;
     this.dragAxis = 0;
     this.parentMesh = null;
-    this.initialPosition = null;
+
+    // --- Cached Event Payloads ---
+    this.editorUpdatePosEvent = new CustomEvent('web.editor.update.pos', {
+      detail: {
+        inputFor: "",
+        propertyId: "position",
+        property: "x",
+        value: 0
+      }
+    });
+    this.editorUpdateRotEvent = new CustomEvent('web.editor.update.rot', {
+      detail: {
+        inputFor: "",
+        propertyId: "rotation",
+        property: "y",
+        value: 0
+      }
+    });
+    this.editorUpdateScaleEvent = new CustomEvent('web.editor.update.scale', {
+      detail: {
+        inputFor: "",
+        propertyId: "scale",
+        property: "1",
+        value: 0
+      }
+    });
+
+    // --- Zero-Allocation Numerical Caches ---
+    this.gizmoSettingsCache = new Float32Array(4);
+    this.matrixResultCache = new Float32Array(16);
+    this.dragStartPointCache = new Float32Array(3);
+    this.initialPositionCache = {
+      x: 0,
+      y: 0,
+      z: 0
+    };
+
+    // Flattened caches for tracking vectors without allocations
+    this._axisScreenDirCache = {
+      x: 0,
+      y: 0
+    };
+    this._p2Cache = {
+      x: 0,
+      y: 0,
+      z: 0
+    };
+    this._rayIntersectsCache = {
+      ro: new Float32Array(3),
+      rd: new Float32Array(3),
+      lineStart: new Float32Array(3),
+      lineEnd: new Float32Array(3),
+      line: new Float32Array(3),
+      w: new Float32Array(3),
+      closestOnRay: new Float32Array(3),
+      closestOnLine: new Float32Array(3)
+    };
     this._initPipeline();
     this._setupEventListeners();
-    addEventListener("editor-set-gizmo-mode", e => {
-      console.log("MODE:", e.detail.mode);
+
+    // Bound reference avoids retaining memory loops on the global object
+    this._onGizmoModeChange = e => {
       this.setMode(e.detail.mode);
-    });
+    };
+    addEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
   _initPipeline() {
     this._createTranslateGizmo();
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -27843,7 +28516,7 @@ class GizmoEffect {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
-      label: 'gizmo Pipeline',
+      label: 'gizmo',
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -27881,6 +28554,10 @@ class GizmoEffect {
               operation: "add"
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -27894,14 +28571,10 @@ class GizmoEffect {
     });
   }
   _createTranslateGizmo() {
-    const axisLength = 2.0;
-    const arrowSize = 0.15;
+    const axisLength = 1.0;
+    const arrowSize = 0.05;
     const positions = new Float32Array([0, 0, 0, axisLength, 0, 0, axisLength, 0, 0, axisLength - arrowSize, arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, -arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, 0, arrowSize, axisLength, 0, 0, axisLength - arrowSize, 0, -arrowSize, 0, 0, 0, 0, axisLength, 0, 0, axisLength, 0, arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, -arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, 0, axisLength - arrowSize, arrowSize, 0, axisLength, 0, 0, axisLength - arrowSize, -arrowSize, 0, 0, 0, 0, 0, axisLength, 0, 0, axisLength, arrowSize, 0, axisLength - arrowSize, 0, 0, axisLength, -arrowSize, 0, axisLength - arrowSize, 0, 0, axisLength, 0, arrowSize, axisLength - arrowSize, 0, 0, axisLength, 0, -arrowSize, axisLength - arrowSize]);
-    const colors = new Float32Array([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0,
-    // Y axis (green)
-    0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
-    // Z axis (blue)
-    0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]);
+    const colors = new Float32Array([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]);
     this.vertexBuffer = this.device.createBuffer({
       size: positions.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
@@ -27918,65 +28591,52 @@ class GizmoEffect {
     app.canvas.addEventListener("ray.hit.mousedown", e => {
       const detail = e.detail;
       if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
+        console.log('test _handleRayHit ');
         this._handleRayHit(detail);
       } else {
         e.detail.hitObject.effects.gizmoEffect = this;
-        this.parentMesh.effects.gizmoEffect = null;
+        if (this.parentMesh && this.parentMesh.effects) {
+          this.parentMesh.effects.gizmoEffect = null;
+        }
         this.parentMesh = e.detail.hitObject;
         app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
-        // console.log('Gizmo: ray.hit.mousedown :FINLA   ', this.parentMesh.name);
       }
     });
     app.canvas.addEventListener("mousemove", e => {
       if (this.isDragging && e.buttons === 1) {
         this._handleDrag(e);
-        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
+        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if (this.isDragging && e.buttons === 0) {
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       } else {
-        if (app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
+        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
       }
     });
     app.canvas.addEventListener("mouseup", () => {
       if (this.isDragging) {
-        // console.log('Gizmo: Stopped dragging:', this.parentMesh.name);
-        // console.log('What is selectedAxis: ', this.selectedAxis)
-        // console.log('What is operation: ', this.mode)
         if (this.parentMesh._GRAPH_CACHE) return;
         if (this.mode == 0) {
-          // 1 x  2 y  3 z
-          // // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
-          document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "position",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z
-            }
-          }));
+          this.editorUpdatePosEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdatePosEvent.detail.propertyId = "position";
+          this.editorUpdatePosEvent.detail.property = this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z";
+          this.editorUpdatePosEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.position.x : this.selectedAxis == 2 ? this.parentMesh.position.y : this.parentMesh.position.z;
+          document.dispatchEvent(this.editorUpdatePosEvent);
         } else if (this.mode == 1) {
-          document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "rotation",
-              property: this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
+          this.editorUpdateRotEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdateRotEvent.detail.propertyId = "rotation";
+          this.editorUpdateRotEvent.detail.property = this.selectedAxis == 1 ? "x" : this.selectedAxis == 2 ? "y" : "z";
+          this.editorUpdateRotEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
+          document.dispatchEvent(this.editorUpdateRotEvent);
         } else if (this.mode == 2) {
-          // if(e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
-          document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-            detail: {
-              inputFor: this.parentMesh.name,
-              propertyId: "scale",
-              property: this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2",
-              value: this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z
-            }
-          }));
+          this.editorUpdateScaleEvent.detail.inputFor = this.parentMesh.name;
+          this.editorUpdateScaleEvent.detail.propertyId = "scale";
+          this.editorUpdateScaleEvent.detail.property = this.selectedAxis == 1 ? "0" : this.selectedAxis == 2 ? "1" : "2";
+          this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
+          document.dispatchEvent(this.editorUpdateScaleEvent);
         }
-        // finish job
+        console.log('this.isDragging = false;');
         this.isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
@@ -27992,101 +28652,78 @@ class GizmoEffect {
     const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
     if (axis > 0) {
       this.selectedAxis = axis;
-      this.dragStartPoint = [...hitPoint];
-      this.initialPosition = {
-        x: this.parentMesh.position.x,
-        y: this.parentMesh.position.y,
-        z: this.parentMesh.position.z
-      };
+
+      // Zero allocations write to tracking buffers
+      this.dragStartPointCache[0] = hitPoint[0];
+      this.dragStartPointCache[1] = hitPoint[1];
+      this.dragStartPointCache[2] = hitPoint[2];
+      this.initialPositionCache.x = this.parentMesh.position.x;
+      this.initialPositionCache.y = this.parentMesh.position.y;
+      this.initialPositionCache.z = this.parentMesh.position.z;
       this.dragAxis = axis;
       this._updateGizmoSettings();
+      console.log('this.isDragging = true;');
       this.isDragging = true;
     }
   }
-
-  /**
-  * Get the screen-space direction of a world axis
-  * @param {number} axisIndex - 0=X, 1=Y, 2=Z
-  * @returns {{x: number, y: number}} - Normalized 2D screen direction
-  */
   _getAxisScreenDirection(axisIndex) {
-    // Get world axis vector
-    const worldAxis = [[1, 0, 0],
-    // X
-    [0, 1, 0],
-    // Y
-    [0, 0, 1] // Z
-    ][axisIndex];
-    // Transform axis to camera space
+    // Perform manual mapping instead of initializing structural inner lists
+    let xDir = 0,
+      yDir = 0,
+      zDir = 0;
+    if (axisIndex === 0) xDir = 1;else if (axisIndex === 1) yDir = 1;else if (axisIndex === 2) zDir = 1;
     const viewMatrix = app.getCamera().view;
     const projMatrix = app.getCamera().projectionMatrix;
     const p1 = this.parentMesh.position;
-    // Point 2: Object position + axis direction
-    const p2 = {
-      x: p1.x + worldAxis[0],
-      y: p1.y + worldAxis[1],
-      z: p1.z + worldAxis[2]
-    };
 
-    // Project both points to screen space
+    // Write directly to reusable object memory
+    this._p2Cache.x = p1.x + xDir;
+    this._p2Cache.y = p1.y + yDir;
+    this._p2Cache.z = p1.z + zDir;
     const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
-    const screen2 = this._worldToScreen(p2, viewMatrix, projMatrix);
+    const s1X = screen1.x,
+      s1Y = screen1.y; // Copy out primitive fields
 
-    // Get screen-space direction
-    const dx = screen2.x - screen1.x;
-    const dy = screen2.y - screen1.y;
+    const screen2 = this._worldToScreen(this._p2Cache, viewMatrix, projMatrix);
+    const dx = screen2.x - s1X;
+    const dy = screen2.y - s1Y;
     const length = Math.sqrt(dx * dx + dy * dy);
-
-    // Return normalized direction
-    return {
-      x: length > 0.001 ? dx / length : 0,
-      y: length > 0.001 ? dy / length : 0
-    };
+    this._axisScreenDirCache.x = length > 0.001 ? dx / length : 0;
+    this._axisScreenDirCache.y = length > 0.001 ? dy / length : 0;
+    return this._axisScreenDirCache;
   }
   _worldToScreen(worldPos, viewMatrix, projMatrix) {
-    // Transform to clip space
-    const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
+    // const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
+    // const ndcX = clipPos.x / clipPos.w;
+    // const ndcY = clipPos.y / clipPos.w;
 
-    // Perspective divide
+    // // Use a single returned local mutable coordinate representation to avoid heap footprint
+    // this._p2Cache.x = (ndcX + 1) * 0.5 * app.canvas.width;
+    // this._p2Cache.y = (1 - ndcY) * 0.5 * app.canvas.height;
+    // return this._p2Cache;
+    const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
     const ndcX = clipPos.x / clipPos.w;
     const ndcY = clipPos.y / clipPos.w;
-
-    // Convert to screen coordinates (assuming viewport)
-    const screenX = (ndcX + 1) * 0.5 * app.canvas.width;
-    const screenY = (1 - ndcY) * 0.5 * app.canvas.height; // Flip Y
-
     return {
-      x: screenX,
-      y: screenY
+      x: (ndcX + 1) * 0.5 * app.canvas.width,
+      y: (1 - ndcY) * 0.5 * app.canvas.height
     };
   }
   _transformPoint(point, viewMatrix, projMatrix) {
-    // Combine view * projection
     const vp = this._multiplyMatrices(projMatrix, viewMatrix);
-
-    // Transform point
     const x = vp[0] * point.x + vp[4] * point.y + vp[8] * point.z + vp[12];
     const y = vp[1] * point.x + vp[5] * point.y + vp[9] * point.z + vp[13];
     const z = vp[2] * point.x + vp[6] * point.y + vp[10] * point.z + vp[14];
     const w = vp[3] * point.x + vp[7] * point.y + vp[11] * point.z + vp[15];
-    return {
-      x,
-      y,
-      z,
-      w
-    };
-  }
-  _multiplyMatrices(a, b) {
-    const result = new Array(16);
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        result[i * 4 + j] = a[i * 4 + 0] * b[0 * 4 + j] + a[i * 4 + 1] * b[1 * 4 + j] + a[i * 4 + 2] * b[2 * 4 + j] + a[i * 4 + 3] * b[3 * 4 + j];
-      }
-    }
-    return result;
+    this._p2Cache.x = x;
+    this._p2Cache.y = y;
+    this._p2Cache.z = z;
+    this._p2Cache.w = w;
+    return this._p2Cache;
   }
   _handleDrag(mouseEvent) {
-    if (!this.parentMesh || !this.dragStartPoint || !this.isDragging) return;
+    if (!this.parentMesh || !this.isDragging) return;
+    if (this.parentMesh.dontDrag && (0, _utils.byId)('graph-status').innerText === "🔴") return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -28099,16 +28736,11 @@ class GizmoEffect {
           case 2:
             this.parentMesh.position.y -= deltaY * this.movementScale;
             break;
-          // case 3: this.parentMesh.position.z -= direction * this.movementScale; break;
           case 3:
-            const zAxisScreenDir = this._getAxisScreenDirection(2); // Z = axis index 2
-            const mouseDelta = {
-              x: deltaX,
-              y: -deltaY
-            }; // Flip Y for screen coords
-            // Dot product: how much does mouse movement align with Z-axis on screen?
-            const movement = mouseDelta.x * zAxisScreenDir.x + mouseDelta.y * zAxisScreenDir.y;
-            this.parentMesh.position.z += movement * this.movementScale;
+            // const zAxisScreenDir = this._getAxisScreenDirection(2);
+            // const movement = (deltaX * zAxisScreenDir.x + (-deltaY) * zAxisScreenDir.y);
+            // this.parentMesh.position.z += movement * this.movementScale;
+            this.parentMesh.position.z -= (deltaX - deltaY) * this.movementScale;
         }
         break;
       case 1:
@@ -28142,46 +28774,96 @@ class GizmoEffect {
     }
   }
   _raycastAxis(rayOrigin, rayDirection, mesh) {
-    const gizmoPos = [mesh.position.x, mesh.position.y, mesh.position.z];
+    const mX = mesh.position.x,
+      mY = mesh.position.y,
+      mZ = mesh.position.z;
     const threshold = 0.1 * this.size;
-    const xEnd = [gizmoPos[0] + 2 * this.size, gizmoPos[1], gizmoPos[2]];
-    const xHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, xEnd, threshold);
-    if (xHit) return 1;
-    const yEnd = [gizmoPos[0], gizmoPos[1] + 2 * this.size, gizmoPos[2]];
-    const yHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, yEnd, threshold);
-    if (yHit) return 2;
-    const zEnd = [gizmoPos[0], gizmoPos[1], gizmoPos[2] + 2 * this.size];
-    const zHit = this._rayIntersectsLine(rayOrigin, rayDirection, gizmoPos, zEnd, threshold);
-    if (zHit) return 3;
+    const ext = 2 * this.size;
+
+    // Direct initialization into primitive values instead of wrapper tracking structures
+    // const start = this._rayIntersectsCache.ro; // reuse array pointers
+    const start = this._rayIntersectsCache.lineStart;
+    start[0] = mX;
+    start[1] = mY;
+    start[2] = mZ;
+
+    // const end = this._rayIntersectsCache.rd;
+    const end = this._rayIntersectsCache.lineEnd;
+
+    // X Axis check
+    end[0] = mX + ext;
+    end[1] = mY;
+    end[2] = mZ;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 1;
+
+    // Y Axis check
+    end[0] = mX;
+    end[1] = mY + ext;
+    end[2] = mZ;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 2;
+
+    // Z Axis check
+    end[0] = mX;
+    end[1] = mY;
+    end[2] = mZ + ext;
+    if (this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold * 2)) return 3;
     return 0;
   }
   _rayIntersectsLine(rayOrigin, rayDir, lineStart, lineEnd, threshold) {
-    const ro = Array.isArray(rayOrigin) ? rayOrigin : [rayOrigin[0], rayOrigin[1], rayOrigin[2]];
-    const rd = [rayDir[0], rayDir[1], rayDir[2]];
-    const rdLen = Math.sqrt(rd[0] ** 2 + rd[1] ** 2 + rd[2] ** 2);
-    const ray = [rd[0] / rdLen, rd[1] / rdLen, rd[2] / rdLen];
-    const line = [lineEnd[0] - lineStart[0], lineEnd[1] - lineStart[1], lineEnd[2] - lineStart[2]];
-    const w = [ro[0] - lineStart[0], ro[1] - lineStart[1], ro[2] - lineStart[2]];
-    const a = ray[0] ** 2 + ray[1] ** 2 + ray[2] ** 2;
-    const b = ray[0] * line[0] + ray[1] * line[1] + ray[2] * line[2];
-    const c = line[0] ** 2 + line[1] ** 2 + line[2] ** 2;
-    const d = ray[0] * w[0] + ray[1] * w[1] + ray[2] * w[2];
-    const e = line[0] * w[0] + line[1] * w[1] + line[2] * w[2];
+    const cache = this._rayIntersectsCache;
+    cache.ro[0] = rayOrigin[0];
+    cache.ro[1] = rayOrigin[1];
+    cache.ro[2] = rayOrigin[2];
+    const rd0 = rayDir[0],
+      rd1 = rayDir[1],
+      rd2 = rayDir[2];
+    const rdLen = Math.sqrt(rd0 * rd0 + rd1 * rd1 + rd2 * rd2);
+    cache.rd[0] = rd0 / rdLen;
+    cache.rd[1] = rd1 / rdLen;
+    cache.rd[2] = rd2 / rdLen;
+    cache.line[0] = lineEnd[0] - lineStart[0];
+    cache.line[1] = lineEnd[1] - lineStart[1];
+    cache.line[2] = lineEnd[2] - lineStart[2];
+    cache.w[0] = cache.ro[0] - lineStart[0];
+    cache.w[1] = cache.ro[1] - lineStart[1];
+    cache.w[2] = cache.ro[2] - lineStart[2];
+    const a = cache.rd[0] * cache.rd[0] + cache.rd[1] * cache.rd[1] + cache.rd[2] * cache.rd[2];
+    const b = cache.rd[0] * cache.line[0] + cache.rd[1] * cache.line[1] + cache.rd[2] * cache.line[2];
+    const c = cache.line[0] * cache.line[0] + cache.line[1] * cache.line[1] + cache.line[2] * cache.line[2];
+    const d = cache.rd[0] * cache.w[0] + cache.rd[1] * cache.w[1] + cache.rd[2] * cache.w[2];
+    const e = cache.line[0] * cache.w[0] + cache.line[1] * cache.w[1] + cache.line[2] * cache.w[2];
     const denom = a * c - b * b;
-    if (Math.abs(denom) < 0.0001) return false;
+    // if(Math.abs(denom) < 0.0001) return false;
+    if (Math.abs(denom) < 0.0000001) return false;
     const sc = (b * e - c * d) / denom;
     const tc = (a * e - b * d) / denom;
     if (tc < 0 || tc > 1) return false;
-    const closestOnRay = [ro[0] + sc * ray[0], ro[1] + sc * ray[1], ro[2] + sc * ray[2]];
-    const closestOnLine = [lineStart[0] + tc * line[0], lineStart[1] + tc * line[1], lineStart[2] + tc * line[2]];
-    const dist = Math.sqrt((closestOnRay[0] - closestOnLine[0]) ** 2 + (closestOnRay[1] - closestOnLine[1]) ** 2 + (closestOnRay[2] - closestOnLine[2]) ** 2);
-    // console.log('Distance to line:', dist, 'threshold:', threshold);
+    cache.closestOnRay[0] = cache.ro[0] + sc * cache.rd[0];
+    cache.closestOnRay[1] = cache.ro[1] + sc * cache.rd[1];
+    cache.closestOnRay[2] = cache.ro[2] + sc * cache.rd[2];
+    cache.closestOnLine[0] = lineStart[0] + tc * cache.line[0];
+    cache.closestOnLine[1] = lineStart[1] + tc * cache.line[1];
+    cache.closestOnLine[2] = lineStart[2] + tc * cache.line[2];
+    const dX = cache.closestOnRay[0] - cache.closestOnLine[0];
+    const dY = cache.closestOnRay[1] - cache.closestOnLine[1];
+    const dZ = cache.closestOnRay[2] - cache.closestOnLine[2];
+    const dist = Math.sqrt(dX * dX + dY * dY + dZ * dZ);
     return dist < threshold;
   }
-  _updateGizmoSettings() {
-    const data = new Float32Array([this.mode, this.size, this.selectedAxis, 1.0]);
-    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, data);
+
+  // Lifecycle cleanup method to completely eliminate global memory retention loops
+  destroy() {
+    removeEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
+  _updateGizmoSettings() {
+    this.gizmoSettingsCache[0] = this.mode;
+    this.gizmoSettingsCache[1] = this.size;
+    this.gizmoSettingsCache[2] = this.selectedAxis;
+    this.gizmoSettingsCache[3] = 1.0;
+    this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, this.gizmoSettingsCache);
+  }
+
+  // ... rest of structural binding configurations unchanged ...
   updateInstanceData(baseModelMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
   }
@@ -28195,7 +28877,8 @@ class GizmoEffect {
     pass.draw(this.vertexCount);
   }
   render(pass, mesh, viewProjMatrix) {
-    this.parentMesh = mesh;
+    // this.parentMesh = mesh;
+    if (mesh !== this.parentMesh) return;
     this.draw(pass, viewProjMatrix);
   }
   setMode(mode) {
@@ -28216,7 +28899,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":96}],45:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":98,"../utils":80}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28226,9 +28909,10 @@ exports.MANABarEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _energyBarShader = require("../../shaders/energy-bars/energy-bar-shader.js");
 class MANABarEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.progress = 1.0;
     this.color = [0.1, 0.1, 0.9, 1.0];
     this.offsetY = 45;
@@ -28263,20 +28947,10 @@ class MANABarEffect {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-
-    // Uniforms
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // model + color + progress (64 + 16 + 4)
     this.modelBuffer = this.device.createBuffer({
       size: 64 + 16 + 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // BindGroup
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [{
         binding: 0,
@@ -28302,8 +28976,6 @@ class MANABarEffect {
         }
       }]
     });
-
-    // Pipeline
     const shaderModule = this.device.createShaderModule({
       code: _energyBarShader.hpBarEffectShaders
     });
@@ -28317,14 +28989,14 @@ class MANABarEffect {
         module: shaderModule,
         entryPoint: 'vsMain',
         buffers: [{
-          arrayStride: 3 * 4,
+          arrayStride: 12,
           attributes: [{
             shaderLocation: 0,
             offset: 0,
             format: 'float32x3'
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             offset: 0,
@@ -28337,6 +29009,10 @@ class MANABarEffect {
         entryPoint: 'fsMain',
         targets: [{
           format: this.format
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -28384,7 +29060,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":82,"wgpu-matrix":31}],46:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":84,"wgpu-matrix":31}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28393,16 +29069,17 @@ Object.defineProperty(exports, "__esModule", {
 exports.MSDFTextEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 class MSDFTextEffect {
-  constructor(device, format, msdfTexture, sampler) {
+  constructor(device, format, msdfTexture, sampler, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.msdfTexture = msdfTexture;
     this.sampler = sampler;
     this.glyphs = [];
     this._init();
   }
   _init() {
-    // quad (same as your HP bar idea)
+    // quad
     const vertexData = new Float32Array([-0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5]);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
@@ -28424,20 +29101,10 @@ class MSDFTextEffect {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-
-    // glyph buffer (dynamic text)
     this.glyphBuffer = this.device.createBuffer({
       size: 1024 * 64,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-
-    // camera
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // bind group layout
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [{
         binding: 0,
@@ -28493,13 +29160,13 @@ class MSDFTextEffect {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [{
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 0,
             format: "float32x2"
           }]
         }, {
-          arrayStride: 2 * 4,
+          arrayStride: 8,
           attributes: [{
             shaderLocation: 1,
             format: "float32x2"
@@ -28511,6 +29178,10 @@ class MSDFTextEffect {
         entryPoint: "fsMain",
         targets: [{
           format: this.format
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -28538,7 +29209,7 @@ class MSDFTextEffect {
 }
 exports.MSDFTextEffect = MSDFTextEffect;
 
-},{"wgpu-matrix":31}],47:[function(require,module,exports){
+},{"wgpu-matrix":31}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28548,19 +29219,18 @@ exports.PointerEffect = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _pointerEffect = require("../../shaders/standalone/pointer.effect.js");
 class PointerEffect {
-  constructor(device, format, initialScale = 10) {
+  constructor(device, format, initialScale = 10, cameraBuffer) {
     this.initialScale = initialScale;
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this._tempModelMatrix = _wgpuMatrix.mat4.identity();
     this._tempTranslation = new Float32Array(3);
     this.enabled = true;
     this.yOffset = 60;
     this._initPipeline();
-    // alert('pointer');
   }
   _initPipeline() {
-    // Vertex data: simple quad
     let S = this.initialScale;
     const vertexData = new Float32Array([-0.5 * S, 0.5 * S, 0.0 * S,
     // top-left
@@ -28588,10 +29258,6 @@ class PointerEffect {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -28622,7 +29288,7 @@ class PointerEffect {
       }]
     });
     const shaderModule = this.device.createShaderModule({
-      code: _pointerEffect.pointerEffect
+      code: (0, _pointerEffect.pointerEffect)()
     });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
@@ -28654,6 +29320,10 @@ class PointerEffect {
         entryPoint: 'fsMain',
         targets: [{
           format: this.format
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -28688,7 +29358,7 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":110,"wgpu-matrix":31}],48:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":114,"wgpu-matrix":31}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28697,29 +29367,20 @@ Object.defineProperty(exports, "__esModule", {
 exports.PointEffect = void 0;
 var _pointEffect = require("../../shaders/topology-point/pointEffect");
 class PointEffect {
-  constructor(device, format) {
+  constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.pointSize = 8.0;
     this.enabled = true;
     this._pointSettingsScratch = new Float32Array(4);
     this._initPipeline();
   }
   _initPipeline() {
-    // Camera uniform buffer
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-
-    // Model buffer
     this.modelBuffer = this.device.createBuffer({
       size: 64,
-      // mat4x4
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
-    // Point settings buffer
     this.pointSettingsBuffer = this.device.createBuffer({
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -28807,6 +29468,10 @@ class PointEffect {
               operation: "add"
             }
           }
+        }, {
+          format: 'rgba16float'
+        }, {
+          format: 'rgba16float'
         }]
       },
       primitive: {
@@ -28819,8 +29484,6 @@ class PointEffect {
       }
     });
   }
-
-  // ✅ THIS MATCHES FlameEffect PATTERN
   updateInstanceData(baseModelMatrix) {
     // You can apply additional transforms here if needed
     // For now, just use the parent's model matrix directly
@@ -28876,7 +29539,7 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":111}],49:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":115}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29420,7 +30083,7 @@ function physicsBodiesChain(material = "standard", pos = {
   });
 }
 
-},{"../../tools/editor/fluxCodexVertex":125,"../loader-obj":55,"../procedural-mesh":73}],50:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":129,"../loader-obj":57,"../procedural-mesh":76}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30581,7 +31244,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30890,6 +31553,7 @@ class MaterialsInstanced {
   setBlend = alpha => {
     this.material.useBlend = true;
     this.setupMaterialPBR([1, 1, 1, alpha]);
+    if (app) app.buildLightShadowBuckets();
   };
   getMaterial() {
     if (this.material.type == 'standard') {
@@ -31151,6 +31815,7 @@ class MaterialsInstanced {
       textureResource = material.baseColorTexture.imageView;
     }
     key = JSON.stringify(key);
+    // if(typeof this.material.share === 'undefined' || this.material.share == true) {
     if (typeof this.material.share !== 'undefined' && this.material.share == true) {
       if (!this.materialBindGroupCache._cache.has(key)) {
         // console.log('[CREATE NEW] materialBindGroup [key] = ', key);
@@ -31267,7 +31932,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.mirror.wgsl":88,"../../shaders/fragment.wgsl":90,"../../shaders/fragment.wgsl.metal":91,"../../shaders/fragment.wgsl.noCut":92,"../../shaders/fragment.wgsl.normalmap":93,"../../shaders/fragment.wgsl.pong":94,"../../shaders/fragment.wgsl.power":95,"../../shaders/instanced/fragment.instanced.wgsl":97,"../../shaders/instanced/fragment.mirror.instanced.wgsl":98,"../../shaders/minimalist/color-a.wgsl":101,"../../shaders/minimalist/color-b.wgsl":102,"../../shaders/minimalist/hybrid.wgsl":103,"../../shaders/minimalist/mini.wgsl":106,"../../shaders/water/water-c.wgls":116,"../pipelineManager":69}],52:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":90,"../../shaders/fragment.wgsl":92,"../../shaders/fragment.wgsl.metal":93,"../../shaders/fragment.wgsl.noCut":94,"../../shaders/fragment.wgsl.normalmap":95,"../../shaders/fragment.wgsl.pong":96,"../../shaders/fragment.wgsl.power":97,"../../shaders/instanced/fragment.instanced.wgsl":100,"../../shaders/instanced/fragment.mirror.instanced.wgsl":101,"../../shaders/minimalist/color-a.wgsl":105,"../../shaders/minimalist/color-b.wgsl":106,"../../shaders/minimalist/hybrid.wgsl":107,"../../shaders/minimalist/mini.wgsl":110,"../../shaders/water/water-c.wgls":120,"../pipelineManager":71}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31292,9 +31957,10 @@ var _genTex2 = require("../effects/gen-tex2");
 var _literals = require("../literals");
 var _meConfig = require("../../me-config");
 var _pipelineManager = require("../pipelineManager");
+var _topologyPoint = require("../effects/topology-point");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObjInstances extends _materialsInstanced.default {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device, o.material, _glbFile, o.textureCache);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
@@ -31311,9 +31977,12 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.dontDrag = true;
+    this.ignoreCulling = false;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o.useScale || false;
@@ -31322,7 +31991,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayoutInstanced = o.uniformBufferBindGroupLayoutInstanced;
-    // cache
     this._posArray = new Float32Array(3);
     this._scaleArray = new Float32Array(3);
     this._modelMatrix = _wgpuMatrix.mat4.create();
@@ -31333,6 +32001,14 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = _wgpuMatrix.mat4.create();
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
+
+    // EDIT INSTANCED PART
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.lerpSpeedAlpha = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 1;
+    this.floatsPerInstance = 16 + 4;
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -31547,7 +32223,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     }
     this.runProgram = () => {
       return new Promise(async resolve => {
-        this.shadowDepthTextureSize = 512; // HARDCODE REMOVE LATER !!!
+        this.shadowDepthTextureSize = _meConfig.MEConfig.SHADOW_RES;
         this.modelViewProjectionMatrix = _wgpuMatrix.mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {
           resolve(this);
@@ -31712,14 +32388,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           }
         }]
       });
-
-      // EDIT INSTANCED PART
-      this.instanceTargets = [];
-      this.lerpSpeed = 0.05;
-      this.lerpSpeedAlpha = 0.05;
-      this.maxInstances = 5;
-      this.instanceCount = 2;
-      this.floatsPerInstance = 16 + 4;
       for (let x = 0; x < this.maxInstances; x++) {
         this.instanceTargets.push({
           index: x,
@@ -31778,6 +32446,13 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           return;
         }
         this.instanceCount = newCount;
+        this.rebuildInstanceSkeletons();
+        const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
+        this.bonesBuffer = device.createBuffer({
+          label: 'bonesBuffer',
+          size: boneBufferSize,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device.createBuffer({
           label: 'instanceBuffer in bvh mesh [instanced]',
@@ -31837,10 +32512,8 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         }
       };
       // end of instanced
-
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
-        // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
@@ -31871,27 +32544,21 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         return Math.ceil(n / 256) * 256;
       }
       this.MAX_BONES = _meConfig.MEConfig.MAX_BONES;
-      // your total instance count
-      const TRAIL_INSTANCES = 10;
-      const BYTES_ONE_SKELETON = this.MAX_BONES * 16 * 4; // 1600 
-      const BYTES_PER_INSTANCE = alignTo256(64 * this.MAX_BONES);
+      console.log('maxInstances', _meConfig.MEConfig.MAX_BONES);
+      console.log('INIT', this.maxInstances, this.instanceCount);
+      const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device.createBuffer({
-        label: "bonesBuffer",
-        size: 64000,
-        // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        label: 'bonesBuffer',
+        size: boneBufferSize,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
-
-      // const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
-      const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
-      for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
+      const bones = new Float32Array(this.MAX_BONES * 16 * this.maxInstances);
+      for (let i = 0; i < this.MAX_BONES * this.maxInstances; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
-      // for(let i = 0;i < this.MAX_BONES;i++) {
-      //   bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
-      // }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
-      // vertex Anim
+
+      // VertexAnim
       this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex AnimationParams",
@@ -32083,32 +32750,32 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
         if (typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, this, true);
+          this.effects.pointer = new _pointerEffect.PointerEffect(device, pf, 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.ballEffect !== 'undefined' && this.pointerEffect.ballEffect == true) {
-          this.effects.ballEffect = new _gen.GenGeo(device, pf, 'sphere');
+          this.effects.ballEffect = new _gen.GenGeo(device, pf, 'sphere', 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.energyBar !== 'undefined' && this.pointerEffect.energyBar == true) {
-          this.effects.energyBar = new _energyBar.HPBarEffect(device, pf);
-          this.effects.manaBar = new _manaBar.MANABarEffect(device, pf);
+          this.effects.energyBar = new _energyBar.HPBarEffect(device, pf, this.cameraBuffer);
+          this.effects.manaBar = new _manaBar.MANABarEffect(device, pf, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new _flame.FlameEffect(device, pf);
+          this.effects.flameEffect = new _flame.FlameEffect(device, pf, pf, undefined, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect(device, pf);
+          this.effects.pointEffect = new _topologyPoint.PointEffect(device, pf, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, pf);
+          this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, pf, 20, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.circlePlane !== 'undefined' && this.pointerEffect.circlePlane == true) {
-          this.effects.circlePlane = new _gen.GenGeo(device, pf, 'circlePlane');
+          this.effects.circlePlane = new _gen.GenGeo(device, pf, 'circlePlane', 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.circlePlaneTex !== 'undefined' && this.pointerEffect.circlePlaneTex == true) {
-          this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circlePlaneTex = new _genTex.GenGeoTexture(device, pf, 'ring', this.pointerEffect.circlePlaneTexPath, undefined, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.circle !== 'undefined' && this.pointerEffect.circlePlaneTexPath !== 'undefined') {
-          this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath);
+          this.effects.circle = new _genTex2.GenGeoTexture2(device, pf, 'circle2', this.pointerEffect.circlePlaneTexPath, 1, this.cameraBuffer);
         }
       }
       this.getModelMatrix = (pos, useScale = false) => {
@@ -32173,7 +32840,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     const vertexCode = (0, _vertexInstanced.vertexWGSLInstanced)();
     const fragmentCode = isVideo ? (0, _fragmentVideo.fragmentVideoWGSL)() : this.getMaterial();
     const isNormalMap = this.material.type === 'normalmap';
-    // console.log('INSTANCED')
     const baseKey = {
       vertexId: isNormalMap ? 'mesh_nm' : 'mesh_basic',
       fragmentId: isVideo ? 'video' : this.material.type,
@@ -32190,7 +32856,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     MKEY.texturesPaths = this.texturesPaths.join();
     this.material.pipelineKey = baseKey;
     this.material.matKey = MKEY;
-    // console.log("MKEY:", MKEY);
     this.createBindGroupForRender(MKEY);
     const layout = this.device.createPipelineLayout({
       label: 'PipelineLayout Instanced Mesh',
@@ -32225,6 +32890,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           }),
           constants: fragmentConstants,
           targets: [{
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
+          }, {
             format: 'rgba16float'
           }]
         },
@@ -32267,6 +32936,10 @@ class MEMeshObjInstances extends _materialsInstanced.default {
                 operation: 'add'
               }
             }
+          }, {
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
           }]
         },
         depthStencil: {
@@ -32341,7 +33014,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     }
   }
   drawElements = pass => {
-    // IN
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -32349,7 +33021,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
     pass.setVertexBuffer(4, this.mesh.weightsBuffer);
     if (this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    // instanceCount covers all instances including index 0
     pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
   };
   drawVideoElements = pass => {
@@ -32407,10 +33078,54 @@ class MEMeshObjInstances extends _materialsInstanced.default {
       shadowPass.drawIndexed(this.indexCount);
     }
   };
+  initBoundingSphere() {
+    if (!this.mesh || !this.mesh.vertices) return;
+    const pos = this.mesh.vertices;
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minY = Infinity,
+      maxY = -Infinity;
+    let minZ = Infinity,
+      maxZ = -Infinity;
+    for (let i = 0; i < pos.length; i += 3) {
+      minX = Math.min(minX, pos[i]);
+      maxX = Math.max(maxX, pos[i]);
+      minY = Math.min(minY, pos[i + 1]);
+      maxY = Math.max(maxY, pos[i + 1]);
+      minZ = Math.min(minZ, pos[i + 2]);
+      maxZ = Math.max(maxZ, pos[i + 2]);
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    let r = 0;
+    for (let i = 0; i < pos.length; i += 3) {
+      const dx = pos[i] - cx;
+      const dy = pos[i + 1] - cy;
+      const dz = pos[i + 2] - cz;
+      r = Math.max(r, Math.sqrt(dx * dx + dy * dy + dz * dz));
+    }
+    this.boundingSphere = {
+      center: new Float32Array([cx, cy, cz]),
+      radius: r
+    };
+  }
+  updateBoundingSphere() {
+    if (!this.boundingSphere) return;
+    const local = this.boundingSphere.center;
+    const m = this.modelMatrix;
+    const center = new Float32Array(3);
+
+    // Transform local sphere center by model matrix
+    center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
+    center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
+    center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
+    this.boundingSphere.center = center; // ← Update world-space center
+  }
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../me-config":79,"../../shaders/fragment.video.wgsl":89,"../../shaders/instanced/vertex.instanced.wgsl":99,"../effects/energy-bar":38,"../effects/flame":40,"../effects/flame-emmiter":39,"../effects/gen":43,"../effects/gen-tex":41,"../effects/gen-tex2":42,"../effects/mana-bar":45,"../effects/pointerEffect":47,"../literals":54,"../loaders/bvh-instaced":56,"../matrix-class":60,"../pipelineManager":69,"../utils":78,"./materials-instanced":51,"wgpu-matrix":31}],53:[function(require,module,exports){
+},{"../../me-config":81,"../../shaders/fragment.video.wgsl":91,"../../shaders/instanced/vertex.instanced.wgsl":102,"../effects/energy-bar":40,"../effects/flame":42,"../effects/flame-emmiter":41,"../effects/gen":45,"../effects/gen-tex":43,"../effects/gen-tex2":44,"../effects/mana-bar":47,"../effects/pointerEffect":49,"../effects/topology-point":50,"../literals":56,"../loaders/bvh-instaced":58,"../matrix-class":62,"../pipelineManager":71,"../utils":80,"./materials-instanced":53,"wgpu-matrix":31}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32452,7 +33167,6 @@ class SpotLight {
   innerCutoff;
   outerCutoff;
 
-  // spotlightUniformBuffer;
   // Dirty flags
   _dirty = true; // VP matrix needs recompute (position/target changed)
   _lightBufferDirty = true; // _lightBuffer array needs rebuild before next upload
@@ -32461,6 +33175,7 @@ class SpotLight {
     return this._position;
   }
   setPosition(x, y, z) {
+    if (this._position[0] === x && this._position[1] === y && this._position[2] === z) return;
     this._position[0] = x;
     this._position[1] = y;
     this._position[2] = z;
@@ -32468,6 +33183,7 @@ class SpotLight {
     this._lightBufferDirty = true;
   }
   setPositionVec(v) {
+    if (_wgpuMatrix.vec3.equals(v, this._position)) return;
     _wgpuMatrix.vec3.copy(v, this._position);
     this._dirty = true;
     this._lightBufferDirty = true;
@@ -32476,11 +33192,13 @@ class SpotLight {
     return this._target;
   }
   setTargetVec(v) {
+    if (_wgpuMatrix.vec3.equals(v, this._target)) return;
     _wgpuMatrix.vec3.copy(v, this._target);
     this._dirty = true;
     this._lightBufferDirty = true;
   }
   setTarget(x, y, z) {
+    if (this._target[0] === x && this._target[1] === y && this._target[2] === z) return;
     this._target[0] = x;
     this._target[1] = y;
     this._target[2] = z;
@@ -32488,28 +33206,35 @@ class SpotLight {
     this._lightBufferDirty = true;
   }
   setTargetX(x) {
+    if (this._target[0] === x) return;
     this._target[0] = x;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
   setTargetY(y) {
+    if (this._target[1] === y) return;
     this._target[1] = y;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
   setTargetZ(z) {
+    if (this._target[2] === z) return;
     this._target[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
   constructor(camera, inputHandler, device, indexx, shadowPassView = null, shadowSampler = null, fov = 175, aspect = 1.0, near = 0.1, far = 100) {
-    aspect = 1;
+    // Validate parameters
+    if (fov <= 0 || fov >= 180) throw new Error('FOV must be between 0 and 180 degrees');
+    if (near >= far) throw new Error('near must be less than far');
+    if (near <= 0) throw new Error('near must be positive');
+    if (far <= 0) throw new Error('far must be positive');
     this.name = "light" + indexx;
     this.getName = () => {
       return this.name;
     };
     this.fov = fov;
-    this.aspect = 1;
+    this.aspect = 1.0; // Force square aspect for shadow map
     this.near = near;
     this.far = far;
     this.lightDinamic = true;
@@ -32524,8 +33249,6 @@ class SpotLight {
     this.direction = _wgpuMatrix.vec3.create();
     this.intensity = 1.0;
     this.color = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
-    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this._position, this._target, this.up);
-    this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov, this.aspect, this.near, this.far);
     this._lightBuffer = new Float32Array(36);
     this._diffScratch = _wgpuMatrix.vec3.create();
     this._dirScratch = _wgpuMatrix.vec3.create();
@@ -32541,20 +33264,21 @@ class SpotLight {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.setProjection = function (fov = 175, aspect = 1.0, near = 0.1, far = 200) {
-      this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, aspect, near, far);
+      if (fov <= 0 || fov >= 180) throw new Error('FOV must be between 0 and 180 degrees');
+      if (near >= far) throw new Error('near must be less than far');
+      this.projectionMatrix = _wgpuMatrix.mat4.perspective(fov, 1.0, near, far);
       this._dirty = true;
     };
     this.updateProjection = function () {
-      console.log('test ', this.fov, this.aspect, this.near, this.far);
-      this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov, this.aspect, this.near, this.far);
+      this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov, 1.0, this.near, this.far);
       this._dirty = true;
     };
     this.device = device;
+
+    // Initialize matrices
+    this.viewMatrix = _wgpuMatrix.mat4.lookAt(this._position, this._target, this.up);
+    this.projectionMatrix = _wgpuMatrix.mat4.perspective(this.fov, 1.0, this.near, this.far);
     this.viewProjMatrix = _wgpuMatrix.mat4.multiply(this.projectionMatrix, this.viewMatrix);
-    this.fov = fov;
-    this.aspect = aspect;
-    this.near = near;
-    this.far = far;
     this.innerCutoff = Math.cos(Math.PI / 180 * 20.0);
     this.outerCutoff = Math.cos(Math.PI / 180 * 30.0);
     this.ambientFactor = 0.5;
@@ -32569,7 +33293,7 @@ class SpotLight {
     this.shadowTextureView = shadowPassView;
     this.shadowSampler = shadowSampler;
     this.renderPassDescriptor = {
-      label: "descriptor shadowPass[SpotLigth]",
+      label: "descriptor shadowPass[SpotLight]",
       colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowTextureView,
@@ -32644,7 +33368,7 @@ class SpotLight {
         binding: 1,
         visibility: GPUShaderStage.VERTEX,
         buffer: {
-          type: 'uniform'
+          type: "read-only-storage"
         }
       }, {
         binding: 2,
@@ -32913,7 +33637,7 @@ class SpotLight {
     this.updater = [];
   }
 
-  // ─── Update ───────────────────────────────────────────────────────────────
+  // ─── Update ───────────────────────────────────────────────────────────
 
   /**
    * Recomputes VP matrix only when dirty.
@@ -33001,12 +33725,12 @@ class SpotLight {
     this.color[0] = colorR;
     this._lightBufferDirty = true;
   };
-  setColorB = colorB => {
-    this.color[1] = colorB;
+  setColorG = colorG => {
+    this.color[1] = colorG;
     this._lightBufferDirty = true;
   };
-  setColorG = colorG => {
-    this.color[2] = colorG;
+  setColorB = colorB => {
+    this.color[2] = colorB;
     this._lightBufferDirty = true;
   };
   setRange = range => {
@@ -33024,7 +33748,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../me-config":79,"../shaders/instanced/vertexShadow.instanced.wgsl":100,"../shaders/vertex.procedural.wgsl":112,"../shaders/vertexShadow.wgsl":115,"./behavior":33,"./utils":78,"wgpu-matrix":31}],54:[function(require,module,exports){
+},{"../me-config":81,"../shaders/instanced/vertexShadow.instanced.wgsl":103,"../shaders/vertex.procedural.wgsl":116,"../shaders/vertexShadow.wgsl":119,"./behavior":33,"./utils":80,"wgpu-matrix":31}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33048,7 +33772,7 @@ const VERTEX_ANIM_FLAGS = exports.VERTEX_ANIM_FLAGS = {
   DISPLACEMENT: 1 << 6 // 64
 };
 
-},{}],55:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33516,7 +34240,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33526,7 +34250,6 @@ exports.BVHPlayerInstances = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
 var _webgpuGltf = require("./webgpu-gltf.js");
 var _meshObjInstances = _interopRequireDefault(require("../instanced/mesh-obj-instances.js"));
-var _utils = require("../utils.js");
 var _meConfig = require("../../me-config.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 // import MEBvh from "bvh-loader";
@@ -33562,8 +34285,8 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * @credits Chatgpt assist here.
  */
 class BVHPlayerInstances extends _meshObjInstances.default {
-  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {
-    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
+  constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient, cameraBuffer) {
+    super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex, cameraBuffer);
     // bvh arg not actual at the moment
     this.bvh = {};
     this.glb = glb;
@@ -33576,7 +34299,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       // deplaced
       delay: 0
     };
-    // debug
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     this.sharedState = {
@@ -33589,7 +34311,6 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.animationIndex = 0;
     this.glbAnimEvents = {};
     this.glb.glbJsonData.animations.forEach((anim, index) => {
-      // console.log('CREATE ANIMATION-END CUSTOME NAME (anim.name) ' , `animationEnd-${anim.name}` )
       this.glbAnimEvents['animEndEvent' + index] = new CustomEvent(`animationEnd-${this.name}`, {
         detail: {
           animationName: this.glb.glbJsonData.animations[index].name,
@@ -33619,12 +34340,30 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     this.inverseBindMatrices = []; // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this.rebuildInstanceSkeletons();
     this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = _wgpuMatrix.mat4.create();
     this.buildNodeChannelMap();
     this.buildSortedNodes();
     this.initNodeOriginals();
+  }
+  rebuildInstanceSkeletons() {
+    this.instanceNodes = [];
+    this.instanceBoneMatrices = [];
+    for (let i = 0; i < this.instanceCount; i++) {
+      const clonedNodes = this.nodes.map(n => ({
+        ...n,
+        translation: n.translation ? new Float32Array(n.translation) : new Float32Array([0, 0, 0]),
+        rotation: n.rotation ? new Float32Array(n.rotation) : new Float32Array([0, 0, 0, 1]),
+        scale: n.scale ? new Float32Array(n.scale) : new Float32Array([1, 1, 1]),
+        transform: n.transform ? new Float32Array(n.transform) : _wgpuMatrix.mat4.identity(),
+        worldMatrix: _wgpuMatrix.mat4.create(),
+        inverseBindMatrix: n.inverseBindMatrix ? new Float32Array(n.inverseBindMatrix) : null
+      }));
+      this.instanceNodes.push(clonedNodes);
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
+    }
   }
   initNodeOriginals() {
     for (let j = 0; j < this.skeleton.length; j++) {
@@ -33734,6 +34473,23 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       }
     }
   }
+  initInstanceSkeletons() {
+    this.instanceNodes = [];
+    this.instanceBoneMatrices = [];
+    for (let i = 0; i < this.instanceCount; i++) {
+      const clonedNodes = this.nodes.map(n => ({
+        ...n,
+        translation: n.translation ? new Float32Array(n.translation) : new Float32Array([0, 0, 0]),
+        rotation: n.rotation ? new Float32Array(n.rotation) : new Float32Array([0, 0, 0, 1]),
+        scale: n.scale ? new Float32Array(n.scale) : new Float32Array([1, 1, 1]),
+        transform: n.transform ? new Float32Array(n.transform) : _wgpuMatrix.mat4.identity(),
+        worldMatrix: _wgpuMatrix.mat4.create(),
+        inverseBindMatrix: n.inverseBindMatrix ? new Float32Array(n.inverseBindMatrix) : null
+      }));
+      this.instanceNodes.push(clonedNodes);
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
+    }
+  }
   initInverseBindMatrices(skinIndex = 0) {
     const skin = this.glb.skins[skinIndex];
     const invBindAccessorIndex = skin.inverseBindMatrices; // number
@@ -33822,20 +34578,21 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        if (this.animationIndex == null) this.animationIndex = 0;
+        if (this.animationIndex == null) {
+          this.animationIndex = 0;
+        }
         window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
       }, inTime * 1200);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      if (this.sharedBones) {
-        // Forest/rocks: all instances share same skeleton pose
+      if (this.sharedBones === true) {
         const currentTime = now / this.animationSpeed - this.startTime;
-        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, 0);
+        this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.instanceNodes[0], currentTime, this.instanceBoneMatrices[0], 0);
       } else {
         for (let i = 0; i < this.instanceCount; i++) {
           const timeOffsetMs = i * this.trailAnimation.delay;
           const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
-          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.nodes, currentTime, this._boneMatrices, i);
+          this.updateSingleBoneCubeAnimation(this.glb.glbJsonData.animations[this.animationIndex], this.instanceNodes[i], currentTime, this.instanceBoneMatrices[i], i);
         }
       }
     }
@@ -33921,16 +34678,12 @@ class BVHPlayerInstances extends _meshObjInstances.default {
    * @returns {ArrayBuffer} sliced array buffer
    **/
   getBufferSlice(bufferDef, byteOffset, byteLength) {
-    // GLTFBuffer instance:
     if (bufferDef instanceof _webgpuGltf.GLTFBuffer) {
-      // Use .arrayBuffer + .byteOffset:
       return bufferDef.arrayBuffer.slice(bufferDef.byteOffset + (byteOffset || 0), bufferDef.byteOffset + (byteOffset || 0) + byteLength);
     }
-    // Already have a raw ArrayBuffer:
     if (bufferDef instanceof ArrayBuffer) {
       return bufferDef.slice(byteOffset, byteOffset + byteLength);
     }
-    // Some loaders store it as .data or ._data:
     if (bufferDef && bufferDef.data instanceof ArrayBuffer) {
       return bufferDef.data.slice(byteOffset, byteOffset + byteLength);
     }
@@ -33992,16 +34745,13 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     //   m2 m6 m10 m14
     //   m3 m7 m11 m15 ]
     const t = new Float32Array([m[12], m[13], m[14]]);
-    // Extract the 3 column vectors (upper-left 3x3)
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
     const cz = [m[8], m[9], m[10]];
-    // Lengths = scales
     const len = v => Math.hypot(v[0], v[1], v[2]);
     let sx = len(cx),
       sy = len(cy),
       sz = len(cz);
-    // If any scale nearly zero, avoid divide-by-zero
     if (sx === 0) sx = 1.0;
     if (sy === 0) sy = 1.0;
     if (sz === 0) sz = 1.0;
@@ -34034,25 +34784,25 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     const trace = r00 + r11 + r22;
     let qx, qy, qz, qw;
     if (trace > 0.00001) {
-      const s = Math.sqrt(trace + 1.0) * 2; // s=4*qw
+      const s = Math.sqrt(trace + 1.0) * 2;
       qw = 0.25 * s;
       qx = (r21 - r12) / s;
       qy = (r02 - r20) / s;
       qz = (r10 - r01) / s;
     } else if (r00 > r11 && r00 > r22) {
-      const s = Math.sqrt(1.0 + r00 - r11 - r22) * 2; // s=4*qx
+      const s = Math.sqrt(1.0 + r00 - r11 - r22) * 2;
       qw = (r21 - r12) / s;
       qx = 0.25 * s;
       qy = (r01 + r10) / s;
       qz = (r02 + r20) / s;
     } else if (r11 > r22) {
-      const s = Math.sqrt(1.0 + r11 - r00 - r22) * 2; // s=4*qy
+      const s = Math.sqrt(1.0 + r11 - r00 - r22) * 2;
       qw = (r02 - r20) / s;
       qx = (r01 + r10) / s;
       qy = 0.25 * s;
       qz = (r12 + r21) / s;
     } else {
-      const s = Math.sqrt(1.0 + r22 - r00 - r11) * 2; // s=4*qz
+      const s = Math.sqrt(1.0 + r22 - r00 - r11) * 2;
       qw = (r10 - r01) / s;
       qx = (r02 + r20) / s;
       qy = (r12 + r21) / s;
@@ -34102,7 +34852,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
     out[2] = s0 * az + s1 * bz;
     out[3] = s0 * aw + s1 * bw;
   }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 0) {
     const animTime = time % this._animationLength;
     const skeleton = this.skeleton;
     for (let j = 0; j < skeleton.length; j++) {
@@ -34114,60 +34864,57 @@ class BVHPlayerInstances extends _meshObjInstances.default {
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
-      /* ── TRANSLATION CHANNELS ── */
+      // TRANSLATION
       for (let k = 0; k < tChannels.length; k++) {
         const channel = tChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-        let i = channel._lastKeyIndex;
-        if (inputTimes[i] > animTime) i = 0;
-        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
+        let i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) {
+          i++;
+        }
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const inv = 1 - factor;
+        const inv = 1.0 - factor;
         const base0 = i * 3;
         const base1 = next * 3;
         tr[0] = outputArray[base0] * inv + outputArray[base1] * factor;
         tr[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         tr[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-
-      /* ── SCALE CHANNELS ── */
+      // SCALE
       for (let k = 0; k < sChannels.length; k++) {
         const channel = sChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-        let i = channel._lastKeyIndex;
-        if (inputTimes[i] > animTime) i = 0;
-        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
+        let i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) {
+          i++;
+        }
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
         const factor = t1 !== t0 ? (animTime - t0) / (t1 - t0) : 0;
-        const inv = 1 - factor;
+        const inv = 1.0 - factor;
         const base0 = i * 3;
         const base1 = next * 3;
         sc[0] = outputArray[base0] * inv + outputArray[base1] * factor;
         sc[1] = outputArray[base0 + 1] * inv + outputArray[base1 + 1] * factor;
         sc[2] = outputArray[base0 + 2] * inv + outputArray[base1 + 2] * factor;
       }
-
-      /* ── ROTATION CHANNELS ── */
       for (let k = 0; k < rChannels.length; k++) {
         const channel = rChannels[k];
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-        let i = channel._lastKeyIndex;
-        if (inputTimes[i] > animTime) i = 0;
-        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
+        let i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) {
+          i++;
+        }
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
@@ -34177,11 +34924,9 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         this.slerp(outputArray, base0, outputArray, base1, factor, rot);
       }
 
-      /* ── COMPOSE LOCAL TRANSFORM ── */
+      // BUILD LOCAL MATRIX
       this.composeTRS(tr, rot, sc, node.transform);
     }
-
-    /* ── WORLD MATRICES ── */
     const sorted = this._sortedNodes;
     for (let i = 0; i < sorted.length; i++) {
       const nodeIndex = sorted[i];
@@ -34193,23 +34938,19 @@ class BVHPlayerInstances extends _meshObjInstances.default {
         _wgpuMatrix.mat4.copy(node.transform, node.worldMatrix);
       }
     }
-
-    /* ── BONE MATRICES ── */
     for (let j = 0; j < skeleton.length; j++) {
       const jointNode = nodes[skeleton[j]];
       _wgpuMatrix.mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
-
-    /* ── WRITE TO GPU BUFFER ── */
-    const byteOffset = this.sharedBones ? 0 : (0, _utils.alignTo256)(64 * this.MAX_BONES) * instanceIndex;
-    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
+    const byteOffset = instanceIndex * this.MAX_BONES * 64;
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices.buffer, boneMatrices.byteOffset, boneMatrices.byteLength);
     return boneMatrices;
   }
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../../me-config.js":79,"../instanced/mesh-obj-instances.js":52,"../utils.js":78,"./webgpu-gltf.js":58,"wgpu-matrix":31}],57:[function(require,module,exports){
+},{"../../me-config.js":81,"../instanced/mesh-obj-instances.js":54,"./webgpu-gltf.js":60,"wgpu-matrix":31}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34868,7 +35609,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../../me-config.js":79,"../mesh-obj":61,"../utils.js":78,"./webgpu-gltf.js":58,"bvh-loader":17,"wgpu-matrix":31}],58:[function(require,module,exports){
+},{"../../me-config.js":81,"../mesh-obj":63,"../utils.js":80,"./webgpu-gltf.js":60,"bvh-loader":17,"wgpu-matrix":31}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35449,7 +36190,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":20}],59:[function(require,module,exports){
+},{"gl-matrix":20}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -35713,7 +36454,7 @@ class Materials {
   changeMaterial(newType = 'graph', graphShader) {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
-    // this.setupPipeline();
+    this.setupPipeline();
   }
   createCheckerboardTexture(size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
     const mipLevelCount = Math.floor(Math.log2(size)) + 1;
@@ -35747,6 +36488,8 @@ class Materials {
     this.material.useBlend = true;
     // this.setupMaterialPBR([1, 1, 1, alpha]);
     this.setupMaterialPBR([1, 0, 0, alpha]);
+    // fast fix
+    if (app) app.buildLightShadowBuckets();
     // this.setupPipeline()
   };
   createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
@@ -36097,6 +36840,8 @@ class Materials {
       const canvas = document.createElement('canvas');
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
+      canvas.style.width = (arg.width || 256) + 'px';
+      canvas.style.height = (arg.height || 256) + 'px';
       canvas.style.position = 'absolute';
       canvas.style.left = '0px';
       canvas.style.top = '-325px';
@@ -36134,6 +36879,11 @@ class Materials {
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
       this.video = null;
+      this.updateVideoTexture();
+      this.createMaterialBindGroupVideo();
+      // setTimeout(() => this.setupPipeline() , 200)
+      // little strange
+      // this.isVideo = false;
       // this.video = document.createElement('video');
       // this.video.style.position = 'absolute';
       // // this.video.style.zIndex = '1';
@@ -36167,6 +36917,7 @@ class Materials {
   }
   updateVideoTexture() {
     if (!this.video || this.video.readyState < 4) return;
+    // if(this.video.readyState < 4) return;
     this.externalTexture = this.device.importExternalTexture({
       source: this.video
     });
@@ -36209,6 +36960,7 @@ class Materials {
     }
     if (this.isVideo == true) return;
     key = JSON.stringify(key);
+    // if(typeof this.material.share === 'undefined' || this.material.share == true) {
     if (typeof this.material.share !== 'undefined' && this.material.share == true) {
       if (!this.materialBindGroupCache._cache.has(key)) {
         // console.log('[CREATE NEW] materialBindGroup [key] = ', key);
@@ -36318,7 +37070,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fontana/fontana.wgsl":85,"../shaders/fragment.dark.wgsl":86,"../shaders/fragment.gpt.wgsl":87,"../shaders/fragment.mirror.wgsl":88,"../shaders/fragment.wgsl":90,"../shaders/fragment.wgsl.metal":91,"../shaders/fragment.wgsl.noCut":92,"../shaders/fragment.wgsl.normalmap":93,"../shaders/fragment.wgsl.pong":94,"../shaders/fragment.wgsl.power":95,"../shaders/minimalist/color-a.wgsl":101,"../shaders/minimalist/color-b.wgsl":102,"../shaders/minimalist/hybrid.wgsl":103,"../shaders/minimalist/mid-a.wgsl":104,"../shaders/minimalist/mini-a.wgsl":105,"../shaders/minimalist/mini.wgsl":106,"../shaders/mixed/fragmentMix1.wgsl":107,"../shaders/water/water-c.wgls":116,"./pipelineManager":69,"./utils":78}],60:[function(require,module,exports){
+},{"../shaders/fontana/fontana.wgsl":87,"../shaders/fragment.dark.wgsl":88,"../shaders/fragment.gpt.wgsl":89,"../shaders/fragment.mirror.wgsl":90,"../shaders/fragment.wgsl":92,"../shaders/fragment.wgsl.metal":93,"../shaders/fragment.wgsl.noCut":94,"../shaders/fragment.wgsl.normalmap":95,"../shaders/fragment.wgsl.pong":96,"../shaders/fragment.wgsl.power":97,"../shaders/minimalist/color-a.wgsl":105,"../shaders/minimalist/color-b.wgsl":106,"../shaders/minimalist/hybrid.wgsl":107,"../shaders/minimalist/mid-a.wgsl":108,"../shaders/minimalist/mini-a.wgsl":109,"../shaders/minimalist/mini.wgsl":110,"../shaders/mixed/fragmentMix1.wgsl":111,"../shaders/water/water-c.wgls":120,"./pipelineManager":71,"./utils":80}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36651,6 +37403,7 @@ class Rotation {
     //   return degToRad(this.x);
     // }
 
+    // console.log(this.rotationSpeed.x)
     if (this.rotationSpeed.x == 0) {
       if (this.netx != this.x && this.emitX) {
         app.net.send({
@@ -36784,13 +37537,10 @@ function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0) {
     const overlap = minDistance - dist;
     const nx = dx / dist;
     const nz = dz / dist;
-
     // push camera 100% out — walls are immovable
     Apos[0] += nx * overlap * pushStrength;
     Apos[2] += nz * overlap * pushStrength;
-
     // sync target so WASD doesn't snap back next frame
-
     return true;
   }
   if (distSq <= 1e-8) {
@@ -36813,7 +37563,7 @@ class PVector {
 }
 exports.PVector = PVector;
 
-},{"./utils":78}],61:[function(require,module,exports){
+},{"./utils":80}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36840,7 +37590,7 @@ var _pipelineManager = require("./pipelineManager");
 var _msdfText = require("./effects/msdfText");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 class MEMeshObj extends _materials.default {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device, o.material, _glbFile, o.textureCache, o.isVideo);
     if (typeof o.name === 'undefined') o.name = (0, _utils.genName)(3);
     if (typeof o.raycast === 'undefined') {
@@ -36863,14 +37613,21 @@ class MEMeshObj extends _materials.default {
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.ignoreCulling = false;
+    this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     if (typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
+    this.texturesPaths = [];
+    o.texturesPaths.forEach(t => {
+      this.texturesPaths.push(t);
+    });
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
@@ -37092,7 +37849,7 @@ class MEMeshObj extends _materials.default {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if (typeof o.isVideo !== 'undefined') {
-      console.log('MESH what i s isvideo ', o.isVideo);
+      // console.log('isvideo ', o.isVideo)
       this.loadVideoTexture(o.isVideo);
       this.drawElements = this.drawVideoElements;
     } else if (this.material.type != 'mirror' && this.material.type != 'water') {
@@ -37104,10 +37861,6 @@ class MEMeshObj extends _materials.default {
       type: o.mainCameraParams.type,
       responseCoef: o.mainCameraParams.responseCoef
     };
-    this.texturesPaths = [];
-    o.texturesPaths.forEach(t => {
-      this.texturesPaths.push(t);
-    });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new _matrixClass.Position(o.position.x, o.position.y, o.position.z);
     this.rotation = new _matrixClass.Rotation(o.rotation.x, o.rotation.y, o.rotation.z);
@@ -37523,29 +38276,29 @@ class MEMeshObj extends _materials.default {
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if (typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new _pointerEffect.PointerEffect(device, 'rgba16float', 1);
+          this.effects.pointer = new _pointerEffect.PointerEffect(device, 'rgba16float', 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new _topologyPoint.PointEffect(device, 'rgba16float');
+          this.effects.pointEffect = new _topologyPoint.PointEffect(device, 'rgba16float', this.cameraBuffer);
         }
         if (typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
-          this.effects.gizmoEffect = new _gizmo.GizmoEffect(device, 'rgba16float');
+          this.effects.gizmoEffect = new _gizmo.GizmoEffect(device, 'rgba16float', this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new _flame.FlameEffect(device, pf, "rgba16float", 'torch');
+          this.effects.flameEffect = new _flame.FlameEffect(device, pf, "rgba16float", 'torch', this.cameraBuffer);
         }
         if (typeof this.pointerEffect.gpuText !== 'undefined' && this.pointerEffect.gpuText == true) {
-          this.effects.gpuText = new _msdfText.MSDFTextEffect(device, pf, "rgba16float", 'torch');
+          this.effects.gpuText = new _msdfText.MSDFTextEffect(device, pf, "rgba16float", 'torch', this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, "rgba16float");
+          this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(device, "rgba16float", 20, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new _destruction.DestructionEffect(device, 'rgba16float', {
             particleCount: 100,
             duration: 2.5,
             color: [0.6, 0.5, 0.4, 1.0]
-          });
+          }, this.cameraBuffer);
         }
       }
       this.getModelMatrix = (pos, useScale = false) => {
@@ -37671,6 +38424,10 @@ class MEMeshObj extends _materials.default {
           constants: fragmentConstants,
           targets: [{
             format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
           }]
         },
         depthStencil: {
@@ -37710,6 +38467,10 @@ class MEMeshObj extends _materials.default {
                 operation: 'add'
               }
             }
+          }, {
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
           }]
         },
         depthStencil: {
@@ -37720,6 +38481,9 @@ class MEMeshObj extends _materials.default {
         primitive: this.primitive
       }
     });
+
+    // test 
+    this.initBoundingSphere();
     dispatchEvent(this.buildPipelineBucketsEvent);
   }
   getMainPipeline = () => {
@@ -37913,10 +38677,54 @@ class MEMeshObj extends _materials.default {
     }
     // console.info(`🧹Destroyed: ${this.name}`);
   };
+  initBoundingSphere() {
+    if (!this.mesh || !this.mesh.vertices) return;
+    const pos = this.mesh.vertices;
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minY = Infinity,
+      maxY = -Infinity;
+    let minZ = Infinity,
+      maxZ = -Infinity;
+    for (let i = 0; i < pos.length; i += 3) {
+      minX = Math.min(minX, pos[i]);
+      maxX = Math.max(maxX, pos[i]);
+      minY = Math.min(minY, pos[i + 1]);
+      maxY = Math.max(maxY, pos[i + 1]);
+      minZ = Math.min(minZ, pos[i + 2]);
+      maxZ = Math.max(maxZ, pos[i + 2]);
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    let r = 0;
+    for (let i = 0; i < pos.length; i += 3) {
+      const dx = pos[i] - cx;
+      const dy = pos[i + 1] - cy;
+      const dz = pos[i + 2] - cz;
+      r = Math.max(r, Math.sqrt(dx * dx + dy * dy + dz * dz));
+    }
+    this.boundingSphere = {
+      center: new Float32Array([cx, cy, cz]),
+      radius: r
+    };
+  }
+  updateBoundingSphere() {
+    if (!this.boundingSphere) return;
+    const local = this.boundingSphere.center;
+    const m = this.modelMatrix;
+    const center = new Float32Array(3);
+
+    // Transform local sphere center by model matrix
+    center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
+    center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
+    center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
+    this.boundingSphere.center = center; // ← Update world-space center
+  }
 }
 exports.default = MEMeshObj;
 
-},{"../me-config":79,"../shaders/fragment.video.wgsl":89,"../shaders/vertex.wgsl":113,"../shaders/vertex.wgsl.normalmap":114,"./effects/destruction":37,"./effects/flame":40,"./effects/flame-emmiter":39,"./effects/gizmo":44,"./effects/msdfText":46,"./effects/pointerEffect":47,"./effects/topology-point":48,"./literals":54,"./materials":59,"./matrix-class":60,"./pipelineManager":69,"./procedures/procedural-textures":76,"./utils":78,"wgpu-matrix":31}],62:[function(require,module,exports){
+},{"../me-config":81,"../shaders/fragment.video.wgsl":91,"../shaders/vertex.wgsl":117,"../shaders/vertex.wgsl.normalmap":118,"./effects/destruction":39,"./effects/flame":42,"./effects/flame-emmiter":41,"./effects/gizmo":46,"./effects/msdfText":48,"./effects/pointerEffect":49,"./effects/topology-point":50,"./literals":56,"./materials":61,"./matrix-class":62,"./pipelineManager":71,"./procedures/procedural-textures":78,"./utils":80,"wgpu-matrix":31}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38407,7 +39215,7 @@ function clearEventsTextarea() {
   exports.events = events = '';
 }
 
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38621,7 +39429,172 @@ let activateNet2 = sessionOption => {
 };
 exports.activateNet2 = activateNet2;
 
-},{"../utils":78,"./matrix-stream":62}],64:[function(require,module,exports){
+},{"../utils":80,"./matrix-stream":64}],66:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.cullingPass = void 0;
+var _utils = require("../utils");
+// no integrated yet
+let cullingPass = function () {
+  const now2 = performance.now();
+  this.now = now2 * 0.001;
+  this.lastFrameMS = this.now;
+  this.autoUpdate.forEach(_ => _.update());
+  requestAnimationFrame(this.frame);
+  try {
+    let commandEncoder = this.device.createCommandEncoder();
+    if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
+    this.updateLights();
+    const camera = this.getCamera();
+    this._sceneData[44] = (performance.now() - this.startTime) / 1000;
+    this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+    if (camera._dirtyAngle || camera._dirty) {
+      this.getTransformationMatrix(camera, now2);
+      camera.update();
+    }
+    for (let i = 0; i < this.lightContainer.length; i++) {
+      const light = this.lightContainer[i];
+      const p = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+      if (this.shadowBuckets.default.length) {
+        p.setPipeline(light.shadowPipeline);
+        for (let m of this.shadowBuckets.default) {
+          p.setBindGroup(0, light.getShadowBindGroup(m));
+          p.setBindGroup(1, m.modelBindGroup);
+          m.drawShadows(p, light);
+        }
+      }
+      if (this.shadowBuckets.instanced.length) {
+        p.setPipeline(light.shadowPipelineInstanced);
+        for (let m of this.shadowBuckets.instanced) {
+          p.setBindGroup(0, light.getShadowBindGroup(m));
+          p.setBindGroup(1, m.modelBindGroup);
+          m.drawShadows(p, light);
+        }
+      }
+      if (this.shadowBuckets.procedural.length) {
+        p.setPipeline(light.shadowPipelineMorph);
+        for (let m of this.shadowBuckets.procedural) {
+          p.setBindGroup(0, light.getShadowBindGroup(m));
+          p.setBindGroup(1, m.modelBindGroup);
+          m.drawShadows(p, light);
+        }
+      }
+      p.end();
+    }
+    const len = this.mainRenderBundle.length;
+    for (let i = 0; i < len; i++) {
+      const mesh = this.mainRenderBundle[i];
+      mesh.updateInstanceData?.(mesh.modelMatrix);
+      if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
+      mesh.position.update();
+      mesh.updateModelUniformBuffer(i);
+      if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
+      if (mesh.update) mesh.update(now2);
+      if (mesh.isVideo) mesh.updateVideoTexture();
+      if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
+
+      // ← ADD THIS: Update world-space bounding sphere if mesh moved
+      mesh.updateBoundingSphere?.();
+    }
+
+    // ← ADD THIS: Frustum cull all meshes before rendering (1-2ms overhead)
+    const cullStartMs = performance.now();
+    this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
+    const cullTimeMs = performance.now() - cullStartMs;
+    // console.log(`Cull: ${cullTimeMs.toFixed(2)}ms`); // Uncomment to measure
+
+    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    pass.setBindGroup(0, this.sceneBindGroup);
+
+    // ← CHANGE: Use visibleOpaqueMeshes instead of opaqueBuckets
+    for (const [pipeline, meshes] of this.culledRenderPass.visibleOpaqueMeshes) {
+      pass.setPipeline(pipeline);
+      let l = null;
+      for (const mesh of meshes) {
+        if (mesh.materialBindGroup !== l) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          l = mesh.materialBindGroup;
+        }
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+
+    // ← CHANGE: Use visibleTransparentMeshes instead of transparentBuckets
+    for (const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
+      const mesh = this.mainRenderBundle[meshIndex];
+      if (mesh.effects) {
+        for (const effectName in mesh.effects) {
+          const effect = mesh.effects[effectName];
+          if (effect === null || effect.enabled === false) continue;
+          if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+          effect.render(pass, mesh, camera.VP);
+        }
+      }
+    }
+    pass.end();
+    if (this.ssrPass.enabled === true) {
+      mat4.invert(camera.VP, this._invViewProj);
+      this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
+      this.ssrPass.render(commandEncoder, {
+        sceneTextureView: this.sceneTextureView,
+        normalTextureView: this.normalTextureView,
+        mainDepthView: this.mainDepthView,
+        mainDepthTexture: this.mainDepthTexture,
+        worldPosTextureView: this.worldPosTextureView
+      });
+    }
+    if (this.volumetricPass.enabled === true) {
+      if (this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
+      this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
+      for (let i = 0; i < this.lightContainer.length; i++) {
+        const light = this.lightContainer[i];
+        this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+        this._volumetricLightUniforms.direction = light.direction;
+        this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricUniforms, this._volumetricLightUniforms);
+      }
+    }
+    const canvasTexture = this.context.getCurrentTexture();
+    if (this._lastCanvasTex !== canvasTexture) {
+      this._lastCanvasTex = canvasTexture;
+      this._canvasView = canvasTexture.createView();
+    }
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    this.finalPS.colorAttachments[0].view = this._canvasView;
+    pass = commandEncoder.beginRenderPass(this.finalPS);
+    pass.setPipeline(this.presentPipeline);
+    pass.setBindGroup(0, this._activeBindGroup);
+    pass.draw(6);
+    pass.end();
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
+    this.submitQueue[0] = null;
+    if (this.collisionSystem) this.collisionSystem.update();
+    this.graphUpdate(this.now);
+    this.blendQueue.length = 0;
+  } catch (err) {
+    if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, _utils.LOG_WARN);
+  }
+};
+exports.cullingPass = cullingPass;
+
+},{"../utils":80}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38734,7 +39707,7 @@ let zeroPass = function () {
 };
 exports.zeroPass = zeroPass;
 
-},{"../utils":78}],65:[function(require,module,exports){
+},{"../utils":80}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38864,7 +39837,7 @@ let mobile1 = function () {
 };
 exports.mobile1 = mobile1;
 
-},{"../utils":78}],66:[function(require,module,exports){
+},{"../utils":80}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38931,19 +39904,7 @@ let nanoPass = function () {
 };
 exports.nanoPass = nanoPass;
 
-},{"../utils":78}],67:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.noShadowPass = void 0;
-var _utils = require("../utils");
-// no integrated yet
-let noShadowPass = function () {};
-exports.noShadowPass = noShadowPass;
-
-},{"../utils":78}],68:[function(require,module,exports){
+},{"../utils":80}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38970,6 +39931,7 @@ class PhysicsBridge {
     this._bodyIndexMap = new Map();
     this._ready = false;
     this._queue = [];
+    this.wPhysicsSteps = 2;
     this._worker.onmessage = ({
       data
     }) => this._onMessage(data);
@@ -39032,7 +39994,7 @@ class PhysicsBridge {
       this._bodyIndexMap.set(idx, MEObject);
     });
   }
-  updatePhysics() {
+  setKinematicTransform() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -39054,11 +40016,15 @@ class PhysicsBridge {
         pos: posArr
       });
     }
-    // if(this.c % 2 === 0) 
-    this._worker.postMessage({
-      cmd: 'step'
-    });
-    // this.c++;
+  }
+  updatePhysics() {
+    if (this.c % this.wPhysicsSteps === 0) {
+      this._worker.postMessage({
+        cmd: 'step'
+      });
+      this.c = 0;
+    }
+    this.c++;
   }
 
   // MatrixJolt public API
@@ -39405,7 +40371,7 @@ function _snapQuat(snap, b) {
   return [Math.cos(a / 2), ax * s, ay * s, az * s];
 }
 
-},{"wgpu-matrix":31}],69:[function(require,module,exports){
+},{"wgpu-matrix":31}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39501,7 +40467,7 @@ class MaterialBindGroupCache {
 }
 exports.MaterialBindGroupCache = MaterialBindGroupCache;
 
-},{}],70:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39543,7 +40509,7 @@ class METoolTip {
 }
 exports.METoolTip = METoolTip;
 
-},{}],71:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39944,7 +40910,386 @@ function combinePassWGSL() {
 `;
 }
 
-},{}],72:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.SSRPass = void 0;
+exports.patchMainRenderPassDesc = patchMainRenderPassDesc;
+var _hzb = require("../../shaders/hzb/hzb.wgsl");
+class SSRPass {
+  constructor(device, width, height, globalSceneUniformBuffer, mainDepthView) {
+    this.device = device;
+    this.width = width;
+    this.height = height;
+    // Cap mip count to prevent texture sizes dropping below 1x1 pixels
+    this.mipCount = Math.floor(Math.log2(Math.max(width, height)));
+    this.enabled = true;
+    this._globalSceneUniformBuffer = globalSceneUniformBuffer;
+    this.ssrOutputTexture = device.createTexture({
+      label: 'SSR out-tex',
+      size: [width, height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.ssrOutputView = this.ssrOutputTexture.createView();
+    this.depthBlitBindGroup = null;
+    this.data = new Float32Array(40);
+    this._createHZB();
+    this._createSSRConfig();
+    this._createPipelines();
+    this._createHZBResources();
+    this._createDepthBlitBindGroup(mainDepthView);
+  }
+  _createDepthBlitBindGroup(depthView) {
+    this.depthBlitBindGroup = this.device.createBindGroup({
+      layout: this.blitPipeline.getBindGroupLayout(0),
+      entries: [{
+        binding: 0,
+        resource: depthView
+      }, {
+        binding: 1,
+        resource: this.pointSampler
+      }]
+    });
+  }
+  _createHZB() {
+    this.hzbTexture = this.device.createTexture({
+      label: 'HZB',
+      size: [this.width, this.height],
+      mipLevelCount: this.mipCount,
+      format: 'r32float',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.hzbMipWriteViews = Array.from({
+      length: this.mipCount
+    }, (_, i) => this.hzbTexture.createView({
+      label: `HZB Mip ${i}`,
+      baseMipLevel: i,
+      mipLevelCount: 1
+    }));
+    this.hzbMipReadViews = Array.from({
+      length: this.mipCount
+    }, (_, i) => this.hzbTexture.createView({
+      label: `HZB Read Mip ${i}`,
+      baseMipLevel: i,
+      mipLevelCount: 1
+    }));
+    this.hzbFullView = this.hzbTexture.createView();
+    this.hzbMipBuffers = [];
+    this.hzbMipBindGroups = [];
+  }
+  _createHZBResources() {
+    for (let mip = 1; mip < this.mipCount; mip++) {
+      const dstW = Math.max(1, this.width >> mip);
+      const dstH = Math.max(1, this.height >> mip);
+
+      // Create ONCE
+      const buffer = this.device.createBuffer({
+        size: 16,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      this.device.queue.writeBuffer(buffer, 0, new Uint32Array([dstW, dstH, 0, 0]));
+      const bindGroup = this.device.createBindGroup({
+        label: `HZB Build BG ${mip}`,
+        layout: this.hzbPipeline.getBindGroupLayout(0),
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer
+          }
+        }, {
+          binding: 1,
+          resource: this.hzbMipReadViews[mip - 1]
+        }, {
+          binding: 2,
+          resource: this.hzbMipWriteViews[mip]
+        }]
+      });
+      this.hzbMipBuffers.push(buffer);
+      this.hzbMipBindGroups.push(bindGroup);
+    }
+  }
+  _createSSRConfig() {
+    // Layout Alignment Checklist: 
+    // invProj(64) + proj(64) + resolution(8) + maxMip(4) + thickness(4) = 144 -> Aligned to 160
+    this.ssrConfigBuffer = this.device.createBuffer({
+      label: 'SSR config',
+      size: 160,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+  }
+  updateConfig(invProjMatrix, projMatrix) {
+    this.data.set(invProjMatrix, 0); // mat4 invProj
+    this.data.set(projMatrix, 16); // mat4 proj
+    this.data[32] = this.width;
+    this.data[33] = this.height;
+    this.data[34] = this.mipCount - 1; // maxMip
+    this.data[35] = 0.05; // thickness - matching our structural test recommendations
+    this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, this.data);
+  }
+  _createPipelines() {
+    const hzbModule = this.device.createShaderModule({
+      label: 'HZB build',
+      code: _hzb.HZB_BUILD_WGSL
+    });
+    this.hzbPipeline = this.device.createComputePipeline({
+      label: 'HZB build',
+      layout: 'auto',
+      compute: {
+        module: hzbModule,
+        entryPoint: 'main'
+      }
+    });
+    const blitModule = this.device.createShaderModule({
+      label: 'Depth blit',
+      code: _hzb.DEPTH_BLIT_WGSL
+    });
+    this.blitPipeline = this.device.createRenderPipeline({
+      label: 'Depth blit',
+      layout: 'auto',
+      vertex: {
+        module: blitModule,
+        entryPoint: 'vs'
+      },
+      fragment: {
+        module: blitModule,
+        entryPoint: 'fs',
+        targets: [{
+          format: 'r32float'
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      }
+    });
+    this.linearSampler = this.device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+      mipmapFilter: 'linear'
+    });
+    const ssrModule = this.device.createShaderModule({
+      label: 'SSR',
+      code: _hzb.SSR_PASS_WGSL
+    });
+    this.bindGroupLayout = this.device.createBindGroupLayout({
+      label: "SSR LAYOUT GROUP",
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {}
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {}
+      }, {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {}
+      }, {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {}
+      }, {
+        binding: 4,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: "unfilterable-float",
+          viewDimension: "2d"
+        }
+      }, {
+        binding: 5,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {}
+      }, {
+        binding: 6,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {}
+      }, {
+        binding: 7,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {}
+      }]
+    });
+    this.ssrPipeline = this.device.createRenderPipeline({
+      label: 'SSR',
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      }),
+      vertex: {
+        module: ssrModule,
+        entryPoint: 'vs'
+      },
+      fragment: {
+        module: ssrModule,
+        entryPoint: 'fs',
+        targets: [{
+          format: 'rgba16float',
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add'
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'zero',
+              operation: 'add'
+            }
+          }
+        }]
+      },
+      primitive: {
+        topology: 'triangle-list'
+      }
+    });
+    this.pointSampler = this.device.createSampler({
+      magFilter: 'nearest',
+      minFilter: 'nearest'
+    });
+  }
+  render(commandEncoder, {
+    sceneTextureView,
+    normalTextureView,
+    mainDepthView,
+    mainDepthTexture,
+    worldPosTextureView
+  }) {
+    // 1. Blit hardware depth attachments -> HZB structural mip 0
+    this._blitDepth(commandEncoder, mainDepthTexture, mainDepthView);
+
+    // 2. Safely process downstream mip compute iterations
+    this._buildHZB(commandEncoder);
+
+    // 3. Render final processed SSR output colors
+    this._renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView);
+  }
+  _blitDepth(commandEncoder, depthTexture, depthView) {
+    // const bg = this.device.createBindGroup({
+    //   layout: this.blitPipeline.getBindGroupLayout(0),
+    //   entries: [
+    //     {binding: 0, resource: depthView},
+    //     {binding: 1, resource: this.pointSampler},
+    //   ],
+    // });
+
+    const pass = commandEncoder.beginRenderPass({
+      label: 'Depth blit Pass',
+      colorAttachments: [{
+        view: this.hzbMipWriteViews[0],
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [1, 0, 0, 1] // Clear with maximum depth standard configuration
+      }]
+    });
+    pass.setPipeline(this.blitPipeline);
+    // pass.setBindGroup(0, bg);
+    pass.setBindGroup(0, this.depthBlitBindGroup);
+    pass.draw(3);
+    pass.end();
+  }
+  _buildHZB(commandEncoder) {
+    for (let mip = 1; mip < this.mipCount; mip++) {
+      const dstW = Math.max(1, this.width >> mip);
+      const dstH = Math.max(1, this.height >> mip);
+      const pass = commandEncoder.beginComputePass({
+        label: `HZB compute level ${mip}`
+      });
+      pass.setPipeline(this.hzbPipeline);
+      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
+      pass.dispatchWorkgroups(Math.ceil(dstW / 8), Math.ceil(dstH / 8));
+      pass.end();
+    }
+  }
+  _renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView) {
+    const bg = this.device.createBindGroup({
+      layout: this.ssrPipeline.getBindGroupLayout(0),
+      entries: [{
+        binding: 0,
+        resource: {
+          buffer: this._globalSceneUniformBuffer
+        }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.ssrConfigBuffer
+        }
+      }, {
+        binding: 2,
+        resource: sceneTextureView
+      }, {
+        binding: 3,
+        resource: normalTextureView
+      }, {
+        binding: 4,
+        resource: this.hzbFullView
+      },
+      // Samples complete structural HZB map cleanly
+      {
+        binding: 5,
+        resource: this.pointSampler
+      }, {
+        binding: 6,
+        resource: worldPosTextureView
+      }, {
+        binding: 7,
+        resource: this.linearSampler
+      }]
+    });
+    const pass = commandEncoder.beginRenderPass({
+      label: 'SSR Composite Pass',
+      colorAttachments: [{
+        view: this.ssrOutputView,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [0, 0, 0, 0]
+      }]
+    });
+    pass.setPipeline(this.ssrPipeline);
+    pass.setBindGroup(0, bg);
+    pass.draw(3);
+    pass.end();
+  }
+}
+exports.SSRPass = SSRPass;
+function patchMainRenderPassDesc(device, width, height, existingDesc) {
+  // Create normal texture — rgba16float, same size as your color buffer
+  const normalTexture = device.createTexture({
+    label: 'GBuffer normals',
+    size: [width, height],
+    format: 'rgba16float',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+  });
+  const normalTextureView = normalTexture.createView();
+
+  // Add to your existing mainRenderPassDesc
+  existingDesc.colorAttachments[1] = {
+    view: normalTextureView,
+    loadOp: 'clear',
+    storeOp: 'store',
+    clearValue: [0, 0, 0, 0]
+  };
+
+  // Also need r32float linear depth for HZB
+  // (WebGPU depth textures can't be bound as texture_2d<f32>)
+  // Easiest: write linear depth as a second color output from your depth prepass
+  // OR use this standalone r32float texture + a blit (see HZBPass below)
+  const linearDepthTexture = device.createTexture({
+    label: 'Linear depth',
+    size: [width, height],
+    format: 'r32float',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING
+  });
+  return {
+    normalTexture,
+    normalTextureView,
+    linearDepthTexture
+  };
+}
+
+},{"../../shaders/hzb/hzb.wgsl":99}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40503,7 +41848,7 @@ function compositeFragWGSL() {
   `;
 }
 
-},{}],73:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40522,6 +41867,9 @@ var _gizmo = require("./effects/gizmo");
 var _flame = require("./effects/flame");
 var _pipelineManager = require("./pipelineManager");
 var _fragmentVideo = require("../shaders/fragment.video.wgsl");
+var _msdfText = require("./effects/msdfText");
+var _topologyPoint = require("./effects/topology-point");
+var _pointerEffect = require("./effects/pointerEffect");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * ProceduralMeshObj - WebGPU mesh entity with procedural geometry & morphing
@@ -40536,19 +41884,20 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
  * - GPU-accelerated vertex morphing
  */
 class ProceduralMeshObj extends _materials.default {
-  constructor(canvas, device, context, o, inputHandler, globalAmbient) {
+  constructor(canvas, device, context, o, inputHandler, globalAmbient, cameraBuffer) {
     super(device, o.material, null, o.textureCache);
     this.name = o.name || (0, _utils.genName)(3);
     this.done = false;
     this.canvas = canvas;
     this.device = device;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.globalAmbient = [...globalAmbient];
     if (typeof o.material.useBlend === 'undefined' || typeof o.material.useBlend !== "boolean") {
       o.material.useBlend = false;
     }
     this.mType = _utils.MeshType.PROCEDURAL;
-    //cache
+    this.dontDrag = true;
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
@@ -40849,14 +42198,30 @@ class ProceduralMeshObj extends _materials.default {
     this.effects = {};
     if (this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
-      if (typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
-        this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(this.device, 'rgba16float');
+      if (typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
+        this.effects.pointer = new _pointerEffect.PointerEffect(this.device, 'rgba16float', 1, this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.pointEffect !== 'undefined' && this.pointerEffect.pointEffect == true) {
+        this.effects.pointEffect = new _topologyPoint.PointEffect(this.device, 'rgba16float', this.cameraBuffer);
       }
       if (typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true) {
-        this.effects.gizmoEffect = new _gizmo.GizmoEffect(this.device, 'rgba16float');
+        this.effects.gizmoEffect = new _gizmo.GizmoEffect(this.device, 'rgba16float', this.cameraBuffer);
       }
       if (typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
-        this.effects.flameEffect = new _flame.FlameEffect(this.device, pf, "rgba16float", 'torch');
+        this.effects.flameEffect = new _flame.FlameEffect(this.device, pf, "rgba16float", 'torch', this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.gpuText !== 'undefined' && this.pointerEffect.gpuText == true) {
+        this.effects.gpuText = new _msdfText.MSDFTextEffect(this.device, pf, "rgba16float", 'torch', this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
+        this.effects.flameEmitter = new _flameEmmiter.FlameEmitter(this.device, "rgba16float", 20, this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
+        this.effects.destructionEffect = new DestructionEffect(this.device, 'rgba16float', {
+          particleCount: 100,
+          duration: 2.5,
+          color: [0.6, 0.5, 0.4, 1.0]
+        }, this.cameraBuffer);
       }
     }
     this.modelUniformBuffer = this.device.createBuffer({
@@ -41166,6 +42531,10 @@ class ProceduralMeshObj extends _materials.default {
           }),
           targets: [{
             format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
           }],
           constants: fragmentConstants
         },
@@ -41207,6 +42576,10 @@ class ProceduralMeshObj extends _materials.default {
                 operation: 'add'
               }
             }
+          }, {
+            format: 'rgba16float'
+          }, {
+            format: 'rgba16float'
           }],
           constants: fragmentConstants
         },
@@ -41244,7 +42617,7 @@ class ProceduralMeshObj extends _materials.default {
       console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} → ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
     }
   }
-  async destroy(destructionType = "shatter", duration = 0.8, options = {}) {
+  async destroyGeo(destructionType = "shatter", duration = 0.8, options = {}) {
     const {
       onComplete = null,
       physics = null,
@@ -42161,7 +43534,7 @@ class MeshMorpher {
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/fragment.video.wgsl":89,"../shaders/vertex.procedural.wgsl":112,"./effects/flame":40,"./effects/flame-emmiter":39,"./effects/gizmo":44,"./geometry-factory":50,"./literals":54,"./materials":59,"./matrix-class":60,"./pipelineManager":69,"./utils":78,"wgpu-matrix":31}],74:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":91,"../shaders/vertex.procedural.wgsl":116,"./effects/flame":42,"./effects/flame-emmiter":41,"./effects/gizmo":46,"./effects/msdfText":48,"./effects/pointerEffect":49,"./effects/topology-point":50,"./geometry-factory":52,"./literals":56,"./materials":61,"./matrix-class":62,"./pipelineManager":71,"./utils":80,"wgpu-matrix":31}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42308,66 +43681,7 @@ class FireballSystem {
 }
 exports.FireballSystem = FireballSystem;
 
-},{"../loaders/webgpu-gltf":58}],75:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.FOUNTAIN_COLUMN_TOP = void 0;
-exports.fountainBasinStoneConfig = fountainBasinStoneConfig;
-exports.fountainBasinWaterConfig = fountainBasinWaterConfig;
-exports.fountainCapConfig = fountainCapConfig;
-exports.fountainCurtainConfig = fountainCurtainConfig;
-exports.fountainStructureConfig = fountainStructureConfig;
-// Stone column
-function fountainStructureConfig(MeshMorpher) {
-  return {
-    meshA: MeshMorpher.cylinder(0.15, 2.5),
-    meshB: MeshMorpher.cylinder(0.15, 2.5),
-    resolutionU: 32,
-    resolutionV: 1
-  };
-}
-// Stone basin floor
-function fountainBasinStoneConfig(MeshMorpher) {
-  return {
-    meshA: MeshMorpher.plane(2.5),
-    meshB: MeshMorpher.plane(2.5),
-    resolutionU: 1,
-    resolutionV: 1
-  };
-}
-// Water top disk
-function fountainCapConfig(MeshMorpher) {
-  return {
-    meshA: MeshMorpher.plane(1.0),
-    meshB: MeshMorpher.plane(1.4),
-    resolutionU: 1,
-    resolutionV: 1
-  };
-}
-// Water curtain
-function fountainCurtainConfig(MeshMorpher) {
-  return {
-    meshA: MeshMorpher.cylinder(0.5, 2.0),
-    meshB: MeshMorpher.cylinder(0.6, 2.0),
-    resolutionU: 48,
-    resolutionV: 32
-  };
-}
-// Basin water surface
-function fountainBasinWaterConfig(MeshMorpher) {
-  return {
-    meshA: MeshMorpher.plane(2.0),
-    meshB: MeshMorpher.plane(2.0),
-    resolutionU: 1,
-    resolutionV: 1
-  };
-}
-const FOUNTAIN_COLUMN_TOP = exports.FOUNTAIN_COLUMN_TOP = 1.25; // half of cylinder height 2.5
-
-},{}],76:[function(require,module,exports){
+},{"../loaders/webgpu-gltf":60}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42406,7 +43720,7 @@ function createGroundTexture(device, size = 512) {
   return texture;
 }
 
-},{}],77:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42422,6 +43736,12 @@ exports.rayIntersectsAABB = rayIntersectsAABB;
 exports.rayIntersectsSphere = rayIntersectsSphere;
 exports.touchCoordinate = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
+// /**
+// * MatrixEngine Raycaster (Fixed Sorting)
+// * Author: Nikola Lukić
+// * Version: 2.1
+// */
+
 /**
 * MatrixEngine Raycaster (improved)
 * Author: Nikola Lukić
@@ -42440,8 +43760,16 @@ const _clip = new Float32Array([0, 0, 1, 1]);
 const _rayOrigin = new Float32Array(3);
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
-  const x = (event.clientX - rect.left) / rect.width * 2 - 1;
-  const y = -((event.clientY - rect.top) / rect.height * 2 - 1);
+  let x, y;
+  if (document.pointerLockElement === canvas) {
+    // Locked: always rayccast from center
+    x = 0;
+    y = 0;
+  } else {
+    // Unlocked: use event coordinates
+    x = (event.clientX - rect.left) / rect.width * 2 - 1;
+    y = -((event.clientY - rect.top) / rect.height * 2 - 1);
+  }
   _wgpuMatrix.mat4.inverse(camera.projectionMatrix, _invProj);
   _wgpuMatrix.mat4.inverse(camera.view, _invView);
   _clip[0] = x;
@@ -42663,8 +43991,335 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
     }
   });
 }
+// import {mat4, vec3, vec4} from "wgpu-matrix";
 
-},{"wgpu-matrix":31}],78:[function(require,module,exports){
+// export let touchCoordinate = {
+//   enabled: false,
+//   x: 0,
+//   y: 0,
+//   stopOnFirstDetectedHit: false,
+// };
+
+// const _invProj = mat4.create();
+// const _invView = mat4.create();
+
+// export function getRayFromMouse(event, canvas, camera) {
+//   const rect = canvas.getBoundingClientRect();
+
+//   const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+//   const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+
+//   // 🎯 FIX: WebGPU Clip Space near plane is 0, far plane is 1
+//   const nearPoint = [x, y, 0, 1]; 
+//   const farPoint = [x, y, 1, 1];
+
+//   mat4.inverse(camera.projectionMatrix, _invProj);
+//   mat4.inverse(camera.view, _invView);
+
+//   // Unproject near
+//   let nearWorld = vec4.transformMat4(nearPoint, _invProj);
+//   nearWorld = [
+//     nearWorld[0] / nearWorld[3],
+//     nearWorld[1] / nearWorld[3],
+//     nearWorld[2] / nearWorld[3],
+//     1
+//   ];
+//   nearWorld = vec4.transformMat4(nearWorld, _invView);
+
+//   // Unproject far
+//   let farWorld = vec4.transformMat4(farPoint, _invProj);
+//   farWorld = [
+//     farWorld[0] / farWorld[3],
+//     farWorld[1] / farWorld[3],
+//     farWorld[2] / farWorld[3],
+//     1
+//   ];
+//   farWorld = vec4.transformMat4(farWorld, _invView);
+
+//   const rayOrigin = [nearWorld[0], nearWorld[1], nearWorld[2]];
+
+//   const rayDirection = vec3.normalize([
+//     farWorld[0] - nearWorld[0],
+//     farWorld[1] - nearWorld[1],
+//     farWorld[2] - nearWorld[2]
+//   ]);
+
+//   return {
+//     rayOrigin,
+//     rayDirection,
+//     screen: {x, y}
+//   };
+// }
+
+// // Backward compatibility alias
+// export const getRayFromMouse2 = getRayFromMouse;
+
+// export function rayIntersectsSphere(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+//   const center = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+//   const oc = vec3.subtract(rayOrigin, center);
+//   const a = vec3.dot(rayDirection, rayDirection);
+//   const b = 2.0 * vec3.dot(oc, rayDirection);
+//   const c = vec3.dot(oc, oc) - sphereRadius * sphereRadius;
+//   const discriminant = b * b - 4 * a * c;
+
+//   if (discriminant < 0) return null;
+//   const t = (-b - Math.sqrt(discriminant)) / (2.0 * a);
+//   if (t < 0) return null;
+
+//   const hitPoint = vec3.add(rayOrigin, vec3.mulScalar(rayDirection, t));
+//   const hitNormal = vec3.normalize(vec3.subtract(hitPoint, center));
+//   return {t, hitPoint, hitNormal};
+// }
+
+// // export function rayIntersectsAABB(rayOrigin, rayDir, boxMin, boxMax) {
+// //   let tmin = -Infinity;
+// //   let tmax = Infinity;
+
+// //   for (let i = 0; i < 3; i++) {
+// //     if (Math.abs(rayDir[i]) < 0.000001) {
+// //       if (rayOrigin[i] < boxMin[i] || rayOrigin[i] > boxMax[i]) {
+// //         return null;
+// //       }
+// //       continue;
+// //     }
+
+// //     let t1 = (boxMin[i] - rayOrigin[i]) / rayDir[i];
+// //     let t2 = (boxMax[i] - rayOrigin[i]) / rayDir[i];
+
+// //     if (t1 > t2) {
+// //       const temp = t1;
+// //       t1 = t2;
+// //       t2 = temp;
+// //     }
+
+// //     tmin = Math.max(tmin, t1);
+// //     tmax = Math.min(tmax, t2);
+
+// //     if (tmin > tmax) return null;
+// //   }
+
+// //   if (tmax < 0) return null;
+
+// //   const t = tmin >= 0 ? tmin : tmax;
+
+// //   return {
+// //     t,
+// //     hitPoint: [
+// //       rayOrigin[0] + rayDir[0] * t,
+// //       rayOrigin[1] + rayDir[1] * t,
+// //       rayOrigin[2] + rayDir[2] * t
+// //     ]
+// //   };
+// // }
+
+// export function rayIntersectsAABB(rayOrigin, rayDir, boxMin, boxMax) {
+//   let tmin = -Infinity;
+//   let tmax = Infinity;
+
+//   for (let i = 0; i < 3; i++) {
+//     if (Math.abs(rayDir[i]) < 0.000001) {
+//       if (rayOrigin[i] < boxMin[i] || rayOrigin[i] > boxMax[i]) return null;
+//       continue;
+//     }
+
+//     let t1 = (boxMin[i] - rayOrigin[i]) / rayDir[i];
+//     let t2 = (boxMax[i] - rayOrigin[i]) / rayDir[i];
+
+//     if (t1 > t2) {
+//       const temp = t1;
+//       t1 = t2;
+//       t2 = temp;
+//     }
+
+//     tmin = Math.max(tmin, t1);
+//     tmax = Math.min(tmax, t2);
+
+//     if (tmin > tmax) return null;
+//   }
+
+//   // Object is behind the camera ray path entirely
+//   if (tmax < 0) return null;
+
+//   // If we are inside the box, tmin is negative, so closest intersection forward is tmax
+//   const t = tmin >= 0 ? tmin : tmax;
+
+//   return {
+//     t,
+//     hitPoint: [
+//       rayOrigin[0] + rayDir[0] * t,
+//       rayOrigin[1] + rayDir[1] * t,
+//       rayOrigin[2] + rayDir[2] * t
+//     ]
+//   };
+// }
+
+// export function computeWorldVertsAndAABB(object) {
+//   if (object._aabbCache &&
+//     object._aabbCache.x === object.position.x &&
+//     object._aabbCache.y === object.position.y &&
+//     object._aabbCache.z === object.position.z) {
+//     return object._aabbCache;
+//   }
+//   const modelMatrix = object.getModelMatrix(object.position, true);
+//   const min = [Infinity, Infinity, Infinity];
+//   const max = [-Infinity, -Infinity, -Infinity];
+//   const verts = object.meshA ? object.meshA.vertices : object.mesh.vertices;
+
+//   for (let i = 0; i < verts.length; i += 3) {
+//     const world = vec3.transformMat4(
+//       [verts[i], verts[i + 1], verts[i + 2]],
+//       modelMatrix
+//     );
+//     min[0] = Math.min(min[0], world[0]);
+//     min[1] = Math.min(min[1], world[1]);
+//     min[2] = Math.min(min[2], world[2]);
+//     max[0] = Math.max(max[0], world[0]);
+//     max[1] = Math.max(max[1], world[1]);
+//     max[2] = Math.max(max[2], world[2]);
+//   }
+
+//   object._aabbCache = {
+//     modelMatrix,
+//     boxMin: min,
+//     boxMax: max,
+//     x: object.position.x,
+//     y: object.position.y,
+//     z: object.position.z
+//   };
+
+//   return object._aabbCache;
+// }
+
+// function dispatchRayHitEvent(canvas, data) {
+//   if (data.eventName === 'click') {
+//     canvas.dispatchEvent(new CustomEvent("ray.hit.event", {detail: data}));
+//   } else if (data.eventName === 'mousedown') {
+//     canvas.dispatchEvent(new CustomEvent("ray.hit.mousedown", {detail: data}));
+//   } else {
+//     canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", {detail: data}));
+//   }
+// }
+
+// // 🎯 FIXED LISTENER 1
+// export function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {
+//   const canvas = document.getElementById(canvasId);
+//   if (!canvas) {
+//     console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
+//     return;
+//   }
+
+//   canvas.addEventListener(eventName, (event) => {
+//     const camera = app.cameras[app.mainCameraParams.type];
+//     const {rayOrigin, rayDirection, screen} = getRayFromMouse(event, canvas, camera);
+//     let closestHit = null;
+
+//     for (const object of app.mainRenderBundle) {
+//       if (!object.raycast?.enabled) continue;
+
+//       const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
+//       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+//       const sphereHit = rayIntersectsSphere(rayOrigin, rayDirection, object.position, object.raycast.radius);
+
+//       // Determine the valid intersection distance for this object
+//       let currentT = null;
+//       let chosenHit = null;
+
+//       if (hitAABB && sphereHit) {
+//         // Use whichever mathematical volume boundary is encountered first
+//         chosenHit = hitAABB.t < sphereHit.t ? hitAABB : sphereHit;
+//         currentT = chosenHit.t;
+//       } else if (hitAABB) {
+//         chosenHit = hitAABB;
+//         currentT = hitAABB.t;
+//       } else if (sphereHit) {
+//         chosenHit = sphereHit;
+//         currentT = sphereHit.t;
+//       }
+
+//       // Strict closest comparison evaluation
+//       if (chosenHit && currentT >= 0) {
+//         if (!closestHit || currentT < closestHit.t) {
+//           closestHit = {
+//             ...chosenHit,
+//             t: currentT,
+//             hitObject: object
+//           };
+//         }
+//       }
+//     }
+
+//     if (closestHit) {
+//       dispatchRayHitEvent(canvas, {
+//         hitObject: closestHit.hitObject,
+//         hitPoint: closestHit.hitPoint,
+//         hitNormal: closestHit.hitNormal || null,
+//         hitDistance: closestHit.t,
+//         rayOrigin,
+//         rayDirection,
+//         screenCoords: screen,
+//         camera,
+//         timestamp: performance.now(),
+//         button: event.button,
+//         eventName: eventName
+//       });
+//     }
+//   });
+// }
+
+// // 🎯 FIXED LISTENER 2
+// export function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
+//   const canvas = document.getElementById(canvasId);
+//   if (!canvas) {
+//     console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
+//     return;
+//   }
+
+//   canvas.addEventListener(eventName, (event) => {
+//     const camera = app.cameras[app.mainCameraParams.type];
+//     const {rayOrigin, rayDirection, screen} = getRayFromMouse(event, canvas, camera);
+//     let closestHit = null;
+
+//     for (const object of app.mainRenderBundle) {
+//       if (!object.raycast?.enabled || !object.getModelMatrix) continue;
+
+//       const {boxMin, boxMax} = computeWorldVertsAndAABB(object);
+//       const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
+
+//       if (!hitAABB || hitAABB.t < 0) continue;
+
+//       if (!closestHit || hitAABB.t < closestHit.t) {
+//         closestHit = {
+//           ...hitAABB,
+//           hitObject: object
+//         };
+
+//         if (touchCoordinate.stopOnFirstDetectedHit) {
+//           // Note: Only break if order in app.mainRenderBundle matches depth,
+//           // otherwise leave stopOnFirstDetectedHit false to get absolute closest.
+//           break; 
+//         }
+//       }
+//     }
+
+//     if (closestHit) {
+//       dispatchRayHitEvent(canvas, {
+//         hitObject: closestHit.hitObject,
+//         hitPoint: closestHit.hitPoint,
+//         hitNormal: closestHit.hitNormal || null,
+//         hitDistance: closestHit.t,
+//         rayOrigin,
+//         rayDirection,
+//         screenCoords: screen,
+//         camera,
+//         timestamp: performance.now(),
+//         button: event.button,
+//         eventName: eventName
+//       });
+//     }
+//   });
+// }
+
+},{"wgpu-matrix":31}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44072,7 +45727,7 @@ class CameraPath {
 }
 exports.CameraPath = CameraPath;
 
-},{}],79:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44098,8 +45753,8 @@ window.urlQ = _utils.urlQuery;
 const MEConfig = exports.MEConfig = {
   fsManager: new _utils.FullScreenManagerElement(),
   SHADOW_RES: (0, _utils.isMobile)() == true ? 128.0 : 512.0,
-  MAX_BONES: (0, _utils.isMobile)() == true ? 80 : 100,
-  MAX_SPOTLIGHTS: (0, _utils.isMobile)() == true ? 18 : 40,
+  MAX_BONES: (0, _utils.isMobile)() == true ? 70 : 100,
+  MAX_SPOTLIGHTS: (0, _utils.isMobile)() == true ? 18 : 20,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
@@ -44107,7 +45762,7 @@ const MEConfig = exports.MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: true,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
-  logLoopError: false,
+  logLoopError: true,
   construct: function (options = {}) {
     if (urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
@@ -44171,7 +45826,7 @@ const MEConfig = exports.MEConfig = {
   }
 };
 
-},{"./engine/utils.js":78}],80:[function(require,module,exports){
+},{"./engine/utils.js":80}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44213,7 +45868,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":32,"../engine/utils":78}],81:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":32,"../engine/utils":80}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44383,7 +46038,7 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],82:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44429,7 +46084,7 @@ fn fsMain(in : VertexOutput) -> @location(0) vec4f {
 }
 `;
 
-},{}],83:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44438,132 +46093,147 @@ Object.defineProperty(exports, "__esModule", {
 exports.flameEffectInstance = void 0;
 const flameEffectInstance = exports.flameEffectInstance = `
 struct Camera {
-    viewProj : mat4x4<f32>
+  viewProj : mat4x4<f32>
 };
+
 @group(0) @binding(0) var<uniform> camera : Camera;
 
-// Exact same layout as the working shader, but in a storage array
 struct ModelData {
-    model     : mat4x4<f32>,
-    timeSpeed : vec4<f32>,
-    params    : vec4<f32>,
-    tint      : vec4<f32>,
+  model     : mat4x4<f32>,
+  timeSpeed : vec4<f32>,
+  params    : vec4<f32>,
+  tint      : vec4<f32>
 };
 @group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
 
 struct VSIn {
-    @location(0) position : vec3<f32>,
-    @location(1) uv : vec2<f32>,
-    @builtin(instance_index) instanceIdx : u32,
+  @location(0) position : vec3<f32>,
+  @location(1) uv : vec2<f32>,
+  @builtin(instance_index) instanceIdx : u32,
 };
 
 struct VSOut {
-    @builtin(position) position : vec4<f32>,
-    @location(0) uv : vec2<f32>,
-    @location(1) p0 : vec4<f32>,
-    @location(2) p1 : vec4<f32>,
-    @location(3) tintColor : vec3<f32>,
+  @builtin(position) position : vec4<f32>,
+  @location(0) uv : vec2<f32>,
+  @location(1) p0 : vec4<f32>,
+  @location(2) p1 : vec4<f32>,
+  @location(3) tintColor : vec3<f32>,
+  @location(4) fragNorm  : vec3<f32>,
+  @location(5) fragPos   : vec3<f32>,
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
-    var output : VSOut;
-    let modelData = modelDataArray[input.instanceIdx];
+  var output : VSOut;
+  let modelData = modelDataArray[input.instanceIdx];
 
-    let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
-    output.position = camera.viewProj * worldPos;
-    output.uv = input.uv;
+  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+  output.position = camera.viewProj * worldPos;
+  output.uv = input.uv;
 
-    // Pass data to fragment exactly like the working shader
-    output.p0 = vec4<f32>(
-        modelData.timeSpeed.x, // time
-        modelData.timeSpeed.y, // speed
-        modelData.params.x,    // intensity
-        modelData.params.y     // turbulence
-    );
-    output.p1 = vec4<f32>(
-        modelData.params.z,    // stretch
-        modelData.tint.w,      // tintStrength
-        0.0, 0.0
-    );
-    output.tintColor = modelData.tint.xyz;
+  output.fragPos = worldPos.xyz;
+  let localNormal = vec3<f32>(0.0, 0.0, 1.0); 
+  output.fragNorm = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz) * localNormal;
 
-    return output;
+
+  // Pass data to fragment exactly like the working shader
+  output.p0 = vec4<f32>(
+      modelData.timeSpeed.x, // time
+      modelData.timeSpeed.y, // speed
+      modelData.params.x,    // intensity
+      modelData.params.y     // turbulence
+  );
+  output.p1 = vec4<f32>(
+      modelData.params.z,    // stretch
+      modelData.tint.w,      // tintStrength
+      0.0, 0.0
+  );
+  output.tintColor = modelData.tint.xyz;
+
+  return output;
 }
 
 fn hash2(n : vec2<f32>) -> f32 {
-    return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
 fn noise(p : vec2<f32>) -> f32 {
-    let i = floor(p); let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(hash2(i + vec2<f32>(0.0, 0.0)), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
-        mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
-        u.y
-    );
+  let i = floor(p); let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash2(i + vec2<f32>(0.0, 0.0)), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
+    mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
+    u.y
+  );
 }
 
 fn fbm(p : vec2<f32>) -> f32 {
-    var v = 0.0; var a = 0.5; var pos = p;
-    for (var i = 0; i < 2; i = i + 1) {
-        v += a * noise(pos);
-        pos = pos * 2.1 + vec2<f32>(1.7, 9.2);
-        a *= 0.5;
-    }
-    return v;
+  var v = 0.0; var a = 0.5; var pos = p;
+  for (var i = 0; i < 2; i = i + 1) {
+    v += a * noise(pos);
+    pos = pos * 2.1 + vec2<f32>(1.7, 9.2);
+    a *= 0.5;
+  }
+  return v;
 }
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+  
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-    let time       = input.p0.x;
-    let speed      = input.p0.y;
-    let intensity  = input.p0.z;
-    let turbulence = input.p0.w;
-    let stretch    = input.p1.x;
-    let tintStr    = input.p1.y;
-    let tintColor  = input.tintColor;
+fn fsMain(input : VSOut) -> FragOut {
+  let time       = input.p0.x;
+  let speed      = input.p0.y;
+  let intensity  = input.p0.z;
+  let turbulence = input.p0.w;
+  let stretch    = input.p1.x;
+  let tintStr    = input.p1.y;
+  let tintColor  = input.tintColor;
 
-    let t = time * speed * 2.0;
-    var uv = input.uv;
-    uv.y = uv.y / max(stretch, 0.01);
+  let t = time * speed * 2.0;
+  var uv = input.uv;
+  uv.y = uv.y / max(stretch, 0.01);
 
-    let warpAmt = turbulence * 0.18;
-    let warpX   = noise(uv * 3.0 + vec2<f32>(0.0, t * 0.6)) - 0.5;
-    let warpY   = noise(uv * 3.0 + vec2<f32>(5.2, t * 0.4)) - 0.5;
-    var warpedUV = uv + vec2<f32>(warpX, warpY) * warpAmt;
+  let warpAmt = turbulence * 0.18;
+  let warpX   = noise(uv * 3.0 + vec2<f32>(0.0, t * 0.6)) - 0.5;
+  let warpY   = noise(uv * 3.0 + vec2<f32>(5.2, t * 0.4)) - 0.5;
+  var warpedUV = uv + vec2<f32>(warpX, warpY) * warpAmt;
 
-    warpedUV.y += t * 0.4;
-    warpedUV.x += sin(t * 0.7) * 0.08 * turbulence;
+  warpedUV.y += t * 0.4;
+  warpedUV.x += sin(t * 0.7) * 0.08 * turbulence;
 
-    var n = fbm(warpedUV * 6.0 + vec2<f32>(0.0, t * 0.8));
-    n = pow(n, 3.0 - turbulence * 1.2);
+  var n = fbm(warpedUV * 6.0 + vec2<f32>(0.0, t * 0.8));
+  n = pow(n, 3.0 - turbulence * 1.2);
 
-    let hotColor  = vec3<f32>(1.0, 0.92, 0.35);
-    let midColor  = vec3<f32>(1.0, 0.38, 0.04);
-    let coolColor = vec3<f32>(0.55, 0.04, 0.0 );
+  let hotColor  = vec3<f32>(1.0, 0.92, 0.35);
+  let midColor  = vec3<f32>(1.0, 0.38, 0.04);
+  let coolColor = vec3<f32>(0.55, 0.04, 0.0 );
 
-    let g1 = smoothstep(0.0, 0.5, n);
-    let g2 = smoothstep(0.5, 1.0, n);
-    var baseColor = mix(mix(coolColor, midColor, g1), hotColor, g2);
+  let g1 = smoothstep(0.0, 0.5, n);
+  let g2 = smoothstep(0.5, 1.0, n);
+  var baseColor = mix(mix(coolColor, midColor, g1), hotColor, g2);
 
-    let tintMask = smoothstep(0.0, 0.5, n);
-    baseColor = mix(baseColor, baseColor * tintColor * 2.0, tintStr * tintMask);
+  let tintMask = smoothstep(0.0, 0.5, n);
+  baseColor = mix(baseColor, baseColor * tintColor * 2.0, tintStr * tintMask);
 
-    let finalColor = baseColor * n * intensity;
-    let edgeMask = smoothstep(0.0, 0.15, input.uv.x) * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
-    let fadeStart = clamp(0.25 / max(stretch, 0.1), 0.1, 0.6);
-    let topFade = 1.0 - smoothstep(fadeStart, 1.0, input.uv.y);
+  let finalColor = baseColor * n * intensity;
+  let edgeMask = smoothstep(0.0, 0.15, input.uv.x) * smoothstep(0.0, 0.15, 1.0 - input.uv.x);
+  let fadeStart = clamp(0.25 / max(stretch, 0.1), 0.1, 0.6);
+  let topFade = 1.0 - smoothstep(fadeStart, 1.0, input.uv.y);
+  let alpha = smoothstep(0.01, 0.4, n) * edgeMask * topFade;
 
-    // let alpha = smoothstep(0.25, 0.9, n) * edgeMask * topFade;
-    let alpha = smoothstep(0.01, 0.4, n) * edgeMask * topFade;
-
-    return vec4<f32>(finalColor * alpha, alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
-},{}],84:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44575,6 +46245,7 @@ const flameEffect = exports.flameEffect = /* wgsl */`
 struct Camera {
   viewProj : mat4x4<f32>
 };
+
 @group(0) @binding(0) var<uniform> camera : Camera;
 
 // Uniform buffer layout (112 bytes, all vec4-aligned):
@@ -44582,12 +46253,14 @@ struct Camera {
 //   offset  64 : timeSpeed    vec4<f32>     (.x = time, .y = speed)
 //   offset  80 : params       vec4<f32>     (.x = intensity, .y = turbulence, .z = stretch)
 //   offset  96 : tint         vec4<f32>     (.xyz = rgb tint colour, .w = tint strength 0..1)
+
 struct ModelData {
   model     : mat4x4<f32>,
   timeSpeed : vec4<f32>,
   params    : vec4<f32>,
   tint      : vec4<f32>,
 };
+
 @group(0) @binding(1) var<uniform> modelData : ModelData;
 
 struct VSIn {
@@ -44598,10 +46271,12 @@ struct VSIn {
 struct VSOut {
   @builtin(position) position  : vec4<f32>,
   @location(0)       uv        : vec2<f32>,
-  // Pack all scalar params into two interpolants to stay within limits
   @location(1)       p0        : vec4<f32>, // .x=time .y=speed .z=intensity .w=turbulence
   @location(2)       p1        : vec4<f32>, // .x=stretch .y=tintStrength
   @location(3)       tintColor : vec3<f32>,
+
+  @location(4) fragNorm  : vec3<f32>,
+  @location(5) fragPos   : vec3<f32>,
 };
 
 @vertex
@@ -44611,6 +46286,10 @@ fn vsMain(input : VSIn) -> VSOut {
   let worldPos     = modelData.model * vec4<f32>(input.position, 1.0);
   output.position  = camera.viewProj * worldPos;
   output.uv        = input.uv;
+
+  output.fragPos = worldPos.xyz;
+  let localNormal = vec3<f32>(0.0, 0.0, 1.0); 
+  output.fragNorm = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz) * localNormal;
 
   output.p0 = vec4<f32>(
     modelData.timeSpeed.x,  // time
@@ -44659,11 +46338,14 @@ fn fbm(p : vec2<f32>) -> f32 {
   return v;
 }
 
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VSOut) -> FragOut {
   // Unpack
   let time       = input.p0.x;
   let speed      = input.p0.y;
@@ -44719,11 +46401,17 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   let alpha = smoothstep(0.08, 0.65, n) * edgeMask * topFade;
 
   // Premultiplied alpha for additive blending
-  return vec4<f32>(finalColor * alpha, alpha);
+  // return vec4<f32>(finalColor * alpha, alpha);
+
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 
-},{}],85:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44890,8 +46578,14 @@ fn sss_lights(fragPos: vec3f, N: vec3f, V: vec3f, fresnel: f32) -> vec3f {
 //  Fragment: discard outside circle, caustics + ripple rings + glow
 // ─────────────────────────────────────────────────────────────────
 const fountainCapFragmentWGSL = () => SHARED + `
+
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let t  = scene.time;
     let N  = normalize(input.fragNorm);
     let V  = normalize(scene.cameraPos - input.fragPos);
@@ -44964,8 +46658,13 @@ fn pb_shadows(fragPos: vec3f, N: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f
 // ─────────────────────────────────────────────────────────────────
 exports.fountainCapFragmentWGSL = fountainCapFragmentWGSL;
 const fountainCurtainFragmentWGSL = () => SHARED + `
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let t  = scene.time;
     let N  = normalize(input.fragNorm);
     let V  = normalize(scene.cameraPos - input.fragPos);
@@ -45029,8 +46728,14 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 // ─────────────────────────────────────────────────────────────────
 exports.fountainCurtainFragmentWGSL = fountainCurtainFragmentWGSL;
 const fountainBasinFragmentWGSL = () => SHARED + `
+
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let t  = scene.time;
     let N  = normalize(input.fragNorm);
     let V  = normalize(scene.cameraPos - input.fragPos);
@@ -45270,7 +46975,7 @@ fn main(input: VertexInput) -> VertexOutput {
 `;
 exports.fountainWaterVertexWGSL = fountainWaterVertexWGSL;
 
-},{"../../me-config":79}],86:[function(require,module,exports){
+},{"../../me-config":81}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45278,7 +46983,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.fragmentDarkWGSL = void 0;
 var _meConfig = require("../me-config");
-console.log('TEST MAX_SPOTLIGHTS FROM SHADER', _meConfig.MEConfig.MAX_SPOTLIGHTS);
+// console.log('TEST MAX_SPOTLIGHTS FROM SHADER', MEConfig.MAX_SPOTLIGHTS);
 let fragmentDarkWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.14159;
@@ -45470,15 +47175,17 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
   return visibility / weight;
 }
 
+struct FragOut {
+    @location(0) color   : vec4f,
+    @location(1) normal  : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
   let norm = normalize(input.fragNorm);
   let viewDir = normalize(scene.cameraPos - input.fragPos);
   let materialData = getPBRMaterial(input.uv);
-  // if (materialData.alpha < 0.01) {
-  //     discard;
-  // }
-
   var lightContribution = vec3f(0.0);
   for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
       let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
@@ -45486,10 +47193,6 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
       let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
       let depthRef = p.z;
       let lightDir = normalize(spotlights[i].position - input.fragPos);
-      // let inFrustum =
-      //     p.z >= 0.0 && p.z <= 1.0 &&
-      //     p.x >= -1.0 && p.x <= 1.0 &&
-      //     p.y >= -1.0 && p.y <= 1.0;
       let inDepth = p.z >= 0.0 && p.z <= 1.0;
       let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
       let shadowFactor = select(1.0, visibility, inDepth);
@@ -45510,11 +47213,16 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
   // var ambientTerm = material.ambientColor + scene.globalAmbient;
   // var finalColor = ambientTerm + texColor.rgb * lightContribution;
   let alpha = texColor.a * material.baseColorFactor.a;
-  return vec4f(finalColor, alpha);
+  // return vec4f(finalColor, alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(norm, 0.0),
+    vec4f(input.fragPos, 1.0),
+  );
 }`;
 exports.fragmentDarkWGSL = fragmentDarkWGSL;
 
-},{"../me-config":79}],87:[function(require,module,exports){
+},{"../me-config":81}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45527,52 +47235,52 @@ override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -45590,136 +47298,147 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
 // ---------------- PBR Helpers ----------------
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 // ---------------- Spotlight ----------------
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) { return vec3f(0.0); }
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) { return vec3f(0.0); }
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-    if (coneAtten <= 0.0) { return vec3f(0.0); }
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  if (coneAtten <= 0.0) { return vec3f(0.0); }
 
-    let H = normalize(L + V);
-    let F0 = mix(vec3f(0.04), material.baseColor, material.metallic);
-    let F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-    let D = distributionGGX(N, H, material.roughness);
-    let G = geometrySmith(N, V, L, material.roughness);
-    let spec = (D * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 1e-5);
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor / PI;
+  let H = normalize(L + V);
+  let F0 = mix(vec3f(0.04), material.baseColor, material.metallic);
+  let F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+  let D = distributionGGX(N, H, material.roughness);
+  let G = geometrySmith(N, V, L, material.roughness);
+  let spec = (D * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 1e-5);
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor / PI;
 
-    let radiance = light.color * light.intensity;
-    return (diffuse + spec) * radiance * NdotL * coneAtten;
+  let radiance = light.color * light.intensity;
+  return (diffuse + spec) * radiance * NdotL * coneAtten;
 }
 
 // ---------------- PCF Shadow ----------------
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            shadowUV + offsets[i] * oneOverSize,
-            layer, depthRef - bias
-        );
-    }
-    return visibility / 9.0;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      visibility += textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          shadowUV + offsets[i] * oneOverSize,
+          layer, depthRef - bias
+      );
+  }
+  return visibility / 9.0;
 }
 
-// ---------------- Fragment ----------------
+struct FragOut {
+  @location(0) color   : vec4f,
+  @location(1) normal  : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    let materialData = getPBRMaterial(input.uv);
+fn main(input: FragmentInput) -> FragOut {
+  let norm = normalize(input.fragNorm);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
 
-    if (materialData.alpha < 0.01) {
-        discard;
-    }
+  if (materialData.alpha < 0.01) {
+      discard;
+  }
 
-    var lightContribution = vec3f(0.0);
+  var lightContribution = vec3f(0.0);
 
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p = sc.xyz / sc.w;
-        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-        let depthRef = p.z;
+  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p = sc.xyz / sc.w;
+      let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+      let depthRef = p.z;
 
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
 
-        // Only apply shadow if fragment is inside light frustum
-        let inFrustum = p.z >= 0.0 && p.z <= 1.0 &&
-                        p.x >= -1.0 && p.x <= 1.0 &&
-                        p.y >= -1.0 && p.y <= 1.0;
-        let shadowFactor = select(1.0, visibility, inFrustum);
+      // Only apply shadow if fragment is inside light frustum
+      let inFrustum = p.z >= 0.0 && p.z <= 1.0 &&
+                      p.x >= -1.0 && p.x <= 1.0 &&
+                      p.y >= -1.0 && p.y <= 1.0;
+      let shadowFactor = select(1.0, visibility, inFrustum);
 
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-        lightContribution += contrib * shadowFactor;
-    }
+      let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+      lightContribution += contrib * shadowFactor;
+  }
 
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
 
-    return vec4f(finalColor, materialData.alpha);
+  // return vec4f(finalColor, materialData.alpha);
+
+  return FragOut(
+    vec4f(finalColor, materialData.alpha),
+    vec4f(norm, 0.0)
+    vec4f(input.fragPos, 1.0),
+  );
 }
 `;
 exports.fragmentWGSLGPT = fragmentWGSLGPT;
 
-},{"../me-config":79}],88:[function(require,module,exports){
+},{"../me-config":81}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45973,63 +47692,63 @@ fn worldPosToEquirectUV(worldPos: vec3f) -> vec2f {
     return vec2f(u, v);
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
+fn main(input: FragmentInput) -> FragOut {
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
+  if (materialData.alpha < 0.01) { discard; }
+  var lightContribution = vec3f(0.0);
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
+      let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p        = sc.xyz / sc.w;
+      let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
+      let depthRef = p.z;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let inFrustum = p.z >= 0.0 && p.z <= 1.0
+                    && p.x >= -1.0 && p.x <= 1.0
+                    && p.y >= -1.0 && p.y <= 1.0;
+      let vis         = sampleShadow(shadowUV, i32(i), depthRef, N, lightDir);
+      let shadowFactor = select(1.0, vis, inFrustum);
+      let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
+      lightContribution += contrib * shadowFactor;
+      // Mirror: sharp specular from each spotlight
+      let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+      let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+      lightContribution += mirrorSpec * coneFactor * shadowFactor;
+  }
 
-    let materialData = getPBRMaterial(input.uv);
-    if (materialData.alpha < 0.01) { discard; }
-
-    var lightContribution = vec3f(0.0);
-
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
-        let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p        = sc.xyz / sc.w;
-        // let shadowUV = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-        let shadowUV = vec2f(p.x * 0.5 + 0.5, p.y * 0.5 + 0.5);
-        let depthRef = p.z;
-
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let inFrustum = p.z >= 0.0 && p.z <= 1.0
-                     && p.x >= -1.0 && p.x <= 1.0
-                     && p.y >= -1.0 && p.y <= 1.0;
-
-        let vis         = sampleShadow(shadowUV, i32(i), depthRef, N, lightDir);
-        let shadowFactor = select(1.0, vis, inFrustum);
-
-        let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
-        lightContribution += contrib * shadowFactor;
-
-        // Mirror: sharp specular from each spotlight
-        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
-        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
-        lightContribution += mirrorSpec * coneFactor * shadowFactor;
-    }
-
-    let R = reflect(-V, N);
-    // var envColor: vec3f;
-    let envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
-
-    let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    finalColor = mix(
-        envColor,
-        finalColor,
-        mirrorParams.baseColorMix
-    );
-
-    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
-    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
-    finalColor += illuminate;
-    let alpha = mix(materialData.alpha, 1.0, 0.5);
-    return vec4f(finalColor, alpha);
+  let R = reflect(-V, N);
+  let envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+  let envFresn = fresnelSchlick(max(dot(N, V), 0.0), mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+  finalColor = mix(
+      envColor,
+      finalColor,
+      mirrorParams.baseColorMix
+  );
+  finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+  let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
+  finalColor += illuminate;
+  let alpha = mix(materialData.alpha, 1.0, 0.5);
+  // return vec4f(finalColor, alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0),
+  );
 }
 `;
 exports.mirrorIlluminateFragmentWGSL = mirrorIlluminateFragmentWGSL;
 
-},{"../me-config":79}],89:[function(require,module,exports){
+},{"../me-config":81}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46059,45 +47778,50 @@ struct FragmentInput {
 const albedo = vec3f(0.9);
 const ambientFactor = 1.2;
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input : FragmentInput) -> @location(0) vec4f {
+fn main(input : FragmentInput) -> FragOut {
   let lambertFactor = max(dot(normalize(scene.lightPos - input.fragPos), normalize(input.fragNorm)), 0.0);
   let lightingFactor = min(ambientFactor * lambertFactor, 1.0);
   let textureColor = textureSampleBaseClampToEdge(meshTexture, meshSampler, input.uv);
-  let color: vec4f = vec4(textureColor.rgb * ambientFactor , textureColor.a);
-  // let color: vec4f = vec4(textureColor.rgb * lightingFactor * albedo, textureColor.a);
-   switch (postFXMode) {
-    case 0: {
-      return color;
-    }
-    case 1: {
-      // Invert
-      return vec4f(1.0 - color.rgb, color.a);
-    }
-    case 2: {
-      // Grayscale
-      let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
-      return vec4f(vec3f(gray), color.a);
-    }
-    case 3: {
-      // Chroma Key
-      let keyColor = vec3f(0.0, 1.0, 0.0);
-      let threshold = 0.3;
-      let diff = distance(color.rgb, keyColor);
-      if (diff < threshold) {
-        return vec4f(0.0, 0.0, 0.0, 0.0);
-      }
-      return color;
-    }
-    default: {
-      return color;
+  let color: vec4f = vec4(textureColor.rgb * ambientFactor, textureColor.a);
+  
+  // ✅ Apply post-FX based on mode
+  var finalColor: vec4f = color;
+  
+  if (postFXMode == 1u) {
+    // Invert
+    finalColor = vec4f(1.0 - color.rgb, color.a);
+  } else if (postFXMode == 2u) {
+    // Grayscale
+    let gray = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
+    finalColor = vec4f(vec3f(gray), color.a);
+  } else if (postFXMode == 3u) {
+    // Chroma Key (green screen)
+    let keyColor = vec3f(0.0, 1.0, 0.0);
+    let threshold = 0.3;
+    let diff = distance(color.rgb, keyColor);
+    if (diff < threshold) {
+      finalColor = vec4f(0.0, 0.0, 0.0, 0.0);
     }
   }
+  
+  // ✅ Return all 3 attachments
+  return FragOut(
+    finalColor,
+    vec4f(normalize(input.fragNorm), 1.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.fragmentVideoWGSL = fragmentVideoWGSL;
 
-},{}],90:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46110,52 +47834,52 @@ override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -46173,181 +47897,182 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
 fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-    return material.baseColor * light.color * light.intensity * NdotL;
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
+  return material.baseColor * light.color * light.intensity * NdotL;
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
+  if (coneAtten <= 0.0 || NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
 
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
 
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
 
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
 
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
 
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
 
-    let radiance = light.color * light.intensity;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let radiance = light.color * light.intensity;
+  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    var weight: f32 = 0.0;
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        let sampleUV = shadowUV + offsets[i] * oneOverSize;
-        let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
-                       sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
-        let s = textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            sampleUV, layer, depthRef - bias
-        );
-        // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
-        visibility += select(1.0, s, inBounds);
-        weight += 1.0;
-    }
-    return visibility / weight;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  var weight: f32 = 0.0;
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      let sampleUV = shadowUV + offsets[i] * oneOverSize;
+      let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                      sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+      let s = textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          sampleUV, layer, depthRef - bias
+      );
+      // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+      visibility += select(1.0, s, inBounds);
+      weight += 1.0;
+  }
+  return visibility / weight;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-
-    let materialData = getPBRMaterial(input.uv);
-    // if (materialData.alpha < 0.01) {
-    //     discard;
-    // }
-
-    var lightContribution = vec3f(0.0);
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-        let depthRef = p.z;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        // let inFrustum =
-        //     p.z >= 0.0 && p.z <= 1.0 &&
-        //     p.x >= -1.0 && p.x <= 1.0 &&
-        //     p.y >= -1.0 && p.y <= 1.0;
-        let inDepth = p.z >= 0.0 && p.z <= 1.0;
-        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
-        let shadowFactor = select(1.0, visibility, inDepth);
-        let contrib = computeSpotLight(
-            spotlights[i],
-            norm,
-            input.fragPos,
-            viewDir,
-            materialData
-        );
-        lightContribution += contrib * shadowFactor;
-    }
-    // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    // var ambientTerm = material.ambientColor * materialData.baseColor;
-    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
-    // -- from dark next feature
-    // var ambientTerm = material.ambientColor * materialData.baseColor;
-    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
-    // like fog interest
-    // var ambientTerm = material.ambientColor + scene.globalAmbient;
-    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    // let alpha = mix(materialData.alpha, 1.0 , 0.5);
-    let alpha = texColor.a * material.baseColorFactor.a;
-    // let alpha = material.baseColorFactor.a;
-    return vec4f(finalColor, alpha);
+fn main(input: FragmentInput) -> FragOut {
+  let norm = normalize(input.fragNorm);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
+  // if (materialData.alpha < 0.01) {
+  //     discard;
+  // }
+  var lightContribution = vec3f(0.0);
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p  = sc.xyz / sc.w;
+      let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+      let depthRef = p.z;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let inDepth = p.z >= 0.0 && p.z <= 1.0;
+      let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+      let shadowFactor = select(1.0, visibility, inDepth);
+      let contrib = computeSpotLight(
+          spotlights[i],
+          norm,
+          input.fragPos,
+          viewDir,
+          materialData
+      );
+      lightContribution += contrib * shadowFactor;
+  }
+  // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  // var ambientTerm = material.ambientColor * materialData.baseColor;
+  // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
+  // like fog interest
+  // var ambientTerm = material.ambientColor + scene.globalAmbient;
+  // var finalColor = ambientTerm + texColor.rgb * lightContribution;
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+  let alpha = texColor.a * material.baseColorFactor.a;
+  // let alpha = material.baseColorFactor.a;
+  // return vec4f(finalColor, alpha);
+    return FragOut(
+      vec4f(finalColor, alpha),
+      vec4f(norm, 0.0),
+      vec4f(input.fragPos, 1.0)
+  );
 }`;
 exports.fragmentWGSL = fragmentWGSL;
 
-},{"../me-config":79}],91:[function(require,module,exports){
+},{"../me-config":81}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46359,52 +48084,52 @@ let fragmentWGSLMetal = () => `override shadowDepthTextureSize: f32 = ${_meConfi
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,  // ✅ Added alpha
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -46421,147 +48146,127 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = material.metallicFactor;
-    let roughness = material.roughnessFactor;
-    // ✅ Get alpha from texture and material factor
-    let alpha = texColor.a * material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = material.metallicFactor;
+  let roughness = material.roughnessFactor;
+  let alpha = texColor.a * material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
 // PCF shadow sampling
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
-    }
-    return visibility / 9.0;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
+  }
+  return visibility / 9.0;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let materialData = getPBRMaterial(input.uv);
-    
-    // ✅ Early discard for fully transparent pixels
-    if (materialData.alpha < 0.01) {
-        discard;
-    }
-    
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    var Lo = vec3f(0.0);
-    
+fn main(input: FragmentInput) -> FragOut {
+  let materialData = getPBRMaterial(input.uv);
+  if (materialData.alpha < 0.01) {discard;}
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  var Lo = vec3f(0.0);
+
 for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-
-    let L = normalize(spotlights[i].position - input.fragPos);
-    let H = normalize(V + L);
-
-    // let NdotL = max(dot(N, L), 0.0);
-let NdotL = max(dot(N, L), 0.0);
-let validLight = select(0.0, 1.0, NdotL > 0.0);
-
-    // ---- SHADOW SPACE ----
-    let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-    let p  = sc.xyz / sc.w;
-
-    let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-    let depthRef = p.z;
-
-    let visibility = sampleShadow(
-        uv,
-        i32(i),
-        depthRef,
-        N,
-        L
-    );
-
-    let inFrustum =
-        p.z >= 0.0 && p.z <= 1.0 &&
-        p.x >= -1.0 && p.x <= 1.0 &&
-        p.y >= -1.0 && p.y <= 1.0;
-
-    let shadowFactor = select(1.0, visibility, inFrustum);
-
-    // ---- PBR ----
-    let NDF = distributionGGX(N, H, materialData.roughness);
-    let G   = geometrySmith(N, V, L, materialData.roughness);
-
-    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-
-    let diffuse  = kD * materialData.baseColor / PI;
-    let specular = (NDF * G * F) /
-                   (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-
-    let radiance = spotlights[i].color * spotlights[i].intensity;
-
-    // Lo += (diffuse + specular) * radiance * NdotL * shadowFactor;
-    Lo += (diffuse + specular) * radiance * NdotL * shadowFactor * validLight;
+  let L = normalize(spotlights[i].position - input.fragPos);
+  let H = normalize(V + L);
+  let NdotL = max(dot(N, L), 0.0);
+  let validLight = select(0.0, 1.0, NdotL > 0.0);
+  let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+  let p  = sc.xyz / sc.w;
+  let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+  let depthRef = p.z;
+  let visibility = sampleShadow(uv,i32(i),depthRef, N, L);
+  let inFrustum = p.z >= 0.0 && p.z <= 1.0 &&
+      p.x >= -1.0 && p.x <= 1.0 &&
+      p.y >= -1.0 && p.y <= 1.0;
+  let shadowFactor = select(1.0, visibility, inFrustum);
+  // PBR
+  let NDF = distributionGGX(N, H, materialData.roughness);
+  let G   = geometrySmith(N, V, L, materialData.roughness);
+  let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+  let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+  let diffuse  = kD * materialData.baseColor / PI;
+  let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+  let radiance = spotlights[i].color * spotlights[i].intensity;
+  Lo += (diffuse + specular) * radiance * NdotL * shadowFactor * validLight;
 }
 
-    let ambient = scene.globalAmbient * materialData.baseColor;
-    var color = ambient + Lo;
-    
-    // ✅ Return color with alpha from material
-    return vec4f(color, materialData.alpha);
+  let ambient = scene.globalAmbient * materialData.baseColor;
+  var color = ambient + Lo;
+
+  // return vec4f(color, materialData.alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.fragmentWGSLMetal = fragmentWGSLMetal;
 
-},{"../me-config":79}],92:[function(require,module,exports){
+},{"../me-config":81}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46574,52 +48279,52 @@ override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+lightViewProjMatrix  : mat4x4f,
+cameraViewProjMatrix : mat4x4f,
+cameraPos            : vec3f,
+padding2             : f32,
+lightPos             : vec3f,
+padding              : f32,
+globalAmbient        : vec3f,
+padding3             : f32,
+time                 : f32,
+deltaTime            : f32,
+padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+position      : vec3f,
+_pad1         : f32,
+direction     : vec3f,
+_pad2         : f32,
+innerCutoff   : f32,
+outerCutoff   : f32,
+intensity     : f32,
+_pad3         : f32,
+color         : vec3f,
+_pad4         : f32,
+range         : f32,
+ambientFactor : f32,
+shadowBias    : f32,
+_pad5         : f32,
+lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,
+  _pad            : f32,
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -46636,179 +48341,173 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+@location(0) shadowPos : vec4f,
+@location(1) fragPos   : vec3f,
+@location(2) fragNorm  : vec3f,
+@location(3) uv        : vec2f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+let texColor = textureSample(meshTexture, meshSampler, uv);
+let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+let metallic = mrTex.b * material.metallicFactor;
+let roughness = mrTex.g * material.roughnessFactor;
+let alpha = material.baseColorFactor.a;
+return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+let a = roughness * roughness;
+let a2 = a * a;
+let NdotH = max(dot(N, H), 0.0);
+let NdotH2 = NdotH * NdotH;
+let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+let r = (roughness + 1.0);
+let k = (r * r) / 8.0;
+return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+let NdotV = max(dot(N, V), 0.0);
+let NdotL = max(dot(N, L), 0.0);
+return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+let L = normalize(light.position - fragPos);
+let theta = dot(L, normalize(-light.direction));
+let epsilon = light.innerCutoff - light.outerCutoff;
+return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
 fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-    return material.baseColor * light.color * light.intensity * NdotL;
+let L = normalize(light.position - fragPos);
+let NdotL = max(dot(N, L), 0.0);
+if (NdotL <= 0.0) {
+    return vec3f(0.0);
+}
+return material.baseColor * light.color * light.intensity * NdotL;
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
+let L = normalize(light.position - fragPos);
+let NdotL = max(dot(N, L), 0.0);
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+let theta = dot(L, normalize(-light.direction));
+let epsilon = light.innerCutoff - light.outerCutoff;
+var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
-
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
-
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
-
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
-
-    let radiance = light.color * light.intensity;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+if (coneAtten <= 0.0 || NdotL <= 0.0) {
+    return vec3f(0.0);
 }
+
+let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+let H = normalize(L + V);
+let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+let alpha = material.roughness * material.roughness;
+let NdotH = max(dot(N, H), 0.0);
+let alpha2 = alpha * alpha;
+let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+let D = alpha2 / (PI * denom * denom + 1e-5);
+
+let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+let NdotV = max(dot(N, V), 0.0);
+let Gv = NdotV / (NdotV * (1.0 - k) + k);
+let Gl = NdotL / (NdotL * (1.0 - k) + k);
+let G = Gv * Gl;
+
+let numerator = D * G * F;
+let denominator = 4.0 * NdotV * NdotL + 1e-5;
+let specular = numerator / denominator;
+
+let kS = F;
+let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+let diffuse = kD * material.baseColor.rgb / PI;
+
+let radiance = light.color * light.intensity;
+  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+}
+
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    var weight: f32 = 0.0;
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        let sampleUV = shadowUV + offsets[i] * oneOverSize;
-        let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
-                       sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
-        let s = textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            sampleUV, layer, depthRef - bias
-        );
-        // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
-        visibility += select(1.0, s, inBounds);
-        weight += 1.0;
-    }
-    return visibility / weight;
+var visibility: f32 = 0.0;
+let biasConstant: f32 = 0.001;
+let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+let bias = biasConstant + slopeBias;
+let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+let offsets: array<vec2f, 9> = array<vec2f, 9>(
+  vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+  vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+  vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+);
+var weight: f32 = 0.0;
+for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+  let sampleUV = shadowUV + offsets[i] * oneOverSize;
+  let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                  sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+  let s = textureSampleCompare(
+      shadowMapArray, shadowSampler,
+      sampleUV, layer, depthRef - bias
+  );
+  // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+  visibility += select(1.0, s, inBounds);
+  weight += 1.0;
+}
+return visibility / weight;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-
-    let materialData = getPBRMaterial(input.uv);
-    // if (materialData.alpha < 0.01) {
-    //     discard;
-    // }
-
-    var lightContribution = vec3f(0.0);
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
-        let depthRef = p.z;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        // let inFrustum =
-        //     p.z >= 0.0 && p.z <= 1.0 &&
-        //     p.x >= -1.0 && p.x <= 1.0 &&
-        //     p.y >= -1.0 && p.y <= 1.0;
-        let inDepth = p.z >= 0.0 && p.z <= 1.0;
-        let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
-        let shadowFactor = select(1.0, visibility, inDepth);
-        let contrib = computeSpotLight(
-            spotlights[i],
-            norm,
-            input.fragPos,
-            viewDir,
-            materialData
-        );
-        lightContribution += contrib * shadowFactor;
-    }
-    // let tiledUV = input.worldPos.xz * 0.1; // 0.1 = tile density
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    // var ambientTerm = material.ambientColor * materialData.baseColor;
-    // var finalColor = ambientTerm + texColor.rgb * (scene.globalAmbient + lightContribution);
-    // -- from dark next feature
-    // var ambientTerm = material.ambientColor * materialData.baseColor;
-    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
-    // like fog interest
-    // var ambientTerm = material.ambientColor + scene.globalAmbient;
-    // var finalColor = ambientTerm + texColor.rgb * lightContribution;
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    let alpha = mix(materialData.alpha, 1.0 , 0.5); 
-    return vec4f(finalColor, alpha);
+fn main(input: FragmentInput) -> FragOut {
+let norm = normalize(input.fragNorm);
+let viewDir = normalize(scene.cameraPos - input.fragPos);
+let materialData = getPBRMaterial(input.uv);
+var lightContribution = vec3f(0.0);
+for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+    let p  = sc.xyz / sc.w;
+    let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+    let depthRef = p.z;
+    let lightDir = normalize(spotlights[i].position - input.fragPos);
+    let inDepth = p.z >= 0.0 && p.z <= 1.0;
+    let visibility = sampleShadow(uv, i32(i), depthRef, norm, lightDir);
+    let shadowFactor = select(1.0, visibility, inDepth);
+    let contrib = computeSpotLight(
+        spotlights[i],
+        norm,
+        input.fragPos,
+        viewDir,
+        materialData
+    );
+    lightContribution += contrib * shadowFactor;
+}
+let texColor = textureSample(meshTexture, meshSampler, input.uv);
+var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+let alpha = mix(materialData.alpha, 1.0 , 0.5); 
+// return vec4f(finalColor, alpha);
+return FragOut(
+  vec4f(finalColor, alpha),
+  vec4f(norm, 0.0),
+  vec4f(input.fragPos, 1.0)
+);
 }`;
 exports.fragmentWGSLDark = fragmentWGSLDark;
 
-},{"../me-config":79}],93:[function(require,module,exports){
+},{"../me-config":81}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46866,6 +48565,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -46910,12 +48610,13 @@ fn getNormalMap2(uv: vec2f, N: vec3f, T: vec3f, B: vec3f) -> vec3f {
 }
     
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -47023,19 +48724,21 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    // let norm = normalize(input.fragNorm);
+fn main(input: FragmentInput) -> FragOut {
     let N = normalize(input.fragNorm);
     let T = normalize(input.tangent.xyz);
     let B = cross(N, T) * input.tangent.w; // handedness
     let norm = getNormalMap2(input.uv, N, T, B);
-
     let viewDir = normalize(scene.cameraPos - input.fragPos);
 
-    // ✅ now we declare materialData
     let materialData = getPBRMaterial(input.uv);
-
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
@@ -47043,22 +48746,26 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         let p  = sc.xyz / sc.w;
         let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
         let depthRef = p.z * 0.5 + 0.5;
-
         let lightDir = normalize(spotlights[i].position - input.fragPos);
         let bias = spotlights[i].shadowBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        // let visibility = 1.0;
         let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
     }
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
-    return vec4f(finalColor, 1.0);
+    // return vec4f(finalColor, 1.0);
+
+    return FragOut(
+      vec4f(finalColor, materialData.alpha),
+      vec4f(N, 0.0),
+      vec4f(input.fragPos, 1.0)
+    );
 }`;
 exports.fragmentWGSLNormalMap = fragmentWGSLNormalMap;
 
-},{"../me-config":79}],94:[function(require,module,exports){
+},{"../me-config":81}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47115,6 +48822,7 @@ struct PBRMaterialData {
     baseColor : vec3f,
     metallic  : f32,
     roughness : f32,
+    alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -47140,12 +48848,13 @@ struct FragmentInput {
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
@@ -47255,14 +48964,17 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 
+struct FragOut {
+    @location(0) color  : vec4f,
+    @location(1) normal : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
     let norm = normalize(input.fragNorm);
     let viewDir = normalize(scene.cameraPos - input.fragPos);
-
-    // ✅ now we declare materialData
     let materialData = getPBRMaterial(input.uv);
-
     var lightContribution = vec3f(0.0);
 
     for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
@@ -47281,11 +48993,17 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
-    return vec4f(finalColor, 1.0);
+
+    return FragOut(
+      vec4f(finalColor, materialData.alpha),
+      vec4f(norm, 0.0),
+      vec4f(input.fragPos, 1.0)
+    );
+    // return vec4f(finalColor, 1.0);
 }`;
 exports.fragmentWGSLPong = fragmentWGSLPong;
 
-},{"../me-config":79}],95:[function(require,module,exports){
+},{"../me-config":81}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47297,51 +49015,52 @@ let fragmentWGSLPower = () => `override shadowDepthTextureSize: f32 = ${_meConfi
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -47359,102 +49078,116 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 // @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha =  material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
 // PCF shadow sampling
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
-    }
-    return visibility / 9.0;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      visibility += textureSampleCompare(shadowMapArray, shadowSampler, shadowUV + offsets[i] * oneOverSize, layer, depthRef - bias);
+  }
+  return visibility / 9.0;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let materialData = getPBRMaterial(input.uv);
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    var Lo = vec3f(0.0);
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let L = normalize(spotlights[i].position - input.fragPos);
-        let H = normalize(V + L);
-        let distance = length(spotlights[i].position - input.fragPos);
-        let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
-        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-        let NDF = distributionGGX(N, H, materialData.roughness);
-        let G   = geometrySmith(N, V, L, materialData.roughness);
-        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-        let kS = F;
-        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-        let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
-        let NdotL = max(dot(N, L), 0.0);
-        let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-        Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
-    }
-    let ambient = scene.globalAmbient * materialData.baseColor;
-    var color = ambient + Lo;
-    return vec4f(color, 1.0);
+fn main(input: FragmentInput) -> FragOut {
+  let materialData = getPBRMaterial(input.uv);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  var Lo = vec3f(0.0);
+  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let L = normalize(spotlights[i].position - input.fragPos);
+      let H = normalize(V + L);
+      let distance = length(spotlights[i].position - input.fragPos);
+      let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+      let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+      let NDF = distributionGGX(N, H, materialData.roughness);
+      let G   = geometrySmith(N, V, L, materialData.roughness);
+      let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+      let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+      let kS = F;
+      let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+      let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
+      let NdotL = max(dot(N, L), 0.0);
+      let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+      Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
+  }
+  let ambient = scene.globalAmbient * materialData.baseColor;
+  var color = ambient + Lo;
+
+  // return vec4f(color, 1.0);
+
+  return FragOut(
+    vec4f(color, materialData.alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.fragmentWGSLPower = fragmentWGSLPower;
 
-},{"../me-config":79}],96:[function(require,module,exports){
+},{"../me-config":81}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47462,40 +49195,35 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.gizmoEffect = void 0;
 const gizmoEffect = exports.gizmoEffect = `
-struct Camera {
-  viewProj : mat4x4<f32>
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
-
-struct ModelData {
-  model : mat4x4<f32>,
-};
-@group(0) @binding(1) var<uniform> modelData : ModelData;
+struct Camera {viewProj : mat4x4<f32>};
+struct ModelData {model : mat4x4<f32>};
 
 struct GizmoSettings {
   mode : u32,
   size : f32,
   selectedAxis : u32,
-  lineThickness : f32,
+  lineThickness : f32
 };
+
+@group(0) @binding(0) var<uniform> camera : Camera;
+@group(0) @binding(1) var<uniform> modelData : ModelData;
 @group(0) @binding(2) var<uniform> gizmoSettings : GizmoSettings;
 
 struct VSIn {
   @location(0) position : vec3<f32>,
-  @location(1) color : vec3<f32>,
+  @location(1) color : vec3<f32>
 };
 
 struct VSOut {
   @builtin(position) position : vec4<f32>,
   @location(0) color : vec3<f32>,
   @location(1) worldPos : vec3<f32>,
-  @location(2) axisId : f32,
+  @location(2) axisId : f32
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
   var output : VSOut;
-  
   let worldPos = modelData.model * vec4<f32>(input.position * gizmoSettings.size, 1.0);
   output.position = camera.viewProj * worldPos;
   output.worldPos = worldPos.xyz;
@@ -47505,25 +49233,335 @@ fn vsMain(input : VSIn) -> VSOut {
   if (input.color.r > 0.9) { axisId = 1.0; } // X axis
   else if (input.color.g > 0.9) { axisId = 2.0; } // Y axis
   else if (input.color.b > 0.9) { axisId = 3.0; } // Z axis
-  
   output.axisId = axisId;
-  
-  // Highlight selected axis
-  var finalColor = input.color;
+
+  var finalColor = input.color * 4.5;
   if (gizmoSettings.selectedAxis > 0u && u32(axisId) == gizmoSettings.selectedAxis) {
-    finalColor = vec3<f32>(1.0, 1.0, 0.0); // Yellow when selected
+    finalColor = vec3<f32>(8.0, 7.0, 0.5);
   }
-  
   output.color = finalColor;
   return output;
 }
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  return vec4<f32>(input.color, 1.0);
+fn fsMain(input : VSOut) -> FragOut {
+  return FragOut(
+    vec4f(input.color * 2, 1.0),
+    vec4f(normalize(input.worldPos), 1.0),
+    vec4f(input.worldPos, 1.0)
+  );
 }`;
 
-},{}],97:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.SSR_PASS_WGSL = exports.HZB_BUILD_WGSL = exports.DEPTH_BLIT_WGSL = void 0;
+/**
+ * @description
+ * Matrix Engine WGPU
+ * Hierarchical Z-Buffer Raytrace implementation.
+ * Postprocessing implementation.
+ * Compute shader — builds Hi-Z mip pyramid from linear depth.
+ * Nikola Lukic - May 2026
+ **/
+const HZB_BUILD_WGSL = exports.HZB_BUILD_WGSL = `
+struct Uniforms { dstSize : vec2<u32> }
+@group(0) @binding(0) var<uniform> u   : Uniforms;
+@group(0) @binding(1) var srcTex       : texture_2d<f32>;
+@group(0) @binding(2) var dstTex       : texture_storage_2d<r32float, write>;
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if (gid.x >= u.dstSize.x || gid.y >= u.dstSize.y) { return; }
+  let s  = vec2<u32>(gid.x * 2u, gid.y * 2u);
+  let d0 = textureLoad(srcTex, s + vec2(0u, 0u), 0).r;
+  let d1 = textureLoad(srcTex, s + vec2(1u, 0u), 0).r;
+  let d2 = textureLoad(srcTex, s + vec2(0u, 1u), 0).r;
+  let d3 = textureLoad(srcTex, s + vec2(1u, 1u), 0).r;
+  textureStore(dstTex, vec2<i32>(gid.xy), vec4(max(max(d0, d1), max(d2, d3))));
+}`;
+
+/**
+ * @description
+ * Copies depth attachment → r32float linear depth texture
+ * One full-screen triangle dispatch before HZB build
+*/
+const DEPTH_BLIT_WGSL = exports.DEPTH_BLIT_WGSL = `
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
+};
+
+// @group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(0) var depthTex       : texture_depth_2d;
+@group(0) @binding(1) var texSampler     : sampler;
+
+struct VertOut {
+  @builtin(position) pos : vec4f,
+  @location(0) uv        : vec2f,
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
+  var pos = array<vec2f, 3>(
+      vec2(-1.0, -1.0),
+      vec2( 3.0, -1.0),
+      vec2(-1.0,  3.0));
+  let p = pos[vi];
+  return VertOut(vec4(p, 0.0, 1.0), p * 0.5 + 0.5);
+}
+
+@fragment
+fn fs(in: VertOut) -> @location(0) vec4f {
+  let d = textureSample(depthTex, texSampler, in.uv);
+  return vec4f(d, 0.0, 0.0, 1.0);
+}`;
+const SSR_PASS_WGSL = exports.SSR_PASS_WGSL = `
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f
+};
+
+struct SSRConfig {
+  invProj     : mat4x4f,
+  proj        : mat4x4f,
+  resolution  : vec2f,
+  maxMip      : f32,
+  thickness   : f32
+}
+
+@group(0) @binding(0) var<uniform> scene  : Scene;
+@group(0) @binding(1) var<uniform> ssrCfg : SSRConfig;
+@group(0) @binding(2) var sceneColor      : texture_2d<f32>;
+@group(0) @binding(3) var normalTex       : texture_2d<f32>;
+@group(0) @binding(4) var hzbTex          : texture_2d<f32>;
+@group(0) @binding(5) var pointSampler    : sampler;
+@group(0) @binding(6) var worldPosTex     : texture_2d<f32>;
+@group(0) @binding(7) var linearSampler   : sampler;
+
+fn edgeFade(uv: vec2f) -> f32 {
+  let e = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  return smoothstep(0.0, 0.1, e);
+}
+
+struct VertOut {
+  @builtin(position) pos : vec4f,
+  @location(0) uv        : vec2f,
+}
+
+fn hash(p: vec2f) -> f32 {
+  return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453123);
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VertOut {
+  var pos = array<vec2f, 3>(
+    vec2(-1.0,  1.0),
+    vec2( 3.0,  1.0),
+    vec2(-1.0, -3.0),
+  );
+  let p = pos[vi];
+  let uv = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+  return VertOut(vec4(p, 0.0, 1.0), uv);
+}
+
+fn worldPosFromDepth(uv: vec2f, depth: f32) -> vec3f {
+  // WebGPU NDC: X is [-1, 1], Y is [-1, 1] (top is positive), Z is [0, 1]
+  let ndc = vec4f(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+  let viewPos = ssrCfg.invProj * ndc;
+  let viewPosSpace = viewPos / viewPos.w;
+  return viewPosSpace.xyz; 
+}
+
+@fragment
+fn fs2(in: VertOut) -> @location(0) vec4f {
+  let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
+  let worldPos4 = textureLoad(worldPosTex, tc, 0);
+  if (worldPos4.w < 0.5) { return vec4f(0.0); }
+  let worldPos = worldPos4.xyz;
+  let rawNormal = textureLoad(normalTex, tc, 0).xyz;
+  if (length(rawNormal) < 0.1) { return vec4f(0.0); }
+  let normal = normalize(rawNormal);
+  let viewDir = normalize(worldPos - scene.cameraPos);
+  let reflDir = reflect(viewDir, normal);
+  let viewMatrix = scene.cameraViewProjMatrix; 
+  var rayPos     = worldPos + normal * 0.001; // Small, safe bias
+  var prevRayPos = rayPos;
+  var stepSize   = 0.04; 
+  var hit        = false;
+  var hitUV      = vec2f(0.0);
+  var minSteps   = 2u; 
+
+  for (var i = 0u; i < 80u; i++) {
+    prevRayPos = rayPos;
+    rayPos    += reflDir * stepSize;
+    let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
+    if (clip.w <= 0.0) { break; }
+    let ndc = clip.xyz / clip.w;
+    let uv  = vec2f(ndc.x * 0.5 + 0.5, 1.0 - (ndc.y * 0.5 + 0.5));
+    if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+    if (i < minSteps) { continue; }
+    let sampleTC = vec2u(uv * ssrCfg.resolution);
+    let sceneWorld4 = textureLoad(worldPosTex, sampleTC, 0);
+    if (sceneWorld4.w < 0.5) { continue; }
+    let rayLinearDepth   = (scene.cameraViewProjMatrix * vec4f(rayPos, 1.0)).w;
+    let sceneLinearDepth = (scene.cameraViewProjMatrix * vec4f(sceneWorld4.xyz, 1.0)).w;
+    let depthDiff = rayLinearDepth - sceneLinearDepth;
+    if (depthDiff > 0.0 && depthDiff < ssrCfg.thickness) {
+      let distFromOrigin = distance(worldPos, sceneWorld4.xyz);
+      if (distFromOrigin < 0.2) { continue; } // Skip self-intersections completely
+      hit   = true;
+      hitUV = uv;
+      break;
+    }
+    stepSize *= 1.015;
+  }
+  if (!hit) { return vec4f(0.0); }
+  let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
+  let confidence = edgeFade(hitUV);
+  return vec4f(color, confidence * 0.8);
+}
+ 
+@fragment
+fn fs(in: VertOut) -> @location(0) vec4f {
+  let tc = min(vec2u(in.uv * ssrCfg.resolution), vec2u(ssrCfg.resolution) - 1u);
+  let worldPos4 = textureLoad(worldPosTex, tc, 0);
+  if (worldPos4.w < 0.5) { return vec4f(0.0); }
+  let worldPos = worldPos4.xyz;
+  let rawNormal = textureLoad(normalTex, tc, 0).xyz;
+  if (length(rawNormal) < 0.1) { return vec4f(0.0); }
+  let normal = normalize(rawNormal);
+  let viewDir = normalize(worldPos - scene.cameraPos);
+  let reflDir = reflect(viewDir, normal);
+  // let jitter = hash(in.uv + vec2f(scene.time * 0.1));
+  let jitter = hash(in.uv); 
+  var rayPos     = worldPos + normal * 0.05; 
+  var prevRayPos = rayPos;
+  var stepSize   = 0.04; 
+  var hit        = false;
+  var hitUV      = vec2f(0.0);
+  var minSteps   = 2u; 
+
+  for (var i = 0u; i < 80u; i++) {
+    prevRayPos = rayPos;
+    let currentStep = stepSize * (1.0 + jitter * 0.05);
+    // let currentStep = stepSize * (1.0 + jitter * 0.01);
+    rayPos += reflDir * currentStep;
+    let clip = scene.cameraViewProjMatrix * vec4f(rayPos, 1.0);
+    if (clip.w <= 0.0) { break; }
+    let ndc = clip.xyz / clip.w;
+    let uv  = vec2f(ndc.x * 0.5 + 0.5, 1.0 - (ndc.y * 0.5 + 0.5));
+    // if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+    if (any(uv < vec2f(-0.05)) || any(uv > vec2f(1.05))) { break; }
+    if (i < minSteps) { continue; }
+    let sampleTC = vec2u(uv * ssrCfg.resolution);
+    let sceneWorld4 = textureLoad(worldPosTex, sampleTC, 0);
+    if (sceneWorld4.w < 0.5) { continue; }
+
+    let rayLinearDepth   = (scene.cameraViewProjMatrix * vec4f(rayPos, 1.0)).w;
+    let sceneLinearDepth = (scene.cameraViewProjMatrix * vec4f(sceneWorld4.xyz, 1.0)).w;
+    let depthDiff = rayLinearDepth - sceneLinearDepth;
+
+    // Potential Intersection Found!
+    if (depthDiff > 0.0 && depthDiff < ssrCfg.thickness) {
+      let distFromOrigin = distance(worldPos, sceneWorld4.xyz);
+      if (distFromOrigin < 0.2) { continue; } 
+      // Step back to the last empty position and halve the search interval
+      var refinePos  = prevRayPos;
+      var refineStep = stepSize * 0.5;
+      var rUV        = uv;
+      for (var j = 0u; j < 10u; j++) {
+        refinePos += reflDir * refineStep;
+        let rClip = scene.cameraViewProjMatrix * vec4f(refinePos, 1.0);
+        let rNDC  = rClip.xyz / rClip.w;
+        rUV       = vec2f(rNDC.x * 0.5 + 0.5, 1.0 - (rNDC.y * 0.5 + 0.5));
+        let rSceneWorld = textureLoad(worldPosTex, vec2u(rUV * ssrCfg.resolution), 0);
+        let rRayDepth   = (scene.cameraViewProjMatrix * vec4f(refinePos, 1.0)).w;
+        let rSceneDepth = (scene.cameraViewProjMatrix * vec4f(rSceneWorld.xyz, 1.0)).w;
+        if ((rRayDepth - rSceneDepth) > 0.0) {
+          refinePos -= reflDir * refineStep;
+        }
+        refineStep *= 0.5;
+      }
+      // Final validation of the refined coordinates
+      let finalTC = vec2u(rUV * ssrCfg.resolution);
+      let finalSceneWorld = textureLoad(worldPosTex, finalTC, 0).xyz;
+      let finalRayDepth   = (scene.cameraViewProjMatrix * vec4f(refinePos, 1.0)).w;
+      let finalSceneDepth = (scene.cameraViewProjMatrix * vec4f(finalSceneWorld, 1.0)).w;
+      if (abs(finalRayDepth - finalSceneDepth) < ssrCfg.thickness) {
+          hit   = true;
+          hitUV = rUV;
+      }
+      break;
+    }
+    stepSize *= 1.015;
+  }
+
+  if (!hit) { return vec4f(0.0); }
+  let texel = 1.0 / ssrCfg.resolution;
+  let c0 = textureSampleLevel(sceneColor, linearSampler, hitUV, 0.0).rgb;
+  let c1 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV + vec2f(texel.x, 0.0),
+    0.0).rgb;
+
+  let c2 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV - vec2f(texel.x, 0.0),
+    0.0).rgb;
+
+  let c3 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV + vec2f(0.0, texel.y),
+    0.0).rgb;
+
+  let c4 = textureSampleLevel(
+    sceneColor,
+    linearSampler,
+    hitUV - vec2f(0.0, texel.y),
+    0.0).rgb;
+
+  let color = (c0 + c1 + c2 + c3 + c4) / 5.0;
+  // let color      = textureLoad(sceneColor, vec2u(hitUV * ssrCfg.resolution), 0).rgb;
+  var confidence = edgeFade(hitUV);
+  //     let fresnel = pow(
+  //     1.0 - max(dot(normal, -viewDir), 0.0),
+  //     5.0
+  // );
+  //       confidence *= fresnel;
+  return vec4f(color, confidence * 0.8);
+}`;
+
+},{}],100:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47536,49 +49574,49 @@ override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -47596,152 +49634,165 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-    @location(4) colorMult : vec4f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+  @location(4) colorMult : vec4f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a = roughness * roughness;
-    let a2 = a * a;
-    let NdotH = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
 fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-    return material.baseColor * light.color * light.intensity * NdotL;
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
+  return material.baseColor * light.color * light.intensity * NdotL;
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
+  let L = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  if (coneAtten <= 0.0 || NdotL <= 0.0) {
+      return vec3f(0.0);
+  }
 
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
 
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
 
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
 
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
 
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
 
-    let radiance = light.color * light.intensity;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let radiance = light.color * light.intensity;
+  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for(var i: u32 = 0u; i < 9u; i = i + 1u) {
-        visibility += textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            shadowUV + offsets[i] * oneOverSize,
-            layer, depthRef - bias
-        );
-    }
-    return visibility / 9.0;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      visibility += textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          shadowUV + offsets[i] * oneOverSize,
+          layer, depthRef - bias
+      );
+  }
+  return visibility / 9.0;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let norm = normalize(input.fragNorm);
-    let viewDir = normalize(scene.cameraPos - input.fragPos);
-    let materialData = getPBRMaterial(input.uv);
-    var lightContribution = vec3f(0.0);
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p  = sc.xyz / sc.w;
-        let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let bias = spotlights[i].shadowBias;
-        let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
-        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
-        lightContribution += contrib * visibility;
-    }
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
-    finalColor *= input.colorMult.rgb;
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-    let alpha = materialData.alpha;
-    return vec4f(finalColor, alpha);
+fn main(input: FragmentInput) -> FragOut {
+  let norm = normalize(input.fragNorm);
+  let viewDir = normalize(scene.cameraPos - input.fragPos);
+  let materialData = getPBRMaterial(input.uv);
+  var lightContribution = vec3f(0.0);
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+      let sc = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p  = sc.xyz / sc.w;
+      let uv = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+      let depthRef = p.z * 0.5 + 0.5;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let bias = spotlights[i].shadowBias;
+      let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
+      let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+      lightContribution += contrib * visibility;
+  }
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+  finalColor *= input.colorMult.rgb;
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  let alpha = materialData.alpha;
+  
+  
+  // return vec4f(finalColor, alpha);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(norm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }`;
 exports.fragmentWGSLInstanced = fragmentWGSLInstanced;
 
-},{"../../me-config":79}],98:[function(require,module,exports){
+},{"../../me-config":81}],101:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47754,65 +49805,65 @@ override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 const PI: f32 = 3.141592653589793;
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 struct PBRMaterialData {
-    baseColor : vec3f,
-    metallic  : f32,
-    roughness : f32,
-    alpha     : f32,
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
 };
 
 struct MirrorIlluminateParams {
-    mirrorTint         : vec3f,
-    reflectivity       : f32,
-    illuminateColor    : vec3f,
-    illuminateStrength : f32,
-    illuminatePulse    : f32,
-    fresnelPower       : f32,
-    envLodBias         : f32,
-    usePlanarReflection: f32,
-    baseColorMix       : f32,
-    _pad2              : vec3f,
+  mirrorTint         : vec3f,
+  reflectivity       : f32,
+  illuminateColor    : vec3f,
+  illuminateStrength : f32,
+  illuminatePulse    : f32,
+  fresnelPower       : f32,
+  envLodBias         : f32,
+  usePlanarReflection: f32,
+  baseColorMix       : f32,
+  _pad2              : vec3f,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -47835,205 +49886,217 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 // ── INSTANCED: adds colorMult at location(4) ──────────────────────────────
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-    @location(4) colorMult : vec4f,  // ← instanced only
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+  @location(4) colorMult : vec4f,  // ← instanced only
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor  = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex     = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic  = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    let alpha     = material.baseColorFactor.a;
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor  = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex     = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic  = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha     = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
-    let a      = roughness * roughness;
-    let a2     = a * a;
-    let NdotH  = max(dot(N, H), 0.0);
-    let NdotH2 = NdotH * NdotH;
-    let denom  = (NdotH2 * (a2 - 1.0) + 1.0);
-    return a2 / (PI * denom * denom);
+  let a      = roughness * roughness;
+  let a2     = a * a;
+  let NdotH  = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom  = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
 fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
-    let r = (roughness + 1.0);
-    let k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
 }
 
 fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
-    let NdotV = max(dot(N, V), 0.0);
-    let NdotL = max(dot(N, L), 0.0);
-    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
 fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
-    let L     = normalize(light.position - fragPos);
-    let theta = dot(L, normalize(-light.direction));
-    let eps   = light.innerCutoff - light.outerCutoff;
-    return clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+  let L     = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let eps   = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
-    let L     = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    let theta = dot(L, normalize(-light.direction));
-    let eps   = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
-    if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
-    let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
-    let H     = normalize(L + V);
-    let alpha  = mat.roughness * mat.roughness;
-    let alpha2 = alpha * alpha;
-    let NdotH  = max(dot(N, H), 0.0);
-    let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D      = alpha2 / (PI * denom * denom + 1e-5);
-    let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV  = max(dot(N, V), 0.0);
-    let Gv     = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl     = NdotL / (NdotL * (1.0 - k) + k);
-    let G      = Gv * Gl;
-    let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-    return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let L     = normalize(light.position - fragPos);
+  let NdotL = max(dot(N, L), 0.0);
+  let theta = dot(L, normalize(-light.direction));
+  let eps   = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+  if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+  let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
+  let H     = normalize(L + V);
+  let alpha  = mat.roughness * mat.roughness;
+  let alpha2 = alpha * alpha;
+  let NdotH  = max(dot(N, H), 0.0);
+  let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D      = alpha2 / (PI * denom * denom + 1e-5);
+  let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV  = max(dot(N, V), 0.0);
+  let Gv     = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl     = NdotL / (NdotL * (1.0 - k) + k);
+  let G      = Gv * Gl;
+  let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+  return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
 fn computeMirrorSpecular(N: vec3f, V: vec3f, lightDir: vec3f, lightColor: vec3f) -> vec3f {
-    let H       = normalize(lightDir + V);
-    let mirrorR = max(0.02, material.roughnessFactor * 0.15);
-    let D       = distributionGGX(N, H, mirrorR);
-    let G       = geometrySmith(N, V, lightDir, mirrorR);
-    let F0      = mix(vec3f(0.9), mirrorParams.mirrorTint, vec3f(material.metallicFactor));
-    let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
-    let NdotL   = max(dot(N, lightDir), 0.0);
-    let NdotV   = max(dot(N, V), 0.0);
-    let spec = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
-    let result = spec * lightColor * NdotL * mirrorParams.reflectivity;
-    return clamp(result, vec3f(0.0), vec3f(64.0));
+  let H       = normalize(lightDir + V);
+  let mirrorR = max(0.02, material.roughnessFactor * 0.15);
+  let D       = distributionGGX(N, H, mirrorR);
+  let G       = geometrySmith(N, V, lightDir, mirrorR);
+  let F0      = mix(vec3f(0.9), mirrorParams.mirrorTint, vec3f(material.metallicFactor));
+  let F       = fresnelSchlick(max(dot(H, V), 0.0), F0);
+  let NdotL   = max(dot(N, lightDir), 0.0);
+  let NdotV   = max(dot(N, V), 0.0);
+  let spec = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+  let result = spec * lightColor * NdotL * mirrorParams.reflectivity;
+  return clamp(result, vec3f(0.0), vec3f(64.0));
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
-    var visibility: f32 = 0.0;
-    let biasConstant: f32 = 0.001;
-    let slopeBias   = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
-    let bias        = biasConstant + slopeBias;
-    let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
-    let offsets: array<vec2f, 9> = array<vec2f, 9>(
-        vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
-        vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
-        vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
-    );
-    for (var i: u32 = 0u; i < 9u; i++) {
-        visibility += textureSampleCompare(
-            shadowMapArray, shadowSampler,
-            shadowUV + offsets[i] * oneOverSize,
-            layer, depthRef - bias
-        );
-    }
-    return visibility / 9.0;
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias   = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias        = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  for (var i: u32 = 0u; i < 9u; i++) {
+      visibility += textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          shadowUV + offsets[i] * oneOverSize,
+          layer, depthRef - bias
+      );
+  }
+  return visibility / 9.0;
 }
 
 fn reflectToEnvUV(R: vec3f, fragPos: vec3f) -> vec2f {
-    let dir   = normalize(R);
-    let phi   = atan2(dir.x, dir.z);
-    let theta = acos(clamp(dir.y, -1.0, 1.0));
-    let u     = phi / (2.0 * PI) + 0.5;
-    let v     = theta / PI;
-    return vec2f(u, v);
+  let dir   = normalize(R);
+  let phi   = atan2(dir.x, dir.z);
+  let theta = acos(clamp(dir.y, -1.0, 1.0));
+  let u     = phi / (2.0 * PI) + 0.5;
+  let v     = theta / PI;
+  return vec2f(u, v);
 }
 
 fn reflectToPlanarUV(fragPos: vec3f, N: vec3f, V: vec3f) -> vec2f {
-    let clipPos = scene.cameraViewProjMatrix * vec4f(fragPos, 1.0);
-    let ndc     = clipPos.xy / clipPos.w;
-    return vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
+  let clipPos = scene.cameraViewProjMatrix * vec4f(fragPos, 1.0);
+  let ndc     = clipPos.xy / clipPos.w;
+  return vec2f(ndc.x * 0.5 + 0.5, -ndc.y * 0.5 + 0.5);
 }
 
 fn sampleMirrorEnv(R: vec3f, fragPos: vec3f, N: vec3f, V: vec3f, roughness: f32) -> vec3f {
-    var uv: vec2f;
-    if (mirrorParams.usePlanarReflection > 0.5) {
-        uv = reflectToPlanarUV(fragPos, N, V);
-    } else {
-        uv = reflectToEnvUV(R, fragPos);
-    }
-    return textureSample(mirrorEnvTex, mirrorEnvSampler, uv).rgb;
+  var uv: vec2f;
+  if (mirrorParams.usePlanarReflection > 0.5) {
+      uv = reflectToPlanarUV(fragPos, N, V);
+  } else {
+      uv = reflectToEnvUV(R, fragPos);
+  }
+  return textureSample(mirrorEnvTex, mirrorEnvSampler, uv).rgb;
 }
 
 fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
-  let NdotV = max(dot(N, V), 0.0);
-    let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
-    let pulse = mix(0.3, 1.0,
-        (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
-    );
-    let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
-    let result = mirrorParams.illuminateColor
-        * mirrorParams.illuminateStrength
-        * rim * pulse * shimmer;
-    return clamp(result, vec3f(0.0), vec3f(1.0));
+let NdotV = max(dot(N, V), 0.0);
+  let rim   = pow(1.0 - NdotV, mirrorParams.fresnelPower);
+  let pulse = mix(0.3, 1.0,
+      (sin(scene.time * mirrorParams.illuminatePulse * 2.0 * PI) * 0.5 + 0.5)
+  );
+  let shimmer = sin(fragPos.y * 3.0 + scene.time * 2.0) * 0.15 + 0.85;
+  let result = mirrorParams.illuminateColor
+      * mirrorParams.illuminateStrength
+      * rim * pulse * shimmer;
+  return clamp(result, vec3f(0.0), vec3f(1.0));
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
 
-    let materialData = getPBRMaterial(input.uv);
-    if (materialData.alpha < 0.01) { discard; }
+  let materialData = getPBRMaterial(input.uv);
+  if (materialData.alpha < 0.01) { discard; }
 
-    var lightContribution = vec3f(0.0);
+  var lightContribution = vec3f(0.0);
 
-    for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
-        let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
-        let p        = sc.xyz / sc.w;
-        let shadowUV = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-        let depthRef = p.z * 0.5 + 0.5;
-        let lightDir = normalize(spotlights[i].position - input.fragPos);
-        let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
-        let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
-        lightContribution += contrib * vis;
-        let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
-        let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
-        lightContribution += mirrorSpec * coneFactor * vis;
-    }
+  for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i++) {
+      let sc       = spotlights[i].lightViewProj * vec4<f32>(input.fragPos, 1.0);
+      let p        = sc.xyz / sc.w;
+      let shadowUV = clamp(p.xy * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+      let depthRef = p.z * 0.5 + 0.5;
+      let lightDir = normalize(spotlights[i].position - input.fragPos);
+      let vis      = sampleShadow(shadowUV, i32(i), depthRef - spotlights[i].shadowBias, N, lightDir);
+      let contrib  = computeSpotLight(spotlights[i], N, input.fragPos, V, materialData);
+      lightContribution += contrib * vis;
+      let mirrorSpec = computeMirrorSpecular(N, V, lightDir, spotlights[i].color * spotlights[i].intensity);
+      let coneFactor = calculateSpotlightFactor(spotlights[i], input.fragPos);
+      lightContribution += mirrorSpec * coneFactor * vis;
+  }
 
-    let R = reflect(-V, N);
-    var envColor: vec3f;
-    if (mirrorParams.baseColorMix < 0.01) {
-        envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
-    } else {
-        envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
-    }
+  let R = reflect(-V, N);
+  var envColor: vec3f;
+  if (mirrorParams.baseColorMix < 0.01) {
+      envColor = textureSample(mirrorEnvTex, mirrorEnvSampler, input.uv).rgb;
+  } else {
+      envColor = sampleMirrorEnv(R, input.fragPos, N, V, materialData.roughness) * mirrorParams.mirrorTint;
+  }
 
-    let envFresn   = fresnelSchlick(max(dot(N, V), 0.0),
-                     mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
-    let texColor   = textureSample(meshTexture, meshSampler, input.uv);
-    // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
+  let envFresn   = fresnelSchlick(max(dot(N, V), 0.0),
+                    mix(vec3f(0.04), vec3f(1.0), vec3f(materialData.metallic)));
+  let texColor   = textureSample(meshTexture, meshSampler, input.uv);
+  // var finalColor = texColor.rgb * (scene.globalAmbient + lightContribution);
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient + lightContribution);
 
-    finalColor = mix(envColor, finalColor, mirrorParams.baseColorMix);
-    finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
+  finalColor = mix(envColor, finalColor, mirrorParams.baseColorMix);
+  finalColor = mix(finalColor, envColor, envFresn * mirrorParams.reflectivity);
 
-    finalColor *= input.colorMult.rgb;
+  finalColor *= input.colorMult.rgb;
 
-    let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
-    finalColor += illuminate;
+  let illuminate = computeMirrorIlluminate(N, V, input.fragPos);
+  finalColor += illuminate;
 
-    let alpha = mix(materialData.alpha, 1.0, 0.5);
-    return vec4f(finalColor, alpha);
+  let alpha = mix(materialData.alpha, 1.0, 0.5);
+  // return vec4f(finalColor, alpha);
+
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.fragmentMirrorWGSLInstanced = fragmentMirrorWGSLInstanced;
 
-},{"../../me-config":79}],99:[function(require,module,exports){
+},{"../../me-config":81}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48049,23 +50112,10 @@ struct Scene {
   lightPos: vec3f,
 }
 
-struct Model {
-  modelMatrix: mat4x4f,
-}
-
-struct Bones {
-  boneMatrices : array<mat4x4f, MAX_BONES>
-}
-
-struct SkinResult {
-  position : vec4f,
-  normal   : vec3f,
-};
-
-struct InstanceData {
-    model     : mat4x4<f32>,
-    colorMult : vec4<f32>,
-};
+struct Model {modelMatrix: mat4x4f}
+struct Bones {boneMatrices : array<mat4x4f>}
+struct SkinResult {position: vec4f, normal: vec3f};
+struct InstanceData {model: mat4x4<f32>, colorMult : vec4<f32>};
 
 struct VertexAnimParams {
   time: f32,
@@ -48104,7 +50154,7 @@ struct VertexAnimParams {
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
-@group(2) @binding(1) var<uniform> bones : Bones;
+@group(2) @binding(1) var<storage, read> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 @group(2) @binding(3) var<uniform> uvScale: vec2f;
 
@@ -48124,46 +50174,23 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
-//     var skinnedPos  = vec4f(0.0);
-//     var skinnedNorm = vec3f(0.0);
-//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-//         let jointIndex = joints[i];
-//         let w = weights[i];
-//         if (w > 0.0) {
-//             let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // ← offset by instance
-//             skinnedPos  += (boneMat * pos) * w;
-//             let boneMat3 = mat3x3f(
-//                 boneMat[0].xyz,
-//                 boneMat[1].xyz,
-//                 boneMat[2].xyz
-//             );
-//             skinnedNorm += (boneMat3 * nrm) * w;
-//         }
-//     }
-//     return SkinResult(skinnedPos, skinnedNorm);
-// }
-
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
-    var skinnedPos  = vec4f(0.0);
-    var skinnedNorm = vec3f(0.0);
-    for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-        let jointIndex = joints[i];
-        let w = weights[i];
-        if (w > 0.0) {
-            let boneMat = bones.boneMatrices[jointIndex]; // ← no instId offset
-            skinnedPos  += (boneMat * pos) * w;
-            let boneMat3 = mat3x3f(
-                boneMat[0].xyz,
-                boneMat[1].xyz,
-                boneMat[2].xyz
-            );
-            skinnedNorm += (boneMat3 * nrm) * w;
-        }
+fn skinVertex( pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
+  var skinnedPos  = vec4f(0.0);
+  var skinnedNorm = vec3f(0.0);
+  let base = instId * MAX_BONES;
+  for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+    let jointIndex = joints[i];
+    let w = weights[i];
+    if (w > 0.0) {
+      let boneMat = bones.boneMatrices[base + jointIndex];
+      skinnedPos += (boneMat * pos) * w;
+      let boneMat3 = mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz);
+      skinnedNorm +=(boneMat3 * nrm) * w;
     }
-    return SkinResult(skinnedPos, skinnedNorm);
+  }
+  return SkinResult(skinnedPos, skinnedNorm);
 }
-    
+
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -48277,15 +50304,11 @@ fn main(
   @location(4) weights  : vec4<f32>,
   @builtin(instance_index) instId: u32
 ) -> VertexOutput {
-
   let inst = instances[instId];
-
   var output : VertexOutput;
   let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights, instId);
   let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
-
   let worldPos = inst.model * animated.position;
-
   let normalMatrix = mat3x3f(
     inst.model[0].xyz,
     inst.model[1].xyz,
@@ -48302,7 +50325,7 @@ fn main(
 }`;
 exports.vertexWGSLInstanced = vertexWGSLInstanced;
 
-},{"../../me-config":79}],100:[function(require,module,exports){
+},{"../../me-config":81}],103:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48324,7 +50347,7 @@ struct InstanceData {
 };
 
 struct Bones {
-  boneMatrices: array<mat4x4f, MAX_BONES>
+  boneMatrices: array<mat4x4f>
 }
 
 struct VertexAnimParams {
@@ -48364,7 +50387,8 @@ struct VertexAnimParams {
 
 @group(0) @binding(0) var<uniform>      scene      : Scene;
 @group(1) @binding(0) var<storage,read> instances  : array<InstanceData>;
-@group(1) @binding(1) var<uniform>      bones      : Bones;
+// @group(1) @binding(1) var<uniform>      bones      : Bones;
+@group(1) @binding(1) var<storage, read> bones : Bones;
 @group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
 
 
@@ -48397,17 +50421,40 @@ fn noise(p: vec2f) -> f32 {
   );
 }
 
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+//   var skinnedPos  = vec4f(0.0);
+//   var skinnedNorm = vec3f(0.0);
+//   for (var i: u32 = 0u; i < 4u; i++) {
+//     let w = weights[i];
+//     if (w > 0.0) {
+//       let boneMat  = bones.boneMatrices[joints[i]];
+//       skinnedPos  += (boneMat * pos) * w;
+//       skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+//     }
+//   }
+//   return SkinResult(skinnedPos, skinnedNorm);
+// }
+
+fn skinVertex( pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
   var skinnedPos  = vec4f(0.0);
   var skinnedNorm = vec3f(0.0);
+  let bonesPerInstance = MAX_BONES;
   for (var i: u32 = 0u; i < 4u; i++) {
     let w = weights[i];
     if (w > 0.0) {
-      let boneMat  = bones.boneMatrices[joints[i]];
-      skinnedPos  += (boneMat * pos) * w;
-      skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+      let jointIndex = joints[i];
+      let boneIndex = instId * bonesPerInstance + jointIndex;
+      let boneMat = bones.boneMatrices[boneIndex];
+      skinnedPos += (boneMat * pos) * w;
+
+      skinnedNorm += ( mat3x3f(
+          boneMat[0].xyz,
+          boneMat[1].xyz,
+          boneMat[2].xyz) * nrm
+      ) * w;
     }
   }
+
   return SkinResult(skinnedPos, skinnedNorm);
 }
 
@@ -48500,7 +50547,8 @@ fn main(
 ) -> @builtin(position) vec4f {
 
   // Skinning
-  let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  // let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  let skinned = skinVertex(  vec4f(position, 1.0),  normal,  joints,  weights,  instId);
   var finalPos = skinned.position.xyz;
 
   // Vertex animation
@@ -48516,7 +50564,349 @@ fn main(
 `;
 exports.vertexShadowWGSLInstanced = vertexShadowWGSLInstanced;
 
-},{"../../me-config":79}],101:[function(require,module,exports){
+},{"../../me-config":81}],104:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.kaleidoscopeEffectShader = exports.kaleidoscopeEffectInstance = void 0;
+const kaleidoscopeEffectShader = exports.kaleidoscopeEffectShader = `
+struct Camera {
+  viewProjMatrix : mat4x4<f32>,
+};
+
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct ModelData {
+  model : mat4x4<f32>,
+  time : f32,
+  speed : f32,
+  segments : f32,
+  zoom : f32,
+  intensity : f32,
+  colorShift : f32,
+  colorShiftSpeed : f32,
+  pad : f32,
+  tint : vec3<f32>,
+  tintStrength : f32,
+};
+@group(0) @binding(1) var<uniform> modelData : ModelData;
+
+struct VertexInput {
+  @location(0) position : vec3<f32>,
+  @location(1) uv : vec2<f32>,
+};
+
+struct VSOut {
+  @builtin(position) Position : vec4<f32>,
+  @location(0) v_uv : vec2<f32>,
+};
+
+@vertex
+fn vsMain(input : VertexInput) -> VSOut {
+  var out : VSOut;
+  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+  out.Position = camera.viewProjMatrix * worldPos;
+  out.v_uv = input.uv;
+  return out;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
+@fragment
+fn fsMain(input : VSOut) -> FragOut {
+  // Normalize UV to [-1, 1] centered
+  var p = input.v_uv * 2.0 - 1.0;
+  p *= modelData.zoom;
+
+  // Convert to polar coordinates
+  let angle = atan2(p.y, p.x);
+  let radius = length(p);
+
+  // Apply rotation based on time & speed
+  let rotated = angle + modelData.time * modelData.speed;
+
+  // Kaleidoscope segmentation: fold angle into segment space
+  let PI = 3.14159265359;
+  let segAngle = (PI * 2.0) / modelData.segments;
+  let foldedAngle = abs(((rotated % segAngle) - segAngle * 0.5));
+
+  // Radial patterns with intensity modulation
+  let pattern1 = sin(radius * 3.0 * modelData.intensity + modelData.time * 0.5) * 0.5 + 0.5;
+  let pattern2 = sin(foldedAngle * 4.0) * 0.5 + 0.5;
+  let pattern3 = cos((rotated + modelData.time * 0.3) * 2.0) * 0.5 + 0.5;
+
+  // Color cycling based on colorShift
+  let hueShift = sin(modelData.colorShift) * 0.5 + 0.5;
+  let col = mix(
+    vec3<f32>(pattern1, pattern2, pattern3),
+    vec3<f32>(pattern2, pattern3, pattern1),
+    hueShift
+  );
+
+  let fade = smoothstep(1.2, 0.3, radius);
+  let tinted = mix(col, modelData.tint, modelData.tintStrength);
+
+  // return vec4<f32>(tinted * fade, fade);
+
+  // ✅ New (use fade for alpha)
+  let finalColor = vec4f(tinted * fade, fade);
+
+  // ✅ Also cleaned up duplicates:
+  let particleNormal = vec4f(normalize(vec3f(p, 0.0)), 1.0);
+  let particleWorldPos = input.Position;
+
+  return FragOut(
+    finalColor,
+    particleNormal,
+    particleWorldPos
+  );
+}
+`;
+const kaleidoscopeEffectInstance = exports.kaleidoscopeEffectInstance = `
+struct Camera {
+    viewProj : mat4x4<f32>
+};
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct ModelData {
+    model     : mat4x4<f32>,
+    timeSpeed : vec4<f32>,
+    params    : vec4<f32>,
+    tint      : vec4<f32>,
+};
+@group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
+
+struct VSIn {
+    @location(0) position : vec3<f32>,
+    @location(1) uv : vec2<f32>,
+    @builtin(instance_index) instanceIdx : u32,
+};
+
+struct VSOut {
+    @builtin(position) position : vec4<f32>,
+    @location(0) uv : vec2<f32>,
+    @location(1) p0 : vec4<f32>,
+    @location(2) p1 : vec4<f32>,
+    @location(3) tintColor : vec3<f32>,
+};
+
+@vertex
+fn vsMain(input : VSIn) -> VSOut {
+    var output : VSOut;
+    let modelData = modelDataArray[input.instanceIdx];
+
+    let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+    output.position = camera.viewProj * worldPos;
+    output.uv = input.uv;
+
+    // Pass data to fragment
+    output.p0 = vec4<f32>(
+        modelData.timeSpeed.x, // time
+        modelData.timeSpeed.y, // speed
+        modelData.params.x,    // intensity
+        modelData.params.y     // segments
+    );
+    output.p1 = vec4<f32>(
+        modelData.params.z,    // zoom
+        modelData.params.w,    // colorShiftSpeed
+        modelData.tint.w,      // tintStrength
+        0.0
+    );
+    output.tintColor = modelData.tint.xyz;
+
+    return output;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
+@fragment
+fn fsMain(input : VSOut) -> FragOut {
+    let time            = input.p0.x;
+    let speed           = input.p0.y;
+    let intensity       = input.p0.z;
+    let segments        = input.p0.w;
+    let zoom            = input.p1.x;
+    let colorShiftSpeed = input.p1.y;
+    let tintStrength    = input.p1.z;
+    let tintColor       = input.tintColor;
+
+    // Use mesh UV for local kaleidoscope on each particle
+    var p = input.uv * 2.0 - 1.0;
+    p *= zoom;
+
+    // Convert to polar coordinates
+    let angle = atan2(p.y, p.x);
+    let radius = length(p);
+
+    // Apply rotation based on time & speed
+    let rotated = angle + time * speed;
+
+    // Kaleidoscope segmentation with proper folding
+    let PI = 3.14159265359;
+    let segAngle = (PI * 2.0) / segments;
+    let halfSeg = segAngle * 0.5;
+    
+    // Fold the angle symmetrically
+    var foldedAngle = rotated % segAngle;
+    if (foldedAngle > halfSeg) {
+      foldedAngle = segAngle - foldedAngle;
+    }
+    foldedAngle = abs(foldedAngle - halfSeg);
+
+    // Enhanced radial patterns
+    let r = radius + time * 0.3;
+    let pattern1 = sin(r * 5.0 + foldedAngle * 8.0 + time) * 0.5 + 0.5;
+    let pattern2 = sin(foldedAngle * 6.0 + r * 3.0) * 0.5 + 0.5;
+    let pattern3 = cos(r * 4.0 - foldedAngle * 5.0 + time * 0.5) * 0.5 + 0.5;
+    let pattern4 = sin((foldedAngle + r) * 7.0) * 0.5 + 0.5;
+
+    // Combine patterns with symmetry
+    let basePattern = mix(pattern1, pattern2, pattern3);
+    let detail = mix(basePattern, pattern4, pattern3);
+
+    // Color cycling
+    let hueShift = sin(time * colorShiftSpeed + foldedAngle * 2.0) * 0.5 + 0.5;
+    let col = mix(
+      vec3<f32>(detail, pattern2, pattern1),
+      vec3<f32>(pattern3, detail, pattern4),
+      hueShift
+    );
+
+    // Radial fade with more definition
+    let fade = smoothstep(1.5, 0.0, radius) * (1.0 - smoothstep(0.5, 0.0, abs(radius - 0.5)));
+
+    // Apply tint
+    let tinted = mix(col, col * tintColor * 2.0, tintStrength * fade);
+
+    // return vec4<f32>(tinted * fade, fade * intensity);
+    let finalColor = vec4f(tinted * fade, fade * intensity);
+    let particleNormal = vec4f(normalize(vec3f(p, 0.0)), 1.0);
+    let particleWorldPos = input.position;
+
+    return FragOut(
+      finalColor,
+      particleNormal,
+      particleWorldPos
+    );
+}
+`;
+
+// export const kaleidoscopeEffectInstance = `
+// struct Camera {
+//     viewProj : mat4x4<f32>
+// };
+// @group(0) @binding(0) var<uniform> camera : Camera;
+
+// struct ModelData {
+//     model     : mat4x4<f32>,
+//     timeSpeed : vec4<f32>,
+//     params    : vec4<f32>,
+//     tint      : vec4<f32>,
+// };
+// @group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
+
+// struct VSIn {
+//     @location(0) position : vec3<f32>,
+//     @location(1) uv : vec2<f32>,
+//     @builtin(instance_index) instanceIdx : u32,
+// };
+
+// struct VSOut {
+//     @builtin(position) position : vec4<f32>,
+//     @location(0) uv : vec2<f32>,
+//     @location(1) p0 : vec4<f32>,
+//     @location(2) p1 : vec4<f32>,
+//     @location(3) tintColor : vec3<f32>,
+// };
+
+// @vertex
+// fn vsMain(input : VSIn) -> VSOut {
+//     var output : VSOut;
+//     let modelData = modelDataArray[input.instanceIdx];
+
+//     let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+//     output.position = camera.viewProj * worldPos;
+//     output.uv = input.uv;
+
+//     // Pass data to fragment
+//     output.p0 = vec4<f32>(
+//         modelData.timeSpeed.x, // time
+//         modelData.timeSpeed.y, // speed
+//         modelData.params.x,    // intensity
+//         modelData.params.y     // segments
+//     );
+//     output.p1 = vec4<f32>(
+//         modelData.params.z,    // zoom
+//         modelData.params.w,    // colorShiftSpeed
+//         modelData.tint.w,      // tintStrength
+//         0.0
+//     );
+//     output.tintColor = modelData.tint.xyz;
+
+//     return output;
+// }
+
+// @fragment
+// fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+//     let time            = input.p0.x;
+//     let speed           = input.p0.y;
+//     let intensity       = input.p0.z;
+//     let segments        = input.p0.w;
+//     let zoom            = input.p1.x;
+//     let colorShiftSpeed = input.p1.y;
+//     let tintStrength    = input.p1.z;
+//     let tintColor       = input.tintColor;
+
+//     // Normalize UV to [-1, 1] centered
+//     var p = input.uv * 2.0 - 1.0;
+//     p *= zoom;
+
+//     // Convert to polar coordinates
+//     let angle = atan2(p.y, p.x);
+//     let radius = length(p);
+
+//     // Apply rotation based on time & speed
+//     let rotated = angle + time * speed;
+
+//     // Kaleidoscope segmentation
+//     let PI = 3.14159265359;
+//     let segAngle = (PI * 2.0) / segments;
+//     let foldedAngle = abs(((rotated % segAngle) - segAngle * 0.5));
+
+//     // Radial patterns with intensity modulation
+//     let pattern1 = sin(radius * 3.0 * intensity + time * 0.5) * 0.5 + 0.5;
+//     let pattern2 = sin(foldedAngle * 4.0) * 0.5 + 0.5;
+//     let pattern3 = cos((rotated + time * 0.3) * 2.0) * 0.5 + 0.5;
+
+//     // Color cycling
+//     let hueShift = sin(time * colorShiftSpeed) * 0.5 + 0.5;
+//     let col = mix(
+//       vec3<f32>(pattern1, pattern2, pattern3),
+//       vec3<f32>(pattern2, pattern3, pattern1),
+//       hueShift
+//     );
+
+//     // Fade edges
+//     let fade = smoothstep(1.2, 0.3, radius);
+
+//     // Apply tint
+//     let tinted = mix(col, col * tintColor * 2.0, tintStrength * fade);
+
+//     return vec4<f32>(tinted * fade, fade * intensity);
+// }
+// `;
+
+},{}],105:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48551,7 +50941,7 @@ struct MaterialPBR {
 };
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
@@ -48559,56 +50949,68 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let L = normalize(scene.lightPos - input.fragPos);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let L = normalize(scene.lightPos - input.fragPos);
 
-    // ===== BASE COLOR =====
-    var baseColor = material.baseColorFactor.rgb;
+  // ===== BASE COLOR =====
+  var baseColor = material.baseColorFactor.rgb;
 
-    // ===== HEIGHT GRADIENT =====
-    let heightFactor = input.fragPos.y * 0.02;
-    let gradientColor = mix(
-        baseColor * 0.5,
-        baseColor * 1.5,
-        clamp(heightFactor, 0.0, 1.0)
-    );
+  // ===== HEIGHT GRADIENT =====
+  let heightFactor = input.fragPos.y * 0.02;
+  let gradientColor = mix(
+      baseColor * 0.5,
+      baseColor * 1.5,
+      clamp(heightFactor, 0.0, 1.0)
+  );
 
-    // ===== FAKE LIGHT =====
-    let NdotL = dot(N, L);
-    let diffuse = NdotL * 0.5 + 0.5;
+  // ===== FAKE LIGHT =====
+  let NdotL = dot(N, L);
+  let diffuse = NdotL * 0.5 + 0.5;
 
-    // ===== FRESNEL EDGE GLOW 🔥 =====
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  // ===== FRESNEL EDGE GLOW 🔥 =====
+  let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
 
-    // ===== PULSE (time based) =====
-    let pulse = 0.5 + 0.5 * sin(scene.time * 2.0);
+  // ===== PULSE (time based) =====
+  let pulse = 0.5 + 0.5 * sin(scene.time * 2.0);
 
-    // ===== COLOR COMBINE =====
-    var color = gradientColor;
+  // ===== COLOR COMBINE =====
+  var color = gradientColor;
 
-    color *= (scene.globalAmbient + diffuse * 0.8);
+  color *= (scene.globalAmbient + diffuse * 0.8);
 
-    // edge glow tint (stylized)
-    let glowColor = vec3f(0.2, 0.6, 1.0);
-    color += glowColor * fresnel * (0.5 + pulse * 0.5);
+  // edge glow tint (stylized)
+  let glowColor = vec3f(0.2, 0.6, 1.0);
+  color += glowColor * fresnel * (0.5 + pulse * 0.5);
 
-    // ===== OPTIONAL: subtle spec =====
-    let H = normalize(L + V);
-    let spec = pow(max(dot(N, H), 0.0), 16.0);
-    color += spec * 0.2;
+  // ===== OPTIONAL: subtle spec =====
+  let H = normalize(L + V);
+  let spec = pow(max(dot(N, H), 0.0), 16.0);
+  color += spec * 0.2;
 
-    let alpha = material.baseColorFactor.a;
+  let alpha = material.baseColorFactor.a;
 
-    return vec4f(color, alpha);
+  // return vec4f(color, alpha);
+
+  return FragOut(
+    vec4f(color, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.coloraWGSL = coloraWGSL;
 
-},{}],102:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48667,12 +51069,12 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
@@ -48680,18 +51082,30 @@ struct FragmentInput {
         @location(3) fragUV    : vec2f,  // need UV
 };
 
-@fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
 
-let uv = fract(input.fragUV);
-    // distance to nearest edge 0 or 1
-    let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-    let edgeWidth = 0.05;  // tweak thickness
-    let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
-    let neonColor = vec3f(0.0, 1.0, 1.0);
-    let coreColor = vec3f(0.0, 0.0, 0.0);
-    let color = mix(coreColor, neonColor, edgeFactor);
-    return vec4f(color, 1);
+@fragment
+fn main(input: FragmentInput) -> FragOut {
+  let N = normalize(input.fragNorm);
+  let uv = fract(input.fragUV);
+  let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  let edgeWidth = 0.05;  // tweak thickness
+  let edgeFactor = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
+  let neonColor = vec3f(0.0, 1.0, 1.0);
+  let coreColor = vec3f(0.0, 0.0, 0.0);
+  let color = mix(coreColor, neonColor, edgeFactor);
+  // return vec4f(color, 1);
+  // !HARDCODE! - for now
+  let alpha = 1.0;
+  return FragOut(
+    vec4f(color, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }`;
 
 // export let colorbWGSL = () => `
@@ -48743,12 +51157,12 @@ let uv = fract(input.fragUV);
 // @group(0) @binding(0) var<uniform> scene : Scene;
 // @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 // @group(0) @binding(2) var shadowSampler: sampler_comparison;
-// @group(0) @binding(3) var meshTexture: texture_2d<f32>;
-// @group(0) @binding(4) var meshSampler: sampler;
-// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-// @group(0) @binding(7) var metallicRoughnessSampler: sampler;
-// @group(0) @binding(8) var<uniform> material: MaterialPBR;
+// @group(1) @binding(0) var meshTexture: texture_2d<f32>;
+// @group(1) @binding(1) var meshSampler: sampler;
+// @group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+// @group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+// @group(1) @binding(3) var metallicRoughnessSampler: sampler;
+// @group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 // struct FragmentInput {
 //     @location(1) fragPos   : vec3f,
@@ -48756,7 +51170,7 @@ let uv = fract(input.fragUV);
 // };
 
 // @fragment
-// fn main(input: FragmentInput) -> @location(0) vec4f {
+// fn main(input: FragmentInput) -> FragOut {
 
 //     let N = normalize(input.fragNorm);
 //     let V = normalize(scene.cameraPos - input.fragPos);
@@ -48773,7 +51187,7 @@ let uv = fract(input.fragUV);
 // `;
 exports.colorbWGSL = colorbWGSL;
 
-},{"../../me-config":79}],103:[function(require,module,exports){
+},{"../../me-config":81}],107:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48829,9 +51243,9 @@ struct SpotLight {
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
 @group(0) @binding(0) var<uniform> scene : Scene;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(1) fragPos   : vec3f,
@@ -48839,68 +51253,63 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    let L = normalize(scene.lightPos - input.fragPos);
-
-    // ===== DISTANCE BASED LOD =====
-    let dist = distance(scene.cameraPos, input.fragPos);
-
-    // tweak these!
-    let nearDist = 50.0;
-    let farDist  = 200.0;
-
-    let lodFactor = clamp((dist - nearDist) / (farDist - nearDist), 0.0, 1.0);
-
-    // ===== CHEAP =====
-    let cheapLighting = scene.globalAmbient;
-
-    // ===== MID QUALITY =====
-    let NdotL = dot(N, L);
-    let diffuse = NdotL * 0.5 + 0.5;
-
-    let H = normalize(L + V);
-    let specPower = mix(8.0, 64.0, 1.0 - material.roughnessFactor);
-    let spec = pow(max(dot(N, H), 0.0), specPower);
-
-    let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-
-    var midLighting = scene.globalAmbient;
-    midLighting += diffuse * 0.8;
-    midLighting += spec * 0.3;
-    midLighting += fresnel * 0.2;
-
-    // ===== FINAL BLEND =====
-    let lighting = mix(midLighting, cheapLighting, lodFactor);
-
-    let finalColor = baseColor * lighting;
-
-    // ===== DISTANCE FOG (BONUS 🔥) =====
-    let fogStart = 150.0;
-    let fogEnd   = 400.0;
-
-    let fogFactor = clamp((dist - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
-    let fogColor = vec3f(0.6, 0.7, 0.8);
-
-    let colorWithFog = mix(finalColor, fogColor, fogFactor);
-
-    let alpha = texColor.a * material.baseColorFactor.a;
-    if(alpha < 0.01) {
-        discard;
-    }
-
-    return vec4f(colorWithFog, alpha);
+fn main(input: FragmentInput) -> FragOut {
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let L = normalize(scene.lightPos - input.fragPos);
+  // ===== DISTANCE BASED LOD =====
+  let dist = distance(scene.cameraPos, input.fragPos);
+  // tweak these!
+  let nearDist = 50.0;
+  let farDist  = 200.0;
+  let lodFactor = clamp((dist - nearDist) / (farDist - nearDist), 0.0, 1.0);
+  // ===== CHEAP =====
+  let cheapLighting = scene.globalAmbient;
+  // ===== MID QUALITY =====
+  let NdotL = dot(N, L);
+  let diffuse = NdotL * 0.5 + 0.5;
+  let H = normalize(L + V);
+  let specPower = mix(8.0, 64.0, 1.0 - material.roughnessFactor);
+  let spec = pow(max(dot(N, H), 0.0), specPower);
+  let fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  var midLighting = scene.globalAmbient;
+  midLighting += diffuse * 0.8;
+  midLighting += spec * 0.3;
+  midLighting += fresnel * 0.2;
+  // ===== FINAL BLEND =====
+  let lighting = mix(midLighting, cheapLighting, lodFactor);
+  let finalColor = baseColor * lighting;
+  // ===== DISTANCE FOG (BONUS 🔥) =====
+  let fogStart = 150.0;
+  let fogEnd   = 400.0;
+  let fogFactor = clamp((dist - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
+  let fogColor = vec3f(0.6, 0.7, 0.8);
+  let colorWithFog = mix(finalColor, fogColor, fogFactor);
+  let alpha = texColor.a * material.baseColorFactor.a;
+  if(alpha < 0.01) {
+      discard;
+  }
+  // return vec4f(colorWithFog, alpha);
+  let alpha = 1.0;
+  return FragOut(
+    vec4f(colorWithFog, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.hybridWGSL = hybridWGSL;
 
-},{"../../me-config":79}],104:[function(require,module,exports){
+},{"../../me-config":81}],108:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48958,12 +51367,12 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
     @location(0) shadowPos : vec4f,
@@ -48972,8 +51381,14 @@ struct FragmentInput {
     @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
     let texColor = textureSample(meshTexture, meshSampler, input.uv);
     let baseColor = texColor.rgb * material.baseColorFactor.rgb;
@@ -49010,12 +51425,17 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
         discard;
     }
 
-    return vec4f(finalColor, alpha);
+    // return vec4f(finalColor, alpha);
+    return FragOut(
+      vec4f(finalColor, alpha),
+      vec4f(N, 0.0),
+      vec4f(input.fragPos, 1.0)
+    );
 }
 `;
 exports.midaWGSL = midaWGSL;
 
-},{"../../me-config":79}],105:[function(require,module,exports){
+},{"../../me-config":81}],109:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49027,45 +51447,45 @@ let miniaWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,   // unused (kept for layout)
-    cameraViewProjMatrix : mat4x4f,   // unused
-    cameraPos            : vec3f,     // unused
-    padding2             : f32,
-    lightPos             : vec3f,     // unused
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,   // unused (kept for layout)
+  cameraViewProjMatrix : mat4x4f,   // unused
+  cameraPos            : vec3f,     // unused
+  padding2             : f32,
+  lightPos             : vec3f,     // unused
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 // MINIMAL MATERIAL (keep layout compatibility)
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,  // unused
-    roughnessFactor : f32,  // unused
-    _pad1           : f32,
-    _pad2           : f32,
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,  // unused
+  roughnessFactor : f32,  // unused
+  _pad1           : f32,
+  _pad2           : f32,
 };
 
 // Dummy spotlight struct (not used but keeps binding valid)
 struct SpotLight {
-    position      : vec3f,
-    _pad1         : f32,
-    direction     : vec3f,
-    _pad2         : f32,
-    innerCutoff   : f32,
-    outerCutoff   : f32,
-    intensity     : f32,
-    _pad3         : f32,
-    color         : vec3f,
-    _pad4         : f32,
-    range         : f32,
-    ambientFactor : f32,
-    shadowBias    : f32,
-    _pad5         : f32,
-    lightViewProj : mat4x4<f32>,
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -49087,38 +51507,53 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f, // unused
-    @location(1) fragPos   : vec3f, // unused
-    @location(2) fragNorm  : vec3f, // unused
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f, // unused
+  @location(1) fragPos   : vec3f, // unused
+  @location(2) fragNorm  : vec3f, // unused
+  @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
 
-    // ===== TEXTURE =====
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  // ===== TEXTURE =====
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
 
-    // ===== BASIC COLOR CONTROL =====
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  // ===== BASIC COLOR CONTROL =====
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
 
-    // ===== AMBIENT ONLY =====
-    let finalColor = baseColor * scene.globalAmbient;
+  // ===== AMBIENT ONLY =====
+  let finalColor = baseColor * scene.globalAmbient;
 
-    // ===== ALPHA =====
-    let alpha = texColor.a * material.baseColorFactor.a;
+  // ===== ALPHA =====
+  let alpha = texColor.a * material.baseColorFactor.a;
 
-    // optional discard (keep if you use alpha cutout)
-    if(alpha < 0.01) {
-        discard;
-    }
+  // optional discard (keep if you use alpha cutout)
+  if(alpha < 0.01) {
+      discard;
+  }
 
-    return vec4f(finalColor, alpha);
+  // return vec4f(finalColor, alpha);
+
+  
+  let N = normalize(input.fragNorm);
+
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.miniaWGSL = miniaWGSL;
 
-},{"../../me-config":79}],106:[function(require,module,exports){
+},{"../../me-config":81}],110:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49129,32 +51564,32 @@ var _meConfig = require("../../me-config");
 let miniWGSL = () => `
 override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};
 struct Scene {
-    lightViewProjMatrix  : mat4x4f,
-    cameraViewProjMatrix : mat4x4f,
-    cameraPos            : vec3f,
-    padding2             : f32,
-    lightPos             : vec3f,
-    padding              : f32,
-    globalAmbient        : vec3f,
-    padding3             : f32,
-    time                 : f32,
-    deltaTime            : f32,
-    padding4             : vec2f,
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
 };
 
 struct SpotLight {
-    position : vec3f,
-    _pad1    : f32,
+  position : vec3f,
+  _pad1    : f32,
 };
 
 struct MaterialPBR {
-    baseColorFactor : vec4f,
-    metallicFactor  : f32,
-    roughnessFactor : f32,
-    effectMix       : f32,
-    lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
 };
 
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
@@ -49165,39 +51600,51 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
 
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
 
 // dummy storage binding (not used)
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
 
 // dummy PBR bindings
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
 };
 
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let texColor = textureSample(meshTexture, meshSampler, input.uv);
-    var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient);
-    // alpha from material factor
-    let alpha = texColor.a * material.baseColorFactor.a;
-    if(alpha < 0.01){
-        discard;
-    }
-    return vec4f(finalColor, alpha);
+fn main(input: FragmentInput) -> FragOut {
+  let texColor = textureSample(meshTexture, meshSampler, input.uv);
+  var finalColor = texColor.rgb * ( material.ambientColor + scene.globalAmbient);
+  // alpha from material factor
+  let alpha = texColor.a * material.baseColorFactor.a;
+  if(alpha < 0.01){
+      discard;
+  }
+  // return vec4f(finalColor, alpha);
+  let N = normalize(input.fragNorm);
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.miniWGSL = miniWGSL;
 
-},{"../../me-config":79}],107:[function(require,module,exports){
+},{"../../me-config":81}],111:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49260,34 +51707,35 @@ const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
-@group(0) @binding(3) var meshTexture: texture_2d<f32>;
-@group(0) @binding(4) var meshSampler: sampler;
-@group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-@group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-@group(0) @binding(7) var metallicRoughnessSampler: sampler;
-@group(0) @binding(8) var<uniform> material: MaterialPBR;
-@group(0) @binding(9) var normalTexture: texture_2d<f32>;
-@group(0) @binding(10) var normalSampler: sampler;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
 
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
-    @builtin(position) position : vec4f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+  @builtin(position) position : vec4f,
 };
 
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    return PBRMaterialData(baseColor, metallic, roughness);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha     = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+  return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
@@ -49311,319 +51759,368 @@ fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
     return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
 }
 
-// ===== SIMPLIFIED WORKING EFFECT =====
-
 fn calculateEffect(fragCoord: vec2f, resolution: vec2f, time: f32) -> vec3f {
-    // Normalize coordinates
-    let uv = fragCoord.xy / resolution;
-    let aspect = resolution.x / resolution.y;
-    let p = (uv * 2.0 - 1.0) * vec2f(aspect, 1.0);
+  let uv = fragCoord.xy / resolution;
+  let aspect = resolution.x / resolution.y;
+  let p = (uv * 2.0 - 1.0) * vec2f(aspect, 1.0);
+  var color = vec3f(0.0);
+  // Simplified version - 5 iterations instead of 9x7
+  for(var i: f32 = 0.0; i < 5.0; i = i + 1.0) {
+    // Rotating coordinates
+    let angle = time * 0.1 + i * 0.5;
+    let c = cos(angle);
+    let s = sin(angle);
+    var pos = vec2f(
+        p.x * c - p.y * s,
+        p.x * s + p.y * c
+    );
     
-    var color = vec3f(0.0);
+    // Add some warping
+    pos += sin(pos.yx * 3.0 + time * 0.5) * 0.1;
     
-    // Simplified version - 5 iterations instead of 9x7
-    for(var i: f32 = 0.0; i < 5.0; i = i + 1.0) {
-        // Rotating coordinates
-        let angle = time * 0.1 + i * 0.5;
-        let c = cos(angle);
-        let s = sin(angle);
-        var pos = vec2f(
-            p.x * c - p.y * s,
-            p.x * s + p.y * c
-        );
-        
-        // Add some warping
-        pos += sin(pos.yx * 3.0 + time * 0.5) * 0.1;
-        
-        // Distance field
-        let dist = length(pos) - 0.5 - i * 0.15;
-        let rings = sin(dist * 10.0 - time * 2.0) * 0.5 + 0.5;
-        
-        // Color based on iteration and distance
-        let hue = i / 5.0 + time * 0.1;
-        color += vec3f(
-            0.5 + 0.5 * sin(hue * 6.28),
-            0.5 + 0.5 * sin(hue * 6.28 + 2.09),
-            0.5 + 0.5 * sin(hue * 6.28 + 4.18)
-        ) * rings * 0.3;
-    }
+    // Distance field
+    let dist = length(pos) - 0.5 - i * 0.15;
+    let rings = sin(dist * 10.0 - time * 2.0) * 0.5 + 0.5;
     
-    // Add some glow
-    let centerDist = length(p);
-    color += vec3f(0.1) / (centerDist * centerDist + 0.1);
-    
-    return clamp(color, vec3f(0.0), vec3f(1.0));
+    // Color based on iteration and distance
+    let hue = i / 5.0 + time * 0.1;
+    color += vec3f(
+        0.5 + 0.5 * sin(hue * 6.28),
+        0.5 + 0.5 * sin(hue * 6.28 + 2.09),
+        0.5 + 0.5 * sin(hue * 6.28 + 4.18)
+    ) * rings * 0.3;
+  }
+  
+  // Add some glow
+  let centerDist = length(p);
+  color += vec3f(0.1) / (centerDist * centerDist + 0.1);
+  
+  return clamp(color, vec3f(0.0), vec3f(1.0));
 }
 
-// ===== STANDARD PBR LIGHTING =====
-
 fn calculatePBRLighting(materialData: PBRMaterialData, N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
-    var Lo = vec3f(0.0);
+  var Lo = vec3f(0.0);
+  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let L = normalize(spotlights[i].position - fragPos);
+    let H = normalize(V + L);
+    let distance = length(spotlights[i].position - fragPos);
+    let attenuation = clamp(1.0 - (distance / max(spotlights[i].range, 0.1)), 0.0, 1.0);
+    let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
     
-    for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-        let L = normalize(spotlights[i].position - fragPos);
-        let H = normalize(V + L);
-        let distance = length(spotlights[i].position - fragPos);
-        let attenuation = clamp(1.0 - (distance / max(spotlights[i].range, 0.1)), 0.0, 1.0);
-        let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-        
-        let NDF = distributionGGX(N, H, materialData.roughness);
-        let G   = geometrySmith(N, V, L, materialData.roughness);
-        let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-        let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-        
-        let kS = F;
-        let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-        let diffuse  = kD * materialData.baseColor / PI;
-        let NdotL = max(dot(N, L), 0.0);
-        let specular = (NDF * G * F) / max(4.0 * max(dot(N, V), 0.0) * NdotL + 0.001, 0.001);
-        
-        Lo += (diffuse + specular) * radiance * NdotL;
-    }
+    let NDF = distributionGGX(N, H, materialData.roughness);
+    let G   = geometrySmith(N, V, L, materialData.roughness);
+    let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+    let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
     
-    return Lo;
+    let kS = F;
+    let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+    let diffuse  = kD * materialData.baseColor / PI;
+    let NdotL = max(dot(N, L), 0.0);
+    let specular = (NDF * G * F) / max(4.0 * max(dot(N, V), 0.0) * NdotL + 0.001, 0.001);
+    
+    Lo += (diffuse + specular) * radiance * NdotL;
+  }
+  return Lo;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
-    let materialData = getPBRMaterial(input.uv);
-    let N = normalize(input.fragNorm);
-    let V = normalize(scene.cameraPos - input.fragPos);
-    
-    let resolution = vec2f(1080.0, 687.0);
-    
-    var finalColor = vec3f(0.0);
-    
-    if (material.lightingEnabled > 0.5) {
-        // Lighting enabled - calculate PBR
-        let Lo = calculatePBRLighting(materialData, N, V, input.fragPos);
-        let ambient = scene.globalAmbient * materialData.baseColor;
-        let litColor = ambient + Lo;
-        
-        if (material.effectMix > 0.01) {
-            // Blend with effect
-            let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
-            finalColor = mix(litColor, effectColor, material.effectMix);
-        } else {
-            // Pure PBR
-            finalColor = litColor;
-        }
-    } else {
-        // Pure effect mode
-        let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
-        // Modulate slightly by material color
-        finalColor = effectColor * mix(vec3f(1.0), materialData.baseColor, 0.2);
-    }
-    
-    return vec4f(finalColor, 1.0);
+fn main(input: FragmentInput) -> FragOut {
+  let materialData = getPBRMaterial(input.uv);
+  let N = normalize(input.fragNorm);
+  let V = normalize(scene.cameraPos - input.fragPos);
+  let resolution = vec2f(1080.0, 687.0);
+  var finalColor = vec3f(0.0);
+  if (material.lightingEnabled > 0.5) {
+      // Lighting enabled - calculate PBR
+      let Lo = calculatePBRLighting(materialData, N, V, input.fragPos);
+      let ambient = scene.globalAmbient * materialData.baseColor;
+      let litColor = ambient + Lo;
+      if (material.effectMix > 0.01) {
+          // Blend with effect
+          let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
+          finalColor = mix(litColor, effectColor, material.effectMix);
+      } else {
+          // Pure PBR
+          finalColor = litColor;
+      }
+  } else {
+      let effectColor = calculateEffect(input.position.xy, resolution, scene.time);
+      finalColor = effectColor * mix(vec3f(1.0), materialData.baseColor, 0.2);
+  }
+
+  // return vec4f(finalColor, 1.0);
+  return FragOut(
+    vec4f(finalColor, materialData.alpha),
+    vec4f(N, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
 }
 `;
 exports.fragmentWGSLMix1 = fragmentWGSLMix1;
 
-},{"../../me-config":79}],108:[function(require,module,exports){
+},{"../../me-config":81}],112:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.geoInstancedEffect = void 0;
-const geoInstancedEffect = exports.geoInstancedEffect = `struct Camera {
-  viewProjMatrix : mat4x4<f32>,
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
+let geoInstancedEffect = () => `
+override shadowDepthTextureSize: f32;
 
-// --- INSTANCE STORAGE BUFFER ----------------------------------------------
-struct InstanceData {
-  model : mat4x4<f32>,
-  color : vec4<f32>,
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  
+    _pad            : f32,    
 };
+
+struct InstanceData {
+    model : mat4x4f,
+    color : vec4f,
+};
+
+// === FIXED TO DIRECT 64-BYTE MATRIX FOR THE STANDALONE CLASS ===
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<storage, read> instances : array<InstanceData>;
+@group(0) @binding(4) var<uniform> material : MaterialPBR;
 
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
-  @location(1) v_color : vec4<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
+    @location(4) instanceColor  : vec4f,
 };
 
 @vertex
-fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex: u32) -> VSOut {
-  var out : VSOut;
+fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex: u32) -> VertexOutput {
+    var out : VertexOutput;
+    
+    let modelMatrix = instances[instanceIndex].model;
+    let color = instances[instanceIndex].color;
+    
+    let worldPos = modelMatrix * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    
+    // Multiplied by raw camera matrix uniform directly
+    out.position = cameraViewProjMatrix * worldPos;
+    
+    // Auto-calculate surface normal direction dynamically
+    out.fragNorm = normalize(input.position);
+    
+    out.uv = input.uv;
+    out.instanceColor = color;
+    return out;
+}
 
-  // Use per-instance model matrix & color
-  let modelMatrix = instances[instanceIndex].model;
-  let color = instances[instanceIndex].color;
-
-  let worldPos = modelMatrix * vec4<f32>(input.position,1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  out.v_color = color;
-  return out;
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-  let dist = length(uv);
-  let glow = exp(-dist * 1.0);
-  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
-  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
-  let color = mix(baseColor, glowColor, glow) * glow * input.v_color.rgb;
-  let alpha = input.v_color.a;
-  return vec4<f32>(color, alpha);
+fn fsMain(input : VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
+    
+    let uv = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(uv);
+    let glow = exp(-dist * 1.0);
+    
+    let baseColor = vec3f(0.2, 0.7, 1.0);
+    let glowColor = vec3f(0.7, 0.9, 1.0);
+    
+    let finalColor = mix(baseColor, glowColor, glow) * glow * input.instanceColor.rgb;
+    let alpha = input.instanceColor.a;
+
+    return FragOut(
+        vec4f(finalColor, alpha), 
+        vec4f(N, 0.0),            
+        vec4f(input.fragPos, 1.0) 
+    );
 }
 `;
+exports.geoInstancedEffect = geoInstancedEffect;
 
-},{}],109:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.geoInstancedTexEffect = void 0;
-const geoInstancedTexEffect = exports.geoInstancedTexEffect = `
-// === CAMERA & INSTANCE BUFFERS ============================================
-struct Camera {
-  viewProjMatrix : mat4x4<f32>,
+let geoInstancedTexEffect = () => `
+override shadowDepthTextureSize: f32;
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  
+    _pad            : f32,    
 };
-@group(0) @binding(0) var<uniform> camera : Camera;
 
 struct InstanceData {
-  model : mat4x4<f32>,
-  color : vec4<f32>,
+    model : mat4x4f,
+    color : vec4f,
 };
-@group(0) @binding(1) var<storage, read> instances : array<InstanceData>;
 
-// === TEXTURE & SAMPLER ====================================================
+// === CHANGED TO DIRECT 64-BYTE MATRIX TO MATCH YOUR FRAMEWORK BUFFER ===
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
+@group(0) @binding(1) var<storage, read> instances : array<InstanceData>;
 @group(0) @binding(2) var mySampler : sampler;
 @group(0) @binding(3) var myTexture : texture_2d<f32>;
 
-// === VERTEX STAGE =========================================================
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
-  @location(1) v_color : vec4<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
+    @location(4) instanceColor  : vec4f,
 };
 
 @vertex
-fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> VSOut {
-  var out : VSOut;
-  let inst = instances[instanceIndex];
+fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> VertexOutput {
+    var out : VertexOutput;
+    let inst = instances[instanceIndex];
 
-  let worldPos = inst.model * vec4<f32>(input.position, 1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  out.v_color = inst.color;
-  return out;
+    let worldPos = inst.model * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    
+    // Multiplied by raw camera matrix uniform directly
+    out.position = cameraViewProjMatrix * worldPos; 
+    
+    // Auto-calculate surface normal directions
+    out.fragNorm = normalize(input.position);
+    
+    out.uv = input.uv;
+    out.instanceColor = inst.color;
+    return out;
 }
 
-// === FRAGMENT STAGE =======================================================
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
 
- // Adjust UV scaling and offset here
-  let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
-  let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
-  
-  let adjustedUV = input.v_uv; // * uvScale + uvOffset; // make it like ring !
+    let adjustedUV = input.uv; 
+    let texColor = textureSample(myTexture, mySampler, adjustedUV);
 
-  let texColor = textureSample(myTexture, mySampler, adjustedUV);
+    let centeredUV = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(centeredUV);
+    let glow = exp(-dist * 1.2);
+    let glowColor = mix(vec3f(0.2, 0.7, 1.0), vec3f(0.8, 0.95, 1.0), glow);
 
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-  let dist = length(uv);
-  let glow = exp(-dist * 1.2);
-  let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
+    let baseRGB = texColor.rgb * glowColor;
+    let tintedRGB = mix(baseRGB, input.instanceColor.rgb, 0.8);
+    let finalAlpha = texColor.a * input.instanceColor.a * glow;
 
-  let baseRGB = texColor.rgb * glowColor;
-  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8);
-  let finalAlpha = texColor.a * input.v_color.a * glow;
-
-  return vec4<f32>(tintedRGB, finalAlpha);
-
-  // let texColor = textureSample(myTexture, mySampler, input.v_uv);
-
-  // let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-  // let dist = length(uv);
-  // let glow = exp(-dist * 1.2);
-  // let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
-
-  // // More balanced color blending:
-  // let baseRGB = texColor.rgb * glowColor;
-  // let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
-  // let finalAlpha = texColor.a * input.v_color.a * glow;
-
-  // return vec4<f32>(tintedRGB, finalAlpha);
+    return FragOut(
+        vec4f(tintedRGB, finalAlpha), 
+        vec4f(N, 0.0),                
+        vec4f(input.fragPos, 1.0)     
+    );
 }
 `;
+exports.geoInstancedTexEffect = geoInstancedTexEffect;
 
-},{}],110:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.pointerEffect = void 0;
-const pointerEffect = exports.pointerEffect = `
-struct Camera {
-  viewProjMatrix : mat4x4<f32>,
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
-
+let pointerEffect = () => `
 struct Model {
-  modelMatrix : mat4x4<f32>,
+    modelMatrix : mat4x4f,
 };
+
+// Changed from "scene : Scene" to a direct 64-byte mat4x4f!
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<uniform> model : Model;
 
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
 };
 
 @vertex
-fn vsMain(input : VertexInput) -> VSOut {
-  var out : VSOut;
-  let worldPos = model.modelMatrix * vec4<f32>(input.position,1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  return out;
+fn vsMain(input : VertexInput) -> VertexOutput {
+    var out : VertexOutput;
+    
+    let worldPos = model.modelMatrix * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    out.position = cameraViewProjMatrix * worldPos; // Uses direct matrix bind
+    
+    out.fragNorm = vec3f(0.0, 1.0, 0.0); 
+    out.uv = input.uv;
+    
+    return out;
+}
+
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  // Center the UVs (0.0–1.0 → -1.0–1.0)
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
+fn fsMain(input: VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
 
-  // Distance from center
-  let dist = length(uv);
+    let centeredUV = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(centeredUV);
+    let glow = exp(-dist * 1.0);
 
-  // Glow falloff
-  let glow = exp(-dist * 1.0); // try values 3.0–6.0 for tighter glow
+    let baseColor = vec3f(0.2, 0.7, 1.0);
+    let glowColor = vec3f(0.7, 0.9, 1.0);
+    let finalColor = mix(baseColor, glowColor, glow) * glow;
 
-  // Gradient color (inner bright → outer dim)
-  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
-  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
+    return FragOut(
+        vec4f(finalColor, 1.0),
+        vec4f(N, 0.0),
+        vec4f(input.fragPos, 1.0)
+    );
+}
+`;
+exports.pointerEffect = pointerEffect;
 
-  // Blend based on glow strength
-  let color = mix(baseColor, glowColor, glow) * glow;
-
-  return vec4<f32>(color, 1.0);
-}`;
-
-},{}],111:[function(require,module,exports){
+},{}],115:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49714,7 +52211,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],112:[function(require,module,exports){
+},{}],116:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50066,7 +52563,7 @@ fn main(input: VertexInput) -> @builtin(position) vec4f {
 `;
 exports.vertexMorphShadowWGSL = vertexMorphShadowWGSL;
 
-},{}],113:[function(require,module,exports){
+},{}],117:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50340,7 +52837,7 @@ fn main(
 }`;
 exports.vertexWGSL = vertexWGSL;
 
-},{"../me-config":79}],114:[function(require,module,exports){
+},{"../me-config":81}],118:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50454,7 +52951,7 @@ fn main(
 }`;
 exports.vertexWGSL_NM = vertexWGSL_NM;
 
-},{"../me-config":79}],115:[function(require,module,exports){
+},{"../me-config":81}],119:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50713,7 +53210,7 @@ fn main(
 `;
 exports.vertexShadowWGSL = vertexShadowWGSL;
 
-},{"../me-config":79}],116:[function(require,module,exports){
+},{"../me-config":81}],120:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50875,11 +53372,18 @@ fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
   let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
   let metallic = mrTex.b * material.metallicFactor;
   let roughness = mrTex.g * material.roughnessFactor;
-  return PBRMaterialData(baseColor, metallic, roughness);
+  let alpha     = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
   let waterNormal = calculateWaterNormal(input.fragPos, scene.time);
   let viewDir = normalize(scene.cameraPos - input.fragPos);
   let fresnel = fresnelSchlick(max(dot(waterNormal, viewDir), 0.0), 0.02);
@@ -50905,11 +53409,16 @@ fn main(input: FragmentInput) -> @location(0) vec4f {
   let finalColor = ambient + diffuse + specular + foam +  ember +  causticsColor;
   let alpha = mix(0.2, 0.5, fresnel);
   let vibrantColor = finalColor * 1.5;
-  return vec4f(vibrantColor, alpha);
+  // return vec4f(vibrantColor, alpha);
+  return FragOut(
+  vec4f(vibrantColor, alpha),
+  vec4f(normalize(waterNormal), 1.0),
+  vec4f(input.fragPos, 1.0)
+);
 }`;
 exports.fragmentWaterWGSL = fragmentWaterWGSL;
 
-},{"../../me-config":79}],117:[function(require,module,exports){
+},{"../../me-config":81}],121:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50996,7 +53505,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],118:[function(require,module,exports){
+},{}],122:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51066,7 +53575,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],119:[function(require,module,exports){
+},{}],123:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51403,7 +53912,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":78}],120:[function(require,module,exports){
+},{"../../engine/utils":80}],124:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52170,7 +54679,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":78}],121:[function(require,module,exports){
+},{"../../engine/utils":80}],125:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52347,7 +54856,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":70,"../../engine/utils":78,"./client":119,"./editor.provider":122,"./flexCodexShader":123,"./fluxCodexVertex":125,"./hud":127,"./methodsManager":128}],122:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":72,"../../engine/utils":80,"./client":123,"./editor.provider":126,"./flexCodexShader":127,"./fluxCodexVertex":129,"./hud":131,"./methodsManager":132}],126:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52575,7 +55084,7 @@ class EditorProvider {
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":55,"../../engine/loaders/webgpu-gltf":58}],123:[function(require,module,exports){
+},{"../../engine/loader-obj":57,"../../engine/loaders/webgpu-gltf":60}],127:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54769,7 +57278,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":78,"./flexCodexShaderAdapter.js":124}],124:[function(require,module,exports){
+},{"../../engine/utils.js":80,"./flexCodexShaderAdapter.js":128}],128:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54777,6 +57286,29 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.graphAdapter = graphAdapter;
 var _meConfig = require("../../me-config");
+/**
+ * Attachment metadata: defines what each output attachment expects
+ */
+const ATTACHMENT_SPEC = {
+  color: {
+    location: 0,
+    type: "vec4f",
+    usage: "Final composited color + alpha",
+    format: "rgba8unorm"
+  },
+  normal: {
+    location: 1,
+    type: "vec4f",
+    usage: "World-space normal for deferred/SSR",
+    format: "rgba16float"
+  },
+  worldPos: {
+    location: 2,
+    type: "vec4f",
+    usage: "World position for depth/position reconstruction",
+    format: "rgba16float"
+  }
+};
 function graphAdapter(compilerResult, nodes) {
   const {
     structs,
@@ -54786,20 +57318,29 @@ function graphAdapter(compilerResult, nodes) {
     outputs,
     mainLines
   } = compilerResult;
-  // console.log("what os node in adapter", nodes);
   const globals = new Set();
   globals.add("const PI: f32 = 3.141592653589793;");
   globals.add(`override shadowDepthTextureSize: f32 = ${_meConfig.MEConfig.SHADOW_RES};`);
-  // 3️⃣ Prepare final color outputs
-  const baseColor = outputs.baseColor || "vec3f(1.0)";
-  const alpha = outputs.alpha || "1.0";
-  const normal = outputs.normal || "normalize(input.fragNorm)";
-  const emissive = outputs.emissive || "vec3f(0.0)";
+
+  // ✅ Build attachment outputs with explicit fallbacks
+  const attachmentOutputs = {
+    color: outputs.outColor || buildColorOutput(outputs),
+    normal: outputs.normal || `vec4f(normalize(input.fragNorm), 1.0)`,
+    worldPos: outputs.worldPos || `vec4f(input.fragPos, 1.0)`
+  };
+
+  // Validate all attachments are present
+  validateAttachments(attachmentOutputs);
+
+  // ✅ Track which node-generated functions have been added (avoid duplicates)
+  const addedNodeFunctions = new Set();
 
   // --- Iterate nodes in topological order ---
   for (const node of nodes) {
     if (node.type === "LightShadowNode") {
-      functions.push(`
+      // Only add once, even if multiple LightShadowNodes exist
+      if (!addedNodeFunctions.has("LightShadowNode")) {
+        functions.push(`
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
     let L = normalize(light.position - fragPos);
     let NdotL = max(dot(N, L), 0.0);
@@ -54808,7 +57349,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let epsilon = light.innerCutoff - light.outerCutoff;
     var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    // coneAtten = 1.0;
     if (coneAtten <= 0.0 || NdotL <= 0.0) {
         return vec3f(0.0);
     }
@@ -54838,7 +57378,6 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
     let diffuse = kD * material.baseColor.rgb / PI;
 
     let radiance = light.color * light.intensity;
-    // return (diffuse + specular) * radiance * NdotL * coneAtten;
     return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
 }
 
@@ -54863,8 +57402,8 @@ fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, light
     return visibility / 9.0;
 }
 `);
-      // Inject compute function (inline or multi-line)
-      // mainLines.push(`finalColor *= vec4(scene.globalAmbient + lightContribution, 1);`);
+        addedNodeFunctions.add("LightShadowNode");
+      }
     }
   }
   return `
@@ -54917,8 +57456,8 @@ struct MaterialPBR {
     roughnessFactor : f32,
     effectMix       : f32,
     lightingEnabled : f32,
-    ambientColor    : vec3f,  // add this
-    _pad            : f32,    // alignment padding
+    ambientColor    : vec3f,
+    _pad            : f32,
 };
 
 // PREDEFINED
@@ -54932,16 +57471,6 @@ struct PBRMaterialData {
 // PREDEFINED
 const MAX_SPOTLIGHTS = ${_meConfig.MEConfig.MAX_SPOTLIGHTS}u;
 
-// // PREDEFINED
-// @group(0) @binding(0) var<uniform> scene : Scene;
-// @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
-// @group(0) @binding(2) var shadowSampler: sampler_comparison;
-// @group(0) @binding(3) var meshTexture: texture_2d<f32>;
-// @group(0) @binding(4) var meshSampler: sampler;
-// @group(0) @binding(5) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
-// @group(0) @binding(6) var metallicRoughnessTex: texture_2d<f32>;
-// @group(0) @binding(7) var metallicRoughnessSampler: sampler;
-// @group(0) @binding(8) var<uniform> material: MaterialPBR;
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
 @group(0) @binding(2) var shadowSampler: sampler_comparison;
@@ -54962,38 +57491,64 @@ ${functions.join("\n\n")}
 
 // PREDEFINED Fragment input
 struct FragmentInput {
-    @location(0) shadowPos : vec4f,
-    @location(1) fragPos   : vec3f,
-    @location(2) fragNorm  : vec3f,
-    @location(3) uv        : vec2f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f
 };
 
-// PREDEFINED PBR helpers
 fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
-    let texColor = textureSample(meshTexture, meshSampler, uv);
-    let baseColor = texColor.rgb * material.baseColorFactor.rgb;
-    let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
-    let metallic = mrTex.b * material.metallicFactor;
-    let roughness = mrTex.g * material.roughnessFactor;
-    
-    // ✅ Get alpha from texture and material factor
-    // let alpha = texColor.a * material.baseColorFactor.a;
-    let alpha = material.baseColorFactor.a;
-    
-    return PBRMaterialData(baseColor, metallic, roughness, alpha);
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+// ✅ 3-Attachment output struct (explicit format metadata for deferred/SSR)
+struct FragOut {
+  @location(0) color  : vec4f,     // rgba8unorm — final color + alpha
+  @location(1) normal : vec4f,     // rgba16float — world-space normal
+  @location(2) worldPos : vec4f,   // rgba16float — world position for reconstruction
 }
 
 @fragment
-fn main(input: FragmentInput) -> @location(0) vec4f {
+fn main(input: FragmentInput) -> FragOut {
   // Locals
   ${locals.join("\n  ")}
   ${mainLines.join("\n  ")}
-  return ${outputs.outColor};
+  
+  return FragOut(
+    ${attachmentOutputs.color},
+    ${attachmentOutputs.normal},
+    ${attachmentOutputs.worldPos}
+  );
 }
 `;
 }
 
-},{"../../me-config":79}],125:[function(require,module,exports){
+/**
+ * Helper: build color output from component pieces
+ */
+function buildColorOutput(outputs) {
+  const baseColor = outputs.baseColor || "vec3f(1.0)";
+  const alpha = outputs.alpha || "1.0";
+  return `vec4f(${baseColor}, ${alpha})`;
+}
+
+/**
+ * Helper: validate all required attachments are defined
+ */
+function validateAttachments(attachmentOutputs) {
+  const missing = Object.entries(attachmentOutputs).filter(([_, val]) => !val || val.trim() === "").map(([key]) => key);
+  if (missing.length > 0) {
+    console.warn(`⚠️ graphAdapter: Missing attachment outputs: ${missing.join(", ")}. ` + `Falling back to defaults.`);
+  }
+}
+
+},{"../../me-config":81}],129:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56001,9 +58556,9 @@ class FluxCodexVertex {
     outputs.forEach(pin => right.appendChild(this._pinElement(pin, true, nodeId)));
     if (node.title === "Get Scene Object" || node.title === "Get Scene Light" || node.title === "Get Scene Animation") {
       const select = el.querySelector("select.scene-select");
-      console.log('!TEST! ??? BEFORE   ', select);
+      // console.log('!TEST! ??? BEFORE   ', select)
       if (select) {
-        console.log('!TEST! ??? exist');
+        // console.log('!TEST! ??? exist')
         // const objects = spec.accessObject || [];
         // objects.forEach(obj => {
         //   const opt = document.createElement("option");
@@ -56499,7 +59054,7 @@ class FluxCodexVertex {
         spec.fields[0].value = name;
         const dom = document.querySelector(`.node[data-id="${spec.id}"]`);
         let fields = dom.querySelectorAll(".node-fields");
-        // console.log('WORKS objects', fields);
+        console.log('set shader ', name);
         fields[0].children[0].value = name;
       });
       el.appendChild(select);
@@ -60497,7 +63052,7 @@ LIST OF INTEREST OBJECT:
           return;
         }
         // console.warn("[canvaInlineProgram] specialCanvas2dArg arg:", specialCanvas2dArg);
-        if (typeof specialCanvas2dArg == 'string') {
+        if (typeof specialCanvas2dArg === 'string') {
           eval("specialCanvas2dArg = " + specialCanvas2dArg);
         }
         if (typeof canvaInlineProgram != 'function') {
@@ -60513,7 +63068,7 @@ LIST OF INTEREST OBJECT:
           _utils.mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        // mb.show("FluxCodexVertex WHAT IS on [Set CanvasInline] node id:", n.id);
+        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,
@@ -60617,7 +63172,6 @@ LIST OF INTEREST OBJECT:
         }
         n._returnCache = n.osc.UPDATE();
       } else if (n.title === "Set Shader Graph") {
-        console.warn("[Set Shader Graph] ?????  ??input fields...");
         const objectName = this.getValue(nodeId, "objectName");
         let selectedShader = this.getValue(nodeId, "selectedShader");
         if (!objectName) {
@@ -60626,7 +63180,7 @@ LIST OF INTEREST OBJECT:
           return;
         }
         let o = app.getSceneObjectByName(objectName);
-        // 
+        // console.warn("[Set Shader Graph]  ", app.shaderGraph.runtime_memory[selectedShader]);
         o.changeMaterial("graph", app.shaderGraph.runtime_memory[selectedShader]);
         this.enqueueOutputs(n, "execOut");
         return;
@@ -60799,7 +63353,6 @@ LIST OF INTEREST OBJECT:
       const texpath = this.getValue(nodeId, "texturePath");
       const sceneObjectName = this.getValue(nodeId, "sceneObjectName");
       if (texpath) {
-        console.log('SET TECTURE : sceneObjectName', sceneObjectName);
         let obj = app.getSceneObjectByName(sceneObjectName);
         obj.loadTex0([texpath]).then(_ => {
           setTimeout(() => {
@@ -60825,6 +63378,8 @@ LIST OF INTEREST OBJECT:
       return;
     } else if (n.title === "Set Rotation") {
       const rot = this.getValue(nodeId, "rotation");
+      console.log('TEST RotationRotation X', rot);
+      console.log('TEST this.getValue(nodeId, "x") X', this.getValue(nodeId, "x"));
       if (rot?.setRotation) {
         rot.setRotation(this.getValue(nodeId, "x"), this.getValue(nodeId, "y"), this.getValue(nodeId, "z"));
       }
@@ -60839,7 +63394,6 @@ LIST OF INTEREST OBJECT:
       return;
     } else if (n.title === "Set RotateX") {
       const rot = this.getValue(nodeId, "rotation");
-      console.log('TEST ROTATE X');
       if (rot?.setRotateX) {
         rot.setRotateX(this.getValue(nodeId, "x"));
       }
@@ -61496,7 +64050,7 @@ LIST OF INTEREST OBJECT:
 }
 exports.default = FluxCodexVertex;
 
-},{"../../engine/matrix-class.js":60,"../../engine/utils":78,"./curve-editor":120,"./generateAISchema.js":126}],126:[function(require,module,exports){
+},{"../../engine/matrix-class.js":62,"../../engine/utils":80,"./curve-editor":124,"./generateAISchema.js":130}],130:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -61623,7 +64177,7 @@ function catalogToText(catalog) {
 let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
-},{}],127:[function(require,module,exports){
+},{}],131:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -62648,7 +65202,7 @@ class SceneObjectProperty {
       } else if (propName == "itIsPhysicsBody") {
         if (!this.core.matrixPhysics) return;
         let body = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
-        for (let key in body) {
+        if (body) for (let key in body) {
           if (typeof body[key] === 'string') {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
               <div style="background:black;color:white;width:35%;">${key}</div>
@@ -62970,7 +65524,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":78,"./flexCodexShader.js":123}],128:[function(require,module,exports){
+},{"../../engine/utils.js":80,"./flexCodexShader.js":127}],132:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -63287,7 +65841,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],129:[function(require,module,exports){
+},{}],133:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -63319,16 +65873,16 @@ var _energyBar = require("./engine/effects/energy-bar.js");
 var _manaBar = require("./engine/effects/mana-bar.js");
 var _pointerEffect = require("./engine/effects/pointerEffect.js");
 var _flame = require("./engine/effects/flame.js");
-var _proceduralMesh = _interopRequireWildcard(require("./engine/procedural-mesh.js"));
-var _fontana = require("./engine/procedures/fontana.js");
-var _fontanaWgsl = require("./shaders/fontana/fontana.wgsl.js");
+var _proceduralMesh = _interopRequireDefault(require("./engine/procedural-mesh.js"));
 var _minRender = require("./engine/overrides/min-render.js");
-var _noshadowRender = require("./engine/overrides/noshadow-render.js");
+var _culling = require("./engine/overrides/culling.js");
 var _pipelineManager = require("./engine/pipelineManager.js");
 var _nanoRender = require("./engine/overrides/nano-render.js");
 var _bridge = require("./engine/physics/bridge.js");
 var _mobile = require("./engine/overrides/mobile-1.js");
-function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
+var _hzb = require("./engine/postprocessing/hzb.js");
+var _KaleidoscopeEffect = require("./engine/effects/KaleidoscopeEffect.js");
+var _culling2 = require("./engine/culling/culling.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 /**
  * @description
@@ -63353,7 +65907,8 @@ class MatrixEngineWGPU {
       FlameEmitter: _flameEmmiter.FlameEmitter,
       PointerEffect: _pointerEffect.PointerEffect,
       HPBarEffect: _energyBar.HPBarEffect,
-      MANABarEffect: _manaBar.MANABarEffect
+      MANABarEffect: _manaBar.MANABarEffect,
+      KaleidoscopeEffect: _KaleidoscopeEffect.KaleidoscopeEffect
     }
   };
   mainRenderBundle = [];
@@ -63497,6 +66052,9 @@ class MatrixEngineWGPU {
     this.usEvent = new CustomEvent('updateSceneContainer', {
       detail: {}
     });
+    this.culledRenderPass = new _culling2.CulledRenderPass();
+    // this.culledRenderPass = new CulledRenderPassDisabled();
+
     this.editor = undefined;
     if (typeof options.useEditor !== "undefined") {
       if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {
@@ -63514,9 +66072,11 @@ class MatrixEngineWGPU {
       } else if (options.render == 'nano') {
         this.overrideRender = _nanoRender.nanoPass.bind(this);
       } else if (options.render == 'no-shadows') {
-        this.overrideRender = _noshadowRender.noShadowPass.bind(this);
+        this.overrideRender = _culling.noShadowPass.bind(this);
       } else if (options.render == 'mobile1') {
         this.overrideRender = _mobile.mobile1.bind(this);
+      } else if (options.render == 'culling') {
+        this.overrideRender = _culling.cullingPass.bind(this);
       }
     }
     window.addEventListener('keydown', e => {
@@ -63822,7 +66382,7 @@ class MatrixEngineWGPU {
         binding: 1,
         visibility: GPUShaderStage.VERTEX,
         buffer: {
-          type: 'uniform'
+          type: "read-only-storage"
         }
       }, {
         binding: 2,
@@ -63915,7 +66475,7 @@ class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.12.0 [The beast] ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.14.1 [The beast] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
@@ -63988,6 +66548,9 @@ class MatrixEngineWGPU {
       setBlurRadius: v => {},
       setThreshold: v => {}
     };
+    this.ssrPass = {
+      enabled: false
+    };
     this.volumetricPass = {
       enabled: false
     };
@@ -64025,26 +66588,29 @@ class MatrixEngineWGPU {
       fragment: {
         module: this.device.createShaderModule({
           code: `
-        @group(0) @binding(0) var hdrTex : texture_2d<f32>;
-        @group(0) @binding(1) var samp : sampler;
+        @group(0) @binding(0) var hdrTex  : texture_2d<f32>;
+        @group(0) @binding(1) var samp    : sampler;
+        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;
         @fragment
         fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
-          let uv = pos.xy / vec2<f32>(textureDimensions(hdrTex));
-          let hdr = textureSample(hdrTex, samp, uv).rgb;
-          // simple tonemap
-          let ldr = hdr / (hdr + vec3(1.0));
-          return vec4<f32>(ldr, 1.0);
+            let uv  = pos.xy / vec2<f32>(textureDimensions(hdrTex));
+            let hdr = textureSample(hdrTex, samp, uv).rgb;
+            let ssr = textureSample(ssrTex, samp, uv);
+            let composited = mix(hdr, ssr.rgb, ssr.a);
+            let ldr = composited / (composited + vec3(1.0));
+            return vec4<f32>(ldr, 1.0);
+            // return vec4<f32>(ssr.rgb, 1.0);
         }
       `
         }),
         entryPoint: 'main',
         targets: [{
           format: (0, _utils.isMobile)() == true ? 'rgba8unorm' : 'bgra8unorm'
-        }] // rgba16float  bgra8unorm rgba8unorm
+        }]
       }
     });
     this.createBloomBindGroup();
-    // global
+    // Global
     this.globalSceneUniformBuffer = this.device.createBuffer({
       label: 'Shared[sceneUniformBuffer]',
       size: 192,
@@ -64103,6 +66669,22 @@ class MatrixEngineWGPU {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
     this.mainDepthView = this.mainDepthTexture.createView();
+
+    // Dummy for initial attacment[1] This is HZB
+    this.normalTexture = this.device.createTexture({
+      label: 'GBuffer normals',
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.normalTextureView = this.normalTexture.createView();
+    this.worldPosTexture = this.device.createTexture({
+      label: 'GBuffer worldPos',
+      size: [this.canvas.width, this.canvas.height],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.worldPosTextureView = this.worldPosTexture.createView();
     this.mainRenderPassDesc = {
       label: 'mainRenderPassDesc',
       colorAttachments: [{
@@ -64110,6 +66692,16 @@ class MatrixEngineWGPU {
         loadOp: 'clear',
         storeOp: 'store',
         clearValue: [0.0, 0.0, 0.0, 1]
+      }, {
+        view: this.normalTextureView,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [0.0, 0.0, 0.0, 0]
+      }, {
+        view: this.worldPosTextureView,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [0, 0, 0, 0]
       }],
       depthStencilAttachment: {
         view: this.mainDepthView,
@@ -64138,6 +66730,10 @@ class MatrixEngineWGPU {
       }
     };
     this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
     this.run(callback);
   }
   createTexArrayForShadows() {
@@ -64385,7 +66981,7 @@ class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
+    let myMesh1 = new _meshObj.default(this.canvas, this.device, this.context, o, this.inputHandler, AM, null, null, null, this.cameraBuffer);
     myMesh1.clearColor = clearColor;
     if (o.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
@@ -64480,7 +67076,7 @@ class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM);
+    let myMesh = new _proceduralMesh.default(this.canvas, this.device, this.context, o, this.inputHandler, AM, this.cameraBuffer);
     myMesh.clearColor = clearColor;
     if (o.physics.enabled === true) {
       myMesh.itIsPhysicsBody = true;
@@ -64493,219 +67089,12 @@ class MatrixEngineWGPU {
     if (typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
     return myMesh;
   };
-
-  // THIS MUST BE ELIMINATED FROM WORLD.JS
-  addFontana = (o, clearColor = this.options.clearColor) => {
-    const px = o.position.x;
-    const py = o.position.y;
-    const pz = o.position.z;
-    const TOP = _fontana.FOUNTAIN_COLUMN_TOP;
-    const geo1 = (0, _fontana.fountainStructureConfig)(_proceduralMesh.MeshMorpher);
-    let m1 = this.addProceduralMeshObj({
-      material: {
-        type: 'free'
-      },
-      name: 'fontana_column',
-      position: {
-        x: px,
-        y: py,
-        z: pz
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      scale: [o.scale[0], o.scale[1], o.scale[2]],
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      physics: {
-        enabled: false,
-        geometry: 'Sphere'
-      },
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      },
-      meshA: geo1.meshA,
-      meshB: geo1.meshB,
-      resolutionU: geo1.resolutionU,
-      resolutionV: geo1.resolutionV,
-      fragmentWGSL: (0, _fontanaWgsl.fountainCurtainFragmentWGSL)(),
-      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
-      // pointerEffect: {
-      //   enabled: true,
-      //   flameEmitter: true,
-      // }
-    });
-    const geo2 = (0, _fontana.fountainBasinStoneConfig)(_proceduralMesh.MeshMorpher);
-    let m2 = this.addProceduralMeshObj({
-      material: {
-        type: 'free'
-      },
-      name: 'fontana_basin_stone',
-      position: {
-        x: px,
-        y: py,
-        z: pz
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      scale: [o.scale[0], o.scale[1], o.scale[2]],
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      physics: {
-        enabled: false,
-        geometry: 'Sphere'
-      },
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      },
-      meshA: geo2.meshA,
-      meshB: geo2.meshB,
-      resolutionU: geo2.resolutionU,
-      resolutionV: geo2.resolutionV,
-      fragmentWGSL: (0, _fontanaWgsl.fountainCapFragmentWGSL)(),
-      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
-    });
-    const geo3 = (0, _fontana.fountainCapConfig)(_proceduralMesh.MeshMorpher);
-    let m3 = this.addProceduralMeshObj({
-      material: {
-        type: 'fontana'
-      },
-      name: 'fontana_cap',
-      globalAmbient: [0.15, 0.72, 0.96, 1.0],
-      position: {
-        x: px,
-        y: py + TOP * 0.8,
-        z: pz
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      scale: [o.scale[0], o.scale[1], o.scale[2]],
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      physics: {
-        enabled: false,
-        geometry: 'Sphere'
-      },
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      },
-      meshA: geo3.meshA,
-      meshB: geo3.meshB,
-      resolutionU: geo3.resolutionU,
-      resolutionV: geo3.resolutionV,
-      fragmentWGSL: (0, _fontanaWgsl.fountainCapFragmentWGSL)(),
-      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
-    });
-    const geo4 = (0, _fontana.fountainCurtainConfig)(_proceduralMesh.MeshMorpher);
-    let m4 = this.addProceduralMeshObj({
-      material: {
-        type: 'fontana'
-      },
-      name: 'fontana_curtain',
-      globalAmbient: [0.12, 0.68, 0.94, 1.0],
-      position: {
-        x: px,
-        y: py,
-        z: pz
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      scale: [o.scale[0], o.scale[1], o.scale[2]],
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      physics: {
-        enabled: false,
-        geometry: 'Sphere'
-      },
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      },
-      meshA: geo4.meshA,
-      meshB: geo4.meshB,
-      resolutionU: geo4.resolutionU,
-      resolutionV: geo4.resolutionV,
-      fragmentWGSL: (0, _fontanaWgsl.fountainCurtainFragmentWGSL)(),
-      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
-    });
-    const geo5 = (0, _fontana.fountainBasinWaterConfig)(_proceduralMesh.MeshMorpher);
-    let m5 = this.addProceduralMeshObj({
-      material: {
-        type: 'fontana'
-      },
-      name: 'fontana_basin_water',
-      globalAmbient: [0.08, 0.55, 0.90, 1.0],
-      position: {
-        x: px,
-        y: py + 0.01,
-        z: pz
-      },
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      scale: [o.scale[0], o.scale[1], o.scale[2]],
-      rotationSpeed: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      physics: {
-        enabled: false,
-        geometry: 'Sphere'
-      },
-      raycast: {
-        enabled: true,
-        radius: 1.5
-      },
-      meshA: geo5.meshA,
-      meshB: geo5.meshB,
-      resolutionU: geo5.resolutionU,
-      resolutionV: geo5.resolutionV,
-      fragmentWGSL: (0, _fontanaWgsl.fountainBasinFragmentWGSL)(),
-      vertexWGSL: (0, _fontanaWgsl.fountainWaterVertexWGSL)()
-    });
-    m1.rotation.setRotateY(1000);
-    m4.setBlend(0.1);
-    setTimeout(() => {
-      // m4.effects.flameEmitter.instanceTargets.forEach((i) => {
-      //   i.color = [0, randomIntFromTo(0, 100), randomIntFromTo(50, 200)];
-      // })
-    }, 1000);
-  };
   createBloomBindGroup() {
+    this.dummySSRTexture = this.device.createTexture({
+      size: [1, 1],
+      format: 'rgba16float',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
+    });
     this.bloomBindGroup = this.device.createBindGroup({
       layout: this.presentPipeline.getBindGroupLayout(0),
       entries: [{
@@ -64714,6 +67103,9 @@ class MatrixEngineWGPU {
       }, {
         binding: 1,
         resource: this.presentSampler
+      }, {
+        binding: 2,
+        resource: this.dummySSRTexture.createView()
       }]
     });
     this.noBloomBindGroup = this.device.createBindGroup({
@@ -64724,6 +67116,9 @@ class MatrixEngineWGPU {
       }, {
         binding: 1,
         resource: this.presentSampler
+      }, {
+        binding: 2,
+        resource: this.dummySSRTexture.createView()
       }]
     });
   }
@@ -64819,42 +67214,43 @@ class MatrixEngineWGPU {
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
-      //this.getTransformationMatrix(camera, now2);
-      camera.update();
+      if (camera._dirtyAngle || camera._dirty) {
+        this.getTransformationMatrix(camera, now2);
+        camera.update();
+      }
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
-        const pass = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+        const p = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
         if (this.shadowBuckets.default.length) {
-          pass.setPipeline(light.shadowPipeline);
+          p.setPipeline(light.shadowPipeline);
           for (let m of this.shadowBuckets.default) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if (this.shadowBuckets.instanced.length) {
-          pass.setPipeline(light.shadowPipelineInstanced);
+          p.setPipeline(light.shadowPipelineInstanced);
           for (let m of this.shadowBuckets.instanced) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if (this.shadowBuckets.procedural.length) {
-          pass.setPipeline(light.shadowPipelineMorph);
+          p.setPipeline(light.shadowPipelineMorph);
           for (let m of this.shadowBuckets.procedural) {
-            pass.setBindGroup(0, light.getShadowBindGroup(m));
-            pass.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
-        pass.end();
+        p.end();
       }
       const len = this.mainRenderBundle.length;
       for (let i = 0; i < len; i++) {
         const mesh = this.mainRenderBundle[i];
-        if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
+        mesh.updateInstanceData?.(mesh.modelMatrix);
         if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
         // if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
@@ -64876,8 +67272,8 @@ class MatrixEngineWGPU {
             l = mesh.materialBindGroup;
           }
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -64895,8 +67291,8 @@ class MatrixEngineWGPU {
         for (const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -64905,19 +67301,29 @@ class MatrixEngineWGPU {
         if (mesh.effects) {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if (effect == null || effect.enabled === false) continue;
+            if (effect === null || effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(pass, mesh, camera.VP);
           }
         }
       }
       pass.end();
-      if (this.volumetricPass.enabled === true) {
+      if (this.ssrPass.enabled === true) {
         _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
+        this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
+        this.ssrPass.render(commandEncoder, {
+          sceneTextureView: this.sceneTextureView,
+          normalTextureView: this.normalTextureView,
+          mainDepthView: this.mainDepthView,
+          mainDepthTexture: this.mainDepthTexture,
+          worldPosTextureView: this.worldPosTextureView
+        });
+      }
+      if (this.volumetricPass.enabled === true) {
+        if (this.ssrPass.enabled === false) _wgpuMatrix.mat4.invert(camera.VP, this._invViewProj);
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
         for (let i = 0; i < this.lightContainer.length; i++) {
           const light = this.lightContainer[i];
-          // if(!light.viewProjMatrix || !light.direction) continue;
           this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
           this._volumetricLightUniforms.direction = light.direction;
           this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricUniforms, this._volumetricLightUniforms);
@@ -64928,10 +67334,7 @@ class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if (this.bloomPass.enabled == true) {
-        // this.bloomPass.render(commandEncoder, bloomInput, this.bloomOutputTex);
-        this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
-      }
+      if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
       this.finalPS.colorAttachments[0].view = this._canvasView;
       pass = commandEncoder.beginRenderPass(this.finalPS);
       pass.setPipeline(this.presentPipeline);
@@ -65056,7 +67459,6 @@ class MatrixEngineWGPU {
         o.materialBGL = this.materialBGL;
         o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
-        // bvhPlayer.shadowDepthTextureView = this.shadowArrayView;
         bvhPlayer.clearColor = clearColor;
         bvhPlayer.itIsPhysicsBody = false;
         // make it soft
@@ -65193,7 +67595,7 @@ class MatrixEngineWGPU {
         }
         o.materialBGL = this.materialBGL;
         o.uniformBufferBindGroupLayoutInstanced = this.uniformBufferBindGroupLayoutInstanced;
-        const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
+        const bvhPlayer = new _bvhInstaced.BVHPlayerInstances(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice(), this.cameraBuffer);
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
         // if(o.physics.enabled == true) {
@@ -65226,6 +67628,45 @@ class MatrixEngineWGPU {
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
     }
   };
+  activateHZB = () => {
+    if (this.ssrPass.enabled != true) {
+      this.ssrPass = new _hzb.SSRPass(this.device, this.canvas.width, this.canvas.height, this.globalSceneUniformBuffer, this.mainDepthView);
+      this.ssrPass.enabled = true;
+      this.bloomBindGroup = this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [{
+          binding: 0,
+          resource: this.bloomOutputTex
+        }, {
+          binding: 1,
+          resource: this.presentSampler
+        }, {
+          binding: 2,
+          resource: this.ssrPass.ssrOutputView
+        }]
+      });
+      this.noBloomBindGroup = this.device.createBindGroup({
+        layout: this.presentPipeline.getBindGroupLayout(0),
+        entries: [{
+          binding: 0,
+          resource: this.sceneTexture.createView()
+        }, {
+          binding: 1,
+          resource: this.presentSampler
+        }, {
+          binding: 2,
+          resource: this.ssrPass.ssrOutputView
+        } // real
+        ]
+      });
+      this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+      // Rebuild all mesh pipelines with 2 targets
+      _pipelineManager.PipelineManager.invalidateAll();
+      for (const mesh of this.mainRenderBundle) {
+        mesh.setupPipeline();
+      }
+    }
+  };
   activateVolumetricEffect = arg => {
     if (this.bloomPass.enabled != true) {
       console.warn(`%cMEW: You must enable bloom before volumetric.`);
@@ -65252,4 +67693,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/cameras.js":34,"./engine/core-cache.js":36,"./engine/effects/energy-bar.js":38,"./engine/effects/flame-emmiter.js":39,"./engine/effects/flame.js":40,"./engine/effects/mana-bar.js":45,"./engine/effects/pointerEffect.js":47,"./engine/generators/generator.js":49,"./engine/instanced/mesh-obj-instances.js":52,"./engine/lights.js":53,"./engine/loader-obj.js":55,"./engine/loaders/bvh-instaced.js":56,"./engine/loaders/bvh.js":57,"./engine/mesh-obj.js":61,"./engine/overrides/min-render.js":64,"./engine/overrides/mobile-1.js":65,"./engine/overrides/nano-render.js":66,"./engine/overrides/noshadow-render.js":67,"./engine/physics/bridge.js":68,"./engine/pipelineManager.js":69,"./engine/postprocessing/bloom.js":71,"./engine/postprocessing/volumetric.js":72,"./engine/procedural-mesh.js":73,"./engine/procedures/fontana.js":75,"./engine/raycast.js":77,"./engine/utils.js":78,"./me-config.js":79,"./multilang/lang.js":80,"./shaders/fontana/fontana.wgsl.js":85,"./sounds/audioAsset.js":117,"./sounds/sounds.js":118,"./tools/editor/editor.js":121,"./tools/editor/flexCodexShaderAdapter.js":124,"wgpu-matrix":31}]},{},[6]);
+},{"./engine/cameras.js":34,"./engine/core-cache.js":36,"./engine/culling/culling.js":37,"./engine/effects/KaleidoscopeEffect.js":38,"./engine/effects/energy-bar.js":40,"./engine/effects/flame-emmiter.js":41,"./engine/effects/flame.js":42,"./engine/effects/mana-bar.js":47,"./engine/effects/pointerEffect.js":49,"./engine/generators/generator.js":51,"./engine/instanced/mesh-obj-instances.js":54,"./engine/lights.js":55,"./engine/loader-obj.js":57,"./engine/loaders/bvh-instaced.js":58,"./engine/loaders/bvh.js":59,"./engine/mesh-obj.js":63,"./engine/overrides/culling.js":66,"./engine/overrides/min-render.js":67,"./engine/overrides/mobile-1.js":68,"./engine/overrides/nano-render.js":69,"./engine/physics/bridge.js":70,"./engine/pipelineManager.js":71,"./engine/postprocessing/bloom.js":73,"./engine/postprocessing/hzb.js":74,"./engine/postprocessing/volumetric.js":75,"./engine/procedural-mesh.js":76,"./engine/raycast.js":79,"./engine/utils.js":80,"./me-config.js":81,"./multilang/lang.js":82,"./sounds/audioAsset.js":121,"./sounds/sounds.js":122,"./tools/editor/editor.js":125,"./tools/editor/flexCodexShaderAdapter.js":128,"wgpu-matrix":31}]},{},[6]);
