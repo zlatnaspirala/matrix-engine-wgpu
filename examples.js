@@ -17,7 +17,7 @@ import {procMesh} from "./examples/procedural-mesh.js";
 import {snakeLightsInstanced} from "./examples/snake-lights-instanced.js";
 import {snakeLights} from "./examples/snake-lights.js";
 import {loadVideoTexture} from "./examples/video-texture.js";
-import {byId, urlQuery} from "./src/engine/utils.js";
+import {byId, isMobile, urlQuery} from "./src/engine/utils.js";
 import {mazeGame} from "./examples/maze.js";
 import {flipperJolt} from "./examples/flipper-jolt.js";
 import {flipperAmmo} from "./examples/flipper-ammo.js";
@@ -55,13 +55,18 @@ byId('video-texture').addEventListener("click", () => switchDemo('4'));
 byId('objs-anim').addEventListener("click", () => switchDemo('5'));
 byId('glb-loader').addEventListener("click", () => switchDemo('6'));
 byId('procedural-mesh').addEventListener("click", () => switchDemo('7'));
-// byId('fontana').addEventListener("click", () => switchDemo('8'));
 byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 byId('maze').addEventListener("click", () => switchDemo('12'));
 byId('flipper-jolt').addEventListener("click", () => switchDemo('13'));
-byId('flipper-ammo').addEventListener("click", () => switchDemo('14'));
+
+if (isMobile() === true) {
+  byId('flipper-ammo').remove();
+} else {
+  byId('flipper-ammo').addEventListener("click", () => switchDemo('14'));
+}
+
 byId('test-jolt').addEventListener("click", () => switchDemo('15'));
 byId('test-cannones').addEventListener("click", () => switchDemo('16'));
 byId('canvas-inline').addEventListener("click", () => switchDemo('17'));
@@ -116,9 +121,9 @@ if(urlQ['demo'] === '1') {
   loadDestructionProcedural();
 } else if(urlQ['demo'] === '20') {
   loadKale();
-} else if (urlQ['demo'] === '21') {
+} else if(urlQ['demo'] === '21') {
   loadHZB();
-}  else if (urlQ['demo'] === '22') {
+} else if(urlQ['demo'] === '22') {
   loadKinematicCollision();
 } else {
   flipperJolt();

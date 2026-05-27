@@ -1,50 +1,60 @@
-export const pointerEffect = `
-struct Camera {
-  viewProjMatrix : mat4x4<f32>,
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
-
+export let pointerEffect = () => `
 struct Model {
-  modelMatrix : mat4x4<f32>,
+    modelMatrix : mat4x4f,
 };
+
+// Changed from "scene : Scene" to a direct 64-byte mat4x4f!
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<uniform> model : Model;
 
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
 };
 
 @vertex
-fn vsMain(input : VertexInput) -> VSOut {
-  var out : VSOut;
-  let worldPos = model.modelMatrix * vec4<f32>(input.position,1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  return out;
+fn vsMain(input : VertexInput) -> VertexOutput {
+    var out : VertexOutput;
+    
+    let worldPos = model.modelMatrix * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    out.position = cameraViewProjMatrix * worldPos; // Uses direct matrix bind
+    
+    out.fragNorm = vec3f(0.0, 1.0, 0.0); 
+    out.uv = input.uv;
+    
+    return out;
+}
+
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  // Center the UVs (0.0–1.0 → -1.0–1.0)
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
+fn fsMain(input: VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
 
-  // Distance from center
-  let dist = length(uv);
+    let centeredUV = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(centeredUV);
+    let glow = exp(-dist * 1.0);
 
-  // Glow falloff
-  let glow = exp(-dist * 1.0); // try values 3.0–6.0 for tighter glow
+    let baseColor = vec3f(0.2, 0.7, 1.0);
+    let glowColor = vec3f(0.7, 0.9, 1.0);
+    let finalColor = mix(baseColor, glowColor, glow) * glow;
 
-  // Gradient color (inner bright → outer dim)
-  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
-  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
-
-  // Blend based on glow strength
-  let color = mix(baseColor, glowColor, glow) * glow;
-
-  return vec4<f32>(color, 1.0);
-}`;
+    return FragOut(
+        vec4f(finalColor, 1.0),
+        vec4f(N, 0.0),
+        vec4f(input.fragPos, 1.0)
+    );
+}
+`;

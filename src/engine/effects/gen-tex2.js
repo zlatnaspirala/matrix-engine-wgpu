@@ -37,7 +37,7 @@ export class GenGeoTexture2 {
       size: [img.width, img.height, 1],
       // Mobile optimization: use rgba8unorm instead of rgba16float
       // Reduces memory bandwidth by 50% on mobile GPUs
-      format: 'rgba8unorm',
+      format: 'rgba16float',
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
@@ -138,7 +138,7 @@ export class GenGeoTexture2 {
       ]
     });
 
-    const shaderModule = this.device.createShaderModule({code: geoInstancedTexEffect});
+    const shaderModule = this.device.createShaderModule({code: geoInstancedTexEffect()});
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
     this.pipeline = this.device.createRenderPipeline({
       label: 'geo tex 2 Pipeline',

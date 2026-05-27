@@ -226,6 +226,7 @@ export class Character extends Hero {
               subMesh.fireballSystem = new FireballSystem(subMesh, this.core);
               subMesh.fireballSystem.parent.effects.flameEmitter.recreateVertexDataRND(30);
               this.core.autoUpdate.push(subMesh.fireballSystem);
+              subMesh.fireballSystem.parent.effects.flameEmitter.setIntensity(20);
             }
           }
 
@@ -412,10 +413,15 @@ export class Character extends Hero {
     });
   }
 
-  setAttack(on) {
+  setAttack(on, isSecoundAttackLong = false) {
     this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack)
+      if (isSecoundAttackLong === false) {
+        subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
+      } else {
+        subMesh.playAnimationByIndex(this.heroAnimationArrange.salute);
+      }
+      
       // console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.animationIndex}`, LOG_MATRIX)
       app.net.send({
         sceneName: subMesh.name,
