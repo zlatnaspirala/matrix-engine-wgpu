@@ -17,7 +17,7 @@ export class PhysicsBridge {
     this._bodyIndexMap = new Map();
     this._ready = false;
     this._queue = [];
-    this.wPhysicsSteps = 2;
+    this.wPhysicsSteps = 1;
     this._worker.onmessage = ({data}) => this._onMessage(data);
 
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
@@ -89,11 +89,11 @@ export class PhysicsBridge {
   }
 
   updatePhysics() {
-    if(this.c % this.wPhysicsSteps === 0) {
-      this._worker.postMessage({cmd: 'step'}); 
-      this.c=0;
-    }
-    this.c++;
+    // if(this.c % this.wPhysicsSteps === 0) {
+    this._worker.postMessage({cmd: 'step'})
+    //   this.c=0;
+    // }
+    // this.c++;
   }
 
   // MatrixJolt public API

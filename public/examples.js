@@ -1868,7 +1868,7 @@ var flipperJolt = function () {
   };
   let flipper = new _world.default({
     // render: isMobile() == true ? 'mobile1' : undefined,
-    fastRender: 0.8,
+    fastRender: 0.65,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -1877,7 +1877,8 @@ var flipperJolt = function () {
     },
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
-    MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 4 : 4,
+    MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 3 : 4,
+    MAX_BONES: 0,
     clearColor: {
       r: 0,
       g: 1,
@@ -1902,10 +1903,10 @@ var flipperJolt = function () {
     flipper.matrixSounds.play('music');
     addEventListener('PhysicsReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
-      flipper.matrixPhysics.speedUpSimulation(2);
+      flipper.matrixPhysics.speedUpSimulation(3);
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
-        ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
+        ball: "./res/meshes/blender/sphepe-mob.obj",
         pin: "./res/meshes/blender/pin-for-pinball.obj",
         pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
         pushBtn: "./res/meshes/shapes/pushBtn.obj",
@@ -1920,17 +1921,26 @@ var flipperJolt = function () {
       });
     });
     if ((0, _utils.isMobile)()) (0, _utils.byId)('mobileControls').style.marginRight = '30%';
+    let preventSpam = false;
     _cameras.MobileDOM.addButton("PUSH", async () => {
-      let ball = app.matrixPhysics.getBodyByName('ball1');
-      const pos = await app.matrixPhysics.getPosition(ball);
-      if (pos.x > 5 && pos.z > -6.6) {
-        if (MYFLIPPER.BALLS == 0) {
-          _utils.mb.show('No more balls...');
-          return;
+      if (preventSpam === false) {
+        preventSpam = true;
+        let ball = app.matrixPhysics.getBodyByName('ball1');
+        const pos = await app.matrixPhysics.getPosition(ball);
+        if (pos.x > 5 && pos.z > -6.6) {
+          if (MYFLIPPER.BALLS == 0) {
+            _utils.mb.show('No more balls...');
+            preventSpam = false;
+            return;
+          }
+          // micro opti needed!
+          flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.1, -(0, _utils.randomIntFromTo)(0.5, 1)));
+          flipper.matrixSounds.play('push');
+          MYFLIPPER.BALLS--;
         }
-        flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.1, -(0, _utils.randomIntFromTo)(0.5, 1)));
-        flipper.matrixSounds.play('push');
-        MYFLIPPER.BALLS--;
+        setTimeout(() => {
+          preventSpam = false;
+        }, 2000);
       }
     }, () => {}, {
       left: '80',
@@ -40444,7 +40454,7 @@ class PhysicsBridge {
     this._bodyIndexMap = new Map();
     this._ready = false;
     this._queue = [];
-    this.wPhysicsSteps = 2;
+    this.wPhysicsSteps = 1;
     this._worker.onmessage = ({
       data
     }) => this._onMessage(data);
@@ -40531,13 +40541,13 @@ class PhysicsBridge {
     }
   }
   updatePhysics() {
-    if (this.c % this.wPhysicsSteps === 0) {
-      this._worker.postMessage({
-        cmd: 'step'
-      });
-      this.c = 0;
-    }
-    this.c++;
+    // if(this.c % this.wPhysicsSteps === 0) {
+    this._worker.postMessage({
+      cmd: 'step'
+    });
+    //   this.c=0;
+    // }
+    // this.c++;
   }
 
   // MatrixJolt public API
