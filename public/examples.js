@@ -53,13 +53,16 @@ const hideMenu = () => {
 (0, _utils.byId)('objs-anim').addEventListener("click", () => switchDemo('5'));
 (0, _utils.byId)('glb-loader').addEventListener("click", () => switchDemo('6'));
 (0, _utils.byId)('procedural-mesh').addEventListener("click", () => switchDemo('7'));
-// byId('fontana').addEventListener("click", () => switchDemo('8'));
 (0, _utils.byId)('myLights').addEventListener("click", () => switchDemo('9'));
 (0, _utils.byId)('snake-light').addEventListener("click", () => switchDemo('10'));
 (0, _utils.byId)('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 (0, _utils.byId)('maze').addEventListener("click", () => switchDemo('12'));
 (0, _utils.byId)('flipper-jolt').addEventListener("click", () => switchDemo('13'));
-(0, _utils.byId)('flipper-ammo').addEventListener("click", () => switchDemo('14'));
+if ((0, _utils.isMobile)() === true) {
+  (0, _utils.byId)('flipper-ammo').remove();
+} else {
+  (0, _utils.byId)('flipper-ammo').addEventListener("click", () => switchDemo('14'));
+}
 (0, _utils.byId)('test-jolt').addEventListener("click", () => switchDemo('15'));
 (0, _utils.byId)('test-cannones').addEventListener("click", () => switchDemo('16'));
 (0, _utils.byId)('canvas-inline').addEventListener("click", () => switchDemo('17'));
@@ -1899,7 +1902,7 @@ var flipperJolt = function () {
     flipper.matrixSounds.play('music');
     addEventListener('PhysicsReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
-      flipper.matrixPhysics.speedUpSimulation(2);
+      flipper.matrixPhysics.speedUpSimulation(3);
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
@@ -24743,14 +24746,9 @@ class WASDCamera {
     up: false,
     down: false
   };
-  _lastX = 0;
-  _lastY = 0;
   _mouseDown = false;
-  _pointerLastScratch = {
-    x: 0,
-    y: 0
-  };
-  // Sensitivity
+
+  // Sensitivity matching standard FPCamera parameters
   MOUSE_SENS = 0.01;
   TOUCH_SENS = 0.03;
   movementSpeed = 0.2;
@@ -24770,7 +24768,6 @@ class WASDCamera {
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if ((0, _utils.isMobile)() == true && options.isActive == 'init active cam') {
-      // console.log('CONTROLER MOBILE WASDCAMERA')
       MobileDOM.createWASD(this, {
         marginR: 0,
         marginD: 0
@@ -24871,51 +24868,69 @@ class WASDCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
-    canvas.addEventListener('pointerdown', e => {
-      this._mouseDown = true;
-      this._lastX = e.clientX;
-      this._lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
-    }, {
-      passive: true
-    });
-    const pointerUp = e => {
-      this._mouseDown = false;
-    };
-    canvas.addEventListener('pointerup', pointerUp, {
-      passive: true
-    });
-    canvas.addEventListener('pointercancel', pointerUp, {
-      passive: true
-    });
-    canvas.addEventListener('pointermove', e => {
-      // this must be removed for prodc
-      const activeBundle = app.mainRenderBundle.find(o => o.effects?.gizmoEffect != null);
-      if (activeBundle && activeBundle.effects.gizmoEffect.isDragging == true) return;
-      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-      for (const ce of events) {
-        let dx = 0,
-          dy = 0;
-        if (ce.pointerType === 'mouse') {
-          if ((ce.buttons & 1) === 0) continue;
-          dx = ce.movementX * this.MOUSE_SENS;
-          dy = ce.movementY * this.MOUSE_SENS;
-        } else {
-          dx = (ce.clientX - this._pointerLastScratch.x) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._pointerLastScratch.y) * this.TOUCH_SENS;
-          this._lastX = ce.clientX;
-          this._lastY = ce.clientY;
+    let touchStartX = 0,
+      touchStartY = 0;
+    if ((0, _utils.isMobile)() === true) {
+      canvas.addEventListener('touchstart', e => {
+        if (e.touches.length > 0) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
         }
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
-        this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-        this._dirtyAngle = true;
-        // this._recalculateViewVP();
-      }
-    }, {
-      passive: true
-    });
+      }, {
+        passive: false
+      });
+      canvas.addEventListener('touchmove', e => {
+        if (e.touches.length > 0) {
+          const touch = e.touches[0];
+          const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+          const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+          this.yaw -= dx * this.rotationSpeed;
+          this.pitch -= dy * this.rotationSpeed;
+          this.yaw %= Math.PI * 2;
+          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+          this._dirtyAngle = true;
+          touchStartX = touch.clientX; // update AFTER clamp
+          touchStartY = touch.clientY;
+        }
+        e.preventDefault();
+      }, {
+        passive: false
+      });
+    }
+    if ((0, _utils.isMobile)() === false) {
+      canvas.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'mouse') {
+          this._mouseDown = true;
+          if (canvas.requestPointerLock) {
+            canvas.requestPointerLock();
+          } else {
+            canvas.setPointerCapture(e.pointerId);
+          }
+        }
+      }, {
+        passive: false
+      });
+      canvas.addEventListener('pointermove', e => {
+        if (e.pointerType === 'mouse' && this._mouseDown) {
+          const dx = e.movementX * this.MOUSE_SENS;
+          const dy = e.movementY * this.MOUSE_SENS;
+          this.yaw -= dx * this.rotationSpeed;
+          this.pitch -= dy * this.rotationSpeed;
+          this.yaw %= Math.PI * 2;
+          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+          this._dirtyAngle = true;
+        }
+      }, {
+        passive: true
+      });
+      canvas.addEventListener('pointerup', e => {
+        if (e.pointerType === 'mouse') {
+          this._mouseDown = false;
+        }
+      }, {
+        passive: true
+      });
+    }
     this._keyInterval = null;
     const setDigital = (e, value) => {
       switch (e.code) {
@@ -24949,7 +24964,6 @@ class WASDCamera {
         if (!d.forward && !d.backward && !d.left && !d.right && !d.up && !d.down) {
           clearInterval(this._keyInterval);
           this._keyInterval = null;
-          console.log;
           this._dirty = false;
           this._dirtyAngle = false;
         }
@@ -24999,12 +25013,10 @@ class WASDCamera {
     }
     const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
     if (len < 0.0001) return;
-    const s = this.movementSpeed; // / len;
+    const s = this.movementSpeed;
     this.position[0] += vx * s;
     this.position[1] += vy * s;
     this.position[2] += vz * s;
-
-    // only update translation — rotation already correct
     const rx = this.right,
       uy = this.up,
       bz = this.back,
@@ -25044,12 +25056,6 @@ class WASDCamera {
   };
   setYaw = y => {
     this.yaw = y;
-    this._dirtyAngle = true;
-  };
-  setTarget = (x, y, z) => {
-    this.target[0] = x;
-    this.target[1] = y;
-    this.target[2] = z;
     this._dirtyAngle = true;
   };
 }
@@ -25414,7 +25420,6 @@ class RPGCamera {
           lastPinchDist = dist;
           return;
         }
-
         // --- 1 finger: pan camera ---
         if (e.touches.length === 1) {
           const tx = e.touches[0].clientX;
@@ -25468,10 +25473,9 @@ class RPGCamera {
   _updateFollow() {
     if (!this.followMe) return;
     if (this.followMe.inMove === true) {
-      this._detachedFromFollow = false; // player moved → re-attach
+      this._detachedFromFollow = false;
     }
-    if (this._detachedFromFollow) return; // WASD mode, skip follow
-
+    if (this._detachedFromFollow) return;
     if (this.followMe.inMove === true || this.mousRollInAction) {
       this.followMeOffset = this.scrollY;
       this.position[0] = this.followMe.x;
@@ -28623,7 +28627,7 @@ class GenGeoTexture {
       }]
     });
     const shaderModule = this.device.createShaderModule({
-      code: _geoTex.geoInstancedTexEffect
+      code: (0, _geoTex.geoInstancedTexEffect)()
     });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
@@ -28773,7 +28777,7 @@ class GenGeoTexture2 {
       size: [img.width, img.height, 1],
       // Mobile optimization: use rgba8unorm instead of rgba16float
       // Reduces memory bandwidth by 50% on mobile GPUs
-      format: 'rgba8unorm',
+      format: 'rgba16float',
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.device.queue.copyExternalImageToTexture({
@@ -28895,7 +28899,7 @@ class GenGeoTexture2 {
       }]
     });
     const shaderModule = this.device.createShaderModule({
-      code: _geoTex.geoInstancedTexEffect
+      code: (0, _geoTex.geoInstancedTexEffect)()
     });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
@@ -29116,7 +29120,9 @@ class GenGeo {
       entries: [{
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
-        buffer: {}
+        buffer: {
+          type: "uniform"
+        }
       }, {
         binding: 1,
         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -29140,7 +29146,7 @@ class GenGeo {
       }]
     });
     const shaderModule = this.device.createShaderModule({
-      code: _geoInstanced.geoInstancedEffect
+      code: (0, _geoInstanced.geoInstancedEffect)()
     });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
@@ -30500,7 +30506,7 @@ class PointerEffect {
       }]
     });
     const shaderModule = this.device.createShaderModule({
-      code: _pointerEffect.pointerEffect
+      code: (0, _pointerEffect.pointerEffect)()
     });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
@@ -46406,41 +46412,61 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.hpBarEffectShaders = void 0;
 const hpBarEffectShaders = exports.hpBarEffectShaders = `
-struct Camera {
-  viewProj : mat4x4f
-};
 struct Model {
-  model : mat4x4f,
-  color : vec4f,
-  progress : f32,
+    model    : mat4x4f,       // 64 bytes (Offsets 0 - 63)
+    color    : vec4f,         // 16 bytes (Offsets 64 - 79)
+    progress : f32,           // 4 bytes  (Offsets 80 - 83)
+    pad1     : f32,           // 4 bytes  (Offsets 84 - 87)
+    pad2     : f32,           // 4 bytes  (Offsets 88 - 91)
+    pad3     : f32,           // 4 bytes  (Offsets 92 - 95) -> Total: Exactly 96 bytes!
 };
 
-@group(0) @binding(0) var<uniform> camera : Camera;
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<uniform> model : Model;
 
 struct VertexOutput {
-  @builtin(position) position : vec4f,
-  @location(0) uv : vec2f,
+    @builtin(position) position : vec4f,
+    @location(0) uv             : vec2f,
+    @location(1) fragPos        : vec3f,
 };
 
 @vertex
 fn vsMain(
-  @location(0) position : vec3f,
-  @location(1) uv : vec2f
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f
 ) -> VertexOutput {
-  var output : VertexOutput;
-  output.position = camera.viewProj * model.model * vec4f(position, 1.0);
-  output.uv = uv;
-  return output;
+    var output : VertexOutput;
+    let worldPos = model.model * vec4f(position, 1.0);
+    
+    output.position = cameraViewProjMatrix * worldPos;
+    output.uv = uv;
+    output.fragPos = worldPos.xyz;
+    
+    return output;
+}
+
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(in : VertexOutput) -> @location(0) vec4f {
-  // simple left-to-right fill based on progress
-  if (in.uv.x > model.progress) {
-    return vec4f(0.1, 0.1, 0.1, 0.3); // empty (transparent gray)
-  }
-  return model.color; // filled
+fn fsMain(in : VertexOutput) -> FragOut {
+    let N = vec3f(0.0, 0.0, 1.0); 
+    var finalColor : vec4f;
+
+    if (in.uv.x > model.progress) {
+        finalColor = vec4f(0.1, 0.1, 0.1, 0.3); 
+    } else {
+        finalColor = model.color; 
+    }
+
+    return FragOut(
+        finalColor,
+        vec4f(N, 0.0),
+        vec4f(in.fragPos, 1.0)
+    );
 }
 `;
 
@@ -52231,56 +52257,91 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.geoInstancedEffect = void 0;
-const geoInstancedEffect = exports.geoInstancedEffect = `struct Camera {
-  viewProjMatrix : mat4x4<f32>,
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
+let geoInstancedEffect = () => `
+override shadowDepthTextureSize: f32;
 
-// --- INSTANCE STORAGE BUFFER ----------------------------------------------
-struct InstanceData {
-  model : mat4x4<f32>,
-  color : vec4<f32>,
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  
+    _pad            : f32,    
 };
+
+struct InstanceData {
+    model : mat4x4f,
+    color : vec4f,
+};
+
+// === FIXED TO DIRECT 64-BYTE MATRIX FOR THE STANDALONE CLASS ===
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<storage, read> instances : array<InstanceData>;
+@group(0) @binding(4) var<uniform> material : MaterialPBR;
 
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
-  @location(1) v_color : vec4<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
+    @location(4) instanceColor  : vec4f,
 };
 
 @vertex
-fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex: u32) -> VSOut {
-  var out : VSOut;
+fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex: u32) -> VertexOutput {
+    var out : VertexOutput;
+    
+    let modelMatrix = instances[instanceIndex].model;
+    let color = instances[instanceIndex].color;
+    
+    let worldPos = modelMatrix * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    
+    // Multiplied by raw camera matrix uniform directly
+    out.position = cameraViewProjMatrix * worldPos;
+    
+    // Auto-calculate surface normal direction dynamically
+    out.fragNorm = normalize(input.position);
+    
+    out.uv = input.uv;
+    out.instanceColor = color;
+    return out;
+}
 
-  // Use per-instance model matrix & color
-  let modelMatrix = instances[instanceIndex].model;
-  let color = instances[instanceIndex].color;
-
-  let worldPos = modelMatrix * vec4<f32>(input.position,1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  out.v_color = color;
-  return out;
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-  let dist = length(uv);
-  let glow = exp(-dist * 1.0);
-  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
-  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
-  let color = mix(baseColor, glowColor, glow) * glow * input.v_color.rgb;
-  let alpha = input.v_color.a;
-  return vec4<f32>(color, alpha);
+fn fsMain(input : VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
+    
+    let uv = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(uv);
+    let glow = exp(-dist * 1.0);
+    
+    let baseColor = vec3f(0.2, 0.7, 1.0);
+    let glowColor = vec3f(0.7, 0.9, 1.0);
+    
+    let finalColor = mix(baseColor, glowColor, glow) * glow * input.instanceColor.rgb;
+    let alpha = input.instanceColor.a;
+
+    return FragOut(
+        vec4f(finalColor, alpha), 
+        vec4f(N, 0.0),            
+        vec4f(input.fragPos, 1.0) 
+    );
 }
 `;
+exports.geoInstancedEffect = geoInstancedEffect;
 
 },{}],118:[function(require,module,exports){
 "use strict";
@@ -52289,85 +52350,92 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.geoInstancedTexEffect = void 0;
-const geoInstancedTexEffect = exports.geoInstancedTexEffect = `
-// === CAMERA & INSTANCE BUFFERS ============================================
-struct Camera {
-  viewProjMatrix : mat4x4<f32>,
+let geoInstancedTexEffect = () => `
+override shadowDepthTextureSize: f32;
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  
+    _pad            : f32,    
 };
-@group(0) @binding(0) var<uniform> camera : Camera;
 
 struct InstanceData {
-  model : mat4x4<f32>,
-  color : vec4<f32>,
+    model : mat4x4f,
+    color : vec4f,
 };
-@group(0) @binding(1) var<storage, read> instances : array<InstanceData>;
 
-// === TEXTURE & SAMPLER ====================================================
+// === CHANGED TO DIRECT 64-BYTE MATRIX TO MATCH YOUR FRAMEWORK BUFFER ===
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
+@group(0) @binding(1) var<storage, read> instances : array<InstanceData>;
 @group(0) @binding(2) var mySampler : sampler;
 @group(0) @binding(3) var myTexture : texture_2d<f32>;
 
-// === VERTEX STAGE =========================================================
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
-  @location(1) v_color : vec4<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
+    @location(4) instanceColor  : vec4f,
 };
 
 @vertex
-fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> VSOut {
-  var out : VSOut;
-  let inst = instances[instanceIndex];
+fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> VertexOutput {
+    var out : VertexOutput;
+    let inst = instances[instanceIndex];
 
-  let worldPos = inst.model * vec4<f32>(input.position, 1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  out.v_color = inst.color;
-  return out;
+    let worldPos = inst.model * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    
+    // Multiplied by raw camera matrix uniform directly
+    out.position = cameraViewProjMatrix * worldPos; 
+    
+    // Auto-calculate surface normal directions
+    out.fragNorm = normalize(input.position);
+    
+    out.uv = input.uv;
+    out.instanceColor = inst.color;
+    return out;
 }
 
-// === FRAGMENT STAGE =======================================================
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
 
- // Adjust UV scaling and offset here
-  let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
-  let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
-  
-  let adjustedUV = input.v_uv; // * uvScale + uvOffset; // make it like ring !
+    let adjustedUV = input.uv; 
+    let texColor = textureSample(myTexture, mySampler, adjustedUV);
 
-  let texColor = textureSample(myTexture, mySampler, adjustedUV);
+    let centeredUV = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(centeredUV);
+    let glow = exp(-dist * 1.2);
+    let glowColor = mix(vec3f(0.2, 0.7, 1.0), vec3f(0.8, 0.95, 1.0), glow);
 
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-  let dist = length(uv);
-  let glow = exp(-dist * 1.2);
-  let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
+    let baseRGB = texColor.rgb * glowColor;
+    let tintedRGB = mix(baseRGB, input.instanceColor.rgb, 0.8);
+    let finalAlpha = texColor.a * input.instanceColor.a * glow;
 
-  let baseRGB = texColor.rgb * glowColor;
-  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8);
-  let finalAlpha = texColor.a * input.v_color.a * glow;
-
-  return vec4<f32>(tintedRGB, finalAlpha);
-
-  // let texColor = textureSample(myTexture, mySampler, input.v_uv);
-
-  // let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-  // let dist = length(uv);
-  // let glow = exp(-dist * 1.2);
-  // let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
-
-  // // More balanced color blending:
-  // let baseRGB = texColor.rgb * glowColor;
-  // let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
-  // let finalAlpha = texColor.a * input.v_color.a * glow;
-
-  // return vec4<f32>(tintedRGB, finalAlpha);
+    return FragOut(
+        vec4f(tintedRGB, finalAlpha), 
+        vec4f(N, 0.0),                
+        vec4f(input.fragPos, 1.0)     
+    );
 }
 `;
+exports.geoInstancedTexEffect = geoInstancedTexEffect;
 
 },{}],119:[function(require,module,exports){
 "use strict";
@@ -52376,56 +52444,67 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.pointerEffect = void 0;
-const pointerEffect = exports.pointerEffect = `
-struct Camera {
-  viewProjMatrix : mat4x4<f32>,
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
-
+let pointerEffect = () => `
 struct Model {
-  modelMatrix : mat4x4<f32>,
+    modelMatrix : mat4x4f,
 };
+
+// Changed from "scene : Scene" to a direct 64-byte mat4x4f!
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<uniform> model : Model;
 
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
 };
 
 @vertex
-fn vsMain(input : VertexInput) -> VSOut {
-  var out : VSOut;
-  let worldPos = model.modelMatrix * vec4<f32>(input.position,1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  return out;
+fn vsMain(input : VertexInput) -> VertexOutput {
+    var out : VertexOutput;
+    
+    let worldPos = model.modelMatrix * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    out.position = cameraViewProjMatrix * worldPos; // Uses direct matrix bind
+    
+    out.fragNorm = vec3f(0.0, 1.0, 0.0); 
+    out.uv = input.uv;
+    
+    return out;
+}
+
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  // Center the UVs (0.0–1.0 → -1.0–1.0)
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
+fn fsMain(input: VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
 
-  // Distance from center
-  let dist = length(uv);
+    let centeredUV = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(centeredUV);
+    let glow = exp(-dist * 1.0);
 
-  // Glow falloff
-  let glow = exp(-dist * 1.0); // try values 3.0–6.0 for tighter glow
+    let baseColor = vec3f(0.2, 0.7, 1.0);
+    let glowColor = vec3f(0.7, 0.9, 1.0);
+    let finalColor = mix(baseColor, glowColor, glow) * glow;
 
-  // Gradient color (inner bright → outer dim)
-  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
-  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
-
-  // Blend based on glow strength
-  let color = mix(baseColor, glowColor, glow) * glow;
-
-  return vec4<f32>(color, 1.0);
-}`;
+    return FragOut(
+        vec4f(finalColor, 1.0),
+        vec4f(N, 0.0),
+        vec4f(input.fragPos, 1.0)
+    );
+}
+`;
+exports.pointerEffect = pointerEffect;
 
 },{}],120:[function(require,module,exports){
 "use strict";

@@ -19,11 +19,9 @@ export class WASDCamera {
   _rotXScratch = mat4.create();
   _viewScratch = mat4.create();
   _digital = {forward: false, backward: false, left: false, right: false, up: false, down: false};
-  _lastX = 0;
-  _lastY = 0;
   _mouseDown = false;
-  _pointerLastScratch = {x: 0, y: 0};
-  // Sensitivity
+
+  // Sensitivity matching standard FPCamera parameters
   MOUSE_SENS = 0.01;
   TOUCH_SENS = 0.03;
   movementSpeed = 0.2;
@@ -43,9 +41,7 @@ export class WASDCamera {
     this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
-
     if(isMobile() == true && options.isActive == 'init active cam') {
-      // console.log('CONTROLER MOBILE WASDCAMERA')
       MobileDOM.createWASD(this, {marginR: 0, marginD: 0});
     }
   }
@@ -106,41 +102,63 @@ export class WASDCamera {
 
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
-    canvas.addEventListener('pointerdown', e => {
-      this._mouseDown = true;
-      this._lastX = e.clientX;
-      this._lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
-    }, {passive: true});
-    const pointerUp = e => {this._mouseDown = false;};
-    canvas.addEventListener('pointerup', pointerUp, {passive: true});
-    canvas.addEventListener('pointercancel', pointerUp, {passive: true});
-    canvas.addEventListener('pointermove', e => {
-      // this must be removed for prodc
-      const activeBundle = app.mainRenderBundle.find(o => o.effects?.gizmoEffect != null);
-      if(activeBundle && activeBundle.effects.gizmoEffect.isDragging == true) return;
-
-      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-      for(const ce of events) {
-        let dx = 0, dy = 0;
-        if(ce.pointerType === 'mouse') {
-          if((ce.buttons & 1) === 0) continue;
-          dx = ce.movementX * this.MOUSE_SENS;
-          dy = ce.movementY * this.MOUSE_SENS;
-        } else {
-          dx = (ce.clientX - this._pointerLastScratch.x) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._pointerLastScratch.y) * this.TOUCH_SENS;
-          this._lastX = ce.clientX;
-          this._lastY = ce.clientY;
+    let touchStartX = 0, touchStartY = 0;
+    if(isMobile() === true) {
+      canvas.addEventListener('touchstart', e => {
+        if(e.touches.length > 0) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
         }
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
-        this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-        this._dirtyAngle = true;
-        // this._recalculateViewVP();
-      }
-    }, {passive: true});
+      }, {passive: false});
+      canvas.addEventListener('touchmove', e => {
+        if(e.touches.length > 0) {
+          const touch = e.touches[0];
+          const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+          const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+
+          this.yaw -= dx * this.rotationSpeed;
+          this.pitch -= dy * this.rotationSpeed;
+          this.yaw %= Math.PI * 2;
+          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+          this._dirtyAngle = true;
+
+          touchStartX = touch.clientX;  // update AFTER clamp
+          touchStartY = touch.clientY;
+        }
+        e.preventDefault();
+      }, {passive: false});
+    }
+
+    if(isMobile() === false) {
+      canvas.addEventListener('pointerdown', e => {
+        if(e.pointerType === 'mouse') {
+          this._mouseDown = true;
+          if(canvas.requestPointerLock) {
+            canvas.requestPointerLock();
+          } else {
+            canvas.setPointerCapture(e.pointerId);
+          }
+        }
+      }, {passive: false});
+
+      canvas.addEventListener('pointermove', e => {
+        if(e.pointerType === 'mouse' && this._mouseDown) {
+          const dx = e.movementX * this.MOUSE_SENS;
+          const dy = e.movementY * this.MOUSE_SENS;
+          this.yaw -= dx * this.rotationSpeed;
+          this.pitch -= dy * this.rotationSpeed;
+          this.yaw %= Math.PI * 2;
+          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+          this._dirtyAngle = true;
+        }
+      }, {passive: true});
+
+      canvas.addEventListener('pointerup', e => {
+        if(e.pointerType === 'mouse') {
+          this._mouseDown = false;
+        }
+      }, {passive: true});
+    }
 
     this._keyInterval = null;
     const setDigital = (e, value) => {
@@ -156,14 +174,13 @@ export class WASDCamera {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
-          this._applyDigitalMovement()
+          this._applyDigitalMovement();
         }, 16);
       } else {
         const d = this._digital;
         if(!d.forward && !d.backward && !d.left && !d.right && !d.up && !d.down) {
           clearInterval(this._keyInterval);
           this._keyInterval = null;
-          console.log
           this._dirty = false;
           this._dirtyAngle = false;
         }
@@ -187,12 +204,11 @@ export class WASDCamera {
     const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
     if(len < 0.0001) return;
 
-    const s = this.movementSpeed; // / len;
+    const s = this.movementSpeed;
     this.position[0] += vx * s;
     this.position[1] += vy * s;
     this.position[2] += vz * s;
 
-    // only update translation — rotation already correct
     const rx = this.right, uy = this.up, bz = this.back, p = this.position;
     this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
     this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
@@ -207,20 +223,9 @@ export class WASDCamera {
     this._dirtyAngle = false;
   }
 
-  setX = (x) => {
-    this.position[0] = x;
-    this._dirtyAngle = true;
-  }
-
-  setY = (y) => {
-    this.position[1] = y;
-    this._dirtyAngle = true;
-  }
-
-  setZ = (z) => {
-    this.position[2] = z;
-    this._dirtyAngle = true;
-  }
+  setX = (x) => {this.position[0] = x; this._dirtyAngle = true;}
+  setY = (y) => {this.position[1] = y; this._dirtyAngle = true;}
+  setZ = (z) => {this.position[2] = z; this._dirtyAngle = true;}
 
   setPosition = (x, y, z) => {
     this.position[0] = x;
@@ -229,22 +234,8 @@ export class WASDCamera {
     this._dirtyAngle = true;
   }
 
-  setPitch = (p) => {
-    this.pitch = p;
-    this._dirtyAngle = true;
-  }
-
-  setYaw = (y) => {
-    this.yaw = y;
-    this._dirtyAngle = true;
-  }
-
-  setTarget = (x, y, z) => {
-    this.target[0] = x;
-    this.target[1] = y;
-    this.target[2] = z;
-    this._dirtyAngle = true;
-  }
+  setPitch = (p) => {this.pitch = p; this._dirtyAngle = true;}
+  setYaw = (y) => {this.yaw = y; this._dirtyAngle = true;}
 }
 
 export class ArcballCamera {
@@ -554,10 +545,8 @@ export class RPGCamera {
     if(isMobile() == false) {
       addEventListener('wheel', (e) => {
         this.mousRollInAction = true;
-
         this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
-
         this._dirty = true;
       });
       this._setupKeyboard();
@@ -580,7 +569,6 @@ export class RPGCamera {
           lastPinchDist = dist;
           return;
         }
-
         // --- 1 finger: pan camera ---
         if(e.touches.length === 1) {
           const tx = e.touches[0].clientX;
@@ -629,12 +617,10 @@ export class RPGCamera {
 
   _updateFollow() {
     if(!this.followMe) return;
-
     if(this.followMe.inMove === true) {
-      this._detachedFromFollow = false; // player moved → re-attach
+      this._detachedFromFollow = false;
     }
-
-    if(this._detachedFromFollow) return; // WASD mode, skip follow
+    if(this._detachedFromFollow) return;
 
     if(this.followMe.inMove === true || this.mousRollInAction) {
       this.followMeOffset = this.scrollY;

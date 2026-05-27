@@ -42,7 +42,7 @@ export var flipperJolt = function() {
     addEventListener('PhysicsReady', () => {
       addRaycastsAABBListener();
 
-      flipper.matrixPhysics.speedUpSimulation(2);
+      flipper.matrixPhysics.speedUpSimulation(3);
 
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
