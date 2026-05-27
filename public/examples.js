@@ -1902,7 +1902,7 @@ var flipperJolt = function () {
     flipper.matrixSounds.play('music');
     addEventListener('PhysicsReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
-      flipper.matrixPhysics.speedUpSimulation(3);
+      flipper.matrixPhysics.speedUpSimulation(2);
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/shapes/sphere-uv-cubeproj.obj",
