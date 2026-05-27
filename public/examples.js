@@ -1867,17 +1867,16 @@ var flipperJolt = function () {
     STATUS_PUSH: 'wait'
   };
   let flipper = new _world.default({
-    // render: isMobile() == true ? 'mobile1' : undefined,
-    fastRender: 0.65,
+    fastRender: 0.7,
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
-    MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 3 : 4,
+    MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 2 : 4,
     MAX_BONES: 0,
     clearColor: {
       r: 0,
@@ -1903,7 +1902,7 @@ var flipperJolt = function () {
     flipper.matrixSounds.play('music');
     addEventListener('PhysicsReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
-      flipper.matrixPhysics.speedUpSimulation(3);
+      flipper.matrixPhysics.speedUpSimulation(4);
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/blender/sphepe-mob.obj",
@@ -1920,27 +1919,31 @@ var flipperJolt = function () {
         scale: [1, 1, 1]
       });
     });
-    if ((0, _utils.isMobile)()) (0, _utils.byId)('mobileControls').style.marginRight = '30%';
+
+    // if(isMobile() && byId('mobileControls')) byId('mobileControls').style.marginRight = '30%';
+
     let preventSpam = false;
     _cameras.MobileDOM.addButton("PUSH", async () => {
       if (preventSpam === false) {
         preventSpam = true;
         let ball = app.matrixPhysics.getBodyByName('ball1');
         const pos = await app.matrixPhysics.getPosition(ball);
-        if (pos.x > 5 && pos.z > -6.6) {
+        // 5.349976062774658 0.25000062584877014 -6.4499993324279785
+
+        if (pos.x > 4.85 && pos.z > -6.6) {
           if (MYFLIPPER.BALLS == 0) {
             _utils.mb.show('No more balls...');
             preventSpam = false;
             return;
           }
           // micro opti needed!
-          flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.1, -(0, _utils.randomIntFromTo)(0.5, 1)));
+          flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(0.8, 1.6)));
           flipper.matrixSounds.play('push');
           MYFLIPPER.BALLS--;
         }
         setTimeout(() => {
           preventSpam = false;
-        }, 2000);
+        }, 1000);
       }
     }, () => {}, {
       left: '80',
@@ -1948,7 +1951,7 @@ var flipperJolt = function () {
     });
 
     // Lights
-    const NUM_LIGHTS = (0, _utils.isMobile)() == true ? 3 : 4;
+    const NUM_LIGHTS = (0, _utils.isMobile)() == true ? 2 : 4;
     const ORBIT_RADIUS = 8;
     const ORBIT_SPEED = 0.7;
     const TARGET = {
@@ -2130,7 +2133,7 @@ var flipperJolt = function () {
             ctx.strokeStyle = `rgba(${r},${g},${b},0.95)`;
             ctx.lineWidth = 2.5;
             ctx.shadowColor = `rgb(${r},${g},${b})`;
-            ctx.shadowBlur = 22 * pulse;
+            ctx.shadowBlur = 20 * pulse;
             roundRect(ctx, p.x, p.y, p.w, p.h, p.r);
             ctx.stroke();
             ctx.shadowBlur = 0;
@@ -2748,7 +2751,7 @@ var flipperJolt = function () {
             MYFLIPPER.STATUS_PUSH = 'in action';
             let ball = app.matrixPhysics.getBodyByName(ball1.name);
             const pos = await app.matrixPhysics.getPosition(ball);
-            if (pos.x > 5 && pos.z > -6) {
+            if (pos.x > 4.85 && pos.z > -6.6) {
               if (MYFLIPPER.BALLS == 0) {
                 _utils.mb.show('No more balls...');
                 return;
@@ -2773,7 +2776,7 @@ var flipperJolt = function () {
             MYFLIPPER.BALANCE = MYFLIPPER.BALANCE + 20;
           } else if (body1Name == 'bottomEdge2') {
             console.log('collision FORCE : ', body1Name);
-            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0.3, 0, 0));
+            flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0.25, 0, 0));
           }
         };
       }, 1000);
@@ -2883,6 +2886,7 @@ var flipperJolt = function () {
         if (e.detail.hitObject.name == "pushBtn") {
           let ball = app.matrixPhysics.getBodyByName(ball1.name);
           const pos = await app.matrixPhysics.getPosition(ball);
+          // 5.349976062774658 0.25000062584877014 -6.4499993324279785
           if (pos.x > 5 && pos.z > -6.6) flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomFloatFromTo)(0.8, 1)));
         }
       });
@@ -2976,17 +2980,68 @@ var flipperJolt = function () {
           }
         });
       }
+
+      // FLIPPER CINEMATIC CAMERA INTRO
+      // Ends at gameplay position: yaw=-0.03, pitch=-0.49, z=0, y=10
+
       setTimeout(() => {
         if ((0, _utils.isMobile)() == false) {
           app.activateBloomEffect();
           app.bloomPass.setBlurRadius(3);
         }
-        app.cameras.WASD.setYaw(-0.03);
-        app.cameras.WASD.setPitch(-0.49);
-        app.cameras.WASD.setZ(0);
-        app.cameras.WASD.setY(10);
-        app.cameras.WASD._dirtyAngle = true;
-      }, 900);
+        const cam = app.getCamera();
+
+        // === CINEMATIC PATH (3-4 seconds) ===
+        // Start: wide shot above flipper table, rotate around to gameplay angle
+        const cinematicPath = new _utils.CameraPath([
+        // SHOT 1: High wide angle, far back
+        {
+          position: [0, 20, 35],
+          target: [0, 8, 0],
+          fov: 2 * Math.PI / 4.5 // slightly wider
+        },
+        // SHOT 2: Orbit left side, closer
+        {
+          position: [-15, 18, 20],
+          target: [0, 6, 0],
+          fov: 2 * Math.PI / 5
+        },
+        // SHOT 3: Top-down angle
+        {
+          position: [8, 16, 12],
+          target: [0, 5, 0],
+          fov: 2 * Math.PI / 5
+        },
+        // SHOT 4: Final gameplay position (smooth transition in)
+        // position from yaw/pitch/y calculated:
+        // yaw=-0.03, pitch=-0.49, y=10, z=0
+        // back vector from camera math: sy*cp, -sp, cy*cp where sy=sin(-0.03), cy=cos(-0.03), sp=sin(-0.49), cp=cos(-0.49)
+        // ≈ back ≈ [-0.029, 0.468, 0.883]
+        // so camera is roughly AT: [0-0.029*dist, 10, 0+0.883*dist]
+        // for a distance of ~15-18 units: ≈ [0.5, 10, 13]
+        {
+          position: [0, 9, 1],
+          target: [0, 3, -15],
+          fov: 2 * Math.PI / 5
+        }], {
+          parameterization: 'arc' // smooth arc-length parameterization
+        });
+
+        // === PLAY CINEMATIC ===
+        cam.setPath(cinematicPath).play({
+          speed: 0.65,
+          onEnd: () => {
+            // alert()
+            // cam.setYaw(-0.03);
+            // cam.setPitch(-0.49);
+            // cam.setZ(0);
+            // cam.setY(10);
+            cam._dirtyAngle = true;
+            console.log('✅ Cinematic done, gameplay cam active');
+          }
+        });
+        cam._dirtyAngle = true;
+      }, 500);
     }
   });
   window.app = flipper;
@@ -26408,25 +26463,39 @@ const MobileDOM = exports.MobileDOM = {
       touchAction: 'none'
     });
     btn.textContent = label;
-    btn.addEventListener('touchstart', e => {
-      e.stopPropagation();
-      // btn.style.background = `rgba(255,255,255,${opacity})`;
-      onClick(e);
-    }, {
-      passive: true
-    });
-    btn.addEventListener('touchend', e => {
-      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-      onRelease(e);
-    }, {
-      passive: true
-    });
-    btn.addEventListener('touchcancel', () => {
-      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-      onRelease(e);
-    }, {
-      passive: true
-    });
+    if ((0, _utils.isMobile)() === true) {
+      btn.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        // btn.style.background = `rgba(255,255,255,${opacity})`;
+        onClick(e);
+      }, {
+        passive: true
+      });
+      btn.addEventListener('touchend', e => {
+        // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        onRelease(e);
+      }, {
+        passive: true
+      });
+      btn.addEventListener('touchcancel', () => {
+        // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        onRelease(e);
+      }, {
+        passive: true
+      });
+    } else {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        onClick(e);
+      }, {
+        passive: true
+      });
+      btn.addEventListener('mouseup', e => {
+        onRelease(e);
+      }, {
+        passive: true
+      });
+    }
     document.body.appendChild(btn);
     return btn;
   }
