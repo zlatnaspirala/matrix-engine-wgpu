@@ -931,7 +931,12 @@ Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTex
 From 1.7.0 engine powered by networking. Used kurento&Openvidu server for backend.
 Very good for handling streams, channels etc...
 
-See example code at `./examples/games/rpg/`
+All you needed to start kurento and openvidu and interconnect this nodejs server
+https://github.com/zlatnaspirala/matrix-stream/blob/main/middleware/server.js
+
+
+
+See example code at `./examples/games/moba/`
 
 Buildin net sync basic:
 Lets say app is engine root object and net is networking object.
@@ -971,7 +976,7 @@ Intelegent emit for teams (two teams implemented).
 Position will be emited for teams[0] and received for uniq scene obj name.
 Position will be emited for teams[1] and received for oposite (eg. enemy) uniq scene obj name.
 In this case toRemote is overrided (Don't pass it).
-Used for RPGMOG project.
+Used for moba project.
 
 ```js
 mesh.position.teams[0] = [connId0, connId1];
