@@ -239,6 +239,7 @@ class Character extends _hero.Hero {
               subMesh.fireballSystem = new _fireball.FireballSystem(subMesh, this.core);
               subMesh.fireballSystem.parent.effects.flameEmitter.recreateVertexDataRND(30);
               this.core.autoUpdate.push(subMesh.fireballSystem);
+              subMesh.fireballSystem.parent.effects.flameEmitter.setIntensity(20);
             }
           }
 
@@ -413,10 +414,15 @@ class Character extends _hero.Hero {
       });
     });
   }
-  setAttack(on) {
+  setAttack(on, isSecoundAttackLong = false) {
     this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
-      subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
+      if (isSecoundAttackLong === false) {
+        subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
+      } else {
+        subMesh.playAnimationByIndex(this.heroAnimationArrange.salute);
+      }
+
       // console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.animationIndex}`, LOG_MATRIX)
       app.net.send({
         sceneName: subMesh.name,
@@ -43547,13 +43553,13 @@ class FireballSystem {
     speed: 2.3,
     homingStrength: 0.08,
     hitRadius: 1.5,
-    damage: 50,
-    lifetime: 4000,
+    damage: 5,
+    lifetime: 2000,
     maxActive: 2
   };
   loadBallAnim = async p => {
     var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
-    this.core.addGlbObjInctance({
+    this.fireballMesh = this.core.addGlbObjInctance({
       material: {
         type: 'standard',
         useTextureFromGlb: true
@@ -43564,8 +43570,7 @@ class FireballSystem {
         y: this.parent.position.y,
         z: this.parent.position.z
       },
-      name: "FIRE",
-      // this.parent.name + "-fireball",
+      name: this.parent.name + "-fireball",
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       raycast: {
         enabled: true,
@@ -43581,7 +43586,8 @@ class FireballSystem {
         circlePlaneTexPath: './res/textures/star1.png'
       }
     }, null, glbFile01);
-    setTimeout(() => this.fireballMesh = app.getSceneObjectByName('FIRE_Circle'), 300);
+    console.log('this.fireballMesh', this.fireballMesh);
+    // setTimeout(() => this.fireballMesh = app.getSceneObjectByName('FIRE_Circle'), 300);
   };
   constructor(parent, core) {
     this.core = core;
