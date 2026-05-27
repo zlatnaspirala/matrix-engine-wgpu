@@ -24901,8 +24901,8 @@ class WASDCamera {
           dx = ce.movementX * this.MOUSE_SENS;
           dy = ce.movementY * this.MOUSE_SENS;
         } else {
-          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
+          dx = (ce.clientX - this._pointerLastScratch.x) * this.TOUCH_SENS;
+          dy = (ce.clientY - this._pointerLastScratch.y) * this.TOUCH_SENS;
           this._lastX = ce.clientX;
           this._lastY = ce.clientY;
         }
@@ -25570,6 +25570,7 @@ class FirstPersonCamera {
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
+    console.log('___________________________' + this.canvas);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if ((0, _utils.isMobile)() == true && options.isActive == 'init active cam') {
@@ -25699,54 +25700,65 @@ class FirstPersonCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
-    // canvas.addEventListener('pointerdown', e => {
-    //   this._mouseDown = true;
-    //   this._lastX = e.clientX;
-    //   this._lastY = e.clientY;
-    //   canvas.setPointerCapture(e.pointerId);
-    //   canvas.requestPointerLock?.();
-    // }, {passive: true});
-    canvas.addEventListener('pointerdown', e => {
-      this._mouseDown = true;
-      this._lastX = e.clientX;
-      this._lastY = e.clientY;
-      if (canvas.requestPointerLock) {
-        canvas.requestPointerLock();
-      } else {
-        canvas.setPointerCapture(e.pointerId);
+    let touchStartX = 0,
+      touchStartY = 0;
+    if ((0, _utils.isMobile)() === true) canvas.addEventListener('touchstart', e => {
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        console.log('touchstart:', touchStartX, touchStartY);
       }
     }, {
       passive: false
     });
-    const pointerUp = e => {
-      this._mouseDown = false;
-    };
-    canvas.addEventListener('pointerup', pointerUp, {
-      passive: true
-    });
-    canvas.addEventListener('pointercancel', pointerUp, {
-      passive: true
-    });
-    canvas.addEventListener('pointermove', e => {
-      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-      for (const ce of events) {
-        let dx = 0,
-          dy = 0;
-        if (ce.pointerType === 'mouse') {
-          // if((ce.buttons & 1) === 0) continue;
-          dx = ce.movementX * this.MOUSE_SENS;
-          dy = ce.movementY * this.MOUSE_SENS;
-        } else {
-          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
-          this._lastX = ce.clientX;
-          this._lastY = ce.clientY;
-        }
+    if ((0, _utils.isMobile)() === true) canvas.addEventListener('touchmove', e => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+        const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+        console.log('touchmove dx=', dx, 'dy=', dy);
         this.yaw -= dx * this.rotationSpeed;
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
         this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
         this._dirtyAngle = true;
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }
+      e.preventDefault();
+    }, {
+      passive: false
+    });
+
+    // MOUSE
+    if ((0, _utils.isMobile)() === false) canvas.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse') {
+        this._mouseDown = true;
+        if (canvas.requestPointerLock) {
+          canvas.requestPointerLock();
+        } else {
+          canvas.setPointerCapture(e.pointerId);
+        }
+      }
+    }, {
+      passive: false
+    });
+    if ((0, _utils.isMobile)() === false) canvas.addEventListener('pointermove', e => {
+      if (e.pointerType === 'mouse' && this._mouseDown) {
+        const dx = e.movementX * this.MOUSE_SENS;
+        const dy = e.movementY * this.MOUSE_SENS;
+        this.yaw -= dx * this.rotationSpeed;
+        this.pitch -= dy * this.rotationSpeed;
+        this.yaw %= Math.PI * 2;
+        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this._dirtyAngle = true;
+      }
+    }, {
+      passive: true
+    });
+    if ((0, _utils.isMobile)() === false) canvas.addEventListener('pointerup', e => {
+      if (e.pointerType === 'mouse') {
+        this._mouseDown = false;
       }
     }, {
       passive: true
@@ -25766,7 +25778,6 @@ class FirstPersonCamera {
         case 'KeyD':
           this._digital.right = value;
           break;
-        // no V/C
       }
       if (value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
@@ -66771,7 +66782,7 @@ class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.12.0 [The beast] ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.14.1 [The beast] ", _utils.LOG_FUNNY);
     console.log("%c👽  ", _utils.LOG_FUNNY_EXTRABIG);
     console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "No tracking. No hype. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);

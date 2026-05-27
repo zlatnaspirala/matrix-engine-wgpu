@@ -13,7 +13,7 @@
  * @param cacheVersion
  */
 
-var cacheVersion = 33;
+var cacheVersion = 34;
 var prefixMOBA = 'matrix-engine-fohb';
 var prefix = 'matrix-engine-examples';
 var cacheName = prefix + cacheVersion;

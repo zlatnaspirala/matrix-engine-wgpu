@@ -128,8 +128,8 @@ export class WASDCamera {
           dx = ce.movementX * this.MOUSE_SENS;
           dy = ce.movementY * this.MOUSE_SENS;
         } else {
-          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
+          dx = (ce.clientX - this._pointerLastScratch.x) * this.TOUCH_SENS;
+          dy = (ce.clientY - this._pointerLastScratch.y) * this.TOUCH_SENS;
           this._lastX = ce.clientX;
           this._lastY = ce.clientY;
         }
@@ -720,6 +720,7 @@ export class FirstPersonCamera {
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 200);
+    console.log('___________________________' + this.canvas)
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
 
@@ -811,45 +812,62 @@ export class FirstPersonCamera {
 
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
-    // canvas.addEventListener('pointerdown', e => {
-    //   this._mouseDown = true;
-    //   this._lastX = e.clientX;
-    //   this._lastY = e.clientY;
-    //   canvas.setPointerCapture(e.pointerId);
-    //   canvas.requestPointerLock?.();
-    // }, {passive: true});
-    canvas.addEventListener('pointerdown', e => {
-      this._mouseDown = true;
-      this._lastX = e.clientX;
-      this._lastY = e.clientY;
-      if(canvas.requestPointerLock) {
-        canvas.requestPointerLock();
-      } else {
-        canvas.setPointerCapture(e.pointerId);
+    let touchStartX = 0, touchStartY = 0;
+    if(isMobile() === true) canvas.addEventListener('touchstart', e => {
+      if(e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        console.log('touchstart:', touchStartX, touchStartY);
       }
     }, {passive: false});
-    const pointerUp = e => {this._mouseDown = false;};
-    canvas.addEventListener('pointerup', pointerUp, {passive: true});
-    canvas.addEventListener('pointercancel', pointerUp, {passive: true});
-    canvas.addEventListener('pointermove', e => {
-      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-      for(const ce of events) {
-        let dx = 0, dy = 0;
-        if(ce.pointerType === 'mouse') {
-          // if((ce.buttons & 1) === 0) continue;
-          dx = ce.movementX * this.MOUSE_SENS;
-          dy = ce.movementY * this.MOUSE_SENS;
-        } else {
-          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
-          this._lastX = ce.clientX;
-          this._lastY = ce.clientY;
-        }
+
+    if(isMobile() === true) canvas.addEventListener('touchmove', e => {
+      if(e.touches.length > 0) {
+        const touch = e.touches[0];
+        const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+        const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+
+        console.log('touchmove dx=', dx, 'dy=', dy);
+
         this.yaw -= dx * this.rotationSpeed;
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
         this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
         this._dirtyAngle = true;
+
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }
+      e.preventDefault();
+    }, {passive: false});
+
+    // MOUSE
+    if(isMobile() === false) canvas.addEventListener('pointerdown', e => {
+      if(e.pointerType === 'mouse') {
+        this._mouseDown = true;
+        if(canvas.requestPointerLock) {
+          canvas.requestPointerLock();
+        } else {
+          canvas.setPointerCapture(e.pointerId);
+        }
+      }
+    }, {passive: false});
+
+    if(isMobile() === false) canvas.addEventListener('pointermove', e => {
+      if(e.pointerType === 'mouse' && this._mouseDown) {
+        const dx = e.movementX * this.MOUSE_SENS;
+        const dy = e.movementY * this.MOUSE_SENS;
+        this.yaw -= dx * this.rotationSpeed;
+        this.pitch -= dy * this.rotationSpeed;
+        this.yaw %= Math.PI * 2;
+        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this._dirtyAngle = true;
+      }
+    }, {passive: true});
+
+    if(isMobile() === false) canvas.addEventListener('pointerup', e => {
+      if(e.pointerType === 'mouse') {
+        this._mouseDown = false;
       }
     }, {passive: true});
 
@@ -860,7 +878,6 @@ export class FirstPersonCamera {
         case 'KeyS': this._digital.backward = value; break;
         case 'KeyA': this._digital.left = value; break;
         case 'KeyD': this._digital.right = value; break;
-        // no V/C
       }
       if(value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
