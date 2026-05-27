@@ -188,10 +188,10 @@ export class MEMapLoader {
         });
       })
       // this.pointerEffect.circlePlaneTexPath
-      app.tron.effects.circle = new GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
+      app.tron.effects.circle = new GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png', 2,  app.cameraBuffer);
       app.tron.effects.circle.rotateEffectSpeed = 0.01;
 
-      app.enemytron.effects.circle = new GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
+      app.enemytron.effects.circle = new GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png', 2, app.cameraBuffer);
       app.enemytron.effects.circle.rotateEffectSpeed = 0.01;
 
       // emit pos

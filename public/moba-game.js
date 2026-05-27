@@ -3871,9 +3871,9 @@ class MEMapLoader {
         });
       });
       // this.pointerEffect.circlePlaneTexPath
-      app.tron.effects.circle = new _genTex.GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
+      app.tron.effects.circle = new _genTex.GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png', 2, app.cameraBuffer);
       app.tron.effects.circle.rotateEffectSpeed = 0.01;
-      app.enemytron.effects.circle = new _genTex.GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png');
+      app.enemytron.effects.circle = new _genTex.GenGeoTexture2(app.device, 'rgba16float', 'circle2', './res/textures/star1.png', 2, app.cameraBuffer);
       app.enemytron.effects.circle.rotateEffectSpeed = 0.01;
 
       // emit pos
@@ -27908,7 +27908,7 @@ class GenGeoTexture2 {
       size: [img.width, img.height, 1],
       // Mobile optimization: use rgba8unorm instead of rgba16float
       // Reduces memory bandwidth by 50% on mobile GPUs
-      format: 'rgba8unorm',
+      format: 'rgba16float',
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
     });
     this.device.queue.copyExternalImageToTexture({
@@ -46046,41 +46046,61 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.hpBarEffectShaders = void 0;
 const hpBarEffectShaders = exports.hpBarEffectShaders = `
-struct Camera {
-  viewProj : mat4x4f
-};
 struct Model {
-  model : mat4x4f,
-  color : vec4f,
-  progress : f32,
+    model    : mat4x4f,       // 64 bytes (Offsets 0 - 63)
+    color    : vec4f,         // 16 bytes (Offsets 64 - 79)
+    progress : f32,           // 4 bytes  (Offsets 80 - 83)
+    pad1     : f32,           // 4 bytes  (Offsets 84 - 87)
+    pad2     : f32,           // 4 bytes  (Offsets 88 - 91)
+    pad3     : f32,           // 4 bytes  (Offsets 92 - 95) -> Total: Exactly 96 bytes!
 };
 
-@group(0) @binding(0) var<uniform> camera : Camera;
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<uniform> model : Model;
 
 struct VertexOutput {
-  @builtin(position) position : vec4f,
-  @location(0) uv : vec2f,
+    @builtin(position) position : vec4f,
+    @location(0) uv             : vec2f,
+    @location(1) fragPos        : vec3f,
 };
 
 @vertex
 fn vsMain(
-  @location(0) position : vec3f,
-  @location(1) uv : vec2f
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f
 ) -> VertexOutput {
-  var output : VertexOutput;
-  output.position = camera.viewProj * model.model * vec4f(position, 1.0);
-  output.uv = uv;
-  return output;
+    var output : VertexOutput;
+    let worldPos = model.model * vec4f(position, 1.0);
+    
+    output.position = cameraViewProjMatrix * worldPos;
+    output.uv = uv;
+    output.fragPos = worldPos.xyz;
+    
+    return output;
+}
+
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(in : VertexOutput) -> @location(0) vec4f {
-  // simple left-to-right fill based on progress
-  if (in.uv.x > model.progress) {
-    return vec4f(0.1, 0.1, 0.1, 0.3); // empty (transparent gray)
-  }
-  return model.color; // filled
+fn fsMain(in : VertexOutput) -> FragOut {
+    let N = vec3f(0.0, 0.0, 1.0); 
+    var finalColor : vec4f;
+
+    if (in.uv.x > model.progress) {
+        finalColor = vec4f(0.1, 0.1, 0.1, 0.3); 
+    } else {
+        finalColor = model.color; 
+    }
+
+    return FragOut(
+        finalColor,
+        vec4f(N, 0.0),
+        vec4f(in.fragPos, 1.0)
+    );
 }
 `;
 
