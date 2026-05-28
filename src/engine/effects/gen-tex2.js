@@ -12,16 +12,14 @@ export class GenGeoTexture2 {
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
     this.enabled = true;
-
     this.rotateEffect = true;
     this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
-
-    // Fixed: Track dirty state, but force the first frame initialization pass
-    this.isDirty = true; 
+    this.isDirty = true;
     this.cameraMatrixDirty = false;
-    this.lastCameraMatrix = null;
-
+    this.lastCameraMatrix = new Float32Array(16);
+    this.tempLocalMatrix = mat4.identity();
+    this.isCameraInitialized = false;
     this.localMatrix = mat4.identity();
     this.finalMatrix = mat4.identity();
 
@@ -34,7 +32,7 @@ export class GenGeoTexture2 {
     const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
     const texture = this.device.createTexture({
       size: [img.width, img.height, 1],
-      format: 'rgba8unorm', // Matched for structural stability across setups
+      format: 'rgba8unorm',
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
@@ -82,29 +80,26 @@ export class GenGeoTexture2 {
     } else {
       this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     }
-    
+
     this.indexCount = indexData.length;
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
+    this.maxInstances = 50;
     this.instanceCount = 2;
-    
-    // Fixed: Standardized to 32-float padding block boundaries (128 bytes) 
-    // to cleanly isolate custom fields from the matrix transformation variables.
-    this.floatsPerInstance = 32; 
-    
+    this.floatsPerInstance = 20;
     this.lastFrameTime = performance.now();
-    this.frameTimeMs = 16; 
-    
-    for(let x = 0; x < this.maxInstances; x++) {
+    this.frameTimeMs = 16;
+
+    for(let x = 0;x < this.maxInstances;x++) {
       this.instanceTargets.push({
         index: x,
-        position: [x * 1.5, 0, 0], // Give distinct starting offsets so objects do not overlap
-        currentPosition: [x * 1.5, 0, 0],
+        position: [0, 0, 0],
+        currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
         currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1.0, 0.4],
-        isDirty: true, // Force write execution on startup loop pass
+        color: [0.6, 0.8, 1.0, 0.9],
+        rotation: [0, 0, 0],
+        isDirty: true,
       });
     }
 
@@ -115,7 +110,7 @@ export class GenGeoTexture2 {
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       label: 'geo-texture bindGroupLayout',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
@@ -127,7 +122,7 @@ export class GenGeoTexture2 {
 
     this.bindGroup = this.device.createBindGroup({
       label: 'geo-texture bindGroup',
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
@@ -137,8 +132,8 @@ export class GenGeoTexture2 {
     });
 
     const shaderModule = this.device.createShaderModule({code: geoInstancedTexEffect()});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-    
+    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+
     this.pipeline = this.device.createRenderPipeline({
       label: 'geo tex 2 Pipeline',
       layout: pipelineLayout,
@@ -157,12 +152,12 @@ export class GenGeoTexture2 {
           {
             format: this.format,
             blend: {
-              color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
-              alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+              color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+              alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
             },
-          }, 
-          { format: 'rgba16float' },
-          { format: 'rgba16float' }
+          },
+          {format: 'rgba16float'},
+          {format: 'rgba16float'}
         ]
       },
       primitive: {topology: 'triangle-list'},
@@ -170,81 +165,71 @@ export class GenGeoTexture2 {
     });
   }
 
+  updateInstanceCount(newCount) {
+    if(newCount > this.maxInstances) {
+      console.warn("Count exceeds maxInstances...");
+      return false;
+    }
+    this.instanceCount = Math.max(0, newCount);
+  }
+
   updateInstanceData = (baseModelMatrix) => {
     if(!this.instanceData) return;
-
     const now = performance.now();
-    this.frameTimeMs = now - this.lastFrameTime;
+    const deltaTime = (now - this.lastFrameTime) / 1000;
     this.lastFrameTime = now;
-
-    const clampedFrameTime = Math.min(this.frameTimeMs, 50) / 1000; 
-
-    if(this.rotateEffect) {
-      this.rotateAngle += this.rotateEffectSpeed * clampedFrameTime;
-      if(this.rotateAngle >= 360) this.rotateAngle -= 360;
-    }
-
     const count = Math.min(this.instanceCount, this.maxInstances);
-    let anyInstanceDirty = false;
+    let anyInstanceDirty = this.isDirty;
 
-    for(let i = 0; i < count; i++) {
+    for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
-      let instanceUpdated = false;
-      const frameAwareLerpSpeed = this.lerpSpeed * clampedFrameTime * 60; 
+      if(this.rotateEffect) {
+        t.rotation[1] += (this.rotateEffectSpeed * Math.PI / 180) * deltaTime;
+        anyInstanceDirty = true;
+      }
 
-      for(let j = 0; j < 3; j++) {
-        const oldPos = t.currentPosition[j];
-        const oldScale = t.currentScale[j];
-
+      // 2. Interpolate Position and Scale
+      const frameAwareLerpSpeed = this.lerpSpeed * Math.min(deltaTime * 60, 1);
+      for(let j = 0;j < 3;j++) {
+        const prevPos = t.currentPosition[j];
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * frameAwareLerpSpeed;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * frameAwareLerpSpeed;
-
-        if(Math.abs(t.currentPosition[j] - oldPos) > 0.0001 ||
-          Math.abs(t.currentScale[j] - oldScale) > 0.0001) {
-          instanceUpdated = true;
-        }
+        if(Math.abs(t.currentPosition[j] - prevPos) > 0.0001) anyInstanceDirty = true;
       }
 
-      // Fixed: Enforce full buffer verification layout generation pass on the initial frame
-      if(!instanceUpdated && t.isDirty === false && !this.isDirty) {
-        continue; 
+      if(anyInstanceDirty) {
+        mat4.identity(this.tempLocalMatrix);
+        mat4.translate(this.tempLocalMatrix, t.currentPosition, this.tempLocalMatrix);
+        mat4.rotateX(this.tempLocalMatrix, t.rotation[0], this.tempLocalMatrix);
+        mat4.rotateY(this.tempLocalMatrix, t.rotation[1], this.tempLocalMatrix);
+        mat4.rotateZ(this.tempLocalMatrix, t.rotation[2], this.tempLocalMatrix);
+        mat4.scale(this.tempLocalMatrix, t.currentScale, this.tempLocalMatrix);
+
+        mat4.multiply(baseModelMatrix, this.tempLocalMatrix, this.finalMatrix);
+
+        const offset = i * this.floatsPerInstance;
+        this.instanceData.set(this.finalMatrix, offset);
+        this.instanceData.set(t.color, offset + 16);
       }
-
-      anyInstanceDirty = true;
-      t.isDirty = false;
-
-      mat4.identity(this.localMatrix);
-      if(this.rotateEffect === true) {
-        mat4.rotateY(this.localMatrix, this.rotateAngle, this.localMatrix);
-      }
-
-      mat4.translate(this.localMatrix, t.currentPosition, this.localMatrix);
-      mat4.scale(this.localMatrix, t.currentScale, this.localMatrix);
-      mat4.multiply(baseModelMatrix, this.localMatrix, this.finalMatrix);
-
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(this.finalMatrix, offset);
-      this.instanceData.set(t.color, offset + 16); 
     }
 
-    if(anyInstanceDirty || this.isDirty) {
+    if(anyInstanceDirty) {
       this.isDirty = false;
-      this.device.queue.writeBuffer(
-        this.modelBuffer,
-        0,
-        this.instanceData.subarray(0, count * this.floatsPerInstance)
-      );
+      this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
     }
-  };
+  }
 
   render(transPass, mesh, viewProjMatrix) {
-    if (!this.pipeline) return; // Prevent calls before texture asynchronous load completes
-    
-    this.updateInstanceData(mesh.modelMatrix || mat4.identity(this.localMatrix));
+    if(!this.pipeline) return;
 
-    if(!this.lastCameraMatrix || !this._matricesEqual(this.lastCameraMatrix, viewProjMatrix)) {
+    // this.updateInstanceData(mesh.modelMatrix || mat4.identity(this.localMatrix));
+     this.updateInstanceData(mesh.modelMatrix);
+
+    // --- FIXED: Replaced "new Float32Array" allocation with an in-place typed array copy ---
+    if(!this.isCameraInitialized || !this._matricesEqual(this.lastCameraMatrix, viewProjMatrix)) {
       this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-      this.lastCameraMatrix = new Float32Array(viewProjMatrix);
+      this.lastCameraMatrix.set(viewProjMatrix); // Copies values directly without allocating memory
+      this.isCameraInitialized = true;
     }
 
     transPass.setPipeline(this.pipeline);
@@ -256,7 +241,7 @@ export class GenGeoTexture2 {
   }
 
   _matricesEqual(m1, m2) {
-    for(let i = 0; i < 16; i++) {
+    for(let i = 0;i < 16;i++) {
       if(Math.abs(m1[i] - m2[i]) > 0.0001) return false;
     }
     return true;

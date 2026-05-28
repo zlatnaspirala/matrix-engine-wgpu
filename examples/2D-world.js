@@ -5,6 +5,8 @@ import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {initializeSpritesForMesh, SpritesPack2D} from "../src/engine/effects/sprite2d2.js";
 import {GenGeo} from "../src/engine/effects/gen.js";
+import {GenGeoTexture} from "../src/engine/effects/gen-tex.js";
+import {InstancedKinematicOperations} from "../src/engine/procedures/InstancedKinematicOperations.js";
 
 export var loadSprite1 = function() {
 
@@ -64,25 +66,14 @@ export var loadSprite1 = function() {
 
       // share: true if not defined it is false.
       let MYCUBE = world2D.addMeshObj({
-        material: {type: 'dark'},
-        position: {x: 0, y: 5, z: -10},
+        material: {type: 'standard'},
+        position: {x: 0, y: 9, z: -10},
         rotation: {x: 180, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [4, 4, 0.01],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
-        // envMapParams: {
-        //   baseColorMix: 0.1,                // CLEAR SKY
-        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-        //   reflectivity: 0.75,               // 25% reflection blend
-        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-        //   illuminateStrength: 1.5,          // Gentle rim
-        //   illuminatePulse: 0.1,             // No pulse (static)
-        //   fresnelPower: 5,                  // Medium-sharp edge
-        //   envLodBias: 1.5,
-        //   usePlanarReflection: false,       // ✅ Env map mode
-        // },
         raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,
@@ -90,14 +81,11 @@ export var loadSprite1 = function() {
           geometry: "Cube"
         },
         pointerEffect: {
-          enabled: true,
-          // flameEmitter: true,
-          // flameEffect: true
+          enabled: true
         }
       })
 
-      // invisible
-      MYCUBE.setBlend(0.001);
+
       // const batch = new SpritesPack2D(app.device, 'rgba16float', 'rgba16float', world2D.cameraBuffer);
       // await batch.registerSpritesheet("reel", "./res/textures/slot/reel1-lod0.webp", 4, 4);
       // // await batch.registerSpritesheet("effects", "./res/textures/slot/reel1-lod0.webp", 4, 4);
@@ -118,11 +106,7 @@ export var loadSprite1 = function() {
         "circle"                                // Pattern: matrix|pulsing|flow|circle|wave
       );
 
-
-
       // const spr = batch.getSprite("player-instance-1");
-      // spr.pause();
-
       MYCUBE.effects.mySprite1 = batch;
 
       world2D.lightContainer[0].setIntensity(15);
@@ -136,27 +120,47 @@ export var loadSprite1 = function() {
       world2D.lightContainer[0].setPosition(0, 15, -10);
       world2D.lightContainer[0].setTarget(0, 0, -10);
 
+      MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
+
       setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 10, world2D.cameraBuffer);
-        // MYCUBE.effects.circle = new GenGeo(world2D.device, 'rgba16float', 'circle', 1, world2D.cameraBuffer);
-        
+        // invisible
+        MYCUBE.setBlend(0.9);
+        MYCUBE.setupPipeline()
+        app.buildRenderBuckets();
+
+
+        MYCUBE.effects.circle.updateInstanceCount(10);
+
+        const FX = new InstancedKinematicOperations(
+          MYCUBE.effects.circle.instanceTargets
+        );
+
+        FX.cinematicSequence();
+
+        // MYCUBE.effects.circle.instanceTargets[0].color[0] = 100;
+        // MYCUBE.effects.circle.instanceTargets[0].position[1] = -5; 
+
+        // MYCUBE.effects.circle.instanceTargets[1].color[1] = 100;
+        // MYCUBE.effects.circle.instanceTargets[1].position[1] = -2; 
+
+        MYCUBE.effects.circle.instanceTargets[0].isDyrty = true;
 
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
-        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        // MYCUBE.effects.flameEmitter.rotSpeed = 1;
 
-        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-          0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+        // MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+        //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
+        //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
 
-        MYCUBE.setAmbient(2, 3, 0.5);
+        MYCUBE.setAmbient(2, 0, 0);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
-        cam.setZ(0);
-        cam.setY(10);
+        cam.setZ(10);
+        cam.setY(30);
         app.buildRenderBuckets(app.mainRenderBundle);
 
         console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData)
