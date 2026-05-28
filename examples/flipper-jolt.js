@@ -16,7 +16,7 @@ export var flipperJolt = function() {
     fastRender: 0.7,
     useJolt: true,
     canvasSize: 'fullscreen',
-    mainCameraParams: {type: 'WASD', responseCoef: 1000},
+    mainCameraParams: {type: 'cinematicCamera', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
     MAX_SPOTLIGHTS: isMobile() ? 2 : 4,

@@ -1874,7 +1874,7 @@ var flipperJolt = function () {
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     PHYSICS_GROUND_BYZ: 40,
