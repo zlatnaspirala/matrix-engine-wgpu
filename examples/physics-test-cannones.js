@@ -10,6 +10,8 @@ export var testCannonES = function() {
     canvasSize: 'fullscreen',
     useCannon: true,
     fastRender: 0.9,
+    MAX_SPOTLIGHTS : 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000

@@ -12,6 +12,7 @@ export var loadDestructionProcedural = function() {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'cinematicCamera',
       responseCoef: 1000

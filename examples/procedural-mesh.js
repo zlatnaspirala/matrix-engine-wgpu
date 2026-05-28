@@ -8,7 +8,7 @@ export var procMesh = function() {
   let procMesh = new MatrixEngineWGPU({
     fastRender: 0.9,
     MAX_SPOTLIGHTS : 1,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     dontUsePhysics: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {

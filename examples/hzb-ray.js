@@ -10,9 +10,8 @@ export var loadHZB = function() {
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     dontUsePhysics: true,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     MAX_SPOTLIGHTS: 1,
-    dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000

@@ -6,6 +6,8 @@ export var loadVideoTexture = function() {
   let videoTexture = new MatrixEngineWGPU({
     fastRender: 0.9,
     canvasSize: 'fullscreen',
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000

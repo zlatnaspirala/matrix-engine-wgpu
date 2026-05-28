@@ -4,6 +4,7 @@ import {geoTypesForMorph, LOG_MATRIX} from "../src/engine/utils.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
+// DEPLACED FOR NOW
 export var fontana = function() {
   let fontana = new MatrixEngineWGPU({
     fastRender: 0.9,

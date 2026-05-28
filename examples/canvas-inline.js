@@ -10,10 +10,9 @@ export var canvasInline = function() {
     fastRender: 0.85,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: isMobile() ? 1 : 2,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
-      // type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0, g: 0, a: 0}

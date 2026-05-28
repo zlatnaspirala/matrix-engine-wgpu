@@ -1,14 +1,14 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-import {CameraPath} from "../src/engine/utils.js";
+import {CameraPath, isMobile} from "../src/engine/utils.js";
 
 export var snakeLights = function() {
   let app = new MatrixEngineWGPU({
     fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
-    MAX_SPOTLIGHTS: 12,
+    MAX_SPOTLIGHTS: isMobile() === true ? 6 : 12,
     mainCameraParams: {
       type: 'cinematicCamera',
       responseCoef: 1000
@@ -16,10 +16,10 @@ export var snakeLights = function() {
     clearColor: {r: 0.01, b: 0.01, g: 0.01, a: 1}
   }, async () => {
 
-    const NUM_LIGHTS = 12;
+    const NUM_LIGHTS = isMobile() === true ? 6 : 12;
     const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.35;
-    const LIGHT_HEIGHT = 20;
+    const LIGHT_HEIGHT = 25;
     const CENTER = {x: 0, z: -10};
 
     const LIGHT_COLORS = [

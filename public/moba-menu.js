@@ -22109,25 +22109,39 @@ const MobileDOM = exports.MobileDOM = {
       touchAction: 'none'
     });
     btn.textContent = label;
-    btn.addEventListener('touchstart', e => {
-      e.stopPropagation();
-      // btn.style.background = `rgba(255,255,255,${opacity})`;
-      onClick(e);
-    }, {
-      passive: true
-    });
-    btn.addEventListener('touchend', e => {
-      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-      onRelease(e);
-    }, {
-      passive: true
-    });
-    btn.addEventListener('touchcancel', () => {
-      // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-      onRelease(e);
-    }, {
-      passive: true
-    });
+    if ((0, _utils.isMobile)() === true) {
+      btn.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        // btn.style.background = `rgba(255,255,255,${opacity})`;
+        onClick(e);
+      }, {
+        passive: true
+      });
+      btn.addEventListener('touchend', e => {
+        // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        onRelease(e);
+      }, {
+        passive: true
+      });
+      btn.addEventListener('touchcancel', () => {
+        // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        onRelease(e);
+      }, {
+        passive: true
+      });
+    } else {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        onClick(e);
+      }, {
+        passive: true
+      });
+      btn.addEventListener('mouseup', e => {
+        onRelease(e);
+      }, {
+        passive: true
+      });
+    }
     document.body.appendChild(btn);
     return btn;
   }
