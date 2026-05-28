@@ -11,6 +11,8 @@ export var physicsPlayground = function() {
     canvasSize: 'fullscreen',
     // Ammojs is default no need flag
     fastRender: 0.7,
+    MAX_SPOTLIGHTS : 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000

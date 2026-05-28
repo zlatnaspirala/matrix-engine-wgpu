@@ -2,7 +2,6 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
-import {MEConfig} from "../src/me-config.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 
 export var loadObjFile = function() {
@@ -12,9 +11,8 @@ export var loadObjFile = function() {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
-    MAX_BONES : 1,
+    MAX_BONES : 0,
     mainCameraParams: {
-      // type: 'WASD',
       type: 'firstPersonCamera',
       responseCoef: 1000
     },
@@ -96,12 +94,7 @@ export var loadObjFile = function() {
         }
       })
 
-
-      
-
       loadObjFile.lightContainer[0].setIntensity(15);
-
-      // if(isMobile() == false) {
       loadObjFile.activateBloomEffect();
       loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       loadObjFile.lightContainer[0].behavior.value_ = -1;
@@ -111,11 +104,9 @@ export var loadObjFile = function() {
       })
       loadObjFile.lightContainer[0].setPosition(0, 15, -10);
       loadObjFile.lightContainer[0].setTarget(0, 0, -10);
-      // }
 
       setTimeout(() => {
-
-        // MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png');
+        MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
 
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 

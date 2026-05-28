@@ -235,10 +235,9 @@ var canvasInline = function () {
     fastRender: 0.85,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 1 : 2,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
-      // type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {
@@ -531,6 +530,7 @@ var loadCinematicCamera = function () {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'cinematicCamera',
       responseCoef: 1000
@@ -759,6 +759,7 @@ var loadDestructionProcedural = function () {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'cinematicCamera',
       responseCoef: 1000
@@ -991,6 +992,8 @@ var flipperAmmo = function () {
     },
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
+    MAX_SPOTLIGHTS: (0, _utils.isMobile)() == true ? 1 : 4,
+    MAX_BONES: 0,
     clearColor: {
       r: 0,
       g: 1,
@@ -1871,7 +1874,7 @@ var flipperJolt = function () {
     useJolt: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
-      type: 'cinematicCamera',
+      type: 'WASD',
       responseCoef: 1000
     },
     PHYSICS_GROUND_BYZ: 40,
@@ -1902,7 +1905,7 @@ var flipperJolt = function () {
     flipper.matrixSounds.play('music');
     addEventListener('PhysicsReady', () => {
       (0, _raycast.addRaycastsAABBListener)();
-      flipper.matrixPhysics.speedUpSimulation(4);
+      flipper.matrixPhysics.speedUpSimulation((0, _utils.isMobile)() === true ? 4 : 3);
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/blender/sphepe-mob.obj",
@@ -1919,9 +1922,7 @@ var flipperJolt = function () {
         scale: [1, 1, 1]
       });
     });
-
-    // if(isMobile() && byId('mobileControls')) byId('mobileControls').style.marginRight = '30%';
-
+    if ((0, _utils.isMobile)() && (0, _utils.byId)('mobileControls')) (0, _utils.byId)('mobileControls').style.marginRight = '30%';
     let preventSpam = false;
     _cameras.MobileDOM.addButton("PUSH", async () => {
       if (preventSpam === false) {
@@ -1929,7 +1930,6 @@ var flipperJolt = function () {
         let ball = app.matrixPhysics.getBodyByName('ball1');
         const pos = await app.matrixPhysics.getPosition(ball);
         // 5.349976062774658 0.25000062584877014 -6.4499993324279785
-
         if (pos.x > 4.85 && pos.z > -6.6) {
           if (MYFLIPPER.BALLS == 0) {
             _utils.mb.show('No more balls...');
@@ -1937,7 +1937,7 @@ var flipperJolt = function () {
             return;
           }
           // micro opti needed!
-          flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(0.8, 1.6)));
+          flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0.2, -(0, _utils.randomIntFromTo)(0.8, 1.2)));
           flipper.matrixSounds.play('push');
           MYFLIPPER.BALLS--;
         }
@@ -1968,28 +1968,19 @@ var flipperJolt = function () {
     [0.2, 0.2, 3.0],
     // blue
     [2.0, 3.0, 0.1] // yellow
-    // [0.2, 1.0, 0.2],  // green
-    // [0.1, 1.0, 0.6],  // teal
-    // [0.1, 0.6, 1.0],  // sky
-    // [0.6, 0.1, 1.0],  // purple
-    // [1.0, 0.1, 0.8],  // pink
-    // [1.0, 0.1, 0.4],  // rose
     ];
     for (let i = 0; i < NUM_LIGHTS; i++) {
       flipper.addLight();
     }
-    // if(isMobile() == false) 
     for (let i = 0; i < NUM_LIGHTS; i++) {
       const light = flipper.lightContainer[i];
       const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
       const color = LIGHT_COLORS[i];
       light.setIntensity(16);
       light.color = color;
-      // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 5;
       light.setPosition(TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS);
       light.setTarget(TARGET.x, TARGET.y, TARGET.z);
-      // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
       light.updater.push(light => {
         light.orbitAngle += ORBIT_SPEED * 0.01;
@@ -2259,9 +2250,7 @@ var flipperJolt = function () {
           };
         })()
       };
-      let TEST;
-      // if(isMobile() == false) 
-      TEST = flipper.addMeshObj({
+      let BIGBOX = flipper.addMeshObj({
         material: {
           type: 'standard',
           share: false
@@ -2277,9 +2266,8 @@ var flipperJolt = function () {
           y: 0,
           z: 0
         },
-        texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'bigBox',
-        // mesh: m.bigBox,
         mesh: m.plane,
         shadowsCast: false,
         isVideo: TEXTBOX,
@@ -2289,12 +2277,6 @@ var flipperJolt = function () {
           geometry: "Cube"
         }
       });
-
-      // // canvas2d-inline
-      // TEST.loadVideoTexture({
-      //   type: 'canvas2d-inline',
-      // });
-
       let envMapParams = {
         baseColorMix: 0.1,
         // CLEAR SKY
@@ -2337,7 +2319,6 @@ var flipperJolt = function () {
         });
         glass.setBlend(0.1);
       } else {
-
         // let glass = flipper.addMeshObj({
         //   material: {type: 'standard'},
         //   position: {x: 0, y: 2.1, z: -20.5},
@@ -2353,7 +2334,6 @@ var flipperJolt = function () {
         //     geometry: "Cube"
         //   }
         // });
-
         // glass.setBlend(0.01);
       }
 
@@ -2388,13 +2368,10 @@ var flipperJolt = function () {
           physics: {
             enabled: true,
             mass: 0,
-            // geometry: "Sphere",
-            // geometry: 'Cylinder',
-            geometry: 'Cube',
+            geometry: 'Sphere',
             group: 2,
-            mask: -1 // & ~1, // collide with everything EXCEPT group 1 (ground)
+            mask: -1
           }
-          // raycast: {enabled: true, radius: 1}
         });
       });
 
@@ -2636,6 +2613,31 @@ var flipperJolt = function () {
           geometry: "Cube"
         }
       });
+      const LEdgeBlocker = flipper.addMeshObj({
+        material: {
+          type: 'standard',
+          share: true
+        },
+        position: {
+          x: -4.9,
+          y: 0.2,
+          z: -15
+        },
+        scale: [0.5, 0.3, 0.3],
+        rotation: {
+          x: 0,
+          y: -15,
+          z: 0
+        },
+        texturesPaths: ['./res/textures/blankgray.webp'],
+        name: 'edgeLeft',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
       const checker2 = REdge.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
       let samplerTest = flipper.device.createSampler({
         magFilter: 'nearest',
@@ -2647,7 +2649,6 @@ var flipperJolt = function () {
         const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
         const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
         _cameras.MobileDOM.addButton("PIN-L", function () {
-          // const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
           flipper.matrixPhysics.activate(leftBody, true);
           flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -10, POWERPIN * 2);
           flipper.matrixSounds.play('click3');
@@ -2655,12 +2656,11 @@ var flipperJolt = function () {
           setTimeout(() => {
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN * 2);
             flipper.matrixSounds.play('click1');
-          }, 30);
+          }, 25);
         }, {
           left: '5'
         });
         _cameras.MobileDOM.addButton("PIN-R", function () {
-          // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
           flipper.matrixPhysics.activate(rightBody, true);
           flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, POWERPIN * 2);
           flipper.matrixSounds.play('click3');
@@ -2668,7 +2668,7 @@ var flipperJolt = function () {
           setTimeout(() => {
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -10, POWERPIN * 2);
             flipper.matrixSounds.play('click1');
-          }, 30);
+          }, 25);
         }, {
           left: '79'
         });
@@ -2719,58 +2719,58 @@ var flipperJolt = function () {
           app.matrixPhysics.enableAngularMotor(idx, true, -10, POWERPIN); // increased strength
         });
         REdge.setUVScale(1, 1);
-        // LEdge.changeTexture(checker2, samplerTest)
         LEdge.setUVScale(1, 1);
         REdge2.setUVScale(1, 1);
         let leftBodycurrPos = 'unpressed';
+        let rightBodycurrPos = 'unpressed';
         window.addEventListener("keydown", e => {
           e.preventDefault();
-          if (e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
+          if (e.code === "KeyZ" && leftBodycurrPos === "unpressed") {
             leftBodycurrPos = 'pressed';
             flipper.matrixPhysics.activate(leftBody, true);
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -10, POWERPIN * 2);
             flipper.matrixSounds.play('click3');
-          }
-          if (e.code === "KeyM") {
+          } else if (e.code === "KeyM" && rightBodycurrPos === "unpressed") {
+            rightBodycurrPos = 'pressed';
             flipper.matrixPhysics.activate(rightBody, true);
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, POWERPIN * 2);
             flipper.matrixSounds.play('click3');
           }
         });
-        window.addEventListener("keyup", async e => {
-          if (e.code === "KeyZ") {
-            leftBodycurrPos = 'unpressed';
-            flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN);
-            flipper.matrixSounds.play('click1');
-          }
-          if (e.code === "KeyM") {
-            flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -10, POWERPIN);
-            flipper.matrixSounds.play('click1');
-          }
-          if (e.code == "Space") {
-            MYFLIPPER.STATUS_PUSH = 'in action';
-            let ball = app.matrixPhysics.getBodyByName(ball1.name);
-            const pos = await app.matrixPhysics.getPosition(ball);
-            if (pos.x > 4.85 && pos.z > -6.6) {
-              if (MYFLIPPER.BALLS == 0) {
-                _utils.mb.show('No more balls...');
-                return;
+        window.addEventListener("keyup", e => {
+          e.preventDefault();
+          setTimeout(async () => {
+            if (e.code === "KeyZ" && leftBodycurrPos === "pressed") {
+              flipper.matrixPhysics.activate(leftBody, true);
+              flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN * 2);
+              flipper.matrixSounds.play('click1');
+              leftBodycurrPos = 'unpressed';
+            } else if (e.code === "KeyM" && rightBodycurrPos === "pressed") {
+              flipper.matrixPhysics.activate(rightBody, true);
+              flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -10, POWERPIN * 2);
+              flipper.matrixSounds.play('click1');
+              rightBodycurrPos = 'unpressed';
+            } else if (e.code == "Space") {
+              MYFLIPPER.STATUS_PUSH = 'in action';
+              let ball = app.matrixPhysics.getBodyByName(ball1.name);
+              const pos = await app.matrixPhysics.getPosition(ball);
+              if (pos.x > 4.85 && pos.z > -6.6) {
+                if (MYFLIPPER.BALLS == 0) {
+                  _utils.mb.show('No more balls...');
+                  return;
+                }
+                flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomFloatFromTo)(0.8, 1)));
+                MYFLIPPER.BALLS--;
+              } else if (pos.x < 5.1 && pos.z > -5.5) {
+                flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector((0, _utils.randomFloatFromTo)(0.1, 0.15), 0, 0));
               }
-              flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(0, 0, -(0, _utils.randomFloatFromTo)(0.8, 1)));
-              MYFLIPPER.BALLS--;
-            } else if (pos.x < 5.1 && pos.z > -5.5) {
-              flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector((0, _utils.randomFloatFromTo)(0.1, 0.15), 0, 0));
             }
-          }
+          }, 25);
         });
-
-        // console.info('BALL ID ', app.matrixPhysics.detectCollision)
-        const strength = 0.01;
         app.matrixPhysics.detectCollision = e => {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
-          // (body1Name == "ball1" && body0Name.startsWith("bumper"))
           if (body0Name == "ball1" && body1Name.startsWith("bumper")) {
             flipper.matrixPhysics.applyImpulse(ball, new _matrixClass.PVector(rayDirection[0] * 0.015, 0, rayDirection[2] * 0.015));
             MYFLIPPER.BALANCE = MYFLIPPER.BALANCE + 20;
@@ -2980,19 +2980,12 @@ var flipperJolt = function () {
           }
         });
       }
-
-      // FLIPPER CINEMATIC CAMERA INTRO
-      // Ends at gameplay position: yaw=-0.03, pitch=-0.49, z=0, y=10
-
       setTimeout(() => {
         if ((0, _utils.isMobile)() == false) {
           app.activateBloomEffect();
-          app.bloomPass.setBlurRadius(3);
+          app.bloomPass.setBlurRadius(2.5);
         }
         const cam = app.getCamera();
-
-        // === CINEMATIC PATH (3-4 seconds) ===
-        // Start: wide shot above flipper table, rotate around to gameplay angle
         const cinematicPath = new _utils.CameraPath([
         // SHOT 1: High wide angle, far back
         {
@@ -3011,37 +3004,22 @@ var flipperJolt = function () {
           position: [8, 16, 12],
           target: [0, 5, 0],
           fov: 2 * Math.PI / 5
-        },
-        // SHOT 4: Final gameplay position (smooth transition in)
-        // position from yaw/pitch/y calculated:
-        // yaw=-0.03, pitch=-0.49, y=10, z=0
-        // back vector from camera math: sy*cp, -sp, cy*cp where sy=sin(-0.03), cy=cos(-0.03), sp=sin(-0.49), cp=cos(-0.49)
-        // ≈ back ≈ [-0.029, 0.468, 0.883]
-        // so camera is roughly AT: [0-0.029*dist, 10, 0+0.883*dist]
-        // for a distance of ~15-18 units: ≈ [0.5, 10, 13]
-        {
-          position: [0, 9, 1],
+        }, {
+          position: [0, 9, -2],
           target: [0, 3, -15],
           fov: 2 * Math.PI / 5
         }], {
-          parameterization: 'arc' // smooth arc-length parameterization
+          parameterization: 'arc'
         });
-
-        // === PLAY CINEMATIC ===
         cam.setPath(cinematicPath).play({
           speed: 0.65,
           onEnd: () => {
-            // alert()
-            // cam.setYaw(-0.03);
-            // cam.setPitch(-0.49);
-            // cam.setZ(0);
-            // cam.setY(10);
             cam._dirtyAngle = true;
-            console.log('✅ Cinematic done, gameplay cam active');
+            // console.log('✅ Cinematic done, gameplay cam active');
           }
         });
         cam._dirtyAngle = true;
-      }, 500);
+      }, 300);
     }
   });
   window.app = flipper;
@@ -3061,6 +3039,7 @@ var _utils = require("../src/engine/utils.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 var _raycast = require("../src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+// DEPLACED FOR NOW
 var fontana = function () {
   let fontana = new _world.default({
     fastRender: 0.9,
@@ -3508,9 +3487,8 @@ var loadHZB = function () {
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     dontUsePhysics: true,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     MAX_SPOTLIGHTS: 1,
-    dontUsePhysics: true,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -3803,15 +3781,13 @@ var _KaleidoscopeEffect = require("../src/engine/effects/KaleidoscopeEffect.js")
 var _kaleWgsl = require("../src/shaders/kale/kale.wgsl.js");
 var _kaleidoscopeEffectInstance = require("../src/engine/effects/kaleidoscopeEffectInstance.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// import {MEConfig} from "../src/me-config.js";
-
 var loadKale = function () {
   let ray = new _world.default({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -4096,7 +4072,6 @@ var loadKale = function () {
         // app.MYCUBE.setBlend(0);
         // app.MYCUBE.shadowsCast = false;
         // app.buildLightShadowBuckets();
-
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
@@ -4173,7 +4148,7 @@ var loadKinematicCollision = function () {
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     dontUsePhysics: true,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     MAX_SPOTLIGHTS: 1,
     dontUsePhysics: true,
     mainCameraParams: {
@@ -4469,7 +4444,6 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
-var _meConfig = require("../src/me-config.js");
 var _genTex = require("../src/engine/effects/gen-tex2.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadObjFile = function () {
@@ -4478,9 +4452,8 @@ var loadObjFile = function () {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
-      // type: 'WASD',
       type: 'firstPersonCamera',
       responseCoef: 1000
     },
@@ -4626,8 +4599,6 @@ var loadObjFile = function () {
         }
       });
       loadObjFile.lightContainer[0].setIntensity(15);
-
-      // if(isMobile() == false) {
       loadObjFile.activateBloomEffect();
       loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       loadObjFile.lightContainer[0].behavior.value_ = -1;
@@ -4637,11 +4608,8 @@ var loadObjFile = function () {
       });
       loadObjFile.lightContainer[0].setPosition(0, 15, -10);
       loadObjFile.lightContainer[0].setTarget(0, 0, -10);
-      // }
-
       setTimeout(() => {
-        // MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png');
-
+        MYCUBE.effects.circle = new _genTex.GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
@@ -4673,7 +4641,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/effects/gen-tex2.js":51,"../src/engine/loader-obj.js":65,"../src/engine/raycast.js":84,"../src/engine/utils.js":85,"../src/me-config.js":86,"../src/world.js":138}],14:[function(require,module,exports){
+},{"../src/engine/effects/gen-tex2.js":51,"../src/engine/loader-obj.js":65,"../src/engine/raycast.js":84,"../src/engine/utils.js":85,"../src/world.js":138}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4684,13 +4652,26 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+/**
+ * @description
+ * In this example we laso use optimisation flag
+ *  MAX_BONES: 0
+ * because this is morphing not skeletal animation.
+ * Sequence of meshies are loaded and then drawen on by one.
+ * 
+ * @Performace$Price
+ * Medium
+ * 
+ * It it good to use it for mobile devices also
+ * but size of objects are crucial.
+ */
 var loadObjsSequence = function () {
   let loadObjFile = new _world.default({
     fastRender: 0.8,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -4714,7 +4695,7 @@ var loadObjsSequence = function () {
       scale: [0.1, 0.1, 0.1]
     });
     function onLoadObj(m) {
-      console.log(`%c Loaded objs: ${m} `, _utils.LOG_MATRIX);
+      console.log(`%c Loaded objs , now construct scene object : ${m} `, _utils.LOG_MATRIX);
       var objAnim = {
         id: "swat-walk-pistol",
         meshList: m,
@@ -4766,11 +4747,12 @@ var loadObjsSequence = function () {
       setTimeout(() => {
         // Int 1 is max speed
         app.getSceneObjectByName('swat').objAnim.animations.walk.speed = 1;
-        app.cameras.WASD.setPitch(-0.26);
-        app.cameras.WASD.setYaw(-0.06);
-        app.cameras.WASD.setY(15);
-        app.cameras.WASD.setZ(11);
-        app.cameras.WASD._dirtyAngle = true;
+        let cam = app.getCamera();
+        cam.setPitch(-0.26);
+        cam.setYaw(-0.06);
+        cam.setY(15);
+        cam.setZ(11);
+        cam._dirtyAngle = true;
         app.getSceneObjectByName('swat').objAnim.play('walk');
       }, 200);
     }
@@ -4819,14 +4801,21 @@ var _raycast = require("../src/engine/raycast.js");
 var _collisionSubSystem = require("../src/engine/collision-sub-system.js");
 var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+/**
+ * @description
+ * How to use culling scene optimisation.
+ * U load 1352 cubes (scene objects)
+ * If you wanna implement glb animations then remove 
+ * flag `MAX_BONES: 0,`
+ */
 var mazeGame = function () {
   let maze = new _world.default({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     render: 'culling',
     dontUsePhysics: true,
-    MAX_SPOTLIGHTS: (0, _utils.isMobile)() ? 1 : 1,
-    MAX_BONES: 1,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'firstPersonCamera',
       // type: 'WASD',
@@ -4991,9 +4980,26 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 var _utils = require("../src/engine/utils.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+/**
+ * @description
+ * This is example for `addGlbObjInctance`
+ * One of most adviced scene objects in mewgpu vs 
+ * lights updated. You can move manually light
+ * this is just examples for automatic periodic 
+ * movement with updater fn option.
+ * Also promote shadows casting on skined instanced meshies.
+ * 
+ * @Performance$Price
+ * Medium
+ * 
+ * @MobileDevices
+ * Medium-high
+ * 
+ */
 var myLights = function () {
   let myLights = new _world.default({
     fastRender: 0.9,
+    MAX_SPOTLIGHTS: 4,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -5073,7 +5079,8 @@ var myLights = function () {
     }, {
       scale: [30, 0.5, 30]
     });
-    // GLB monster
+
+    // GLB monster fetch call
     const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, myLights.device));
     myLights.addGlbObjInctance({
       material: {
@@ -5125,7 +5132,7 @@ var myLights = function () {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
       monster.updateMaxInstances(4);
       monster.updateInstances(4);
-      monster.trailAnimation.delay = 1250;
+      monster.trailAnimation.delay = 220;
       monster.playAnimationByIndex(3);
       myLights.getCamera().setYaw(-0.03);
       myLights.getCamera().setPitch(-0.35);
@@ -5174,6 +5181,8 @@ var physicsPlayground = function () {
     canvasSize: 'fullscreen',
     // Ammojs is default no need flag
     fastRender: 0.7,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -5599,6 +5608,8 @@ var testCannonES = function () {
     canvasSize: 'fullscreen',
     useCannon: true,
     fastRender: 0.9,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -5872,7 +5883,9 @@ var testJolt = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
     useJolt: true,
-    fastRender: 0.7,
+    fastRender: 0.8,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -6145,7 +6158,7 @@ var procMesh = function () {
   let procMesh = new _world.default({
     fastRender: 0.9,
     MAX_SPOTLIGHTS: 1,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     dontUsePhysics: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
@@ -6350,6 +6363,7 @@ var snakeLightsInstanced = function () {
     fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -6482,7 +6496,7 @@ var snakeLights = function () {
     fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
-    MAX_SPOTLIGHTS: 12,
+    MAX_SPOTLIGHTS: (0, _utils.isMobile)() === true ? 6 : 12,
     mainCameraParams: {
       type: 'cinematicCamera',
       responseCoef: 1000
@@ -6494,10 +6508,10 @@ var snakeLights = function () {
       a: 1
     }
   }, async () => {
-    const NUM_LIGHTS = 12;
+    const NUM_LIGHTS = (0, _utils.isMobile)() === true ? 6 : 12;
     const SNAKE_SPEED = 0.8;
     const SNAKE_SPACING = 0.35;
-    const LIGHT_HEIGHT = 20;
+    const LIGHT_HEIGHT = 25;
     const CENTER = {
       x: 0,
       z: -10
@@ -6746,6 +6760,8 @@ var loadVideoTexture = function () {
   let videoTexture = new _world.default({
     fastRender: 0.9,
     canvasSize: 'fullscreen',
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000

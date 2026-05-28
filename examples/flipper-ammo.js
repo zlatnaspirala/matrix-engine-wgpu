@@ -17,6 +17,8 @@ export var flipperAmmo = function() {
     mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
+    MAX_SPOTLIGHTS: isMobile() == true ? 1 : 4,
+    MAX_BONES: 0,
     clearColor: {r: 0, g: 1, b: 1, a: 1}
   }, () => {
     let hingeLeftID = 0;

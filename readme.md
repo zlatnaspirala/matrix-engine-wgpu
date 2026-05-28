@@ -206,6 +206,16 @@ mainCameraParams: {
 }
 ```
 
+Access camera:
+```js
+let cam = app.getCamera();
+cam.setPitch(-0.26);
+cam.setYaw(-0.06);
+cam.setY(15);
+cam.setZ(11);
+cam._dirtyAngle = true;
+```
+
 For now translation is only with `WASD` keyboard keys.
 Supported types: `WASD`, `RPGCamera`, `FirstPersonCamera`, `cinematicCamera`
 
@@ -229,6 +239,21 @@ cam.setZ(0);
 cam.setY(33);
 cam._dirtyAngle = true;
 ```
+
+Cinematic camera:
+```js
+const introPath = new CameraPath([
+  {position: [0, 5, 20], target: [0, 0, 0]},
+  {position: [10, 12, 10], target: [0, 1, 0]},
+  {position: [0, 15, -22], target: [0, 0, 0]},
+], {parameterization: 'arc'});
+
+if(cam.setPath) cam.setPath(introPath).play({
+  speed: 0.3,
+  onEnd: () => console.log('done'),
+});
+```
+
 
 ---
 
@@ -319,15 +344,6 @@ app.mainRenderBundle[0].rotation.rotationSpeed.y = 0;
 
 ---
 
-### 3D Camera Example
-
-Manipulate WASD camera:
-
-```js
-app.cameras.WASD.setPitch(0.2);
-```
-
----
 
 💡 Lighting System
 

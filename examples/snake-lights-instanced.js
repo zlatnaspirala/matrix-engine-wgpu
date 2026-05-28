@@ -8,6 +8,7 @@ export var snakeLightsInstanced = function() {
     fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000

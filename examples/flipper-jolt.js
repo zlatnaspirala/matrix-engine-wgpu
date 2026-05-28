@@ -16,7 +16,7 @@ export var flipperJolt = function() {
     fastRender: 0.7,
     useJolt: true,
     canvasSize: 'fullscreen',
-    mainCameraParams: {type: 'cinematicCamera', responseCoef: 1000},
+    mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
     MAX_SPOTLIGHTS: isMobile() ? 2 : 4,
@@ -41,9 +41,7 @@ export var flipperJolt = function() {
 
     addEventListener('PhysicsReady', () => {
       addRaycastsAABBListener();
-
-      flipper.matrixPhysics.speedUpSimulation(4);
-
+      flipper.matrixPhysics.speedUpSimulation(isMobile() === true ? 4 : 3);
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/blender/sphepe-mob.obj",
@@ -60,7 +58,7 @@ export var flipperJolt = function() {
         onGround, {scale: [1, 1, 1]});
     });
 
-    // if(isMobile() && byId('mobileControls')) byId('mobileControls').style.marginRight = '30%';
+    if(isMobile() && byId('mobileControls')) byId('mobileControls').style.marginRight = '30%';
 
     let preventSpam = false;
     MobileDOM.addButton("PUSH", async () => {
@@ -69,7 +67,6 @@ export var flipperJolt = function() {
         let ball = app.matrixPhysics.getBodyByName('ball1');
         const pos = await app.matrixPhysics.getPosition(ball);
         // 5.349976062774658 0.25000062584877014 -6.4499993324279785
-
         if(pos.x > 4.85 && pos.z > -6.6) {
           if(MYFLIPPER.BALLS == 0) {
             mb.show('No more balls...');
@@ -78,7 +75,7 @@ export var flipperJolt = function() {
           }
           // micro opti needed!
           flipper.matrixPhysics.applyImpulse(ball,
-            new PVector(0, 0.2, -randomIntFromTo(0.8, 1.6)));
+            new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2)));
           flipper.matrixSounds.play('push');
           MYFLIPPER.BALLS--;
         }
@@ -100,23 +97,15 @@ export var flipperJolt = function() {
       [2.5, 0.8, 0.1],  // orange
       [0.2, 0.2, 3.0],  // blue
       [2.0, 3.0, 0.1],  // yellow
-      // [0.2, 1.0, 0.2],  // green
-      // [0.1, 1.0, 0.6],  // teal
-      // [0.1, 0.6, 1.0],  // sky
-      // [0.6, 0.1, 1.0],  // purple
-      // [1.0, 0.1, 0.8],  // pink
-      // [1.0, 0.1, 0.4],  // rose
     ];
 
     for(let i = 0;i < NUM_LIGHTS;i++) {flipper.addLight()}
-    // if(isMobile() == false) 
     for(let i = 0;i < NUM_LIGHTS;i++) {
       const light = flipper.lightContainer[i];
       const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
       const color = LIGHT_COLORS[i];
       light.setIntensity(16);
       light.color = color;
-      // Orbit height varies slightly per light for more visual interest
       const heightOffset = Math.sin(angleOffset) * 5;
       light.setPosition(
         TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
@@ -124,7 +113,6 @@ export var flipperJolt = function() {
         TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
       );
       light.setTarget(TARGET.x, TARGET.y, TARGET.z);
-      // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
       light.updater.push((light) => {
         light.orbitAngle += ORBIT_SPEED * 0.01;
@@ -383,16 +371,13 @@ export var flipperJolt = function() {
         })()
       };
 
-      let TEST;
-      // if(isMobile() == false) 
-      TEST = flipper.addMeshObj({
+      let BIGBOX = flipper.addMeshObj({
         material: {type: 'standard', share: false},
         position: {x: 0, y: 10, z: -35},
         scale: [7.5, 7.5, 7.5],
         rotation: {x: 90, y: 0, z: 0},
-        texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
+        texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'bigBox',
-        // mesh: m.bigBox,
         mesh: m.plane,
         shadowsCast: false,
         isVideo: TEXTBOX,
@@ -400,13 +385,8 @@ export var flipperJolt = function() {
           enabled: false,
           mass: 0,
           geometry: "Cube"
-        },
+        }
       });
-
-      // // canvas2d-inline
-      // TEST.loadVideoTexture({
-      //   type: 'canvas2d-inline',
-      // });
 
       let envMapParams = {
         baseColorMix: 0.1,                // CLEAR SKY
@@ -437,9 +417,7 @@ export var flipperJolt = function() {
           }
         });
         glass.setBlend(0.1);
-
       } else {
-
         // let glass = flipper.addMeshObj({
         //   material: {type: 'standard'},
         //   position: {x: 0, y: 2.1, z: -20.5},
@@ -455,7 +433,6 @@ export var flipperJolt = function() {
         //     geometry: "Cube"
         //   }
         // });
-
         // glass.setBlend(0.01);
       }
 
@@ -478,13 +455,10 @@ export var flipperJolt = function() {
           physics: {
             enabled: true,
             mass: 0,
-            // geometry: "Sphere",
-            // geometry: 'Cylinder',
-            geometry: 'Cube',
+            geometry: 'Sphere',
             group: 2,
-            mask: -1 // & ~1, // collide with everything EXCEPT group 1 (ground)
-          },
-          // raycast: {enabled: true, radius: 1}
+            mask: -1
+          }
         });
       });
 
@@ -649,6 +623,21 @@ export var flipperJolt = function() {
         }
       });
 
+      const LEdgeBlocker = flipper.addMeshObj({
+        material: {type: 'standard', share: true},
+        position: {x: -4.9, y: 0.2, z: -15},
+        scale: [0.5, 0.3, 0.3],
+        rotation: {x: 0 , y: -15 , z:0},
+        texturesPaths: ['./res/textures/blankgray.webp'],
+        name: 'edgeLeft',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+
       const checker2 = REdge.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
       let samplerTest = flipper.device.createSampler({
         magFilter: 'nearest',
@@ -662,7 +651,6 @@ export var flipperJolt = function() {
         const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
 
         MobileDOM.addButton("PIN-L", function() {
-          // const leftBody = flipper.matrixPhysics.getBodyByName('flipperLeft');
           flipper.matrixPhysics.activate(leftBody, true);
           flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -10, POWERPIN * 2);
           flipper.matrixSounds.play('click3');
@@ -670,12 +658,11 @@ export var flipperJolt = function() {
           setTimeout(() => {
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN * 2);
             flipper.matrixSounds.play('click1');
-          }, 30)
+          }, 25)
         },
           {left: '5'});
 
         MobileDOM.addButton("PIN-R", function() {
-          // const rightBody = flipper.matrixPhysics.getBodyByName('flipperRight');
           flipper.matrixPhysics.activate(rightBody, true);
           flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, POWERPIN * 2);
           flipper.matrixSounds.play('click3');
@@ -683,7 +670,7 @@ export var flipperJolt = function() {
           setTimeout(() => {
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -10, POWERPIN * 2);
             flipper.matrixSounds.play('click1');
-          }, 30)
+          }, 25)
         }, {left: '79'});
 
         flipper.matrixPhysics.activate(leftBody, true);
@@ -736,62 +723,63 @@ export var flipperJolt = function() {
         })
 
         REdge.setUVScale(1, 1);
-        // LEdge.changeTexture(checker2, samplerTest)
         LEdge.setUVScale(1, 1);
         REdge2.setUVScale(1, 1);
 
         let leftBodycurrPos = 'unpressed';
+        let rightBodycurrPos = 'unpressed';
         window.addEventListener("keydown", (e) => {
           e.preventDefault();
-          if(e.code === "KeyZ" && leftBodycurrPos == 'unpressed') {
+          if(e.code === "KeyZ" && leftBodycurrPos === "unpressed") {
             leftBodycurrPos = 'pressed';
             flipper.matrixPhysics.activate(leftBody, true);
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -10, POWERPIN * 2);
             flipper.matrixSounds.play('click3');
-          }
-          if(e.code === "KeyM") {
+          } else if(e.code === "KeyM" && rightBodycurrPos === "unpressed") {
+            rightBodycurrPos = 'pressed';
             flipper.matrixPhysics.activate(rightBody, true);
             flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, 10, POWERPIN * 2);
             flipper.matrixSounds.play('click3');
           }
         });
 
-        window.addEventListener("keyup", async (e) => {
-          if(e.code === "KeyZ") {
-            leftBodycurrPos = 'unpressed';
-            flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN);
-            flipper.matrixSounds.play('click1');
-          }
-          if(e.code === "KeyM") {
-            flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -10, POWERPIN);
-            flipper.matrixSounds.play('click1');
-          }
-          if(e.code == "Space") {
-            MYFLIPPER.STATUS_PUSH = 'in action';
-            let ball = app.matrixPhysics.getBodyByName(ball1.name);
-            const pos = await app.matrixPhysics.getPosition(ball);
-            if(pos.x > 4.85 && pos.z > -6.6) {
-              if(MYFLIPPER.BALLS == 0) {
-                mb.show('No more balls...')
-                return;
+        window.addEventListener("keyup", (e) => {
+          e.preventDefault();
+          setTimeout(async () => {
+            if(e.code === "KeyZ" && leftBodycurrPos === "pressed") {
+              flipper.matrixPhysics.activate(leftBody, true);
+              flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN * 2);
+              flipper.matrixSounds.play('click1');
+              leftBodycurrPos = 'unpressed';
+            } else if(e.code === "KeyM" && rightBodycurrPos === "pressed") {
+              flipper.matrixPhysics.activate(rightBody, true);
+              flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -10, POWERPIN * 2);
+              flipper.matrixSounds.play('click1');
+              rightBodycurrPos = 'unpressed';
+            } else if(e.code == "Space") {
+              MYFLIPPER.STATUS_PUSH = 'in action';
+              let ball = app.matrixPhysics.getBodyByName(ball1.name);
+              const pos = await app.matrixPhysics.getPosition(ball);
+              if(pos.x > 4.85 && pos.z > -6.6) {
+                if(MYFLIPPER.BALLS == 0) {
+                  mb.show('No more balls...')
+                  return;
+                }
+                flipper.matrixPhysics.applyImpulse(ball,
+                  new PVector(0, 0, -randomFloatFromTo(0.8, 1)));
+                MYFLIPPER.BALLS--;
+              } else if(pos.x < 5.1 && pos.z > -5.5) {
+                flipper.matrixPhysics.applyImpulse(ball,
+                  new PVector(randomFloatFromTo(0.1, 0.15), 0, 0));
               }
-              flipper.matrixPhysics.applyImpulse(ball,
-                new PVector(0, 0, -randomFloatFromTo(0.8, 1)));
-              MYFLIPPER.BALLS--;
-            } else if(pos.x < 5.1 && pos.z > -5.5) {
-              flipper.matrixPhysics.applyImpulse(ball,
-                new PVector(randomFloatFromTo(0.1, 0.15), 0, 0));
             }
-          }
+          }, 25)
         });
 
-        // console.info('BALL ID ', app.matrixPhysics.detectCollision)
-        const strength = 0.01;
         app.matrixPhysics.detectCollision = (e) => {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
-          // (body1Name == "ball1" && body0Name.startsWith("bumper"))
           if(body0Name == "ball1" && body1Name.startsWith("bumper")) {
             flipper.matrixPhysics.applyImpulse(ball, new PVector(
               rayDirection[0] * 0.015, 0, rayDirection[2] * 0.015));
@@ -960,19 +948,13 @@ export var flipperJolt = function() {
         });
       }
 
-      // FLIPPER CINEMATIC CAMERA INTRO
-      // Ends at gameplay position: yaw=-0.03, pitch=-0.49, z=0, y=10
-
       setTimeout(() => {
         if(isMobile() == false) {
           app.activateBloomEffect();
-          app.bloomPass.setBlurRadius(3);
+          app.bloomPass.setBlurRadius(2.5);
         }
 
         const cam = app.getCamera();
-
-        // === CINEMATIC PATH (3-4 seconds) ===
-        // Start: wide shot above flipper table, rotate around to gameplay angle
         const cinematicPath = new CameraPath([
           // SHOT 1: High wide angle, far back
           {
@@ -992,38 +974,24 @@ export var flipperJolt = function() {
             target: [0, 5, 0],
             fov: (2 * Math.PI) / 5
           },
-          // SHOT 4: Final gameplay position (smooth transition in)
-          // position from yaw/pitch/y calculated:
-          // yaw=-0.03, pitch=-0.49, y=10, z=0
-          // back vector from camera math: sy*cp, -sp, cy*cp where sy=sin(-0.03), cy=cos(-0.03), sp=sin(-0.49), cp=cos(-0.49)
-          // ≈ back ≈ [-0.029, 0.468, 0.883]
-          // so camera is roughly AT: [0-0.029*dist, 10, 0+0.883*dist]
-          // for a distance of ~15-18 units: ≈ [0.5, 10, 13]
           {
-            position: [0, 9, 1],
+            position: [0, 9, -2],
             target: [0, 3, -15],
             fov: (2 * Math.PI) / 5
           }
         ], {
-          parameterization: 'arc'  // smooth arc-length parameterization
+          parameterization: 'arc'
         });
 
-        // === PLAY CINEMATIC ===
         cam.setPath(cinematicPath).play({
           speed: 0.65,
           onEnd: () => {
-            // alert()
-            // cam.setYaw(-0.03);
-            // cam.setPitch(-0.49);
-            // cam.setZ(0);
-            // cam.setY(10);
             cam._dirtyAngle = true;
-            console.log('✅ Cinematic done, gameplay cam active');
+            // console.log('✅ Cinematic done, gameplay cam active');
           }
         });
-
         cam._dirtyAngle = true;
-      }, 500);
+      }, 300);
     }
 
   });

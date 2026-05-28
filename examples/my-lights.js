@@ -3,9 +3,26 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 import {CameraPath, isMobile, ORBIT} from '../src/engine/utils.js';
 
+/**
+ * @description
+ * This is example for `addGlbObjInctance`
+ * One of most adviced scene objects in mewgpu vs 
+ * lights updated. You can move manually light
+ * this is just examples for automatic periodic 
+ * movement with updater fn option.
+ * Also promote shadows casting on skined instanced meshies.
+ * 
+ * @Performance$Price
+ * Medium
+ * 
+ * @MobileDevices
+ * Medium-high
+ * 
+ */
 export var myLights = function() {
   let myLights = new MatrixEngineWGPU({
     fastRender: 0.9,
+    MAX_SPOTLIGHTS : 4,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -59,7 +76,8 @@ export var myLights = function() {
       }, 200)
 
     }, {scale: [30, 0.5, 30]});
-    // GLB monster
+
+    // GLB monster fetch call
     const glbFile = await fetch("res/meshes/glb/monster.glb")
       .then(res => res.arrayBuffer())
       .then(buf => uploadGLBModel(buf, myLights.device));
@@ -115,7 +133,7 @@ export var myLights = function() {
       let monster = app.getSceneObjectByName('monster_MutantMesh');
       monster.updateMaxInstances(4);
       monster.updateInstances(4);
-      monster.trailAnimation.delay = 1250;
+      monster.trailAnimation.delay = 220;
       monster.playAnimationByIndex(3);
 
       myLights.getCamera().setYaw(-0.03);

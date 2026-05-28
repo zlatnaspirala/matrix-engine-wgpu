@@ -5,7 +5,6 @@ import {CameraPath, randomIntFromTo} from "../src/engine/utils.js";
 import {KaleidoscopeEffect, KaleidoscopePresets} from "../src/engine/effects/KaleidoscopeEffect.js";
 import {kaleidoscopeEffectInstance} from "../src/shaders/kale/kale.wgsl.js";
 import {KaleidoscopeEmitter} from "../src/engine/effects/kaleidoscopeEffectInstance.js";
-// import {MEConfig} from "../src/me-config.js";
 
 export var loadKale = function() {
 
@@ -14,7 +13,7 @@ export var loadKale = function() {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
-    MAX_BONES: 1,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -190,7 +189,6 @@ export var loadKale = function() {
         // app.MYCUBE.setBlend(0);
         // app.MYCUBE.shadowsCast = false;
         // app.buildLightShadowBuckets();
-
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
