@@ -3,8 +3,10 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
+import {initializeSpritesForMesh, SpritesPack2D} from "../src/engine/effects/sprite2d2.js";
+import {GenGeo} from "../src/engine/effects/gen.js";
 
-export var load2DWorld = function() {
+export var loadSprite1 = function() {
 
   let world2D = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
@@ -13,7 +15,7 @@ export var load2DWorld = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: 'firstPersonCamera',
+      type: 'WASD',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -62,25 +64,25 @@ export var load2DWorld = function() {
 
       // share: true if not defined it is false.
       let MYCUBE = world2D.addMeshObj({
-        material: {type: 'mirror'},
-        position: {x: 0, y: 4, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
+        material: {type: 'dark'},
+        position: {x: 0, y: 5, z: -10},
+        rotation: {x: 180, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [3, 5, 1],
+        scale: [4, 4, 0.01],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.1,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.75,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 1.5,          // Gentle rim
-          illuminatePulse: 0.1,             // No pulse (static)
-          fresnelPower: 5,                  // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // ✅ Env map mode
-        },
+        // envMapParams: {
+        //   baseColorMix: 0.1,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.75,               // 25% reflection blend
+        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+        //   illuminateStrength: 1.5,          // Gentle rim
+        //   illuminatePulse: 0.1,             // No pulse (static)
+        //   fresnelPower: 5,                  // Medium-sharp edge
+        //   envLodBias: 1.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
         raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,
@@ -89,15 +91,39 @@ export var load2DWorld = function() {
         },
         pointerEffect: {
           enabled: true,
-          flameEmitter: true,
+          // flameEmitter: true,
           // flameEffect: true
         }
       })
 
-      const batch = new SpriteBatchManager(app.device, 'rgba16float', 'rgba16float', world2D.cameraBuffer);
-      await batch.registerSpritesheet("player", "path/to/player.png", 4, 1);
-      await batch.registerSpritesheet("effects", "path/to/effects.png", 5, 3);
+      // invisible
+      MYCUBE.setBlend(0.001);
+      // const batch = new SpritesPack2D(app.device, 'rgba16float', 'rgba16float', world2D.cameraBuffer);
+      // await batch.registerSpritesheet("reel", "./res/textures/slot/reel1-lod0.webp", 4, 4);
+      // // await batch.registerSpritesheet("effects", "./res/textures/slot/reel1-lod0.webp", 4, 4);
+      // const sprite = batch.createSprite("my-sprite", 'reel', {scale: 2.0});
+      // const sprite1 = batch.createSprite("my-sprite1", 'reel', {scale: 2.0});
+      // sprite.play(12.0, true);
+      // sprite1.play(2.0, true);
+      // world2D.TEST = sprite;
 
+      const batch = await initializeSpritesForMesh(
+        MYCUBE,                                    // Your mesh
+        app.device,                              // WebGPU device
+        'rgba16float',                           // Format
+        app.cameraBuffer,                     // Camera buffer
+        "./res/textures/slot/reel1-lod0.webp", // Spritesheet path
+        4,                                       // Grid cols
+        4,                                       // Grid rows
+        "circle"                                // Pattern: matrix|pulsing|flow|circle|wave
+      );
+
+
+
+      // const spr = batch.getSprite("player-instance-1");
+      // spr.pause();
+
+      MYCUBE.effects.mySprite1 = batch;
 
       world2D.lightContainer[0].setIntensity(15);
       world2D.activateBloomEffect();
@@ -111,7 +137,9 @@ export var load2DWorld = function() {
       world2D.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
+        MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 10, world2D.cameraBuffer);
+        // MYCUBE.effects.circle = new GenGeo(world2D.device, 'rgba16float', 'circle', 1, world2D.cameraBuffer);
+        
 
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
