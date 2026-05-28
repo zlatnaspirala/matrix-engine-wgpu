@@ -3019,7 +3019,7 @@ var flipperJolt = function () {
           }
         });
         cam._dirtyAngle = true;
-      }, 300);
+      }, 1200);
     }
   });
   window.app = flipper;

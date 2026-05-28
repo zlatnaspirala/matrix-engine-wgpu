@@ -991,7 +991,7 @@ export var flipperJolt = function() {
           }
         });
         cam._dirtyAngle = true;
-      }, 300);
+      }, 1200);
     }
 
   });

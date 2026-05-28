@@ -11,7 +11,7 @@ export var load2DWorld = function() {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
-    MAX_BONES : 0,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'firstPersonCamera',
       responseCoef: 1000
@@ -94,6 +94,11 @@ export var load2DWorld = function() {
         }
       })
 
+      const batch = new SpriteBatchManager(app.device, 'rgba16float', 'rgba16float', world2D.cameraBuffer);
+      await batch.registerSpritesheet("player", "path/to/player.png", 4, 1);
+      await batch.registerSpritesheet("effects", "path/to/effects.png", 5, 3);
+
+
       world2D.lightContainer[0].setIntensity(15);
       world2D.activateBloomEffect();
       world2D.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
@@ -113,7 +118,7 @@ export var load2DWorld = function() {
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        
+
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
           0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
@@ -127,13 +132,13 @@ export var load2DWorld = function() {
         app.buildRenderBuckets(app.mainRenderBundle);
 
         console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData)
-        
+
         cam._dirtyAngle = true;
       }, 700);
     }
 
     world2D.canvas.addEventListener("ray.hit.event", (e) => {
-       console.log('ray.hit.event detected');
+      console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
