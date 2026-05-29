@@ -115,7 +115,7 @@ export class SpritesPack2D {
               format: this.colorFormat,
               blend: {
                 color: {
-                  srcFactor: "src-alpha",
+                  srcFactor: 'one', //"src-alpha",
                   dstFactor: "one-minus-src-alpha",
                   operation: "add"
                 },
@@ -136,8 +136,8 @@ export class SpritesPack2D {
         },
 
         depthStencil: {
-          depthWriteEnabled: false,
-          depthCompare: "less",
+          depthWriteEnabled: true,
+          depthCompare: "less-equal",
           format: "depth24plus"
         }
       });
@@ -211,6 +211,19 @@ export class SpritesPack2D {
     this.sprites.delete(spriteName);
   }
 
+  _getDistance(sprite, cameraPosition) {
+    // Extract the sprite's world position from its local matrix 
+    // or store an explicit worldPosition property on the sprite.
+    // Since you use localOffset in the sprite, we can use that:
+    const spritePos = sprite.localOffset;
+
+    const dx = spritePos[0] - cameraPosition[0];
+    const dy = spritePos[1] - cameraPosition[1];
+    const dz = spritePos[2] - cameraPosition[2];
+
+    return dx * dx + dy * dy + dz * dz; // Squared distance is faster (no Math.sqrt)
+  }
+
   render(pass, mesh, viewProjMatrix) {
     if(!this.enabled) return;
 
@@ -221,12 +234,31 @@ export class SpritesPack2D {
       sprite.updateInstanceData(baseModelMatrix);
     }
 
-    // Draw all sprites
-    for(const [, sprite] of this.sprites) {
+
+    // 1. Convert Map to Array
+    const spriteArray = Array.from(this.sprites.values());
+
+    // 2. Sort sprites by distance from camera 
+    // (You need to calculate distance based on camera position)
+    const cameraPosition = app.getCamera().position;
+spriteArray.sort((a, b) => {
+    const distA = this._getDistance(a, cameraPosition);
+    const distB = this._getDistance(b, cameraPosition);
+    return distB - distA; 
+  });
+    // 3. Draw in sorted order
+    for(const sprite of spriteArray) {
       const sheet = this.spriteSheets.get(sprite.spritesheetName);
       if(!sheet) continue;
       sprite.draw(pass, viewProjMatrix, sheet);
     }
+
+    // // Draw all sprites
+    // for(const [, sprite] of this.sprites) {
+    //   const sheet = this.spriteSheets.get(sprite.spritesheetName);
+    //   if(!sheet) continue;
+    //   sprite.draw(pass, viewProjMatrix, sheet);
+    // }
   }
 
   /**
@@ -415,7 +447,6 @@ class SpriteInstance {
     mat4.rotateX(this._localMatrix, this.localRotation[0], this._localMatrix);
     mat4.rotateY(this._localMatrix, this.localRotation[1], this._localMatrix);
     mat4.rotateZ(this._localMatrix, this.localRotation[2], this._localMatrix);
-
     this._scaleVec[0] = this.scale;
     this._scaleVec[1] = this.scale;
     mat4.scale(this._localMatrix, this._scaleVec, this._localMatrix);
@@ -766,7 +797,7 @@ export function createDiagonalFlow(batch, spritesheetName, count = 5, spacing = 
 /**
  * Create circular arrangement of sprites
  */
-export function createCircularArray(batch, spritesheetName, count = 16, radius = 10) {
+export function createCircularArray(batch, spritesheetName, count = 16, radius = 10, play = false) {
   const sprites = [];
   for(let i = 0;i < count;i++) {
     const angle = (i / count) * Math.PI * 2;
@@ -789,7 +820,7 @@ export function createCircularArray(batch, spritesheetName, count = 16, radius =
       }
     );
 
-    sprite.play(sprite.playbackSpeed, true);
+    if (play === true) sprite.play(sprite.playbackSpeed, true);
     sprites.push(sprite);
   }
 

@@ -108,7 +108,7 @@ export var loadSprite2 = function() {
       );
 
       // const spr = batch.getSprite("player-instance-1");
-      MYCUBE.effects.mySprite1 = batch;
+      
 
       world2D.lightContainer[0].setIntensity(15);
       world2D.activateBloomEffect();
