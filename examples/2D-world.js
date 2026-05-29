@@ -28,7 +28,7 @@ export var loadSprite1 = function() {
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
-    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
+    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [35, 0.5, 35]})
 
     addRaycastsAABBListener('canvas1', 'click');
 
@@ -68,10 +68,10 @@ export var loadSprite1 = function() {
       // share: true if not defined it is false.
       let MYCUBE = world2D.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 9, z: -10},
+        position: {x: 0, y: 15, z: -10},
         rotation: {x: 180, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [4, 4, 0.01],
+        scale: [3.5, 3.5, 0.1],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
@@ -104,11 +104,12 @@ export var loadSprite1 = function() {
         "./res/textures/slot/reel1-lod0.webp", // Spritesheet path
         4,                                       // Grid cols
         4,                                       // Grid rows
-        "circle"                                // Pattern: matrix|pulsing|flow|circle|wave
+        "circle",                                // Pattern: matrix|pulsing|flow|circle|wave
+        {radius: 4, count: 15}
       );
 
       // const spr = batch.getSprite("player-instance-1");
-      MYCUBE.effects.mySprite1 = batch;
+      // MYCUBE.effects.mySprite1 = batch;
 
       world2D.lightContainer[0].setIntensity(15);
       world2D.activateBloomEffect();

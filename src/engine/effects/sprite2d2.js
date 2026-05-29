@@ -1,3 +1,4 @@
+import {mat4} from "wgpu-matrix";
 
 export class SpritesPack2D {
   constructor(device, format, colorFormat, cameraBuffer) {
@@ -300,37 +301,39 @@ class SpriteInstance {
     this.sheet = sheet;
     this.spritesheetName = spritesheetName;
     this.shared = shared;
-
     // State
     this.currentFrame = config.currentFrame ?? 0;
     this.playbackSpeed = config.playbackSpeed ?? 1.0;
     this.timeAccumulator = 0;
     this.loopMode = config.loop ?? true;
     this.isPlaying = config.autoPlay ?? false;
-
     // Transform
     this.localOffset = config.localOffset ?? [0, 0, 0];
     this.localRotation = config.localRotation ?? [0, 0, 0];
     this.scale = config.scale ?? 1.0;
-
+    this._scaleVec = new Float32Array([1, 1, 1]);
+    this.rotationSpeed = config.rotationSpeed ?? [0, 0, 0];
+    this._targetRotation = new Float32Array(3);
+    this._lerpSpeed = config.lerpSpeed ?? 0.05;
     // Tint
     this.tint = config.tint ?? [1, 1, 1];
     this.tintStrength = config.tintStrength ?? 0.0;
-
     // Buffers
     this._spriteDataBuffer = this.device.createBuffer({
       size: 112,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    // Geometry (reuse shared quad)
-
     this._initBindGroups()
-    // Matrices
     this._localMatrix = new Float32Array(16);
     this._finalMatrix = new Float32Array(16);
     this._uniformData = new Float32Array(28);
-
-
+    this.spinning = config.spinning ?? false;
+    this._spinSpeed = new Float32Array([
+      config.spinSpeed?.[0] ?? 0,
+      config.spinSpeed?.[1] ?? 0,
+      config.spinSpeed?.[2] ?? 0,
+    ]);
+    this.DEG2RAD = Math.PI / 180;
   }
 
   play(speed = 1.0, loop = true) {
@@ -341,13 +344,9 @@ class SpriteInstance {
     this.currentFrame = 0;
   }
 
-  pause() {
-    this.isPlaying = false;
-  }
+  pause() {this.isPlaying = false;}
 
-  resume() {
-    this.isPlaying = true;
-  }
+  resume() {this.isPlaying = true;}
 
   goToFrame(frameIdx) {
     this.currentFrame = Math.max(
@@ -381,12 +380,11 @@ class SpriteInstance {
   }
 
   updateInstanceData(baseModelMatrix) {
-    // Update frame progression
+    // Frame update unchanged...
     if(this.isPlaying) {
       this.timeAccumulator += 0.016;
       const frameProgress = this.timeAccumulator * this.playbackSpeed;
       let nextFrame = Math.floor(frameProgress);
-
       if(this.loopMode) {
         nextFrame = nextFrame % this.sheet.totalFrames;
       } else {
@@ -398,33 +396,32 @@ class SpriteInstance {
       this.currentFrame = nextFrame;
     }
 
-    // Build matrix
-    const local = this._localMatrix;
-    const finalMat = this._finalMatrix;
-
-    // Identity
-    for(let i = 0;i < 16;i++) {
-      local[i] = i % 5 === 0 ? 1 : 0;
-      finalMat[i] = i % 5 === 0 ? 1 : 0;
+    if(this.spinning) {
+      this.localRotation[0] += this._spinSpeed[0];
+      this.localRotation[1] += this._spinSpeed[1];
+      this.localRotation[2] += this._spinSpeed[2];
+    } else {
+      // existing rotationSpeed + lerp logic
+      this.localRotation[0] += this.rotationSpeed[0];
+      this.localRotation[1] += this.rotationSpeed[1];
+      this.localRotation[2] += this.rotationSpeed[2];
+      this.localRotation[0] += (this._targetRotation[0] - this.localRotation[0]) * this._lerpSpeed;
+      this.localRotation[1] += (this._targetRotation[1] - this.localRotation[1]) * this._lerpSpeed;
+      this.localRotation[2] += (this._targetRotation[2] - this.localRotation[2]) * this._lerpSpeed;
     }
 
-    // Translate
-    local[12] = this.localOffset[0];
-    local[13] = this.localOffset[1];
-    local[14] = this.localOffset[2];
+    mat4.identity(this._localMatrix);
+    mat4.translate(this._localMatrix, this.localOffset, this._localMatrix);
+    mat4.rotateX(this._localMatrix, this.localRotation[0], this._localMatrix);
+    mat4.rotateY(this._localMatrix, this.localRotation[1], this._localMatrix);
+    mat4.rotateZ(this._localMatrix, this.localRotation[2], this._localMatrix);
 
-    // Apply to final (simplified for brevity; use mat4 library for full transform)
-    finalMat.set(baseModelMatrix);
-    const scale = [this.scale, this.scale, 1];
-    finalMat[0] *= scale[0];
-    finalMat[5] *= scale[1];
-    finalMat[10] *= scale[2];
-    finalMat[12] += this.localOffset[0];
-    finalMat[13] += this.localOffset[1];
-    finalMat[14] += this.localOffset[2];
+    this._scaleVec[0] = this.scale;
+    this._scaleVec[1] = this.scale;
+    mat4.scale(this._localMatrix, this._scaleVec, this._localMatrix);
+    mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
 
-    // Pack uniforms
-    this._uniformData.set(finalMat, 0);
+    this._uniformData.set(this._finalMatrix, 0);
     this._uniformData[16] = this.currentFrame;
     this._uniformData[17] = this.playbackSpeed;
     this._uniformData[18] = this.timeAccumulator;
@@ -437,39 +434,27 @@ class SpriteInstance {
     this._uniformData[25] = this.tint[1];
     this._uniformData[26] = this.tint[2];
     this._uniformData[27] = this.tintStrength;
-
-    this.device.queue.writeBuffer(
-      this._spriteDataBuffer,
-      0,
-      this._uniformData
-    );
+    this.device.queue.writeBuffer(this._spriteDataBuffer, 0, this._uniformData);
   }
 
-  // draw(pass, viewProjMatrix, sheet) {
-  //   this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-  //   pass.setPipeline(this.pipeline);
-  //   pass.setBindGroup(0, this.cameraBindGroup);
-  //   pass.setBindGroup(1, this.spriteBindGroup);
-  //   pass.setVertexBuffer(0, this.vertexBuffer);
-  //   pass.setVertexBuffer(1, this.uvBuffer);
-  //   pass.setIndexBuffer(this.indexBuffer, "uint16");
-  //   pass.drawIndexed(this.indexCount);
-  // }
+  startSpin(x, y, z) {
+    this._spinSpeed[0] = x;
+    this._spinSpeed[1] = y;
+    this._spinSpeed[2] = z;
+    this.spinning = true;
+  }
+
+  stopSpin() {
+    this.spinning = false;
+  }
 
   draw(pass) {
-
     pass.setPipeline(this.shared.pipeline);
-
     pass.setBindGroup(0, this.cameraBindGroup);
-
     pass.setBindGroup(1, this.spriteBindGroup);
-
     pass.setVertexBuffer(0, this.shared.vertexBuffer);
-
     pass.setVertexBuffer(1, this.shared.uvBuffer);
-
     pass.setIndexBuffer(this.shared.indexBuffer, "uint16");
-
     pass.drawIndexed(this.shared.indexCount);
   }
 
@@ -478,6 +463,18 @@ class SpriteInstance {
     this.uvBuffer?.destroy();
     this.indexBuffer?.destroy();
     this._spriteDataBuffer?.destroy();
+  }
+
+  setTargetRotation(x, y, z) {
+    this._targetRotation[0] = x * this.DEG2RAD;
+    this._targetRotation[1] = y * this.DEG2RAD;
+    this._targetRotation[2] = z * this.DEG2RAD;
+  }
+
+  setRotationSpeed(x, y, z) {
+    this.rotationSpeed[0] = x * this.DEG2RAD;
+    this.rotationSpeed[1] = y * this.DEG2RAD;
+    this.rotationSpeed[2] = z * this.DEG2RAD;
   }
 
   static _getShaderCode = () => {
