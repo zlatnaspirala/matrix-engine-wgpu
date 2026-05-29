@@ -161,7 +161,7 @@ export var loadSprite1 = function() {
         cam.setPitch(-0.49);
         cam.setZ(10);
         cam.setY(30);
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
 
         console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData)
 

@@ -225,7 +225,7 @@ export var loadKinematicCollision = function() {
         collision.collisionSystem.registerCamera(collision.getCamera().position, 2.0);
         
 
-        // app.buildRenderBuckets(app.mainRenderBundle);
+        // app.buildRenderBuckets();
         // 🚀 First main playback run trigger
         // triggerEntireGridSequence();
         cam._dirtyAngle = true;

@@ -1,26 +1,155 @@
-/**
- * SpritesPack2D - Handles multiple sprites with optional GPU instancing
- * 
- * Two modes:
- * 1. Simple: Multiple SpriteEffect instances (simple, flexible)
- * 2. Batched: Single pipeline + storage buffer for 50+ sprites (GPU-optimized)
- */
-/**
- * SpriteBatchManager - Multiple sprites with shared texture pooling
- * 
- * Interface matches FlameEffect:
- * - Single render() call handles all updates + draws
- * - No exposed updateInstanceData/renderAll
- */
+
 export class SpritesPack2D {
   constructor(device, format, colorFormat, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.colorFormat = colorFormat ?? format;
     this.cameraBuffer = cameraBuffer;
-    this.sprites = new Map(); // name -> SpriteInstance
-    this.spriteSheets = new Map(); // name -> texture + sampler
+    this.sprites = new Map();
+    this.spriteSheets = new Map();
     this.enabled = true;
+    this.shared = null;
+    this._initSharedResources();
+  }
+
+  _initSharedResources() {
+    if(this.shared) return;
+    const shaderModule = this.device.createShaderModule({code: SpriteInstance._getShaderCode()});
+    // QUAD GEOMETRY
+    const positions = new Float32Array([
+      -1, -1, 0,
+      1, -1, 0,
+      1, 1, 0,
+      -1, 1, 0,
+    ]);
+
+    const uvs = new Float32Array([
+      0, 1,
+      1, 1,
+      1, 0,
+      0, 0
+    ]);
+
+    const indices = new Uint16Array([
+      0, 1, 2,
+      0, 2, 3
+    ]);
+
+    const vertexBuffer =
+      this.device.createBuffer({
+        size: positions.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true,
+      });
+    new Float32Array(vertexBuffer.getMappedRange()).set(positions);
+    vertexBuffer.unmap();
+
+    const uvBuffer = this.device.createBuffer({
+      size: uvs.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true,
+    });
+
+    new Float32Array(uvBuffer.getMappedRange()).set(uvs);
+    uvBuffer.unmap();
+
+    const indexBuffer = this.device.createBuffer({
+      size: indices.byteLength,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true,
+    });
+
+    new Uint16Array(indexBuffer.getMappedRange()).set(indices);
+    indexBuffer.unmap();
+
+    // LAYOUTS
+    const cameraBindGroupLayout =
+      this.device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}, },
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}, }
+        ],
+      });
+
+    const spriteBindGroupLayout =
+      this.device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: "float"}, },
+          {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: "filtering"}, },
+        ],
+      });
+
+    const pipeline =
+      this.device.createRenderPipeline({
+        layout:
+          this.device.createPipelineLayout({
+            bindGroupLayouts: [
+              cameraBindGroupLayout,
+              spriteBindGroupLayout
+            ]
+          }),
+        vertex: {
+          module: shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 12,
+              attributes: [
+                {shaderLocation: 0, offset: 0, format: "float32x3"}
+              ]
+            },
+            {
+              arrayStride: 8,
+              attributes: [
+                {shaderLocation: 1, offset: 0, format: "float32x2"}
+              ]
+            }
+          ]
+        },
+        fragment: {
+          module: shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.colorFormat,
+              blend: {
+                color: {
+                  srcFactor: "src-alpha",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                }
+              }
+            },
+            {format: "rgba16float"},
+            {format: "rgba16float"}
+          ]
+        },
+
+        primitive: {
+          topology: "triangle-list"
+        },
+
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: "less",
+          format: "depth24plus"
+        }
+      });
+
+    this.shared = {
+      pipeline,
+      cameraBindGroupLayout,
+      spriteBindGroupLayout,
+      vertexBuffer,
+      uvBuffer,
+      indexBuffer,
+      indexCount: 6
+    };
   }
 
   /**
@@ -35,6 +164,7 @@ export class SpritesPack2D {
 
     this.spriteSheets.set(name, {
       texture,
+      textureView: texture.createView(),
       sampler,
       gridCols,
       gridRows,
@@ -58,7 +188,8 @@ export class SpritesPack2D {
       this.cameraBuffer,
       sheet,
       spritesheetName,
-      config
+      config,
+      this.shared
     );
 
     this.sprites.set(spriteName, sprite);
@@ -161,13 +292,14 @@ export class SpritesPack2D {
  * SpriteInstance - Individual sprite with shared pipeline/texture
  */
 class SpriteInstance {
-  constructor(device, format, colorFormat, cameraBuffer, sheet, spritesheetName, config = {}) {
+  constructor(device, format, colorFormat, cameraBuffer, sheet, spritesheetName, config = {}, shared) {
     this.device = device;
     this.format = format;
     this.colorFormat = colorFormat;
     this.cameraBuffer = cameraBuffer;
     this.sheet = sheet;
     this.spritesheetName = spritesheetName;
+    this.shared = shared;
 
     // State
     this.currentFrame = config.currentFrame ?? 0;
@@ -191,13 +323,14 @@ class SpriteInstance {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     // Geometry (reuse shared quad)
-    this._initGeometry();
-    this._initPipeline();
 
+    this._initBindGroups()
     // Matrices
     this._localMatrix = new Float32Array(16);
     this._finalMatrix = new Float32Array(16);
     this._uniformData = new Float32Array(28);
+
+
   }
 
   play(speed = 1.0, loop = true) {
@@ -228,135 +361,23 @@ class SpriteInstance {
     this.timeAccumulator = 0;
   }
 
-  _initGeometry() {
-    // Shared quad mesh
-    const positions = new Float32Array([
-      -1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0,
-    ]);
-    const uvs = new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]);
-    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
-
-    this.vertexBuffer = this.device.createBuffer({
-      size: positions.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
-    });
-    new Float32Array(this.vertexBuffer.getMappedRange()).set(positions);
-    this.vertexBuffer.unmap();
-
-    this.uvBuffer = this.device.createBuffer({
-      size: uvs.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
-    });
-    new Float32Array(this.uvBuffer.getMappedRange()).set(uvs);
-    this.uvBuffer.unmap();
-
-    this.indexBuffer = this.device.createBuffer({
-      size: indices.byteLength,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
-    });
-    new Uint16Array(this.indexBuffer.getMappedRange()).set(indices);
-    this.indexBuffer.unmap();
-
-    this.indexCount = indices.length;
-  }
-
-  _initPipeline() {
-    const shaderCode = this._getShaderCode();
-    const shaderModule = this.device.createShaderModule({code: shaderCode});
-
-    const cameraBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {type: "uniform"},
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {type: "uniform"},
-        },
-      ],
-    });
-
-    const spriteBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {sampleType: "float"},
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {type: "filtering"},
-        },
-      ],
-    });
-
-    this.cameraBindGroup = this.device.createBindGroup({
-      layout: cameraBindGroupLayout,
-      entries: [
-        {binding: 0, resource: {buffer: this.cameraBuffer, offset: 0, size: 64}},
-        {binding: 1, resource: {buffer: this._spriteDataBuffer, offset: 0, size: 112}},
-      ],
-    });
-
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [cameraBindGroupLayout, spriteBindGroupLayout],
-      }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 12,
-            attributes: [
-              {shaderLocation: 0, offset: 0, format: "float32x3"},
-            ],
-          },
-          {
-            arrayStride: 8,
-            attributes: [
-              {shaderLocation: 1, offset: 0, format: "float32x2"},
-            ],
-          },
-        ],
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.colorFormat,
-            blend: {
-              color: {
-                srcFactor: "src-alpha",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add",
-              },
-              alpha: {
-                srcFactor: "one",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add",
-              },
-            },
-          },
-          {format: "rgba16float"},  // normal
-          {format: "rgba16float"},  // worldPos
-        ],
-      },
-      primitive: {topology: "triangle-list"},
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "less",
-        format: "depth24plus",
-      },
-    });
+  _initBindGroups() {
+    this.cameraBindGroup =
+      this.device.createBindGroup({
+        layout: this.shared.cameraBindGroupLayout,
+        entries: [
+          {binding: 0, resource: {buffer: this.cameraBuffer}},
+          {binding: 1, resource: {buffer: this._spriteDataBuffer}}
+        ]
+      });
+    this.spriteBindGroup =
+      this.device.createBindGroup({
+        layout: this.shared.pipeline.getBindGroupLayout(1),
+        entries: [
+          {binding: 0, resource: this.sheet.texture.createView()},
+          {binding: 1, resource: this.sheet.sampler}
+        ]
+      });
   }
 
   updateInstanceData(baseModelMatrix) {
@@ -424,24 +445,32 @@ class SpriteInstance {
     );
   }
 
-  draw(pass, viewProjMatrix, sheet) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+  // draw(pass, viewProjMatrix, sheet) {
+  //   this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+  //   pass.setPipeline(this.pipeline);
+  //   pass.setBindGroup(0, this.cameraBindGroup);
+  //   pass.setBindGroup(1, this.spriteBindGroup);
+  //   pass.setVertexBuffer(0, this.vertexBuffer);
+  //   pass.setVertexBuffer(1, this.uvBuffer);
+  //   pass.setIndexBuffer(this.indexBuffer, "uint16");
+  //   pass.drawIndexed(this.indexCount);
+  // }
 
-    const spriteBindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(1),
-      entries: [
-        {binding: 0, resource: sheet.texture.createView()},
-        {binding: 1, resource: sheet.sampler},
-      ],
-    });
+  draw(pass) {
 
-    pass.setPipeline(this.pipeline);
+    pass.setPipeline(this.shared.pipeline);
+
     pass.setBindGroup(0, this.cameraBindGroup);
-    pass.setBindGroup(1, spriteBindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
+
+    pass.setBindGroup(1, this.spriteBindGroup);
+
+    pass.setVertexBuffer(0, this.shared.vertexBuffer);
+
+    pass.setVertexBuffer(1, this.shared.uvBuffer);
+
+    pass.setIndexBuffer(this.shared.indexBuffer, "uint16");
+
+    pass.drawIndexed(this.shared.indexCount);
   }
 
   destroy() {
@@ -451,7 +480,7 @@ class SpriteInstance {
     this._spriteDataBuffer?.destroy();
   }
 
-  _getShaderCode() {
+  static _getShaderCode = () => {
     return `
 struct Camera {
   viewProj: mat4x4f,
@@ -858,7 +887,7 @@ export function updateSpriteGroup(sprites, updates = {}) {
 }
 
 export async function initializeSpritesForMesh(mesh, device, format, cameraBuffer, spritesheetPath, gridCols, gridRows, pattern = "pulsing",
-   extraData = {waveCount: 50, radius: 10, count: 10, spacing: 5}) {
+  extraData = {waveCount: 50, radius: 10, count: 10, spacing: 5}) {
   const batch = new SpritesPack2D(
     device,
     format,

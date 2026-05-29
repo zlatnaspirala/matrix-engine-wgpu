@@ -349,7 +349,7 @@ var loadSprite1 = function () {
         cam.setPitch(-0.49);
         cam.setZ(10);
         cam.setY(30);
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
         console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData);
         cam._dirtyAngle = true;
       }, 700);
@@ -735,7 +735,7 @@ var canvasInline = function () {
         cam.setPitch(-0.49);
         cam.setZ(5);
         cam.setY(20);
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 800);
     }
@@ -964,7 +964,7 @@ var loadCinematicCamera = function () {
           onEnd: () => console.log('done')
         });
         cam._dirtyAngle = true;
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
       }, 1000);
     }
     cinematicCamera.canvas.addEventListener("ray.hit.event", e => {
@@ -1188,7 +1188,7 @@ var loadDestructionProcedural = function () {
           speed: 0.3,
           onEnd: () => console.log('done')
         });
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 700);
     }
@@ -3992,7 +3992,7 @@ var loadHZB = function () {
         cam.setZ(25);
         cam.setY(5);
         HZB.getCamera().setPosition(0, 3, 10);
-        // app.buildRenderBuckets(app.mainRenderBundle);
+        // app.buildRenderBuckets();
         // 🚀 First main playback run trigger
         triggerEntireGridSequence();
         cam._dirtyAngle = true;
@@ -4345,7 +4345,7 @@ var loadKale = function () {
           speed: 0.3,
           onEnd: () => console.log('done')
         });
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 700);
     }
@@ -4659,7 +4659,7 @@ var loadKinematicCollision = function () {
         collision.getCamera().setPosition(0, 3, 10);
         collision.collisionSystem.registerCamera(collision.getCamera().position, 2.0);
 
-        // app.buildRenderBuckets(app.mainRenderBundle);
+        // app.buildRenderBuckets();
         // 🚀 First main playback run trigger
         // triggerEntireGridSequence();
         cam._dirtyAngle = true;
@@ -4865,7 +4865,7 @@ var loadObjFile = function () {
         cam.setPitch(-0.49);
         cam.setZ(0);
         cam.setY(10);
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
         console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData);
         cam._dirtyAngle = true;
       }, 700);
@@ -25704,6 +25704,18 @@ class RPGCamera {
         case 'KeyD':
           this._digital.right = value;
           break;
+        case 'ArrowUp':
+          this._digital.forward = value;
+          break;
+        case 'ArrowDown':
+          this._digital.backward = value;
+          break;
+        case 'ArrowLeft':
+          this._digital.left = value;
+          break;
+        case 'ArrowRight':
+          this._digital.right = value;
+          break;
       }
       if (value && this._keyInterval === null) {
         this._detachedFromFollow = true;
@@ -26116,6 +26128,18 @@ class FirstPersonCamera {
           this._digital.left = value;
           break;
         case 'KeyD':
+          this._digital.right = value;
+          break;
+        case 'ArrowUp':
+          this._digital.forward = value;
+          break;
+        case 'ArrowDown':
+          this._digital.backward = value;
+          break;
+        case 'ArrowLeft':
+          this._digital.left = value;
+          break;
+        case 'ArrowRight':
           this._digital.right = value;
           break;
       }
@@ -30911,29 +30935,144 @@ exports.createSpriteMatrix = createSpriteMatrix;
 exports.createWavePattern = createWavePattern;
 exports.initializeSpritesForMesh = initializeSpritesForMesh;
 exports.updateSpriteGroup = updateSpriteGroup;
-/**
- * SpritesPack2D - Handles multiple sprites with optional GPU instancing
- * 
- * Two modes:
- * 1. Simple: Multiple SpriteEffect instances (simple, flexible)
- * 2. Batched: Single pipeline + storage buffer for 50+ sprites (GPU-optimized)
- */
-/**
- * SpriteBatchManager - Multiple sprites with shared texture pooling
- * 
- * Interface matches FlameEffect:
- * - Single render() call handles all updates + draws
- * - No exposed updateInstanceData/renderAll
- */
 class SpritesPack2D {
   constructor(device, format, colorFormat, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.colorFormat = colorFormat ?? format;
     this.cameraBuffer = cameraBuffer;
-    this.sprites = new Map(); // name -> SpriteInstance
-    this.spriteSheets = new Map(); // name -> texture + sampler
+    this.sprites = new Map();
+    this.spriteSheets = new Map();
     this.enabled = true;
+    this.shared = null;
+    this._initSharedResources();
+  }
+  _initSharedResources() {
+    if (this.shared) return;
+    const shaderModule = this.device.createShaderModule({
+      code: SpriteInstance._getShaderCode()
+    });
+    // QUAD GEOMETRY
+    const positions = new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]);
+    const uvs = new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]);
+    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+    const vertexBuffer = this.device.createBuffer({
+      size: positions.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Float32Array(vertexBuffer.getMappedRange()).set(positions);
+    vertexBuffer.unmap();
+    const uvBuffer = this.device.createBuffer({
+      size: uvs.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Float32Array(uvBuffer.getMappedRange()).set(uvs);
+    uvBuffer.unmap();
+    const indexBuffer = this.device.createBuffer({
+      size: indices.byteLength,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Uint16Array(indexBuffer.getMappedRange()).set(indices);
+    indexBuffer.unmap();
+
+    // LAYOUTS
+    const cameraBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: "uniform"
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        buffer: {
+          type: "uniform"
+        }
+      }]
+    });
+    const spriteBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [{
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        texture: {
+          sampleType: "float"
+        }
+      }, {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        sampler: {
+          type: "filtering"
+        }
+      }]
+    });
+    const pipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [cameraBindGroupLayout, spriteBindGroupLayout]
+      }),
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [{
+          arrayStride: 12,
+          attributes: [{
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x3"
+          }]
+        }, {
+          arrayStride: 8,
+          attributes: [{
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x2"
+          }]
+        }]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{
+          format: this.colorFormat,
+          blend: {
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            }
+          }
+        }, {
+          format: "rgba16float"
+        }, {
+          format: "rgba16float"
+        }]
+      },
+      primitive: {
+        topology: "triangle-list"
+      },
+      depthStencil: {
+        depthWriteEnabled: false,
+        depthCompare: "less",
+        format: "depth24plus"
+      }
+    });
+    this.shared = {
+      pipeline,
+      cameraBindGroupLayout,
+      spriteBindGroupLayout,
+      vertexBuffer,
+      uvBuffer,
+      indexBuffer,
+      indexCount: 6
+    };
   }
 
   /**
@@ -30947,6 +31086,7 @@ class SpritesPack2D {
     });
     this.spriteSheets.set(name, {
       texture,
+      textureView: texture.createView(),
       sampler,
       gridCols,
       gridRows,
@@ -30961,7 +31101,7 @@ class SpritesPack2D {
   createSprite(spriteName, spritesheetName, config = {}) {
     const sheet = this.spriteSheets.get(spritesheetName);
     if (!sheet) throw new Error(`Spritesheet "${spritesheetName}" not found`);
-    const sprite = new SpriteInstance(this.device, this.format, this.colorFormat, this.cameraBuffer, sheet, spritesheetName, config);
+    const sprite = new SpriteInstance(this.device, this.format, this.colorFormat, this.cameraBuffer, sheet, spritesheetName, config, this.shared);
     this.sprites.set(spriteName, sprite);
     return sprite;
   }
@@ -31053,13 +31193,14 @@ class SpritesPack2D {
  */
 exports.SpritesPack2D = SpritesPack2D;
 class SpriteInstance {
-  constructor(device, format, colorFormat, cameraBuffer, sheet, spritesheetName, config = {}) {
+  constructor(device, format, colorFormat, cameraBuffer, sheet, spritesheetName, config = {}, shared) {
     this.device = device;
     this.format = format;
     this.colorFormat = colorFormat;
     this.cameraBuffer = cameraBuffer;
     this.sheet = sheet;
     this.spritesheetName = spritesheetName;
+    this.shared = shared;
 
     // State
     this.currentFrame = config.currentFrame ?? 0;
@@ -31083,9 +31224,8 @@ class SpriteInstance {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     // Geometry (reuse shared quad)
-    this._initGeometry();
-    this._initPipeline();
 
+    this._initBindGroups();
     // Matrices
     this._localMatrix = new Float32Array(16);
     this._finalMatrix = new Float32Array(16);
@@ -31111,144 +31251,30 @@ class SpriteInstance {
     this.currentFrame = 0;
     this.timeAccumulator = 0;
   }
-  _initGeometry() {
-    // Shared quad mesh
-    const positions = new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]);
-    const uvs = new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]);
-    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
-      size: positions.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.vertexBuffer.getMappedRange()).set(positions);
-    this.vertexBuffer.unmap();
-    this.uvBuffer = this.device.createBuffer({
-      size: uvs.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.uvBuffer.getMappedRange()).set(uvs);
-    this.uvBuffer.unmap();
-    this.indexBuffer = this.device.createBuffer({
-      size: indices.byteLength,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    new Uint16Array(this.indexBuffer.getMappedRange()).set(indices);
-    this.indexBuffer.unmap();
-    this.indexCount = indices.length;
-  }
-  _initPipeline() {
-    const shaderCode = this._getShaderCode();
-    const shaderModule = this.device.createShaderModule({
-      code: shaderCode
-    });
-    const cameraBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.VERTEX,
-        buffer: {
-          type: "uniform"
-        }
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        buffer: {
-          type: "uniform"
-        }
-      }]
-    });
-    const spriteBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [{
-        binding: 0,
-        visibility: GPUShaderStage.FRAGMENT,
-        texture: {
-          sampleType: "float"
-        }
-      }, {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        sampler: {
-          type: "filtering"
-        }
-      }]
-    });
+  _initBindGroups() {
     this.cameraBindGroup = this.device.createBindGroup({
-      layout: cameraBindGroupLayout,
+      layout: this.shared.cameraBindGroupLayout,
       entries: [{
         binding: 0,
         resource: {
-          buffer: this.cameraBuffer,
-          offset: 0,
-          size: 64
+          buffer: this.cameraBuffer
         }
       }, {
         binding: 1,
         resource: {
-          buffer: this._spriteDataBuffer,
-          offset: 0,
-          size: 112
+          buffer: this._spriteDataBuffer
         }
       }]
     });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [cameraBindGroupLayout, spriteBindGroupLayout]
-      }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [{
-          arrayStride: 12,
-          attributes: [{
-            shaderLocation: 0,
-            offset: 0,
-            format: "float32x3"
-          }]
-        }, {
-          arrayStride: 8,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: "float32x2"
-          }]
-        }]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.colorFormat,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            }
-          }
-        }, {
-          format: "rgba16float"
-        },
-        // normal
-        {
-          format: "rgba16float"
-        } // worldPos
-        ]
-      },
-      primitive: {
-        topology: "triangle-list"
-      },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "less",
-        format: "depth24plus"
-      }
+    this.spriteBindGroup = this.device.createBindGroup({
+      layout: this.shared.pipeline.getBindGroupLayout(1),
+      entries: [{
+        binding: 0,
+        resource: this.sheet.texture.createView()
+      }, {
+        binding: 1,
+        resource: this.sheet.sampler
+      }]
     });
   }
   updateInstanceData(baseModelMatrix) {
@@ -31309,25 +31335,26 @@ class SpriteInstance {
     this._uniformData[27] = this.tintStrength;
     this.device.queue.writeBuffer(this._spriteDataBuffer, 0, this._uniformData);
   }
-  draw(pass, viewProjMatrix, sheet) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    const spriteBindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(1),
-      entries: [{
-        binding: 0,
-        resource: sheet.texture.createView()
-      }, {
-        binding: 1,
-        resource: sheet.sampler
-      }]
-    });
-    pass.setPipeline(this.pipeline);
+
+  // draw(pass, viewProjMatrix, sheet) {
+  //   this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+  //   pass.setPipeline(this.pipeline);
+  //   pass.setBindGroup(0, this.cameraBindGroup);
+  //   pass.setBindGroup(1, this.spriteBindGroup);
+  //   pass.setVertexBuffer(0, this.vertexBuffer);
+  //   pass.setVertexBuffer(1, this.uvBuffer);
+  //   pass.setIndexBuffer(this.indexBuffer, "uint16");
+  //   pass.drawIndexed(this.indexCount);
+  // }
+
+  draw(pass) {
+    pass.setPipeline(this.shared.pipeline);
     pass.setBindGroup(0, this.cameraBindGroup);
-    pass.setBindGroup(1, spriteBindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
+    pass.setBindGroup(1, this.spriteBindGroup);
+    pass.setVertexBuffer(0, this.shared.vertexBuffer);
+    pass.setVertexBuffer(1, this.shared.uvBuffer);
+    pass.setIndexBuffer(this.shared.indexBuffer, "uint16");
+    pass.drawIndexed(this.shared.indexCount);
   }
   destroy() {
     this.vertexBuffer?.destroy();
@@ -31335,7 +31362,7 @@ class SpriteInstance {
     this.indexBuffer?.destroy();
     this._spriteDataBuffer?.destroy();
   }
-  _getShaderCode() {
+  static _getShaderCode = () => {
     return `
 struct Camera {
   viewProj: mat4x4f,
@@ -31417,7 +31444,7 @@ fn fsMain(input: VertexOutput) -> FragOut {
   );
 }
     `;
-  }
+  };
 }
 
 // Top level
@@ -68645,7 +68672,7 @@ class MatrixEngineWGPU {
     this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   };
-  buildRenderBuckets = sceneMeshes => {
+  buildRenderBuckets = () => {
     this.opaqueBuckets.clear();
     this.transparentBuckets.clear();
     for (const mesh of this.mainRenderBundle) {

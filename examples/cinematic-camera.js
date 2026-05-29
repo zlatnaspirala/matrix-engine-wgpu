@@ -141,7 +141,7 @@ export var loadCinematicCamera = function() {
 
         cam._dirtyAngle = true;
 
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
         
       }, 1000);
     }

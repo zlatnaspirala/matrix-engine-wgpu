@@ -827,7 +827,7 @@ export default class MatrixEngineWGPU {
     return true;
   }
 
-  buildRenderBuckets = (sceneMeshes) => {
+  buildRenderBuckets = () => {
     this.opaqueBuckets.clear();
     this.transparentBuckets.clear();
     for(const mesh of this.mainRenderBundle) {

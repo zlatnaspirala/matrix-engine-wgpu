@@ -124,7 +124,7 @@ export var loadObjFile = function() {
         cam.setPitch(-0.49);
         cam.setZ(0);
         cam.setY(10);
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
 
         console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData)
         
