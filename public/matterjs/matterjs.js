@@ -189,7 +189,7 @@ class MatterPhysicsWorker {
   applyImpulse(idx, x, y, z) {
     const body = this.rigidBodies[idx];
     if(!body) return;
-    this.Body.applyForce(body, body.position, {x, -y});
+    this.Body.applyForce(body, body.position, {x, y: -y});
   }
 
   applyTorque(idx, x, y, z) {

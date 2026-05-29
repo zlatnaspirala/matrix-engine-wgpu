@@ -86,25 +86,25 @@ export var loadSprite2 = function() {
           }
         })
 
-        // let MYCUBE2 = world2D.addMeshObj({
-        //   material: {type: 'standard'},
-        //   position: {x: 0, y: 19, z: -10},
-        //   rotation: {x: 0, y: 0, z: 0},
-        //   rotationSpeed: {x: 0, y: 0, z: 0},
-        //   scale: [4, 4, 1],
-        //   texturesPaths: ['./res/textures/floor1.webp'],
-        //   name: 'cube2',
-        //   mesh: m.cube,
-        //   raycast: {enabled: true, radius: 1},
-        //   physics: {
-        //     enabled: true,
-        //     mass: 1,
-        //     geometry: "Cube"
-        //   },
-        //   pointerEffect: {
-        //     enabled: true
-        //   }
-        // })
+        let MYCUBE2 = world2D.addMeshObj({
+          material: {type: 'standard'},
+          position: {x: 21111 , y: 111119, z: -10},
+          rotation: {x: 0, y: 0, z: 0},
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          scale: [1, 1, 1],
+          texturesPaths: ['./res/textures/floor1.webp'],
+          name: 'cube2',
+          mesh: m.cube,
+          raycast: {enabled: false, radius: 1},
+          physics: {
+            enabled: true,
+            mass: 1,
+            geometry: "Cube"
+          },
+          pointerEffect: {
+            enabled: true
+          }
+        })
 
         console.log(',,,,,,,,,,,,,,,,,,,,,,')
         // const batch = new SpritesPack2D(app.device, 'rgba16float', 'rgba16float', world2D.cameraBuffer);
@@ -125,11 +125,10 @@ export var loadSprite2 = function() {
           4,                                       // Grid cols
           4,                                       // Grid rows
           "circle",                                // Pattern: matrix|pulsing|flow|circle|wave
-          {radius: 4.5, count: 18}
+          {radius: 2.5, count: 18}
         );
 
         // const spr = batch.getSprite("player-instance-1");
-
 
         world2D.lightContainer[0].setIntensity(15);
         world2D.activateBloomEffect();
