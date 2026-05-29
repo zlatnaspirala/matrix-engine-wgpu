@@ -199,7 +199,7 @@ export var canvasInline = function() {
         cam.setPitch(-0.49);
         cam.setZ(5);
         cam.setY(20);
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 800);
     }

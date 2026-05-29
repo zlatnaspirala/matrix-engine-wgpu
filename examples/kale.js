@@ -215,7 +215,7 @@ export var loadKale = function() {
           onEnd: () => console.log('done'),
         });
 
-        app.buildRenderBuckets(app.mainRenderBundle);
+        app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 700);
     }

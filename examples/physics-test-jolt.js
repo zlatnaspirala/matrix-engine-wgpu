@@ -59,7 +59,7 @@ export var testJolt = function() {
         position: {x: 8, y: 17, z: -16},
         rotation: {x: 0, y: 0, z: 0},
         scale: [3, 3, 3],
-        texturesPaths: ['./res/textures/slot/reel1.webp'],
+        texturesPaths: ['./res/textures/slot/reel1-lod1.webp'],
         name: 'MyHull',
         mesh: m.reel,
         physics: {

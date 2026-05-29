@@ -9,7 +9,7 @@ import {PVector} from "../src/engine/matrix-class.js";
 export var physicsPlayground = function() {
   let physicsPlayground = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    // Ammojs is default no need flag
+    useAmmo: true,
     fastRender: 0.7,
     MAX_SPOTLIGHTS : 1,
     MAX_BONES: 0,
@@ -107,7 +107,7 @@ export var physicsPlayground = function() {
         position: {x: 8, y: 4, z: -6},
         rotation: {x: 0, y: 0, z: 0.02},
         scale: [3, 3, 3],
-        texturesPaths: ['./res/textures/slot/reel1.webp'],
+        texturesPaths: ['./res/textures/slot/reel1-lod1.webp'],
         name: 'MyHull',
         mesh: m.reel,
         physics: {

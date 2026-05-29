@@ -215,7 +215,7 @@ export var loadHZB = function() {
         cam.setZ(25);
         cam.setY(5);
         HZB.getCamera().setPosition(0, 3, 10);
-        // app.buildRenderBuckets(app.mainRenderBundle);
+        // app.buildRenderBuckets();
         // 🚀 First main playback run trigger
         triggerEntireGridSequence();
         cam._dirtyAngle = true;

@@ -16,17 +16,28 @@
  * But resouces must be shared if both on same domain.
  */
 
-var cacheVersion = 41;
-var prefix = 'matrix-engine-examples';
-var cacheName = prefix + cacheVersion;
+var cacheVersion = 37;
+var prefixMOBA = 'matrix-engine-fohb';
+var cacheNameMOBA = prefixMOBA + cacheVersion;
 
 try {
   for(var j = 0;j < cacheVersion;j++) {
-    var oldCacheName = prefix + j;
+    var oldCacheName = prefixMOBA + j;
     caches.delete(oldCacheName);
   }
   for(var j = 200;j > cacheVersion;j--) {
-    var oldCacheName = prefix + j;
+    var oldCacheName = prefixMOBA + j;
+    caches.delete(oldCacheName);
+  }
+} catch(e) {}
+
+try {
+  for(var j = 0;j < cacheVersion;j++) {
+    var oldCacheName = prefixMOBA + j;
+    caches.delete(oldCacheName);
+  }
+  for(var j = 200;j > cacheVersion;j--) {
+    var oldCacheName = prefixMOBA + j;
     caches.delete(oldCacheName);
   }
 } catch(e) {}
@@ -35,7 +46,7 @@ const offlineUrl = 'offline.html';
 self.addEventListener('install', function(event) {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(cacheName).then(function(cache) {
+    caches.open(cacheNameMOBA).then(function(cache) {
       return cache.addAll([
         offlineUrl
       ]);
@@ -48,7 +59,7 @@ self.addEventListener('fetch', function(event) {
     return;
   }
   event.respondWith(
-    caches.open(cacheName).then(function(cache) {
+    caches.open(cacheNameMOBA).then(function(cache) {
       return cache.match(event.request).then(function(response) {
         return (
           response ||

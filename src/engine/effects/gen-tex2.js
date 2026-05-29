@@ -12,17 +12,14 @@ export class GenGeoTexture2 {
     this.uvData = geom.uvs;
     this.indexData = geom.indices;
     this.enabled = true;
-
     this.rotateEffect = true;
     this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
-
-    // Mobile optimization: track dirty state to avoid redundant GPU uploads
-    this.isDirty = false;
+    this.isDirty = true;
     this.cameraMatrixDirty = false;
-    this.lastCameraMatrix = null;
-
-    // Reusable matrix buffers to reduce allocations
+    this.lastCameraMatrix = new Float32Array(16);
+    this.tempLocalMatrix = mat4.identity();
+    this.isCameraInitialized = false;
     this.localMatrix = mat4.identity();
     this.finalMatrix = mat4.identity();
 
@@ -35,9 +32,7 @@ export class GenGeoTexture2 {
     const img = await fetch(url).then(r => r.blob()).then(createImageBitmap);
     const texture = this.device.createTexture({
       size: [img.width, img.height, 1],
-      // Mobile optimization: use rgba8unorm instead of rgba16float
-      // Reduces memory bandwidth by 50% on mobile GPUs
-      format: 'rgba16float',
+      format: 'rgba8unorm',
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
@@ -47,7 +42,7 @@ export class GenGeoTexture2 {
       [img.width, img.height]
     );
 
-    const sampler = this.device.createSampler({
+    this.sampler = this.device.createSampler({
       magFilter: "linear",
       minFilter: "linear",
       addressModeU: "repeat",
@@ -55,36 +50,29 @@ export class GenGeoTexture2 {
     });
 
     this.texture = texture;
-    this.sampler = sampler;
   }
 
   _initPipeline() {
     const {vertexData, uvData, indexData} = this;
 
-    // --- POSITION BUFFER (aligned)
-    const alignedVertexSize = Math.ceil(vertexData.byteLength / 4) * 4;
     this.vertexBuffer = this.device.createBuffer({
-      size: alignedVertexSize,
+      size: Math.ceil(vertexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
 
-    // --- UV BUFFER (aligned)
-    const alignedUVSize = Math.ceil(uvData.byteLength / 4) * 4;
     this.uvBuffer = this.device.createBuffer({
-      size: alignedUVSize,
+      size: Math.ceil(uvData.byteLength / 4) * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
 
-    // --- INDEX BUFFER (aligned, mobile optimization)
     const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
     this.indexBuffer = this.device.createBuffer({
       size: alignedIndexSize,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
 
-    // Mobile optimization: create aligned buffer once, reuse for all writes
     if(indexData.byteLength !== alignedIndexSize) {
       const paddedIndexData = new Uint8Array(alignedIndexSize);
       paddedIndexData.set(new Uint8Array(indexData.buffer));
@@ -92,15 +80,16 @@ export class GenGeoTexture2 {
     } else {
       this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     }
+
     this.indexCount = indexData.length;
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
+    this.maxInstances = 50;
     this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
-    // Mobile optimization: track frame time for frame-rate independent animation
+    this.floatsPerInstance = 20;
     this.lastFrameTime = performance.now();
-    this.frameTimeMs = 16; // default 60fps
+    this.frameTimeMs = 16;
+
     for(let x = 0;x < this.maxInstances;x++) {
       this.instanceTargets.push({
         index: x,
@@ -108,28 +97,32 @@ export class GenGeoTexture2 {
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
         currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1.0, 0.4],
-        isDirty: false, // track which instances changed
+        color: [0.6, 0.8, 1.0, 0.9],
+        rotation: [0, 0, 0],
+        isDirty: true,
       });
     }
 
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+    this.instanceData = new Float32Array(this.maxInstances * this.floatsPerInstance);
     this.modelBuffer = this.device.createBuffer({
-      size: Math.ceil(this.instanceData.byteLength / 4) * 4,
+      label: 'geo-texture modelBuffer',
+      size: this.instanceData.byteLength * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'geo-texture bindGroupLayout',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
         {binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {}},
       ],
     });
 
     this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+      label: 'geo-texture bindGroup',
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
@@ -139,7 +132,8 @@ export class GenGeoTexture2 {
     });
 
     const shaderModule = this.device.createShaderModule({code: geoInstancedTexEffect()});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
+    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+
     this.pipeline = this.device.createRenderPipeline({
       label: 'geo tex 2 Pipeline',
       layout: pipelineLayout,
@@ -154,131 +148,101 @@ export class GenGeoTexture2 {
       fragment: {
         module: shaderModule,
         entryPoint: 'fsMain',
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+              alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
             },
           },
-        }, {format: 'rgba16float'},
-        {format: 'rgba16float'}]
+          {format: 'rgba16float'},
+          {format: 'rgba16float'}
+        ]
       },
       primitive: {topology: 'triangle-list'},
       depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}
     });
   }
 
+  updateInstanceCount(newCount) {
+    if(newCount > this.maxInstances) {
+      console.warn("Count exceeds maxInstances...");
+      return false;
+    }
+    this.instanceCount = Math.max(0, newCount);
+  }
+
   updateInstanceData = (baseModelMatrix) => {
     if(!this.instanceData) return;
-
-    // Mobile optimization: track frame time for frame-rate independent animation
     const now = performance.now();
-    this.frameTimeMs = now - this.lastFrameTime;
+    const deltaTime = (now - this.lastFrameTime) / 1000;
     this.lastFrameTime = now;
-
-    // Clamp frame time to prevent huge jumps (e.g., when tab is unfocused)
-    const clampedFrameTime = Math.min(this.frameTimeMs, 50) / 1000; // ms to seconds
-
-    if(this.rotateEffect) {
-      // Frame-time aware rotation
-      this.rotateAngle += this.rotateEffectSpeed * clampedFrameTime;
-      if(this.rotateAngle >= 360) {
-        this.rotateAngle -= 360;
-      }
-    }
-
     const count = Math.min(this.instanceCount, this.maxInstances);
-    let anyInstanceDirty = false;
+    let anyInstanceDirty = this.isDirty;
 
     for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
-      let instanceUpdated = false;
+      if(this.rotateEffect) {
+        t.rotation[1] += (this.rotateEffectSpeed * Math.PI / 180) * deltaTime;
+        anyInstanceDirty = true;
+      }
 
-      // Mobile optimization: smooth interpolation with frame-time awareness
-      const frameAwareLerpSpeed = this.lerpSpeed * clampedFrameTime * 60; // normalize to 60fps
-
+      // 2. Interpolate Position and Scale
+      const frameAwareLerpSpeed = this.lerpSpeed * Math.min(deltaTime * 60, 1);
       for(let j = 0;j < 3;j++) {
-        const oldPos = t.currentPosition[j];
-        const oldScale = t.currentScale[j];
-
+        const prevPos = t.currentPosition[j];
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * frameAwareLerpSpeed;
         t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * frameAwareLerpSpeed;
-
-        if(Math.abs(t.currentPosition[j] - oldPos) > 0.0001 ||
-          Math.abs(t.currentScale[j] - oldScale) > 0.0001) {
-          instanceUpdated = true;
-        }
+        if(Math.abs(t.currentPosition[j] - prevPos) > 0.0001) anyInstanceDirty = true;
       }
 
-      if(!instanceUpdated && t.isDirty === false) {
-        continue; // Skip GPU upload for unchanged instances
+      if(anyInstanceDirty) {
+        mat4.identity(this.tempLocalMatrix);
+        mat4.translate(this.tempLocalMatrix, t.currentPosition, this.tempLocalMatrix);
+        mat4.rotateX(this.tempLocalMatrix, t.rotation[0], this.tempLocalMatrix);
+        mat4.rotateY(this.tempLocalMatrix, t.rotation[1], this.tempLocalMatrix);
+        mat4.rotateZ(this.tempLocalMatrix, t.rotation[2], this.tempLocalMatrix);
+        mat4.scale(this.tempLocalMatrix, t.currentScale, this.tempLocalMatrix);
+
+        mat4.multiply(baseModelMatrix, this.tempLocalMatrix, this.finalMatrix);
+
+        const offset = i * this.floatsPerInstance;
+        this.instanceData.set(this.finalMatrix, offset);
+        this.instanceData.set(t.color, offset + 16);
       }
-
-      anyInstanceDirty = true;
-      t.isDirty = true;
-
-      // Mobile optimization: reuse matrix buffer to reduce allocations
-      mat4.identity(this.localMatrix);
-
-      if(this.rotateEffect === true) {
-        mat4.rotateY(this.localMatrix, this.rotateAngle, this.localMatrix);
-      }
-
-      mat4.translate(this.localMatrix, t.currentPosition, this.localMatrix);
-      mat4.scale(this.localMatrix, t.currentScale, this.localMatrix);
-
-      // Combine matrices in-place to reduce allocations
-      mat4.multiply(baseModelMatrix, this.localMatrix, this.finalMatrix);
-
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(this.finalMatrix, offset);
-      this.instanceData.set(t.color, offset + 16);
     }
 
-    // Mobile optimization: only upload changed data to GPU
     if(anyInstanceDirty) {
-      const activeFloatCount = count * this.floatsPerInstance;
-      this.device.queue.writeBuffer(
-        this.modelBuffer,
-        0,
-        this.instanceData.subarray(0, activeFloatCount)
-      );
+      this.isDirty = false;
+      this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
     }
-  };
-
-  draw(pass, cameraMatrix) {
-    // Mobile optimization: cache camera matrix to avoid redundant uploads
-    if(!this.lastCameraMatrix || !this._matricesEqual(this.lastCameraMatrix, cameraMatrix)) {
-      this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-      this.lastCameraMatrix = new Float32Array(cameraMatrix);
-    }
-
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount, this.instanceCount);
   }
 
   render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
+    if(!this.pipeline) return;
+
+    // this.updateInstanceData(mesh.modelMatrix || mat4.identity(this.localMatrix));
+     this.updateInstanceData(mesh.modelMatrix);
+
+    // --- FIXED: Replaced "new Float32Array" allocation with an in-place typed array copy ---
+    if(!this.isCameraInitialized || !this._matricesEqual(this.lastCameraMatrix, viewProjMatrix)) {
+      this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+      this.lastCameraMatrix.set(viewProjMatrix); // Copies values directly without allocating memory
+      this.isCameraInitialized = true;
+    }
+
+    transPass.setPipeline(this.pipeline);
+    transPass.setBindGroup(0, this.bindGroup);
+    transPass.setVertexBuffer(0, this.vertexBuffer);
+    transPass.setVertexBuffer(1, this.uvBuffer);
+    transPass.setIndexBuffer(this.indexBuffer, 'uint16');
+    transPass.drawIndexed(this.indexCount, this.instanceCount);
   }
 
-  // Mobile optimization: quick matrix comparison to avoid redundant GPU uploads
   _matricesEqual(m1, m2) {
     for(let i = 0;i < 16;i++) {
-      if(Math.abs(m1[i] - m2[i]) > 0.0001) {
-        return false;
-      }
+      if(Math.abs(m1[i] - m2[i]) > 0.0001) return false;
     }
     return true;
   }

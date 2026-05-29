@@ -163,6 +163,10 @@ export class WASDCamera {
     this._keyInterval = null;
     const setDigital = (e, value) => {
       switch(e.code) {
+        case 'ArrowUp': this._digital.forward = value; break;
+        case 'ArrowDown': this._digital.backward = value; break;
+        case 'ArrowLeft': this._digital.left = value; break;
+        case 'ArrowRight': this._digital.right = value; break;
         case 'KeyW': this._digital.forward = value; break;
         case 'KeyS': this._digital.backward = value; break;
         case 'KeyA': this._digital.left = value; break;
@@ -517,6 +521,10 @@ export class RPGCamera {
         case 'KeyS': this._digital.backward = value; break;
         case 'KeyA': this._digital.left = value; break;
         case 'KeyD': this._digital.right = value; break;
+        case 'ArrowUp': this._digital.forward = value; break;
+        case 'ArrowDown': this._digital.backward = value; break;
+        case 'ArrowLeft': this._digital.left = value; break;
+        case 'ArrowRight': this._digital.right = value; break;
       }
 
       if(value && this._keyInterval === null) {
@@ -864,6 +872,10 @@ export class FirstPersonCamera {
         case 'KeyS': this._digital.backward = value; break;
         case 'KeyA': this._digital.left = value; break;
         case 'KeyD': this._digital.right = value; break;
+        case 'ArrowUp': this._digital.forward = value; break;
+        case 'ArrowDown': this._digital.backward = value; break;
+        case 'ArrowLeft': this._digital.left = value; break;
+        case 'ArrowRight': this._digital.right = value; break;
       }
       if(value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
