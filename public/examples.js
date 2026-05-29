@@ -150,6 +150,7 @@ var loadSprite1 = function () {
   let world2D = new _world.default({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
+    useMatter: true,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -5422,7 +5423,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var physicsPlayground = function () {
   let physicsPlayground = new _world.default({
     canvasSize: 'fullscreen',
-    // Ammojs is default no need flag
+    useAmmo: true,
     fastRender: 0.7,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -67824,15 +67825,7 @@ class MatrixEngineWGPU {
         });
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'JOLT';
-      } else if (typeof options.useCannon !== 'undefined') {
-        this.matrixPhysics = new _bridge.PhysicsBridge('./ammojs/cannon-es-worker.js');
-        this.matrixPhysics.init({
-          gravity: 10,
-          groundY: -1
-        });
-        this.matrixPhysics.bodyIndexMap = new Map();
-        this.matrixPhysics._PHYSICS_DRIVE = 'CANNON';
-      } else {
+      } else if (typeof options.useAmmo !== 'undefined') {
         this.matrixPhysics = new _bridge.PhysicsBridge('./ammojs/matrix-ammo-worker.js');
         const G = options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : _meConfig.MEConfig.GRAVITY_Y_AXIS;
         this.matrixPhysics.init({
@@ -67843,6 +67836,14 @@ class MatrixEngineWGPU {
         });
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'AMMO';
+      } else if (typeof options.useCannon !== 'undefined') {
+        this.matrixPhysics = new _bridge.PhysicsBridge('./ammojs/cannon-es-worker.js');
+        this.matrixPhysics.init({
+          gravity: 10,
+          groundY: -1
+        });
+        this.matrixPhysics.bodyIndexMap = new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = 'CANNON';
       }
     }
     // cache
@@ -67878,8 +67879,6 @@ class MatrixEngineWGPU {
       detail: {}
     });
     this.culledRenderPass = new _culling2.CulledRenderPass();
-    // this.culledRenderPass = new CulledRenderPassDisabled();
-
     this.editor = undefined;
     if (typeof options.useEditor !== "undefined") {
       if (typeof options.projectType !== "undefined" && options.projectType == "created from editor") {

@@ -1,5 +1,10 @@
 ## CHANGES [Started from feb 2026]
 
+[1.15.x]
+ - geo effects fixed for moba prepare
+ - added Sprite2DPAck class
+ - no default physics any more must be
+   useAmmo, useJolt, useCannon or useMatter
 
 [1.14.0]
  - Added HZB postproccesing effect

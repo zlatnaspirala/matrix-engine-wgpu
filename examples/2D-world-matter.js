@@ -8,7 +8,7 @@ import {GenGeo} from "../src/engine/effects/gen.js";
 import {GenGeoTexture} from "../src/engine/effects/gen-tex.js";
 import {InstancedKinematicOperations} from "../src/engine/procedures/InstancedKinematicOperations.js";
 
-export var loadSprite1 = function() {
+export var loadSprite2 = function() {
 
   let world2D = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',

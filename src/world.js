@@ -121,18 +121,12 @@ export default class MatrixEngineWGPU {
     }
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if(typeof options.dontUsePhysics === 'undefined') {
-
       if(typeof options.useJolt !== 'undefined') {
         this.matrixPhysics = new PhysicsBridge('./joltjs/matrix-jolt-worker.js');
         this.matrixPhysics.init({gravity: 10, groundY: -1});
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'JOLT';
-      } else if(typeof options.useCannon !== 'undefined') {
-        this.matrixPhysics = new PhysicsBridge('./ammojs/cannon-es-worker.js');
-        this.matrixPhysics.init({gravity: 10, groundY: -1});
-        this.matrixPhysics.bodyIndexMap = new Map();
-        this.matrixPhysics._PHYSICS_DRIVE = 'CANNON';
-      } else {
+      } else if(typeof options.useAmmo !== 'undefined') {
         this.matrixPhysics = new PhysicsBridge('./ammojs/matrix-ammo-worker.js');
         const G = options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS;
         this.matrixPhysics.init({
@@ -142,6 +136,11 @@ export default class MatrixEngineWGPU {
         });
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'AMMO';
+      } else if(typeof options.useCannon !== 'undefined') {
+        this.matrixPhysics = new PhysicsBridge('./ammojs/cannon-es-worker.js');
+        this.matrixPhysics.init({gravity: 10, groundY: -1});
+        this.matrixPhysics.bodyIndexMap = new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = 'CANNON';
       }
     }
     // cache
@@ -165,7 +164,6 @@ export default class MatrixEngineWGPU {
     this._volumetricLightUniforms = {viewProjectionMatrix: null, direction: null};
     this.usEvent = new CustomEvent('updateSceneContainer', {detail: {}});
     this.culledRenderPass = new CulledRenderPass();
-    // this.culledRenderPass = new CulledRenderPassDisabled();
 
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
@@ -379,7 +377,7 @@ export default class MatrixEngineWGPU {
       label: 'uniformBufferBindGroupLayout in mesh [instanced]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage"}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ],
