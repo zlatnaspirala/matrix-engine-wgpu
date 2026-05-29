@@ -74,7 +74,8 @@ if ((0, _utils.isMobile)() === true) {
 (0, _utils.byId)('loadKCollision').addEventListener("click", () => switchDemo('22'));
 (0, _utils.byId)('loadSprite1').addEventListener("click", () => switchDemo('23'));
 (0, _utils.byId)('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
-(0, _utils.byId)('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
+// byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
+(0, _utils.byId)('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
 window.loadObjFile = _loadObjFile.loadObjFile;
 if (urlQ['demo'] === '1') {
   (0, _loadObjFile.loadObjFile)();
@@ -142,10 +143,9 @@ var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
 var _genTex = require("../src/engine/effects/gen-tex2.js");
 var _sprite2d = require("../src/engine/effects/sprite2d2.js");
-var _gen = require("../src/engine/effects/gen.js");
-var _genTex2 = require("../src/engine/effects/gen-tex.js");
 var _InstancedKinematicOperations = require("../src/engine/procedures/InstancedKinematicOperations.js");
 var _sceneobjectKinematics = require("../src/engine/procedures/sceneobjectKinematics.js");
+var _kaleidoscopeEffectInstance = require("../src/engine/effects/kaleidoscopeEffectInstance.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadSprite1 = function () {
   let world2D = new _world.default({
@@ -268,7 +268,7 @@ var loadSprite1 = function () {
         name: 'cube',
         mesh: m.cube,
         raycast: {
-          enabled: true,
+          enabled: false,
           radius: 1
         },
         physics: {
@@ -304,7 +304,7 @@ var loadSprite1 = function () {
         name: 'cube2',
         mesh: m.cube,
         raycast: {
-          enabled: true,
+          enabled: false,
           radius: 1
         },
         physics: {
@@ -340,7 +340,7 @@ var loadSprite1 = function () {
         name: 'cube2',
         mesh: m.cube,
         raycast: {
-          enabled: true,
+          enabled: false,
           radius: 1
         },
         physics: {
@@ -418,13 +418,14 @@ var loadSprite1 = function () {
 
       world2D.lightContainer[0].setIntensity(15);
       world2D.activateBloomEffect();
+      world2D.activateVolumetricEffect();
       world2D.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       world2D.lightContainer[0].behavior.value_ = -1;
       world2D.lightContainer[0].updater.push(light => {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       });
-      world2D.lightContainer[0].setPosition(0, 15, -10);
+      world2D.lightContainer[0].setPosition(0, 45, -8);
       world2D.lightContainer[0].setTarget(0, 0, -10);
       let MYCUBE_EFFECT = world2D.addMeshObj({
         material: {
@@ -445,7 +446,7 @@ var loadSprite1 = function () {
           y: 0,
           z: 0
         },
-        scale: [14.5, 14.5, 14.5],
+        scale: [9, 9, 9],
         texturesPaths: ['./res/icons/512.webp'],
         name: 'cubeeffect',
         mesh: m.plane,
@@ -460,10 +461,12 @@ var loadSprite1 = function () {
         },
         pointerEffect: {
           enabled: true
+          //  flameEmitter: true,
         }
       });
       setTimeout(() => {
         MYCUBE_EFFECT.effects.circle = new _genTex.GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
+        MYCUBE_EFFECT.effects.keeffect = new _kaleidoscopeEffectInstance.KaleidoscopeEmitter(world2D.device, 'rgba16float', 30, world2D.cameraBuffer);
       }, 200);
       setTimeout(() => {
         MYCUBE.setBlend(0.001);
@@ -529,47 +532,30 @@ var loadSprite1 = function () {
             if (index === myReel3.length - 1) {
               (0, _sceneobjectKinematics.animateRotationY)(MYCUBE3.rotation, 90, 2000);
               setTimeout(() => {
-                MYCUBE3.rotation.setRotateX(14);
+                MYCUBE3.rotation.setRotateX(8);
+                MYCUBE_EFFECT.rotation.setRotateZ(1);
+                MYCUBE_EFFECT.effects.keeffect.recreateVertexDataFromData([-6.94798115268439, 13.359448700316488, 15.690525966669506, 14.642970205525577, 2.5040455061885725, 13.874531871189749, -16.32885928825164, -11.8878829677588]);
               }, 1900);
             }
           }, 300 * index);
         });
-
-        // MYCUBE.effects.circle.instanceTargets[0].color[0] = 100;
-        // MYCUBE.effects.circle.instanceTargets[0].position[1] = -5; 
-
-        // MYCUBE.effects.circle.instanceTargets[1].color[1] = 100;
-        // MYCUBE.effects.circle.instanceTargets[1].position[1] = -2; 
-
         MYCUBE_EFFECT.effects.circle.instanceTargets[0].isDyrty = true;
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-
-        // MYCUBE.effects.flameEmitter.setIntensity(100);
-        // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
-        // MYCUBE.effects.flameEmitter.rotSpeed = 1;
-
-        // MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-        //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-        //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
-
         MYCUBE.setAmbient(2, 0, 0);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.05);
-        cam.setZ(14);
+        cam.setZ(22);
         cam.setY(16);
         app.buildRenderBuckets();
-        // console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData)
         cam._dirtyAngle = true;
-      }, 1000);
+      }, 400);
     }
     world2D.canvas.addEventListener("ray.hit.event", e => {
       console.log('ray.hit.event detected');
-      if (e.detail.hitObject.name.startsWith('cube')) {
-        // e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        // e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        // e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        // app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
+      if (e.detail.hitObject.name.startsWith('cubeeffect')) {
+        e.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy((0, _utils.randomIntFromTo)(6, 36));
+        e.detail.hitObject.effects.keeffect.setIntensity((0, _utils.randomIntFromTo)(3, 23));
       }
     });
   });
@@ -577,7 +563,7 @@ var loadSprite1 = function () {
 };
 exports.loadSprite1 = loadSprite1;
 
-},{"../src/engine/effects/gen-tex.js":51,"../src/engine/effects/gen-tex2.js":52,"../src/engine/effects/gen.js":53,"../src/engine/effects/sprite2d2.js":59,"../src/engine/loader-obj.js":67,"../src/engine/procedures/InstancedKinematicOperations.js":85,"../src/engine/procedures/sceneobjectKinematics.js":87,"../src/engine/raycast.js":88,"../src/engine/utils.js":89,"../src/world.js":142}],3:[function(require,module,exports){
+},{"../src/engine/effects/gen-tex2.js":52,"../src/engine/effects/kaleidoscopeEffectInstance.js":55,"../src/engine/effects/sprite2d2.js":59,"../src/engine/loader-obj.js":67,"../src/engine/procedures/InstancedKinematicOperations.js":85,"../src/engine/procedures/sceneobjectKinematics.js":87,"../src/engine/raycast.js":88,"../src/engine/utils.js":89,"../src/world.js":142}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3471,7 +3457,7 @@ var flipperJolt = function () {
           }
         });
         cam._dirtyAngle = true;
-      }, 1200);
+      }, 1500);
     }
   });
   window.app = flipper;

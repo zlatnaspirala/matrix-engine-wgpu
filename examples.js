@@ -79,7 +79,8 @@ byId('loadKCollision').addEventListener("click", () => switchDemo('22'));
 byId('loadSprite1').addEventListener("click", () => switchDemo('23'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
-byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
+// byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
+byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
 
 window.loadObjFile = loadObjFile;
 

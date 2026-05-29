@@ -1,13 +1,12 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {initializeSpritesForMesh, SpritesPack2D} from "../src/engine/effects/sprite2d2.js";
-import {GenGeo} from "../src/engine/effects/gen.js";
-import {GenGeoTexture} from "../src/engine/effects/gen-tex.js";
 import {InstancedKinematicOperations} from "../src/engine/procedures/InstancedKinematicOperations.js";
 import {animateRotationY} from "../src/engine/procedures/sceneobjectKinematics.js";
+import {KaleidoscopeEmitter} from "../src/engine/effects/kaleidoscopeEffectInstance.js";
 
 export var loadSprite1 = function() {
 
@@ -27,7 +26,7 @@ export var loadSprite1 = function() {
 
     world2D.addLight();
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
-    downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj",  plane: "./res/meshes/blender/plane.obj" },
+    downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", plane: "./res/meshes/blender/plane.obj"},
       onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [35, 0.5, 35]})
 
@@ -76,7 +75,7 @@ export var loadSprite1 = function() {
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'cube',
         mesh: m.cube,
-        raycast: {enabled: true, radius: 1},
+        raycast: {enabled: false, radius: 1},
         physics: {
           enabled: false,
           mass: 0,
@@ -96,7 +95,7 @@ export var loadSprite1 = function() {
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'cube2',
         mesh: m.cube,
-        raycast: {enabled: true, radius: 1},
+        raycast: {enabled: false, radius: 1},
         physics: {
           enabled: false,
           mass: 0,
@@ -116,7 +115,7 @@ export var loadSprite1 = function() {
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'cube2',
         mesh: m.cube,
-        raycast: {enabled: true, radius: 1},
+        raycast: {enabled: false, radius: 1},
         physics: {
           enabled: false,
           mass: 0,
@@ -168,13 +167,14 @@ export var loadSprite1 = function() {
 
       world2D.lightContainer[0].setIntensity(15);
       world2D.activateBloomEffect();
+      world2D.activateVolumetricEffect();
       world2D.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       world2D.lightContainer[0].behavior.value_ = -1;
       world2D.lightContainer[0].updater.push((light) => {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       })
-      world2D.lightContainer[0].setPosition(0, 15, -10);
+      world2D.lightContainer[0].setPosition(0, 45, -8);
       world2D.lightContainer[0].setTarget(0, 0, -10);
 
 
@@ -183,7 +183,7 @@ export var loadSprite1 = function() {
         position: {x: 0, y: 15, z: -10},
         rotation: {x: 90, y: 0, z: 180},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [14.5, 14.5, 14.5],
+        scale: [9, 9, 9],
         texturesPaths: ['./res/icons/512.webp'],
         name: 'cubeeffect',
         mesh: m.plane,
@@ -194,12 +194,15 @@ export var loadSprite1 = function() {
           geometry: "Cube"
         },
         pointerEffect: {
-          enabled: true
+          enabled: true,
+          //  flameEmitter: true,
         }
       })
 
       setTimeout(() => {
         MYCUBE_EFFECT.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
+        MYCUBE_EFFECT.effects.keeffect = new KaleidoscopeEmitter(world2D.device, 'rgba16float', 30, world2D.cameraBuffer)
+
       }, 200)
 
       setTimeout(() => {
@@ -224,7 +227,7 @@ export var loadSprite1 = function() {
             const angle = (index / count) * Math.PI * 2;
             const yDeg = angle * (180 / Math.PI);
             const FIX = 90;
-            sprite.goToFrame(randomIntFromTo(0,8))
+            sprite.goToFrame(randomIntFromTo(0, 8))
             sprite.setTargetRotation(90, yDeg - FIX, FIX);
             if(index === myReel1.length - 1) {
               animateRotationY(MYCUBE.rotation, 90, 2000);
@@ -244,7 +247,7 @@ export var loadSprite1 = function() {
             const angle = (index / count2) * Math.PI * 2;
             const yDeg = angle * (180 / Math.PI);
             const FIX = 90;
-            sprite.goToFrame(randomIntFromTo(0,8))
+            sprite.goToFrame(randomIntFromTo(0, 8))
             sprite.setTargetRotation(90, yDeg - FIX, FIX);
             if(index === myReel2.length - 1) {
               animateRotationY(MYCUBE2.rotation, 90, 2000);
@@ -264,55 +267,39 @@ export var loadSprite1 = function() {
             const angle = (index / count3) * Math.PI * 2;
             const yDeg = angle * (180 / Math.PI);
             const FIX = 90;
-            sprite.goToFrame(randomIntFromTo(0,8))
+            sprite.goToFrame(randomIntFromTo(0, 8))
             sprite.setTargetRotation(90, yDeg - FIX, FIX);
             if(index === myReel3.length - 1) {
               animateRotationY(MYCUBE3.rotation, 90, 2000);
               setTimeout(() => {
-                MYCUBE3.rotation.setRotateX(14)
+                MYCUBE3.rotation.setRotateX(8);
+                MYCUBE_EFFECT.rotation.setRotateZ(1)
+MYCUBE_EFFECT.effects.keeffect.recreateVertexDataFromData(
+                [-6.94798115268439, 13.359448700316488, 15.690525966669506, 14.642970205525577, 2.5040455061885725, 13.874531871189749, -16.32885928825164, -11.8878829677588]
+                )
               }, 1900)
             }
           }, 300 * index);
         });
 
-
-        // MYCUBE.effects.circle.instanceTargets[0].color[0] = 100;
-        // MYCUBE.effects.circle.instanceTargets[0].position[1] = -5; 
-
-        // MYCUBE.effects.circle.instanceTargets[1].color[1] = 100;
-        // MYCUBE.effects.circle.instanceTargets[1].position[1] = -2; 
-
         MYCUBE_EFFECT.effects.circle.instanceTargets[0].isDyrty = true;
-
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-
-        // MYCUBE.effects.flameEmitter.setIntensity(100);
-        // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
-        // MYCUBE.effects.flameEmitter.rotSpeed = 1;
-
-        // MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-        //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-        //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
-
         MYCUBE.setAmbient(2, 0, 0);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.05);
-        cam.setZ(14);
+        cam.setZ(22);
         cam.setY(16);
         app.buildRenderBuckets();
-        // console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData)
         cam._dirtyAngle = true;
-      }, 1000);
+      }, 400);
     }
 
     world2D.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
-      if(e.detail.hitObject.name.startsWith('cube')) {
-        // e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        // e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        // e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        // app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
+      if(e.detail.hitObject.name.startsWith('cubeeffect')) {
+        e.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+        e.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
       }
     });
 
