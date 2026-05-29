@@ -108,7 +108,7 @@ export var loadSprite1 = function() {
 
       let MYCUBE3 = world2D.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 6, y: 15, z: -10},
+        position: {x: 6, y: 1115, z: -10},
         rotation: {x: 180, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [3.5, 3.5, 3.5],

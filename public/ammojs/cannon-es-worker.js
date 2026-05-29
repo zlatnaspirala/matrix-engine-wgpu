@@ -151,9 +151,12 @@ class MatrixCannon {
     this._allocBuffer(this.rigidBodies.length);
     if(this._snapshot) {
       const base = idx * FLOATS_PER_BODY;
-      this._snapshot[base + 0] = pOptions.position?.x ?? 0;
-      this._snapshot[base + 1] = pOptions.position?.y ?? 0;
-      this._snapshot[base + 2] = pOptions.position?.z ?? 0;
+      // this._snapshot[base + 0] = pOptions.position?.x ?? 0;
+      // this._snapshot[base + 1] = pOptions.position?.y ?? 0;
+      // this._snapshot[base + 2] = pOptions.position?.z ?? 0;
+      this._snapshot[base + 0] = body.position.x;
+      this._snapshot[base + 1] = 0;          // y up = 0
+      this._snapshot[base + 2] = body.position.y;  // matter y → z
     }
     return cannonBody;
   }
@@ -579,9 +582,9 @@ class MatrixCannon {
         snap[base + 7] = 0;
         continue;
       }
-      snap[base + 0] = body.position.x;
-      snap[base + 1] = body.position.y;
-      snap[base + 2] = body.position.z;
+      snap[base + 0] = body.position.x;  // x → x
+      snap[base + 1] = 0;                 // y (up) = 0, it's 2D
+      snap[base + 2] = body.position.y;  // matter y → 3D z
       snap[base + 3] = body.quaternion.x;
       snap[base + 4] = body.quaternion.y;
       snap[base + 5] = body.quaternion.z;
