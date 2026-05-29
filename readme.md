@@ -10,9 +10,6 @@
 
 <img width="320" height="320" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
 
-> Logo includes the official WebGPU logo.
-> **WebGPU logo by [W3C](https://www.w3.org/)**
-> Licensed under [Creative Commons Attribution 4.0](https://www.w3.org/2023/02/webgpu-logos.html)
 
 ---
 
