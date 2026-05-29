@@ -268,7 +268,6 @@ export default class MatrixEngineWGPU {
       } else if('RPG' == this.options.mainCameraParams.type) {
         this.cameras = {
           RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas, isActive: 'RPG' == this.options.mainCameraParams.type ? 'init active cam' : null}),
-
         };
       } else if('cinematicCamera' == this.options.mainCameraParams.type) {
         this.cameras = {
@@ -461,12 +460,13 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.14.1 [The beast] ", LOG_FUNNY);
-    console.log("%c👽  ", LOG_FUNNY_EXTRABIG);
+    console.log("%c Version 1.15.1 [The beast] ", LOG_FUNNY);
+    console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
       "Creative power with intuitive visual scripting work flow.\n" +
-      "No tracking. No hype. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
+      "New Features: Culling render mode, Dorizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      "Mobile support: chrome-android tested. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
       "%cMatrix Engine WGPU - Initial configuration :\n" +
       " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
