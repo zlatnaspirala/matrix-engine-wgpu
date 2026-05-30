@@ -145,23 +145,33 @@ fn main(input: FragmentInput) -> FragOut {
   let N = normalize(input.fragNorm);
   let V = normalize(scene.cameraPos - input.fragPos);
   var Lo = vec3f(0.0);
-  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-      let L = normalize(spotlights[i].position - input.fragPos);
-      let H = normalize(V + L);
-      let distance = length(spotlights[i].position - input.fragPos);
-      let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
-      let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-      let NDF = distributionGGX(N, H, materialData.roughness);
-      let G   = geometrySmith(N, V, L, materialData.roughness);
-      let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-      let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-      let kS = F;
-      let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-      let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
-      let NdotL = max(dot(N, L), 0.0);
-      let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-      Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
-  }
+  // for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+  //     let L = normalize(spotlights[i].position - input.fragPos);
+  //     let H = normalize(V + L);
+  //     let distance = length(spotlights[i].position - input.fragPos);
+  //     let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+  //     let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+  //     let NDF = distributionGGX(N, H, materialData.roughness);
+  //     let G   = geometrySmith(N, V, L, materialData.roughness);
+  //     let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+  //     let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+  //     let kS = F;
+  //     let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+  //     let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
+  //     let NdotL = max(dot(N, L), 0.0);
+  //     let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+  //     Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
+  // }
+for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+  let L = normalize(spotlights[i].position - input.fragPos);
+  let H = normalize(V + L);
+  let distance = length(spotlights[i].position - input.fragPos);
+  let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
+  let NdotL = max(dot(N, L), 0.0);
+
+  Lo += NdotL * spotlights[i].color * spotlights[i].intensity * attenuation2;
+}
   let ambient = scene.globalAmbient * materialData.baseColor;
   var color = ambient + Lo;
 

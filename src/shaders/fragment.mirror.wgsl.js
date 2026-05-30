@@ -134,27 +134,39 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
-    let L    = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    let theta = dot(L, normalize(-light.direction));
-    let eps   = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
-    if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
+  let NdotL = max(dot(N, L), 0.0);
 
-    let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
-    let H     = normalize(L + V);
-    let alpha  = mat.roughness * mat.roughness;
-    let alpha2 = alpha * alpha;
-    let NdotH  = max(dot(N, H), 0.0);
-    let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D      = alpha2 / (PI * denom * denom + 1e-5);
-    let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV  = max(dot(N, V), 0.0);
-    let Gv     = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl     = NdotL / (NdotL * (1.0 - k) + k);
-    let G      = Gv * Gl;
-    let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-    return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let theta = dot(L, normalize(-light.direction));
+  let eps = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+  if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
+
+  let F0 = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
+  let H = normalize(L + V);
+  let alpha = mat.roughness * mat.roughness;
+  let alpha2 = alpha * alpha;
+  let NdotH = max(dot(N, H), 0.0);
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+  let specular = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+  let kD = (vec3f(1.0) - F) * (1.0 - mat.metallic);
+  let diffuse = kD * mat.baseColor.rgb / PI;
+
+  let radiance = light.color * light.intensity * attenuation2;
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {

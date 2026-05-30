@@ -116,58 +116,30 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) { return vec3f(0.0); }
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-    if (coneAtten <= 0.0) {
-        return vec3f(0.0);
-    }
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  if (coneAtten <= 0.0) { return vec3f(0.0); }
 
-    // --- diffuse controlled by metallic ---
-    let kD = 1.0 - material.metallic;  // 1.0 → full diffuse, 0.0 → fully metallic
-    let lambert = kD * material.baseColor * light.color * light.intensity * NdotL;
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
 
-    // --- simple specular controlled by roughness ---
-    let H = normalize(L + V);
-    let shininess = mix(2.0, 128.0, 1.0 - material.roughness); // map roughness → exponent
-    let spec = pow(max(dot(N, H), 0.0), shininess);
-    let specular = light.color * spec * material.metallic; // only strong if metallic > 0
+  let kD = 1.0 - material.metallic;
+  let lambert = kD * material.baseColor * light.color * light.intensity * NdotL;
 
-    return (lambert + specular) * coneAtten;
-}
-// Debug hybrid spotlight
-fn computeSpotLight3(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
+  let H = normalize(L + V);
+  let shininess = mix(2.0, 128.0, 1.0 - material.roughness);
+  let spec = pow(max(dot(N, H), 0.0), shininess);
+  let specular = light.color * spec * material.metallic;
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-
-    if (coneAtten <= 0.0) {
-        return vec3f(0.0);
-    }
-
-    // ---- baseline lambert ----
-    let lambert = material.baseColor * light.color * light.intensity * NdotL;
-
-    // ---- add a bit of specular safely ----
-    let H = normalize(L + V);
-    let spec = pow(max(dot(N, H), 0.0), 32.0); // simple Blinn-Phong
-    let specular = light.color * spec * 0.2;   // scaled so it doesn’t kill diffuse
-
-    // final mix
-    return (lambert + specular) * coneAtten;
+  return (lambert + specular) * coneAtten * attenuation2;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -214,7 +186,7 @@ fn main(input: FragmentInput) -> FragOut {
         let bias = spotlights[i].shadowBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
         // let visibility = 1.0;
-        let contrib = computeSpotLight2(spotlights[i], norm, input.fragPos, viewDir, materialData);
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
     }
 

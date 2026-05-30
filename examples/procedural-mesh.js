@@ -109,7 +109,7 @@ export var procMesh = function() {
 
       runChain(0);
 
-      procMesh.lightContainer[0].intensity = 10;
+      procMesh.lightContainer[0].setIntensity(10);
       procMesh.lightContainer[0].behavior.setOsc0(-2, 2, 0.1)
       procMesh.lightContainer[0].behavior.value_ = -1;
       procMesh.lightContainer[0].updater.push((light) => {

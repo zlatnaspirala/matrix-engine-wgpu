@@ -112,7 +112,9 @@ fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
 
 // ---------------- Spotlight ----------------
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
   let NdotL = max(dot(N, L), 0.0);
   if (NdotL <= 0.0) { return vec3f(0.0); }
 
@@ -120,6 +122,9 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   let epsilon = light.innerCutoff - light.outerCutoff;
   let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
   if (coneAtten <= 0.0) { return vec3f(0.0); }
+
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
 
   let H = normalize(L + V);
   let F0 = mix(vec3f(0.04), material.baseColor, material.metallic);
@@ -131,7 +136,7 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
   let diffuse = kD * material.baseColor / PI;
 
-  let radiance = light.color * light.intensity;
+  let radiance = light.color * light.intensity * attenuation2;
   return (diffuse + spec) * radiance * NdotL * coneAtten;
 }
 

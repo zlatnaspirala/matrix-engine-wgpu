@@ -131,7 +131,7 @@ export class SpotLight {
     this.up = vec3.create(0, 0, -1);
 
     this.direction = vec3.create();
-    this.intensity = 1.0;
+    this.intensity = 20.0;
     this.color = vec3.create(1.0, 1.0, 1.0);
 
     this._lightBuffer = new Float32Array(36);
@@ -173,7 +173,7 @@ export class SpotLight {
     this.outerCutoff = Math.cos((Math.PI / 180) * 30.0);
 
     this.ambientFactor = 0.5;
-    this.range = 20.0;
+    this.range = 70.0;
     this.shadowBias = 0.01;
 
     this.SHADOW_RES = MEConfig.SHADOW_RES;
@@ -430,7 +430,7 @@ export class SpotLight {
     this._lightBufferDirty = true;
   };
   setIntensity = (intensity) => {
-    this.intensity = intensity;
+    this.intensity = intensity * 10;
     this._lightBufferDirty = true;
   };
   setColor = (color) => {

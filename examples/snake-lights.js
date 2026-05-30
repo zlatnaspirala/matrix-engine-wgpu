@@ -147,15 +147,11 @@ export var snakeLights = function() {
       const phaseOffset = i * SNAKE_SPACING;
       const fade = 1.0 - (i / NUM_LIGHTS) * 0.4;
       // const fade = 1.0 - (i / NUM_LIGHTS) * 0.6;
-
-      light.intensity = 15 * fade;
       light.color = LIGHT_COLORS[i];
-
       light.innerCutoff = 0.97 - (i / NUM_LIGHTS) * 0.05; // 0.97 → 0.92
       light.outerCutoff = 0.92 - (i / NUM_LIGHTS) * 0.05; // 0.92 → 0.87
-      light.intensity = 18 * fade;
+      light.setIntensity(18 * fade);
       light._phase = phaseOffset;
-
       const initialPos = PATHS[currentPathKey](0);
       light.setPosition(initialPos.x, LIGHT_HEIGHT, initialPos.z);
       light.setTarget(initialPos.x, 0, initialPos.z);
