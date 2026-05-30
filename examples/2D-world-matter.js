@@ -69,7 +69,7 @@ export var loadSprite2 = function() {
           position: {x: 0, y: 19, z: -10},
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
-          scale: [4, 4, 1],
+          scale: [1, 1, 1],
           texturesPaths: ['./res/textures/floor1.webp'],
           name: 'PLAYER',
           mesh: m.cube,
@@ -83,6 +83,27 @@ export var loadSprite2 = function() {
             enabled: true
           }
         })
+
+        let BLOCK = world2D.addMeshObj({
+          material: {type: 'standard'},
+          position: {x: 110, y: 19, z: -10},
+          rotation: {x: 0, y: 0, z: 0},
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          scale: [1, 1, 1],
+          texturesPaths: ['./res/textures/floor1.webp'],
+          name: 'BLOCK',
+          mesh: m.cube,
+          raycast: {enabled: true, radius: 1},
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: "Cube"
+          },
+          pointerEffect: {
+            enabled: true
+          }
+        })
+
 
         console.log(',,,,,,,,,,,,,,,,,,,,,,', PLAYER)
         // const batch = new SpritesPack2D(app.device, 'rgba16float', 'rgba16float', world2D.cameraBuffer);
@@ -137,6 +158,11 @@ export var loadSprite2 = function() {
           PLAYER.setAmbient(2, 1, 0);
           let cam = app.getCamera();
 
+          // This is only for PlaneCamera !
+          cam.onUp = () => {
+            let _ = app.matrixPhysics.getBodyByName('PLAYER');
+            app.matrixPhysics.applyImpulse(_, new PVector(0, 1, 0))
+          }
 
           cam.setYaw(-0.01);
           cam.setPitch(-0.05);

@@ -1315,14 +1315,14 @@ export class PlaneCamera {
 
   // ── mobile buttons ────────────────────────────────────────────
 
-  _setupMobileButtons() {
-    MobileDOM.addButton({label: '←', onPress: () => this.onLeft?.(), onRelease: () => this.onLeftRelease?.()});
-    MobileDOM.addButton({label: '→', onPress: () => this.onRight?.(), onRelease: () => this.onRightRelease?.()});
-    MobileDOM.addButton({label: '↑', onPress: () => this.onUp?.(), onRelease: () => this.onUpRelease?.()});
-    MobileDOM.addButton({label: '↓', onPress: () => this.onDown?.(), onRelease: () => this.onDownRelease?.()});
-    MobileDOM.addButton({label: 'A', onPress: () => this.onAction1?.(), onRelease: () => this.onAction1Release?.()});
-    MobileDOM.addButton({label: 'B', onPress: () => this.onAction2?.(), onRelease: () => this.onAction2Release?.()});
-  }
+_setupMobileButtons() {
+  MobileDOM.addButton('←', () => this.onLeft?.(),     () => this.onLeftRelease?.(),    {left: '20', bottom: '5'});
+  MobileDOM.addButton('→', () => this.onRight?.(),    () => this.onRightRelease?.(),   {left: '60', bottom: '5'});
+  MobileDOM.addButton('↑', () => this.onUp?.(),       () => this.onUpRelease?.(),      {left: '40', bottom: '15'});
+  MobileDOM.addButton('↓', () => this.onDown?.(),     () => this.onDownRelease?.(),    {left: '40', bottom: '5'});
+  MobileDOM.addButton('A', () => this.onAction1?.(),  () => this.onAction1Release?.(), {left: '80', bottom: '40'});
+  MobileDOM.addButton('B', () => this.onAction2?.(),  () => this.onAction2Release?.(), {left: '80', bottom: '30'});
+}
 
   // ── keyboard ──────────────────────────────────────────────────
 
