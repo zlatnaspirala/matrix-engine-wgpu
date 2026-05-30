@@ -191,7 +191,7 @@ var loadSprite2 = function () {
           },
           position: {
             x: 0,
-            y: -5,
+            y: -4,
             z: -10
           },
           rotation: {
@@ -250,7 +250,7 @@ var loadSprite2 = function () {
           },
           position: {
             x: 0,
-            y: 19,
+            y: 4,
             z: -10
           },
           rotation: {
@@ -299,7 +299,7 @@ var loadSprite2 = function () {
             y: 0,
             z: 0
           },
-          scale: [1, 1, 1],
+          scale: [4, 1, 1],
           texturesPaths: ['./res/textures/floor1.webp'],
           name: 'BLOCK',
           mesh: m.cube,
@@ -346,12 +346,14 @@ var loadSprite2 = function () {
           physics: {
             enabled: true,
             mass: 0,
+            kinematic: true,
             geometry: "Cube"
           },
           pointerEffect: {
             enabled: true
           }
         });
+        BLOCK2.isKinematic = true;
         console.log(',,,,,,,,,,,,,,,,,,,,,,', PLAYER);
         // const batch = new SpritesPack2D(app.device, 'rgba16float', 'rgba16float', world2D.cameraBuffer);
         // await batch.registerSpritesheet("reel", "./res/textures/slot/reel1-lod0.webp", 4, 4);
@@ -385,7 +387,7 @@ var loadSprite2 = function () {
 
         // const spr = batch.getSprite("player-instance-1");
 
-        world2D.lightContainer[0].setIntensity(15);
+        world2D.lightContainer[0].setIntensity(55);
         world2D.activateBloomEffect();
         world2D.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
         world2D.lightContainer[0].behavior.value_ = -1;
@@ -393,8 +395,9 @@ var loadSprite2 = function () {
           light.setTargetX(light.behavior.setPath0());
           light.setPosX(light.behavior.setPath0());
         });
-        world2D.lightContainer[0].setPosition(0, 15, -10);
-        world2D.lightContainer[0].setTarget(0, 0, -10);
+        world2D.lightContainer[0].setPosition(0, 45, 0);
+        world2D.lightContainer[0].setRange(200);
+        world2D.lightContainer[0].setTarget(0, 0, 0);
         setTimeout(() => {
           // MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
         }, 200);
@@ -410,11 +413,33 @@ var loadSprite2 = function () {
           app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
           PLAYER.setAmbient(2, 1, 0);
           let cam = app.getCamera();
+          let moveSpeed = 0.3;
 
           // This is only for PlaneCamera !
+          let _playerID = app.matrixPhysics.getBodyByName('PLAYER');
           cam.onUp = () => {
+            app.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(0, moveSpeed, 0));
+          };
+          cam.onLeft = () => {
             let _ = app.matrixPhysics.getBodyByName('PLAYER');
-            app.matrixPhysics.applyImpulse(_, new _matrixClass.PVector(0, 1, 0));
+            app.matrixPhysics.applyImpulse(_, new _matrixClass.PVector(-moveSpeed, 0, 0));
+          };
+          cam.onRight = () => {
+            let _ = app.matrixPhysics.getBodyByName('PLAYER');
+            app.matrixPhysics.applyImpulse(_, new _matrixClass.PVector(moveSpeed, 0, 0));
+          };
+          let strength = 1;
+          app.matrixPhysics.detectCollision = e => {
+            const body0Name = e.detail.body0Name;
+            const body1Name = e.detail.body1Name;
+            const rayDirection = e.detail.rayDirection;
+            console.log('collision : ', e.detail);
+            console.log('collision : ', body1Name);
+            if (body0Name == "PLAYER" && body1Name.startsWith("BLOCK")) {
+              app.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(rayDirection[0] * strength, 0, rayDirection[2] * strength));
+            } else if (body1Name == 'bottomEdge2') {
+              app.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(1, 1, 0));
+            }
           };
           cam.setYaw(-0.01);
           cam.setPitch(-0.05);
@@ -27142,9 +27167,9 @@ class PlaneCamera {
   followMe = null; // cam.followMe = body.position  {x, y}
   followMeOffset = 80;
   scrollY = 80;
-  minY = 20.0;
+  minY = 3.0;
   maxY = 200.0;
-  scrollSpeed = 1;
+  scrollSpeed = 0.8;
   smoothFactor = 0.1;
   mousRollInAction = false;
   _detachedFromFollow = false;
@@ -42746,12 +42771,17 @@ class PhysicsBridge {
       const base = count * 3;
       idxArr[count] = idx;
       posArr[base + 0] = meObj.position.x;
-      posArr[base + 1] = meObj.position.y;
+      posArr[base + 1] = -meObj.position.y;
       posArr[base + 2] = meObj.position.z;
       count++;
+      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if (count > 0) {
+      console.log('Sending to Worker:', {
+        idxArr,
+        posArr
+      });
       this._worker.postMessage({
         cmd: 'setKinematicTransform',
         count,
@@ -42761,16 +42791,10 @@ class PhysicsBridge {
     }
   }
   updatePhysics() {
-    // if(this.c % this.wPhysicsSteps === 0) {
     this._worker.postMessage({
       cmd: 'step'
     });
-    //   this.c=0;
-    // }
-    // this.c++;
   }
-
-  // MatrixJolt public API
   setGravity(x, y, z) {
     this._worker.postMessage({
       cmd: 'setGravity',
@@ -43030,6 +43054,7 @@ class PhysicsBridge {
     if (!snap) return;
     const STRIDE = 8;
     for (const [idx, meObj] of this._bodyIndexMap) {
+      // if(!meObj.modelMatrix || meObj.isKinematic=== true) continue;
       if (!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
       const pos = snap.subarray(b, b + 3);
@@ -68934,7 +68959,7 @@ class MatrixEngineWGPU {
         this.matrixPhysics = new _bridge.PhysicsBridge('./matterjs/matterjs.js');
         this.matrixPhysics.init({
           gravity: 10,
-          groundY: -1
+          groundY: 0
         });
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'MATTERJS';

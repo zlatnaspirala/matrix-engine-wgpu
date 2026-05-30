@@ -1250,9 +1250,9 @@ export class PlaneCamera {
   followMeOffset = 80;
 
   scrollY = 80;
-  minY = 20.0;
+  minY = 3.0;
   maxY = 200.0;
-  scrollSpeed = 1;
+  scrollSpeed = 0.8;
 
   smoothFactor = 0.1;
 

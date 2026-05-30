@@ -81,25 +81,22 @@ export class PhysicsBridge {
       const base = count * 3;
       idxArr[count] = idx;
       posArr[base + 0] = meObj.position.x;
-      posArr[base + 1] = meObj.position.y;
+      posArr[base + 1] = -meObj.position.y;
       posArr[base + 2] = meObj.position.z;
       count++;
+      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if(count > 0) {
+      console.log('Sending to Worker:', {idxArr, posArr});
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idxArr, pos: posArr});
     }
   }
 
   updatePhysics() {
-    // if(this.c % this.wPhysicsSteps === 0) {
     this._worker.postMessage({cmd: 'step'})
-    //   this.c=0;
-    // }
-    // this.c++;
   }
 
-  // MatrixJolt public API
   setGravity(x, y, z) {this._worker.postMessage({cmd: 'setGravity', x, y, z})}
 
   setHingeLimit(idx, v0, v1, v2, v3, v4) {
@@ -241,6 +238,7 @@ export class PhysicsBridge {
     if(!snap) return;
     const STRIDE = 8;
     for(const [idx, meObj] of this._bodyIndexMap) {
+      // if(!meObj.modelMatrix || meObj.isKinematic=== true) continue;
       if(!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
       const pos = snap.subarray(b, b + 3);

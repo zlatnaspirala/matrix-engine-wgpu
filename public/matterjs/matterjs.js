@@ -18,7 +18,7 @@ class MatterPhysicsWorker {
     this._useSAB = false;
     this.options = {gravity: 1, roundDimension: 100};
     this._arr = [0, 0, 0];
-    this.TUNE = 0.0005;
+    this.TUNE = 0.005;
   }
 
   async init(options = {}) {
@@ -58,16 +58,33 @@ class MatterPhysicsWorker {
 
   _initGround(groundZ = 0) {
     const matterY = groundZ;
+
+    // Convert ground size to Matter pixel space using the same TUNE logic
+    // We divide by TUNE to map world units to Matter pixels
+    const width = this.options.roundDimension / this.TUNE;
+    const height = this.options.roundDimension / 4; // / this.TUNE;
+
     const ground = this.Bodies.rectangle(
-      0, matterY + 100,
-      this.options.roundDimension * 21, this.options.roundDimension * 21,
-      {isStatic: true, name: 'ground', friction: 0.3, restitution: 0.1}
+      0,
+      matterY, // Ensure this offset aligns with your render origin
+      width,
+      height,
+      {
+        isStatic: true,
+        name: 'ground',
+        friction: 0.3,
+        restitution: 0.1
+      }
     );
+
     this.World.add(this.engine.world, ground);
     this.rigidBodies.push(ground);
+
+    // Keep your buffer allocation logic
     this._allocBuffer(this.rigidBodies.length);
     const idx = this.rigidBodies.length - 1;
     this.bodyMap.set('ground', idx);
+
     return idx;
   }
 
@@ -145,14 +162,23 @@ class MatterPhysicsWorker {
 
     if(!body) return -1;
 
-    if(mass > 0) {
+    if(pOptions.sensor) body.isSensor = true;
+
+    // NEW: Identify if it is kinematic
+    body.isKinematic = pOptions.state === 4 || pOptions.kinematic;
+
+    if(body.isKinematic) {
+      // Kinematic bodies must be static so gravity/forces don't affect them
+      body.isStatic = true;
+      // Optional: Add a label for debugging
+      body.label = 'kinematic';
+    } else if(mass > 0) {
       this.Body.setMass(body, mass);
     } else {
       body.isStatic = true;
     }
 
-    if(pOptions.sensor) body.isSensor = true;
-    body.isKinematic = pOptions.state === 4 || pOptions.kinematic;
+ 
 
     this.World.add(this.engine.world, body);
     this.rigidBodies.push(body);
@@ -176,11 +202,23 @@ class MatterPhysicsWorker {
 
     return idx;
   }
-
   setKinematicTransform(idx, x, y, z) {
     const body = this.rigidBodies[idx];
     if(!body) return;
-    this.Body.setPosition(body, {x, y});
+    // const mx = x / this.TUNE;
+    // const my = -(y / this.TUNE);
+    const mx = x ;
+    const my = y;
+
+    // Directly set the position
+
+    console.log('in worker X:', mx)
+    console.log('in worker Y:', my)
+    this.Body.setPosition(body, {x: mx, y: my});
+
+    // Set velocity to 0 immediately after move to stop it from "drifting"
+    this.Body.setVelocity(body, {x: 0, y: 0});
+    this.Body.setAngularVelocity(body, 0);
   }
 
   applyImpulse(idx, x, y, z) {
@@ -358,8 +396,18 @@ self.onmessage = async ({data}) => {
         self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
       }
       break;
+    // case 'setKinematicTransform':
+    // worker.setKinematicTransform(data.idx, data.x, data.y, data.z);
     case 'setKinematicTransform':
-      worker.setKinematicTransform(data.idx, data.x, data.y, data.z);
+      // Loop through the data.count to process all batched updates
+      for(let i = 0;i < data.count;i++) {
+        const idx = data.idx[i];
+        const x = data.pos[i * 3 + 0] / worker.TUNE;
+        const y = data.pos[i * 3 + 1] / worker.TUNE;
+        // const z = data.pos[i * 3 + 2] / this.TUNE;
+        // Call the logic to actually move the body
+        worker.setKinematicTransform(idx, x, y, 0);
+      }
       break;
     case 'applyImpulse':
       worker.applyImpulse(data.idx, data.x, data.y, data.z);

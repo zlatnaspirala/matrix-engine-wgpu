@@ -143,7 +143,7 @@ export default class MatrixEngineWGPU {
         this.matrixPhysics._PHYSICS_DRIVE = 'CANNON';
       } else if(typeof options.useMatter !== 'undefined') {
         this.matrixPhysics = new PhysicsBridge('./matterjs/matterjs.js');
-        this.matrixPhysics.init({gravity: 10, groundY: -1});
+        this.matrixPhysics.init({gravity: 10, groundY: 0});
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'MATTERJS';
       }

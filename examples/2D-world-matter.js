@@ -34,7 +34,7 @@ export var loadSprite2 = function() {
       function onGround(m) {
         world2D.addMeshObj({
           material: {type: 'standard', share: true},
-          position: {x: 0, y: -5, z: -10},
+          position: {x: 0, y: -4, z: -10},
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: ['./res/textures/floor1.webp'],
@@ -66,7 +66,7 @@ export var loadSprite2 = function() {
 
         let PLAYER = world2D.addMeshObj({
           material: {type: 'standard'},
-          position: {x: 0, y: 19, z: -10},
+          position: {x: 0, y: 4, z: -10},
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
           scale: [1, 1, 1],
@@ -89,7 +89,7 @@ export var loadSprite2 = function() {
           position: {x: 0, y: 10, z: -10},
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
-          scale: [1, 1, 1],
+          scale: [4, 1, 1],
           texturesPaths: ['./res/textures/floor1.webp'],
           name: 'BLOCK',
           mesh: m.cube,
@@ -117,12 +117,15 @@ export var loadSprite2 = function() {
           physics: {
             enabled: true,
             mass: 0,
+            kinematic: true,
             geometry: "Cube"
           },
           pointerEffect: {
             enabled: true
           }
         })
+
+        BLOCK2.isKinematic = true;
 
 
         console.log(',,,,,,,,,,,,,,,,,,,,,,', PLAYER)
@@ -149,7 +152,7 @@ export var loadSprite2 = function() {
 
         // const spr = batch.getSprite("player-instance-1");
 
-        world2D.lightContainer[0].setIntensity(15);
+        world2D.lightContainer[0].setIntensity(55);
         world2D.activateBloomEffect();
         world2D.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
         world2D.lightContainer[0].behavior.value_ = -1;
@@ -157,8 +160,9 @@ export var loadSprite2 = function() {
           light.setTargetX(light.behavior.setPath0());
           light.setPosX(light.behavior.setPath0());
         })
-        world2D.lightContainer[0].setPosition(0, 15, -10);
-        world2D.lightContainer[0].setTarget(0, 0, -10);
+        world2D.lightContainer[0].setPosition(0, 45, 0);
+        world2D.lightContainer[0].setRange(200);
+        world2D.lightContainer[0].setTarget(0, 0, 0);
 
         setTimeout(() => {
           // MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
@@ -178,11 +182,40 @@ export var loadSprite2 = function() {
           PLAYER.setAmbient(2, 1, 0);
           let cam = app.getCamera();
 
+          let moveSpeed = 0.3;
+
           // This is only for PlaneCamera !
+          let _playerID = app.matrixPhysics.getBodyByName('PLAYER');
           cam.onUp = () => {
-            let _ = app.matrixPhysics.getBodyByName('PLAYER');
-            app.matrixPhysics.applyImpulse(_, new PVector(0, 1, 0))
+            
+            app.matrixPhysics.applyImpulse(_playerID, new PVector(0, moveSpeed, 0))
           }
+
+          cam.onLeft = () => {
+            let _ = app.matrixPhysics.getBodyByName('PLAYER');
+            app.matrixPhysics.applyImpulse(_, new PVector(-moveSpeed, 0, 0))
+          }
+
+          cam.onRight = () => {
+            let _ = app.matrixPhysics.getBodyByName('PLAYER');
+            app.matrixPhysics.applyImpulse(_, new PVector(moveSpeed, 0, 0))
+          }
+
+          let strength = 1;
+          app.matrixPhysics.detectCollision = (e) => {
+            const body0Name = e.detail.body0Name;
+            const body1Name = e.detail.body1Name;
+            const rayDirection = e.detail.rayDirection;
+            console.log('collision : ', e.detail)
+            console.log('collision : ', body1Name)
+            if(body0Name == "PLAYER" && body1Name.startsWith("BLOCK")) {
+              app.matrixPhysics.applyImpulse(_playerID, new PVector(
+                rayDirection[0] * strength, 0, rayDirection[2] * strength));
+            } else if(body1Name == 'bottomEdge2') {
+              app.matrixPhysics.applyImpulse(_playerID,
+                new PVector(1, 1, 0));
+            }
+          };
 
           cam.setYaw(-0.01);
           cam.setPitch(-0.05);
