@@ -116,17 +116,10 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
   return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
-  let NdotL = max(dot(N, L), 0.0);
-  if (NdotL <= 0.0) {
-      return vec3f(0.0);
-  }
-  return material.baseColor * light.color * light.intensity * NdotL;
-}
-
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
   let NdotL = max(dot(N, L), 0.0);
 
   let theta = dot(L, normalize(-light.direction));
@@ -134,8 +127,12 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
   if (coneAtten <= 0.0 || NdotL <= 0.0) {
-      return vec3f(0.0);
+    return vec3f(0.0);
   }
+
+  // Distance attenuation
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation; // quadratic falloff curve
 
   let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
   let H = normalize(L + V);
@@ -161,9 +158,11 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
   let diffuse = kD * material.baseColor.rgb / PI;
 
-  let radiance = light.color * light.intensity;
-  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let radiance = light.color * light.intensity * attenuation2;
+
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
 }
+  
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
   var visibility: f32 = 0.0;
   let biasConstant: f32 = 0.001;
