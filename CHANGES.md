@@ -5,6 +5,7 @@
  - added Sprite2DPAck class
  - no default physics any more must be
    useAmmo, useJolt, useCannon or useMatter
+ - Improved volumetric and light - range param
 
 [1.14.0]
  - Added HZB postproccesing effect

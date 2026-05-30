@@ -44014,7 +44014,8 @@ class VolumetricPass {
       density: options.density ?? 0.03,
       steps: options.steps ?? 32,
       scatterStrength: options.scatterStrength ?? 1.0,
-      heightFalloff: options.heightFalloff ?? 0.1
+      heightFalloff: options.heightFalloff ?? 0.1,
+      range: options.range ?? 40
     };
     this.lightParams = {
       color: options.lightColor ?? [1.0, 0.85, 0.6],
@@ -44022,7 +44023,8 @@ class VolumetricPass {
     };
     this.paramsBuffer = device.createBuffer({
       label: 'VolumetricPass.paramsBuffer',
-      size: 16,
+      size: 32,
+      //16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.invViewProjBuffer = device.createBuffer({
@@ -44146,8 +44148,12 @@ class VolumetricPass {
     this._lightDir[3] = 0.0;
     this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
   };
+  setRange = v => {
+    this.params.range = v;
+    this._updateParams();
+  };
   _updateParams() {
-    this.device.queue.writeBuffer(this.paramsBuffer, 0, new Float32Array([this.params.density, this.params.steps, this.params.scatterStrength, this.params.heightFalloff]));
+    this.device.queue.writeBuffer(this.paramsBuffer, 0, new Float32Array([this.params.density, this.params.steps, this.params.scatterStrength, this.params.heightFalloff, this.params.range, 0.0, 0.0, 0.0]));
   }
   _updateLightColor() {
     this.device.queue.writeBuffer(this.lightColorBuffer, 0, new Float32Array([...this.lightParams.color, 0.0]));
@@ -44449,7 +44455,18 @@ function marchFragWGSL() {
   @group(0) @binding(5) var<uniform> lightDir:      vec4<f32>;
   @group(0) @binding(6) var<uniform> lightColor:    vec4<f32>;
 
-  struct Params { density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32 }
+  // struct Params { density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32 }
+  struct Params { 
+    density: f32, 
+    steps: f32, 
+    scatterStrength: f32, 
+    heightFalloff: f32,
+    range: f32,
+    _pad0: f32,
+    _pad1: f32,
+    _pad2: f32,
+  }
+  
   @group(0) @binding(7) var<uniform> params: Params;
 
   fn worldPos(uv: vec2<f32>, depth: f32) -> vec3<f32> {
@@ -44494,7 +44511,15 @@ function marchFragWGSL() {
 
       let d   = fogDensity(p) * step;
       let ext = exp(-d);
-      let s   = trans * (1.0 - ext) * lit * params.scatterStrength * f32(d > 0.0001);
+
+      let toLight = lightDir.xyz - p;  // assumes lightDir.xyz is light POSITION — see note below
+      let distToLight = length(p - /* lightPos */ vec3(0.0)); // needs light pos not dir
+      let rangeAtten = clamp(1.0 - (distToLight / params.range), 0.0, 1.0);
+      let rangeAtten2 = rangeAtten * rangeAtten;
+
+      let s = trans * (1.0 - ext) * lit * params.scatterStrength * rangeAtten2 * f32(d > 0.0001);
+
+      // let s   = trans * (1.0 - ext) * lit * params.scatterStrength * f32(d > 0.0001);
 
       accum += s * lightColor.rgb;
       trans *= select(1.0, ext, d > 0.0001);
