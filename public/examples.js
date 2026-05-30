@@ -285,8 +285,8 @@ var loadSprite2 = function () {
             type: 'standard'
           },
           position: {
-            x: 110,
-            y: 19,
+            x: 0,
+            y: 10,
             z: -10
           },
           rotation: {
@@ -302,6 +302,42 @@ var loadSprite2 = function () {
           scale: [1, 1, 1],
           texturesPaths: ['./res/textures/floor1.webp'],
           name: 'BLOCK',
+          mesh: m.cube,
+          raycast: {
+            enabled: true,
+            radius: 1
+          },
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: "Cube"
+          },
+          pointerEffect: {
+            enabled: true
+          }
+        });
+        let BLOCK2 = world2D.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: {
+            x: 10,
+            y: 20,
+            z: -10
+          },
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [1, 1, 1],
+          texturesPaths: ['./res/textures/floor1.webp'],
+          name: 'BLOCK2',
           mesh: m.cube,
           raycast: {
             enabled: true,
