@@ -56,7 +56,7 @@ export class PhysicsBridge {
   }
 
   addPhysics(MEObject, pOptions) {
-       console.log('   ad add cccccccccccccccccccccccccccc');
+    console.log('   ad add cccccccccccccccccccccccccccc');
     if(!this._ready) {
       this._queue.push({MEObject, pOptions});
       return;
@@ -65,7 +65,7 @@ export class PhysicsBridge {
   }
 
   _doAddPhysics(MEObject, pOptions) {
- 
+
     MEObject.isKinematic = pOptions.state === 4;
     this._send('addBody', {pOptions}).then(idx => {
       this._bodyIndexMap.set(idx, MEObject);
@@ -252,6 +252,9 @@ export class PhysicsBridge {
       mat4.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
       meObj.modelMatrix[15] = 1;
       meObj.position.inMove = true;
+      meObj.position.x = pos[0];
+      meObj.position.y = pos[1];
+      meObj.position.z = pos[2];
     }
   }
 
@@ -297,7 +300,6 @@ export class PhysicsBridge {
         this._pending.delete(data.id);
         break;
       case 'getPosition':
-
         this._pending.get(data.id)?.(data.position);
         this._pending.delete(data.id);
         break;

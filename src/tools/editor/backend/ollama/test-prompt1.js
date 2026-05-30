@@ -9056,7 +9056,7 @@ GRAPH ExampleComplex1
     },
     "string": {
       "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.webp",
-      "REEL_TEX": "res/textures/slot/reel1-lod1.webp",
+      "REEL_TEX": "res/textures/slot/reel1-lod0.webp",
       "START_SPIN": "start-spin",
       "CUBE_TEX": "res/textures/cube-g1.webp"
     },

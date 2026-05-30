@@ -1,6 +1,6 @@
 import {MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
-import {ArcballCamera, CinematicCamera, FirstPersonCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
+import {ArcballCamera, Camera2D, CinematicCamera, FirstPersonCamera, PlaneCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader, checkLock, mobileLock, preventZoom} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
@@ -276,12 +276,17 @@ export default class MatrixEngineWGPU {
         this.cameras = {
           cinematicCamera: new CinematicCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'cinematicCamera' == this.options.mainCameraParams.type ? 'init active cam' : null})
         };
+      } else if('planeCamera' == this.options.mainCameraParams.type) {
+        this.cameras = {
+          planeCamera: new PlaneCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'planeCamera' == this.options.mainCameraParams.type ? 'init active cam' : null})
+        };
       }
+      // Camera2D
     } else {
       this.cameras = {
-        firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+        // firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
         WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null}),
-        RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas, isActive: 'RPG' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+        // RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas, isActive: 'RPG' == this.options.mainCameraParams.type ? 'init active cam' : null}),
         cinematicCamera: new CinematicCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'cinematicCamera' == this.options.mainCameraParams.type ? 'init active cam' : null})
       };
     }

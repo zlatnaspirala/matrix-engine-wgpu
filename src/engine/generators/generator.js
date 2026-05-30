@@ -473,7 +473,7 @@ export function physicsBodiesChain(
   material = "standard",
   pos = {x: 10, y: 30, z: -6},
   rot = {x: 0, y: 0, z: 0},
-  texturePath = ['./res/textures/slot/reel1-lod1.webp'],
+  texturePath = ['./res/textures/slot/reel1-lod0.webp'],
   name = "chain",
   size = 10,
   raycast = false,

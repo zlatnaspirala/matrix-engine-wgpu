@@ -60,7 +60,7 @@ export var testCannonES = function() {
       //   position: {x: 8, y: 4, z: -6},
       //   rotation: {x: 0, y: 0, z: 0.02},
       //   scale: [3, 3, 3],
-      //   texturesPaths: ['./res/textures/slot/reel1-lod1.webp'],
+      //   texturesPaths: ['./res/textures/slot/reel1-lod0.webp'],
       //   name: 'MyHull',
       //   mesh: m.reel,
       //   physics: {

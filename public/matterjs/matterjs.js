@@ -295,7 +295,8 @@ class MatterPhysicsWorker {
 
     for(let i = 0;i < this.rigidBodies.length;i++) {
       const body = this.rigidBodies[i];
-      console.log('body.position.x', body.position.x)
+      // console.log('body.position.x', body.position.x)
+      console.log('body.position.y', body.position.y) 
       if(!body) continue;
       const base = i * FLOATS_PER_BODY;
       snap[base + 0] = body.position.x * this.TUNE;

@@ -936,7 +936,6 @@ export class FirstPersonCamera {
 }
 
 // CinematicCamera — no input, pure programmatic control
-// Drop-in replacement alongside FirstPersonCamera — same .view / .VP / .projectionMatrix API
 export class CinematicCamera {
   pitch = 0;
   yaw = 0;
@@ -1228,6 +1227,435 @@ export class CinematicCamera {
       this.setProjection(s.fov, aspect);
     }
     this._dirtyAngle = true;
+  }
+}
+
+export class PlaneCamera {
+  pitch = 0;
+  yaw = 0;
+
+  position = new Float32Array(3);
+
+  right = new Float32Array(3);
+  up = new Float32Array(3);
+  back = new Float32Array(3);
+
+  view = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
+  VP = new Float32Array(16);
+
+  // ===== PLANE =====
+  followMe = null;   // cam.followMe = body.position  {x, y}
+  followMeOffset = 80;
+
+  scrollY = 80;
+  minY = 20.0;
+  maxY = 200.0;
+  scrollSpeed = 1;
+
+  smoothFactor = 0.1;
+
+  mousRollInAction = false;
+
+  _detachedFromFollow = false;
+  _dirty = true;
+
+  // ===== CALLBACKS =====
+  onLeft = null;
+  onLeftRelease = null;
+  onRight = null;
+  onRightRelease = null;
+  onUp = null;
+  onUpRelease = null;
+  onDown = null;
+  onDownRelease = null;
+  onAction1 = null;
+  onAction1Release = null;
+  onAction2 = null;
+  onAction2Release = null;
+
+  constructor(options = {}) {
+    if(options.position) {
+      this.position[0] = options.position[0];
+      this.position[1] = options.position[1];
+      this.position[2] = options.position[2];
+    }
+
+    this.canvas = options.canvas;
+    this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
+
+    this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
+    this._setupEvents();
+    this._recalculateViewVP();
+
+    if(isMobile() == true && options.isActive == 'init active cam') {
+      this._setupMobileButtons();
+    }
+  }
+
+  setProjection(fov, aspect, near, far) {
+    mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._dirty = true;
+  }
+
+  setPitch = (p) => {this.pitch = p; this._dirty = true;}
+  setYaw = (y) => {this.yaw = y; this._dirty = true;}
+
+  setPosition = (x, y, z) => {
+    this.position[0] = x;
+    this.position[1] = y;
+    this.position[2] = z;
+    this._dirty = true;
+  }
+
+  setX = (x) => {this.position[0] = x; this._dirty = true;}
+  setY = (y) => {this.position[1] = y; this._dirty = true;}
+  setZ = (z) => {this.position[2] = z; this._dirty = true;}
+
+  // ── mobile buttons ────────────────────────────────────────────
+
+  _setupMobileButtons() {
+    MobileDOM.addButton({label: '←', onPress: () => this.onLeft?.(), onRelease: () => this.onLeftRelease?.()});
+    MobileDOM.addButton({label: '→', onPress: () => this.onRight?.(), onRelease: () => this.onRightRelease?.()});
+    MobileDOM.addButton({label: '↑', onPress: () => this.onUp?.(), onRelease: () => this.onUpRelease?.()});
+    MobileDOM.addButton({label: '↓', onPress: () => this.onDown?.(), onRelease: () => this.onDownRelease?.()});
+    MobileDOM.addButton({label: 'A', onPress: () => this.onAction1?.(), onRelease: () => this.onAction1Release?.()});
+    MobileDOM.addButton({label: 'B', onPress: () => this.onAction2?.(), onRelease: () => this.onAction2Release?.()});
+  }
+
+  // ── keyboard ──────────────────────────────────────────────────
+
+  _setupKeyboard() {
+    const handle = (e, isDown) => {
+      switch(e.code) {
+        case 'KeyA': case 'ArrowLeft': isDown ? this.onLeft?.() : this.onLeftRelease?.(); break;
+        case 'KeyD': case 'ArrowRight': isDown ? this.onRight?.() : this.onRightRelease?.(); break;
+        case 'KeyW': case 'ArrowUp': isDown ? this.onUp?.() : this.onUpRelease?.(); break;
+        case 'KeyS': case 'ArrowDown': isDown ? this.onDown?.() : this.onDownRelease?.(); break;
+        case 'KeyJ': isDown ? this.onAction1?.() : this.onAction1Release?.(); break;
+        case 'KeyK': isDown ? this.onAction2?.() : this.onAction2Release?.(); break;
+      }
+    };
+
+    window.addEventListener('keydown', e => {if(!e.repeat) handle(e, true);}, {passive: true});
+    window.addEventListener('keyup', e => handle(e, false), {passive: true});
+  }
+
+  // ── scroll / touch ────────────────────────────────────────────
+
+  _pinchDist(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  }
+
+  _setupEvents() {
+    if(isMobile() == false) {
+      addEventListener('wheel', (e) => {
+        this.mousRollInAction = true;
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.1;
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        this._dirty = true;
+      });
+      this._setupKeyboard();
+    } else {
+      let lastPinchDist = null;
+      let lastTouchX = null, lastTouchY = null;
+
+      addEventListener('touchmove', (e) => {
+        if(e.touches.length === 2) {
+          const dist = this._pinchDist(e.touches);
+          if(lastPinchDist !== null) {
+            const delta = lastPinchDist - dist;
+            this.scrollY -= delta * this.scrollSpeed * 0.5;
+            this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+            this._dirty = true;
+          }
+          lastPinchDist = dist;
+          return;
+        }
+        if(e.touches.length === 1) {
+          const tx = e.touches[0].clientX;
+          const tz = e.touches[0].clientY;
+          if(lastTouchX !== null) {
+            // no pan — touch is handled by MobileDOM buttons
+          }
+          lastTouchX = tx;
+          lastTouchY = tz;
+        }
+      }, {passive: true});
+
+      addEventListener('touchend', (e) => {
+        if(e.touches.length < 2) lastPinchDist = null;
+        if(e.touches.length === 0) {lastTouchX = null; lastTouchY = null;}
+      }, {passive: true});
+    }
+  }
+
+  // ── orientation ───────────────────────────────────────────────
+
+  _updateOrientation() {
+    this.right[0] = 1; this.right[1] = 0; this.right[2] = 0;
+    this.up[0] = 0; this.up[1] = 1; this.up[2] = 0;
+    this.back[0] = 0; this.back[1] = 0; this.back[2] = 1;
+  }
+
+  // ── follow ────────────────────────────────────────────────────
+
+  _updateFollow() {
+    if(!this.followMe) return;
+    if(this._detachedFromFollow) return;
+
+    if(this.mousRollInAction) {
+      this.followMeOffset = this.scrollY;
+      this.mousRollInAction = false;
+    }
+
+    const dx = this.followMe.x - this.position[0];
+    const dy = this.followMe.y - this.position[1];
+
+    if(Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) {
+      this.position[0] += dx * this.smoothFactor;
+      this.position[1] += dy * this.smoothFactor;
+      this._dirty = true;
+    }
+
+    // smooth Z pull-back
+    const newZ = this.position[2] + (this.scrollY - this.position[2]) * this.smoothFactor;
+    if(Math.abs(newZ - this.position[2]) > 0.001) {
+      this.position[2] = newZ;
+      this._dirty = true;
+    }
+  }
+
+  _recalculateViewVP() {
+    this._updateOrientation();
+    mat4.lookAt(
+      [this.position[0], this.position[1], this.position[2]],
+      [this.position[0], this.position[1], 0],
+      [0, 1, 0],
+      this.view
+    );
+
+    mat4.multiply(this.projectionMatrix, this.view, this.VP);
+  }
+
+  update() {
+    this._updateFollow();
+    if(!this._dirty) return;
+    this._recalculateViewVP();
+    this._dirty = false;
+  }
+}
+
+// DEV
+export class Camera2DOrthogonaly {
+  pitch = 0;
+  yaw = 0;
+  position = new Float32Array(3);
+  right = new Float32Array(3);
+  up = new Float32Array(3);
+  back = new Float32Array(3);
+  view = mat4.identity();
+  projectionMatrix = mat4.identity();
+  invProj = mat4.identity();
+  VP = mat4.identity();
+  followMe = null;
+  followMeOffset = 0;
+  zoom = 12.0;
+  minZoom = 2.0;
+  maxZoom = 40.0;
+  zoomSpeed = 0.01;
+  smoothFactor = 0.12;
+  _detachedFromFollow = false;
+  _digital = {forward: false, backward: false, left: false, right: false};
+  _keyInterval = null;
+  KEYBOARD_SPEED = 4.5;
+  // set after construction if you want WASD → worker velocity
+  // cam._bridge = physicsBridge;  cam._followBodyId = bodyId;
+  _bridge = null;
+  _followBodyId = null;
+  MOVE_FORCE = 0.015;
+  _dirty = true;
+
+  constructor(options = {}) {
+    if(options.position) {
+      this.position[0] = options.position[0];
+      this.position[1] = options.position[1];
+      this.position[2] = options.position[2];
+    }
+
+    this.canvas = options.canvas;
+    this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
+
+    if(options.zoom !== undefined) this.zoom = options.zoom;
+
+    this._buildProjection();
+    this._setupEvents();
+    this._recalculateViewVP();
+  }
+
+  _buildProjection() {
+    const r = this.zoom * this.aspect;
+    const t = this.zoom;
+    mat4.ortho(-r, r, -t, t, -1, 1, this.projectionMatrix);
+    this._dirty = true;
+  }
+
+  setZoom(z) {
+    this.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, z));
+    this._buildProjection();
+  }
+
+  _updateOrientation() {
+    this.right[0] = 1; this.right[1] = 0; this.right[2] = 0;
+    this.up[0] = 0; this.up[1] = 1; this.up[2] = 0;
+    this.back[0] = 0; this.back[1] = 0; this.back[2] = 1;
+  }
+
+  _recalculateViewVP() {
+    this._updateOrientation();
+    mat4.lookAt(
+      [this.position[0], this.position[1], 1],   // eye
+      [this.position[0], this.position[1], 0],   // target
+      [0, 1, 0],                                 // up
+      this.view
+    );
+    mat4.multiply(this.projectionMatrix, this.view, this.VP);
+  }
+
+  _updateFollow() {
+    if(!this.followMe) return;
+    if(this._detachedFromFollow) return;
+    const tx = this.followMe.x;
+    const ty = this.followMe.y;
+    const dx = tx - this.position[0];
+    const dy = ty - this.position[1];
+    if(Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) {
+      this.position[0] += dx * this.smoothFactor;
+      this.position[1] += dy * this.smoothFactor;
+      this._dirty = true;
+    }
+  }
+
+  _applyDigitalMovement() {
+    const d = this._digital;
+    if(this._bridge && this._followBodyId !== null) {
+      // send velocity to Matter.js worker — camera follows via followMe
+      let vx = 0, vy = 0;
+      if(d.left) vx -= this.MOVE_FORCE;
+      if(d.right) vx += this.MOVE_FORCE;
+      if(d.forward) vy -= this.MOVE_FORCE;
+      if(d.backward) vy += this.MOVE_FORCE;
+      if(vx === 0 && vy === 0) return;
+      this._bridge._send({type: 'setVelocity', id: this._followBodyId, vx, vy});
+    } else {
+      // no bridge — move camera directly (free pan)
+      let vx = 0, vz = 0;
+      if(d.forward) vx -= this.back[0], vz -= this.back[2];
+      if(d.backward) vx += this.back[0], vz += this.back[2];
+      if(d.right) vx += this.right[0], vz += this.right[2];
+      if(d.left) vx -= this.right[0], vz -= this.right[2];
+      const len = Math.sqrt(vx * vx + vz * vz);
+      if(len < 0.0001) return;
+      const s = this.KEYBOARD_SPEED / len;
+      this.position[0] += vx * s;
+      this.position[2] += vz * s;
+      this._dirty = true;
+    }
+  }
+
+  setFollowObject = (obj, matterBridge) => {
+    this._bridge = matterBridge;
+    this.followMe = obj.position;
+    // optional — only if you want WASD to drive physics velocity
+    cam._followBodyId = heroBodyId;
+  }
+
+  _setupKeyboard() {
+    const setDigital = (e, value) => {
+      switch(e.code) {
+        case 'KeyW': case 'ArrowUp': this._digital.forward = value; break;
+        case 'KeyS': case 'ArrowDown': this._digital.backward = value; break;
+        case 'KeyA': case 'ArrowLeft': this._digital.left = value; break;
+        case 'KeyD': case 'ArrowRight': this._digital.right = value; break;
+        default: return;
+      }
+
+      const d = this._digital;
+      const anyDown = d.forward || d.backward || d.left || d.right;
+      if(value && this._keyInterval === null) {
+        this._detachedFromFollow = !this._bridge;  // detach only if no bridge
+        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
+      } else if(!anyDown) {
+        clearInterval(this._keyInterval);
+        this._keyInterval = null;
+        // zero velocity on release
+        if(this._bridge && this._followBodyId !== null) {
+          this._bridge._send({type: 'setVelocity', id: this._followBodyId, vx: 0, vy: 0});
+        }
+      }
+    };
+
+    window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
+    window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
+  }
+
+  _pinchDist(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  }
+
+  _setupEvents() {
+    if(isMobile() == false) {
+      addEventListener('wheel', (e) => {
+        this.setZoom(this.zoom - e.deltaY * this.zoomSpeed);
+        this._dirty = true;
+      });
+      this._setupKeyboard();
+    } else {
+      let lastPinchDist = null;
+      let lastTouchX = null, lastTouchY = null;
+
+      addEventListener('touchmove', (e) => {
+        if(e.touches.length === 2) {
+          const dist = this._pinchDist(e.touches);
+          if(lastPinchDist !== null) {
+            this.setZoom(this.zoom + (lastPinchDist - dist) * this.zoomSpeed * 0.5);
+            this._dirty = true;
+          }
+          lastPinchDist = dist;
+          return;
+        }
+        if(e.touches.length === 1) {
+          const tx = e.touches[0].clientX;
+          const tz = e.touches[0].clientY;
+          if(lastTouchX !== null) {
+            const scale = (2 * this.zoom) / (this.canvas?.height ?? 600);
+            this.position[0] -= (tx - lastTouchX) * scale;
+            this.position[1] += (tz - lastTouchY) * scale;
+            this._detachedFromFollow = true;
+            this._dirty = true;
+          }
+          lastTouchX = tx;
+          lastTouchY = tz;
+        }
+      }, {passive: true});
+
+      addEventListener('touchend', (e) => {
+        if(e.touches.length < 2) lastPinchDist = null;
+        if(e.touches.length === 0) {lastTouchX = null; lastTouchY = null;}
+      }, {passive: true});
+    }
+  }
+
+  update() {
+    this._updateFollow();
+    if(!this._dirty) return;
+    this._recalculateViewVP();
+    this._dirty = false;
   }
 }
 
