@@ -559,6 +559,18 @@ class MatrixJolt {
     self.postMessage({cmd: 'getPosition', id: msgID, position: {x: t.GetX(), y: t.GetY(), z: t.GetZ()}});
   }
 
+
+  isSleeping(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) {
+      if(!body.IsActive()) {
+        self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});
+      } else {
+        self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
+      }
+    }
+  }
+
   speedUpSimulation(v) {
     this.setSpeedUp = v;
   }
@@ -635,5 +647,8 @@ self.onmessage = async ({data}) => {
     case 'speedUpSimulation': jolt.speedUpSimulation(data.value); break;
     case 'removeRigidBody': jolt.removeRigidBody(data.idx, data.flags); break;
     case 'createChain': jolt.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
+
+    // new
+    case 'isSleeping': jolt.isSleeping(data.idx); break;
   }
 };

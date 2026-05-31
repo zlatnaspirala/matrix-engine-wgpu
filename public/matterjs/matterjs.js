@@ -19,6 +19,7 @@ class MatterPhysicsWorker {
     this.options = {gravity: 1, roundDimension: 100};
     this._arr = [0, 0, 0];
     this.TUNE = 0.005;
+    this.kinematicTargets = new Map();
   }
 
   async init(options = {}) {
@@ -35,8 +36,12 @@ class MatterPhysicsWorker {
     this.Constraint = Matter.Constraint;
     this.Composite = Matter.Composite;
     this.Events = Matter.Events;
-    this.engine = this.Engine.create();
+    this.engine = this.Engine.create({enableSleeping: true});
     this.engine.world.gravity.y = this.options.gravity;
+
+    Matter.Events.on(this.engine, 'beforeUpdate', () => {
+      this.tickKinematic();
+    });
 
     this.Events.on(this.engine, 'collisionStart', (event) => {
       for(const pair of event.pairs) {
@@ -161,24 +166,16 @@ class MatterPhysicsWorker {
     }
 
     if(!body) return -1;
-
     if(pOptions.sensor) body.isSensor = true;
-
-    // NEW: Identify if it is kinematic
     body.isKinematic = pOptions.state === 4 || pOptions.kinematic;
-
     if(body.isKinematic) {
-      // Kinematic bodies must be static so gravity/forces don't affect them
       body.isStatic = true;
-      // Optional: Add a label for debugging
       body.label = 'kinematic';
     } else if(mass > 0) {
       this.Body.setMass(body, mass);
     } else {
       body.isStatic = true;
     }
-
- 
 
     this.World.add(this.engine.world, body);
     this.rigidBodies.push(body);
@@ -202,6 +199,27 @@ class MatterPhysicsWorker {
 
     return idx;
   }
+
+  tickKinematic() {
+    for(const [idx, target] of this.kinematicTargets) {
+      const body = this.rigidBodies[idx];
+      if(!body) {this.kinematicTargets.delete(idx); continue;}
+
+      const {tx, ty, lerpFactor} = target;
+      const prevX = body.position.x;
+      const prevY = body.position.y;
+
+      const nextX = prevX + (tx - prevX) * lerpFactor;
+      const nextY = prevY + (ty - prevY) * lerpFactor;
+
+      // unlock → move → relock
+      this.Body.setStatic(body, false);
+      this.Body.setPosition(body, {x: nextX, y: nextY});
+      this.Body.setVelocity(body, {x: nextX - prevX, y: nextY - prevY});
+      this.Body.setStatic(body, true);
+    }
+  }
+
   setKinematicTransform(idx, x, y, z) {
     const body = this.rigidBodies[idx];
     if(!body) return;
@@ -209,17 +227,54 @@ class MatterPhysicsWorker {
     const my = -(y / this.TUNE);
     // const mx = x;
     // const my = y;
-
-    // Directly set the position
-
-    console.log('in worker X:', mx)
-    console.log('in worker Y:', my)
+    // console.log('in worker X:', mx)
+    // console.log('in worker Y:', my)
     this.Body.setPosition(body, {x: mx, y: my});
-
     // Set velocity to 0 immediately after move to stop it from "drifting"
     this.Body.setVelocity(body, {x: 0, y: 0});
     this.Body.setAngularVelocity(body, 0);
   }
+
+  // implement for other later !
+  // Worker logic
+  // Keep track of target positions in a Map: targetPositions.set(idx, {x, y, z})
+  setKinematicInterpolate(idx, targetX, targetY, targetZ = 0, lerpFactor = 0.1) {
+    const body = this.rigidBodies[idx];
+    if(!body) return;
+    this.kinematicTargets.set(idx, {
+      tx: targetX / this.TUNE,
+      ty: -(targetY / this.TUNE),
+      lerpFactor
+    });
+  }
+
+  //   setKinematicInterpolate(idx, targetX, targetY, targetZ , lerpFactor = 0.1) {
+  //   const body = this.rigidBodies[idx];
+  //   if (!body) return;
+
+  //   const tx = targetX / this.TUNE;
+  //   const ty = -(targetY / this.TUNE);
+  //   const pos = body.position;
+
+  //   // Instead of lerp (percentage), use move_toward (fixed step speed)
+  //   const dx = tx - pos.x;
+  //   const dy = ty - pos.y;
+  //   const dist = Math.sqrt(dx * dx + dy * dy);
+
+  //   // Define a maximum speed for your platform
+  //   const maxSpeed = 0.5; 
+
+  //   if (dist > 0.001) {
+  //     const moveStep = Math.min(dist, maxSpeed);
+  //     const ratio = moveStep / dist;
+  //     const nextX = pos.x + dx * ratio;
+  //     const nextY = pos.y + dy * ratio;
+
+  //     this.Body.setPosition(body, {x: nextX, y: nextY});
+  //     // Velocity is handled automatically by the engine's 
+  //     // collision solver when you update position on a kinematic body
+  //   }
+  // }
 
   applyImpulse(idx, x, y, z) {
     const body = this.rigidBodies[idx];
@@ -230,7 +285,7 @@ class MatterPhysicsWorker {
   applyTorque(idx, x, y, z) {
     const body = this.rigidBodies[idx];
     if(!body) return;
-    this.Body.rotate(body, z); // 2D: use z component as angular impulse
+    this.Body.rotate(body, z);
   }
 
   setLinearVelocity(idx, x, y, z) {
@@ -342,10 +397,22 @@ class MatterPhysicsWorker {
     }
   }
 
-  getPosition(idx) {
+  getPosition(idx, msgID) {
     const body = this.rigidBodies[idx];
-    if(!body) return null;
-    return {x: body.position.x, y: body.position.y, z: 0};
+    if(!body) {
+      self.postMessage({cmd: 'getPosition', id: msgID, position: null});
+      return;
+    }
+    const pos = body.position;
+    self.postMessage({
+      cmd: 'getPosition',
+      id: msgID,
+      position: {
+        x: pos.x,
+        y: pos.y,
+        z: 0
+      }
+    });
   }
 
   shootBody(idx, lx, ly, lz, ax, ay, az) {
@@ -354,6 +421,26 @@ class MatterPhysicsWorker {
     this.Body.setVelocity(body, {x: lx, y: ly});
     body.angularVelocity = az;
   }
+
+  isSleeping(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) return;
+    if(body.isSleeping) {
+      console.log("The object is asleep and stationary.");
+      self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});
+    } else {
+      console.log("The object is not asleep and stationary.");
+      self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
+    }
+  }
+
+  //   Matter.Events.on(engine, 'sleepStart', (event) => {
+  //     event.source.bodies.forEach(body => {
+  //         if (body === myPinball) {
+  //             console.log("Pinball has entered sleep state.");
+  //         }
+  //     });
+  // });
 }
 
 // Convert Euler (X=0, Y=0, Z=angle) → Quaternion
@@ -403,65 +490,32 @@ self.onmessage = async ({data}) => {
       // Loop through the data.count to process all batched updates
       for(let i = 0;i < data.count;i++) {
         const idx = data.idx[i];
-        const x = data.pos[i * 3 + 0] ;
-        const y = data.pos[i * 3 + 1] ;
+        const x = data.pos[i * 3 + 0];
+        const y = data.pos[i * 3 + 1];
         // const z = data.pos[i * 3 + 2] / this.TUNE;
         // Call the logic to actually move the body
         worker.setKinematicTransform(idx, x, y, 0);
       }
       break;
-    case 'applyImpulse':
-      worker.applyImpulse(data.idx, data.x, data.y, data.z);
-      break;
-    case 'applyTorque':
-      worker.applyTorque(data.idx, data.x, data.y, data.z);
-      break;
-    case 'setLinearVelocity':
-      worker.setLinearVelocity(data.idx, data.x, data.y, data.z);
-      break;
-    case 'setBodyAngularVelocity':
-      worker.setBodyAngularVelocity(data.idx, data.x, data.y, data.z);
-      break;
-    case 'setGravity':
-      worker.setGravity(data.x, data.y, data.z);
-      break;
-    case 'setGravityScale':
-      worker.setGravityScale(data.idx, data.scale);
-      break;
-    case 'setFriction':
-      worker.setFriction(data.idx, data.s);
-      break;
-    case 'setRestitution':
-      worker.setRestitution(data.idx, data.s);
-      break;
-    case 'setDamping':
-      worker.setDamping(data.idx, data.l, data.a);
-      break;
-    case 'setBodyTransform':
-      worker.setBodyTransform(data.idx, data.x, data.y, data.z);
-      break;
-    case 'clearBody':
-      worker.clearBody(data.idx);
-      break;
-    case 'activate':
-      worker.activate(data.idx);
-      break;
-    case 'deactivate':
-      worker.deactivate(data.idx);
-      break;
-    case 'removeRigidBody':
-      worker.removeRigidBody(data.idx);
-      break;
-    case 'speedUpSimulation':
-      worker.speedUpSimulation(data.value);
-      break;
-    case 'getPosition':
-      const pos = worker.getPosition(data.idx);
-      self.postMessage({cmd: 'getPosition', id, position: pos});
-      break;
-    case 'shootBody':
-      worker.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az);
-      break;
+    case 'applyImpulse': worker.applyImpulse(data.idx, data.x, data.y, data.z); break;
+    case 'applyTorque': worker.applyTorque(data.idx, data.x, data.y, data.z); break;
+    case 'setLinearVelocity': worker.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setBodyAngularVelocity': worker.setBodyAngularVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setGravity': worker.setGravity(data.x, data.y, data.z); break;
+    case 'setGravityScale': worker.setGravityScale(data.idx, data.scale); break;
+    case 'setFriction': worker.setFriction(data.idx, data.s); break;
+    case 'setRestitution': worker.setRestitution(data.idx, data.s); break;
+    case 'setDamping': worker.setDamping(data.idx, data.l, data.a); break;
+    case 'setBodyTransform': worker.setBodyTransform(data.idx, data.x, data.y, data.z); break;
+    case 'clearBody': worker.clearBody(data.idx); break;
+    case 'activate': worker.activate(data.idx); break;
+    case 'deactivate': worker.deactivate(data.idx); break;
+    case 'removeRigidBody': worker.removeRigidBody(data.idx); break;
+    case 'speedUpSimulation': worker.speedUpSimulation(data.value); break;
+    case 'getPosition': worker.getPosition(data.idx, data.id); break;
+    case 'shootBody': worker.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;
+    case 'isSleeping': worker.isSleeping(data.idx, data.id); break;
+    case 'setKinematicInterpolate': worker.setKinematicInterpolate(data.idx, data.targetX, data.targetY, data.targetZ, data.lerpFactor = 0.1); break;
     default:
       console.warn(`Unknown command: ${cmd}`);
   }

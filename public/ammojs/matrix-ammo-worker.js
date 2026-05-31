@@ -574,6 +574,17 @@ class MatrixAmmoWorker {
     body.setGravity(this._origin2);
   }
 
+  isSleeping() {
+    const body = this.rigidBodies[idx];
+    if(!body) return;
+    if(body.isActive()) {
+      console.log("The body is moving or active.");
+      self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
+    } else {
+      self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});
+    }
+  }
+
   setCollisionFlags(idx, flags) {
     this.rigidBodies[idx].setCollisionFlags(flags);
   }
@@ -684,5 +695,8 @@ self.onmessage = async ({data}) => {
     case 'removeRigidBody': ammo.removeRigidBody(data.idx, data.flags); break;
     case 'speedUpSimulation': ammo.speedUpSimulation(data.value); break;
     case 'createChain': ammo.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
+
+    // new
+    case 'isSleeping': ammo.isSleeping(data.idx); break;
   }
 };

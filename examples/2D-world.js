@@ -108,12 +108,12 @@ export var loadSprite1 = function() {
 
       let MYCUBE3 = world2D.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 6, y: 1115, z: -10},
+        position: {x: 6, y: 15, z: -10},
         rotation: {x: 180, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [3.5, 3.5, 3.5],
         texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'cube2',
+        name: 'cube3',
         mesh: m.cube,
         raycast: {enabled: false, radius: 1},
         physics: {
@@ -126,6 +126,50 @@ export var loadSprite1 = function() {
         }
       })
 
+
+      // const spr = batch.getSprite("player-instance-1");
+      // MYCUBE.effects.mySprite1 = batch;
+
+      world2D.lightContainer[0].setIntensity(15);
+      world2D.activateBloomEffect();
+      world2D.activateVolumetricEffect();
+      world2D.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
+      world2D.lightContainer[0].behavior.value_ = -1;
+      world2D.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      })
+      world2D.lightContainer[0].setPosition(0, 45, -8);
+      world2D.lightContainer[0].setTarget(0, 0, -10);
+
+      console.log(MYCUBE3)
+
+      let MYCUBE_EFFECT = world2D.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 15, z: -10},
+        rotation: {x: 90, y: 0, z: 180},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [9, 9, 9],
+        texturesPaths: ['./res/icons/512.webp'],
+        name: 'cubeeffect',
+        mesh: m.plane,
+        raycast: {enabled: true, radius: 1},
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          //  flameEmitter: true,
+        }
+      })
+
+      setTimeout(async () => {
+        MYCUBE_EFFECT.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
+        MYCUBE_EFFECT.effects.keeffect = new KaleidoscopeEmitter(world2D.device, 'rgba16float', 30, world2D.cameraBuffer)
+
+        
       const batch = await initializeSpritesForMesh(
         MYCUBE,                                    // Your mesh
         app.device,                              // WebGPU device
@@ -162,47 +206,6 @@ export var loadSprite1 = function() {
         {radius: 4.5, count: 18}
       );
 
-      // const spr = batch.getSprite("player-instance-1");
-      // MYCUBE.effects.mySprite1 = batch;
-
-      world2D.lightContainer[0].setIntensity(15);
-      world2D.activateBloomEffect();
-      world2D.activateVolumetricEffect();
-      world2D.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
-      world2D.lightContainer[0].behavior.value_ = -1;
-      world2D.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      })
-      world2D.lightContainer[0].setPosition(0, 45, -8);
-      world2D.lightContainer[0].setTarget(0, 0, -10);
-
-
-      let MYCUBE_EFFECT = world2D.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 15, z: -10},
-        rotation: {x: 90, y: 0, z: 180},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [9, 9, 9],
-        texturesPaths: ['./res/icons/512.webp'],
-        name: 'cubeeffect',
-        mesh: m.plane,
-        raycast: {enabled: true, radius: 1},
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          //  flameEmitter: true,
-        }
-      })
-
-      setTimeout(() => {
-        MYCUBE_EFFECT.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
-        MYCUBE_EFFECT.effects.keeffect = new KaleidoscopeEmitter(world2D.device, 'rgba16float', 30, world2D.cameraBuffer)
-
       }, 200)
 
       setTimeout(() => {
@@ -218,7 +221,6 @@ export var loadSprite1 = function() {
 
         // effects.spriteBatch.getSprite('circle-1').setTargetRotation(0,90,0)
         let myReel1 = [...MYCUBE.effects.spriteBatch.sprites.values()];
-        let max_ = myReel1.length - 1;
         const count = myReel1.length;
         myReel1.forEach((sprite, index) => {
           const baseAngle = index * 20;
@@ -292,7 +294,7 @@ MYCUBE_EFFECT.effects.keeffect.recreateVertexDataFromData(
         cam.setY(16);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 400);
+      }, 700);
     }
 
     world2D.canvas.addEventListener("ray.hit.event", (e) => {

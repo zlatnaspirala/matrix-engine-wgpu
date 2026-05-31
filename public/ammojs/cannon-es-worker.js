@@ -662,6 +662,15 @@ class MatrixCannon {
     });
   }
 
+  isSleeping(idx) {
+    const b = this.rigidBodies[idx];
+    if(b) {
+      if(b.sleepState === 2) {
+        console.log("The object is currently asleep.");
+      }
+    }
+  }
+
 
   // WIP TEST
   createSphereBoundary(ids, center, radius) {
@@ -771,6 +780,7 @@ self.onmessage = async ({data}) => {
     case 'createBoundedSpace': cannon.createBoundedSpace(data.ids, data.pos, data.size); break;
     case 'createSphereBoundary': cannon.createSphereBoundary(data.idxs, data.pos, data.radius); break;
     case 'lotteryMachineShake': cannon.lotteryMachineShake(data.ids, data.strength); break;
-    
+    case 'isSleeping': cannon.isSleeping(data.idx, data.id); break;
+
   }
 };

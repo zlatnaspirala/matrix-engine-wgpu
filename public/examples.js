@@ -144,10 +144,46 @@ exports.loadSprite2 = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
-var _utils = require("../src/engine/utils.js");
-var _sprite2d = require("../src/engine/effects/sprite2d2.js");
 var _matrixClass = require("../src/engine/matrix-class.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+const BLOCK_TYPES = {
+  SAFE: {
+    color: [0.2, 0.8, 0.2],
+    moving: false,
+    dangerous: false
+  },
+  MOVING: {
+    color: [0.2, 0.4, 1.0],
+    moving: true,
+    dangerous: false
+  },
+  DANGEROUS_STATIC: {
+    color: [1.0, 0.2, 0.2],
+    moving: false,
+    dangerous: true
+  },
+  DANGEROUS_MOVING: {
+    color: [1.0, 0.5, 0.0],
+    moving: true,
+    dangerous: true
+  }
+};
+function pickType() {
+  const r = Math.random();
+  if (r > 0.85) return 'DANGEROUS_MOVING';
+  if (r > 0.70) return 'DANGEROUS_STATIC';
+  if (r > 0.50) return 'MOVING';
+  return 'SAFE';
+}
+const COLLISION = {
+  onPlayerLand(world2D) {
+    setTimeout(() => world2D._PlayerCanJump = true, 150);
+  },
+  onDangerous(world2D, _playerID, rayDirection) {
+    world2D.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(rayDirection[0] * 3, 1.5, rayDirection[2] * 3));
+    world2D._PlayerCanJump = false;
+  }
+};
 var loadSprite2 = function () {
   let world2D = new _world.default({
     canvasSize: 'fullscreen',
@@ -177,7 +213,7 @@ var loadSprite2 = function () {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
-        scale: [30, 0.5, 30]
+        scale: [40, 1.5, 40]
       });
       (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
       function onGround(m) {
@@ -277,7 +313,7 @@ var loadSprite2 = function () {
             enabled: true
           }
         });
-        let BLOCK = world2D.addMeshObj({
+        world2D.addMeshObj({
           material: {
             type: 'standard'
           },
@@ -332,7 +368,7 @@ var loadSprite2 = function () {
             y: 0,
             z: 0
           },
-          scale: [1, 1, 1],
+          scale: [3, 0.5, 1],
           texturesPaths: ['./res/textures/floor1.webp'],
           name: 'BLOCK2',
           mesh: m.cube,
@@ -351,39 +387,50 @@ var loadSprite2 = function () {
           }
         });
         BLOCK2.isKinematic = true;
-        console.log(',,,,,,,,,,,,,,,,,,,,,,', PLAYER);
-        // const batch = new SpritesPack2D(app.device, 'rgba16float', 'rgba16float', world2D.cameraBuffer);
-        // await batch.registerSpritesheet("reel", "./res/textures/slot/reel1-lod0.webp", 4, 4);
-        // // await batch.registerSpritesheet("effects", "./res/textures/slot/reel1-lod0.webp", 4, 4);
-        // const sprite = batch.createSprite("my-sprite", 'reel', {scale: 2.0});
-        // const sprite1 = batch.createSprite("my-sprite1", 'reel', {scale: 2.0});
-        // sprite.play(12.0, true);
-        // sprite1.play(2.0, true);
-        // world2D.TEST = sprite;
-
-        const batch = await (0, _sprite2d.initializeSpritesForMesh)(PLAYER,
-        // Your mesh
-        world2D.device,
-        // WebGPU device
-        'rgba16float',
-        // Format
-        world2D.cameraBuffer,
-        // Camera buffer
-        "./res/textures/slot/reel1-lod0.webp",
-        // Spritesheet path
-        4,
-        // Grid cols
-        4,
-        // Grid rows
-        "circle",
-        // Pattern: matrix|pulsing|flow|circle|wave
-        {
-          radius: 2.5,
-          count: 18
-        });
-
-        // const spr = batch.getSprite("player-instance-1");
-
+        BLOCK2.setAmbient(...BLOCK_TYPES.MOVING.color);
+        BLOCK2._blockType = 'MOVING';
+        const levelRegistry = new Map();
+        function generateLevel(startHeight, count, meshData) {
+          for (let i = 1; i <= count; i++) {
+            let y = startHeight + i * 7;
+            let x = Math.random() * 24 - 12;
+            let type = pickType();
+            let def = BLOCK_TYPES[type];
+            let block = world2D.addMeshObj({
+              material: {
+                type: 'standard'
+              },
+              position: {
+                x: x,
+                y: y,
+                z: -10
+              },
+              scale: [3, 0.5, 1],
+              name: `BLOCK_${type}_${i}`,
+              mesh: meshData,
+              physics: {
+                enabled: true,
+                mass: 0,
+                kinematic: def.moving,
+                geometry: "Cube"
+              }
+            });
+            block.setAmbient(...def.color);
+            block._blockType = type;
+            if (def.moving) {
+              block.isKinematic = true;
+              block._baseX = x;
+              block._baseY = y;
+            }
+            levelRegistry.set(`BLOCK_${type}_${i}`, {
+              type,
+              def,
+              baseX: x,
+              baseY: y
+            });
+          }
+        }
+        generateLevel(15, 20, m.cube);
         world2D.lightContainer[0].setIntensity(55);
         world2D.activateBloomEffect();
         world2D.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
@@ -395,49 +442,79 @@ var loadSprite2 = function () {
         world2D.lightContainer[0].setPosition(0, 45, 0);
         world2D.lightContainer[0].setRange(200);
         world2D.lightContainer[0].setTarget(0, 0, 0);
-
-        // setTimeout(() => {
-        //   // MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
-        // }, 200)
-
         setTimeout(() => {
-          // invisible
-          // MYCUBE.setBlend(0.9);
-          // MYCUBE.setupPipeline()
-          // app.buildRenderBuckets();
-          // MYCUBE.effects.circle.updateInstanceCount(10);
-          // const FX = new InstancedKinematicOperations(          MYCUBE.effects.circle.instanceTargets        );
-          // FX.cinematicSequence();
-
-          app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+          world2D.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
           PLAYER.setAmbient(2, 1, 0);
-          let cam = app.getCamera();
-          let moveSpeed = 0.3;
-
-          // This is only for PlaneCamera !
-          let _playerID = app.matrixPhysics.getBodyByName('PLAYER');
+          let cam = world2D.getCamera();
+          world2D._PlayerCanJump = true;
+          let moveSpeed = 0.2;
+          let jumpPower = moveSpeed * 2.3;
+          let _playerID = world2D.matrixPhysics.getBodyByName('PLAYER');
+          const BLOCK2_ID = world2D.matrixPhysics.getBodyByName('BLOCK2');
+          let t = 0;
+          world2D.autoUpdate.push({
+            update: () => {
+              t += 0.02;
+              world2D.matrixPhysics.setKinematicInterpolate(BLOCK2_ID, Math.sin(t) * 8, 20, 0, 0.15);
+            }
+          });
+          const movingBlocks = [];
+          for (let i = 1; i <= 20; i++) {
+            for (const type of ['MOVING', 'DANGEROUS_MOVING']) {
+              const name = `BLOCK_${type}_${i}`;
+              const id = world2D.matrixPhysics.getBodyByName(name);
+              if (id !== undefined && id !== -1) {
+                const entry = levelRegistry.get(name);
+                movingBlocks.push({
+                  id,
+                  offset: Math.random() * Math.PI * 2,
+                  baseX: entry ? entry.baseX : 0,
+                  baseY: entry ? entry.baseY : 0
+                });
+              }
+            }
+          }
+          let mt = 0;
+          world2D.autoUpdate.push({
+            update: () => {
+              mt += 0.018;
+              for (const b of movingBlocks) {
+                world2D.matrixPhysics.setKinematicInterpolate(b.id, b.baseX + Math.sin(mt + b.offset) * 5, b.baseY, 0, 0.2);
+              }
+            }
+          });
           cam.onUp = () => {
-            app.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(0, moveSpeed, 0));
+            if (world2D._PlayerCanJump === true) {
+              world2D.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(0, jumpPower, 0));
+              world2D._PlayerCanJump = false;
+              return;
+            }
+            world2D.matrixPhysics.isSleeping(_playerID).then(a => {
+              if (a) {
+                world2D.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(0, jumpPower, 0));
+                world2D._PlayerCanJump = false;
+              }
+            });
           };
           cam.onLeft = () => {
-            let _ = app.matrixPhysics.getBodyByName('PLAYER');
-            app.matrixPhysics.applyImpulse(_, new _matrixClass.PVector(-moveSpeed, 0, 0));
+            world2D.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(-moveSpeed, 0, 0));
           };
           cam.onRight = () => {
-            let _ = app.matrixPhysics.getBodyByName('PLAYER');
-            app.matrixPhysics.applyImpulse(_, new _matrixClass.PVector(moveSpeed, 0, 0));
+            world2D.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(moveSpeed, 0, 0));
           };
-          let strength = 1;
-          app.matrixPhysics.detectCollision = e => {
+          world2D.matrixPhysics.detectCollision = e => {
             const body0Name = e.detail.body0Name;
             const body1Name = e.detail.body1Name;
             const rayDirection = e.detail.rayDirection;
-            console.log('collision : ', e.detail);
-            console.log('collision : ', body1Name);
-            if (body0Name == "PLAYER" && body1Name.startsWith("BLOCK")) {
-              app.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(rayDirection[0] * strength, 0, rayDirection[2] * strength));
-            } else if (body1Name == 'bottomEdge2') {
-              app.matrixPhysics.applyImpulse(_playerID, new _matrixClass.PVector(1, 1, 0));
+            const isPlayer = body0Name === 'PLAYER' || body1Name === 'PLAYER';
+            if (!isPlayer) return;
+            const otherName = body0Name === 'PLAYER' ? body1Name : body0Name;
+            const mesh = world2D.getSceneObjectByName(otherName);
+            const blockType = mesh ? mesh._blockType : null;
+            COLLISION.onPlayerLand(world2D);
+            if (!blockType) return;
+            if (blockType === 'DANGEROUS_STATIC' || blockType === 'DANGEROUS_MOVING') {
+              COLLISION.onDangerous(world2D, _playerID, rayDirection);
             }
           };
           cam.setYaw(-0.01);
@@ -445,25 +522,14 @@ var loadSprite2 = function () {
           cam.setZ(10);
           cam.setY(10);
           cam.followMe = PLAYER.position;
-
-          // wire callbacks — whatever you want, bridge, impulse, state machine
-          // cam.onLeft = () => bridge._send({type: 'setVelocity', id: heroId, vx: -SPEED, vy: 0});
-          // cam.onLeftRelease = () => bridge._send({type: 'setVelocity', id: heroId, vx: 0, vy: 0});
-          // cam.onRight = () => bridge._send({type: 'setVelocity', id: heroId, vx: SPEED, vy: 0});
-          // cam.onRightRelease = () => bridge._send({type: 'setVelocity', id: heroId, vx: 0, vy: 0});
-          // cam.onUp = () => bridge._send({type: 'applyImpulse', id: heroId, fy: -JUMP});
-          // cam.onAction1 = () => hero.attack();
-          // cam.onAction2 = () => hero.dash();
-
-          app.buildRenderBuckets();
+          world2D.buildRenderBuckets();
           cam._dirtyAngle = true;
         }, 700);
       }
       world2D.canvas.addEventListener("ray.hit.event", e => {
-        console.log('ray.hit.event detected');
         if (e.detail.hitObject.name.startsWith('PLAYER')) {
-          let _ = app.matrixPhysics.getBodyByName('PLAYER');
-          app.matrixPhysics.applyImpulse(_, new _matrixClass.PVector(0, 1, 0));
+          let _ = world2D.matrixPhysics.getBodyByName('PLAYER');
+          world2D.matrixPhysics.applyImpulse(_, new _matrixClass.PVector(0, 1, 0));
         }
       });
     });
@@ -472,7 +538,7 @@ var loadSprite2 = function () {
 };
 exports.loadSprite2 = loadSprite2;
 
-},{"../src/engine/effects/sprite2d2.js":60,"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/raycast.js":89,"../src/world.js":143}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -664,7 +730,7 @@ var loadSprite1 = function () {
         },
         position: {
           x: 6,
-          y: 1115,
+          y: 15,
           z: -10
         },
         rotation: {
@@ -679,7 +745,7 @@ var loadSprite1 = function () {
         },
         scale: [3.5, 3.5, 3.5],
         texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'cube2',
+        name: 'cube3',
         mesh: m.cube,
         raycast: {
           enabled: false,
@@ -693,66 +759,6 @@ var loadSprite1 = function () {
         pointerEffect: {
           enabled: true
         }
-      });
-      const batch = await (0, _sprite2d.initializeSpritesForMesh)(MYCUBE,
-      // Your mesh
-      app.device,
-      // WebGPU device
-      'rgba16float',
-      // Format
-      app.cameraBuffer,
-      // Camera buffer
-      "./res/textures/slot/reel1-lod0.webp",
-      // Spritesheet path
-      4,
-      // Grid cols
-      4,
-      // Grid rows
-      "circle",
-      // Pattern: matrix|pulsing|flow|circle|wave
-      {
-        radius: 4.5,
-        count: 18
-      });
-      const batch2 = await (0, _sprite2d.initializeSpritesForMesh)(MYCUBE2,
-      // Your mesh
-      app.device,
-      // WebGPU device
-      'rgba16float',
-      // Format
-      app.cameraBuffer,
-      // Camera buffer
-      "./res/textures/slot/reel1-lod0.webp",
-      // Spritesheet path
-      4,
-      // Grid cols
-      4,
-      // Grid rows
-      "circle",
-      // Pattern: matrix|pulsing|flow|circle|wave
-      {
-        radius: 4.5,
-        count: 18
-      });
-      const batch3 = await (0, _sprite2d.initializeSpritesForMesh)(MYCUBE3,
-      // Your mesh
-      app.device,
-      // WebGPU device
-      'rgba16float',
-      // Format
-      app.cameraBuffer,
-      // Camera buffer
-      "./res/textures/slot/reel1-lod0.webp",
-      // Spritesheet path
-      4,
-      // Grid cols
-      4,
-      // Grid rows
-      "circle",
-      // Pattern: matrix|pulsing|flow|circle|wave
-      {
-        radius: 4.5,
-        count: 18
       });
 
       // const spr = batch.getSprite("player-instance-1");
@@ -769,6 +775,7 @@ var loadSprite1 = function () {
       });
       world2D.lightContainer[0].setPosition(0, 45, -8);
       world2D.lightContainer[0].setTarget(0, 0, -10);
+      console.log(MYCUBE3);
       let MYCUBE_EFFECT = world2D.addMeshObj({
         material: {
           type: 'standard'
@@ -806,9 +813,69 @@ var loadSprite1 = function () {
           //  flameEmitter: true,
         }
       });
-      setTimeout(() => {
+      setTimeout(async () => {
         MYCUBE_EFFECT.effects.circle = new _genTex.GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
         MYCUBE_EFFECT.effects.keeffect = new _kaleidoscopeEffectInstance.KaleidoscopeEmitter(world2D.device, 'rgba16float', 30, world2D.cameraBuffer);
+        const batch = await (0, _sprite2d.initializeSpritesForMesh)(MYCUBE,
+        // Your mesh
+        app.device,
+        // WebGPU device
+        'rgba16float',
+        // Format
+        app.cameraBuffer,
+        // Camera buffer
+        "./res/textures/slot/reel1-lod0.webp",
+        // Spritesheet path
+        4,
+        // Grid cols
+        4,
+        // Grid rows
+        "circle",
+        // Pattern: matrix|pulsing|flow|circle|wave
+        {
+          radius: 4.5,
+          count: 18
+        });
+        const batch2 = await (0, _sprite2d.initializeSpritesForMesh)(MYCUBE2,
+        // Your mesh
+        app.device,
+        // WebGPU device
+        'rgba16float',
+        // Format
+        app.cameraBuffer,
+        // Camera buffer
+        "./res/textures/slot/reel1-lod0.webp",
+        // Spritesheet path
+        4,
+        // Grid cols
+        4,
+        // Grid rows
+        "circle",
+        // Pattern: matrix|pulsing|flow|circle|wave
+        {
+          radius: 4.5,
+          count: 18
+        });
+        const batch3 = await (0, _sprite2d.initializeSpritesForMesh)(MYCUBE3,
+        // Your mesh
+        app.device,
+        // WebGPU device
+        'rgba16float',
+        // Format
+        app.cameraBuffer,
+        // Camera buffer
+        "./res/textures/slot/reel1-lod0.webp",
+        // Spritesheet path
+        4,
+        // Grid cols
+        4,
+        // Grid rows
+        "circle",
+        // Pattern: matrix|pulsing|flow|circle|wave
+        {
+          radius: 4.5,
+          count: 18
+        });
       }, 200);
       setTimeout(() => {
         MYCUBE.setBlend(0.001);
@@ -822,7 +889,6 @@ var loadSprite1 = function () {
 
         // effects.spriteBatch.getSprite('circle-1').setTargetRotation(0,90,0)
         let myReel1 = [...MYCUBE.effects.spriteBatch.sprites.values()];
-        let max_ = myReel1.length - 1;
         const count = myReel1.length;
         myReel1.forEach((sprite, index) => {
           const baseAngle = index * 20;
@@ -891,7 +957,7 @@ var loadSprite1 = function () {
         cam.setY(16);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 400);
+      }, 700);
     }
     world2D.canvas.addEventListener("ray.hit.event", e => {
       console.log('ray.hit.event detected');
@@ -42704,7 +42770,7 @@ class PhysicsBridge {
       this._bodyIndexMap.set(idx, MEObject);
     });
   }
-  setKinematicTransform() {
+  setKinematicTransformDeplaced() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -42732,7 +42798,7 @@ class PhysicsBridge {
       });
     }
   }
-  setKinematicTransformIndividual(idx, x, y, z = 0) {
+  setKinematicTransform(idx, x, y, z = 0) {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -42975,7 +43041,7 @@ class PhysicsBridge {
     this._bodyIndexMap.delete(idx);
   }
 
-  // cannones ,
+  // cannones ---
   createChain(ids, size = 0.5, mass = 0.3, marginSpace = 0.1) {
     this._worker.postMessage({
       cmd: 'createChain',
@@ -43008,8 +43074,23 @@ class PhysicsBridge {
       strength
     });
   }
+  isSleeping(idx) {
+    return this._send('isSleeping', {
+      idx: idx
+    });
+  }
+  setKinematicInterpolate(idx, targetX, targetY, targetZ = 0, lerpFactor) {
+    this._worker.postMessage({
+      cmd: 'setKinematicInterpolate',
+      idx,
+      targetX,
+      targetY,
+      targetZ,
+      lerpFactor
+    });
+  }
+  //---
 
-  // createSphereBoundary
   createSphereBoundary(idxs, pos = {
     x: 0,
     y: 0,
@@ -43098,6 +43179,10 @@ class PhysicsBridge {
         break;
       case 'getPosition':
         this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+      case 'isSleeping':
+        this._pending.get(data.id)?.(data.isSleeping);
         this._pending.delete(data.id);
         break;
     }

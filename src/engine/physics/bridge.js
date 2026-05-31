@@ -72,7 +72,7 @@ export class PhysicsBridge {
     });
   }
 
-  setKinematicTransform() {
+  setKinematicTransformDeplaced() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -93,7 +93,7 @@ export class PhysicsBridge {
     }
   }
 
-  setKinematicTransformIndividual(idx, x, y, z=0) {
+  setKinematicTransform(idx, x, y, z = 0) {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -233,7 +233,7 @@ export class PhysicsBridge {
     this._bodyIndexMap.delete(idx);
   }
 
-  // cannones ,
+  // cannones ---
   createChain(ids, size = 0.5, mass = 0.3, marginSpace = 0.1) {
     this._worker.postMessage({cmd: 'createChain', ids, size, mass, marginSpace});
   }
@@ -246,11 +246,16 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'lotteryMachineShake', ids, strength});
   }
 
-  // createSphereBoundary
-  createSphereBoundary(idxs,
-    pos = {x: 0, y: 0, z: 0},
-    radius = 20
-  ) {
+  isSleeping(idx) {
+    return this._send('isSleeping', {idx: idx});
+  }
+
+  setKinematicInterpolate(idx, targetX, targetY, targetZ = 0, lerpFactor) {
+    this._worker.postMessage({cmd: 'setKinematicInterpolate', idx, targetX, targetY, targetZ, lerpFactor});
+  }
+  //---
+
+  createSphereBoundary(idxs, pos = {x: 0, y: 0, z: 0}, radius = 20) {
     this._worker.postMessage({cmd: 'createSphereBoundary', idxs, pos, radius});
   }
 
@@ -320,6 +325,10 @@ export class PhysicsBridge {
         break;
       case 'getPosition':
         this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+      case 'isSleeping':
+        this._pending.get(data.id)?.(data.isSleeping);
         this._pending.delete(data.id);
         break;
     }
