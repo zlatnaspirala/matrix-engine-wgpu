@@ -11,7 +11,7 @@ export var loadObjFile = function() {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
-    MAX_BONES : 0,
+    MAX_BONES: 0,
     mainCameraParams: {
       type: 'firstPersonCamera',
       responseCoef: 1000
@@ -113,7 +113,7 @@ export var loadObjFile = function() {
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        
+
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
           0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
@@ -126,14 +126,12 @@ export var loadObjFile = function() {
         cam.setY(10);
         app.buildRenderBuckets();
 
-        console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData)
-        
         cam._dirtyAngle = true;
       }, 700);
     }
 
     loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
-       console.log('ray.hit.event detected');
+      console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));

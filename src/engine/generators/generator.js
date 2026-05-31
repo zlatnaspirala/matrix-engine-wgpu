@@ -54,6 +54,7 @@ export async function physicsBodiesGenerator(
             physics: {
               enabled: true,
               geometry: geometry,
+              group: 2 // cannon
             },
             raycast: RAY
           });
@@ -72,7 +73,7 @@ export async function physicsBodiesGenerator(
             resolve(ALL);
           }
         }
-      }, delay * sum)
+      }, delay * sum * 3)
 
     }
 

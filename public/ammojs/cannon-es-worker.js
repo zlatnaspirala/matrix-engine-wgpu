@@ -81,15 +81,32 @@ class MatrixCannon {
     const CANNON = this.CANNON;
     this.world = new CANNON.World();
     this.world.gravity.set(0, -this.options.gravity, 0);
-    // Tweak contact properties. Contact stiffness - use to make softer/harder contacts
-    this.world.defaultContactMaterial.contactEquationStiffness = 1e9
-    this.world.defaultContactMaterial.contactEquationRelaxation = 4;
-    // world.quatNormalizeFast = true
-    // world.quatNormalizeSkip = 8    // ...and we do not have to normalize every step.
-    const solver = new CANNON.GSSolver()
+
+    // 1. Use standard GSSolver for stability
+    const solver = new CANNON.GSSolver();
     solver.iterations = iterations;
     solver.tolerance = tolerance;
-    this.world.solver = new CANNON.SplitSolver(solver)
+    this.world.solver = solver; 
+
+    // 2. Softer contacts prevent the "teleporting" / "ghosting" effect
+    this.world.defaultContactMaterial.contactEquationStiffness = 1e6; 
+    this.world.defaultContactMaterial.contactEquationRelaxation = 10;
+    
+    // 3. ADD THIS: Broadphase optimization for containers
+    this.world.broadphase = new CANNON.SAPBroadphase(this.world);
+
+
+    // Tweak contact properties. Contact stiffness - use to make softer/harder contacts
+    // this.world.defaultContactMaterial.contactEquationStiffness = 1e9
+    // this.world.defaultContactMaterial.contactEquationRelaxation = 4;
+    // world.quatNormalizeFast = true
+    // world.quatNormalizeSkip = 8    // ...and we do not have to normalize every step.
+
+    // const solver = new CANNON.GSSolver()
+    // solver.iterations = iterations;
+    // solver.tolerance = tolerance;
+    // this.world.solver = new CANNON.SplitSolver(solver)
+
 
     const groundShape = new CANNON.Box(
       new CANNON.Vec3(this.options.roundDimension, 1, this.options.roundDimension)
@@ -257,6 +274,7 @@ class MatrixCannon {
     const v = pOptions.vertices;
     const idx = pOptions.indices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
+    // const [sx, sy, sz] = [1, 1, 1];
     const vertices = [];
     for(let i = 0;i < v.length;i += 3) {
       vertices.push(
@@ -266,15 +284,25 @@ class MatrixCannon {
       );
     }
 
-    const shape = new CANNON.Trimesh(vertices, idx);
-    const body = new CANNON.Body({mass: pOptions.mass});
-    body.addShape(shape);
+    const shape = new CANNON.ConvexPolyhedron(vertices, idx);
 
-    const pos = pOptions.position || {x: 0, y: 0, z: 0};
-    body.position.set(pos.x, pos.y, pos.z);
+    return this._createBody(pOptions, shape);
+    // const body = new CANNON.Body({mass: pOptions.mass});
+    // body.addShape(shape);
 
-    this.world.addBody(body);
-    return this._registerBody(body, pOptions);
+    // const rot = pOptions.rotation || {x: 0, y: 0, z: 0};
+    // const rx = degToRad(rot.x || 0);
+    // const ry = degToRad(rot.y || 0);
+    // const rz = degToRad(rot.z || 0);
+    // const quat = new CANNON.Quaternion();
+    // quat.setFromEuler(rx, ry, rz);
+
+    // const pos = pOptions.position || {x: 0, y: 0, z: 0};
+    // body.position.set(pos.x, pos.y, pos.z);
+    // body.quaternion.copy(quat);
+
+    // this.world.addBody(body);
+    // return this._registerBody(body, pOptions);
   }
 
   _addBvhMesh(pOptions) {
@@ -552,8 +580,8 @@ class MatrixCannon {
         pos.z + pz
       );
 
-      body.collisionFilterGroup = wallGroup;
-      body.collisionFilterMask = wallGroup;
+      body.collisionFilterGroup |= wallGroup;
+      body.collisionFilterMask |= wallGroup;
 
       this.world.addBody(body);
 
@@ -570,15 +598,15 @@ class MatrixCannon {
       0
     );
 
-    // ceiling
-    addWall(
-      size.x * 2,
-      wallThickness,
-      size.z * 2,
-      0,
-      size.y,
-      0
-    );
+    // // ceiling
+    // addWall(
+    //   size.x * 2,
+    //   wallThickness,
+    //   size.z * 2,
+    //   0,
+    //   size.y,
+    //   0
+    // );
 
     // left
     addWall(

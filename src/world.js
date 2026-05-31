@@ -468,12 +468,13 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.15.1 [The beast] ", LOG_FUNNY);
+    console.log("%c Version 1.15.5 [The beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
       "Creative power with intuitive visual scripting work flow.\n" +
-      "New Features: Culling render mode, Dorizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      "New Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      "2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
       "Mobile support: chrome-android tested. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
       "%cMatrix Engine WGPU - Initial configuration :\n" +

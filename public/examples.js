@@ -876,88 +876,103 @@ var loadSprite1 = function () {
           radius: 4.5,
           count: 18
         });
-      }, 200);
-      setTimeout(() => {
-        MYCUBE.setBlend(0.001);
-        MYCUBE2.setBlend(0.001);
-        MYCUBE3.setBlend(0.001);
-        MYCUBE.setupPipeline();
-        app.buildRenderBuckets();
-        MYCUBE_EFFECT.effects.circle.updateInstanceCount(8);
-        const FX = new _InstancedKinematicOperations.InstancedKinematicOperations(MYCUBE_EFFECT.effects.circle.instanceTargets);
-        FX.orbit();
-
-        // effects.spriteBatch.getSprite('circle-1').setTargetRotation(0,90,0)
-        let myReel1 = [...MYCUBE.effects.spriteBatch.sprites.values()];
-        const count = myReel1.length;
-        myReel1.forEach((sprite, index) => {
-          const baseAngle = index * 20;
-          const targetY = baseAngle;
-          setTimeout(() => {
-            const angle = index / count * Math.PI * 2;
-            const yDeg = angle * (180 / Math.PI);
-            const FIX = 90;
-            sprite.goToFrame((0, _utils.randomIntFromTo)(0, 8));
-            sprite.setTargetRotation(90, yDeg - FIX, FIX);
-            if (index === myReel1.length - 1) {
-              (0, _sceneobjectKinematics.animateRotationY)(MYCUBE.rotation, 90, 2000);
-              setTimeout(() => {
-                MYCUBE.rotation.setRotateX(2.5);
-              }, 1500);
-            }
-          }, 100 * index);
-        });
-        let myReel2 = [...MYCUBE2.effects.spriteBatch.sprites.values()];
-        const count2 = myReel2.length;
-        myReel2.forEach((sprite, index) => {
-          const baseAngle = index * 20;
-          const targetY = baseAngle;
-          setTimeout(() => {
-            const angle = index / count2 * Math.PI * 2;
-            const yDeg = angle * (180 / Math.PI);
-            const FIX = 90;
-            sprite.goToFrame((0, _utils.randomIntFromTo)(0, 8));
-            sprite.setTargetRotation(90, yDeg - FIX, FIX);
-            if (index === myReel2.length - 1) {
-              (0, _sceneobjectKinematics.animateRotationY)(MYCUBE2.rotation, 90, 2000);
-              setTimeout(() => {
-                MYCUBE2.rotation.setRotateX(4);
-              }, 1700);
-            }
-          }, 200 * index);
-        });
-        let myReel3 = [...MYCUBE3.effects.spriteBatch.sprites.values()];
-        const count3 = myReel3.length;
-        myReel3.forEach((sprite, index) => {
-          const baseAngle = index * 20;
-          const targetY = baseAngle;
-          setTimeout(() => {
-            const angle = index / count3 * Math.PI * 2;
-            const yDeg = angle * (180 / Math.PI);
-            const FIX = 90;
-            sprite.goToFrame((0, _utils.randomIntFromTo)(0, 8));
-            sprite.setTargetRotation(90, yDeg - FIX, FIX);
-            if (index === myReel3.length - 1) {
-              (0, _sceneobjectKinematics.animateRotationY)(MYCUBE3.rotation, 90, 2000);
-              setTimeout(() => {
-                MYCUBE3.rotation.setRotateX(8);
-                MYCUBE_EFFECT.rotation.setRotateZ(1);
-                MYCUBE_EFFECT.effects.keeffect.recreateVertexDataFromData([-6.94798115268439, 13.359448700316488, 15.690525966669506, 14.642970205525577, 2.5040455061885725, 13.874531871189749, -16.32885928825164, -11.8878829677588]);
-              }, 1900);
-            }
-          }, 300 * index);
-        });
-        MYCUBE_EFFECT.effects.circle.instanceTargets[0].isDyrty = true;
-        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-        MYCUBE.setAmbient(2, 0, 0);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.05);
         cam.setZ(22);
         cam.setY(16);
-        app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 700);
+        MYCUBE.setBlend(0.001);
+        MYCUBE2.setBlend(0.001);
+        MYCUBE3.setBlend(0.001);
+        MYCUBE.setupPipeline();
+        app.buildRenderBuckets();
+      }, 600);
+      setTimeout(() => {
+        let timer1 = null;
+        let myReel1 = [...MYCUBE.effects.spriteBatch.sprites.values()];
+        const count = myReel1.length;
+        let myReel2 = [...MYCUBE2.effects.spriteBatch.sprites.values()];
+        const count2 = myReel2.length;
+        let myReel3 = [...MYCUBE3.effects.spriteBatch.sprites.values()];
+        const count3 = myReel3.length;
+        myReel1.forEach((sprite, index) => {
+          const angle = index / count * Math.PI * 2;
+          sprite.play(index * 0.5);
+        });
+        myReel2.forEach((sprite, index) => {
+          const angle = index / count * Math.PI * 2;
+          sprite.play(index * 0.5);
+        });
+        myReel3.forEach((sprite, index) => {
+          const angle = index / count * Math.PI * 2;
+          sprite.play(index * 0.5);
+        });
+        setTimeout(() => {
+          MYCUBE_EFFECT.effects.circle.updateInstanceCount(8);
+          const FX = new _InstancedKinematicOperations.InstancedKinematicOperations(MYCUBE_EFFECT.effects.circle.instanceTargets);
+          FX.orbit();
+          myReel1.forEach((sprite, index) => {
+            const baseAngle = index * 20;
+            const targetY = baseAngle;
+            setTimeout(() => {
+              const angle = index / count * Math.PI * 2;
+              const yDeg = angle * (180 / Math.PI);
+              const FIX = 90;
+              sprite.pause();
+              sprite.goToFrame((0, _utils.randomIntFromTo)(0, 8));
+              sprite.setTargetRotation(90, yDeg - FIX, FIX);
+              if (index === myReel1.length - 1) {
+                (0, _sceneobjectKinematics.animateRotationY)(MYCUBE.rotation, 90, 1000);
+                setTimeout(() => {
+                  MYCUBE.rotation.setRotateX(2.5);
+                }, 1500);
+              }
+            }, 100 * index);
+          });
+          myReel2.forEach((sprite, index) => {
+            const baseAngle = index * 20;
+            const targetY = baseAngle;
+            setTimeout(() => {
+              const angle = index / count2 * Math.PI * 2;
+              const yDeg = angle * (180 / Math.PI);
+              const FIX = 90;
+              sprite.pause();
+              sprite.goToFrame((0, _utils.randomIntFromTo)(0, 8));
+              sprite.setTargetRotation(90, yDeg - FIX, FIX);
+              if (index === myReel2.length - 1) {
+                (0, _sceneobjectKinematics.animateRotationY)(MYCUBE2.rotation, 90, 1000);
+                setTimeout(() => {
+                  MYCUBE2.rotation.setRotateX(4);
+                }, 1700);
+              }
+            }, 200 * index);
+          });
+          myReel3.forEach((sprite, index) => {
+            const baseAngle = index * 20;
+            const targetY = baseAngle;
+            setTimeout(() => {
+              const angle = index / count3 * Math.PI * 2;
+              const yDeg = angle * (180 / Math.PI);
+              const FIX = 90;
+              sprite.pause();
+              sprite.goToFrame((0, _utils.randomIntFromTo)(0, 8));
+              sprite.setTargetRotation(90, yDeg - FIX, FIX);
+              if (index === myReel3.length - 1) {
+                (0, _sceneobjectKinematics.animateRotationY)(MYCUBE3.rotation, 90, 1000);
+                setTimeout(() => {
+                  MYCUBE3.rotation.setRotateX(8);
+                  MYCUBE_EFFECT.rotation.setRotateZ(1);
+                  MYCUBE_EFFECT.effects.keeffect.recreateVertexDataFromData([-6.94798115268439, 13.359448700316488, 15.690525966669506, 14.642970205525577, 2.5040455061885725, 13.874531871189749, -16.32885928825164, -11.8878829677588]);
+                }, 1900);
+              }
+            }, 300 * index);
+          });
+        }, 3000);
+        MYCUBE_EFFECT.effects.circle.instanceTargets[0].isDyrty = true;
+        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+        MYCUBE.setAmbient(2, 0, 0);
+      }, 1000);
     }
     world2D.canvas.addEventListener("ray.hit.event", e => {
       console.log('ray.hit.event detected');
@@ -5469,7 +5484,6 @@ var loadObjFile = function () {
         cam.setZ(0);
         cam.setY(10);
         app.buildRenderBuckets();
-        console.log('MYCUBE.effects.flameEmitter.recreateVertexDataFromData', MYCUBE.effects.flameEmitter.recreateVertexDataFromData);
         cam._dirtyAngle = true;
       }, 700);
     }
@@ -6474,7 +6488,9 @@ var testCannonES = function () {
         cube: "./res/meshes/blender/cube.obj",
         plane: "./res/meshes/blender/plane.obj",
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
-        reel: "./res/meshes/obj/reel.obj"
+        reel: "./res/meshes/obj/reel.obj",
+        side: "./res/meshes/obj/drumpart.obj",
+        side2: "./res/meshes/obj/drumpart2.obj"
       }, onGround, {
         scale: [1, 1, 1]
       });
@@ -6520,11 +6536,12 @@ var testCannonES = function () {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      app.cameras.WASD.setYaw(-0.03);
-      app.cameras.WASD.setPitch(-0.49);
-      app.cameras.WASD.setZ(0);
-      app.cameras.WASD.setY(3.76);
-      app.cameras.WASD._dirtyAngle = true;
+      let cam = app.getCamera();
+      cam.setYaw(-0.03);
+      cam.setPitch(-0.49);
+      cam.setZ(0);
+      cam.setY(13);
+      cam._dirtyAngle = true;
 
       // physicsPlayground.addMeshObj({
       //   material: {type: 'standard'},
@@ -6567,6 +6584,194 @@ var testCannonES = function () {
         mesh: m.plane,
         physics: {
           enabled: false
+        }
+      });
+
+      // DRum
+      // BOTTOM
+      const drum0 = physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 14.5,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [4.3, 0.5, 4.3],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_bottom',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube",
+          group: 1
+          // mask: 2,
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      const drum1 = physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 21,
+          z: -13.5
+        },
+        rotation: {
+          x: 20,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [4.5, 8, 0.5],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_r1',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          // kinematic: true,
+          mass: 0,
+          geometry: "Cube",
+          vertices: m.reel.vertices,
+          indices: m.reel.indices,
+          group: 1
+          // mask: 2,
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      const drum2 = physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 21,
+          z: -27.5
+        },
+        rotation: {
+          x: -20,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [4.5, 8, 0.5],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_r2',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          // kinematic: true,
+          geometry: "Cube",
+          vertices: m.reel.vertices,
+          indices: m.reel.indices,
+          group: 1
+          // mask: 2,
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      const drum3 = physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 5.5,
+          y: 21,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 180,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [0.5, 10, 8],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_l1',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          // kinematic: true,
+          geometry: "Cube",
+          vertices: m.reel.vertices,
+          indices: m.reel.indices,
+          group: 1
+          // mask: 2,
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      const drum4 = physicsPlayground.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -5.5,
+          y: 21,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [0.5, 10, 8],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_l2',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          kinematic: true,
+          geometry: "Cube",
+          group: 0
+          // mask: 2,
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
         }
       });
 
@@ -6638,27 +6843,29 @@ var testCannonES = function () {
 
       // not isolated bug yet - selecting not precise!
       setTimeout(async () => {
-        let T = await physicsPlayground.physicsBodiesGenerator("standard", {
+        drum0.setBlend(0.5);
+        drum1.setBlend(0.5);
+        drum2.setBlend(0.4);
+        drum3.setBlend(0.4);
+        drum4.setBlend(0.4);
+        physicsPlayground.physicsBodiesGenerator("standard", {
           x: 0,
-          y: 520,
+          y: 150,
           z: -20
         }, {
           x: 0,
           y: 0,
           z: 0
-        }, "res/textures/star1.png", "testGen", "Sphere", false, [1, 1, 1], 15, 200);
-        app.matrixPhysics.createBoundedSpace(T, {
-          x: 0,
-          y: 25,
-          z: -20
-        }, {
-          x: 7,
-          y: 7,
-          z: 7
+        }, "res/textures/star1.png", "testGen", "Sphere", false, [1, 1, 1], 15, 1).then(T => {
+          // app.matrixPhysics.createBoundedSpace(T, {x: 0, y: 15, z: -20}, {x: 5, y: 5, z: 5});
+
+          console.log(T);
+          setTimeout(async () => {
+            app.matrixPhysics.lotteryMachineShake(T, 0.001);
+          }, 4000);
+
+          //  app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
         });
-        console.log(T);
-        app.matrixPhysics.lotteryMachineShake(T, 10);
-        // app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
 
         //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
       }, 2500);
@@ -33087,7 +33294,8 @@ async function physicsBodiesGenerator(material = "standard", pos, rot, texturePa
             mesh: m.mesh,
             physics: {
               enabled: true,
-              geometry: geometry
+              geometry: geometry,
+              group: 2 // cannon
             },
             raycast: RAY
           });
@@ -33105,7 +33313,7 @@ async function physicsBodiesGenerator(material = "standard", pos, rot, texturePa
             resolve(ALL);
           }
         }
-      }, delay * sum);
+      }, delay * sum * 3);
     }
     if (geometry == "Cube") {
       (0, _loaderObj.downloadMeshes)(inputCube, handler, {
@@ -42734,7 +42942,6 @@ class PhysicsBridge {
     return -1;
   }
   async init(options = {}) {
-    console.log('BRIGDE FINISEHD 1');
     await this._send('init', {
       options
     });
@@ -42746,13 +42953,11 @@ class PhysicsBridge {
       this._doAddPhysics(MEObject, pOptions);
     }
     this._queue = [];
-    console.log('BRIGDE FINISEHD');
     setTimeout(() => {
       dispatchEvent(new CustomEvent('PhysicsReady', {}));
     }, 100);
   }
   addPhysics(MEObject, pOptions) {
-    console.log('   ad add cccccccccccccccccccccccccccc');
     if (!this._ready) {
       this._queue.push({
         MEObject,
@@ -69477,9 +69682,9 @@ class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", _utils.LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", _utils.LOG_FUNNY);
-    console.log("%c Version 1.15.1 [The beast] ", _utils.LOG_FUNNY);
+    console.log("%c Version 1.15.5 [The beast] ", _utils.LOG_FUNNY);
     console.log("%c👽", _utils.LOG_FUNNY_EXTRABIG);
-    console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "New Features: Culling render mode, Dorizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" + "Mobile support: chrome-android tested. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
+    console.log("%cMatrix Engine WGPU - Gate is open...\n" + "Creative power with intuitive visual scripting work flow.\n" + "New Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" + "2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" + "Mobile support: chrome-android tested. Just solutions and high performance. 🔥", _utils.LOG_FUNNY_BIG_ARCADE);
     console.log("%cMatrix Engine WGPU - Initial configuration :\n" + " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" + " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" + " - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n" + " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" + " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX, _utils.LOG_FUNNY_ARCADE);
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", _utils.LOG_FUNNY_ARCADE);
     console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", _utils.LOG_FUNNY_ARCADE);
