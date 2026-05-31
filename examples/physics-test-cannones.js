@@ -81,23 +81,23 @@ export var testCannonES = function() {
       app.cameras.WASD.setY(3.76);
       app.cameras.WASD._dirtyAngle = true;
 
-      physicsPlayground.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 15, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 111, z: 0},
-        scale: [5, 5, 5],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'ball1',
-        mesh: m.ball,
-        physics: {
-          enabled: true,
-          geometry: "Sphere",
-          group: 2,
-          mask: -1,
-        },
-        raycast: {enabled: true, radius: 1}
-      })
+      // physicsPlayground.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 15, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 111, z: 0},
+      //   scale: [5, 5, 5],
+      //   texturesPaths: ['./res/textures/floor1.webp'],
+      //   name: 'ball1',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Sphere",
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // })
 
       physicsPlayground.addMeshObj({
         position: {x: 0, y: -0.5, z: -10},
@@ -110,49 +110,49 @@ export var testCannonES = function() {
         physics: {enabled: false}
       });
 
-      physicsPlayground.addProceduralMeshObj({
-        material: {type: 'standard'},
-        position: {x: 10, y: 15, z: -7},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [1, 1, 1],
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: MeshMorpher.capsule(1, 2, false),
-        meshB: MeshMorpher.cube(1),
-        name: `morph_1`,
-        physics: {
-          enabled: true,
-          geometry: "Capsule",
-          mass: 1,
-          radius: 1.0,
-          height: 2.0,
-          group: 2,
-          mask: -1,
-        },
-        raycast: {enabled: true, radius: 1}
-      });
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 10, y: 15, z: -17},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.capsule(1, 2, false),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_1`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Capsule",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
 
-      physicsPlayground.addProceduralMeshObj({
-        material: {type: 'standard'},
-        position: {x: 6, y: 15, z: -7},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [1, 1, 1],
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: MeshMorpher.cylinder(1, 2),
-        meshB: MeshMorpher.cube(1),
-        name: `morph_cylinder`,
-        physics: {
-          enabled: true,
-          geometry: "Cylinder",
-          mass: 1,
-          radius: 1.0,
-          height: 2.0,
-          group: 2,
-          mask: -1,
-        },
-        raycast: {enabled: true, radius: 1}
-      });
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 6, y: 15, z: -17},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.cylinder(1, 2),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_cylinder`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cylinder",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
 
       // physicsPlayground.addProceduralMeshObj({
       //   material: {type: 'standard'},
@@ -177,21 +177,26 @@ export var testCannonES = function() {
       // });
 
       // not isolated bug yet - selecting not precise!
-      // setTimeout(async () => {
-      //   let T = await physicsPlayground.physicsBodiesGenerator(
-      //     "standard",
-      //     {x: -20, y: 10, z: -20},
-      //     {x: 0, y: 0, z: 0},
-      //     "res/textures/star1.png",
-      //     "testGen",
-      //     "Cube",
-      //     false,
-      //     [1, 1, 1],
-      //     10
-      //   )
-      //   app.matrixPhysics.createBoundedSpace(T, {x: -20, y: 3, z: -20}, {x: 3, y: 3, z: 3});
+      setTimeout(async () => {
+        let T = await physicsPlayground.physicsBodiesGenerator(
+          "standard",
+          {x: 0, y: 520, z: -20},
+          {x: 0, y: 0, z: 0},
+          "res/textures/star1.png",
+          "testGen",
+          "Sphere",
+          false,
+          [1, 1, 1],
+          15, 200
+        )
+
+        app.matrixPhysics.createBoundedSpace(T, {x: 0, y: 25, z: -20}, {x: 7, y: 7, z: 7});
+        console.log(T)
+        app.matrixPhysics.lotteryMachineShake(T, 10)
+        // app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
+        
       //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
-      // }, 2500)
+      }, 2500)
 
       if(isMobile() == false) app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);

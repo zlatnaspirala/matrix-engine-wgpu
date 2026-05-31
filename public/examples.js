@@ -145,9 +145,7 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
-var _genTex = require("../src/engine/effects/gen-tex2.js");
 var _sprite2d = require("../src/engine/effects/sprite2d2.js");
-var _InstancedKinematicOperations = require("../src/engine/procedures/InstancedKinematicOperations.js");
 var _matrixClass = require("../src/engine/matrix-class.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadSprite2 = function () {
@@ -170,7 +168,6 @@ var loadSprite2 = function () {
   }, () => {
     addEventListener('PhysicsReady', () => {
       world2D.addLight();
-      // if you double call downloadMeshes for same path engine use cached values no double fetch...
       (0, _loaderObj.downloadMeshes)({
         ball: "./res/meshes/blender/sphere.obj",
         cube: "./res/meshes/blender/cube.obj"
@@ -398,9 +395,11 @@ var loadSprite2 = function () {
         world2D.lightContainer[0].setPosition(0, 45, 0);
         world2D.lightContainer[0].setRange(200);
         world2D.lightContainer[0].setTarget(0, 0, 0);
-        setTimeout(() => {
-          // MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
-        }, 200);
+
+        // setTimeout(() => {
+        //   // MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
+        // }, 200)
+
         setTimeout(() => {
           // invisible
           // MYCUBE.setBlend(0.9);
@@ -473,7 +472,7 @@ var loadSprite2 = function () {
 };
 exports.loadSprite2 = loadSprite2;
 
-},{"../src/engine/effects/gen-tex2.js":53,"../src/engine/effects/sprite2d2.js":60,"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/procedures/InstancedKinematicOperations.js":86,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],3:[function(require,module,exports){
+},{"../src/engine/effects/sprite2d2.js":60,"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6460,40 +6459,25 @@ var testCannonES = function () {
       app.cameras.WASD.setZ(0);
       app.cameras.WASD.setY(3.76);
       app.cameras.WASD._dirtyAngle = true;
-      physicsPlayground.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: 15,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 111,
-          z: 0
-        },
-        scale: [5, 5, 5],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'ball1',
-        mesh: m.ball,
-        physics: {
-          enabled: true,
-          geometry: "Sphere",
-          group: 2,
-          mask: -1
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
+
+      // physicsPlayground.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 0, y: 15, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 111, z: 0},
+      //   scale: [5, 5, 5],
+      //   texturesPaths: ['./res/textures/floor1.webp'],
+      //   name: 'ball1',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Sphere",
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // })
+
       physicsPlayground.addMeshObj({
         position: {
           x: 0,
@@ -6519,82 +6503,50 @@ var testCannonES = function () {
           enabled: false
         }
       });
-      physicsPlayground.addProceduralMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 10,
-          y: 15,
-          z: -7
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [1, 1, 1],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: _proceduralMesh.MeshMorpher.capsule(1, 2, false),
-        meshB: _proceduralMesh.MeshMorpher.cube(1),
-        name: `morph_1`,
-        physics: {
-          enabled: true,
-          geometry: "Capsule",
-          mass: 1,
-          radius: 1.0,
-          height: 2.0,
-          group: 2,
-          mask: -1
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
-      physicsPlayground.addProceduralMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 6,
-          y: 15,
-          z: -7
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [1, 1, 1],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        meshA: _proceduralMesh.MeshMorpher.cylinder(1, 2),
-        meshB: _proceduralMesh.MeshMorpher.cube(1),
-        name: `morph_cylinder`,
-        physics: {
-          enabled: true,
-          geometry: "Cylinder",
-          mass: 1,
-          radius: 1.0,
-          height: 2.0,
-          group: 2,
-          mask: -1
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
+
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 10, y: 15, z: -17},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.capsule(1, 2, false),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_1`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Capsule",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
+
+      // physicsPlayground.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 6, y: 15, z: -17},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.cylinder(1, 2),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_cylinder`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cylinder",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
 
       // physicsPlayground.addProceduralMeshObj({
       //   material: {type: 'standard'},
@@ -6619,22 +6571,31 @@ var testCannonES = function () {
       // });
 
       // not isolated bug yet - selecting not precise!
-      // setTimeout(async () => {
-      //   let T = await physicsPlayground.physicsBodiesGenerator(
-      //     "standard",
-      //     {x: -20, y: 10, z: -20},
-      //     {x: 0, y: 0, z: 0},
-      //     "res/textures/star1.png",
-      //     "testGen",
-      //     "Cube",
-      //     false,
-      //     [1, 1, 1],
-      //     10
-      //   )
-      //   app.matrixPhysics.createBoundedSpace(T, {x: -20, y: 3, z: -20}, {x: 3, y: 3, z: 3});
-      //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
-      // }, 2500)
+      setTimeout(async () => {
+        let T = await physicsPlayground.physicsBodiesGenerator("standard", {
+          x: 0,
+          y: 520,
+          z: -20
+        }, {
+          x: 0,
+          y: 0,
+          z: 0
+        }, "res/textures/star1.png", "testGen", "Sphere", false, [1, 1, 1], 15, 200);
+        app.matrixPhysics.createBoundedSpace(T, {
+          x: 0,
+          y: 25,
+          z: -20
+        }, {
+          x: 7,
+          y: 7,
+          z: 7
+        });
+        console.log(T);
+        app.matrixPhysics.lotteryMachineShake(T, 10);
+        // app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
 
+        //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
+      }, 2500);
       if ((0, _utils.isMobile)() == false) app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
@@ -27162,20 +27123,17 @@ class PlaneCamera {
   projectionMatrix = new Float32Array(16);
   invProj = new Float32Array(16);
   VP = new Float32Array(16);
-
-  // ===== PLANE =====
-  followMe = null; // cam.followMe = body.position  {x, y}
+  followMe = null;
   followMeOffset = 80;
   scrollY = 80;
   minY = 3.0;
   maxY = 200.0;
-  scrollSpeed = 0.8;
+  scrollSpeed = 0.2;
   smoothFactor = 0.1;
   mousRollInAction = false;
   _detachedFromFollow = false;
   _dirty = true;
-
-  // ===== CALLBACKS =====
+  // CALLBACKS
   onLeft = null;
   onLeftRelease = null;
   onRight = null;
@@ -27233,9 +27191,6 @@ class PlaneCamera {
     this.position[2] = z;
     this._dirty = true;
   };
-
-  // ── mobile buttons ────────────────────────────────────────────
-
   _setupMobileButtons() {
     MobileDOM.addButton('←', () => this.onLeft?.(), () => this.onLeftRelease?.(), {
       left: '20',
@@ -27262,9 +27217,6 @@ class PlaneCamera {
       bottom: '30'
     });
   }
-
-  // ── keyboard ──────────────────────────────────────────────────
-
   _setupKeyboard() {
     const handle = (e, isDown) => {
       switch (e.code) {
@@ -27301,9 +27253,6 @@ class PlaneCamera {
       passive: true
     });
   }
-
-  // ── scroll / touch ────────────────────────────────────────────
-
   _pinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
@@ -27357,9 +27306,6 @@ class PlaneCamera {
       });
     }
   }
-
-  // ── orientation ───────────────────────────────────────────────
-
   _updateOrientation() {
     this.right[0] = 1;
     this.right[1] = 0;
@@ -27371,9 +27317,6 @@ class PlaneCamera {
     this.back[1] = 0;
     this.back[2] = 1;
   }
-
-  // ── follow ────────────────────────────────────────────────────
-
   _updateFollow() {
     if (!this.followMe) return;
     if (this._detachedFromFollow) return;
@@ -27388,7 +27331,6 @@ class PlaneCamera {
       this.position[1] += dy * this.smoothFactor;
       this._dirty = true;
     }
-
     // smooth Z pull-back
     const newZ = this.position[2] + (this.scrollY - this.position[2]) * this.smoothFactor;
     if (Math.abs(newZ - this.position[2]) > 0.001) {
@@ -42771,7 +42713,7 @@ class PhysicsBridge {
       const base = count * 3;
       idxArr[count] = idx;
       posArr[base + 0] = meObj.position.x;
-      posArr[base + 1] = -meObj.position.y;
+      posArr[base + 1] = meObj.position.y;
       posArr[base + 2] = meObj.position.z;
       count++;
       console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
@@ -42787,6 +42729,33 @@ class PhysicsBridge {
         count,
         idx: idxArr,
         pos: posArr
+      });
+    }
+  }
+  setKinematicTransformIndividual(idx, x, y, z = 0) {
+    let count = 0;
+    const idxArr = this._kinematicIdx;
+    const posArr = this._kinematicPos;
+    for (const [idx_, meObj] of this._bodyIndexMap) {
+      if (!meObj.isKinematic && idx_ !== idx) continue;
+      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
+      meObj.position.setPosition(x, y, 0);
+      count++;
+      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
+    }
+    this._kinematicCount = count;
+    if (count > 0) {
+      console.log('Sending to Worker:', {
+        idxArr,
+        posArr
+      });
+      this._worker.postMessage({
+        cmd: 'setKinematicTransform',
+        count,
+        idx: idx,
+        x: x,
+        y: y,
+        z: z
       });
     }
   }
@@ -43032,21 +43001,25 @@ class PhysicsBridge {
       size
     });
   }
-  physicsBoundedSpace(pos = {
+  lotteryMachineShake(ids, strength = 5) {
+    this._worker.postMessage({
+      cmd: 'lotteryMachineShake',
+      ids,
+      strength
+    });
+  }
+
+  // createSphereBoundary
+  createSphereBoundary(idxs, pos = {
     x: 0,
     y: 0,
     z: 0
-  }, size = {
-    x: 5,
-    y: 5,
-    z: 5
-  }, name = "bounded_space", withFloor = true) {
+  }, radius = 20) {
     this._worker.postMessage({
-      cmd: 'createBoundedSpace',
+      cmd: 'createSphereBoundary',
+      idxs,
       pos,
-      size,
-      name,
-      withFloor
+      radius
     });
   }
   _syncToObjects() {

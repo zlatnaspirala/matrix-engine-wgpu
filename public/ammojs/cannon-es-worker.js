@@ -151,12 +151,9 @@ class MatrixCannon {
     this._allocBuffer(this.rigidBodies.length);
     if(this._snapshot) {
       const base = idx * FLOATS_PER_BODY;
-      // this._snapshot[base + 0] = pOptions.position?.x ?? 0;
-      // this._snapshot[base + 1] = pOptions.position?.y ?? 0;
-      // this._snapshot[base + 2] = pOptions.position?.z ?? 0;
-      this._snapshot[base + 0] = body.position.x;
-      this._snapshot[base + 1] = 0;          // y up = 0
-      this._snapshot[base + 2] = body.position.y;  // matter y → z
+      this._snapshot[base + 0] = pOptions.position?.x ?? 0;
+      this._snapshot[base + 1] = pOptions.position?.y ?? 0;
+      this._snapshot[base + 2] = pOptions.position?.z ?? 0;
     }
     return cannonBody;
   }
@@ -533,38 +530,167 @@ class MatrixCannon {
 
   createBoundedSpace(ids, pos, size) {
     const CANNON = this.CANNON;
-    // Assign a unique group bit for this bounded space
-    const wallGroup = 1 << this._boundedSpaceCount || 1;
+
+    const wallGroup = 1 << (this._boundedSpaceCount || 0);
     this._boundedSpaceCount = (this._boundedSpaceCount || 0) + 1;
 
-    const addPlane = (eulerX, eulerY, eulerZ, px, py, pz) => {
-      const shape = new CANNON.Plane();
-      const body = new CANNON.Body({mass: 0});
-      body.addShape(shape);
-      body.quaternion.setFromEuler(eulerX, eulerY, eulerZ);
-      body.position.set(pos.x + px, pos.y + py, pos.z + pz);
+    const wallThickness = 0.6;
+
+    const addWall = (sx, sy, sz, px, py, pz) => {
+      const shape = new CANNON.Box(
+        new CANNON.Vec3(sx * 0.5, sy * 0.5, sz * 0.5)
+      );
+
+      const body = new CANNON.Body({
+        mass: 0,
+        shape
+      });
+
+      body.position.set(
+        pos.x + px,
+        pos.y + py,
+        pos.z + pz
+      );
+
       body.collisionFilterGroup = wallGroup;
-      body.collisionFilterMask = wallGroup; // only collide with bodies in same group
+      body.collisionFilterMask = wallGroup;
+
       this.world.addBody(body);
+
       return body;
     };
 
-    const planes = [
-      addPlane(-Math.PI / 2, 0, 0, 0, -size.y, 0),
-      addPlane(Math.PI / 2, 0, 0, 0, size.y, 0),
-      addPlane(0, Math.PI / 2, 0, -size.x, 0, 0),
-      addPlane(0, -Math.PI / 2, 0, size.x, 0, 0),
-      addPlane(0, 0, 0, 0, 0, -size.z),
-      addPlane(0, Math.PI, 0, 0, 0, size.z),
-    ];
+    // floor
+    addWall(
+      size.x * 2,
+      wallThickness,
+      size.z * 2,
+      0,
+      -size.y,
+      0
+    );
 
-    // Tag each selected body to also use this group
+    // ceiling
+    addWall(
+      size.x * 2,
+      wallThickness,
+      size.z * 2,
+      0,
+      size.y,
+      0
+    );
+
+    // left
+    addWall(
+      wallThickness,
+      size.y * 2,
+      size.z * 2,
+      -size.x,
+      0,
+      0
+    );
+
+    // right
+    addWall(
+      wallThickness,
+      size.y * 2,
+      size.z * 2,
+      size.x,
+      0,
+      0
+    );
+
+    // back
+    addWall(
+      size.x * 2,
+      size.y * 2,
+      wallThickness,
+      0,
+      0,
+      -size.z
+    );
+
+    // front
+    addWall(
+      size.x * 2,
+      size.y * 2,
+      wallThickness,
+      0,
+      0,
+      size.z
+    );
+
     ids.forEach(id => {
       const body = this.rigidBodies[id];
       if(!body) return;
+
       body.collisionFilterGroup |= wallGroup;
       body.collisionFilterMask |= wallGroup;
     });
+  }
+
+  // TEST
+  shake(ids, strength = 5) {
+    ids.forEach(id => {
+      const body = this.rigidBodies[id];
+      if(!body) return;
+
+      body.applyImpulse(
+        new this.CANNON.Vec3(
+          (Math.random() - 0.5) * strength,
+          (Math.random() - 0.5) * strength,
+          (Math.random() - 0.5) * strength
+        ),
+        body.position
+      );
+    });
+  }
+
+  lotteryMachineShake(ids, strength = 5) {
+    ids.forEach(id => {
+      const body = this.rigidBodies[id];
+      if(!body) return;
+
+      const force = new this.CANNON.Vec3(
+        (Math.random() - 0.5) * 2,
+        Math.random() * 2,
+        (Math.random() - 0.5) * 2
+      );
+
+      body.applyForce(force, body.position);
+
+    });
+  }
+
+
+  // WIP TEST
+  createSphereBoundary(ids, center, radius) {
+
+    this.world.addEventListener('postStep', () => {
+      ids.forEach(id => {
+        const body = this.rigidBodies[id];
+        if(!body) return;
+
+        const dx = body.position.x - center.x;
+        const dy = body.position.y - center.y;
+        const dz = body.position.z - center.z;
+
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if(dist > radius) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const nz = dz / dist;
+
+          body.position.set(
+            center.x + nx * radius,
+            center.y + ny * radius,
+            center.z + nz * radius
+          );
+        }
+      });
+    });
+
   }
 
   step() {
@@ -582,9 +708,9 @@ class MatrixCannon {
         snap[base + 7] = 0;
         continue;
       }
-      snap[base + 0] = body.position.x;  // x → x
-      snap[base + 1] = 0;                 // y (up) = 0, it's 2D
-      snap[base + 2] = body.position.y;  // matter y → 3D z
+      snap[base + 0] = body.position.x;
+      snap[base + 1] = body.position.y;
+      snap[base + 2] = body.position.z;
       snap[base + 3] = body.quaternion.x;
       snap[base + 4] = body.quaternion.y;
       snap[base + 5] = body.quaternion.z;
@@ -638,12 +764,13 @@ self.onmessage = async ({data}) => {
     case 'explode': cannon.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'getPosition': cannon.getPosition(data.idx, data.id); break;
     case 'speedUpSimulation': cannon.speedUpSimulation(data.value); break;
-
     case 'setCollisionFlags': cannon.setCollisionFlags(data.idx, data.flags); break;
     case 'removeRigidBody': cannon.removeRigidBody(data.idx, data.flags); break;
     // new
     case 'createChain': cannon.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
     case 'createBoundedSpace': cannon.createBoundedSpace(data.ids, data.pos, data.size); break;
-
+    case 'createSphereBoundary': cannon.createSphereBoundary(data.idxs, data.pos, data.radius); break;
+    case 'lotteryMachineShake': cannon.lotteryMachineShake(data.ids, data.strength); break;
+    
   }
 };

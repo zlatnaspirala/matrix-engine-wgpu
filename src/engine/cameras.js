@@ -1233,35 +1233,25 @@ export class CinematicCamera {
 export class PlaneCamera {
   pitch = 0;
   yaw = 0;
-
   position = new Float32Array(3);
-
   right = new Float32Array(3);
   up = new Float32Array(3);
   back = new Float32Array(3);
-
   view = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   invProj = new Float32Array(16);
   VP = new Float32Array(16);
-
-  // ===== PLANE =====
-  followMe = null;   // cam.followMe = body.position  {x, y}
+  followMe = null;
   followMeOffset = 80;
-
   scrollY = 80;
   minY = 3.0;
   maxY = 200.0;
-  scrollSpeed = 0.8;
-
+  scrollSpeed = 0.2;
   smoothFactor = 0.1;
-
   mousRollInAction = false;
-
   _detachedFromFollow = false;
   _dirty = true;
-
-  // ===== CALLBACKS =====
+  // CALLBACKS
   onLeft = null;
   onLeftRelease = null;
   onRight = null;
@@ -1313,18 +1303,14 @@ export class PlaneCamera {
   setY = (y) => {this.position[1] = y; this._dirty = true;}
   setZ = (z) => {this.position[2] = z; this._dirty = true;}
 
-  // ── mobile buttons ────────────────────────────────────────────
-
-_setupMobileButtons() {
-  MobileDOM.addButton('←', () => this.onLeft?.(),     () => this.onLeftRelease?.(),    {left: '20', bottom: '5'});
-  MobileDOM.addButton('→', () => this.onRight?.(),    () => this.onRightRelease?.(),   {left: '60', bottom: '5'});
-  MobileDOM.addButton('↑', () => this.onUp?.(),       () => this.onUpRelease?.(),      {left: '40', bottom: '15'});
-  MobileDOM.addButton('↓', () => this.onDown?.(),     () => this.onDownRelease?.(),    {left: '40', bottom: '5'});
-  MobileDOM.addButton('A', () => this.onAction1?.(),  () => this.onAction1Release?.(), {left: '80', bottom: '40'});
-  MobileDOM.addButton('B', () => this.onAction2?.(),  () => this.onAction2Release?.(), {left: '80', bottom: '30'});
-}
-
-  // ── keyboard ──────────────────────────────────────────────────
+  _setupMobileButtons() {
+    MobileDOM.addButton('←', () => this.onLeft?.(), () => this.onLeftRelease?.(), {left: '20', bottom: '5'});
+    MobileDOM.addButton('→', () => this.onRight?.(), () => this.onRightRelease?.(), {left: '60', bottom: '5'});
+    MobileDOM.addButton('↑', () => this.onUp?.(), () => this.onUpRelease?.(), {left: '40', bottom: '15'});
+    MobileDOM.addButton('↓', () => this.onDown?.(), () => this.onDownRelease?.(), {left: '40', bottom: '5'});
+    MobileDOM.addButton('A', () => this.onAction1?.(), () => this.onAction1Release?.(), {left: '80', bottom: '40'});
+    MobileDOM.addButton('B', () => this.onAction2?.(), () => this.onAction2Release?.(), {left: '80', bottom: '30'});
+  }
 
   _setupKeyboard() {
     const handle = (e, isDown) => {
@@ -1341,8 +1327,6 @@ _setupMobileButtons() {
     window.addEventListener('keydown', e => {if(!e.repeat) handle(e, true);}, {passive: true});
     window.addEventListener('keyup', e => handle(e, false), {passive: true});
   }
-
-  // ── scroll / touch ────────────────────────────────────────────
 
   _pinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
@@ -1393,34 +1377,26 @@ _setupMobileButtons() {
     }
   }
 
-  // ── orientation ───────────────────────────────────────────────
-
   _updateOrientation() {
     this.right[0] = 1; this.right[1] = 0; this.right[2] = 0;
     this.up[0] = 0; this.up[1] = 1; this.up[2] = 0;
     this.back[0] = 0; this.back[1] = 0; this.back[2] = 1;
   }
 
-  // ── follow ────────────────────────────────────────────────────
-
   _updateFollow() {
     if(!this.followMe) return;
     if(this._detachedFromFollow) return;
-
     if(this.mousRollInAction) {
       this.followMeOffset = this.scrollY;
       this.mousRollInAction = false;
     }
-
     const dx = this.followMe.x - this.position[0];
     const dy = this.followMe.y - this.position[1];
-
     if(Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) {
       this.position[0] += dx * this.smoothFactor;
       this.position[1] += dy * this.smoothFactor;
       this._dirty = true;
     }
-
     // smooth Z pull-back
     const newZ = this.position[2] + (this.scrollY - this.position[2]) * this.smoothFactor;
     if(Math.abs(newZ - this.position[2]) > 0.001) {
@@ -1660,7 +1636,6 @@ export class Camera2DOrthogonaly {
 }
 
 export const MobileDOM = {
-
   eventDown: null,
   eventUp: null,
   eventCancel: null,

@@ -205,10 +205,10 @@ class MatterPhysicsWorker {
   setKinematicTransform(idx, x, y, z) {
     const body = this.rigidBodies[idx];
     if(!body) return;
-    // const mx = x / this.TUNE;
-    // const my = -(y / this.TUNE);
-    const mx = x ;
-    const my = y;
+    const mx = x / this.TUNE;
+    const my = -(y / this.TUNE);
+    // const mx = x;
+    // const my = y;
 
     // Directly set the position
 
@@ -396,14 +396,15 @@ self.onmessage = async ({data}) => {
         self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
       }
       break;
-    // case 'setKinematicTransform':
-    // worker.setKinematicTransform(data.idx, data.x, data.y, data.z);
     case 'setKinematicTransform':
+      worker.setKinematicTransform(data.idx, data.x, data.y, data.z);
+      break;
+    case 'setKinematicTransform2':
       // Loop through the data.count to process all batched updates
       for(let i = 0;i < data.count;i++) {
         const idx = data.idx[i];
-        const x = data.pos[i * 3 + 0] / worker.TUNE;
-        const y = data.pos[i * 3 + 1] / worker.TUNE;
+        const x = data.pos[i * 3 + 0] ;
+        const y = data.pos[i * 3 + 1] ;
         // const z = data.pos[i * 3 + 2] / this.TUNE;
         // Call the logic to actually move the body
         worker.setKinematicTransform(idx, x, y, 0);

@@ -2,9 +2,7 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {randomIntFromTo} from "../src/engine/utils.js";
-import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {initializeSpritesForMesh, SpritesPack2D} from "../src/engine/effects/sprite2d2.js";
-import {InstancedKinematicOperations} from "../src/engine/procedures/InstancedKinematicOperations.js";
 import {PVector} from "../src/engine/matrix-class.js";
 
 export var loadSprite2 = function() {
@@ -24,7 +22,6 @@ export var loadSprite2 = function() {
 
     addEventListener('PhysicsReady', () => {
       world2D.addLight();
-      // if you double call downloadMeshes for same path engine use cached values no double fetch...
       downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
         onLoadObj, {scale: [1, 1, 1]})
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
@@ -164,9 +161,9 @@ export var loadSprite2 = function() {
         world2D.lightContainer[0].setRange(200);
         world2D.lightContainer[0].setTarget(0, 0, 0);
 
-        setTimeout(() => {
-          // MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
-        }, 200)
+        // setTimeout(() => {
+        //   // MYCUBE.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
+        // }, 200)
 
         setTimeout(() => {
           // invisible

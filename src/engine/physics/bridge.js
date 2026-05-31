@@ -81,7 +81,7 @@ export class PhysicsBridge {
       const base = count * 3;
       idxArr[count] = idx;
       posArr[base + 0] = meObj.position.x;
-      posArr[base + 1] = -meObj.position.y;
+      posArr[base + 1] = meObj.position.y;
       posArr[base + 2] = meObj.position.z;
       count++;
       console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
@@ -90,6 +90,24 @@ export class PhysicsBridge {
     if(count > 0) {
       console.log('Sending to Worker:', {idxArr, posArr});
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idxArr, pos: posArr});
+    }
+  }
+
+  setKinematicTransformIndividual(idx, x, y, z=0) {
+    let count = 0;
+    const idxArr = this._kinematicIdx;
+    const posArr = this._kinematicPos;
+    for(const [idx_, meObj] of this._bodyIndexMap) {
+      if(!meObj.isKinematic && idx_ !== idx) continue;
+      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
+      meObj.position.setPosition(x, y, 0);
+      count++;
+      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
+    }
+    this._kinematicCount = count;
+    if(count > 0) {
+      console.log('Sending to Worker:', {idxArr, posArr});
+      this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idx, x: x, y: y, z: z});
     }
   }
 
@@ -224,13 +242,16 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'createBoundedSpace', ids, pos, size});
   }
 
-  physicsBoundedSpace(
+  lotteryMachineShake(ids, strength = 5) {
+    this._worker.postMessage({cmd: 'lotteryMachineShake', ids, strength});
+  }
+
+  // createSphereBoundary
+  createSphereBoundary(idxs,
     pos = {x: 0, y: 0, z: 0},
-    size = {x: 5, y: 5, z: 5},
-    name = "bounded_space",
-    withFloor = true
+    radius = 20
   ) {
-    this._worker.postMessage({cmd: 'createBoundedSpace', pos, size, name, withFloor});
+    this._worker.postMessage({cmd: 'createSphereBoundary', idxs, pos, radius});
   }
 
   _syncToObjects() {
