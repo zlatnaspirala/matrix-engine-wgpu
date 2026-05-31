@@ -213,7 +213,7 @@ var loadSprite2 = function () {
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, onGround, {
-        scale: [40, 1.5, 40]
+        scale: [43, 1.5, 43]
       });
       (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
       function onGround(m) {
@@ -224,7 +224,7 @@ var loadSprite2 = function () {
           },
           position: {
             x: 0,
-            y: -4,
+            y: -1.5,
             z: -10
           },
           rotation: {

@@ -10,12 +10,73 @@ const BLOCK_TYPES = {
   DANGEROUS_MOVING: { color: [1.0, 0.5, 0.0],  moving: true,  dangerous: true  },
 };
 
+const BALL_COLOR  = [1.0, 0.9, 0.1];
+const BALL_DANGER = true;
+
 function pickType() {
   const r = Math.random();
   if (r > 0.85) return 'DANGEROUS_MOVING';
   if (r > 0.70) return 'DANGEROUS_STATIC';
   if (r > 0.50) return 'MOVING';
   return 'SAFE';
+}
+
+function generatePaths(startHeight, totalBlocks, meshData, world2D, levelRegistry) {
+  const PATHS = [
+    { xCenter: -34, label: 'LEFT'   },
+    // { xCenter:   0, label: 'CENTER' },
+    { xCenter:  34, label: 'RIGHT'  },
+  ];
+
+  const blocksPerPath = Math.floor(totalBlocks / PATHS.length);
+
+  for (const path of PATHS) {
+    for (let i = 1; i <= blocksPerPath; i++) {
+      const y = startHeight + (i * 6);
+      const x = path.xCenter + (Math.random() * 8 - 4);
+      const type = pickType();
+      const def = BLOCK_TYPES[type];
+      const name = `BLOCK_${path.label}_${type}_${i}`;
+
+      const block = world2D.addMeshObj({
+        material: {type: 'standard'},
+        position: {x, y, z: -10},
+        scale: [3, 0.5, 1],
+        name,
+        mesh: meshData,
+        physics: {enabled: true, mass: 0, kinematic: def.moving, geometry: "Cube"}
+      });
+
+      block.setAmbient(...def.color);
+      block._blockType = type;
+
+      if (def.moving) {
+        block.isKinematic = true;
+        block._baseX = x;
+        block._baseY = y;
+      }
+
+      levelRegistry.set(name, {type, def, baseX: x, baseY: y, path: path.label});
+    }
+  }
+
+  // bridge platforms connecting paths at intervals
+  const bridgeCount = 4;
+  for (let b = 0; b < bridgeCount; b++) {
+    const y = startHeight + ((b + 1) * (blocksPerPath * 6 / bridgeCount));
+    const name = `BLOCK_BRIDGE_SAFE_${b}`;
+    const block = world2D.addMeshObj({
+      material: {type: 'standard'},
+      position: {x: 0, y, z: -10},
+      scale: [10, 0.5, 1],
+      name,
+      mesh: meshData,
+      physics: {enabled: true, mass: 0, geometry: "Cube"}
+    });
+    block.setAmbient(...BLOCK_TYPES.SAFE.color);
+    block._blockType = 'SAFE';
+    levelRegistry.set(name, {type: 'SAFE', def: BLOCK_TYPES.SAFE, baseX: 0, baseY: y});
+  }
 }
 
 const COLLISION = {
@@ -50,13 +111,13 @@ export var loadSprite2 = function() {
     addEventListener('PhysicsReady', () => {
       world2D.addLight();
       downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
-      downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [43, 1.5, 43]})
+      downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [40, 1.5, 40]})
       addRaycastsAABBListener('canvas1', 'click');
 
       function onGround(m) {
         world2D.addMeshObj({
           material: {type: 'standard', share: true},
-          position: {x: 0, y: -1.5, z: -10},
+          position: {x: 0, y: -4, z: -10},
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: ['./res/textures/floor1.webp'],
@@ -81,7 +142,7 @@ export var loadSprite2 = function() {
 
         let PLAYER = world2D.addMeshObj({
           material: {type: 'standard'},
-          position: {x: 0, y: 4, z: -10},
+          position: {x: 0, y: 1, z: -10},
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
           scale: [1, 1, 1],
@@ -126,42 +187,27 @@ export var loadSprite2 = function() {
         BLOCK2._blockType = 'MOVING';
 
         const levelRegistry = new Map();
+        generatePaths(15, 24, m.cube, world2D, levelRegistry);
 
-        function generateLevel(startHeight, count, meshData) {
-          for (let i = 1; i <= count; i++) {
-            let y = startHeight + (i * 7);
-            let x = (Math.random() * 24) - 12;
-            let type = pickType();
-            let def = BLOCK_TYPES[type];
-
-            let block = world2D.addMeshObj({
-              material: {type: 'standard'},
-              position: {x: x, y: y, z: -10},
-              scale: [3, 0.5, 1],
-              name: `BLOCK_${type}_${i}`,
-              mesh: meshData,
-              physics: {
-                enabled: true,
-                mass: 0,
-                kinematic: def.moving,
-                geometry: "Cube"
-              }
-            });
-
-            block.setAmbient(...def.color);
-            block._blockType = type;
-
-            if (def.moving) {
-              block.isKinematic = true;
-              block._baseX = x;
-              block._baseY = y;
-            }
-
-            levelRegistry.set(`BLOCK_${type}_${i}`, {type, def, baseX: x, baseY: y});
-          }
+        // falling balls
+        const BALL_COUNT = 6;
+        const fallingBalls = [];
+        for (let i = 0; i < BALL_COUNT; i++) {
+          const bx = (Math.random() * 28) - 14;
+          const by = 80 + Math.random() * 40;
+          const name = `BALL_${i}`;
+          const ball = world2D.addMeshObj({
+            material: {type: 'standard'},
+            position: {x: bx, y: by, z: -10},
+            scale: [1, 1, 1],
+            name,
+            mesh: m.ball,
+            physics: {enabled: true, mass: 2, geometry: "Sphere"}
+          });
+          ball.setAmbient(...BALL_COLOR);
+          ball._blockType = 'BALL';
+          fallingBalls.push({name, ball, spawnX: bx, spawnY: by});
         }
-
-        generateLevel(15, 20, m.cube);
 
         world2D.lightContainer[0].setIntensity(55);
         world2D.activateBloomEffect();
@@ -182,9 +228,10 @@ export var loadSprite2 = function() {
           let cam = world2D.getCamera();
           world2D._PlayerCanJump = true;
           let moveSpeed = 0.2;
-          let jumpPower = moveSpeed * 2.3;
+          let jumpPower = moveSpeed * 2.65;
           let _playerID = world2D.matrixPhysics.getBodyByName('PLAYER');
 
+          // BLOCK2 oscillator
           const BLOCK2_ID = world2D.matrixPhysics.getBodyByName('BLOCK2');
           let t = 0;
           world2D.autoUpdate.push({
@@ -194,20 +241,18 @@ export var loadSprite2 = function() {
             }
           });
 
+          // moving platform updater
           const movingBlocks = [];
-          for (let i = 1; i <= 20; i++) {
-            for (const type of ['MOVING', 'DANGEROUS_MOVING']) {
-              const name = `BLOCK_${type}_${i}`;
-              const id = world2D.matrixPhysics.getBodyByName(name);
-              if (id !== undefined && id !== -1) {
-                const entry = levelRegistry.get(name);
-                movingBlocks.push({
-                  id,
-                  offset: Math.random() * Math.PI * 2,
-                  baseX: entry ? entry.baseX : 0,
-                  baseY: entry ? entry.baseY : 0,
-                });
-              }
+          for (const [name, entry] of levelRegistry) {
+            if (!entry.def.moving) continue;
+            const id = world2D.matrixPhysics.getBodyByName(name);
+            if (id !== undefined && id !== -1) {
+              movingBlocks.push({
+                id,
+                offset: Math.random() * Math.PI * 2,
+                baseX: entry.baseX,
+                baseY: entry.baseY,
+              });
             }
           }
 
@@ -227,11 +272,28 @@ export var loadSprite2 = function() {
             }
           });
 
+          // ball respawn updater — reset when fallen below world
+          world2D.autoUpdate.push({
+            update: () => {
+              for (const b of fallingBalls) {
+                const id = world2D.matrixPhysics.getBodyByName(b.name);
+                if (id === undefined || id === -1) continue;
+                world2D.matrixPhysics.getPosition(id).then((pos) => {
+                  if (pos && pos.y < -20) {
+                    const nx = (Math.random() * 28) - 14;
+                    const ny = 80 + Math.random() * 40;
+                    world2D.matrixPhysics.setBodyTransform(id, nx, ny, 0);
+                    world2D.matrixPhysics.setLinearVelocity(id, 0, 0, 0);
+                  }
+                });
+              }
+            }
+          });
+
           cam.onUp = () => {
             if (world2D._PlayerCanJump === true) {
               world2D.matrixPhysics.applyImpulse(_playerID, new PVector(0, jumpPower, 0));
               world2D._PlayerCanJump = false;
-              return;
             }
             world2D.matrixPhysics.isSleeping(_playerID).then((a) => {
               if (a) {
@@ -265,7 +327,7 @@ export var loadSprite2 = function() {
 
             if (!blockType) return;
 
-            if (blockType === 'DANGEROUS_STATIC' || blockType === 'DANGEROUS_MOVING') {
+            if (blockType === 'DANGEROUS_STATIC' || blockType === 'DANGEROUS_MOVING' || blockType === 'BALL') {
               COLLISION.onDangerous(world2D, _playerID, rayDirection);
             }
           };
