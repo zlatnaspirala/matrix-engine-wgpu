@@ -45,9 +45,9 @@ export class FragmentShaderGraph {
     this.id = id;
     this.nodes = [];
     this.connections = [];
-    this.spawnX = 80;
-    this.spawnY = 80;
-    this.spawnStepX = 220;
+    this.spawnX = 20;
+    this.spawnY = 20;
+    this.spawnStepX = 200;
     this.spawnStepY = 140;
     this.spawnCol = 0;
     this.runtimeList = [];
@@ -83,29 +83,29 @@ export class FragmentShaderGraph {
 
   nextSpawn() {
     const x = this.spawnX + this.spawnCol * this.spawnStepX;
-    const y = this.spawnY;
+    const y = this.spawnY + Math.floor(this.spawnCol / 3) * this.spawnStepY;
     this.spawnCol++;
-    if(this.spawnCol >= 3) {
-      this.spawnCol = 0;
-      this.spawnY += this.spawnStepY;
-    }
     return {x, y};
   }
 
   makeDraggable(el, node, connectionLayer) {
-    let ox = 0, oy = 0, drag = false;
+    let ox = 0, oy = 0, drag = false, startX = 0, startY = 0;
     el.addEventListener("pointerdown", e => {
       drag = true;
-      ox = e.clientX - el.offsetLeft;
-      oy = e.clientY - el.offsetTop;
+      startX = node.x;
+      startY = node.y;
+      ox = e.clientX;
+      oy = e.clientY;
       el.setPointerCapture(e.pointerId);
     });
     el.addEventListener("pointermove", e => {
       if(!drag) return;
-      el.style.left = (e.clientX - ox) + "px";
-      el.style.top = (e.clientY - oy) + "px";
-      node.x = (e.clientX - ox);
-      node.y = (e.clientY - oy);
+      const dx = e.clientX - ox;
+      const dy = e.clientY - oy;
+      node.x = startX + dx;
+      node.y = startY + dy;
+      el.style.left = node.x + "px";
+      el.style.top = node.y + "px";
       connectionLayer.redrawAll();
     });
     el.addEventListener("pointerup", () => drag = false);
@@ -114,8 +114,8 @@ export class FragmentShaderGraph {
   clear() {
     this.nodes = [];
     this.connections = [];
-    this.spawnX = 80;
-    this.spawnY = 80;
+    this.spawnX = 20;
+    this.spawnY = 20;
     this.spawnCol = 0;
     if(this.connectionLayer) {
       this.connectionLayer.svg.innerHTML = '';
@@ -1427,6 +1427,7 @@ export async function openFragmentShaderEditor(id = "fragShader") {
   padding:0;
   color:#eee;
   cursor:move;
+  will-change: transform;
 }
 
 .nodeShader.selected {
@@ -1498,6 +1499,7 @@ export async function openFragmentShaderEditor(id = "fragShader") {
   border: 2px solid #000;
   z-index: 5;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .pinShader.input {  margin-left: -6px; background: #ff6a6a; }
