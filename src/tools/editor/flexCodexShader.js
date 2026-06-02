@@ -1355,7 +1355,7 @@ export async function openFragmentShaderEditor(id = "fragShader") {
     const menu = document.createElement("div");
     menu.style.cssText = `
     width:200px; border-right:1px solid #222;
-    padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
+    padding:8px; background:#0f1320; height: 69vh; overflow: scroll;
   `;
     const btn = (txt, fn) => {
       const b = document.createElement("button");
