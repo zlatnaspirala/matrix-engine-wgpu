@@ -6513,7 +6513,7 @@ var testCannonES = function () {
         x: 0,
         y: 0,
         z: 0
-      }, ["./res/textures/rust.jpg"], 'my_set_walls', "5x3", true, [1, 1, 1], 2, 70);
+      }, ["./res/textures/rust.jpg"], 'my_set_walls', "5x3", true, [1, 1, 1], 2, 350);
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
@@ -33147,11 +33147,6 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
       for (let x = 0; x < width; x++) {
         const cubeName = `${name}_${index}`;
         setTimeout(() => {
-          console.log(cubeName, {
-            x: pos.x + x * spacing,
-            y: pos.y + y * spacing - 2.8,
-            z: pos.z
-          });
           engine.addMeshObj({
             material: {
               type: material
@@ -33172,7 +33167,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
               fresnelPower: 2.0,
               // Medium-sharp edge
               envLodBias: 2.5,
-              usePlanarReflection: false // ✅ Env map mode
+              usePlanarReflection: false // ✅ Env map mode - wip
             } : undefined,
             position: {
               x: pos.x + x * spacing,

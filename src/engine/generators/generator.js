@@ -116,8 +116,8 @@ export function physicsBodiesGeneratorWall(
     .split("x")
     .map(n => parseInt(n, 10));
 
-    console.log(width)
-    console.log(height)
+  console.log(width)
+  console.log(height)
   const inputCube = {mesh: useMeshPath};
 
   function handler(m) {
@@ -127,24 +127,18 @@ export function physicsBodiesGeneratorWall(
       for(let x = 0;x < width;x++) {
         const cubeName = `${name}_${index}`;
         setTimeout(() => {
-           console.log(cubeName, {
-  x: pos.x + x * spacing,
-  y: pos.y + y * spacing - 2.8,
-  z: pos.z
-});
-
           engine.addMeshObj({
             material: {type: material},
             envMapParams: (material == 'mirror' ? {
               baseColorMix: 0.5, // normal mix
-              mirrorTint: [0.9, 0.95, 1.0],    // Slight cool tint
+              mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
               reflectivity: 0.95,               // 25% reflection blend
               illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
               illuminateStrength: 0.4,          // Gentle rim
-              illuminatePulse: 0.01,             // No pulse (static)
+              illuminatePulse: 0.01,            // No pulse (static)
               fresnelPower: 2.0,                // Medium-sharp edge
               envLodBias: 2.5,
-              usePlanarReflection: false,  // ✅ Env map mode
+              usePlanarReflection: false,       // ✅ Env map mode - wip
             } : undefined),
             position: {
               x: pos.x + x * spacing,
@@ -423,7 +417,7 @@ export function addOBJ(
       // const b = app.matrixPhysics.getBodyByName(name);
       const o = app.getSceneObjectByName(name);
       console.log(o.name);
-      
+
       runtimeCacheObjs.push(o);
       resolve(o);
     }
@@ -448,34 +442,34 @@ export function addProceduralOBJ(
   return new Promise((resolve, reject) => {
     const engine = this;
     // const inputCube = {mesh: path};
-      const RAY = {enabled: !!raycast, radius: 1};
-      console.info('add cube form graph..')
-      engine.addProceduralMeshObj({
-        material: {type: material},
-        position: {
-          x: pos.x,
-          y: pos.y,
-          z: pos.z
-        },
-        rotation: rot,
-        rotationSpeed: rotationSpeed,
-        texturesPaths: [texturePath],
-        name: name,
-        meshA: MeshMorpher[meshTypeA](1),
-        meshB: MeshMorpher[meshTypeB](1),
+    const RAY = {enabled: !!raycast, radius: 1};
+    console.info('add cube form graph..')
+    engine.addProceduralMeshObj({
+      material: {type: material},
+      position: {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z
+      },
+      rotation: rot,
+      rotationSpeed: rotationSpeed,
+      texturesPaths: [texturePath],
+      name: name,
+      meshA: MeshMorpher[meshTypeA](1),
+      meshB: MeshMorpher[meshTypeB](1),
+      scale: scale,
+      physics: {
         scale: scale,
-        physics: {
-          scale: scale,
-          enabled: isPhysicsBody,
-          geometry: "Cube"
-        },
-        raycast: RAY
-      });
-      const o = app.getSceneObjectByName(name);
-      console.log(o.name);
-      runtimeCacheObjs.push(o);
-      resolve(o);
-    
+        enabled: isPhysicsBody,
+        geometry: "Cube"
+      },
+      raycast: RAY
+    });
+    const o = app.getSceneObjectByName(name);
+    console.log(o.name);
+    runtimeCacheObjs.push(o);
+    resolve(o);
+
   });
 }
 
