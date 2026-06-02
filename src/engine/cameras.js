@@ -134,7 +134,7 @@ export class WASDCamera {
         if(e.pointerType === 'mouse') {
           this._mouseDown = true;
           if(canvas.requestPointerLock) {
-            canvas.requestPointerLock();
+            // canvas.requestPointerLock();
           } else {
             canvas.setPointerCapture(e.pointerId);
           }

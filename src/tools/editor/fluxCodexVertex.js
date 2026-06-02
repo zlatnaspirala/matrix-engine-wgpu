@@ -1586,7 +1586,7 @@ export default class FluxCodexVertex {
         spec.fields[0].value = name;
         const dom = document.querySelector(`.node[data-id="${spec.id}"]`);
         let fields = dom.querySelectorAll(".node-fields");
-        console.log('set shader ', name);
+        // console.log('set shader ', name);
         fields[0].children[0].value = name;
       });
       el.appendChild(select);

@@ -23361,7 +23361,10 @@ var MEEditorClient = class {
         } else {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
-            if (typeof data.graphName === "string") document.dispatchEvent(new CustomEvent("get-shader-graphs", {}));
+            if (typeof data.graphName === "string") {
+              console.log("Graph saved \u2705 test ", data.graphName);
+              console.log("Graph saved \u2705 test ", data.graphs);
+            }
           }
           if (data.methodLoads && data.ok == true && data.shaderGraphs) {
             mb.show("Graphs list \u2705" + data.shaderGraphs);
@@ -24901,7 +24904,7 @@ async function openFragmentShaderEditor(id2 = "fragShader") {
     const menu = document.createElement("div");
     menu.style.cssText = `
     width:200px; border-right:1px solid #222;
-    padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
+    padding:8px; background:#0f1320; height: 69vh; overflow: scroll;
   `;
     const btn = (txt, fn) => {
       const b2 = document.createElement("button");

@@ -1945,8 +1945,8 @@ function serializeGraph(shaderGraph) {
 function saveGraph(shaderGraph, key = "fragShaderGraph") {
   let content = serializeGraph(shaderGraph);
   localStorage.setItem(key, content);
-  console.log('test compile content', shaderGraph.runtime_memory[key]);
-  console.log('test compile content', content);
+  // console.log('test compile content', shaderGraph.runtime_memory[key]);
+  // console.log('test compile content', content);
   if(shaderGraph.runtime_memory[key]) {
     // content.runtime_memory = shaderGraph.runtime_memory[key];
   } else {

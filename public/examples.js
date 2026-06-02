@@ -26018,7 +26018,7 @@ class WASDCamera {
         if (e.pointerType === 'mouse') {
           this._mouseDown = true;
           if (canvas.requestPointerLock) {
-            canvas.requestPointerLock();
+            // canvas.requestPointerLock();
           } else {
             canvas.setPointerCapture(e.pointerId);
           }
@@ -56970,8 +56970,12 @@ class MEEditorClient {
         } else {
           if (data.methodSaves && data.ok == true) {
             _utils.mb.show("Graph saved ✅");
-            // console.log('Graph saved ✅ test ', data.graphName);
-            if (typeof data.graphName === "string") document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
+            if (typeof data.graphName === "string") {
+              // last selected no priory - later
+              // console.log('Graph saved ✅ test ', data.graphName);
+              console.log('Graph saved ✅ test ', data.graphs);
+              // document.dispatchEvent(new CustomEvent('get-shader-graphs', {}));
+            }
           }
           if (data.methodLoads && data.ok == true && data.shaderGraphs) {
             _utils.mb.show("Graphs list ✅" + data.shaderGraphs);
@@ -60405,8 +60409,8 @@ function serializeGraph(shaderGraph) {
 function saveGraph(shaderGraph, key = "fragShaderGraph") {
   let content = serializeGraph(shaderGraph);
   localStorage.setItem(key, content);
-  console.log('test compile content', shaderGraph.runtime_memory[key]);
-  console.log('test compile content', content);
+  // console.log('test compile content', shaderGraph.runtime_memory[key]);
+  // console.log('test compile content', content);
   if (shaderGraph.runtime_memory[key]) {
     // content.runtime_memory = shaderGraph.runtime_memory[key];
   } else {
@@ -62382,7 +62386,7 @@ class FluxCodexVertex {
         spec.fields[0].value = name;
         const dom = document.querySelector(`.node[data-id="${spec.id}"]`);
         let fields = dom.querySelectorAll(".node-fields");
-        console.log('set shader ', name);
+        // console.log('set shader ', name);
         fields[0].children[0].value = name;
       });
       el.appendChild(select);
