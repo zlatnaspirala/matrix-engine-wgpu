@@ -3,29 +3,15 @@ export var supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoint
 
 export const MeshType = Object.freeze({MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3});
 
-// ✅ OPTIMIZATION: Cache touch event handlers to prevent memory leaks
-const touchStartHandler = function(e) {
-  if(e.touches.length > 1) {
-    e.preventDefault();
-  }
-};
-
-const touchMoveHandler = function(e) {
-  if(e.touches.length > 1) {
-    e.preventDefault();
-  }
-};
-
-const gestureStartHandler = function(e) {
-  e.preventDefault();
-};
+const touchStartHandler = function(e) {if(e.touches.length > 1) {e.preventDefault()} };
+const touchMoveHandler = function(e) {if(e.touches.length > 1) {e.preventDefault()} };
+const gestureStartHandler = function(e) {e.preventDefault()};
 
 let preventZoomApplied = false;
 
 export function preventZoom() {
-  if(preventZoomApplied) return; // ✅ Prevent duplicate listeners
+  if(preventZoomApplied) return;
   preventZoomApplied = true;
-  
   document.addEventListener('touchstart', touchStartHandler, {passive: false});
   document.addEventListener('touchmove', touchMoveHandler, {passive: false});
   document.addEventListener('gesturestart', gestureStartHandler);
@@ -63,12 +49,10 @@ let mobileCheckResult = null;
 
 export function isMobile() {
   if(mobileCheckResult !== null) return mobileCheckResult;
-  
   if(supportsTouch) {
     mobileCheckResult = true;
     return true;
   }
-  
   mobileCheckResult = mobileRegexPatterns.some(pattern => pattern.test(cachedUserAgent));
   return mobileCheckResult;
 }
@@ -565,13 +549,12 @@ export function OSCILLATOR(min, max, step, options) {
     }
   };
 
-  // ---- UPDATE ----
+  // UPDATE!
   this.UPDATE = function(delta) {
     var s = this.step;
     if(this.useDelta && delta !== undefined) {
       s = s * delta;
     }
-    // ---------- REGIMES ----------
     switch(this.regime) {
       // ===== PING-PONG =====
       case "pingpong":
@@ -782,49 +765,26 @@ export function getAxisRot3(Q) {
   return axis;
 }
 
-// Copied intro worker also.
 export function quaternion_rotation_matrix(Q) {
-
-  // Covert a quaternion into a full three-dimensional rotation matrix.
-
-  // Input
-  // :param Q: A 4 element array representing the quaternion (q0,q1,q2,q3) 
-
-  // Output
-  // :return: A 3x3 element matrix representing the full 3D rotation matrix. 
-  //          This rotation matrix converts a point in the local reference 
-  //          frame to a point in the global reference frame.
-  // """
-  // # Extract the values from Q
   var q0 = Q[0]
   var q1 = Q[1]
   var q2 = Q[2]
   var q3 = Q[3]
-
-  // # First row of the rotation matrix
   var r00 = 2 * (q0 * q0 + q1 * q1) - 1
   var r01 = 2 * (q1 * q2 - q0 * q3)
   var r02 = 2 * (q1 * q3 + q0 * q2)
-
-  // # Second row of the rotation matrix
   var r10 = 2 * (q1 * q2 + q0 * q3)
   var r11 = 2 * (q0 * q0 + q2 * q2) - 1
   var r12 = 2 * (q2 * q3 - q0 * q1)
-
-  // # Third row of the rotation matrix
   var r20 = 2 * (q1 * q3 - q0 * q2)
   var r21 = 2 * (q2 * q3 + q0 * q1)
   var r22 = 2 * (q0 * q0 + q3 * q3) - 1
-
-  // # 3x3 rotation matrix
   var rot_matrix = [[r00, r01, r02],
   [r10, r11, r12],
   [r20, r21, r22]]
-
   return rot_matrix;
 }
 
-// copnsole log graphics
 export const LOG_WARN = 'background: gray; color: yellow; font-size:10px';
 export const LOG_INFO = 'background: green; color: white; font-size:11px';
 export const LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
