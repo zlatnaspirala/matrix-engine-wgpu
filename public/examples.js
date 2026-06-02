@@ -6488,9 +6488,7 @@ var testCannonES = function () {
         cube: "./res/meshes/blender/cube.obj",
         plane: "./res/meshes/blender/plane.obj",
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
-        reel: "./res/meshes/obj/reel.obj",
-        side: "./res/meshes/obj/drumpart.obj",
-        side2: "./res/meshes/obj/drumpart2.obj"
+        reel: "./res/meshes/obj/reel.obj"
       }, onGround, {
         scale: [1, 1, 1]
       });
@@ -6536,12 +6534,11 @@ var testCannonES = function () {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      let cam = app.getCamera();
-      cam.setYaw(-0.03);
-      cam.setPitch(-0.49);
-      cam.setZ(0);
-      cam.setY(13);
-      cam._dirtyAngle = true;
+      app.cameras.WASD.setYaw(-0.03);
+      app.cameras.WASD.setPitch(-0.49);
+      app.cameras.WASD.setZ(0);
+      app.cameras.WASD.setY(3.76);
+      app.cameras.WASD._dirtyAngle = true;
 
       // physicsPlayground.addMeshObj({
       //   material: {type: 'standard'},
@@ -6584,194 +6581,6 @@ var testCannonES = function () {
         mesh: m.plane,
         physics: {
           enabled: false
-        }
-      });
-
-      // DRum
-      // BOTTOM
-      const drum0 = physicsPlayground.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: 14.5,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [4.3, 0.5, 4.3],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_bottom',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube",
-          group: 1
-          // mask: 2,
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
-      const drum1 = physicsPlayground.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: 21,
-          z: -13.5
-        },
-        rotation: {
-          x: 20,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [4.5, 8, 0.5],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_r1',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          // kinematic: true,
-          mass: 0,
-          geometry: "Cube",
-          vertices: m.reel.vertices,
-          indices: m.reel.indices,
-          group: 1
-          // mask: 2,
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
-      const drum2 = physicsPlayground.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: 21,
-          z: -27.5
-        },
-        rotation: {
-          x: -20,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [4.5, 8, 0.5],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_r2',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          // kinematic: true,
-          geometry: "Cube",
-          vertices: m.reel.vertices,
-          indices: m.reel.indices,
-          group: 1
-          // mask: 2,
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
-      const drum3 = physicsPlayground.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 5.5,
-          y: 21,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 180,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [0.5, 10, 8],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_l1',
-        mesh: m.cube,
-        physics: {
-          mass: 0,
-          enabled: true,
-          // kinematic: true,
-          geometry: "Cube",
-          vertices: m.reel.vertices,
-          indices: m.reel.indices,
-          group: 1
-          // mask: 2,
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
-      const drum4 = physicsPlayground.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: -5.5,
-          y: 21,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [0.5, 10, 8],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_l2',
-        mesh: m.cube,
-        physics: {
-          mass: 0,
-          enabled: true,
-          kinematic: true,
-          geometry: "Cube",
-          group: 0
-          // mask: 2,
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
         }
       });
 
@@ -6843,29 +6652,27 @@ var testCannonES = function () {
 
       // not isolated bug yet - selecting not precise!
       setTimeout(async () => {
-        drum0.setBlend(0.5);
-        drum1.setBlend(0.5);
-        drum2.setBlend(0.4);
-        drum3.setBlend(0.4);
-        drum4.setBlend(0.4);
-        physicsPlayground.physicsBodiesGenerator("standard", {
+        let T = await physicsPlayground.physicsBodiesGenerator("standard", {
           x: 0,
-          y: 150,
+          y: 520,
           z: -20
         }, {
           x: 0,
           y: 0,
           z: 0
-        }, "res/textures/star1.png", "testGen", "Sphere", false, [1, 1, 1], 15, 1).then(T => {
-          // app.matrixPhysics.createBoundedSpace(T, {x: 0, y: 15, z: -20}, {x: 5, y: 5, z: 5});
-
-          console.log(T);
-          setTimeout(async () => {
-            app.matrixPhysics.lotteryMachineShake(T, 0.001);
-          }, 4000);
-
-          //  app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
+        }, "res/textures/star1.png", "testGen", "Sphere", false, [1, 1, 1], 15, 200);
+        app.matrixPhysics.createBoundedSpace(T, {
+          x: 0,
+          y: 25,
+          z: -20
+        }, {
+          x: 7,
+          y: 7,
+          z: 7
         });
+        console.log(T);
+        app.matrixPhysics.lotteryMachineShake(T, 10);
+        // app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
 
         //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
       }, 2500);
