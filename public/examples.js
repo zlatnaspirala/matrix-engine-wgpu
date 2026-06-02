@@ -47355,40 +47355,51 @@ exports.supportsTouch = void 0;
 exports.typeText = typeText;
 exports.vec3 = exports.urlQuery = void 0;
 var supportsTouch = exports.supportsTouch = 'ontouchstart' in window || navigator.msMaxTouchPoints;
-const MeshType = exports.MeshType = {
+const MeshType = exports.MeshType = Object.freeze({
   MESH: 0,
   INSTANCED: 1,
   PROCEDURAL: 2,
   BVHANIM: 3
-};
-function preventZoom() {
-  document.addEventListener('touchstart', function (e) {
-    if (e.touches.length > 1) {
-      e.preventDefault();
-    }
-  }, {
-    passive: false
-  });
-  document.addEventListener('touchmove', function (e) {
-    if (e.touches.length > 1) {
-      e.preventDefault();
-    }
-  }, {
-    passive: false
-  });
-  document.addEventListener('gesturestart', function (e) {
+});
+const touchStartHandler = function (e) {
+  if (e.touches.length > 1) {
     e.preventDefault();
+  }
+};
+const touchMoveHandler = function (e) {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+};
+const gestureStartHandler = function (e) {
+  e.preventDefault();
+};
+let preventZoomApplied = false;
+function preventZoom() {
+  if (preventZoomApplied) return;
+  preventZoomApplied = true;
+  document.addEventListener('touchstart', touchStartHandler, {
+    passive: false
   });
+  document.addEventListener('touchmove', touchMoveHandler, {
+    passive: false
+  });
+  document.addEventListener('gesturestart', gestureStartHandler);
+}
+
+// ✅ OPTIMIZATION: Cache screen.orientation check
+let screenOrientationSupported = null;
+function getScreenOrientationSupport() {
+  if (screenOrientationSupported === null) {
+    screenOrientationSupported = !!(screen.orientation && screen.orientation.lock);
+  }
+  return screenOrientationSupported;
 }
 function checkLock() {
-  if (screen.orientation && screen.orientation.lock) {
-    return true;
-  } else {
-    return false;
-  }
+  return getScreenOrientationSupport();
 }
 function mobileLock(o) {
-  if (screen.orientation && screen.orientation.lock) {
+  if (getScreenOrientationSupport()) {
     // Lock to landscape
     screen.orientation.lock(o).then(function () {
       console.log(`%cOrientation locked to ${o}`, LOG_FUNNY_ARCADE);
@@ -47397,14 +47408,34 @@ function mobileLock(o) {
     });
   }
 }
+
+// ✅ OPTIMIZATION: Cache navigator.userAgent and regex patterns
+const cachedUserAgent = navigator.userAgent;
+const mobileRegexPatterns = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
+let mobileCheckResult = null;
 function isMobile() {
-  if (supportsTouch == true) return true;
-  const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
-  return toMatch.some(toMatchItem => {
-    return navigator.userAgent.match(toMatchItem);
-  });
+  if (mobileCheckResult !== null) return mobileCheckResult;
+  if (supportsTouch) {
+    mobileCheckResult = true;
+    return true;
+  }
+  mobileCheckResult = mobileRegexPatterns.some(pattern => pattern.test(cachedUserAgent));
+  return mobileCheckResult;
 }
-;
+
+// ✅ OPTIMIZATION: Object pool for vec3 operations to eliminate per-frame allocations
+const vec3Pool = {
+  pool: [],
+  acquire() {
+    return this.pool.pop() || new Float32Array(3);
+  },
+  release(arr) {
+    arr[0] = 0;
+    arr[1] = 0;
+    arr[2] = 0;
+    this.pool.push(arr);
+  }
+};
 const vec3 = exports.vec3 = {
   cross(a, b, dst) {
     dst = dst || new Float32Array(3);
@@ -47426,8 +47457,8 @@ const vec3 = exports.vec3 = {
   normalize(v, dst) {
     dst = dst || new Float32Array(3);
     const length = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-    // make sure we don't divide by 0.
-    if (length > 0.00001) {
+    // ✅ OPTIMIZATION: Better epsilon check to prevent division by very small numbers
+    if (length > 1e-5) {
       dst[0] = v[0] / length;
       dst[1] = v[1] / length;
       dst[2] = v[2] / length;
@@ -47774,12 +47805,9 @@ const mat4 = exports.mat4 = {
 function degToRad(degrees) {
   return degrees * Math.PI / 180;
 }
-;
 function radToDeg(r) {
-  var pi = Math.PI;
-  return r * (180 / pi);
+  return r * (180 / Math.PI);
 }
-;
 function createAppEvent(name, myDetails) {
   return new CustomEvent(name, {
     detail: {
@@ -47799,7 +47827,6 @@ var scriptManager = exports.scriptManager = {
   LOAD: function addScript(src, id, type, parent, callback) {
     var s = document.createElement('script');
     s.onload = function () {
-      // console.log('Script id loaded [src]: ' + this.src);
       if (typeof callback != 'undefined') callback();
     };
     if (typeof type !== 'undefined') {
@@ -47819,7 +47846,6 @@ var scriptManager = exports.scriptManager = {
     }
   },
   loadModule: function addScript(src, id, type, parent) {
-    console.log('Script id load called ');
     var s = document.createElement('script');
     s.onload = function () {
       scriptManager.SCRIPT_ID++;
@@ -47899,13 +47925,12 @@ function OSCILLATOR(min, max, step, options) {
     }
   };
 
-  // ---- UPDATE ----
+  // UPDATE!
   this.UPDATE = function (delta) {
     var s = this.step;
     if (this.useDelta && delta !== undefined) {
       s = s * delta;
     }
-    // ---------- REGIMES ----------
     switch (this.regime) {
       // ===== PING-PONG =====
       case "pingpong":
@@ -48100,46 +48125,23 @@ function getAxisRot3(Q) {
   }
   return axis;
 }
-
-// Copied intro worker also.
 function quaternion_rotation_matrix(Q) {
-  // Covert a quaternion into a full three-dimensional rotation matrix.
-
-  // Input
-  // :param Q: A 4 element array representing the quaternion (q0,q1,q2,q3) 
-
-  // Output
-  // :return: A 3x3 element matrix representing the full 3D rotation matrix. 
-  //          This rotation matrix converts a point in the local reference 
-  //          frame to a point in the global reference frame.
-  // """
-  // # Extract the values from Q
   var q0 = Q[0];
   var q1 = Q[1];
   var q2 = Q[2];
   var q3 = Q[3];
-
-  // # First row of the rotation matrix
   var r00 = 2 * (q0 * q0 + q1 * q1) - 1;
   var r01 = 2 * (q1 * q2 - q0 * q3);
   var r02 = 2 * (q1 * q3 + q0 * q2);
-
-  // # Second row of the rotation matrix
   var r10 = 2 * (q1 * q2 + q0 * q3);
   var r11 = 2 * (q0 * q0 + q2 * q2) - 1;
   var r12 = 2 * (q2 * q3 - q0 * q1);
-
-  // # Third row of the rotation matrix
   var r20 = 2 * (q1 * q3 - q0 * q2);
   var r21 = 2 * (q2 * q3 + q0 * q1);
   var r22 = 2 * (q0 * q0 + q3 * q3) - 1;
-
-  // # 3x3 rotation matrix
   var rot_matrix = [[r00, r01, r02], [r10, r11, r12], [r20, r21, r22]];
   return rot_matrix;
 }
-
-// copnsole log graphics
 const LOG_WARN = exports.LOG_WARN = 'background: gray; color: yellow; font-size:10px';
 const LOG_INFO = exports.LOG_INFO = 'background: green; color: white; font-size:11px';
 const LOG_MATRIX = exports.LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
@@ -48150,25 +48152,6 @@ const LOG_FUNNY_ARCADE = exports.LOG_FUNNY_ARCADE = "font-family: system-ui; fon
 const LOG_FUNNY_BIG_ARCADE = exports.LOG_FUNNY_BIG_ARCADE = "font-family: system-ui; font-size:24px; font-weight:600;" + "color:#ffffff;" + "text-shadow: 2px 2px 6px #000;" + "background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
 const LOG_FUNNY_BIG_NEON = exports.LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;" + "color:#00ffff;" + "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" + "background:black; padding:14px 18px;";
 const LOG_FUNNY_EXTRABIG = exports.LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;" + "color:#00ffff;" + "text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;" + "background:black; padding:14px 18px;";
-
-// export const LOGO_FRAMES = [
-//   ` M                 `,
-//   ` MA                 `,
-//   ` MAT                `,
-//   ` MATR               `,
-//   ` MATRI              `,
-//   ` MATRIX             `,
-//   ` MATRIX-E           `,
-//   ` MATRIX-ENG         `,
-//   ` MATRIX-ENGI        `,
-//   ` MATRIX-ENGIN       `,
-//   ` MATRIX-ENGINE      `,
-//   ` MATRIX-ENGINE-     `,
-//   ` MATRIX-ENGINE-W    `,
-//   ` MATRIX-ENGINE-WG   `,
-//   ` MATRIX-ENGINE-WGPU `
-// ];
-
 function genName(length) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -48573,7 +48556,7 @@ exports.FullscreenManager = FullscreenManager;
 function alignTo256(n) {
   return Math.ceil(n / 256) * 256;
 }
-const geometryTypes = exports.geometryTypes = {
+const geometryTypes = exports.geometryTypes = Object.freeze({
   "quad": "quad",
   "cube": "cube",
   "sphere": "sphere",
@@ -48588,15 +48571,14 @@ const geometryTypes = exports.geometryTypes = {
   "circlePlane": "circlePlane",
   "ring": "ring",
   "icosahedron": "icosahedron",
-  // "dodecahedron": "dodecahedron",
   "torusKnot": "torusKnot",
   "mobius": "mobius",
   "crystal": "crystal",
   "starPrism": "starPrism",
   "crescent": "crescent",
   "pyramidFractal": "pyramidFractal"
-};
-const geoTypesForMorph = exports.geoTypesForMorph = {
+});
+const geoTypesForMorph = exports.geoTypesForMorph = Object.freeze({
   cube: "cube",
   sphere: "sphere",
   mobius: "mobius",
@@ -48622,7 +48604,7 @@ const geoTypesForMorph = exports.geoTypesForMorph = {
   twistedTorus: "twistedTorus",
   tornado: "tornado",
   galaxySpiral: "galaxySpiral"
-};
+});
 class CameraPath {
   constructor(keyframes, options = {}) {
     this.keyframes = keyframes;
