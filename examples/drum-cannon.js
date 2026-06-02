@@ -106,15 +106,14 @@ export var testCannonES = function() {
         position: {x: 0, y: -0.5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [25, 0.1, 25], // chatgpt-gen-bg-inv
+        scale: [25, 0.1, 25],
         texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
         mesh: m.plane,
         physics: {enabled: false}
       });
 
-
-      // DRum
+      // DRUM
       // BOTTOM
       const drum0 = physicsPlayground.addMeshObj({
         material: {type: 'standard'},
@@ -130,7 +129,6 @@ export var testCannonES = function() {
           mass: 0,
           geometry: "Cube",
           group: 1,
-          // mask: 2,
         },
         raycast: {enabled: true, radius: 1}
       })
@@ -152,7 +150,6 @@ export var testCannonES = function() {
           vertices: m.reel.vertices,
           indices: m.reel.indices,
           group: 1,
-          // mask: 2,
         },
         raycast: {enabled: true, radius: 1}
       })
@@ -162,28 +159,25 @@ export var testCannonES = function() {
         position: {x: 0, y: 21, z: -27.5},
         rotation: {x: -20, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [ 4.5, 8, 0.5],
+        scale: [4.5, 8, 0.5],
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_r2',
         mesh: m.cube,
         physics: {
           enabled: true,
           mass: 0,
-          // kinematic: true,
           geometry: "Cube",
           vertices: m.reel.vertices,
           indices: m.reel.indices,
-         group: 1,
-          // mask: 2,
+          group: 1,
         },
         raycast: {enabled: true, radius: 1}
       })
 
-
       const drum3 = physicsPlayground.addMeshObj({
         material: {type: 'standard'},
         position: {x: 5.5, y: 21, z: -20},
-        rotation: {x: 0, y: 180, z: 0},
+        rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [0.5, 10, 8],
         texturesPaths: ['./res/textures/floor1.webp'],
@@ -192,12 +186,11 @@ export var testCannonES = function() {
         physics: {
           mass: 0,
           enabled: true,
-          // kinematic: true,
           geometry: "Cube",
           vertices: m.reel.vertices,
           indices: m.reel.indices,
           group: 1,
-          // mask: 2,
+          mask: 2,
         },
         raycast: {enabled: true, radius: 1}
       })
