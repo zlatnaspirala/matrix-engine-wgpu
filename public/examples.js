@@ -36450,18 +36450,6 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           sampler: {
             type: 'comparison'
           }
-        }, {
-          binding: 2,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: 'float'
-          }
-        }, {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'filtering'
-          }
         }]
       });
       this.effects = {};
@@ -36968,7 +36956,7 @@ class SpotLight {
     this.direction = _wgpuMatrix.vec3.create();
     this.intensity = 20.0;
     this.color = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
-    this._lightBuffer = new Float32Array(44);
+    this._lightBuffer = new Float32Array(36);
     this._diffScratch = _wgpuMatrix.vec3.create();
     this._dirScratch = _wgpuMatrix.vec3.create();
     this._viewMatrix = _wgpuMatrix.mat4.create();
@@ -37003,15 +36991,6 @@ class SpotLight {
     this.ambientFactor = 0.5;
     this.range = 70.0;
     this.shadowBias = 0.01;
-    this.projectedTexture = null;
-    this.projectedSampler = null;
-    this.hasProjection = false;
-    this.setProjectedTexture = function (textureView, sampler) {
-      this.projectedTexture = textureView;
-      this.projectedSampler = sampler;
-      this.hasProjection = true;
-      this.mainPassBindGroupContainer = {};
-    };
     this.SHADOW_RES = _meConfig.MEConfig.SHADOW_RES;
     this.primitive = {
       topology: 'triangle-list',
@@ -37020,9 +36999,6 @@ class SpotLight {
     };
     this.shadowTextureView = shadowPassView;
     this.shadowSampler = shadowSampler;
-    this._goboRect = new Float32Array([0, 0, 0.125, 1]);
-    this.goboAtlasView = null;
-    this.goboAtlasSampler = null;
     this.renderPassDescriptor = {
       label: "descriptor shadowPass[SpotLight]",
       colorAttachments: [],
@@ -37348,27 +37324,19 @@ class SpotLight {
       },
       primitive: this.primitive
     });
-    this.getMainPassBindGroup = mesh => {
+    this.getMainPassBindGroup = function (mesh) {
       const key = mesh.name;
       if (this.mainPassBindGroupContainer[key]) return this.mainPassBindGroupContainer[key];
-      const entries = [{
-        binding: 0,
-        resource: this.shadowTextureView
-      }, {
-        binding: 1,
-        resource: this.shadowSampler
-      }, {
-        binding: 2,
-        resource: this.goboAtlasView
-      }, {
-        binding: 3,
-        resource: this.goboAtlasSampler
-      }];
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
-        label: 'mainPassBindGroup [gobo] for mesh',
+        label: 'mainPassBindGroup for mesh',
         layout: mesh.mainPassBindGroupLayout,
-        // layout must include bindings 2+3 (see mesh patch)
-        entries
+        entries: [{
+          binding: 0,
+          resource: this.shadowTextureView
+        }, {
+          binding: 1,
+          resource: this.shadowSampler
+        }]
       });
       return this.mainPassBindGroupContainer[key];
     };
@@ -37397,29 +37365,6 @@ class SpotLight {
     this._lightBufferDirty = true;
     return true;
   }
-  setGobo(rect, atlas) {
-    this._goboRect.set(rect);
-    this.goboAtlasView = atlas.view;
-    this.goboAtlasSampler = atlas.sampler;
-    this._lightBufferDirty = true;
-    // Invalidate bind group cache — binding 2/3 now point at atlas
-    this.mainPassBindGroupContainer = {};
-  }
-
-  /**
-   * Removes gobo from this light — reverts to white sentinel (no effect).
-   * @param {GoboAtlas} atlas - needed to keep binding slots valid (white pixel)
-   */
-  clearGobo(atlas) {
-    this._goboRect[0] = 0;
-    this._goboRect[1] = 0;
-    this._goboRect[2] = 1 / atlas.maxSlots; // u_max of slot 0
-    this._goboRect[3] = 1;
-    this.goboAtlasView = atlas.view; // still bind atlas, just white rect
-    this.goboAtlasSampler = atlas.sampler;
-    this._lightBufferDirty = true;
-    this.mainPassBindGroupContainer = {};
-  }
 
   /**
    * Returns the packed Float32Array for the spotlight uniform array.
@@ -37443,12 +37388,7 @@ class SpotLight {
     b[17] = this.ambientFactor;
     b[18] = this.shadowBias;
     b[19] = 0.0;
-    b.set(m, 20); // mat4 → offsets 20-35
-    b.set(this._goboRect, 36); // vec4 → offsets 36-39  [u_min, v_min, u_max, v_max]
-    b[40] = 0.0; // padding
-    b[41] = 0.0;
-    b[42] = 0.0;
-    b[43] = 0.0;
+    b.set(m, 20);
     this._lightBufferDirty = false;
     return b;
   }
@@ -59892,7 +59832,7 @@ async function openFragmentShaderEditor(id = "fragShader") {
     const menu = document.createElement("div");
     menu.style.cssText = `
     width:200px; border-right:1px solid #222;
-    padding:8px; background:#0f1320; height: 77vh; overflow: scroll;
+    padding:8px; background:#0f1320; height: 69vh; overflow: scroll;
   `;
     const btn = (txt, fn) => {
       const b = document.createElement("button");
