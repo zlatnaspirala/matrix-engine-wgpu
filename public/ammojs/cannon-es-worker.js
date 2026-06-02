@@ -43,7 +43,10 @@ class MatrixCannon {
     this.constraints = [];
     this.CANNON = null;
     this.world = null;
-    this.speedUpSimulation = 2;
+    this.speedUp = 1;
+    this.speedUpSimulation = (v) => {
+      this.speedUp = v;
+    };
     this.options = {roundDimension: 100, gravity: 10};
     this._snapshot = null;
     this._useSAB = false;
@@ -86,12 +89,12 @@ class MatrixCannon {
     const solver = new CANNON.GSSolver();
     solver.iterations = iterations;
     solver.tolerance = tolerance;
-    this.world.solver = solver; 
+    this.world.solver = solver;
 
     // 2. Softer contacts prevent the "teleporting" / "ghosting" effect
-    this.world.defaultContactMaterial.contactEquationStiffness = 1e6; 
+    this.world.defaultContactMaterial.contactEquationStiffness = 1e6;
     this.world.defaultContactMaterial.contactEquationRelaxation = 10;
-    
+
     // 3. ADD THIS: Broadphase optimization for containers
     this.world.broadphase = new CANNON.SAPBroadphase(this.world);
 
@@ -732,7 +735,7 @@ class MatrixCannon {
 
   step() {
     if(!this.world) return;
-    for(let i = 0;i < this.speedUpSimulation;i++) {
+    for(let i = 0;i < this.speedUp;i++) {
       this.world.step(1 / 30);
     }
     const snap = this._snapshot;

@@ -33,17 +33,17 @@ export var testCannonES = function() {
       // physicsPlayground.matrixPhysics.speedUpSimulation(4);
 
       // physicsPlayground.physicsBodiesChain();
+      // // physicsPlayground.physicsBodiesGeneratorDeepPyramid(
+      // //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
+      // //   "./res/textures/gold-1.webp", "pyr", 2, true, [1, 1, 1], 2, 400
+      // // );
 
-      // physicsPlayground.physicsBodiesGeneratorDeepPyramid(
-      //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
-      //   "./res/textures/gold-1.webp", "pyr", 2, true, [1, 1, 1], 2, 400
-      // );
-
-      // Buildin options
+      // // Buildin options
       // app.physicsBodiesGeneratorWall("standard",
       //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
       //   ["./res/textures/rust.jpg",],
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
+
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');

@@ -6102,11 +6102,15 @@ var physicsPlayground = function () {
       }, "./res/textures/gold-1.webp", "pyr", 3, true, [1, 1, 1], 2, 400);
 
       // Buildin options
-      // app.physicsBodiesGeneratorWall("standard",
-      //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",],
-      //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
-
+      app.physicsBodiesGeneratorWall("standard", {
+        x: -4.5,
+        y: 0,
+        z: -10
+      }, {
+        x: 0,
+        y: 0,
+        z: 0
+      }, ["./res/textures/rust.jpg"], 'my_set_walls', "4x2", true, [1, 1, 1], 2, 70);
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
@@ -6492,9 +6496,8 @@ var testCannonES = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      // physicsPlayground.matrixPhysics.speedUpSimulation(4);
-
-      // physicsPlayground.physicsBodiesChain();
+      physicsPlayground.matrixPhysics.speedUpSimulation(2);
+      physicsPlayground.physicsBodiesChain();
 
       // physicsPlayground.physicsBodiesGeneratorDeepPyramid(
       //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
@@ -6502,10 +6505,15 @@ var testCannonES = function () {
       // );
 
       // Buildin options
-      // app.physicsBodiesGeneratorWall("standard",
-      //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",],
-      //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
+      app.physicsBodiesGeneratorWall("standard", {
+        x: -4.5,
+        y: 1,
+        z: -10
+      }, {
+        x: 0,
+        y: 0,
+        z: 0
+      }, ["./res/textures/rust.jpg"], 'my_set_walls', "5x3", true, [1, 1, 1], 2, 70);
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
@@ -6534,11 +6542,12 @@ var testCannonES = function () {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      app.cameras.WASD.setYaw(-0.03);
-      app.cameras.WASD.setPitch(-0.49);
-      app.cameras.WASD.setZ(0);
-      app.cameras.WASD.setY(3.76);
-      app.cameras.WASD._dirtyAngle = true;
+      let cam = app.getCamera();
+      cam.setYaw(-0.03);
+      cam.setPitch(-0.49);
+      cam.setZ(0);
+      cam.setY(3.76);
+      cam._dirtyAngle = true;
 
       // physicsPlayground.addMeshObj({
       //   material: {type: 'standard'},
@@ -6650,32 +6659,6 @@ var testCannonES = function () {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      // not isolated bug yet - selecting not precise!
-      setTimeout(async () => {
-        let T = await physicsPlayground.physicsBodiesGenerator("standard", {
-          x: 0,
-          y: 520,
-          z: -20
-        }, {
-          x: 0,
-          y: 0,
-          z: 0
-        }, "res/textures/star1.png", "testGen", "Sphere", false, [1, 1, 1], 15, 200);
-        app.matrixPhysics.createBoundedSpace(T, {
-          x: 0,
-          y: 25,
-          z: -20
-        }, {
-          x: 7,
-          y: 7,
-          z: 7
-        });
-        console.log(T);
-        app.matrixPhysics.lotteryMachineShake(T, 10);
-        // app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
-
-        //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
-      }, 2500);
       if ((0, _utils.isMobile)() == false) app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
@@ -33149,6 +33132,8 @@ async function physicsBodiesGenerator(material = "standard", pos, rot, texturePa
 function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
   const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
+  console.log(width);
+  console.log(height);
   const inputCube = {
     mesh: useMeshPath
   };
@@ -33162,6 +33147,11 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
       for (let x = 0; x < width; x++) {
         const cubeName = `${name}_${index}`;
         setTimeout(() => {
+          console.log(cubeName, {
+            x: pos.x + x * spacing,
+            y: pos.y + y * spacing - 2.8,
+            z: pos.z
+          });
           engine.addMeshObj({
             material: {
               type: material
@@ -33186,7 +33176,7 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
             } : undefined,
             position: {
               x: pos.x + x * spacing,
-              y: pos.y + y * spacing - 2.8,
+              y: pos.y + y * spacing + 2.8,
               z: pos.z
             },
             rotation: rot,

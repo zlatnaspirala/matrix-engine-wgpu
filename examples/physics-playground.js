@@ -61,10 +61,10 @@ export var physicsPlayground = function() {
       );
 
       // Buildin options
-      // app.physicsBodiesGeneratorWall("standard",
-      //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",],
-      //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
+      app.physicsBodiesGeneratorWall("standard",
+        {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
+        ["./res/textures/rust.jpg",],
+        'my_set_walls', "4x2", true, [1, 1, 1], 2, 70);
 
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {

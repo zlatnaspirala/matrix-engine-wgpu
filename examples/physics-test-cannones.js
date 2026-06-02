@@ -10,7 +10,7 @@ export var testCannonES = function() {
     canvasSize: 'fullscreen',
     useCannon: true,
     fastRender: 0.9,
-    MAX_SPOTLIGHTS : 1,
+    MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
@@ -28,9 +28,10 @@ export var testCannonES = function() {
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
-      // physicsPlayground.matrixPhysics.speedUpSimulation(4);
 
-      // physicsPlayground.physicsBodiesChain();
+      physicsPlayground.matrixPhysics.speedUpSimulation(2);
+
+      physicsPlayground.physicsBodiesChain();
 
       // physicsPlayground.physicsBodiesGeneratorDeepPyramid(
       //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
@@ -38,10 +39,11 @@ export var testCannonES = function() {
       // );
 
       // Buildin options
-      // app.physicsBodiesGeneratorWall("standard",
-      //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",],
-      //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
+      app.physicsBodiesGeneratorWall("standard",
+        {x: -4.5, y: 1, z: -10}, {x: 0, y: 0, z: 0},
+        ["./res/textures/rust.jpg",],
+        'my_set_walls', "5x3", true, [1, 1, 1], 2, 70);
+
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
@@ -75,11 +77,12 @@ export var testCannonES = function() {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      app.cameras.WASD.setYaw(-0.03);
-      app.cameras.WASD.setPitch(-0.49);
-      app.cameras.WASD.setZ(0);
-      app.cameras.WASD.setY(3.76);
-      app.cameras.WASD._dirtyAngle = true;
+      let cam = app.getCamera();
+      cam.setYaw(-0.03);
+      cam.setPitch(-0.49);
+      cam.setZ(0);
+      cam.setY(3.76);
+      cam._dirtyAngle = true;
 
       // physicsPlayground.addMeshObj({
       //   material: {type: 'standard'},
@@ -175,28 +178,6 @@ export var testCannonES = function() {
       //   },
       //   raycast: {enabled: true, radius: 1}
       // });
-
-      // not isolated bug yet - selecting not precise!
-      setTimeout(async () => {
-        let T = await physicsPlayground.physicsBodiesGenerator(
-          "standard",
-          {x: 0, y: 520, z: -20},
-          {x: 0, y: 0, z: 0},
-          "res/textures/star1.png",
-          "testGen",
-          "Sphere",
-          false,
-          [1, 1, 1],
-          15, 200
-        )
-
-        app.matrixPhysics.createBoundedSpace(T, {x: 0, y: 25, z: -20}, {x: 7, y: 7, z: 7});
-        console.log(T)
-        app.matrixPhysics.lotteryMachineShake(T, 10)
-        // app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
-        
-      //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
-      }, 2500)
 
       if(isMobile() == false) app.activateBloomEffect();
       physicsPlayground.lightContainer[0].setPosY(14);

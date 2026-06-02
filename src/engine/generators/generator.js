@@ -115,6 +115,9 @@ export function physicsBodiesGeneratorWall(
     .toLowerCase()
     .split("x")
     .map(n => parseInt(n, 10));
+
+    console.log(width)
+    console.log(height)
   const inputCube = {mesh: useMeshPath};
 
   function handler(m) {
@@ -124,6 +127,12 @@ export function physicsBodiesGeneratorWall(
       for(let x = 0;x < width;x++) {
         const cubeName = `${name}_${index}`;
         setTimeout(() => {
+           console.log(cubeName, {
+  x: pos.x + x * spacing,
+  y: pos.y + y * spacing - 2.8,
+  z: pos.z
+});
+
           engine.addMeshObj({
             material: {type: material},
             envMapParams: (material == 'mirror' ? {
@@ -139,7 +148,7 @@ export function physicsBodiesGeneratorWall(
             } : undefined),
             position: {
               x: pos.x + x * spacing,
-              y: pos.y + y * spacing - 2.8,
+              y: pos.y + y * spacing + 2.8,
               z: pos.z
             },
             rotation: rot,
