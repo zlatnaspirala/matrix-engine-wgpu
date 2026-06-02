@@ -1,13 +1,12 @@
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
- * @version 1.11.0
- * @www maximumroulette.com
- * 2026
+ * @version 1.15.6
+ * @www maximumroulette.com 2026
  */
 
 import {loadCameraTexture} from "./examples/camera-texture.js";
-import {fontana} from "./examples/fontana.js";
+// import {fontana} from "./examples/fontana.js";
 import {loadGLBLoader} from "./examples/glb-loader.js";
 import {myLights} from "./examples/my-lights.js";
 import {loadObjFile} from "./examples/load-obj-file.js";
@@ -31,6 +30,8 @@ import {loadHZB} from "./examples/hzb-ray.js";
 import {loadKinematicCollision} from "./examples/kinematic-collision.js";
 import {loadSprite1} from "./examples/2D-world.js";
 import {loadSprite2} from "./examples/2D-world-matter.js";
+import {loadDrumCannon} from "./examples/drum-cannon.js";
+import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 
 window.urlQ = urlQuery;
 
@@ -79,6 +80,7 @@ byId('loadhzb').addEventListener("click", () => switchDemo('21'));
 byId('loadKCollision').addEventListener("click", () => switchDemo('22'));
 byId('loadSprite1').addEventListener("click", () => switchDemo('23'));
 byId('loadSprite2').addEventListener("click", () => switchDemo('24'));
+byId('loadDrumCannon').addEventListener("click", () => switchDemo('25'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
@@ -101,7 +103,7 @@ if(urlQ['demo'] === '1') {
 } else if(urlQ['demo'] === '7') {
   procMesh();
 } else if(urlQ['demo'] === '8') {
-  fontana();
+  loadObjFile();
 } else if(urlQ['demo'] === '9') {
   myLights();
 } else if(urlQ['demo'] === '10') {
@@ -134,8 +136,14 @@ if(urlQ['demo'] === '1') {
   loadSprite1();
 } else if(urlQ['demo'] === '24') {
   loadSprite2();
+} else if(urlQ['demo'] === '25') {
+  loadDrumCannon();
 } else {
-  flipperJolt();
+  loadObjFile();
 }
 
 setTimeout(() => {hideMenu()}, 2000);
+
+// Pre cache politic 0 Only big one
+fetch("res/meshes/glb/monster.glb");
+fetch("./res/meshes/glb/woman1.glb");

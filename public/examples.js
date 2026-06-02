@@ -2,7 +2,6 @@
 "use strict";
 
 var _cameraTexture = require("./examples/camera-texture.js");
-var _fontana = require("./examples/fontana.js");
 var _glbLoader = require("./examples/glb-loader.js");
 var _myLights = require("./examples/my-lights.js");
 var _loadObjFile = require("./examples/load-obj-file.js");
@@ -26,13 +25,16 @@ var _hzbRay = require("./examples/hzb-ray.js");
 var _kinematicCollision = require("./examples/kinematic-collision.js");
 var _DWorld = require("./examples/2D-world.js");
 var _DWorldMatter = require("./examples/2D-world-matter.js");
+var _drumCannon = require("./examples/drum-cannon.js");
+var _webgpuGltf = require("./src/engine/loaders/webgpu-gltf.js");
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
- * @version 1.11.0
- * @www maximumroulette.com
- * 2026
+ * @version 1.15.6
+ * @www maximumroulette.com 2026
  */
+
+// import {fontana} from "./examples/fontana.js";
 
 window.urlQ = _utils.urlQuery;
 if ('serviceWorker' in navigator) {
@@ -75,6 +77,7 @@ if ((0, _utils.isMobile)() === true) {
 (0, _utils.byId)('loadKCollision').addEventListener("click", () => switchDemo('22'));
 (0, _utils.byId)('loadSprite1').addEventListener("click", () => switchDemo('23'));
 (0, _utils.byId)('loadSprite2').addEventListener("click", () => switchDemo('24'));
+(0, _utils.byId)('loadDrumCannon').addEventListener("click", () => switchDemo('25'));
 (0, _utils.byId)('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 (0, _utils.byId)('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
@@ -94,7 +97,7 @@ if (urlQ['demo'] === '1') {
 } else if (urlQ['demo'] === '7') {
   (0, _proceduralMesh.procMesh)();
 } else if (urlQ['demo'] === '8') {
-  (0, _fontana.fontana)();
+  (0, _loadObjFile.loadObjFile)();
 } else if (urlQ['demo'] === '9') {
   (0, _myLights.myLights)();
 } else if (urlQ['demo'] === '10') {
@@ -127,14 +130,20 @@ if (urlQ['demo'] === '1') {
   (0, _DWorld.loadSprite1)();
 } else if (urlQ['demo'] === '24') {
   (0, _DWorldMatter.loadSprite2)();
+} else if (urlQ['demo'] === '25') {
+  (0, _drumCannon.loadDrumCannon)();
 } else {
-  (0, _flipperJolt.flipperJolt)();
+  (0, _loadObjFile.loadObjFile)();
 }
 setTimeout(() => {
   hideMenu();
 }, 2000);
 
-},{"./examples/2D-world-matter.js":2,"./examples/2D-world.js":3,"./examples/camera-texture.js":4,"./examples/canvas-inline.js":5,"./examples/cinematic-camera.js":6,"./examples/destruction-procedural.js":7,"./examples/flipper-ammo.js":8,"./examples/flipper-jolt.js":9,"./examples/fontana.js":10,"./examples/glb-loader.js":11,"./examples/hzb-ray.js":12,"./examples/kale.js":13,"./examples/kinematic-collision.js":14,"./examples/load-obj-file.js":15,"./examples/load-objs-sequence.js":16,"./examples/maze.js":17,"./examples/my-lights.js":18,"./examples/physics-playground.js":19,"./examples/physics-test-cannones.js":20,"./examples/physics-test-jolt.js":21,"./examples/procedural-mesh.js":22,"./examples/snake-lights-instanced.js":23,"./examples/snake-lights.js":24,"./examples/video-texture.js":25,"./src/engine/utils.js":90}],2:[function(require,module,exports){
+// Pre cache politic 0 Only big one
+fetch("res/meshes/glb/monster.glb");
+fetch("./res/meshes/glb/woman1.glb");
+
+},{"./examples/2D-world-matter.js":2,"./examples/2D-world.js":3,"./examples/camera-texture.js":4,"./examples/canvas-inline.js":5,"./examples/cinematic-camera.js":6,"./examples/destruction-procedural.js":7,"./examples/drum-cannon.js":8,"./examples/flipper-ammo.js":9,"./examples/flipper-jolt.js":10,"./examples/glb-loader.js":11,"./examples/hzb-ray.js":12,"./examples/kale.js":13,"./examples/kinematic-collision.js":14,"./examples/load-obj-file.js":15,"./examples/load-objs-sequence.js":16,"./examples/maze.js":17,"./examples/my-lights.js":18,"./examples/physics-playground.js":19,"./examples/physics-test-cannones.js":20,"./examples/physics-test-jolt.js":21,"./examples/procedural-mesh.js":22,"./examples/snake-lights-instanced.js":23,"./examples/snake-lights.js":24,"./examples/video-texture.js":25,"./src/engine/loaders/webgpu-gltf.js":71,"./src/engine/utils.js":90}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1831,6 +1840,410 @@ exports.loadDestructionProcedural = loadDestructionProcedural;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.loadDrumCannon = void 0;
+var _world = _interopRequireDefault(require("../src/world.js"));
+var _loaderObj = require("../src/engine/loader-obj.js");
+var _raycast = require("../src/engine/raycast.js");
+var _proceduralMesh = require("../src/engine/procedural-mesh.js");
+var _matrixClass = require("../src/engine/matrix-class.js");
+var _utils = require("../src/engine/utils.js");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+var loadDrumCannon = function () {
+  let drumCannon = new _world.default({
+    canvasSize: 'fullscreen',
+    useCannon: true,
+    fastRender: 0.9,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: 'WASD',
+      responseCoef: 1000
+    },
+    clearColor: {
+      r: 0,
+      b: 0.122,
+      g: 0.122,
+      a: 1
+    }
+  }, () => {
+    drumCannon.addLight();
+    (0, _raycast.addRaycastsListener)();
+    addEventListener('PhysicsReady', () => {
+      (0, _loaderObj.downloadMeshes)({
+        cube: "./res/meshes/blender/cube.obj",
+        plane: "./res/meshes/blender/plane.obj",
+        ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
+        reel: "./res/meshes/obj/reel.obj",
+        side: "./res/meshes/obj/drumpart.obj",
+        side2: "./res/meshes/obj/drumpart2.obj"
+      }, onGround, {
+        scale: [1, 1, 1]
+      });
+      // drumCannon.matrixPhysics.speedUpSimulation(4);
+
+      // drumCannon.physicsBodiesChain();
+      // // drumCannon.physicsBodiesGeneratorDeepPyramid(
+      // //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
+      // //   "./res/textures/gold-1.webp", "pyr", 2, true, [1, 1, 1], 2, 400
+      // // );
+
+      // // Buildin options
+      // app.physicsBodiesGeneratorWall("standard",
+      //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
+      //   ["./res/textures/rust.jpg",],
+      //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
+
+      let strength = 10;
+      drumCannon.canvas.addEventListener("ray.hit.event", e => {
+        console.log('ray.hit.event detected');
+        let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
+        app.matrixPhysics.applyImpulse(b, new _matrixClass.PVector(e.detail.rayDirection[0] * strength, e.detail.rayDirection[1] * strength, e.detail.rayDirection[2] * strength));
+      });
+    });
+    async function onGround(m) {
+      // const myComplexGeometry = drumCannon.addMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 8, y: 4, z: -6},
+      //   rotation: {x: 0, y: 0, z: 0.02},
+      //   scale: [3, 3, 3],
+      //   texturesPaths: ['./res/textures/slot/reel1-lod0.webp'],
+      //   name: 'MyHull',
+      //   mesh: m.reel,
+      //   physics: {
+      //     enabled: true,
+      //     mass: 2,
+      //     geometry: "ConvexHull",
+      //     vertices: m.reel.vertices,
+      //     indices: m.reel.indices,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
+
+      let cam = app.getCamera();
+      cam.setYaw(-0.03);
+      cam.setPitch(-0.49);
+      cam.setZ(0);
+      cam.setY(13);
+      cam._dirtyAngle = true;
+      drumCannon.addMeshObj({
+        position: {
+          x: 0,
+          y: -0.5,
+          z: -10
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [25, 0.1, 25],
+        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
+        name: 'ground',
+        mesh: m.plane,
+        physics: {
+          enabled: false
+        }
+      });
+
+      // DRUM
+      // BOTTOM
+      const drum0 = drumCannon.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 14.5,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [4.3, 0.5, 4.3],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_bottom',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube",
+          group: 1
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      const drum1 = drumCannon.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 21,
+          z: -13.5
+        },
+        rotation: {
+          x: 20,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [4.5, 8, 0.5],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_r1',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          // kinematic: true,
+          mass: 0,
+          geometry: "Cube",
+          vertices: m.reel.vertices,
+          indices: m.reel.indices,
+          group: 1
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      const drum2 = drumCannon.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 21,
+          z: -27.5
+        },
+        rotation: {
+          x: -20,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [4.5, 8, 0.5],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_r2',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube",
+          vertices: m.reel.vertices,
+          indices: m.reel.indices,
+          group: 1
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      const drum3 = drumCannon.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 5.5,
+          y: 21,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [0.5, 10, 8],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_l1',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube",
+          vertices: m.reel.vertices,
+          indices: m.reel.indices,
+          group: 1,
+          mask: 2
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+      const drum4 = drumCannon.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: -5.5,
+          y: 21,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [0.5, 10, 8],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_l2',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          kinematic: true,
+          geometry: "Cube",
+          group: 1
+          // mask: 2,
+        },
+        raycast: {
+          enabled: true,
+          radius: 1
+        }
+      });
+
+      // drumCannon.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 10, y: 15, z: -17},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.capsule(1, 2, false),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_1`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Capsule",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
+
+      // drumCannon.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 6, y: 15, z: -17},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.cylinder(1, 2),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_cylinder`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cylinder",
+      //     mass: 1,
+      //     radius: 1.0,
+      //     height: 2.0,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
+
+      // drumCannon.addProceduralMeshObj({
+      //   material: {type: 'standard'},
+      //   position: {x: 1, y: 3, z: -7},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
+      //   meshA: MeshMorpher.cone(1, 3, false),
+      //   meshB: MeshMorpher.cube(1),
+      //   name: `morph_cone`,
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cone",
+      //     mass: 1,
+      //     radius: 1,
+      //     height: 3,
+      //     group: 2,
+      //     mask: -1,
+      //   },
+      //   raycast: {enabled: true, radius: 1}
+      // });
+
+      // not isolated bug yet - selecting not precise!
+      setTimeout(async () => {
+        drum0.setBlend(0.5);
+        drum1.setBlend(0.5);
+        drum2.setBlend(0.4);
+        drum3.setBlend(0.4);
+        drum4.setBlend(0.4);
+        drumCannon.physicsBodiesGenerator("standard", {
+          x: 0,
+          y: 150,
+          z: -20
+        }, {
+          x: 0,
+          y: 0,
+          z: 0
+        }, "res/textures/star1.png", "testGen", "Sphere", false, [1, 1, 1], 15, 1).then(T => {
+          // app.matrixPhysics.createBoundedSpace(T, {x: 0, y: 15, z: -20}, {x: 5, y: 5, z: 5});
+
+          console.log(T);
+          setTimeout(async () => {
+            app.matrixPhysics.lotteryMachineShake(T, 0.001);
+          }, 4000);
+
+          //  app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
+        });
+
+        //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
+      }, 2500);
+      if ((0, _utils.isMobile)() == false) app.activateBloomEffect();
+      drumCannon.lightContainer[0].setPosY(14);
+      drumCannon.lightContainer[0].setIntensity(24);
+    }
+  });
+  window.app = drumCannon;
+};
+exports.loadDrumCannon = loadDrumCannon;
+
+},{"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/procedural-mesh.js":85,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],9:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.flipperAmmo = void 0;
 var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
@@ -2710,7 +3123,7 @@ var flipperAmmo = function () {
 };
 exports.flipperAmmo = flipperAmmo;
 
-},{"../src/engine/cameras.js":43,"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],9:[function(require,module,exports){
+},{"../src/engine/cameras.js":43,"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3887,188 +4300,7 @@ var flipperJolt = function () {
 };
 exports.flipperJolt = flipperJolt;
 
-},{"../src/engine/cameras.js":43,"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],10:[function(require,module,exports){
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.fontana = void 0;
-var _world = _interopRequireDefault(require("../src/world.js"));
-var _loaderObj = require("../src/engine/loader-obj.js");
-var _utils = require("../src/engine/utils.js");
-var _proceduralMesh = require("../src/engine/procedural-mesh.js");
-var _raycast = require("../src/engine/raycast.js");
-function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-// DEPLACED FOR NOW
-var fontana = function () {
-  let fontana = new _world.default({
-    fastRender: 0.9,
-    canvasSize: 'fullscreen',
-    mainCameraParams: {
-      type: 'WASD',
-      responseCoef: 1000
-    },
-    clearColor: {
-      r: 0,
-      b: 0.122,
-      g: 0.122,
-      a: 1
-    }
-  }, () => {
-    addEventListener('PhysicsReady', () => {
-      (0, _raycast.addRaycastsAABBListener)();
-      (0, _loaderObj.downloadMeshes)({
-        ball: "./res/meshes/blender/sphere.obj",
-        cube: "./res/meshes/blender/cube.obj"
-      }, onLoadObj, {
-        scale: [2, 2, 2]
-      });
-      (0, _loaderObj.downloadMeshes)({
-        cube: "./res/meshes/blender/cube.obj"
-      }, onGround, {
-        scale: [30, 0.5, 30]
-      });
-    });
-    function onGround(m) {
-      fontana.addMeshObj({
-        material: {
-          type: 'dark'
-        },
-        position: {
-          x: 0,
-          y: -5,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1.webp'],
-        envMapParams: {
-          baseColorMix: 0.5,
-          mirrorTint: [0.9, 0.95, 1.0],
-          // Slight cool tint
-          reflectivity: 0.4,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0],
-          // Soft cyan
-          illuminateStrength: 0.1,
-          // Gentle rim
-          illuminatePulse: 0.001,
-          // No pulse (static)
-          fresnelPower: 5.0,
-          // Medium-sharp edge
-          envLodBias: 2.5,
-          usePlanarReflection: false // ✅ Env map mode
-        },
-        name: 'floor',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
-    }
-    function onLoadObj(m) {
-      fontana.myLoadedMeshes = m;
-      fontana.addMeshObj({
-        material: {
-          type: 'dark'
-        },
-        position: {
-          x: 0,
-          y: -1,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [100, 100, 100],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'sky',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
-      // fontana
-      const obj = fontana.addFontana({
-        material: {
-          type: 'dark'
-        },
-        position: {
-          x: 0,
-          y: 4,
-          z: -15
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [10, 10, 10],
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/cube-g1_low.webp'],
-        name: `fontana`,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        },
-        raycast: {
-          enabled: true,
-          radius: 1.5
-        }
-      });
-      fontana.addLight();
-      fontana.lightContainer[0].setIntensity(10);
-
-      // fontana.activateBloomEffect();
-      fontana.lightContainer[0].behavior.setOsc0(-2, 2, 0.001);
-      fontana.lightContainer[0].behavior.value_ = -1;
-      // fontana.lightContainer[0].updater.push((light) => {
-      //   light.setPosX(light.behavior.setPath0())
-      //   light.setTargetX(light.behavior.setPath0())
-      // })
-
-      fontana.lightContainer[0].setPosition(0, 17, -10);
-      fontana.lightContainer[0].setTarget(0, 0, -10);
-      setTimeout(() => {
-        app.cameras.WASD.setYaw(-0.03);
-        app.cameras.WASD.setPitch(-0.49);
-        app.cameras.WASD.setZ(0);
-        app.cameras.WASD.setY(5);
-      }, 800);
-    }
-    fontana.canvas.addEventListener("ray.hit.event", e => {
-      // console.log('ray.hit.event');
-      if (e.detail.hitObject.morphTo) e.detail.hitObject.morphTo(0.0, 500);
-    });
-  });
-  window.app = fontana;
-};
-exports.fontana = fontana;
-
-},{"../src/engine/loader-obj.js":68,"../src/engine/procedural-mesh.js":85,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],11:[function(require,module,exports){
+},{"../src/engine/cameras.js":43,"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36763,6 +36995,15 @@ class SpotLight {
     this.ambientFactor = 0.5;
     this.range = 70.0;
     this.shadowBias = 0.01;
+    this.projectedTexture = null;
+    this.projectedSampler = null;
+    this.hasProjection = false;
+    this.setProjectedTexture = function (textureView, sampler) {
+      this.projectedTexture = textureView;
+      this.projectedSampler = sampler;
+      this.hasProjection = true;
+      this.mainPassBindGroupContainer = {};
+    };
     this.SHADOW_RES = _meConfig.MEConfig.SHADOW_RES;
     this.primitive = {
       topology: 'triangle-list',
@@ -37099,16 +37340,27 @@ class SpotLight {
     this.getMainPassBindGroup = function (mesh) {
       const key = mesh.name;
       if (this.mainPassBindGroupContainer[key]) return this.mainPassBindGroupContainer[key];
+      const entries = [{
+        binding: 0,
+        resource: this.shadowTextureView
+      }, {
+        binding: 1,
+        resource: this.shadowSampler
+      }];
+      if (this.hasProjection) {
+        entries.push({
+          binding: 2,
+          resource: this.projectedTexture
+        });
+        entries.push({
+          binding: 3,
+          resource: this.projectedSampler
+        });
+      }
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
         label: 'mainPassBindGroup for mesh',
-        layout: mesh.mainPassBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: this.shadowTextureView
-        }, {
-          binding: 1,
-          resource: this.shadowSampler
-        }]
+        layout: this.hasProjection ? mesh.mainPassBindGroupLayoutProjected : mesh.mainPassBindGroupLayout,
+        entries
       });
       return this.mainPassBindGroupContainer[key];
     };

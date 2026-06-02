@@ -5,8 +5,8 @@ import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 import {PVector} from "../src/engine/matrix-class.js";
 import {isMobile} from "../src/engine/utils.js";
 
-export var testCannonES = function() {
-  let physicsPlayground = new MatrixEngineWGPU({
+export var loadDrumCannon = function() {
+  let drumCannon = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     useCannon: true,
     fastRender: 0.9,
@@ -19,7 +19,7 @@ export var testCannonES = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
-    physicsPlayground.addLight();
+    drumCannon.addLight();
     addRaycastsListener();
     addEventListener('PhysicsReady', () => {
       downloadMeshes({
@@ -30,10 +30,10 @@ export var testCannonES = function() {
         side: "./res/meshes/obj/drumpart.obj",
         side2: "./res/meshes/obj/drumpart2.obj"
       }, onGround, {scale: [1, 1, 1]})
-      // physicsPlayground.matrixPhysics.speedUpSimulation(4);
+      // drumCannon.matrixPhysics.speedUpSimulation(4);
 
-      // physicsPlayground.physicsBodiesChain();
-      // // physicsPlayground.physicsBodiesGeneratorDeepPyramid(
+      // drumCannon.physicsBodiesChain();
+      // // drumCannon.physicsBodiesGeneratorDeepPyramid(
       // //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
       // //   "./res/textures/gold-1.webp", "pyr", 2, true, [1, 1, 1], 2, 400
       // // );
@@ -45,7 +45,7 @@ export var testCannonES = function() {
       //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
 
       let strength = 10;
-      physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
+      drumCannon.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
         let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
         app.matrixPhysics.applyImpulse(b, new PVector(
@@ -57,7 +57,7 @@ export var testCannonES = function() {
 
     async function onGround(m) {
 
-      // const myComplexGeometry = physicsPlayground.addMeshObj({
+      // const myComplexGeometry = drumCannon.addMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 8, y: 4, z: -6},
       //   rotation: {x: 0, y: 0, z: 0.02},
@@ -84,25 +84,7 @@ export var testCannonES = function() {
       cam.setY(13);
       cam._dirtyAngle = true;
 
-      // physicsPlayground.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: 15, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 111, z: 0},
-      //   scale: [5, 5, 5],
-      //   texturesPaths: ['./res/textures/floor1.webp'],
-      //   name: 'ball1',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Sphere",
-      //     group: 2,
-      //     mask: -1,
-      //   },
-      //   raycast: {enabled: true, radius: 1}
-      // })
-
-      physicsPlayground.addMeshObj({
+      drumCannon.addMeshObj({
         position: {x: 0, y: -0.5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -115,7 +97,7 @@ export var testCannonES = function() {
 
       // DRUM
       // BOTTOM
-      const drum0 = physicsPlayground.addMeshObj({
+      const drum0 = drumCannon.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 14.5, z: -20},
         rotation: {x: 0, y: 0, z: 0},
@@ -133,7 +115,7 @@ export var testCannonES = function() {
         raycast: {enabled: true, radius: 1}
       })
 
-      const drum1 = physicsPlayground.addMeshObj({
+      const drum1 = drumCannon.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 21, z: -13.5},
         rotation: {x: 20, y: 0, z: 0},
@@ -154,7 +136,7 @@ export var testCannonES = function() {
         raycast: {enabled: true, radius: 1}
       })
 
-      const drum2 = physicsPlayground.addMeshObj({
+      const drum2 = drumCannon.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 21, z: -27.5},
         rotation: {x: -20, y: 0, z: 0},
@@ -174,7 +156,7 @@ export var testCannonES = function() {
         raycast: {enabled: true, radius: 1}
       })
 
-      const drum3 = physicsPlayground.addMeshObj({
+      const drum3 = drumCannon.addMeshObj({
         material: {type: 'standard'},
         position: {x: 5.5, y: 21, z: -20},
         rotation: {x: 0, y: 0, z: 0},
@@ -195,7 +177,7 @@ export var testCannonES = function() {
         raycast: {enabled: true, radius: 1}
       })
 
-      const drum4 = physicsPlayground.addMeshObj({
+      const drum4 = drumCannon.addMeshObj({
         material: {type: 'standard'},
         position: {x: -5.5, y: 21, z: -20},
         rotation: {x: 0, y: 0, z: 0},
@@ -209,7 +191,7 @@ export var testCannonES = function() {
           enabled: true,
           kinematic: true,
           geometry: "Cube",
-          group: 0,
+          group: 1,
           // mask: 2,
         },
         raycast: {enabled: true, radius: 1}
@@ -218,7 +200,7 @@ export var testCannonES = function() {
 
 
 
-      // physicsPlayground.addProceduralMeshObj({
+      // drumCannon.addProceduralMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 10, y: 15, z: -17},
       //   rotation: {x: 0, y: 0, z: 0},
@@ -240,7 +222,7 @@ export var testCannonES = function() {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      // physicsPlayground.addProceduralMeshObj({
+      // drumCannon.addProceduralMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 6, y: 15, z: -17},
       //   rotation: {x: 0, y: 0, z: 0},
@@ -262,7 +244,7 @@ export var testCannonES = function() {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      // physicsPlayground.addProceduralMeshObj({
+      // drumCannon.addProceduralMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 1, y: 3, z: -7},
       //   rotation: {x: 0, y: 0, z: 0},
@@ -294,7 +276,7 @@ export var testCannonES = function() {
         drum3.setBlend(0.4)
         drum4.setBlend(0.4)
 
-        physicsPlayground.physicsBodiesGenerator(
+        drumCannon.physicsBodiesGenerator(
           "standard",
           {x: 0, y: 150, z: -20},
           {x: 0, y: 0, z: 0},
@@ -324,9 +306,9 @@ export var testCannonES = function() {
       }, 2500)
 
       if(isMobile() == false) app.activateBloomEffect();
-      physicsPlayground.lightContainer[0].setPosY(14);
-      physicsPlayground.lightContainer[0].setIntensity(24);
+      drumCannon.lightContainer[0].setPosY(14);
+      drumCannon.lightContainer[0].setIntensity(24);
     }
   })
-  window.app = physicsPlayground;
+  window.app = drumCannon;
 }
