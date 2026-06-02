@@ -1,10 +1,6 @@
 /**
  * @description
  * MEWGPU - Scene Culling System for massive scenes.
- */
-/**
- * @description
- * MEWGPU - Scene Culling System for massive scenes.
  * Optimized with static array caching to eliminate runtime memory allocation.
  */
 export class CulledRenderPass {

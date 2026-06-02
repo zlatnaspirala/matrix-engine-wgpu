@@ -6,42 +6,55 @@ var __export = (target, all) => {
 
 // ../../../engine/utils.js
 var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
-var MeshType = { MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3 };
-function preventZoom() {
-  document.addEventListener("touchstart", function(e2) {
-    if (e2.touches.length > 1) {
-      e2.preventDefault();
-    }
-  }, { passive: false });
-  document.addEventListener("touchmove", function(e2) {
-    if (e2.touches.length > 1) {
-      e2.preventDefault();
-    }
-  }, { passive: false });
-  document.addEventListener("gesturestart", function(e2) {
+var MeshType = Object.freeze({ MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3 });
+var touchStartHandler = function(e2) {
+  if (e2.touches.length > 1) {
     e2.preventDefault();
-  });
+  }
+};
+var touchMoveHandler = function(e2) {
+  if (e2.touches.length > 1) {
+    e2.preventDefault();
+  }
+};
+var gestureStartHandler = function(e2) {
+  e2.preventDefault();
+};
+var preventZoomApplied = false;
+function preventZoom() {
+  if (preventZoomApplied) return;
+  preventZoomApplied = true;
+  document.addEventListener("touchstart", touchStartHandler, { passive: false });
+  document.addEventListener("touchmove", touchMoveHandler, { passive: false });
+  document.addEventListener("gesturestart", gestureStartHandler);
+}
+var screenOrientationSupported = null;
+function getScreenOrientationSupport() {
+  if (screenOrientationSupported === null) {
+    screenOrientationSupported = !!(screen.orientation && screen.orientation.lock);
+  }
+  return screenOrientationSupported;
 }
 function checkLock() {
-  if (screen.orientation && screen.orientation.lock) {
-    return true;
-  } else {
-    return false;
-  }
+  return getScreenOrientationSupport();
 }
+var cachedUserAgent = navigator.userAgent;
+var mobileRegexPatterns = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
+var mobileCheckResult = null;
 function isMobile() {
-  if (supportsTouch == true) return true;
-  const toMatch = [/Android/i, /webOS/i, /iPhone/i, /iPad/i, /iPod/i, /BlackBerry/i, /Windows Phone/i];
-  return toMatch.some((toMatchItem) => {
-    return navigator.userAgent.match(toMatchItem);
-  });
+  if (mobileCheckResult !== null) return mobileCheckResult;
+  if (supportsTouch) {
+    mobileCheckResult = true;
+    return true;
+  }
+  mobileCheckResult = mobileRegexPatterns.some((pattern) => pattern.test(cachedUserAgent));
+  return mobileCheckResult;
 }
 function degToRad(degrees) {
   return degrees * Math.PI / 180;
 }
 function radToDeg(r2) {
-  var pi = Math.PI;
-  return r2 * (180 / pi);
+  return r2 * (180 / Math.PI);
 }
 function OSCILLATOR(min2, max2, step, options2) {
   if (min2 == null || max2 == null || step == null) {
@@ -386,17 +399,63 @@ var FullscreenManager = class {
     );
   }
 };
-function alignTo256(n2) {
-  return Math.ceil(n2 / 256) * 256;
-}
+var geometryTypes = Object.freeze({
+  "quad": "quad",
+  "cube": "cube",
+  "sphere": "sphere",
+  "pyramid": "pyramid",
+  "star": "star",
+  "circle": "circle",
+  "diamond": "diamond",
+  "rock": "rock",
+  "meteor": "meteor",
+  "thunder": "thunder",
+  "shard": "shard",
+  "circlePlane": "circlePlane",
+  "ring": "ring",
+  "icosahedron": "icosahedron",
+  "torusKnot": "torusKnot",
+  "mobius": "mobius",
+  "crystal": "crystal",
+  "starPrism": "starPrism",
+  "crescent": "crescent",
+  "pyramidFractal": "pyramidFractal"
+});
+var geoTypesForMorph = Object.freeze({
+  cube: "cube",
+  sphere: "sphere",
+  mobius: "mobius",
+  cylinder: "cylinder",
+  plane: "plane",
+  capsule: "capsule",
+  cone: "cone",
+  torus: "torus",
+  wavePlane: "wavePlane",
+  supershape: "supershape",
+  pyramid: "pyramid",
+  diamond: "diamond",
+  icosahedron: "icosahedron",
+  circlePlane: "circlePlane",
+  rock: "rock",
+  star: "star",
+  star3d: "star3d",
+  littleStar: "littleStar",
+  flatStar: "flatStar",
+  klein: "klein",
+  shell: "shell",
+  rippleSphere: "rippleSphere",
+  twistedTorus: "twistedTorus",
+  tornado: "tornado",
+  galaxySpiral: "galaxySpiral"
+});
 
 // ../../../me-config.js
 window.urlQ = urlQuery;
 var MEConfig = {
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() == true ? 128 : 512,
-  MAX_BONES: isMobile() == true ? 80 : 100,
-  MAX_SPOTLIGHTS: isMobile() == true ? 18 : 40,
+  MAX_BONES: isMobile() == true ? 70 : 100,
+  MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
@@ -404,7 +463,7 @@ var MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: true,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
-  logLoopError: false,
+  logLoopError: true,
   construct: function(options2 = {}) {
     if (urlQ["GRAVITY_Y_AXIS"]) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
@@ -2253,6 +2312,7 @@ var WASDCamera = class _WASDCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = vec3Impl.fromValues(1, 0, 0);
@@ -2262,11 +2322,8 @@ var WASDCamera = class _WASDCamera {
   _rotXScratch = mat4Impl.create();
   _viewScratch = mat4Impl.create();
   _digital = { forward: false, backward: false, left: false, right: false, up: false, down: false };
-  _lastX = 0;
-  _lastY = 0;
   _mouseDown = false;
-  _pointerLastScratch = { x: 0, y: 0 };
-  // Sensitivity
+  // Sensitivity matching standard FPCamera parameters
   MOUSE_SENS = 0.01;
   TOUCH_SENS = 0.03;
   movementSpeed = 0.2;
@@ -2354,43 +2411,73 @@ var WASDCamera = class _WASDCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
-    canvas.addEventListener("pointerdown", (e2) => {
-      this._mouseDown = true;
-      this._lastX = e2.clientX;
-      this._lastY = e2.clientY;
-      canvas.setPointerCapture(e2.pointerId);
-    }, { passive: true });
-    const pointerUp = (e2) => {
-      this._mouseDown = false;
-    };
-    canvas.addEventListener("pointerup", pointerUp, { passive: true });
-    canvas.addEventListener("pointercancel", pointerUp, { passive: true });
-    canvas.addEventListener("pointermove", (e2) => {
-      const activeBundle = app.mainRenderBundle.find((o2) => o2.effects?.gizmoEffect != null);
-      if (activeBundle && activeBundle.effects.gizmoEffect.isDragging == true) return;
-      const events = e2.getCoalescedEvents ? e2.getCoalescedEvents() : [e2];
-      for (const ce of events) {
-        let dx = 0, dy = 0;
-        if (ce.pointerType === "mouse") {
-          if ((ce.buttons & 1) === 0) continue;
-          dx = ce.movementX * this.MOUSE_SENS;
-          dy = ce.movementY * this.MOUSE_SENS;
-        } else {
-          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
-          this._lastX = ce.clientX;
-          this._lastY = ce.clientY;
+    let touchStartX = 0, touchStartY = 0;
+    if (isMobile() === true) {
+      canvas.addEventListener("touchstart", (e2) => {
+        if (e2.touches.length > 0) {
+          touchStartX = e2.touches[0].clientX;
+          touchStartY = e2.touches[0].clientY;
         }
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
-        this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-        this._dirtyAngle = true;
-      }
-    }, { passive: true });
+      }, { passive: false });
+      canvas.addEventListener("touchmove", (e2) => {
+        if (e2.touches.length > 0) {
+          const touch = e2.touches[0];
+          const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+          const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+          this.yaw -= dx * this.rotationSpeed;
+          this.pitch -= dy * this.rotationSpeed;
+          this.yaw %= Math.PI * 2;
+          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+          this._dirtyAngle = true;
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
+        }
+        e2.preventDefault();
+      }, { passive: false });
+    }
+    if (isMobile() === false) {
+      canvas.addEventListener("pointerdown", (e2) => {
+        if (e2.pointerType === "mouse") {
+          this._mouseDown = true;
+          if (canvas.requestPointerLock) {
+            canvas.requestPointerLock();
+          } else {
+            canvas.setPointerCapture(e2.pointerId);
+          }
+        }
+      }, { passive: false });
+      canvas.addEventListener("pointermove", (e2) => {
+        if (e2.pointerType === "mouse" && this._mouseDown) {
+          const dx = e2.movementX * this.MOUSE_SENS;
+          const dy = e2.movementY * this.MOUSE_SENS;
+          this.yaw -= dx * this.rotationSpeed;
+          this.pitch -= dy * this.rotationSpeed;
+          this.yaw %= Math.PI * 2;
+          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+          this._dirtyAngle = true;
+        }
+      }, { passive: true });
+      canvas.addEventListener("pointerup", (e2) => {
+        if (e2.pointerType === "mouse") {
+          this._mouseDown = false;
+        }
+      }, { passive: true });
+    }
     this._keyInterval = null;
     const setDigital = (e2, value) => {
       switch (e2.code) {
+        case "ArrowUp":
+          this._digital.forward = value;
+          break;
+        case "ArrowDown":
+          this._digital.backward = value;
+          break;
+        case "ArrowLeft":
+          this._digital.left = value;
+          break;
+        case "ArrowRight":
+          this._digital.right = value;
+          break;
         case "KeyW":
           this._digital.forward = value;
           break;
@@ -2421,7 +2508,6 @@ var WASDCamera = class _WASDCamera {
         if (!d.forward && !d.backward && !d.left && !d.right && !d.up && !d.down) {
           clearInterval(this._keyInterval);
           this._keyInterval = null;
-          console.log;
           this._dirty = false;
           this._dirtyAngle = false;
         }
@@ -2507,12 +2593,6 @@ var WASDCamera = class _WASDCamera {
     this.yaw = y2;
     this._dirtyAngle = true;
   };
-  setTarget = (x2, y2, z) => {
-    this.target[0] = x2;
-    this.target[1] = y2;
-    this.target[2] = z;
-    this._dirtyAngle = true;
-  };
 };
 var RPGCamera = class _RPGCamera {
   pitch = -0.88;
@@ -2523,6 +2603,7 @@ var RPGCamera = class _RPGCamera {
   back = new Float32Array(3);
   view = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   VP = new Float32Array(16);
   // ===== RPG =====
   followMe = null;
@@ -2647,6 +2728,18 @@ var RPGCamera = class _RPGCamera {
           this._digital.left = value;
           break;
         case "KeyD":
+          this._digital.right = value;
+          break;
+        case "ArrowUp":
+          this._digital.forward = value;
+          break;
+        case "ArrowDown":
+          this._digital.backward = value;
+          break;
+        case "ArrowLeft":
+          this._digital.left = value;
+          break;
+        case "ArrowRight":
           this._digital.right = value;
           break;
       }
@@ -2799,6 +2892,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   _moveVelScratch = new Float32Array(3);
   _dirty = true;
   right = vec3Impl.fromValues(1, 0, 0);
@@ -2828,6 +2922,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
+    console.log("___________________________" + this.canvas);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
@@ -2926,35 +3021,54 @@ var FirstPersonCamera = class _FirstPersonCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
-    canvas.addEventListener("pointerdown", (e2) => {
-      this._mouseDown = true;
-      this._lastX = e2.clientX;
-      this._lastY = e2.clientY;
-      canvas.setPointerCapture(e2.pointerId);
-    }, { passive: true });
-    const pointerUp = (e2) => {
-      this._mouseDown = false;
-    };
-    canvas.addEventListener("pointerup", pointerUp, { passive: true });
-    canvas.addEventListener("pointercancel", pointerUp, { passive: true });
-    canvas.addEventListener("pointermove", (e2) => {
-      const events = e2.getCoalescedEvents ? e2.getCoalescedEvents() : [e2];
-      for (const ce of events) {
-        let dx = 0, dy = 0;
-        if (ce.pointerType === "mouse") {
-          dx = ce.movementX * this.MOUSE_SENS;
-          dy = ce.movementY * this.MOUSE_SENS;
-        } else {
-          dx = (ce.clientX - this._lastX) * this.TOUCH_SENS;
-          dy = (ce.clientY - this._lastY) * this.TOUCH_SENS;
-          this._lastX = ce.clientX;
-          this._lastY = ce.clientY;
-        }
+    let touchStartX = 0, touchStartY = 0;
+    if (isMobile() === true) canvas.addEventListener("touchstart", (e2) => {
+      if (e2.touches.length > 0) {
+        touchStartX = e2.touches[0].clientX;
+        touchStartY = e2.touches[0].clientY;
+        console.log("touchstart:", touchStartX, touchStartY);
+      }
+    }, { passive: false });
+    if (isMobile() === true) canvas.addEventListener("touchmove", (e2) => {
+      if (e2.touches.length > 0) {
+        const touch = e2.touches[0];
+        const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+        const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+        console.log("touchmove dx=", dx, "dy=", dy);
         this.yaw -= dx * this.rotationSpeed;
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
         this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
         this._dirtyAngle = true;
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }
+      e2.preventDefault();
+    }, { passive: false });
+    if (isMobile() === false) canvas.addEventListener("pointerdown", (e2) => {
+      if (e2.pointerType === "mouse") {
+        this._mouseDown = true;
+        if (canvas.requestPointerLock) {
+          canvas.requestPointerLock();
+        } else {
+          canvas.setPointerCapture(e2.pointerId);
+        }
+      }
+    }, { passive: false });
+    if (isMobile() === false) canvas.addEventListener("pointermove", (e2) => {
+      if (e2.pointerType === "mouse" && this._mouseDown) {
+        const dx = e2.movementX * this.MOUSE_SENS;
+        const dy = e2.movementY * this.MOUSE_SENS;
+        this.yaw -= dx * this.rotationSpeed;
+        this.pitch -= dy * this.rotationSpeed;
+        this.yaw %= Math.PI * 2;
+        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this._dirtyAngle = true;
+      }
+    }, { passive: true });
+    if (isMobile() === false) canvas.addEventListener("pointerup", (e2) => {
+      if (e2.pointerType === "mouse") {
+        this._mouseDown = false;
       }
     }, { passive: true });
     this._keyInterval = null;
@@ -2972,10 +3086,23 @@ var FirstPersonCamera = class _FirstPersonCamera {
         case "KeyD":
           this._digital.right = value;
           break;
+        case "ArrowUp":
+          this._digital.forward = value;
+          break;
+        case "ArrowDown":
+          this._digital.backward = value;
+          break;
+        case "ArrowLeft":
+          this._digital.left = value;
+          break;
+        case "ArrowRight":
+          this._digital.right = value;
+          break;
       }
       if (value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
+          this._dirtyAngle = true;
           this._applyDigitalMovement();
         }, 16);
       } else {
@@ -2984,6 +3111,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
           clearInterval(this._keyInterval);
           this._keyInterval = null;
           this._dirty = false;
+          this._dirtyAngle = false;
         }
       }
     };
@@ -3032,7 +3160,6 @@ var FirstPersonCamera = class _FirstPersonCamera {
   }
 };
 var CinematicCamera = class _CinematicCamera {
-  // ── same public fields as FirstPersonCamera ──────────────────────────────────
   pitch = 0;
   yaw = 0;
   position = new Float32Array(3);
@@ -3040,11 +3167,11 @@ var CinematicCamera = class _CinematicCamera {
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
   right = vec3Impl.fromValues(1, 0, 0);
   up = vec3Impl.fromValues(0, 1, 0);
   back = vec3Impl.fromValues(0, 0, 1);
   _dirtyAngle = false;
-  // ── cinematic-only state ─────────────────────────────────────────────────────
   _path = null;
   _t = 0;
   _playing = false;
@@ -3053,8 +3180,6 @@ var CinematicCamera = class _CinematicCamera {
   _onEnd = null;
   _shake = { active: false, amplitude: 0, frequency: 10, elapsed: 0, duration: 0 };
   _shakeOffset = new Float32Array(3);
-  // ── "look-at target" helpers (optional, used by path playback) ───────────────
-  // When _useTarget is true, view is built from position+_target instead of pitch/yaw
   _useTarget = false;
   _target = new Float32Array(3);
   constructor(options2 = {}) {
@@ -3076,7 +3201,6 @@ var CinematicCamera = class _CinematicCamera {
     this.setProjection(options2.fov ?? 2 * Math.PI / 5, aspect, options2.near ?? 0.3, options2.far ?? 200);
     this._recalculateViewVP();
   }
-  // ── same static helper as FirstPersonCamera ──────────────────────────────────
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
     const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];
@@ -3349,6 +3473,220 @@ var CinematicCamera = class _CinematicCamera {
     this._dirtyAngle = true;
   }
 };
+var PlaneCamera = class {
+  pitch = 0;
+  yaw = 0;
+  position = new Float32Array(3);
+  right = new Float32Array(3);
+  up = new Float32Array(3);
+  back = new Float32Array(3);
+  view = new Float32Array(16);
+  projectionMatrix = new Float32Array(16);
+  invProj = new Float32Array(16);
+  VP = new Float32Array(16);
+  followMe = null;
+  followMeOffset = 80;
+  scrollY = 80;
+  minY = 3;
+  maxY = 200;
+  scrollSpeed = 0.2;
+  smoothFactor = 0.1;
+  mousRollInAction = false;
+  _detachedFromFollow = false;
+  _dirty = true;
+  // CALLBACKS
+  onLeft = null;
+  onLeftRelease = null;
+  onRight = null;
+  onRightRelease = null;
+  onUp = null;
+  onUpRelease = null;
+  onDown = null;
+  onDownRelease = null;
+  onAction1 = null;
+  onAction1Release = null;
+  onAction2 = null;
+  onAction2Release = null;
+  constructor(options2 = {}) {
+    if (options2.position) {
+      this.position[0] = options2.position[0];
+      this.position[1] = options2.position[1];
+      this.position[2] = options2.position[2];
+    }
+    this.canvas = options2.canvas;
+    this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
+    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1e3);
+    this._setupEvents();
+    this._recalculateViewVP();
+    if (isMobile() == true && options2.isActive == "init active cam") {
+      this._setupMobileButtons();
+    }
+  }
+  setProjection(fov, aspect, near, far) {
+    mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._dirty = true;
+  }
+  setPitch = (p) => {
+    this.pitch = p;
+    this._dirty = true;
+  };
+  setYaw = (y2) => {
+    this.yaw = y2;
+    this._dirty = true;
+  };
+  setPosition = (x2, y2, z) => {
+    this.position[0] = x2;
+    this.position[1] = y2;
+    this.position[2] = z;
+    this._dirty = true;
+  };
+  setX = (x2) => {
+    this.position[0] = x2;
+    this._dirty = true;
+  };
+  setY = (y2) => {
+    this.position[1] = y2;
+    this._dirty = true;
+  };
+  setZ = (z) => {
+    this.position[2] = z;
+    this._dirty = true;
+  };
+  _setupMobileButtons() {
+    MobileDOM.addButton("\u2190", () => this.onLeft?.(), () => this.onLeftRelease?.(), { left: "20", bottom: "5" });
+    MobileDOM.addButton("\u2192", () => this.onRight?.(), () => this.onRightRelease?.(), { left: "60", bottom: "5" });
+    MobileDOM.addButton("\u2191", () => this.onUp?.(), () => this.onUpRelease?.(), { left: "40", bottom: "15" });
+    MobileDOM.addButton("\u2193", () => this.onDown?.(), () => this.onDownRelease?.(), { left: "40", bottom: "5" });
+    MobileDOM.addButton("A", () => this.onAction1?.(), () => this.onAction1Release?.(), { left: "80", bottom: "40" });
+    MobileDOM.addButton("B", () => this.onAction2?.(), () => this.onAction2Release?.(), { left: "80", bottom: "30" });
+  }
+  _setupKeyboard() {
+    const handle = (e2, isDown) => {
+      switch (e2.code) {
+        case "KeyA":
+        case "ArrowLeft":
+          isDown ? this.onLeft?.() : this.onLeftRelease?.();
+          break;
+        case "KeyD":
+        case "ArrowRight":
+          isDown ? this.onRight?.() : this.onRightRelease?.();
+          break;
+        case "KeyW":
+        case "ArrowUp":
+          isDown ? this.onUp?.() : this.onUpRelease?.();
+          break;
+        case "KeyS":
+        case "ArrowDown":
+          isDown ? this.onDown?.() : this.onDownRelease?.();
+          break;
+        case "KeyJ":
+          isDown ? this.onAction1?.() : this.onAction1Release?.();
+          break;
+        case "KeyK":
+          isDown ? this.onAction2?.() : this.onAction2Release?.();
+          break;
+      }
+    };
+    window.addEventListener("keydown", (e2) => {
+      if (!e2.repeat) handle(e2, true);
+    }, { passive: true });
+    window.addEventListener("keyup", (e2) => handle(e2, false), { passive: true });
+  }
+  _pinchDist(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  }
+  _setupEvents() {
+    if (isMobile() == false) {
+      addEventListener("wheel", (e2) => {
+        this.mousRollInAction = true;
+        this.scrollY -= e2.deltaY * this.scrollSpeed * 0.1;
+        this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+        this._dirty = true;
+      });
+      this._setupKeyboard();
+    } else {
+      let lastPinchDist = null;
+      let lastTouchX = null, lastTouchY = null;
+      addEventListener("touchmove", (e2) => {
+        if (e2.touches.length === 2) {
+          const dist2 = this._pinchDist(e2.touches);
+          if (lastPinchDist !== null) {
+            const delta = lastPinchDist - dist2;
+            this.scrollY -= delta * this.scrollSpeed * 0.5;
+            this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
+            this._dirty = true;
+          }
+          lastPinchDist = dist2;
+          return;
+        }
+        if (e2.touches.length === 1) {
+          const tx = e2.touches[0].clientX;
+          const tz = e2.touches[0].clientY;
+          if (lastTouchX !== null) {
+          }
+          lastTouchX = tx;
+          lastTouchY = tz;
+        }
+      }, { passive: true });
+      addEventListener("touchend", (e2) => {
+        if (e2.touches.length < 2) lastPinchDist = null;
+        if (e2.touches.length === 0) {
+          lastTouchX = null;
+          lastTouchY = null;
+        }
+      }, { passive: true });
+    }
+  }
+  _updateOrientation() {
+    this.right[0] = 1;
+    this.right[1] = 0;
+    this.right[2] = 0;
+    this.up[0] = 0;
+    this.up[1] = 1;
+    this.up[2] = 0;
+    this.back[0] = 0;
+    this.back[1] = 0;
+    this.back[2] = 1;
+  }
+  _updateFollow() {
+    if (!this.followMe) return;
+    if (this._detachedFromFollow) return;
+    if (this.mousRollInAction) {
+      this.followMeOffset = this.scrollY;
+      this.mousRollInAction = false;
+    }
+    const dx = this.followMe.x - this.position[0];
+    const dy = this.followMe.y - this.position[1];
+    if (Math.abs(dx) > 1e-3 || Math.abs(dy) > 1e-3) {
+      this.position[0] += dx * this.smoothFactor;
+      this.position[1] += dy * this.smoothFactor;
+      this._dirty = true;
+    }
+    const newZ = this.position[2] + (this.scrollY - this.position[2]) * this.smoothFactor;
+    if (Math.abs(newZ - this.position[2]) > 1e-3) {
+      this.position[2] = newZ;
+      this._dirty = true;
+    }
+  }
+  _recalculateViewVP() {
+    this._updateOrientation();
+    mat4Impl.lookAt(
+      [this.position[0], this.position[1], this.position[2]],
+      [this.position[0], this.position[1], 0],
+      [0, 1, 0],
+      this.view
+    );
+    mat4Impl.multiply(this.projectionMatrix, this.view, this.VP);
+  }
+  update() {
+    this._updateFollow();
+    if (!this._dirty) return;
+    this._recalculateViewVP();
+    this._dirty = false;
+  }
+};
 var MobileDOM = {
   eventDown: null,
   eventUp: null,
@@ -3488,16 +3826,26 @@ var MobileDOM = {
       touchAction: "none"
     });
     btn.textContent = label;
-    btn.addEventListener("touchstart", (e2) => {
-      e2.stopPropagation();
-      onClick(e2);
-    }, { passive: true });
-    btn.addEventListener("touchend", (e2) => {
-      onRelease(e2);
-    }, { passive: true });
-    btn.addEventListener("touchcancel", () => {
-      onRelease(e);
-    }, { passive: true });
+    if (isMobile() === true) {
+      btn.addEventListener("touchstart", (e2) => {
+        e2.stopPropagation();
+        onClick(e2);
+      }, { passive: true });
+      btn.addEventListener("touchend", (e2) => {
+        onRelease(e2);
+      }, { passive: true });
+      btn.addEventListener("touchcancel", () => {
+        onRelease(e);
+      }, { passive: true });
+    } else {
+      btn.addEventListener("click", (e2) => {
+        e2.stopPropagation();
+        onClick(e2);
+      }, { passive: true });
+      btn.addEventListener("mouseup", (e2) => {
+        onRelease(e2);
+      }, { passive: true });
+    }
     document.body.appendChild(btn);
     return btn;
   }
@@ -4233,17 +4581,10 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
   return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
-  let NdotL = max(dot(N, L), 0.0);
-  if (NdotL <= 0.0) {
-      return vec3f(0.0);
-  }
-  return material.baseColor * light.color * light.intensity * NdotL;
-}
-
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
   let NdotL = max(dot(N, L), 0.0);
 
   let theta = dot(L, normalize(-light.direction));
@@ -4251,8 +4592,12 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
   if (coneAtten <= 0.0 || NdotL <= 0.0) {
-      return vec3f(0.0);
+    return vec3f(0.0);
   }
+
+  // Distance attenuation
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation; // quadratic falloff curve
 
   let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
   let H = normalize(L + V);
@@ -4278,9 +4623,11 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
   let diffuse = kD * material.baseColor.rgb / PI;
 
-  let radiance = light.color * light.intensity;
-  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let radiance = light.color * light.intensity * attenuation2;
+
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
 }
+  
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
   var visibility: f32 = 0.0;
   let biasConstant: f32 = 0.001;
@@ -4682,56 +5029,47 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
-    return material.baseColor * light.color * light.intensity * NdotL;
-    // return material.baseColor * light.color * light.intensity * NdotL;
-}
-
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
+  let NdotL = max(dot(N, L), 0.0);
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    // coneAtten = 1.0;
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
+  if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
 
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
 
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
 
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
 
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
 
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
 
-    let radiance = light.color * light.intensity;
-    // return (diffuse + specular) * radiance * NdotL * coneAtten;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
+
+  let radiance = light.color * light.intensity * attenuation2;
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -4912,58 +5250,30 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
     return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
+  let NdotL = max(dot(N, L), 0.0);
+  if (NdotL <= 0.0) { return vec3f(0.0); }
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-    if (coneAtten <= 0.0) {
-        return vec3f(0.0);
-    }
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  if (coneAtten <= 0.0) { return vec3f(0.0); }
 
-    // --- diffuse controlled by metallic ---
-    let kD = 1.0 - material.metallic;  // 1.0 \u2192 full diffuse, 0.0 \u2192 fully metallic
-    let lambert = kD * material.baseColor * light.color * light.intensity * NdotL;
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
 
-    // --- simple specular controlled by roughness ---
-    let H = normalize(L + V);
-    let shininess = mix(2.0, 128.0, 1.0 - material.roughness); // map roughness \u2192 exponent
-    let spec = pow(max(dot(N, H), 0.0), shininess);
-    let specular = light.color * spec * material.metallic; // only strong if metallic > 0
+  let kD = 1.0 - material.metallic;
+  let lambert = kD * material.baseColor * light.color * light.intensity * NdotL;
 
-    return (lambert + specular) * coneAtten;
-}
-// Debug hybrid spotlight
-fn computeSpotLight3(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    if (NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
+  let H = normalize(L + V);
+  let shininess = mix(2.0, 128.0, 1.0 - material.roughness);
+  let spec = pow(max(dot(N, H), 0.0), shininess);
+  let specular = light.color * spec * material.metallic;
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
-
-    if (coneAtten <= 0.0) {
-        return vec3f(0.0);
-    }
-
-    // ---- baseline lambert ----
-    let lambert = material.baseColor * light.color * light.intensity * NdotL;
-
-    // ---- add a bit of specular safely ----
-    let H = normalize(L + V);
-    let spec = pow(max(dot(N, H), 0.0), 32.0); // simple Blinn-Phong
-    let specular = light.color * spec * 0.2;   // scaled so it doesn\u2019t kill diffuse
-
-    // final mix
-    return (lambert + specular) * coneAtten;
+  return (lambert + specular) * coneAtten * attenuation2;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -5010,7 +5320,7 @@ fn main(input: FragmentInput) -> FragOut {
         let bias = spotlights[i].shadowBias;
         let visibility = sampleShadow(uv, i32(i), depthRef - bias, norm, lightDir);
         // let visibility = 1.0;
-        let contrib = computeSpotLight2(spotlights[i], norm, input.fragPos, viewDir, materialData);
+        let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
         lightContribution += contrib * visibility;
     }
 
@@ -5171,23 +5481,33 @@ fn main(input: FragmentInput) -> FragOut {
   let N = normalize(input.fragNorm);
   let V = normalize(scene.cameraPos - input.fragPos);
   var Lo = vec3f(0.0);
-  for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
-      let L = normalize(spotlights[i].position - input.fragPos);
-      let H = normalize(V + L);
-      let distance = length(spotlights[i].position - input.fragPos);
-      let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
-      let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
-      let NDF = distributionGGX(N, H, materialData.roughness);
-      let G   = geometrySmith(N, V, L, materialData.roughness);
-      let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
-      let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-      let kS = F;
-      let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
-      let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
-      let NdotL = max(dot(N, L), 0.0);
-      let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
-      Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
-  }
+  // for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+  //     let L = normalize(spotlights[i].position - input.fragPos);
+  //     let H = normalize(V + L);
+  //     let distance = length(spotlights[i].position - input.fragPos);
+  //     let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+  //     let radiance = spotlights[i].color * spotlights[i].intensity * attenuation;
+  //     let NDF = distributionGGX(N, H, materialData.roughness);
+  //     let G   = geometrySmith(N, V, L, materialData.roughness);
+  //     let F0 = mix(vec3f(0.04), materialData.baseColor, materialData.metallic);
+  //     let F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+  //     let kS = F;
+  //     let kD = (vec3f(1.0) - kS) * (1.0 - materialData.metallic);
+  //     let diffuse  = kD * materialData.baseColor / PI; // Lambertian diffuse // ??
+  //     let NdotL = max(dot(N, L), 0.0);
+  //     let specular = (NDF * G * F) / (4.0 * max(dot(N, V), 0.0) * NdotL + 0.001);
+  //     Lo += NdotL * spotlights[i].color * spotlights[i].intensity;
+  // }
+for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+  let L = normalize(spotlights[i].position - input.fragPos);
+  let H = normalize(V + L);
+  let distance = length(spotlights[i].position - input.fragPos);
+  let attenuation = clamp(1.0 - (distance / spotlights[i].range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
+  let NdotL = max(dot(N, L), 0.0);
+
+  Lo += NdotL * spotlights[i].color * spotlights[i].intensity * attenuation2;
+}
   let ambient = scene.globalAmbient * materialData.baseColor;
   var color = ambient + Lo;
 
@@ -5748,27 +6068,39 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
 }
 
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, mat: PBRMaterialData) -> vec3f {
-    let L    = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
-    let theta = dot(L, normalize(-light.direction));
-    let eps   = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
-    if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
+  let NdotL = max(dot(N, L), 0.0);
 
-    let F0    = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
-    let H     = normalize(L + V);
-    let alpha  = mat.roughness * mat.roughness;
-    let alpha2 = alpha * alpha;
-    let NdotH  = max(dot(N, H), 0.0);
-    let denom  = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D      = alpha2 / (PI * denom * denom + 1e-5);
-    let k      = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV  = max(dot(N, V), 0.0);
-    let Gv     = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl     = NdotL / (NdotL * (1.0 - k) + k);
-    let G      = Gv * Gl;
-    let F      = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-    return mat.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let theta = dot(L, normalize(-light.direction));
+  let eps = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / eps, 0.0, 1.0);
+  if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
+
+  let F0 = mix(vec3f(0.04), mat.baseColor.rgb, vec3f(mat.metallic));
+  let H = normalize(L + V);
+  let alpha = mat.roughness * mat.roughness;
+  let alpha2 = alpha * alpha;
+  let NdotH = max(dot(N, H), 0.0);
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+  let specular = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+  let kD = (vec3f(1.0) - F) * (1.0 - mat.metallic);
+  let diffuse = kD * mat.baseColor.rgb / PI;
+
+  let radiance = light.color * light.intensity * attenuation2;
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -6028,7 +6360,9 @@ fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
 
 // ---------------- Spotlight ----------------
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
   let NdotL = max(dot(N, L), 0.0);
   if (NdotL <= 0.0) { return vec3f(0.0); }
 
@@ -6036,6 +6370,9 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   let epsilon = light.innerCutoff - light.outerCutoff;
   let coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
   if (coneAtten <= 0.0) { return vec3f(0.0); }
+
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
 
   let H = normalize(L + V);
   let F0 = mix(vec3f(0.04), material.baseColor, material.metallic);
@@ -6047,7 +6384,7 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
   let diffuse = kD * material.baseColor / PI;
 
-  let radiance = light.color * light.intensity;
+  let radiance = light.color * light.intensity * attenuation2;
   return (diffuse + spec) * radiance * NdotL * coneAtten;
 }
 
@@ -6239,55 +6576,49 @@ let epsilon = light.innerCutoff - light.outerCutoff;
 return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-let L = normalize(light.position - fragPos);
-let NdotL = max(dot(N, L), 0.0);
-if (NdotL <= 0.0) {
-    return vec3f(0.0);
-}
-return material.baseColor * light.color * light.intensity * NdotL;
-}
-
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-let L = normalize(light.position - fragPos);
-let NdotL = max(dot(N, L), 0.0);
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
+  let NdotL = max(dot(N, L), 0.0);
 
-let theta = dot(L, normalize(-light.direction));
-let epsilon = light.innerCutoff - light.outerCutoff;
-var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-if (coneAtten <= 0.0 || NdotL <= 0.0) {
-    return vec3f(0.0);
+  if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
+
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
+
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
+
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
+
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
+
+  let radiance = light.color * light.intensity * attenuation2;
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
 }
-
-let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-let H = normalize(L + V);
-let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-
-let alpha = material.roughness * material.roughness;
-let NdotH = max(dot(N, H), 0.0);
-let alpha2 = alpha * alpha;
-let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-let D = alpha2 / (PI * denom * denom + 1e-5);
-
-let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-let NdotV = max(dot(N, V), 0.0);
-let Gv = NdotV / (NdotV * (1.0 - k) + k);
-let Gl = NdotL / (NdotL * (1.0 - k) + k);
-let G = Gv * Gl;
-
-let numerator = D * G * F;
-let denominator = 4.0 * NdotV * NdotL + 1e-5;
-let specular = numerator / denominator;
-
-let kS = F;
-let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-let diffuse = kD * material.baseColor.rgb / PI;
-
-let radiance = light.color * light.intensity;
-  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
-}
-
+  
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
 var visibility: f32 = 0.0;
 let biasConstant: f32 = 0.001;
@@ -7278,7 +7609,6 @@ var MaterialBindGroupCache = class _MaterialBindGroupCache {
 };
 
 // ../../../shaders/fragment.dark.wgsl.js
-console.log("TEST MAX_SPOTLIGHTS FROM SHADER", MEConfig.MAX_SPOTLIGHTS);
 var fragmentDarkWGSL = () => `
 override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
 const PI: f32 = 3.14159;
@@ -7393,27 +7723,20 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
   let epsilon = light.innerCutoff - light.outerCutoff;
   return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
-
-fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
-  let NdotL = max(dot(N, L), 0.0);
-  if (NdotL <= 0.0) {
-      return vec3f(0.0);
-  }
-  return material.baseColor * light.color * light.intensity * NdotL;
-}
-
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
   let NdotL = max(dot(N, L), 0.0);
 
   let theta = dot(L, normalize(-light.direction));
   let epsilon = light.innerCutoff - light.outerCutoff;
   var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-  if (coneAtten <= 0.0 || NdotL <= 0.0) {
-      return vec3f(0.0);
-  }
+  if (coneAtten <= 0.0 || NdotL <= 0.0) { return vec3f(0.0); }
+
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
 
   let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
   let H = normalize(L + V);
@@ -7431,16 +7754,12 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   let Gl = NdotL / (NdotL * (1.0 - k) + k);
   let G = Gv * Gl;
 
-  let numerator = D * G * F;
-  let denominator = 4.0 * NdotV * NdotL + 1e-5;
-  let specular = numerator / denominator;
-
-  let kS = F;
-  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let specular = (D * G * F) / (4.0 * NdotV * NdotL + 1e-5);
+  let kD = (vec3f(1.0) - F) * (1.0 - material.metallic);
   let diffuse = kD * material.baseColor.rgb / PI;
 
-  let radiance = light.color * light.intensity;
-  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let radiance = light.color * light.intensity * attenuation2;
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -7508,7 +7827,6 @@ fn main(input: FragmentInput) -> FragOut {
   // var ambientTerm = material.ambientColor + scene.globalAmbient;
   // var finalColor = ambientTerm + texColor.rgb * lightContribution;
   let alpha = texColor.a * material.baseColorFactor.a;
-  // return vec4f(finalColor, alpha);
   return FragOut(
     vec4f(finalColor, alpha),
     vec4f(norm, 0.0),
@@ -8113,7 +8431,6 @@ var Materials = class {
       this.video = null;
       this.updateVideoTexture();
       this.createMaterialBindGroupVideo();
-      this.setupPipeline();
     }
     if (this.video) await new Promise((resolve) => {
       this.video.requestVideoFrameCallback(() => {
@@ -8495,23 +8812,19 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }`;
 
 // ../../../engine/effects/topology-point.js
-var PointEffect2 = class {
-  constructor(device2, format) {
+var PointEffect = class {
+  constructor(device2, format, cameraBuffer) {
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.pointSize = 8;
     this.enabled = true;
     this._pointSettingsScratch = new Float32Array(4);
     this._initPipeline();
   }
   _initPipeline() {
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 64,
-      // mat4x4
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.pointSettingsBuffer = this.device.createBuffer({
@@ -8567,7 +8880,7 @@ var PointEffect2 = class {
             color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
             alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
           }
-        }]
+        }, { format: "rgba16float" }, { format: "rgba16float" }]
       },
       primitive: { topology: "triangle-strip" },
       depthStencil: {
@@ -8577,7 +8890,6 @@ var PointEffect2 = class {
       }
     });
   }
-  // ✅ THIS MATCHES FlameEffect PATTERN
   updateInstanceData(baseModelMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
   }
@@ -8697,9 +9009,10 @@ fn fsMain(input : VSOut) -> FragOut {
 
 // ../../../engine/effects/gizmo.js
 var GizmoEffect = class {
-  constructor(device2, format) {
+  constructor(device2, format, cameraBuffer) {
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.enabled = true;
     this.mode = 0;
     this.size = 3;
@@ -8742,7 +9055,6 @@ var GizmoEffect = class {
   }
   _initPipeline() {
     this._createTranslateGizmo();
-    this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.modelBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.gizmoSettingsBuffer = this.device.createBuffer({ size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this._updateGizmoSettings();
@@ -8766,7 +9078,7 @@ var GizmoEffect = class {
       bindGroupLayouts: [bindGroupLayout]
     });
     this.pipeline = this.device.createRenderPipeline({
-      label: "gizmo Pipeline",
+      label: "gizmo",
       layout: pipelineLayout,
       vertex: {
         module: shaderModule,
@@ -9414,8 +9726,8 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 `;
 
 // ../../../engine/effects/destruction.js
-var DestructionEffect = class {
-  constructor(device2, format, config = {}) {
+var DestructionEffect2 = class {
+  constructor(device2, format, config = {}, cameraBuffer) {
     this.device = device2;
     this.format = format;
     this.particleCount = config.particleCount || 100;
@@ -9426,6 +9738,7 @@ var DestructionEffect = class {
     this.particles = [];
     this.color = config.color || [0.6, 0.5, 0.4, 1];
     this.intensity = 1;
+    this.cameraBuffer = cameraBuffer;
     this._initPipeline();
     this._initParticles();
   }
@@ -9485,11 +9798,6 @@ var DestructionEffect = class {
     this.instanceBuffer = this.device.createBuffer({
       size: instanceDataSize,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      // mat4x4
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.modelBuffer = this.device.createBuffer({
       size: 64 + 16 + 16,
@@ -9551,13 +9859,17 @@ var DestructionEffect = class {
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-          }
-        }]
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
       },
       primitive: { topology: "triangle-list", cullMode: "none" },
       depthStencil: {
@@ -11366,9 +11678,10 @@ var FlamePresets = {
   }
 };
 var FlameEffect = class {
-  constructor(device2, format, colorFormat, params = {}) {
+  constructor(device2, format, colorFormat, params = {}, cameraBuffer) {
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.colorFormat = colorFormat ?? format;
     const config = typeof params === "string" ? FlamePresets[params] : params;
     const defaults = FlamePresets.natural;
@@ -11411,7 +11724,6 @@ var FlameEffect = class {
     this.indexFormat = geo2.indices instanceof Uint16Array ? "uint16" : "uint32";
   }
   _initPipeline() {
-    this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.modelBuffer = this.device.createBuffer({ size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
@@ -11689,7 +12001,7 @@ fn fsMain(input : VSOut) -> FragOut {
 
 // ../../../engine/effects/flame-emmiter.js
 var FlameEmitter = class {
-  constructor(device2, format, maxParticles = 20) {
+  constructor(device2, format, maxParticles = 20, cameraBuffer) {
     this.device = device2;
     this.format = format;
     this.time = 0;
@@ -11709,6 +12021,7 @@ var FlameEmitter = class {
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
     this.rotSpeed = 0.1;
+    this.cameraBuffer = cameraBuffer;
     this._localMatrix = mat4Impl.create();
     this._finalMatrix = mat4Impl.create();
     this._scratch4 = new Float32Array(4);
@@ -11792,8 +12105,6 @@ var FlameEmitter = class {
     return vertexData;
   }
   recreateVertexDataFromData(data) {
-    console.info(`%c Crazzy flame emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} 
-  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
     const vertexData = new Float32Array([
       data[0],
       data[4],
@@ -11823,7 +12134,6 @@ var FlameEmitter = class {
     this.indexBuffer = this.device.createBuffer({ size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.modelBuffer = this.device.createBuffer({ label: "flame-emmiter modeBuffer", size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
     const bindGroupLayout = this.device.createBindGroupLayout({
       label: "flame-emmiter bindGroupLayout",
@@ -11849,8 +12159,8 @@ var FlameEmitter = class {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
         ]
       },
       fragment: {
@@ -12002,63 +12312,74 @@ var VERTEX_ANIM_FLAGS = {
 };
 
 // ../../../shaders/standalone/pointer.effect.js
-var pointerEffect = `
-struct Camera {
-  viewProjMatrix : mat4x4<f32>,
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
-
+var pointerEffect = () => `
 struct Model {
-  modelMatrix : mat4x4<f32>,
+    modelMatrix : mat4x4f,
 };
+
+// Changed from "scene : Scene" to a direct 64-byte mat4x4f!
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<uniform> model : Model;
 
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
 };
 
 @vertex
-fn vsMain(input : VertexInput) -> VSOut {
-  var out : VSOut;
-  let worldPos = model.modelMatrix * vec4<f32>(input.position,1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  return out;
+fn vsMain(input : VertexInput) -> VertexOutput {
+    var out : VertexOutput;
+    
+    let worldPos = model.modelMatrix * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    out.position = cameraViewProjMatrix * worldPos; // Uses direct matrix bind
+    
+    out.fragNorm = vec3f(0.0, 1.0, 0.0); 
+    out.uv = input.uv;
+    
+    return out;
+}
+
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  // Center the UVs (0.0\u20131.0 \u2192 -1.0\u20131.0)
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
+fn fsMain(input: VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
 
-  // Distance from center
-  let dist = length(uv);
+    let centeredUV = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(centeredUV);
+    let glow = exp(-dist * 1.0);
 
-  // Glow falloff
-  let glow = exp(-dist * 1.0); // try values 3.0\u20136.0 for tighter glow
+    let baseColor = vec3f(0.2, 0.7, 1.0);
+    let glowColor = vec3f(0.7, 0.9, 1.0);
+    let finalColor = mix(baseColor, glowColor, glow) * glow;
 
-  // Gradient color (inner bright \u2192 outer dim)
-  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
-  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
-
-  // Blend based on glow strength
-  let color = mix(baseColor, glowColor, glow) * glow;
-
-  return vec4<f32>(color, 1.0);
-}`;
+    return FragOut(
+        vec4f(finalColor, 1.0),
+        vec4f(N, 0.0),
+        vec4f(input.fragPos, 1.0)
+    );
+}
+`;
 
 // ../../../engine/effects/pointerEffect.js
 var PointerEffect = class {
-  constructor(device2, format, initialScale = 10) {
+  constructor(device2, format, initialScale = 10, cameraBuffer) {
     this.initialScale = initialScale;
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this._tempModelMatrix = mat4Impl.identity();
     this._tempTranslation = new Float32Array(3);
     this.enabled = true;
@@ -12119,10 +12440,6 @@ var PointerEffect = class {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -12140,7 +12457,7 @@ var PointerEffect = class {
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: pointerEffect });
+    const shaderModule = this.device.createShaderModule({ code: pointerEffect() });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
       label: "pointEffect Pipeline",
@@ -12156,7 +12473,7 @@ var PointerEffect = class {
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{ format: this.format }]
+        targets: [{ format: this.format }, { format: "rgba16float" }, { format: "rgba16float" }]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: true, depthCompare: "always", format: "depth24plus" }
@@ -12185,9 +12502,10 @@ var PointerEffect = class {
 
 // ../../../engine/effects/msdfText.js
 var MSDFTextEffect = class {
-  constructor(device2, format, msdfTexture, sampler) {
+  constructor(device2, format, msdfTexture, sampler, cameraBuffer) {
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.msdfTexture = msdfTexture;
     this.sampler = sampler;
     this.glyphs = [];
@@ -12242,10 +12560,6 @@ var MSDFTextEffect = class {
       size: 1024 * 64,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
@@ -12276,11 +12590,11 @@ var MSDFTextEffect = class {
         entryPoint: "vsMain",
         buffers: [
           {
-            arrayStride: 2 * 4,
+            arrayStride: 8,
             attributes: [{ shaderLocation: 0, format: "float32x2" }]
           },
           {
-            arrayStride: 2 * 4,
+            arrayStride: 8,
             attributes: [{ shaderLocation: 1, format: "float32x2" }]
           }
         ]
@@ -12288,7 +12602,7 @@ var MSDFTextEffect = class {
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{ format: this.format }]
+        targets: [{ format: this.format }, { format: "rgba16float" }, { format: "rgba16float" }]
       },
       primitive: {
         topology: "triangle-list"
@@ -12314,7 +12628,7 @@ var MSDFTextEffect = class {
 
 // ../../../engine/mesh-obj.js
 var MEMeshObj = class extends Materials {
-  constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device2, o2.material, _glbFile, o2.textureCache, o2.isVideo);
     if (typeof o2.name === "undefined") o2.name = genName(3);
     if (typeof o2.raycast === "undefined") {
@@ -12332,15 +12646,21 @@ var MEMeshObj = class extends Materials {
     this.canvas = canvas;
     this.device = device2;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o2.entityArgPass;
     this.clearColor = "red";
     this.video = null;
+    this.ignoreCulling = false;
     this.dontDrag = true;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     if (typeof o2.material.useTextureFromGlb === "undefined" || typeof o2.material.useTextureFromGlb !== "boolean") {
       o2.material.useTextureFromGlb = false;
     }
+    this.texturesPaths = [];
+    o2.texturesPaths.forEach((t) => {
+      this.texturesPaths.push(t);
+    });
     this._translateVec = new Float32Array(3);
     this._rotAxisVec = new Float32Array(3);
     this._scaleVec = new Float32Array(3);
@@ -12537,7 +12857,6 @@ var MEMeshObj = class extends Materials {
       this.drawElements = this.drawElementsAnim;
       this.drawShadows = this.drawShadowsAnim;
     } else if (typeof o2.isVideo !== "undefined") {
-      console.log("MESH what i s isvideo ", o2.isVideo);
       this.loadVideoTexture(o2.isVideo);
       this.drawElements = this.drawVideoElements;
     } else if (this.material.type != "mirror" && this.material.type != "water") {
@@ -12549,10 +12868,6 @@ var MEMeshObj = class extends Materials {
       type: o2.mainCameraParams.type,
       responseCoef: o2.mainCameraParams.responseCoef
     };
-    this.texturesPaths = [];
-    o2.texturesPaths.forEach((t) => {
-      this.texturesPaths.push(t);
-    });
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.position = new Position(o2.position.x, o2.position.y, o2.position.z);
     this.rotation = new Rotation(o2.rotation.x, o2.rotation.y, o2.rotation.z);
@@ -12714,14 +13029,14 @@ var MEMeshObj = class extends Materials {
         // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      function alignTo2562(n2) {
+      function alignTo256(n2) {
         return Math.ceil(n2 / 256) * 256;
       }
       let MAX_BONES = MEConfig.MAX_BONES;
       this.MAX_BONES = MAX_BONES;
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
-        size: alignTo2562(64 * MAX_BONES),
+        size: alignTo256(64 * MAX_BONES),
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       const bones = new Float32Array(this.MAX_BONES * 16);
@@ -12920,29 +13235,29 @@ var MEMeshObj = class extends Materials {
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new PointerEffect(device2, "rgba16float", 1);
+          this.effects.pointer = new PointerEffect(device2, "rgba16float", 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect2(device2, "rgba16float");
+          this.effects.pointEffect = new PointEffect(device2, "rgba16float", this.cameraBuffer);
         }
         if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
-          this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float");
+          this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float", this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new FlameEffect(device2, pf, "rgba16float", "torch");
+          this.effects.flameEffect = new FlameEffect(device2, pf, "rgba16float", "torch", this.cameraBuffer);
         }
         if (typeof this.pointerEffect.gpuText !== "undefined" && this.pointerEffect.gpuText == true) {
-          this.effects.gpuText = new MSDFTextEffect(device2, pf, "rgba16float", "torch");
+          this.effects.gpuText = new MSDFTextEffect(device2, pf, "rgba16float", "torch", this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new FlameEmitter(device2, "rgba16float");
+          this.effects.flameEmitter = new FlameEmitter(device2, "rgba16float", 20, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.destructionEffect !== "undefined" && this.pointerEffect.destructionEffect == true) {
-          this.effects.destructionEffect = new DestructionEffect(device2, "rgba16float", {
+          this.effects.destructionEffect = new DestructionEffect2(device2, "rgba16float", {
             particleCount: 100,
             duration: 2.5,
             color: [0.6, 0.5, 0.4, 1]
-          });
+          }, this.cameraBuffer);
         }
       }
       this.getModelMatrix = (pos2, useScale = false) => {
@@ -13123,6 +13438,7 @@ var MEMeshObj = class extends Materials {
         primitive: this.primitive
       }
     });
+    this.initBoundingSphere();
     dispatchEvent(this.buildPipelineBucketsEvent);
   }
   getMainPipeline = () => {
@@ -13307,6 +13623,45 @@ var MEMeshObj = class extends Materials {
       }
     }
   };
+  initBoundingSphere() {
+    if (!this.mesh || !this.mesh.vertices) return;
+    const pos2 = this.mesh.vertices;
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (let i = 0; i < pos2.length; i += 3) {
+      minX = Math.min(minX, pos2[i]);
+      maxX = Math.max(maxX, pos2[i]);
+      minY = Math.min(minY, pos2[i + 1]);
+      maxY = Math.max(maxY, pos2[i + 1]);
+      minZ = Math.min(minZ, pos2[i + 2]);
+      maxZ = Math.max(maxZ, pos2[i + 2]);
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    let r2 = 0;
+    for (let i = 0; i < pos2.length; i += 3) {
+      const dx = pos2[i] - cx;
+      const dy = pos2[i + 1] - cy;
+      const dz = pos2[i + 2] - cz;
+      r2 = Math.max(r2, Math.sqrt(dx * dx + dy * dy + dz * dz));
+    }
+    this.boundingSphere = {
+      center: new Float32Array([cx, cy, cz]),
+      radius: r2
+    };
+  }
+  updateBoundingSphere() {
+    if (!this.boundingSphere) return;
+    const local2 = this.boundingSphere.center;
+    const m = this.modelMatrix;
+    const center = new Float32Array(3);
+    center[0] = m[12] + local2[0] * m[0] + local2[1] * m[4] + local2[2] * m[8];
+    center[1] = m[13] + local2[0] * m[1] + local2[1] * m[5] + local2[2] * m[9];
+    center[2] = m[14] + local2[0] * m[2] + local2[1] * m[6] + local2[2] * m[10];
+    this.boundingSphere.center = center;
+  }
 };
 
 // ../../../../public/res/multilang/en-backup.js
@@ -13898,7 +14253,7 @@ struct InstanceData {
 };
 
 struct Bones {
-  boneMatrices: array<mat4x4f, MAX_BONES>
+  boneMatrices: array<mat4x4f>
 }
 
 struct VertexAnimParams {
@@ -13938,7 +14293,8 @@ struct VertexAnimParams {
 
 @group(0) @binding(0) var<uniform>      scene      : Scene;
 @group(1) @binding(0) var<storage,read> instances  : array<InstanceData>;
-@group(1) @binding(1) var<uniform>      bones      : Bones;
+// @group(1) @binding(1) var<uniform>      bones      : Bones;
+@group(1) @binding(1) var<storage, read> bones : Bones;
 @group(1) @binding(2) var<uniform>      vertexAnim : VertexAnimParams;
 
 
@@ -13971,17 +14327,40 @@ fn noise(p: vec2f) -> f32 {
   );
 }
 
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> SkinResult {
+//   var skinnedPos  = vec4f(0.0);
+//   var skinnedNorm = vec3f(0.0);
+//   for (var i: u32 = 0u; i < 4u; i++) {
+//     let w = weights[i];
+//     if (w > 0.0) {
+//       let boneMat  = bones.boneMatrices[joints[i]];
+//       skinnedPos  += (boneMat * pos) * w;
+//       skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+//     }
+//   }
+//   return SkinResult(skinnedPos, skinnedNorm);
+// }
+
+fn skinVertex( pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
   var skinnedPos  = vec4f(0.0);
   var skinnedNorm = vec3f(0.0);
+  let bonesPerInstance = MAX_BONES;
   for (var i: u32 = 0u; i < 4u; i++) {
     let w = weights[i];
     if (w > 0.0) {
-      let boneMat  = bones.boneMatrices[joints[i]];
-      skinnedPos  += (boneMat * pos) * w;
-      skinnedNorm += (mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz) * nrm) * w;
+      let jointIndex = joints[i];
+      let boneIndex = instId * bonesPerInstance + jointIndex;
+      let boneMat = bones.boneMatrices[boneIndex];
+      skinnedPos += (boneMat * pos) * w;
+
+      skinnedNorm += ( mat3x3f(
+          boneMat[0].xyz,
+          boneMat[1].xyz,
+          boneMat[2].xyz) * nrm
+      ) * w;
     }
   }
+
   return SkinResult(skinnedPos, skinnedNorm);
 }
 
@@ -14074,7 +14453,8 @@ fn main(
 ) -> @builtin(position) vec4f {
 
   // Skinning
-  let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  // let skinned  = skinVertex(vec4f(position, 1.0), normal, joints, weights);
+  let skinned = skinVertex(  vec4f(position, 1.0),  normal,  joints,  weights,  instId);
   var finalPos = skinned.position.xyz;
 
   // Vertex animation
@@ -14452,7 +14832,6 @@ var SpotLight = class {
   far;
   innerCutoff;
   outerCutoff;
-  // spotlightUniformBuffer;
   // Dirty flags
   _dirty = true;
   // VP matrix needs recompute (position/target changed)
@@ -14462,6 +14841,7 @@ var SpotLight = class {
     return this._position;
   }
   setPosition(x2, y2, z) {
+    if (this._position[0] === x2 && this._position[1] === y2 && this._position[2] === z) return;
     this._position[0] = x2;
     this._position[1] = y2;
     this._position[2] = z;
@@ -14469,6 +14849,7 @@ var SpotLight = class {
     this._lightBufferDirty = true;
   }
   setPositionVec(v) {
+    if (vec3Impl.equals(v, this._position)) return;
     vec3Impl.copy(v, this._position);
     this._dirty = true;
     this._lightBufferDirty = true;
@@ -14477,11 +14858,13 @@ var SpotLight = class {
     return this._target;
   }
   setTargetVec(v) {
+    if (vec3Impl.equals(v, this._target)) return;
     vec3Impl.copy(v, this._target);
     this._dirty = true;
     this._lightBufferDirty = true;
   }
   setTarget(x2, y2, z) {
+    if (this._target[0] === x2 && this._target[1] === y2 && this._target[2] === z) return;
     this._target[0] = x2;
     this._target[1] = y2;
     this._target[2] = z;
@@ -14489,22 +14872,28 @@ var SpotLight = class {
     this._lightBufferDirty = true;
   }
   setTargetX(x2) {
+    if (this._target[0] === x2) return;
     this._target[0] = x2;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
   setTargetY(y2) {
+    if (this._target[1] === y2) return;
     this._target[1] = y2;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
   setTargetZ(z) {
+    if (this._target[2] === z) return;
     this._target[2] = z;
     this._dirty = true;
     this._lightBufferDirty = true;
   }
   constructor(camera, inputHandler, device2, indexx, shadowPassView = null, shadowSampler = null, fov = 175, aspect = 1, near = 0.1, far = 100) {
-    aspect = 1;
+    if (fov <= 0 || fov >= 180) throw new Error("FOV must be between 0 and 180 degrees");
+    if (near >= far) throw new Error("near must be less than far");
+    if (near <= 0) throw new Error("near must be positive");
+    if (far <= 0) throw new Error("far must be positive");
     this.name = "light" + indexx;
     this.getName = () => {
       return this.name;
@@ -14521,15 +14910,8 @@ var SpotLight = class {
     this._target = vec3Impl.create(0, 0, -20);
     this.up = vec3Impl.create(0, 0, -1);
     this.direction = vec3Impl.create();
-    this.intensity = 1;
+    this.intensity = 20;
     this.color = vec3Impl.create(1, 1, 1);
-    this.viewMatrix = mat4Impl.lookAt(this._position, this._target, this.up);
-    this.projectionMatrix = mat4Impl.perspective(
-      this.fov,
-      this.aspect,
-      this.near,
-      this.far
-    );
     this._lightBuffer = new Float32Array(36);
     this._diffScratch = vec3Impl.create();
     this._dirScratch = vec3Impl.create();
@@ -14543,24 +14925,23 @@ var SpotLight = class {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.setProjection = function(fov2 = 175, aspect2 = 1, near2 = 0.1, far2 = 200) {
-      this.projectionMatrix = mat4Impl.perspective(fov2, aspect2, near2, far2);
+      if (fov2 <= 0 || fov2 >= 180) throw new Error("FOV must be between 0 and 180 degrees");
+      if (near2 >= far2) throw new Error("near must be less than far");
+      this.projectionMatrix = mat4Impl.perspective(fov2, 1, near2, far2);
       this._dirty = true;
     };
     this.updateProjection = function() {
-      console.log("test ", this.fov, this.aspect, this.near, this.far);
-      this.projectionMatrix = mat4Impl.perspective(this.fov, this.aspect, this.near, this.far);
+      this.projectionMatrix = mat4Impl.perspective(this.fov, 1, this.near, this.far);
       this._dirty = true;
     };
     this.device = device2;
+    this.viewMatrix = mat4Impl.lookAt(this._position, this._target, this.up);
+    this.projectionMatrix = mat4Impl.perspective(this.fov, 1, this.near, this.far);
     this.viewProjMatrix = mat4Impl.multiply(this.projectionMatrix, this.viewMatrix);
-    this.fov = fov;
-    this.aspect = aspect;
-    this.near = near;
-    this.far = far;
     this.innerCutoff = Math.cos(Math.PI / 180 * 20);
     this.outerCutoff = Math.cos(Math.PI / 180 * 30);
     this.ambientFactor = 0.5;
-    this.range = 20;
+    this.range = 70;
     this.shadowBias = 0.01;
     this.SHADOW_RES = MEConfig.SHADOW_RES;
     this.primitive = {
@@ -14571,7 +14952,7 @@ var SpotLight = class {
     this.shadowTextureView = shadowPassView;
     this.shadowSampler = shadowSampler;
     this.renderPassDescriptor = {
-      label: "descriptor shadowPass[SpotLigth]",
+      label: "descriptor shadowPass[SpotLight]",
       colorAttachments: [],
       depthStencilAttachment: {
         view: this.shadowTextureView,
@@ -14608,7 +14989,7 @@ var SpotLight = class {
       label: "modelBindGroupLayout light [skinned][instanced]",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
       ]
@@ -14744,7 +15125,7 @@ var SpotLight = class {
     this.behavior = new Behavior();
     this.updater = [];
   }
-  // ─── Update ───────────────────────────────────────────────────────────────
+  // ─── Update ───────────────────────────────────────────────────────────
   /**
    * Recomputes VP matrix only when dirty.
    * Does NOT call writeBuffer — that is batched in updateLights().
@@ -14817,7 +15198,7 @@ var SpotLight = class {
     this._lightBufferDirty = true;
   };
   setIntensity = (intensity) => {
-    this.intensity = intensity;
+    this.intensity = intensity * 10;
     this._lightBufferDirty = true;
   };
   setColor = (color) => {
@@ -14828,12 +15209,12 @@ var SpotLight = class {
     this.color[0] = colorR;
     this._lightBufferDirty = true;
   };
-  setColorB = (colorB) => {
-    this.color[1] = colorB;
+  setColorG = (colorG) => {
+    this.color[1] = colorG;
     this._lightBufferDirty = true;
   };
-  setColorG = (colorG) => {
-    this.color[2] = colorG;
+  setColorB = (colorB) => {
+    this.color[2] = colorB;
     this._lightBufferDirty = true;
   };
   setRange = (range) => {
@@ -18884,24 +19265,22 @@ fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
   return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 }
 
-fn computeSpotLight2(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
-  let NdotL = max(dot(N, L), 0.0);
-  if (NdotL <= 0.0) {
-      return vec3f(0.0);
-  }
-  return material.baseColor * light.color * light.intensity * NdotL;
-}
-
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-  let L = normalize(light.position - fragPos);
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
   let NdotL = max(dot(N, L), 0.0);
+
   let theta = dot(L, normalize(-light.direction));
   let epsilon = light.innerCutoff - light.outerCutoff;
   var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
   if (coneAtten <= 0.0 || NdotL <= 0.0) {
-      return vec3f(0.0);
+    return vec3f(0.0);
   }
+
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation;
 
   let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
   let H = normalize(L + V);
@@ -18927,8 +19306,8 @@ fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, materi
   let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
   let diffuse = kD * material.baseColor.rgb / PI;
 
-  let radiance = light.color * light.intensity;
-  return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let radiance = light.color * light.intensity * attenuation2;
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -19874,23 +20253,10 @@ struct Scene {
   lightPos: vec3f,
 }
 
-struct Model {
-  modelMatrix: mat4x4f,
-}
-
-struct Bones {
-  boneMatrices : array<mat4x4f, MAX_BONES>
-}
-
-struct SkinResult {
-  position : vec4f,
-  normal   : vec3f,
-};
-
-struct InstanceData {
-    model     : mat4x4<f32>,
-    colorMult : vec4<f32>,
-};
+struct Model {modelMatrix: mat4x4f}
+struct Bones {boneMatrices : array<mat4x4f>}
+struct SkinResult {position: vec4f, normal: vec3f};
+struct InstanceData {model: mat4x4<f32>, colorMult : vec4<f32>};
 
 struct VertexAnimParams {
   time: f32,
@@ -19929,7 +20295,7 @@ struct VertexAnimParams {
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(2) @binding(0) var<storage, read> instances : array<InstanceData>;
-@group(2) @binding(1) var<uniform> bones : Bones;
+@group(2) @binding(1) var<storage, read> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 @group(2) @binding(3) var<uniform> uvScale: vec2f;
 
@@ -19949,46 +20315,23 @@ struct VertexOutput {
   @builtin(position) Position: vec4f,
 }
 
-// fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
-//     var skinnedPos  = vec4f(0.0);
-//     var skinnedNorm = vec3f(0.0);
-//     for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-//         let jointIndex = joints[i];
-//         let w = weights[i];
-//         if (w > 0.0) {
-//             let boneMat = bones.boneMatrices[instId * MAX_BONES + jointIndex]; // \u2190 offset by instance
-//             skinnedPos  += (boneMat * pos) * w;
-//             let boneMat3 = mat3x3f(
-//                 boneMat[0].xyz,
-//                 boneMat[1].xyz,
-//                 boneMat[2].xyz
-//             );
-//             skinnedNorm += (boneMat3 * nrm) * w;
-//         }
-//     }
-//     return SkinResult(skinnedPos, skinnedNorm);
-// }
-
-fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
-    var skinnedPos  = vec4f(0.0);
-    var skinnedNorm = vec3f(0.0);
-    for (var i: u32 = 0u; i < 4u; i = i + 1u) {
-        let jointIndex = joints[i];
-        let w = weights[i];
-        if (w > 0.0) {
-            let boneMat = bones.boneMatrices[jointIndex]; // \u2190 no instId offset
-            skinnedPos  += (boneMat * pos) * w;
-            let boneMat3 = mat3x3f(
-                boneMat[0].xyz,
-                boneMat[1].xyz,
-                boneMat[2].xyz
-            );
-            skinnedNorm += (boneMat3 * nrm) * w;
-        }
+fn skinVertex( pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f, instId: u32) -> SkinResult {
+  var skinnedPos  = vec4f(0.0);
+  var skinnedNorm = vec3f(0.0);
+  let base = instId * MAX_BONES;
+  for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+    let jointIndex = joints[i];
+    let w = weights[i];
+    if (w > 0.0) {
+      let boneMat = bones.boneMatrices[base + jointIndex];
+      skinnedPos += (boneMat * pos) * w;
+      let boneMat3 = mat3x3f(boneMat[0].xyz, boneMat[1].xyz, boneMat[2].xyz);
+      skinnedNorm +=(boneMat3 * nrm) * w;
     }
-    return SkinResult(skinnedPos, skinnedNorm);
+  }
+  return SkinResult(skinnedPos, skinnedNorm);
 }
-    
+
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -20102,15 +20445,11 @@ fn main(
   @location(4) weights  : vec4<f32>,
   @builtin(instance_index) instId: u32
 ) -> VertexOutput {
-
   let inst = instances[instId];
-
   var output : VertexOutput;
   let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights, instId);
   let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
-
   let worldPos = inst.model * animated.position;
-
   let normalMatrix = mat3x3f(
     inst.model[0].xyz,
     inst.model[1].xyz,
@@ -20127,62 +20466,97 @@ fn main(
 }`;
 
 // ../../../shaders/standalone/geo.instanced.js
-var geoInstancedEffect = `struct Camera {
-  viewProjMatrix : mat4x4<f32>,
-};
-@group(0) @binding(0) var<uniform> camera : Camera;
+var geoInstancedEffect = () => `
+override shadowDepthTextureSize: f32;
 
-// --- INSTANCE STORAGE BUFFER ----------------------------------------------
-struct InstanceData {
-  model : mat4x4<f32>,
-  color : vec4<f32>,
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  
+    _pad            : f32,    
 };
+
+struct InstanceData {
+    model : mat4x4f,
+    color : vec4f,
+};
+
+// === FIXED TO DIRECT 64-BYTE MATRIX FOR THE STANDALONE CLASS ===
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<storage, read> instances : array<InstanceData>;
+@group(0) @binding(4) var<uniform> material : MaterialPBR;
 
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
-  @location(1) v_color : vec4<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
+    @location(4) instanceColor  : vec4f,
 };
 
 @vertex
-fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex: u32) -> VSOut {
-  var out : VSOut;
+fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex: u32) -> VertexOutput {
+    var out : VertexOutput;
+    
+    let modelMatrix = instances[instanceIndex].model;
+    let color = instances[instanceIndex].color;
+    
+    let worldPos = modelMatrix * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    
+    // Multiplied by raw camera matrix uniform directly
+    out.position = cameraViewProjMatrix * worldPos;
+    
+    // Auto-calculate surface normal direction dynamically
+    out.fragNorm = normalize(input.position);
+    
+    out.uv = input.uv;
+    out.instanceColor = color;
+    return out;
+}
 
-  // Use per-instance model matrix & color
-  let modelMatrix = instances[instanceIndex].model;
-  let color = instances[instanceIndex].color;
-
-  let worldPos = modelMatrix * vec4<f32>(input.position,1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  out.v_color = color;
-  return out;
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-  let dist = length(uv);
-  let glow = exp(-dist * 1.0);
-  let baseColor = vec3<f32>(0.2, 0.7, 1.0);
-  let glowColor = vec3<f32>(0.7, 0.9, 1.0);
-  let color = mix(baseColor, glowColor, glow) * glow * input.v_color.rgb;
-  let alpha = input.v_color.a;
-  return vec4<f32>(color, alpha);
+fn fsMain(input : VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
+    
+    let uv = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(uv);
+    let glow = exp(-dist * 1.0);
+    
+    let baseColor = vec3f(0.2, 0.7, 1.0);
+    let glowColor = vec3f(0.7, 0.9, 1.0);
+    
+    let finalColor = mix(baseColor, glowColor, glow) * glow * input.instanceColor.rgb;
+    let alpha = input.instanceColor.a;
+
+    return FragOut(
+        vec4f(finalColor, alpha), 
+        vec4f(N, 0.0),            
+        vec4f(input.fragPos, 1.0) 
+    );
 }
 `;
 
 // ../../../engine/effects/gen.js
 var GenGeo = class {
-  constructor(device2, format, type2 = "sphere", scale4 = 1) {
+  constructor(device2, format, type2 = "sphere", scale4 = 1, cameraBuffer) {
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = GeometryFactory.create(type2, scale4);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -20208,10 +20582,6 @@ var GenGeo = class {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
@@ -20234,7 +20604,7 @@ var GenGeo = class {
     });
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
       ]
     });
@@ -20245,7 +20615,7 @@ var GenGeo = class {
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: geoInstancedEffect });
+    const shaderModule = this.device.createShaderModule({ code: geoInstancedEffect() });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
       label: "geo gen Pipeline",
@@ -20254,28 +20624,32 @@ var GenGeo = class {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: {
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              },
+              alpha: {
+                srcFactor: "one",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              }
             }
-          }
-        }]
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
@@ -20318,53 +20692,76 @@ var GenGeo = class {
 
 // ../../../shaders/energy-bars/energy-bar-shader.js
 var hpBarEffectShaders = `
-struct Camera {
-  viewProj : mat4x4f
-};
 struct Model {
-  model : mat4x4f,
-  color : vec4f,
-  progress : f32,
+    model    : mat4x4f,       // 64 bytes (Offsets 0 - 63)
+    color    : vec4f,         // 16 bytes (Offsets 64 - 79)
+    progress : f32,           // 4 bytes  (Offsets 80 - 83)
+    pad1     : f32,           // 4 bytes  (Offsets 84 - 87)
+    pad2     : f32,           // 4 bytes  (Offsets 88 - 91)
+    pad3     : f32,           // 4 bytes  (Offsets 92 - 95) -> Total: Exactly 96 bytes!
 };
 
-@group(0) @binding(0) var<uniform> camera : Camera;
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
 @group(0) @binding(1) var<uniform> model : Model;
 
 struct VertexOutput {
-  @builtin(position) position : vec4f,
-  @location(0) uv : vec2f,
+    @builtin(position) position : vec4f,
+    @location(0) uv             : vec2f,
+    @location(1) fragPos        : vec3f,
 };
 
 @vertex
 fn vsMain(
-  @location(0) position : vec3f,
-  @location(1) uv : vec2f
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f
 ) -> VertexOutput {
-  var output : VertexOutput;
-  output.position = camera.viewProj * model.model * vec4f(position, 1.0);
-  output.uv = uv;
-  return output;
+    var output : VertexOutput;
+    let worldPos = model.model * vec4f(position, 1.0);
+    
+    output.position = cameraViewProjMatrix * worldPos;
+    output.uv = uv;
+    output.fragPos = worldPos.xyz;
+    
+    return output;
+}
+
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
 }
 
 @fragment
-fn fsMain(in : VertexOutput) -> @location(0) vec4f {
-  // simple left-to-right fill based on progress
-  if (in.uv.x > model.progress) {
-    return vec4f(0.1, 0.1, 0.1, 0.3); // empty (transparent gray)
-  }
-  return model.color; // filled
+fn fsMain(in : VertexOutput) -> FragOut {
+    let N = vec3f(0.0, 0.0, 1.0); 
+    var finalColor : vec4f;
+
+    if (in.uv.x > model.progress) {
+        finalColor = vec4f(0.1, 0.1, 0.1, 0.3); 
+    } else {
+        finalColor = model.color; 
+    }
+
+    return FragOut(
+        finalColor,
+        vec4f(N, 0.0),
+        vec4f(in.fragPos, 1.0)
+    );
 }
 `;
 
 // ../../../engine/effects/energy-bar.js
 var HPBarEffect = class {
-  constructor(device2, format) {
+  constructor(device2, format, cameraBuffer) {
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.progress = 1;
     this.color = [0.1, 0.9, 0.1, 1];
     this.offsetY = 48;
     this.enabled = true;
+    this._colorDirty = true;
+    this._progressDirty = true;
     this._modelMatrix = new Float32Array(16);
     this._colorScratch = new Float32Array(4);
     this._progressScratch = new Float32Array(1);
@@ -20372,20 +20769,20 @@ var HPBarEffect = class {
     this._initPipeline();
   }
   _initPipeline() {
-    const W = 40;
-    const H = 3;
+    const W = 20;
+    const H = 1.5;
     const vertexData = new Float32Array([
-      -0.5 * W,
-      0.5 * H,
+      -W,
+      H,
       0,
-      0.5 * W,
-      0.5 * H,
+      W,
+      H,
       0,
-      -0.5 * W,
-      -0.5 * H,
+      -W,
+      -H,
       0,
-      0.5 * W,
-      -0.5 * H,
+      W,
+      -H,
       0
     ]);
     const uvData = new Float32Array([
@@ -20401,33 +20798,36 @@ var HPBarEffect = class {
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
+    this.vertexBuffer.unmap();
     this.uvBuffer = this.device.createBuffer({
       size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
+    this.uvBuffer.unmap();
     this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+      size: 12,
+      // 6 indices * 2 bytes (Uint16)
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
+    this.indexBuffer.unmap();
+    this.indexCount = 6;
     this.modelBuffer = this.device.createBuffer({
-      size: 64 + 16 + 16,
+      size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     const bindGroupLayout = this.device.createBindGroupLayout({
       label: "energy-bar bindGroupLayout",
       entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
       ]
     });
     this.bindGroup = this.device.createBindGroup({
@@ -20447,35 +20847,55 @@ var HPBarEffect = class {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{ format: this.format }]
+        targets: [
+          { format: "rgba16float" },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
   setProgress(value) {
-    this.progress = Math.max(0, Math.min(1, value));
+    const clamped = value < 0 ? 0 : value > 1 ? 1 : value;
+    if (this.progress !== clamped) {
+      this.progress = clamped;
+      this._progressDirty = true;
+    }
   }
   setColor(r2, g, b, a = 1) {
-    this.color = [r2, g, b, a];
+    if (this.color[0] !== r2 || this.color[1] !== g || this.color[2] !== b || this.color[3] !== a) {
+      this.color[0] = r2;
+      this.color[1] = g;
+      this.color[2] = b;
+      this.color[3] = a;
+      this._colorDirty = true;
+    }
   }
   draw(pass, cameraMatrix, modelMatrix) {
-    this._colorScratch[0] = this.color[0];
-    this._colorScratch[1] = this.color[1];
-    this._colorScratch[2] = this.color[2];
-    this._colorScratch[3] = this.color[3];
-    this._progressScratch[0] = this.progress;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
-    this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
+    if (this._colorDirty) {
+      this._colorScratch[0] = this.color[0];
+      this._colorScratch[1] = this.color[1];
+      this._colorScratch[2] = this.color[2];
+      this._colorScratch[3] = this.color[3];
+      this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
+      this._colorDirty = false;
+    }
+    if (this._progressDirty) {
+      this._progressScratch[0] = this.progress;
+      this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
+      this._progressDirty = false;
+    }
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -20496,9 +20916,10 @@ var HPBarEffect = class {
 
 // ../../../engine/effects/mana-bar.js
 var MANABarEffect = class {
-  constructor(device2, format) {
+  constructor(device2, format, cameraBuffer) {
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     this.progress = 1;
     this.color = [0.1, 0.1, 0.9, 1];
     this.offsetY = 45;
@@ -20553,10 +20974,6 @@ var MANABarEffect = class {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.modelBuffer = this.device.createBuffer({
       size: 64 + 16 + 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -20583,14 +21000,14 @@ var MANABarEffect = class {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{ format: this.format }]
+        targets: [{ format: this.format }, { format: "rgba16float" }, { format: "rgba16float" }]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
@@ -20631,91 +21048,98 @@ var MANABarEffect = class {
 };
 
 // ../../../shaders/standalone/geo.tex.js
-var geoInstancedTexEffect = `
-// === CAMERA & INSTANCE BUFFERS ============================================
-struct Camera {
-  viewProjMatrix : mat4x4<f32>,
+var geoInstancedTexEffect = () => `
+override shadowDepthTextureSize: f32;
+
+struct MaterialPBR {
+    baseColorFactor : vec4f,
+    metallicFactor  : f32,
+    roughnessFactor : f32,
+    effectMix       : f32,
+    lightingEnabled : f32,
+    ambientColor    : vec3f,  
+    _pad            : f32,    
 };
-@group(0) @binding(0) var<uniform> camera : Camera;
 
 struct InstanceData {
-  model : mat4x4<f32>,
-  color : vec4<f32>,
+    model : mat4x4f,
+    color : vec4f,
 };
-@group(0) @binding(1) var<storage, read> instances : array<InstanceData>;
 
-// === TEXTURE & SAMPLER ====================================================
+// === CHANGED TO DIRECT 64-BYTE MATRIX TO MATCH YOUR FRAMEWORK BUFFER ===
+@group(0) @binding(0) var<uniform> cameraViewProjMatrix : mat4x4f;
+@group(0) @binding(1) var<storage, read> instances : array<InstanceData>;
 @group(0) @binding(2) var mySampler : sampler;
 @group(0) @binding(3) var myTexture : texture_2d<f32>;
 
-// === VERTEX STAGE =========================================================
 struct VertexInput {
-  @location(0) position : vec3<f32>,
-  @location(1) uv       : vec2<f32>,
+    @location(0) position : vec3f,
+    @location(1) uv       : vec2f,
 };
 
-struct VSOut {
-  @builtin(position) Position : vec4<f32>,
-  @location(0) v_uv : vec2<f32>,
-  @location(1) v_color : vec4<f32>,
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(1) fragPos        : vec3f,
+    @location(2) fragNorm       : vec3f,
+    @location(3) uv             : vec2f,
+    @location(4) instanceColor  : vec4f,
 };
 
 @vertex
-fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> VSOut {
-  var out : VSOut;
-  let inst = instances[instanceIndex];
+fn vsMain(input : VertexInput, @builtin(instance_index) instanceIndex : u32) -> VertexOutput {
+    var out : VertexOutput;
+    let inst = instances[instanceIndex];
 
-  let worldPos = inst.model * vec4<f32>(input.position, 1.0);
-  out.Position = camera.viewProjMatrix * worldPos;
-  out.v_uv = input.uv;
-  out.v_color = inst.color;
-  return out;
+    let worldPos = inst.model * vec4f(input.position, 1.0);
+    out.fragPos = worldPos.xyz;
+    
+    // Multiplied by raw camera matrix uniform directly
+    out.position = cameraViewProjMatrix * worldPos; 
+    
+    // Auto-calculate surface normal directions
+    out.fragNorm = normalize(input.position);
+    
+    out.uv = input.uv;
+    out.instanceColor = inst.color;
+    return out;
 }
 
-// === FRAGMENT STAGE =======================================================
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
 @fragment
-fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
+fn fsMain(input : VertexOutput) -> FragOut {
+    let N = normalize(input.fragNorm);
 
- // Adjust UV scaling and offset here
-  let uvScale = vec2<f32>(1.3, 1.3);   // < 1.0 = zoom out (more texture visible)
-  let uvOffset = vec2<f32>(0.01, 0.01); // move the texture slightly
-  
-  let adjustedUV = input.v_uv; // * uvScale + uvOffset; // make it like ring !
+    let adjustedUV = input.uv; 
+    let texColor = textureSample(myTexture, mySampler, adjustedUV);
 
-  let texColor = textureSample(myTexture, mySampler, adjustedUV);
+    let centeredUV = input.uv * 2.0 - vec2f(1.0, 1.0);
+    let dist = length(centeredUV);
+    let glow = exp(-dist * 1.2);
+    let glowColor = mix(vec3f(0.2, 0.7, 1.0), vec3f(0.8, 0.95, 1.0), glow);
 
-  let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-  let dist = length(uv);
-  let glow = exp(-dist * 1.2);
-  let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
+    let baseRGB = texColor.rgb * glowColor;
+    let tintedRGB = mix(baseRGB, input.instanceColor.rgb, 0.8);
+    let finalAlpha = texColor.a * input.instanceColor.a * glow;
 
-  let baseRGB = texColor.rgb * glowColor;
-  let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8);
-  let finalAlpha = texColor.a * input.v_color.a * glow;
-
-  return vec4<f32>(tintedRGB, finalAlpha);
-
-  // let texColor = textureSample(myTexture, mySampler, input.v_uv);
-
-  // let uv = input.v_uv * 2.0 - vec2<f32>(1.0, 1.0);
-  // let dist = length(uv);
-  // let glow = exp(-dist * 1.2);
-  // let glowColor = mix(vec3<f32>(0.2, 0.7, 1.0), vec3<f32>(0.8, 0.95, 1.0), glow);
-
-  // // More balanced color blending:
-  // let baseRGB = texColor.rgb * glowColor;
-  // let tintedRGB = mix(baseRGB, input.v_color.rgb, 0.8); // 0.8 gives strong tint influence
-  // let finalAlpha = texColor.a * input.v_color.a * glow;
-
-  // return vec4<f32>(tintedRGB, finalAlpha);
+    return FragOut(
+        vec4f(tintedRGB, finalAlpha), 
+        vec4f(N, 0.0),                
+        vec4f(input.fragPos, 1.0)     
+    );
 }
 `;
 
 // ../../../engine/effects/gen-tex.js
 var GenGeoTexture = class {
-  constructor(device2, format, type2 = "sphere", path2, scale4 = 1) {
+  constructor(device2, format, type2 = "sphere", path2, scale4 = 1, cameraBuffer) {
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = GeometryFactory.create(type2, scale4);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -20772,10 +21196,6 @@ var GenGeoTexture = class {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.maxInstances = 5;
@@ -20813,7 +21233,7 @@ var GenGeoTexture = class {
         { binding: 3, resource: this.texture.createView() }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect });
+    const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect() });
     const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
       label: "gen-geo-tex pipeline",
@@ -20822,28 +21242,32 @@ var GenGeoTexture = class {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: {
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              },
+              alpha: {
+                srcFactor: "one",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
+              }
             }
-          }
-        }]
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
@@ -20897,9 +21321,10 @@ var GenGeoTexture = class {
 
 // ../../../engine/effects/gen-tex2.js
 var GenGeoTexture2 = class {
-  constructor(device2, format, type2 = "sphere", path2, scale4 = 1) {
+  constructor(device2, format, type2 = "sphere", path2, scale4 = 1, cameraBuffer) {
     this.device = device2;
     this.format = format;
+    this.cameraBuffer = cameraBuffer;
     const geom = GeometryFactory.create(type2, scale4);
     this.vertexData = geom.positions;
     this.uvData = geom.uvs;
@@ -20908,34 +21333,36 @@ var GenGeoTexture2 = class {
     this.rotateEffect = true;
     this.rotateEffectSpeed = 10;
     this.rotateAngle = 0;
+    this.isDirty = true;
+    this.cameraMatrixDirty = false;
+    this.lastCameraMatrix = new Float32Array(16);
+    this.tempLocalMatrix = mat4Impl.identity();
+    this.isCameraInitialized = false;
+    this.localMatrix = mat4Impl.identity();
+    this.finalMatrix = mat4Impl.identity();
     this.loadTexture(path2).then(() => {
       this._initPipeline();
     });
   }
   async loadTexture(url) {
-    return new Promise(async (resolve, reject) => {
-      const img = await fetch(url).then((r2) => r2.blob()).then(createImageBitmap);
-      const texture = this.device.createTexture({
-        size: [img.width, img.height, 1],
-        format: "rgba16float",
-        // "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      this.device.queue.copyExternalImageToTexture(
-        { source: img },
-        { texture },
-        [img.width, img.height]
-      );
-      const sampler = this.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear",
-        addressModeU: "repeat",
-        addressModeV: "repeat"
-      });
-      this.texture = texture;
-      this.sampler = sampler;
-      resolve();
+    const img = await fetch(url).then((r2) => r2.blob()).then(createImageBitmap);
+    const texture = this.device.createTexture({
+      size: [img.width, img.height, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
     });
+    this.device.queue.copyExternalImageToTexture(
+      { source: img },
+      { texture },
+      [img.width, img.height]
+    );
+    this.sampler = this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "repeat",
+      addressModeV: "repeat"
+    });
+    this.texture = texture;
   }
   _initPipeline() {
     const { vertexData, uvData, indexData } = this;
@@ -20955,22 +21382,20 @@ var GenGeoTexture2 = class {
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
     if (indexData.byteLength !== alignedIndexSize) {
-      const tmp = new Uint8Array(alignedIndexSize);
-      tmp.set(new Uint8Array(indexData.buffer));
-      this.device.queue.writeBuffer(this.indexBuffer, 0, tmp);
+      const paddedIndexData = new Uint8Array(alignedIndexSize);
+      paddedIndexData.set(new Uint8Array(indexData.buffer));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedIndexData);
     } else {
       this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     }
     this.indexCount = indexData.length;
-    this.cameraBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
+    this.maxInstances = 50;
     this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
+    this.floatsPerInstance = 20;
+    this.lastFrameTime = performance.now();
+    this.frameTimeMs = 16;
     for (let x2 = 0; x2 < this.maxInstances; x2++) {
       this.instanceTargets.push({
         index: x2,
@@ -20978,24 +21403,29 @@ var GenGeoTexture2 = class {
         currentPosition: [0, 0, 0],
         scale: [1, 1, 1],
         currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1, 0.4]
+        color: [0.6, 0.8, 1, 0.9],
+        rotation: [0, 0, 0],
+        isDirty: true
       });
     }
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+    this.instanceData = new Float32Array(this.maxInstances * this.floatsPerInstance);
     this.modelBuffer = this.device.createBuffer({
-      size: Math.ceil(this.instanceData.byteLength / 4) * 4,
+      label: "geo-texture modelBuffer",
+      size: this.instanceData.byteLength * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
+      label: "geo-texture bindGroupLayout",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
         { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
         { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} }
       ]
     });
     this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+      label: "geo-texture bindGroup",
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } },
@@ -21003,8 +21433,8 @@ var GenGeoTexture2 = class {
         { binding: 3, resource: this.texture.createView() }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect() });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
     this.pipeline = this.device.createRenderPipeline({
       label: "geo tex 2 Pipeline",
       layout: pipelineLayout,
@@ -21012,81 +21442,100 @@ var GenGeoTexture2 = class {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
             }
-          }
-        }]
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
     });
   }
+  updateInstanceCount(newCount) {
+    if (newCount > this.maxInstances) {
+      console.warn("Count exceeds maxInstances...");
+      return false;
+    }
+    this.instanceCount = Math.max(0, newCount);
+  }
   updateInstanceData = (baseModelMatrix) => {
     if (!this.instanceData) return;
-    if (this.rotateEffect) {
-      this.rotateAngle = (this.rotateAngle ?? 0) + this.rotateEffectSpeed;
-      if (this.rotateAngle >= 360) {
-        this.rotateAngle = 0;
-      }
-    }
+    const now = performance.now();
+    const deltaTime = (now - this.lastFrameTime) / 1e3;
+    this.lastFrameTime = now;
     const count = Math.min(this.instanceCount, this.maxInstances);
+    let anyInstanceDirty = this.isDirty;
     for (let i = 0; i < count; i++) {
       const t = this.instanceTargets[i];
+      if (this.rotateEffect) {
+        t.rotation[1] += this.rotateEffectSpeed * Math.PI / 180 * deltaTime;
+        anyInstanceDirty = true;
+      }
+      const frameAwareLerpSpeed = this.lerpSpeed * Math.min(deltaTime * 60, 1);
       for (let j = 0; j < 3; j++) {
-        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.lerpSpeed;
-        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * this.lerpSpeed;
+        const prevPos = t.currentPosition[j];
+        t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * frameAwareLerpSpeed;
+        t.currentScale[j] += (t.scale[j] - t.currentScale[j]) * frameAwareLerpSpeed;
+        if (Math.abs(t.currentPosition[j] - prevPos) > 1e-4) anyInstanceDirty = true;
       }
-      const local2 = mat4Impl.identity();
-      if (this.rotateEffect == true) {
-        mat4Impl.rotateY(local2, this.rotateAngle, local2);
+      if (anyInstanceDirty) {
+        mat4Impl.identity(this.tempLocalMatrix);
+        mat4Impl.translate(this.tempLocalMatrix, t.currentPosition, this.tempLocalMatrix);
+        mat4Impl.rotateX(this.tempLocalMatrix, t.rotation[0], this.tempLocalMatrix);
+        mat4Impl.rotateY(this.tempLocalMatrix, t.rotation[1], this.tempLocalMatrix);
+        mat4Impl.rotateZ(this.tempLocalMatrix, t.rotation[2], this.tempLocalMatrix);
+        mat4Impl.scale(this.tempLocalMatrix, t.currentScale, this.tempLocalMatrix);
+        mat4Impl.multiply(baseModelMatrix, this.tempLocalMatrix, this.finalMatrix);
+        const offset = i * this.floatsPerInstance;
+        this.instanceData.set(this.finalMatrix, offset);
+        this.instanceData.set(t.color, offset + 16);
       }
-      mat4Impl.translate(local2, t.currentPosition, local2);
-      mat4Impl.scale(local2, t.currentScale, local2);
-      const finalMat = mat4Impl.identity();
-      mat4Impl.multiply(baseModelMatrix, local2, finalMat);
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(finalMat, offset);
-      this.instanceData.set(t.color, offset + 16);
     }
-    const activeFloatCount = count * this.floatsPerInstance;
-    const activeBytes = activeFloatCount * 4;
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, activeFloatCount));
+    if (anyInstanceDirty) {
+      this.isDirty = false;
+      this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
+    }
   };
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.instanceCount);
-  }
   render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
+    if (!this.pipeline) return;
+    this.updateInstanceData(mesh.modelMatrix);
+    if (!this.isCameraInitialized || !this._matricesEqual(this.lastCameraMatrix, viewProjMatrix)) {
+      this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+      this.lastCameraMatrix.set(viewProjMatrix);
+      this.isCameraInitialized = true;
+    }
+    transPass.setPipeline(this.pipeline);
+    transPass.setBindGroup(0, this.bindGroup);
+    transPass.setVertexBuffer(0, this.vertexBuffer);
+    transPass.setVertexBuffer(1, this.uvBuffer);
+    transPass.setIndexBuffer(this.indexBuffer, "uint16");
+    transPass.drawIndexed(this.indexCount, this.instanceCount);
+  }
+  _matricesEqual(m1, m2) {
+    for (let i = 0; i < 16; i++) {
+      if (Math.abs(m1[i] - m2[i]) > 1e-4) return false;
+    }
+    return true;
   }
 };
 
 // ../../../engine/instanced/mesh-obj-instances.js
 var MEMeshObjInstances = class extends MaterialsInstanced {
-  constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null) {
+  constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
     super(device2, o2.material, _glbFile, o2.textureCache);
     if (typeof o2.name === "undefined") o2.name = genName(3);
     if (typeof o2.raycast === "undefined") {
@@ -21100,10 +21549,12 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     this.canvas = canvas;
     this.device = device2;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.entityArgPass = o2.entityArgPass;
     this.clearColor = "red";
     this.video = null;
     this.dontDrag = true;
+    this.ignoreCulling = false;
     this.FINISH_VIDIO_INIT = false;
     this.globalAmbient = [...globalAmbient];
     this.useScale = o2.useScale || false;
@@ -21122,6 +21573,12 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     this._defaultColor = new Float32Array([1, 1, 1, 1]);
     this._camVP = mat4Impl.create();
     this.buildPipelineBucketsEvent = new CustomEvent("update-pipeine-buckets", {});
+    this.instanceTargets = [];
+    this.lerpSpeed = 0.05;
+    this.lerpSpeedAlpha = 0.05;
+    this.maxInstances = 5;
+    this.instanceCount = 1;
+    this.floatsPerInstance = 16 + 4;
     if (typeof o2.material.useTextureFromGlb === "undefined" || typeof o2.material.useTextureFromGlb !== "boolean") {
       o2.material.useTextureFromGlb = false;
     }
@@ -21336,7 +21793,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     }
     this.runProgram = () => {
       return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 512;
+        this.shadowDepthTextureSize = MEConfig.SHADOW_RES;
         this.modelViewProjectionMatrix = mat4Impl.create();
         this.loadTex0(this.texturesPaths).then(() => {
           resolve(this);
@@ -21463,12 +21920,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
         ]
       });
-      this.instanceTargets = [];
-      this.lerpSpeed = 0.05;
-      this.lerpSpeedAlpha = 0.05;
-      this.maxInstances = 5;
-      this.instanceCount = 2;
-      this.floatsPerInstance = 16 + 4;
       for (let x2 = 0; x2 < this.maxInstances; x2++) {
         this.instanceTargets.push({
           index: x2,
@@ -21527,6 +21978,13 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           return;
         }
         this.instanceCount = newCount;
+        this.rebuildInstanceSkeletons();
+        const boneBufferSize2 = this.maxInstances * this.MAX_BONES * 64;
+        this.bonesBuffer = device2.createBuffer({
+          label: "bonesBuffer",
+          size: boneBufferSize2,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device2.createBuffer({
           label: "instanceBuffer in bvh mesh [instanced]",
@@ -21572,7 +22030,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       };
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
-        // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
@@ -21583,21 +22040,24 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
         ]
       });
-      function alignTo2562(n2) {
+      function alignTo256(n2) {
         return Math.ceil(n2 / 256) * 256;
       }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      const TRAIL_INSTANCES = 10;
-      const BYTES_ONE_SKELETON = this.MAX_BONES * 16 * 4;
-      const BYTES_PER_INSTANCE = alignTo2562(64 * this.MAX_BONES);
+      console.log("maxInstances", MEConfig.MAX_BONES);
+      console.log(
+        "INIT",
+        this.maxInstances,
+        this.instanceCount
+      );
+      const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
-        size: 64e3,
-        // BYTES_ONE_SKELETON, // 64000, //BYTES_PER_INSTANCE * TRAIL_INSTANCES,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        size: boneBufferSize,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
       });
-      const bones = new Float32Array(this.MAX_BONES * 16 * TRAIL_INSTANCES);
-      for (let i = 0; i < this.MAX_BONES * TRAIL_INSTANCES; i++) {
+      const bones = new Float32Array(this.MAX_BONES * 16 * this.maxInstances);
+      for (let i = 0; i < this.MAX_BONES * this.maxInstances; i++) {
         bones.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], i * 16);
       }
       this.device.queue.writeBuffer(this.bonesBuffer, 0, bones);
@@ -21798,32 +22258,32 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = "rgba16float";
         if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
-          this.effects.pointer = new PointerEffect(device2, pf, this, true);
+          this.effects.pointer = new PointerEffect(device2, pf, 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.ballEffect !== "undefined" && this.pointerEffect.ballEffect == true) {
-          this.effects.ballEffect = new GenGeo(device2, pf, "sphere");
+          this.effects.ballEffect = new GenGeo(device2, pf, "sphere", 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.energyBar !== "undefined" && this.pointerEffect.energyBar == true) {
-          this.effects.energyBar = new HPBarEffect(device2, pf);
-          this.effects.manaBar = new MANABarEffect(device2, pf);
+          this.effects.energyBar = new HPBarEffect(device2, pf, this.cameraBuffer);
+          this.effects.manaBar = new MANABarEffect(device2, pf, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
-          this.effects.flameEffect = new FlameEffect(device2, pf);
+          this.effects.flameEffect = new FlameEffect(device2, pf, pf, void 0, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
-          this.effects.pointEffect = new PointEffect(device2, pf);
+          this.effects.pointEffect = new PointEffect(device2, pf, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
-          this.effects.flameEmitter = new FlameEmitter(device2, pf);
+          this.effects.flameEmitter = new FlameEmitter(device2, pf, 20, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.circlePlane !== "undefined" && this.pointerEffect.circlePlane == true) {
-          this.effects.circlePlane = new GenGeo(device2, pf, "circlePlane");
+          this.effects.circlePlane = new GenGeo(device2, pf, "circlePlane", 1, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.circlePlaneTex !== "undefined" && this.pointerEffect.circlePlaneTex == true) {
-          this.effects.circlePlaneTex = new GenGeoTexture(device2, pf, "ring", this.pointerEffect.circlePlaneTexPath);
+          this.effects.circlePlaneTex = new GenGeoTexture(device2, pf, "ring", this.pointerEffect.circlePlaneTexPath, void 0, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.circle !== "undefined" && this.pointerEffect.circlePlaneTexPath !== "undefined") {
-          this.effects.circle = new GenGeoTexture2(device2, pf, "circle2", this.pointerEffect.circlePlaneTexPath);
+          this.effects.circle = new GenGeoTexture2(device2, pf, "circle2", this.pointerEffect.circlePlaneTexPath, 1, this.cameraBuffer);
         }
       }
       this.getModelMatrix = (pos2, useScale = false) => {
@@ -22111,12 +22571,51 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       shadowPass.drawIndexed(this.indexCount);
     }
   };
+  initBoundingSphere() {
+    if (!this.mesh || !this.mesh.vertices) return;
+    const pos2 = this.mesh.vertices;
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (let i = 0; i < pos2.length; i += 3) {
+      minX = Math.min(minX, pos2[i]);
+      maxX = Math.max(maxX, pos2[i]);
+      minY = Math.min(minY, pos2[i + 1]);
+      maxY = Math.max(maxY, pos2[i + 1]);
+      minZ = Math.min(minZ, pos2[i + 2]);
+      maxZ = Math.max(maxZ, pos2[i + 2]);
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    let r2 = 0;
+    for (let i = 0; i < pos2.length; i += 3) {
+      const dx = pos2[i] - cx;
+      const dy = pos2[i + 1] - cy;
+      const dz = pos2[i + 2] - cz;
+      r2 = Math.max(r2, Math.sqrt(dx * dx + dy * dy + dz * dz));
+    }
+    this.boundingSphere = {
+      center: new Float32Array([cx, cy, cz]),
+      radius: r2
+    };
+  }
+  updateBoundingSphere() {
+    if (!this.boundingSphere) return;
+    const local2 = this.boundingSphere.center;
+    const m = this.modelMatrix;
+    const center = new Float32Array(3);
+    center[0] = m[12] + local2[0] * m[0] + local2[1] * m[4] + local2[2] * m[8];
+    center[1] = m[13] + local2[0] * m[1] + local2[1] * m[5] + local2[2] * m[9];
+    center[2] = m[14] + local2[0] * m[2] + local2[1] * m[6] + local2[2] * m[10];
+    this.boundingSphere.center = center;
+  }
 };
 
 // ../../../engine/loaders/bvh-instaced.js
 var BVHPlayerInstances = class extends MEMeshObjInstances {
-  constructor(o2, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device2, context, inputHandler, globalAmbient) {
-    super(canvas, device2, context, o2, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex);
+  constructor(o2, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device2, context, inputHandler, globalAmbient, cameraBuffer) {
+    super(canvas, device2, context, o2, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex, cameraBuffer);
     this.bvh = {};
     this.glb = glb;
     this.currentFrame = 0;
@@ -22167,12 +22666,30 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     this.inverseBindMatrices = [];
     this.initInverseBindMatrices();
     this.makeSkeletal();
+    this.rebuildInstanceSkeletons();
     this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = mat4Impl.create();
     this.buildNodeChannelMap();
     this.buildSortedNodes();
     this.initNodeOriginals();
+  }
+  rebuildInstanceSkeletons() {
+    this.instanceNodes = [];
+    this.instanceBoneMatrices = [];
+    for (let i = 0; i < this.instanceCount; i++) {
+      const clonedNodes = this.nodes.map((n2) => ({
+        ...n2,
+        translation: n2.translation ? new Float32Array(n2.translation) : new Float32Array([0, 0, 0]),
+        rotation: n2.rotation ? new Float32Array(n2.rotation) : new Float32Array([0, 0, 0, 1]),
+        scale: n2.scale ? new Float32Array(n2.scale) : new Float32Array([1, 1, 1]),
+        transform: n2.transform ? new Float32Array(n2.transform) : mat4Impl.identity(),
+        worldMatrix: mat4Impl.create(),
+        inverseBindMatrix: n2.inverseBindMatrix ? new Float32Array(n2.inverseBindMatrix) : null
+      }));
+      this.instanceNodes.push(clonedNodes);
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
+    }
   }
   initNodeOriginals() {
     for (let j = 0; j < this.skeleton.length; j++) {
@@ -22286,6 +22803,25 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       }
     }
   }
+  initInstanceSkeletons() {
+    this.instanceNodes = [];
+    this.instanceBoneMatrices = [];
+    for (let i = 0; i < this.instanceCount; i++) {
+      const clonedNodes = this.nodes.map((n2) => ({
+        ...n2,
+        translation: n2.translation ? new Float32Array(n2.translation) : new Float32Array([0, 0, 0]),
+        rotation: n2.rotation ? new Float32Array(n2.rotation) : new Float32Array([0, 0, 0, 1]),
+        scale: n2.scale ? new Float32Array(n2.scale) : new Float32Array([1, 1, 1]),
+        transform: n2.transform ? new Float32Array(n2.transform) : mat4Impl.identity(),
+        worldMatrix: mat4Impl.create(),
+        inverseBindMatrix: n2.inverseBindMatrix ? new Float32Array(n2.inverseBindMatrix) : null
+      }));
+      this.instanceNodes.push(clonedNodes);
+      this.instanceBoneMatrices.push(
+        new Float32Array(this.MAX_BONES * 16)
+      );
+    }
+  }
   initInverseBindMatrices(skinIndex = 0) {
     const skin = this.glb.skins[skinIndex];
     const invBindAccessorIndex = skin.inverseBindMatrices;
@@ -22365,18 +22901,22 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        if (this.animationIndex == null) this.animationIndex = 0;
-        window.dispatchEvent(this.glbAnimEvents["animEndEvent" + capturedIndex]);
+        if (this.animationIndex == null) {
+          this.animationIndex = 0;
+        }
+        window.dispatchEvent(
+          this.glbAnimEvents["animEndEvent" + capturedIndex]
+        );
       }, inTime * 1200);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
-      if (this.sharedBones) {
+      if (this.sharedBones === true) {
         const currentTime = now / this.animationSpeed - this.startTime;
         this.updateSingleBoneCubeAnimation(
           this.glb.glbJsonData.animations[this.animationIndex],
-          this.nodes,
+          this.instanceNodes[0],
           currentTime,
-          this._boneMatrices,
+          this.instanceBoneMatrices[0],
           0
         );
       } else {
@@ -22385,9 +22925,9 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
           const currentTime = (now - timeOffsetMs) / this.animationSpeed - this.startTime;
           this.updateSingleBoneCubeAnimation(
             this.glb.glbJsonData.animations[this.animationIndex],
-            this.nodes,
+            this.instanceNodes[i],
             currentTime,
-            this._boneMatrices,
+            this.instanceBoneMatrices[i],
             i
           );
         }
@@ -22621,7 +23161,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     out[2] = s0 * az + s1 * bz;
     out[3] = s0 * aw + s1 * bw;
   }
-  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 1) {
+  updateSingleBoneCubeAnimation(glbAnimation, nodes, time, boneMatrices, instanceIndex = 0) {
     const animTime = time % this._animationLength;
     const skeleton = this.skeleton;
     for (let j = 0; j < skeleton.length; j++) {
@@ -22638,10 +23178,10 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-        let i = channel._lastKeyIndex;
-        if (inputTimes[i] > animTime) i = 0;
-        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
+        let i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) {
+          i++;
+        }
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
@@ -22658,10 +23198,10 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-        let i = channel._lastKeyIndex;
-        if (inputTimes[i] > animTime) i = 0;
-        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
+        let i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) {
+          i++;
+        }
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
@@ -22678,10 +23218,10 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         const inputTimes = channel._inputTimes;
         const outputArray = channel._outputArray;
         const lastFrame = channel._lastFrame;
-        let i = channel._lastKeyIndex;
-        if (inputTimes[i] > animTime) i = 0;
-        while (i < lastFrame && inputTimes[i + 1] <= animTime) i++;
-        channel._lastKeyIndex = i;
+        let i = 0;
+        while (i < lastFrame && inputTimes[i + 1] <= animTime) {
+          i++;
+        }
         const next = i < lastFrame ? i + 1 : lastFrame;
         const t0 = inputTimes[i];
         const t1 = inputTimes[next];
@@ -22705,11 +23245,21 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     for (let j = 0; j < skeleton.length; j++) {
       const jointNode = nodes[skeleton[j]];
-      mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
+      mat4Impl.multiply(
+        jointNode.worldMatrix,
+        jointNode.inverseBindMatrix,
+        this._tempMat
+      );
       boneMatrices.set(this._tempMat, j * 16);
     }
-    const byteOffset = this.sharedBones ? 0 : alignTo256(64 * this.MAX_BONES) * instanceIndex;
-    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices);
+    const byteOffset = instanceIndex * this.MAX_BONES * 64;
+    this.device.queue.writeBuffer(
+      this.bonesBuffer,
+      byteOffset,
+      boneMatrices.buffer,
+      boneMatrices.byteOffset,
+      boneMatrices.byteLength
+    );
     return boneMatrices;
   }
 };
@@ -23202,43 +23752,50 @@ function graphAdapter(compilerResult, nodes) {
       if (!addedNodeFunctions.has("LightShadowNode")) {
         functions.push(`
 fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
-    let L = normalize(light.position - fragPos);
-    let NdotL = max(dot(N, L), 0.0);
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
+  let NdotL = max(dot(N, L), 0.0);
 
-    let theta = dot(L, normalize(-light.direction));
-    let epsilon = light.innerCutoff - light.outerCutoff;
-    var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    if (coneAtten <= 0.0 || NdotL <= 0.0) {
-        return vec3f(0.0);
-    }
+  if (coneAtten <= 0.0 || NdotL <= 0.0) {
+    return vec3f(0.0);
+  }
 
-    let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
-    let H = normalize(L + V);
-    let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+  // Distance attenuation
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation; // quadratic falloff curve
 
-    let alpha = material.roughness * material.roughness;
-    let NdotH = max(dot(N, H), 0.0);
-    let alpha2 = alpha * alpha;
-    let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
-    let D = alpha2 / (PI * denom * denom + 1e-5);
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
 
-    let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-    let NdotV = max(dot(N, V), 0.0);
-    let Gv = NdotV / (NdotV * (1.0 - k) + k);
-    let Gl = NdotL / (NdotL * (1.0 - k) + k);
-    let G = Gv * Gl;
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
 
-    let numerator = D * G * F;
-    let denominator = 4.0 * NdotV * NdotL + 1e-5;
-    let specular = numerator / denominator;
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
 
-    let kS = F;
-    let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
-    let diffuse = kD * material.baseColor.rgb / PI;
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
 
-    let radiance = light.color * light.intensity;
-    return material.baseColor * light.color * light.intensity * NdotL * coneAtten;
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
+
+  let radiance = light.color * light.intensity * attenuation2;
+
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
 }
 
 fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
@@ -32831,8 +33388,14 @@ var _clip = new Float32Array([0, 0, 1, 1]);
 var _rayOrigin = new Float32Array(3);
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
-  const x2 = (event.clientX - rect.left) / rect.width * 2 - 1;
-  const y2 = -((event.clientY - rect.top) / rect.height * 2 - 1);
+  let x2, y2;
+  if (document.pointerLockElement === canvas) {
+    x2 = 0;
+    y2 = 0;
+  } else {
+    x2 = (event.clientX - rect.left) / rect.width * 2 - 1;
+    y2 = -((event.clientY - rect.top) / rect.height * 2 - 1);
+  }
   mat4Impl.inverse(camera.projectionMatrix, _invProj);
   mat4Impl.inverse(camera.view, _invView);
   _clip[0] = x2;
@@ -32959,13 +33522,14 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
 
 // ../../../engine/procedural-mesh.js
 var ProceduralMeshObj = class extends Materials {
-  constructor(canvas, device2, context, o2, inputHandler, globalAmbient) {
+  constructor(canvas, device2, context, o2, inputHandler, globalAmbient, cameraBuffer) {
     super(device2, o2.material, null, o2.textureCache);
     this.name = o2.name || genName(3);
     this.done = false;
     this.canvas = canvas;
     this.device = device2;
     this.context = context;
+    this.cameraBuffer = cameraBuffer;
     this.globalAmbient = [...globalAmbient];
     if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
       o2.material.useBlend = false;
@@ -33219,14 +33783,30 @@ var ProceduralMeshObj = class extends Materials {
     this.effects = {};
     if (this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
-      if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
-        this.effects.flameEmitter = new FlameEmitter(this.device, "rgba16float");
+      if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
+        this.effects.pointer = new PointerEffect(this.device, "rgba16float", 1, this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
+        this.effects.pointEffect = new PointEffect(this.device, "rgba16float", this.cameraBuffer);
       }
       if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
-        this.effects.gizmoEffect = new GizmoEffect(this.device, "rgba16float");
+        this.effects.gizmoEffect = new GizmoEffect(this.device, "rgba16float", this.cameraBuffer);
       }
       if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
-        this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", "torch");
+        this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", "torch", this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.gpuText !== "undefined" && this.pointerEffect.gpuText == true) {
+        this.effects.gpuText = new MSDFTextEffect(this.device, pf, "rgba16float", "torch", this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
+        this.effects.flameEmitter = new FlameEmitter(this.device, "rgba16float", 20, this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.destructionEffect !== "undefined" && this.pointerEffect.destructionEffect == true) {
+        this.effects.destructionEffect = new DestructionEffect(this.device, "rgba16float", {
+          particleCount: 100,
+          duration: 2.5,
+          color: [0.6, 0.5, 0.4, 1]
+        }, this.cameraBuffer);
       }
     }
     this.modelUniformBuffer = this.device.createBuffer({ size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
@@ -34453,7 +35033,9 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
             mesh: m.mesh,
             physics: {
               enabled: true,
-              geometry
+              geometry,
+              group: 2
+              // cannon
             },
             raycast: RAY
           });
@@ -34470,7 +35052,7 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
             resolve(ALL);
           }
         }
-      }, delay2 * sum2);
+      }, delay2 * sum2 * 3);
     }
     if (geometry == "Cube") {
       downloadMeshes(inputCube, handler, { scale: scale4 });
@@ -34482,6 +35064,8 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
 function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
   const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
+  console.log(width);
+  console.log(height);
   const inputCube = { mesh: useMeshPath };
   function handler(m) {
     let index = 0;
@@ -34509,11 +35093,11 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
               // Medium-sharp edge
               envLodBias: 2.5,
               usePlanarReflection: false
-              // ✅ Env map mode
+              // ✅ Env map mode - wip
             } : void 0,
             position: {
               x: pos2.x + x2 * spacing2,
-              y: pos2.y + y2 * spacing2 - 2.8,
+              y: pos2.y + y2 * spacing2 + 2.8,
               z: pos2.z
             },
             rotation: rot2,
@@ -34732,7 +35316,7 @@ function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed2 = { 
     resolve(o2);
   });
 }
-function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 }, rot2 = { x: 0, y: 0, z: 0 }, texturePath2 = ["./res/textures/slot/reel1.webp"], name2 = "chain", size2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 1, mass = 1) {
+function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 }, rot2 = { x: 0, y: 0, z: 0 }, texturePath2 = ["./res/textures/slot/reel1-lod0.webp"], name2 = "chain", size2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 1, mass = 1) {
   const engine = this;
   const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
   function handler(m) {
@@ -34960,7 +35544,8 @@ var VolumetricPass = class {
       density: options2.density ?? 0.03,
       steps: options2.steps ?? 32,
       scatterStrength: options2.scatterStrength ?? 1,
-      heightFalloff: options2.heightFalloff ?? 0.1
+      heightFalloff: options2.heightFalloff ?? 0.1,
+      range: options2.range ?? 40
     };
     this.lightParams = {
       color: options2.lightColor ?? [1, 0.85, 0.6],
@@ -34968,7 +35553,8 @@ var VolumetricPass = class {
     };
     this.paramsBuffer = device2.createBuffer({
       label: "VolumetricPass.paramsBuffer",
-      size: 16,
+      size: 32,
+      //16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.invViewProjBuffer = device2.createBuffer({
@@ -35058,12 +35644,20 @@ var VolumetricPass = class {
     this._lightDir[3] = 0;
     this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
   };
+  setRange = (v) => {
+    this.params.range = v;
+    this._updateParams();
+  };
   _updateParams() {
     this.device.queue.writeBuffer(this.paramsBuffer, 0, new Float32Array([
       this.params.density,
       this.params.steps,
       this.params.scatterStrength,
-      this.params.heightFalloff
+      this.params.heightFalloff,
+      this.params.range,
+      0,
+      0,
+      0
     ]));
   }
   _updateLightColor() {
@@ -35254,7 +35848,18 @@ function marchFragWGSL() {
   @group(0) @binding(5) var<uniform> lightDir:      vec4<f32>;
   @group(0) @binding(6) var<uniform> lightColor:    vec4<f32>;
 
-  struct Params { density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32 }
+  // struct Params { density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32 }
+  struct Params { 
+    density: f32, 
+    steps: f32, 
+    scatterStrength: f32, 
+    heightFalloff: f32,
+    range: f32,
+    _pad0: f32,
+    _pad1: f32,
+    _pad2: f32,
+  }
+  
   @group(0) @binding(7) var<uniform> params: Params;
 
   fn worldPos(uv: vec2<f32>, depth: f32) -> vec3<f32> {
@@ -35299,7 +35904,15 @@ function marchFragWGSL() {
 
       let d   = fogDensity(p) * step;
       let ext = exp(-d);
-      let s   = trans * (1.0 - ext) * lit * params.scatterStrength * f32(d > 0.0001);
+
+      let toLight = lightDir.xyz - p;  // assumes lightDir.xyz is light POSITION \u2014 see note below
+      let distToLight = length(p - /* lightPos */ vec3(0.0)); // needs light pos not dir
+      let rangeAtten = clamp(1.0 - (distToLight / params.range), 0.0, 1.0);
+      let rangeAtten2 = rangeAtten * rangeAtten;
+
+      let s = trans * (1.0 - ext) * lit * params.scatterStrength * rangeAtten2 * f32(d > 0.0001);
+
+      // let s   = trans * (1.0 - ext) * lit * params.scatterStrength * f32(d > 0.0001);
 
       accum += s * lightColor.rgb;
       trans *= select(1.0, ext, d > 0.0001);
@@ -35407,8 +36020,279 @@ var zeroPass = function() {
   }
 };
 
-// ../../../engine/overrides/noshadow-render.js
+// ../../../engine/overrides/culling.js
+var cullingPass = function() {
+  const now2 = performance.now();
+  this.now = now2 * 1e-3;
+  this.lastFrameMS = this.now;
+  this.autoUpdate.forEach((_) => _.update());
+  requestAnimationFrame(this.frame);
+  try {
+    let commandEncoder = this.device.createCommandEncoder();
+    if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
+    this.updateLights();
+    const camera = this.getCamera();
+    this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
+    this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+    if (camera._dirtyAngle || camera._dirty) {
+      this.getTransformationMatrix(camera, now2);
+      camera.update();
+    }
+    for (let i = 0; i < this.lightContainer.length; i++) {
+      const light = this.lightContainer[i];
+      const p = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+      if (this.shadowBuckets.default.length) {
+        p.setPipeline(light.shadowPipeline);
+        for (let m of this.shadowBuckets.default) {
+          p.setBindGroup(0, light.getShadowBindGroup(m));
+          p.setBindGroup(1, m.modelBindGroup);
+          m.drawShadows(p, light);
+        }
+      }
+      if (this.shadowBuckets.instanced.length) {
+        p.setPipeline(light.shadowPipelineInstanced);
+        for (let m of this.shadowBuckets.instanced) {
+          p.setBindGroup(0, light.getShadowBindGroup(m));
+          p.setBindGroup(1, m.modelBindGroup);
+          m.drawShadows(p, light);
+        }
+      }
+      if (this.shadowBuckets.procedural.length) {
+        p.setPipeline(light.shadowPipelineMorph);
+        for (let m of this.shadowBuckets.procedural) {
+          p.setBindGroup(0, light.getShadowBindGroup(m));
+          p.setBindGroup(1, m.modelBindGroup);
+          m.drawShadows(p, light);
+        }
+      }
+      p.end();
+    }
+    const len2 = this.mainRenderBundle.length;
+    for (let i = 0; i < len2; i++) {
+      const mesh = this.mainRenderBundle[i];
+      mesh.updateInstanceData?.(mesh.modelMatrix);
+      if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
+      mesh.position.update();
+      mesh.updateModelUniformBuffer(i);
+      if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
+      if (mesh.update) mesh.update(now2);
+      if (mesh.isVideo) mesh.updateVideoTexture();
+      if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
+      mesh.updateBoundingSphere?.();
+    }
+    const cullStartMs = performance.now();
+    this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
+    const cullTimeMs = performance.now() - cullStartMs;
+    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    pass.setBindGroup(0, this.sceneBindGroup);
+    for (const [pipeline, meshes] of this.culledRenderPass.visibleOpaqueMeshes) {
+      pass.setPipeline(pipeline);
+      let l = null;
+      for (const mesh of meshes) {
+        if (mesh.materialBindGroup !== l) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          l = mesh.materialBindGroup;
+        }
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+    for (const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
+      const mesh = this.mainRenderBundle[meshIndex];
+      if (mesh.effects) {
+        for (const effectName in mesh.effects) {
+          const effect = mesh.effects[effectName];
+          if (effect === null || effect.enabled === false) continue;
+          if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+          effect.render(pass, mesh, camera.VP);
+        }
+      }
+    }
+    pass.end();
+    if (this.ssrPass.enabled === true) {
+      mat4.invert(camera.VP, this._invViewProj);
+      this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
+      this.ssrPass.render(commandEncoder, {
+        sceneTextureView: this.sceneTextureView,
+        normalTextureView: this.normalTextureView,
+        mainDepthView: this.mainDepthView,
+        mainDepthTexture: this.mainDepthTexture,
+        worldPosTextureView: this.worldPosTextureView
+      });
+    }
+    if (this.volumetricPass.enabled === true) {
+      if (this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
+      this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
+      for (let i = 0; i < this.lightContainer.length; i++) {
+        const light = this.lightContainer[i];
+        this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+        this._volumetricLightUniforms.direction = light.direction;
+        this.volumetricPass.render(
+          commandEncoder,
+          this.sceneTextureView,
+          this.mainDepthView,
+          this.shadowArrayView,
+          this._volumetricUniforms,
+          this._volumetricLightUniforms
+        );
+      }
+    }
+    const canvasTexture = this.context.getCurrentTexture();
+    if (this._lastCanvasTex !== canvasTexture) {
+      this._lastCanvasTex = canvasTexture;
+      this._canvasView = canvasTexture.createView();
+    }
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    this.finalPS.colorAttachments[0].view = this._canvasView;
+    pass = commandEncoder.beginRenderPass(this.finalPS);
+    pass.setPipeline(this.presentPipeline);
+    pass.setBindGroup(0, this._activeBindGroup);
+    pass.draw(6);
+    pass.end();
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
+    this.submitQueue[0] = null;
+    if (this.collisionSystem) this.collisionSystem.update();
+    this.graphUpdate(this.now);
+    this.blendQueue.length = 0;
+  } catch (err) {
+    if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
+  }
+};
 var noShadowPass = function() {
+  const now2 = performance.now();
+  this.now = now2 * 1e-3;
+  this.lastFrameMS = this.now;
+  this.autoUpdate.forEach((_) => _.update());
+  requestAnimationFrame(this.frame);
+  try {
+    let commandEncoder = this.device.createCommandEncoder();
+    if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
+    this.updateLights();
+    const camera = this.getCamera();
+    this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
+    this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+    if (camera._dirtyAngle || camera._dirty) {
+      this.getTransformationMatrix(camera, now2);
+      camera.update();
+    }
+    const len2 = this.mainRenderBundle.length;
+    for (let i = 0; i < len2; i++) {
+      const mesh = this.mainRenderBundle[i];
+      mesh.updateInstanceData?.(mesh.modelMatrix);
+      if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
+      mesh.position.update();
+      mesh.updateModelUniformBuffer(i);
+      if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
+      if (mesh.update) mesh.update(now2);
+      if (mesh.isVideo) mesh.updateVideoTexture();
+      if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
+      mesh.updateBoundingSphere?.();
+    }
+    const cullStartMs = performance.now();
+    this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
+    const cullTimeMs = performance.now() - cullStartMs;
+    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    pass.setBindGroup(0, this.sceneBindGroup);
+    for (const [pipeline, meshes] of this.culledRenderPass.visibleOpaqueMeshes) {
+      pass.setPipeline(pipeline);
+      let l = null;
+      for (const mesh of meshes) {
+        if (mesh.materialBindGroup !== l) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          l = mesh.materialBindGroup;
+        }
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+    for (const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
+      const mesh = this.mainRenderBundle[meshIndex];
+      if (mesh.effects) {
+        for (const effectName in mesh.effects) {
+          const effect = mesh.effects[effectName];
+          if (effect === null || effect.enabled === false) continue;
+          if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+          effect.render(pass, mesh, camera.VP);
+        }
+      }
+    }
+    pass.end();
+    if (this.ssrPass.enabled === true) {
+      mat4.invert(camera.VP, this._invViewProj);
+      this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
+      this.ssrPass.render(commandEncoder, {
+        sceneTextureView: this.sceneTextureView,
+        normalTextureView: this.normalTextureView,
+        mainDepthView: this.mainDepthView,
+        mainDepthTexture: this.mainDepthTexture,
+        worldPosTextureView: this.worldPosTextureView
+      });
+    }
+    if (this.volumetricPass.enabled === true) {
+      if (this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
+      this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
+      for (let i = 0; i < this.lightContainer.length; i++) {
+        const light = this.lightContainer[i];
+        this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+        this._volumetricLightUniforms.direction = light.direction;
+        this.volumetricPass.render(
+          commandEncoder,
+          this.sceneTextureView,
+          this.mainDepthView,
+          this.shadowArrayView,
+          this._volumetricUniforms,
+          this._volumetricLightUniforms
+        );
+      }
+    }
+    const canvasTexture = this.context.getCurrentTexture();
+    if (this._lastCanvasTex !== canvasTexture) {
+      this._lastCanvasTex = canvasTexture;
+      this._canvasView = canvasTexture.createView();
+    }
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    this.finalPS.colorAttachments[0].view = this._canvasView;
+    pass = commandEncoder.beginRenderPass(this.finalPS);
+    pass.setPipeline(this.presentPipeline);
+    pass.setBindGroup(0, this._activeBindGroup);
+    pass.draw(6);
+    pass.end();
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
+    this.submitQueue[0] = null;
+    if (this.collisionSystem) this.collisionSystem.update();
+    this.graphUpdate(this.now);
+    this.blendQueue.length = 0;
+  } catch (err) {
+    if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
+  }
 };
 
 // ../../../engine/overrides/nano-render.js
@@ -35468,7 +36352,7 @@ var nanoPass = function() {
 var PhysicsBridge = class {
   constructor(workerUrl) {
     this._worker = null;
-    if (workerUrl.indexOf("ammo") != -1) {
+    if (workerUrl.indexOf("ammo") != -1 || workerUrl.indexOf("matter")) {
       this._worker = new Worker(workerUrl);
     } else {
       this._worker = new Worker(workerUrl, { type: "module" });
@@ -35482,6 +36366,7 @@ var PhysicsBridge = class {
     this._bodyIndexMap = /* @__PURE__ */ new Map();
     this._ready = false;
     this._queue = [];
+    this.wPhysicsSteps = 1;
     this._worker.onmessage = ({ data }) => this._onMessage(data);
     this.pCollisionEvent = new CustomEvent("pCollision", { detail: {} });
     this.pCollisionEventArg = {
@@ -35530,7 +36415,7 @@ var PhysicsBridge = class {
       this._bodyIndexMap.set(idx, MEObject);
     });
   }
-  setKinematicTransform() {
+  setKinematicTransformDeplaced() {
     let count = 0;
     const idxArr = this._kinematicIdx;
     const posArr = this._kinematicPos;
@@ -35542,18 +36427,34 @@ var PhysicsBridge = class {
       posArr[base + 1] = meObj.position.y;
       posArr[base + 2] = meObj.position.z;
       count++;
+      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if (count > 0) {
+      console.log("Sending to Worker:", { idxArr, posArr });
       this._worker.postMessage({ cmd: "setKinematicTransform", count, idx: idxArr, pos: posArr });
     }
   }
-  updatePhysics() {
-    if (this.c % 4 === 0) this._worker.postMessage({ cmd: "step" });
-    this.c = 0;
-    this.c++;
+  setKinematicTransform(idx, x2, y2, z = 0) {
+    let count = 0;
+    const idxArr = this._kinematicIdx;
+    const posArr = this._kinematicPos;
+    for (const [idx_, meObj] of this._bodyIndexMap) {
+      if (!meObj.isKinematic && idx_ !== idx) continue;
+      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
+      meObj.position.setPosition(x2, y2, 0);
+      count++;
+      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
+    }
+    this._kinematicCount = count;
+    if (count > 0) {
+      console.log("Sending to Worker:", { idxArr, posArr });
+      this._worker.postMessage({ cmd: "setKinematicTransform", count, idx, x: x2, y: y2, z });
+    }
   }
-  // MatrixJolt public API
+  updatePhysics() {
+    this._worker.postMessage({ cmd: "step" });
+  }
   setGravity(x2, y2, z) {
     this._worker.postMessage({ cmd: "setGravity", x: x2, y: y2, z });
   }
@@ -35650,15 +36551,25 @@ var PhysicsBridge = class {
     this._worker.postMessage({ cmd: "removeRigidBody", idx });
     this._bodyIndexMap.delete(idx);
   }
-  // cannones ,
+  // cannones ---
   createChain(ids, size2 = 0.5, mass = 0.3, marginSpace = 0.1) {
     this._worker.postMessage({ cmd: "createChain", ids, size: size2, mass, marginSpace });
   }
   createBoundedSpace(ids, pos2 = { x: 0, y: 0, z: 0 }, size2 = { x: 5, y: 5, z: 5 }) {
     this._worker.postMessage({ cmd: "createBoundedSpace", ids, pos: pos2, size: size2 });
   }
-  physicsBoundedSpace(pos2 = { x: 0, y: 0, z: 0 }, size2 = { x: 5, y: 5, z: 5 }, name2 = "bounded_space", withFloor = true) {
-    this._worker.postMessage({ cmd: "createBoundedSpace", pos: pos2, size: size2, name: name2, withFloor });
+  lotteryMachineShake(ids, strength = 5) {
+    this._worker.postMessage({ cmd: "lotteryMachineShake", ids, strength });
+  }
+  isSleeping(idx) {
+    return this._send("isSleeping", { idx });
+  }
+  setKinematicInterpolate(idx, targetX, targetY, targetZ = 0, lerpFactor) {
+    this._worker.postMessage({ cmd: "setKinematicInterpolate", idx, targetX, targetY, targetZ, lerpFactor });
+  }
+  //---
+  createSphereBoundary(idxs, pos2 = { x: 0, y: 0, z: 0 }, radius = 20) {
+    this._worker.postMessage({ cmd: "createSphereBoundary", idxs, pos: pos2, radius });
   }
   _syncToObjects() {
     const snap = this._snapshot;
@@ -35676,6 +36587,9 @@ var PhysicsBridge = class {
       mat4Impl.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
       meObj.modelMatrix[15] = 1;
       meObj.position.inMove = true;
+      meObj.position.x = pos2[0];
+      meObj.position.y = pos2[1];
+      meObj.position.z = pos2[2];
     }
   }
   _send(cmd, extra = {}) {
@@ -35717,6 +36631,10 @@ var PhysicsBridge = class {
         break;
       case "getPosition":
         this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+      case "isSleeping":
+        this._pending.get(data.id)?.(data.isSleeping);
         this._pending.delete(data.id);
         break;
     }
@@ -36111,13 +37029,14 @@ var SSRPass = class {
     this.enabled = true;
     this._globalSceneUniformBuffer = globalSceneUniformBuffer;
     this.ssrOutputTexture = device2.createTexture({
-      label: "SSR output",
+      label: "SSR out-tex",
       size: [width, height],
       format: "rgba16float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
     this.ssrOutputView = this.ssrOutputTexture.createView();
     this.depthBlitBindGroup = null;
+    this.data = new Float32Array(40);
     this._createHZB();
     this._createSSRConfig();
     this._createPipelines();
@@ -36169,11 +37088,7 @@ var SSRPass = class {
         size: 16,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
-      this.device.queue.writeBuffer(
-        buffer,
-        0,
-        new Uint32Array([dstW, dstH, 0, 0])
-      );
+      this.device.queue.writeBuffer(buffer, 0, new Uint32Array([dstW, dstH, 0, 0]));
       const bindGroup = this.device.createBindGroup({
         label: `HZB Build BG ${mip}`,
         layout: this.hzbPipeline.getBindGroupLayout(0),
@@ -36204,14 +37119,13 @@ var SSRPass = class {
     });
   }
   updateConfig(invProjMatrix, projMatrix) {
-    const data = new Float32Array(40);
-    data.set(invProjMatrix, 0);
-    data.set(projMatrix, 16);
-    data[32] = this.width;
-    data[33] = this.height;
-    data[34] = this.mipCount - 1;
-    data[35] = 0.04;
-    this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, data);
+    this.data.set(invProjMatrix, 0);
+    this.data.set(projMatrix, 16);
+    this.data[32] = this.width;
+    this.data[33] = this.height;
+    this.data[34] = this.mipCount - 1;
+    this.data[35] = 0.05;
+    this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, this.data);
   }
   _createPipelines() {
     const hzbModule = this.device.createShaderModule({
@@ -36354,6 +37268,513 @@ var SSRPass = class {
   }
 };
 
+// ../../../shaders/kale/kale.wgsl.js
+var kaleidoscopeEffectShader = `
+struct Camera {
+  viewProjMatrix : mat4x4<f32>,
+};
+
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct ModelData {
+  model : mat4x4<f32>,
+  time : f32,
+  speed : f32,
+  segments : f32,
+  zoom : f32,
+  intensity : f32,
+  colorShift : f32,
+  colorShiftSpeed : f32,
+  pad : f32,
+  tint : vec3<f32>,
+  tintStrength : f32,
+};
+@group(0) @binding(1) var<uniform> modelData : ModelData;
+
+struct VertexInput {
+  @location(0) position : vec3<f32>,
+  @location(1) uv : vec2<f32>,
+};
+
+struct VSOut {
+  @builtin(position) Position : vec4<f32>,
+  @location(0) v_uv : vec2<f32>,
+};
+
+@vertex
+fn vsMain(input : VertexInput) -> VSOut {
+  var out : VSOut;
+  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+  out.Position = camera.viewProjMatrix * worldPos;
+  out.v_uv = input.uv;
+  return out;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
+@fragment
+fn fsMain(input : VSOut) -> FragOut {
+  // Normalize UV to [-1, 1] centered
+  var p = input.v_uv * 2.0 - 1.0;
+  p *= modelData.zoom;
+
+  // Convert to polar coordinates
+  let angle = atan2(p.y, p.x);
+  let radius = length(p);
+
+  // Apply rotation based on time & speed
+  let rotated = angle + modelData.time * modelData.speed;
+
+  // Kaleidoscope segmentation: fold angle into segment space
+  let PI = 3.14159265359;
+  let segAngle = (PI * 2.0) / modelData.segments;
+  let foldedAngle = abs(((rotated % segAngle) - segAngle * 0.5));
+
+  // Radial patterns with intensity modulation
+  let pattern1 = sin(radius * 3.0 * modelData.intensity + modelData.time * 0.5) * 0.5 + 0.5;
+  let pattern2 = sin(foldedAngle * 4.0) * 0.5 + 0.5;
+  let pattern3 = cos((rotated + modelData.time * 0.3) * 2.0) * 0.5 + 0.5;
+
+  // Color cycling based on colorShift
+  let hueShift = sin(modelData.colorShift) * 0.5 + 0.5;
+  let col = mix(
+    vec3<f32>(pattern1, pattern2, pattern3),
+    vec3<f32>(pattern2, pattern3, pattern1),
+    hueShift
+  );
+
+  let fade = smoothstep(1.2, 0.3, radius);
+  let tinted = mix(col, modelData.tint, modelData.tintStrength);
+
+  // return vec4<f32>(tinted * fade, fade);
+
+  // \u2705 New (use fade for alpha)
+  let finalColor = vec4f(tinted * fade, fade);
+
+  // \u2705 Also cleaned up duplicates:
+  let particleNormal = vec4f(normalize(vec3f(p, 0.0)), 1.0);
+  let particleWorldPos = input.Position;
+
+  return FragOut(
+    finalColor,
+    particleNormal,
+    particleWorldPos
+  );
+}
+`;
+
+// ../../../engine/effects/KaleidoscopeEffect.js
+var KaleidoscopePresets = {
+  // Classic symmetric kaleidoscope
+  classic: {
+    intensity: 1,
+    speed: 0.5,
+    segments: 6,
+    zoom: 1,
+    colorShift: 0,
+    colorShiftSpeed: 0.3,
+    tint: [1, 1, 1],
+    tintStrength: 0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  },
+  // Fast rotating 8-segment
+  fast: {
+    intensity: 1.2,
+    speed: 1,
+    segments: 8,
+    zoom: 1.2,
+    colorShift: 0,
+    colorShiftSpeed: 0.6,
+    tint: [1, 1, 1],
+    tintStrength: 0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0.5, 0]
+  },
+  // Slow, deep zoom
+  deep: {
+    intensity: 0.8,
+    speed: 0.3,
+    segments: 12,
+    zoom: 2.5,
+    colorShift: 0,
+    colorShiftSpeed: 0.15,
+    tint: [1, 1, 1],
+    tintStrength: 0,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0, 0]
+  },
+  // Psychedelic cyan/magenta
+  psycho: {
+    intensity: 1.5,
+    speed: 1.4,
+    segments: 7,
+    zoom: 1.3,
+    colorShift: 0,
+    colorShiftSpeed: 1.2,
+    tint: [0, 1, 1],
+    tintStrength: 0.7,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0.3, 0.2, 0]
+  },
+  // Cool blues
+  cool: {
+    intensity: 1,
+    speed: 0.7,
+    segments: 10,
+    zoom: 1.5,
+    colorShift: 0,
+    colorShiftSpeed: 0.4,
+    tint: [0.2, 0.6, 1],
+    tintStrength: 0.8,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0.3, 0]
+  },
+  // Warm fire-like
+  warm: {
+    intensity: 1.3,
+    speed: 0.6,
+    segments: 5,
+    zoom: 0.9,
+    colorShift: 0,
+    colorShiftSpeed: 0.25,
+    tint: [1, 0.6, 0.2],
+    tintStrength: 0.85,
+    scale: 2,
+    localOffset: [0, 0, 0],
+    localRotation: [0, 0, 0],
+    activeRotate: [0, 0.2, 0]
+  }
+};
+var KaleidoscopeEffect = class {
+  constructor(device2, format, shape = "quad", params = {}, cameraBuffer) {
+    this.device = device2;
+    this.format = format;
+    this.colorFormat = format;
+    this.cameraBuffer = cameraBuffer;
+    const config = typeof params === "string" ? KaleidoscopePresets[params] : params;
+    const defaults = KaleidoscopePresets.classic;
+    this.intensity = config.intensity ?? defaults.intensity;
+    this.speed = config.speed ?? defaults.speed;
+    this.segments = config.segments ?? defaults.segments;
+    this.zoom = config.zoom ?? defaults.zoom;
+    this.colorShift = config.colorShift ?? defaults.colorShift;
+    this.colorShiftSpeed = config.colorShiftSpeed ?? defaults.colorShiftSpeed;
+    this.tint = config.tint ?? defaults.tint;
+    this.tintStrength = config.tintStrength ?? defaults.tintStrength;
+    this.scale = config.scale ?? defaults.scale;
+    this.time = 0;
+    this.enabled = true;
+    this.localOffset = config.localOffset ?? defaults.localOffset;
+    this.localRotation = config.localRotation ?? defaults.localRotation;
+    this.activeRotate = config.activeRotate ?? defaults.activeRotate;
+    this._initPipeline();
+    this.setGeometry("quad", this.scale);
+    this._localMatrix = mat4Impl.create();
+    this._finalMatrix = mat4Impl.create();
+    this._uniformData = new Float32Array(32);
+  }
+  setGeometry(type2, size2 = 1, segments = 32) {
+    const geo2 = GeometryFactory.create(type2, size2, segments);
+    this.vertexBuffer = this._uploadVertex(geo2.positions);
+    this.uvBuffer = this._uploadVertex(geo2.uvs);
+    const byteLen = geo2.indices.byteLength;
+    const paddedByteLen = Math.ceil(byteLen / 4) * 4;
+    this.indexBuffer = this.device.createBuffer({
+      size: paddedByteLen,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    if (byteLen % 4 !== 0) {
+      const paddedData = new Uint8Array(paddedByteLen);
+      paddedData.set(new Uint8Array(geo2.indices.buffer, geo2.indices.byteOffset, byteLen));
+      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedData);
+    } else {
+      this.device.queue.writeBuffer(this.indexBuffer, 0, geo2.indices);
+    }
+    this.indexCount = geo2.indices.length;
+    this.indexFormat = geo2.indices instanceof Uint16Array ? "uint16" : "uint32";
+  }
+  _initPipeline() {
+    this.modelBuffer = this.device.createBuffer({
+      size: 128,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: kaleidoscopeEffectShader });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [
+          {
+            format: this.colorFormat,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
+          { format: this.colorFormat },
+          { format: this.colorFormat }
+        ]
+      },
+      primitive: { topology: "triangle-list" },
+      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
+    });
+  }
+  _uploadVertex(data) {
+    const buf = this.device.createBuffer({
+      size: data.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(buf, 0, data);
+    return buf;
+  }
+  updateInstanceData(baseModelMatrix) {
+    const local2 = this._localMatrix;
+    const finalMat = this._finalMatrix;
+    mat4Impl.identity(local2);
+    mat4Impl.identity(finalMat);
+    mat4Impl.translate(local2, this.localOffset, local2);
+    mat4Impl.rotateX(local2, this.localRotation[0], local2);
+    mat4Impl.rotateY(local2, this.localRotation[1], local2);
+    mat4Impl.rotateZ(local2, this.localRotation[2], local2);
+    if (this.activeRotate[0] !== 0) {
+      mat4Impl.rotateX(local2, this.activeRotate[0] * this.time, local2);
+    }
+    if (this.activeRotate[1] !== 0) {
+      mat4Impl.rotateY(local2, this.activeRotate[1] * this.time, local2);
+    }
+    if (this.activeRotate[2] !== 0) {
+      mat4Impl.rotateZ(local2, this.activeRotate[2] * this.time, local2);
+    }
+    mat4Impl.multiply(baseModelMatrix, local2, finalMat);
+    this._uniformData.set(finalMat, 0);
+    this._uniformData[16] = this.time;
+    this._uniformData[17] = this.speed;
+    this._uniformData[18] = this.segments;
+    this._uniformData[19] = this.zoom;
+    this._uniformData[20] = this.intensity;
+    this._uniformData[21] = this.colorShift;
+    this._uniformData[22] = this.colorShiftSpeed;
+    this._uniformData[23] = 0;
+    this._uniformData[24] = this.tint[0];
+    this._uniformData[25] = this.tint[1];
+    this._uniformData[26] = this.tint[2];
+    this._uniformData[27] = this.tintStrength;
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this._uniformData);
+  }
+  draw(pass, cameraMatrix) {
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
+    pass.drawIndexed(this.indexCount);
+  }
+  render(pass, mesh, viewProjMatrix) {
+    this.time += 0.016;
+    this.colorShift = (this.colorShift + 0.016 * this.colorShiftSpeed) % (Math.PI * 2);
+    this.draw(pass, viewProjMatrix);
+  }
+  // Control setters
+  setIntensity(intensity) {
+    this.intensity = Math.max(0.1, intensity);
+  }
+  setSpeed(speed) {
+    this.speed = Math.max(0.1, speed);
+  }
+  setSegments(segments) {
+    this.segments = Math.max(3, Math.round(segments));
+  }
+  setZoom(zoom) {
+    this.zoom = Math.max(0.1, zoom);
+  }
+  setColorShiftSpeed(speed) {
+    this.colorShiftSpeed = Math.max(0, speed);
+  }
+  setTint(r2, g, b) {
+    this.tint = [r2, g, b];
+  }
+  setTintStrength(strength) {
+    this.tintStrength = Math.max(0, Math.min(1, strength));
+  }
+};
+
+// ../../../engine/culling/culling.js
+var CulledRenderPass = class {
+  constructor() {
+    this.visibleOpaqueMeshes = /* @__PURE__ */ new Map();
+    this.visibleTransparentMeshes = /* @__PURE__ */ new Map();
+    this.cullStats = { total: 0, visible: 0, culled: 0 };
+    this.range = 500;
+    this._camPos = new Float32Array(3);
+    this._camForward = new Float32Array(3);
+    this._opaqueArrayCache = /* @__PURE__ */ new Map();
+    this._transparentArrayCache = /* @__PURE__ */ new Map();
+  }
+  cullAndGroup(camera, opaqueBuckets, transparentBuckets) {
+    this.visibleOpaqueMeshes.clear();
+    this.visibleTransparentMeshes.clear();
+    this.cullStats = { total: 0, visible: 0, culled: 0 };
+    if (!camera || !camera.position || !camera.back) {
+      this.visibleOpaqueMeshes = new Map(opaqueBuckets);
+      this.visibleTransparentMeshes = new Map(transparentBuckets);
+      return;
+    }
+    this._camPos[0] = camera.position[0];
+    this._camPos[1] = camera.position[1];
+    this._camPos[2] = camera.position[2];
+    this._camForward[0] = -camera.back[0];
+    this._camForward[1] = -camera.back[1];
+    this._camForward[2] = -camera.back[2];
+    if (opaqueBuckets) {
+      for (const [pipeline, meshes] of opaqueBuckets) {
+        let visibleMeshes = this._opaqueArrayCache.get(pipeline);
+        if (!visibleMeshes) {
+          visibleMeshes = [];
+          this._opaqueArrayCache.set(pipeline, visibleMeshes);
+        }
+        visibleMeshes.length = 0;
+        const len2 = meshes.length;
+        for (let i = 0; i < len2; i++) {
+          const mesh = meshes[i];
+          this.cullStats.total++;
+          if (!mesh || !mesh._modelMatrix || mesh.ignoreCulling === true) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          const m = mesh._modelMatrix;
+          const toObjX = m[12] - this._camPos[0];
+          const toObjY = m[13] - this._camPos[1];
+          const toObjZ = m[14] - this._camPos[2];
+          const distanceSq2 = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
+          if (distanceSq2 < 4) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          if (distanceSq2 > this.range) {
+            this.cullStats.culled++;
+            continue;
+          }
+          const distance2 = Math.sqrt(distanceSq2);
+          if (distance2 <= 1e-4) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          const dot2 = toObjX / distance2 * this._camForward[0] + toObjY / distance2 * this._camForward[1] + toObjZ / distance2 * this._camForward[2];
+          if (dot2 > 0.2) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+          } else {
+            this.cullStats.culled++;
+          }
+        }
+        if (visibleMeshes.length > 0) {
+          this.visibleOpaqueMeshes.set(pipeline, visibleMeshes);
+        }
+      }
+    }
+    if (transparentBuckets) {
+      for (const [pipeline, meshes] of transparentBuckets) {
+        let visibleMeshes = this._transparentArrayCache.get(pipeline);
+        if (!visibleMeshes) {
+          visibleMeshes = [];
+          this._transparentArrayCache.set(pipeline, visibleMeshes);
+        }
+        visibleMeshes.length = 0;
+        const len2 = meshes.length;
+        for (let i = 0; i < len2; i++) {
+          const mesh = meshes[i];
+          this.cullStats.total++;
+          if (!mesh || !mesh._modelMatrix) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          const m = mesh._modelMatrix;
+          const toObjX = m[12] - this._camPos[0];
+          const toObjY = m[13] - this._camPos[1];
+          const toObjZ = m[14] - this._camPos[2];
+          const distanceSq2 = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
+          if (distanceSq2 < 4) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          if (distanceSq2 > this.range) {
+            this.cullStats.culled++;
+            continue;
+          }
+          const distance2 = Math.sqrt(distanceSq2);
+          if (distance2 <= 1e-4) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+            continue;
+          }
+          const dot2 = toObjX / distance2 * this._camForward[0] + toObjY / distance2 * this._camForward[1] + toObjZ / distance2 * this._camForward[2];
+          if (dot2 > 0.2) {
+            visibleMeshes.push(mesh);
+            this.cullStats.visible++;
+          } else {
+            this.cullStats.culled++;
+          }
+        }
+        if (visibleMeshes.length > 0) {
+          this.visibleTransparentMeshes.set(pipeline, visibleMeshes);
+        }
+      }
+    }
+  }
+  getStats() {
+    const cullRate = this.cullStats.total > 0 ? (this.cullStats.culled / this.cullStats.total * 100).toFixed(1) : 0;
+    return {
+      total: this.cullStats.total,
+      visible: this.cullStats.visible,
+      culled: this.cullStats.culled,
+      cullRate: `${cullRate}%`
+    };
+  }
+};
+
 // ../../../world.js
 var MatrixEngineWGPU = class {
   // Save class reference
@@ -36370,7 +37791,8 @@ var MatrixEngineWGPU = class {
       FlameEmitter,
       PointerEffect,
       HPBarEffect,
-      MANABarEffect
+      MANABarEffect,
+      KaleidoscopeEffect
     }
   };
   mainRenderBundle = [];
@@ -36442,12 +37864,7 @@ var MatrixEngineWGPU = class {
         this.matrixPhysics.init({ gravity: 10, groundY: -1 });
         this.matrixPhysics.bodyIndexMap = /* @__PURE__ */ new Map();
         this.matrixPhysics._PHYSICS_DRIVE = "JOLT";
-      } else if (typeof options2.useCannon !== "undefined") {
-        this.matrixPhysics = new PhysicsBridge("./ammojs/cannon-es-worker.js");
-        this.matrixPhysics.init({ gravity: 10, groundY: -1 });
-        this.matrixPhysics.bodyIndexMap = /* @__PURE__ */ new Map();
-        this.matrixPhysics._PHYSICS_DRIVE = "CANNON";
-      } else {
+      } else if (typeof options2.useAmmo !== "undefined") {
         this.matrixPhysics = new PhysicsBridge("./ammojs/matrix-ammo-worker.js");
         const G = options2.GRAVITY_Y_AXIS ? options2.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS;
         this.matrixPhysics.init({
@@ -36458,6 +37875,16 @@ var MatrixEngineWGPU = class {
         });
         this.matrixPhysics.bodyIndexMap = /* @__PURE__ */ new Map();
         this.matrixPhysics._PHYSICS_DRIVE = "AMMO";
+      } else if (typeof options2.useCannon !== "undefined") {
+        this.matrixPhysics = new PhysicsBridge("./ammojs/cannon-es-worker.js");
+        this.matrixPhysics.init({ gravity: 10, groundY: -1 });
+        this.matrixPhysics.bodyIndexMap = /* @__PURE__ */ new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = "CANNON";
+      } else if (typeof options2.useMatter !== "undefined") {
+        this.matrixPhysics = new PhysicsBridge("./matterjs/matterjs.js");
+        this.matrixPhysics.init({ gravity: 10, groundY: 0 });
+        this.matrixPhysics.bodyIndexMap = /* @__PURE__ */ new Map();
+        this.matrixPhysics._PHYSICS_DRIVE = "MATTERJS";
       }
     }
     this._sceneData = new Float32Array(48);
@@ -36479,6 +37906,7 @@ var MatrixEngineWGPU = class {
     this._volumetricUniforms = { invViewProjectionMatrix: null };
     this._volumetricLightUniforms = { viewProjectionMatrix: null, direction: null };
     this.usEvent = new CustomEvent("updateSceneContainer", { detail: {} });
+    this.culledRenderPass = new CulledRenderPass();
     this.editor = void 0;
     if (typeof options2.useEditor !== "undefined") {
       if (typeof options2.projectType !== "undefined" && options2.projectType == "created from editor") {
@@ -36499,6 +37927,8 @@ var MatrixEngineWGPU = class {
         this.overrideRender = noShadowPass.bind(this);
       } else if (options2.render == "mobile1") {
         this.overrideRender = mobile1.bind(this);
+      } else if (options2.render == "culling") {
+        this.overrideRender = cullingPass.bind(this);
       }
     }
     window.addEventListener("keydown", (e2) => {
@@ -36577,12 +38007,16 @@ var MatrixEngineWGPU = class {
         this.cameras = {
           cinematicCamera: new CinematicCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "cinematicCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
         };
+      } else if ("planeCamera" == this.options.mainCameraParams.type) {
+        this.cameras = {
+          planeCamera: new PlaneCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "planeCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
+        };
       }
     } else {
       this.cameras = {
-        firstPersonCamera: new FirstPersonCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "firstPersonCamera" == this.options.mainCameraParams.type ? "init active cam" : null }),
+        // firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
         WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "WASD" == this.options.mainCameraParams.type ? "init active cam" : null }),
-        RPG: new RPGCamera({ position: initialCameraPosition, canvas, isActive: "RPG" == this.options.mainCameraParams.type ? "init active cam" : null }),
+        // RPG: new RPGCamera({position: initialCameraPosition, canvas: canvas, isActive: 'RPG' == this.options.mainCameraParams.type ? 'init active cam' : null}),
         cinematicCamera: new CinematicCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "cinematicCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
       };
     }
@@ -36673,7 +38107,7 @@ var MatrixEngineWGPU = class {
       label: "uniformBufferBindGroupLayout in mesh [instanced]",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
       ]
@@ -36743,10 +38177,10 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.12.0 [The beast] ", LOG_FUNNY);
-    console.log("%c\u{1F47D}  ", LOG_FUNNY_EXTRABIG);
+    console.log("%c Version 1.15.5 [The beast] ", LOG_FUNNY);
+    console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open...\nCreative power with intuitive visual scripting work flow.\nNo tracking. No hype. Just solutions and high performance. \u{1F525}",
+      "%cMatrix Engine WGPU - Gate is open...\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
     );
     console.log(
@@ -36865,15 +38299,13 @@ var MatrixEngineWGPU = class {
           code: `
         @group(0) @binding(0) var hdrTex  : texture_2d<f32>;
         @group(0) @binding(1) var samp    : sampler;
-        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;  // NEW
-
+        @group(0) @binding(2) var ssrTex  : texture_2d<f32>;
         @fragment
         fn main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
             let uv  = pos.xy / vec2<f32>(textureDimensions(hdrTex));
             let hdr = textureSample(hdrTex, samp, uv).rgb;
-            let ssr = textureSample(ssrTex, samp, uv);          // NEW
-
-            let composited = mix(hdr, ssr.rgb, ssr.a);           // NEW
+            let ssr = textureSample(ssrTex, samp, uv);
+            let composited = mix(hdr, ssr.rgb, ssr.a);
             let ldr = composited / (composited + vec3(1.0));
             return vec4<f32>(ldr, 1.0);
             // return vec4<f32>(ssr.rgb, 1.0);
@@ -36893,29 +38325,10 @@ var MatrixEngineWGPU = class {
     this.sceneBGL = this.device.createBindGroupLayout({
       label: "SceneBGL",
       entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: { type: "uniform" }
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: "depth",
-            viewDimension: "2d-array"
-          }
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: { type: "comparison" }
-        },
-        {
-          binding: 3,
-          visibility: GPUShaderStage.FRAGMENT,
-          buffer: { type: "read-only-storage" }
-        }
+        { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth", viewDimension: "2d-array" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
       ]
     });
     this.compareSampler = this.device.createSampler({
@@ -36995,6 +38408,10 @@ var MatrixEngineWGPU = class {
       }
     };
     this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
+    this.cameraBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
     this.run(callback);
   }
   createTexArrayForShadows() {
@@ -37097,10 +38514,10 @@ var MatrixEngineWGPU = class {
     this.buildRenderBuckets(this.mainRenderBundle);
     return true;
   };
-  buildRenderBuckets(sceneMeshes) {
+  buildRenderBuckets = () => {
     this.opaqueBuckets.clear();
     this.transparentBuckets.clear();
-    for (const mesh of sceneMeshes) {
+    for (const mesh of this.mainRenderBundle) {
       if (!mesh.pipeline) {
         if (this.flagPreventRebuildMap == false) setTimeout(() => {
           this.buildRenderBuckets(this.mainRenderBundle);
@@ -37120,7 +38537,7 @@ var MatrixEngineWGPU = class {
       bucket.push(mesh);
     }
     this.buildLightShadowBuckets();
-  }
+  };
   buildLightShadowBuckets() {
     this.shadowBuckets.default.length = 0;
     this.shadowBuckets.instanced.length = 0;
@@ -37221,7 +38638,18 @@ var MatrixEngineWGPU = class {
     o2.sceneBGL = this.sceneBGL;
     o2.materialBGL = this.materialBGL;
     o2.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    let myMesh1 = new MEMeshObj(this.canvas, this.device, this.context, o2, this.inputHandler, AM);
+    let myMesh1 = new MEMeshObj(
+      this.canvas,
+      this.device,
+      this.context,
+      o2,
+      this.inputHandler,
+      AM,
+      null,
+      null,
+      null,
+      this.cameraBuffer
+    );
     myMesh1.clearColor = clearColor;
     if (o2.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
@@ -37293,7 +38721,7 @@ var MatrixEngineWGPU = class {
     o2.sceneBGL = this.sceneBGL;
     o2.materialBGL = this.materialBGL;
     o2.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
-    let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o2, this.inputHandler, AM);
+    let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o2, this.inputHandler, AM, this.cameraBuffer);
     myMesh.clearColor = clearColor;
     if (o2.physics.enabled === true) {
       myMesh.itIsPhysicsBody = true;
@@ -37409,41 +38837,43 @@ var MatrixEngineWGPU = class {
       const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
-      camera.update();
+      if (camera._dirtyAngle || camera._dirty) {
+        this.getTransformationMatrix(camera, now2);
+        camera.update();
+      }
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
-        const pass2 = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
+        const p = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
         if (this.shadowBuckets.default.length) {
-          pass2.setPipeline(light.shadowPipeline);
+          p.setPipeline(light.shadowPipeline);
           for (let m of this.shadowBuckets.default) {
-            pass2.setBindGroup(0, light.getShadowBindGroup(m));
-            pass2.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass2, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if (this.shadowBuckets.instanced.length) {
-          pass2.setPipeline(light.shadowPipelineInstanced);
+          p.setPipeline(light.shadowPipelineInstanced);
           for (let m of this.shadowBuckets.instanced) {
-            pass2.setBindGroup(0, light.getShadowBindGroup(m));
-            pass2.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass2, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
         if (this.shadowBuckets.procedural.length) {
-          pass2.setPipeline(light.shadowPipelineMorph);
+          p.setPipeline(light.shadowPipelineMorph);
           for (let m of this.shadowBuckets.procedural) {
-            pass2.setBindGroup(0, light.getShadowBindGroup(m));
-            pass2.setBindGroup(1, m.modelBindGroup);
-            m.drawShadows(pass2, light);
+            p.setBindGroup(0, light.getShadowBindGroup(m));
+            p.setBindGroup(1, m.modelBindGroup);
+            m.drawShadows(p, light);
           }
         }
-        pass2.end();
+        p.end();
       }
       const len2 = this.mainRenderBundle.length;
       for (let i = 0; i < len2; i++) {
         const mesh = this.mainRenderBundle[i];
-        if (mesh.updateInstanceData) mesh.updateInstanceData(mesh.modelMatrix);
+        mesh.updateInstanceData?.(mesh.modelMatrix);
         if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
         mesh.position.update();
         mesh.updateModelUniformBuffer(i);
@@ -37464,8 +38894,8 @@ var MatrixEngineWGPU = class {
             l = mesh.materialBindGroup;
           }
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -37474,8 +38904,8 @@ var MatrixEngineWGPU = class {
         for (const mesh of meshes) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
-          if (mesh.material.type == "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
-          if (mesh.material.type == "water") pass.setBindGroup(3, mesh.waterBindGroup);
+          if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+          if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
         }
       }
@@ -37484,20 +38914,16 @@ var MatrixEngineWGPU = class {
         if (mesh.effects) {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if (effect == null || effect.enabled === false) continue;
+            if (effect === null || effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(pass, mesh, camera.VP);
           }
         }
       }
       pass.end();
-      if (this.ssrPass.enabled == true) {
-        const invProj = new Float32Array(16);
-        mat4Impl.invert(camera.projectionMatrix, invProj);
-        this.ssrPass.updateConfig(
-          invProj,
-          camera.projectionMatrix
-        );
+      if (this.ssrPass.enabled === true) {
+        mat4Impl.invert(camera.VP, this._invViewProj);
+        this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
         this.ssrPass.render(commandEncoder, {
           sceneTextureView: this.sceneTextureView,
           normalTextureView: this.normalTextureView,
@@ -37507,7 +38933,7 @@ var MatrixEngineWGPU = class {
         });
       }
       if (this.volumetricPass.enabled === true) {
-        mat4Impl.invert(camera.VP, this._invViewProj);
+        if (this.ssrPass.enabled === false) mat4Impl.invert(camera.VP, this._invViewProj);
         this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
         for (let i = 0; i < this.lightContainer.length; i++) {
           const light = this.lightContainer[i];
@@ -37528,9 +38954,7 @@ var MatrixEngineWGPU = class {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if (this.bloomPass.enabled == true) {
-        this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
-      }
+      if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
       this.finalPS.colorAttachments[0].view = this._canvasView;
       pass = commandEncoder.beginRenderPass(this.finalPS);
       pass.setPipeline(this.presentPipeline);
@@ -37767,7 +39191,8 @@ var MatrixEngineWGPU = class {
           this.device,
           this.context,
           this.inputHandler,
-          this.globalAmbient.slice()
+          this.globalAmbient.slice(),
+          this.cameraBuffer
         );
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
@@ -37851,7 +39276,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test1/graph.js
-var graph_default = { "nodes": { "node_2": { "noExec": true, "id": "node_2", "title": "Get Scene Light", "x": 372.15625, "y": 416.046875, "category": "scene", "inputs": [], "outputs": [{ "name": "ambientFactor", "type": "value" }, { "name": "setPosX", "type": "object" }, { "name": "setPosY", "type": "object" }, { "name": "setPosZ", "type": "object" }, { "name": "setIntensity", "type": "object" }, { "name": "setInnerCutoff", "type": "object" }, { "name": "setOuterCutoff", "type": "object" }, { "name": "setColor", "type": "object" }, { "name": "setColorR", "type": "object" }, { "name": "setColorB", "type": "object" }, { "name": "setColorG", "type": "object" }, { "name": "setRange", "type": "object" }, { "name": "setAmbientFactor", "type": "object" }, { "name": "setShadowBias", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "light0" }], "builtIn": true, "accessObjectLiteral": "window.app?.lightContainer", "exposeProps": ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"] }, "node_3": { "id": "node_3", "title": "reffunctions", "x": 977.34375, "y": 357.4375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "intensity", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_4": { "id": "node_4", "title": "Get Number", "x": 686.953125, "y": 400.53125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_POWER" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_5": { "id": "node_5", "title": "Get Number", "x": 682.8125, "y": 602.140625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_7": { "id": "node_7", "title": "reffunctions", "x": 988.78125, "y": 557.28125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_10": { "id": "node_10", "title": "reffunctions", "x": 989.671875, "y": 731.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorR", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_11": { "id": "node_11", "title": "Get Number", "x": 698.609375, "y": 789.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_RED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_12": { "id": "node_12", "title": "reffunctions", "x": 1005.078125, "y": 947.953125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorB", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_13": { "id": "node_13", "title": "Get Number", "x": 713.515625, "y": 995.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_BLUE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_14": { "id": "node_14", "title": "reffunctions", "x": 989.984375, "y": 1199.3125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorG", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_15": { "id": "node_15", "title": "Get Number", "x": 740.1006469726562, "y": 1241.9687805175781, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_GREEN" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_16": { "noExec": true, "id": "node_16", "title": "Get Scene Object", "x": 1323.5625, "y": 1496.8125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_17": { "id": "node_17", "x": 1603.234375, "y": 1239.390625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_18": { "id": "node_18", "title": "Get String", "x": 1295.5625, "y": 1325.265625, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_20": { "id": "node_20", "title": "functions", "x": -17.28125, "y": 17.765625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "activateBloomEffect" }], "accessObjectLiteral": "app", "fnName": "activateBloomEffect", "descFunc": "activateBloomEffect" }, "node_22": { "id": "node_22", "title": "Get Number", "x": 128.828125, "y": 221.390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "bloomPower" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_24": { "id": "node_24", "x": 2020.515625, "y": 1696.265625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_25": { "id": "node_25", "title": "Get String", "x": 1221.40625, "y": 1987.234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_26": { "noExec": true, "id": "node_26", "title": "Get Scene Object", "x": 1706.9375, "y": 1755.78125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_42": { "noExec": true, "id": "node_42", "title": "Get Scene Object", "x": 3181.890625, "y": 1338.546875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_43": { "id": "node_43", "x": 3566.53125, "y": 1326.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_44": { "id": "node_44", "title": "Get Number", "x": 3215.9375, "y": 1842.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SMALL_INV_ROT_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_45": { "noExec": true, "id": "node_45", "title": "Get Scene Object", "x": 3187.828125, "y": 1599.359375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_46": { "noExec": true, "id": "node_46", "title": "Get Scene Object", "x": 3195.609375, "y": 2016.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_48": { "id": "node_48", "x": 3566.46875, "y": 1701, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_49": { "id": "node_49", "x": 3574.5625, "y": 2060.640625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_50": { "id": "node_50", "title": "SetTimeout", "x": 3579.765625, "y": 1884.234375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_65": { "id": "node_65", "title": "if", "x": 3154.484375, "y": 719.640625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }] }, "node_69": { "noExec": true, "id": "node_69", "title": "Get Scene Object", "x": 1705.015625, "y": 1972.59375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_70": { "noExec": true, "id": "node_70", "title": "Get Scene Object", "x": 1706.4375, "y": 2193.75, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_71": { "id": "node_71", "x": 2023.84375, "y": 1928.5625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_72": { "id": "node_72", "x": 2021.96875, "y": 2152.53125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_77": { "id": "node_77", "title": "Set Object", "x": -272.625, "y": 9.171875, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_78": { "id": "node_78", "title": "Get Object", "x": -271.75, "y": 168.84375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_84": { "id": "node_84", "title": "Print", "x": 3437.34375, "y": 797.8125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS IS FREE TO PLAY" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_85": { "id": "node_85", "title": "SetTimeout", "x": 3554.40625, "y": 1527.28125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_86": { "id": "node_86", "title": "Get Number", "x": 4025.125, "y": 1846.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPIN_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_87": { "id": "node_87", "x": 4277.9375, "y": 1504.921875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_89": { "id": "node_89", "x": 4306.96875, "y": 2103.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_97": { "id": "node_97", "title": "Function", "x": 5406.890625, "y": 1280.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_98": { "id": "node_98", "title": "GenRandInt", "x": 5180.90625, "y": 1401.8125, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_99": { "id": "node_99", "title": "Get Number", "x": 5091.109375, "y": 2146.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_100": { "id": "node_100", "title": "SetTimeout", "x": 4716.15625, "y": 1556.875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_102": { "id": "node_102", "x": 4921.765625, "y": 1272.671875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_104": { "noExec": true, "id": "node_104", "title": "Get Scene Object", "x": 5421.203125, "y": 1565.96875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_109": { "id": "node_109", "title": "Get Number", "x": 6485.46875, "y": 3241.625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_113": { "noExec": true, "id": "node_113", "title": "Get Scene Object", "x": 5486.765625, "y": 2273.46875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_115": { "id": "node_115", "title": "GenRandInt", "x": 5819.71875, "y": 2246.890625, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_116": { "id": "node_116", "title": "Function", "x": 6078.734375, "y": 2163.59375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_118": { "id": "node_118", "title": "GenRandInt", "x": 5855.5, "y": 3006.875, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_119": { "id": "node_119", "title": "Function", "x": 6183.046875, "y": 2990.25, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_120": { "noExec": true, "id": "node_120", "title": "Get Scene Object", "x": 5513.84375, "y": 3075.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_121": { "id": "node_121", "x": 6522.609375, "y": 3010.75, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_126": { "id": "node_126", "title": "functions", "x": -718.80908203125, "y": -307.0694580078125, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_128": { "id": "node_128", "title": "Get Number", "x": -1016.638916015625, "y": -180.72222900390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_INIT_PITCH" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_130": { "id": "node_130", "title": "Get Number", "x": -1005.2430419921875, "y": 24.24652099609375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_131": { "id": "node_131", "title": "Get Number", "x": -998.861083984375, "y": 238.2430419921875, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Z" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_132": { "id": "node_132", "title": "functions", "x": -686.140625, "y": -41.90625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setY" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setY", "descFunc": "setY" }, "node_137": { "id": "node_137", "title": "functions", "x": -688.15625, "y": 181.71875, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "z", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setZ" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setZ", "descFunc": "setZ" }, "node_139": { "id": "node_139", "title": "Get Number", "x": 5417.203125, "y": 1811.234375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_142": { "id": "node_142", "x": 6558.296875, "y": 2190.84375, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_144": { "id": "node_144", "title": "Get Number", "x": 6347.265625, "y": 2632.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_146": { "id": "node_146", "title": "onLoad", "x": -1718.1807250976562, "y": -728.7395935058594, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_149": { "id": "node_149", "x": 3850.359375, "y": 1616.234375, "title": "Play MP3", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "key", "type": "string", "default": "audio" }, { "name": "src", "type": "string", "default": "" }, { "name": "clones", "type": "value", "default": 1 }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "created", "value": true }, { "key": "key", "value": "start_spin" }, { "key": "src", "value": "res/audios/spin.mp3" }], "noselfExec": "true" }, "node_150": { "id": "node_150", "title": "SetTimeout", "x": 3818.0625, "y": 1951.421875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_160": { "id": "node_160", "title": "Set Object", "x": 3442.03125, "y": 996.734375, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": "" }], "finished": true }, "node_161": { "id": "node_161", "title": "Get Object", "x": 3155.234375, "y": 1053.75, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "USED_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_162": { "id": "node_162", "title": "Get Object", "x": 2519.8125, "y": 930.875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_164": { "id": "node_164", "title": "Get Object", "x": 2523.875, "y": 781.109375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_165": { "id": "node_165", "title": "A != B", "x": 2857.375, "y": 897.234375, "category": "compare", "inputs": [{ "name": "A", "type": "any" }, { "name": "B", "type": "any" }], "outputs": [{ "name": "result", "type": "boolean" }] }, "node_167": { "id": "node_167", "title": "Set Object", "x": 7844.84375, "y": 2837.28125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_168": { "id": "node_168", "title": "Get Object", "x": 7966.9375, "y": 3035.078125, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_169": { "id": "node_169", "title": "Print", "x": 8093.671875, "y": 2833.359375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "MASHINE IS FREE " }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_170": { "id": "node_170", "title": "Comment", "x": 2790.890625, "y": 748.046875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "Equal and NoEqual only compare nodes \nwho works with objects !!!" }] }, "node_172": { "id": "node_172", "x": 5761.578125, "y": 2051.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_174": { "id": "node_174", "x": 5978.875, "y": 2834.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_176": { "id": "node_176", "title": "Get Number", "x": 5711.625, "y": 1683.859375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_177": { "id": "node_177", "x": 5950.9375, "y": 1361.5, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_179": { "id": "node_179", "title": "Mul", "x": 5988.328125, "y": 1788.34375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_180": { "id": "node_180", "title": "Get Number", "x": 5738.21875, "y": 1860.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_181": { "id": "node_181", "title": "SetTimeout", "x": 6245.046875, "y": 1577.140625, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_184": { "id": "node_184", "title": "Get Number", "x": 6065.84375, "y": 2406.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_185": { "id": "node_185", "title": "Mul", "x": 6293.59375, "y": 2485.90625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_186": { "id": "node_186", "title": "Get Number", "x": 6055.53125, "y": 2574.125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_188": { "id": "node_188", "title": "SetTimeout", "x": 6662.84375, "y": 2619.09375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_194": { "id": "node_194", "title": "SetTimeout", "x": 7510.78125, "y": 2875.953125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_195": { "id": "node_195", "title": "SetTimeout", "x": 6881.125, "y": 3011.046875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_196": { "id": "node_196", "x": 7210.9375, "y": 3164.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_197": { "id": "node_197", "title": "SetTimeout", "x": 4286.1875, "y": 1649.359375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_198": { "id": "node_198", "x": 4300.8125, "y": 1804.625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_199": { "id": "node_199", "title": "SetTimeout", "x": 4303.109375, "y": 1959.21875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_200": { "id": "node_200", "title": "Print", "x": 3452.515625, "y": 594.296875, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS USED" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_205": { "id": "node_205", "title": "Get Number", "x": 409.59375, "y": 217.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLUR_EFFECT" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_206": { "id": "node_206", "title": "Comment", "x": 7031.359375, "y": 2832.375, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "NOW STOP SPINING" }] }, "node_207": { "id": "node_207", "title": "functions", "x": 984.359375, "y": 62.625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setKnee" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setKnee", "descFunc": "setKnee" }, "node_208": { "id": "node_208", "title": "functions", "x": 709.546875, "y": 63.234375, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setBlurRadius" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setBlurRadius", "descFunc": "setBlurRadius" }, "node_209": { "id": "node_209", "title": "Get Number", "x": 743.1875, "y": 238.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLOOM_KNEE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_211": { "id": "node_211", "title": "functions", "x": 431.140625, "y": 28.140625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setIntensity" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setIntensity", "descFunc": "setIntensity" }, "node_215": { "id": "node_215", "title": "Function", "x": 369.7292175292969, "y": 2556.8612670898438, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "ctx", "type": "value" }, { "name": "canvas", "type": "value" }, { "name": "arg", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "neonTextEffect" }, "node_231": { "id": "node_231", "x": 992.65625, "y": 3119.546875, "title": "Curve", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "name", "type": "string" }, { "name": "delta", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "name", "value": "Curve1" }], "curve": { "name": "node_231", "keys": [{ "time": 0, "value": 0, "inTangent": 0, "outTangent": 0 }, { "time": 1, "value": 1, "inTangent": 0, "outTangent": 0 }], "length": 1, "loop": true, "samples": 128, "baked": null }, "noselfExec": "true" }, "node_233": { "noExec": true, "id": "node_233", "title": "Get Scene Object", "x": 1247.1875, "y": 2880.078125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "BANNER1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_236": { "id": "node_236", "title": "Mul", "x": 1363.453125, "y": 3296.296875, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_237": { "id": "node_237", "title": "Get Number", "x": 1038.3125, "y": 3386.328125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "MULTIPLY_CURVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_239": { "id": "node_239", "title": "Get Number", "x": 1357.515625, "y": 3480.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_241": { "id": "node_241", "x": 1727.015625, "y": 3126.765625, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_243": { "id": "node_243", "title": "getNumberLiteral", "x": 1351.953125, "y": 3126.109375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "90" }], "noselfExec": "true" }, "node_252": { "noExec": true, "id": "node_252", "title": "Get Scene Object", "x": 3139.484375, "y": 3452.890625, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "CAMERA_JUMPER" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_254": { "id": "node_254", "title": "Get Object", "x": 3141, "y": 3715.921875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_255": { "id": "node_255", "x": 3489.953125, "y": 3351.296875, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_258": { "id": "node_258", "title": "getNumberLiteral", "x": 3089.09375, "y": 3074.984375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "0.03" }], "noselfExec": "true" }, "node_261": { "id": "node_261", "title": "if", "x": 2792.125, "y": 3138.71875, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "true" }], "noselfExec": "true" }, "node_269": { "id": "node_269", "title": "Mul", "x": 3153.6875, "y": 3274.625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_271": { "id": "node_271", "x": 2370.59375, "y": 3180.625, "title": "Audio Reactive Node", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "audioSrc", "type": "string" }, { "name": "loop", "type": "boolean" }, { "name": "thresholdBeat", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "low", "type": "value" }, { "name": "mid", "type": "value" }, { "name": "high", "type": "value" }, { "name": "energy", "type": "value" }, { "name": "beat", "type": "boolean" }], "fields": [{ "key": "audioSrc", "value": "audionautix-black-fly.mp3" }, { "key": "loop", "value": true }, { "key": "thresholdBeat", "value": 0.7 }, { "key": "created", "value": true, "disabled": true }], "noselfExec": "true", "_loading": false, "_beatCooldown": 0 }, "node_275": { "id": "node_275", "title": "Get Boolean", "x": 3489.921875, "y": 3641.328125, "category": "value", "outputs": [{ "name": "result", "type": "boolean" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_276": { "id": "node_276", "title": "Set Boolean", "x": 2913.078125, "y": 2589.90625, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": "true" }], "finished": true }, "node_280": { "id": "node_280", "x": 2458.84375, "y": 2502.921875, "title": "Generator Pyramid", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "levels", "type": "value" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "objectNames", "type": "object" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/cube-g1.webp" }, { "key": "name", "value": "TEST" }, { "key": "levels", "value": "5" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": 10 }, { "key": "delay", "value": "50" }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_281": { "id": "node_281", "type": "getArray", "title": "Get Array", "x": 4353.375, "y": 3439.109375, "fields": [{ "key": "array", "value": [] }], "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "array", "type": "any" }] }, "node_282": { "id": "node_282", "title": "For Each", "type": "forEach", "x": 4596.390625, "y": 3454.578125, "state": { "item": "TEST_54", "index": 54 }, "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "loop", "type": "action" }, { "name": "completed", "type": "action" }, { "name": "item", "type": "any" }, { "name": "index", "type": "value" }] }, "node_284": { "id": "node_284", "x": 4928.7606201171875, "y": 3606.062744140625, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_286": { "id": "node_286", "title": "Mul", "x": 4376.5625, "y": 3749.234375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_287": { "id": "node_287", "title": "getNumberLiteral", "x": 4052.7466430664062, "y": 3551.3613891601562, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": "0.02" }], "noselfExec": "true" }, "node_288": { "id": "node_288", "title": "if", "x": 3794.234375, "y": 3402.265625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }], "noselfExec": "true" }, "node_289": { "id": "node_289", "title": "Get Object", "x": 4691.159912109375, "y": 3881.0072021484375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_290": { "id": "node_290", "title": "Set Boolean", "x": 2114.84375, "y": 2644.125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": false }], "finished": true }, "node_308": { "noExec": true, "id": "node_308", "title": "Get Scene Object", "x": 2356.765625, "y": 1721.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "L_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_309": { "id": "node_309", "x": 2723.4375, "y": 1888.484375, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_310": { "id": "node_310", "title": "Get String", "x": 2483.796875, "y": 2028.75, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "CUBE_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_311": { "noExec": true, "id": "node_311", "title": "Get Scene Object", "x": 2349.734375, "y": 2185, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "R_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_312": { "id": "node_312", "x": 2715.484375, "y": 2184.0625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_313": { "id": "node_313", "title": "Comment", "x": 1832.203125, "y": 2625.671875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON LOAD TEST CASE \n" }] }, "node_314": { "id": "node_314", "title": "Comment", "x": 710.796875, "y": 3127.1875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON DRAW \n" }] }, "node_349": { "noExec": true, "id": "node_349", "title": "Get Scene Object", "x": -124.2569580078125, "y": 1362.0798950195312, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_TOP" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_350": { "id": "node_350", "x": 210.10760498046875, "y": 1170.34033203125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_352": { "id": "node_352", "title": "Get String", "x": -137.607666015625, "y": 1198.6771240234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_363": { "id": "node_363", "title": "getNumberLiteral", "x": -1410.1007080078125, "y": -269.3333740234375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 1 }], "noselfExec": "true" }, "node_367": { "id": "node_367", "title": "functions", "x": -1021.892578125, "y": -538.3471984863281, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "yaw", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setYaw" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setYaw", "descFunc": "setYaw" }, "node_370": { "id": "node_370", "title": "Get Number", "x": -1736.3228759765625, "y": -465.6805725097656, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_371": { "id": "node_371", "title": "functions", "x": -1355.045166015625, "y": -740.0625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "p", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_373": { "noExec": true, "id": "node_373", "title": "Set Shader Graph", "x": 437.08539681682487, "y": 1545.4947693566085, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "objectName": "objectName", "type": "string" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "selectedShader", "value": "ScrollTex" }, { "key": "objectName", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.shaderGraph" }, "node_375": { "id": "node_375", "title": "SetTimeout", "x": -103.77256028580496, "y": 946.6400761224659, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_377": { "id": "node_377", "title": "onLoad", "x": -364.1959955202632, "y": 855.4715120458612, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_378": { "id": "node_378", "x": 665.8666738935068, "y": 1803.8184464830729, "title": "Set Vertex Wave", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "intensity", "type": "value" }, { "name": "enableWave", "type": "boolean" }, { "name": "Wave Speed", "type": "value" }, { "name": "Wave Amplitude", "type": "value" }, { "name": "Wave Frequency", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "L_BOX" }, { "key": "enableWave", "value": "true" }, { "key": "Wave Speed", "value": "0.01" }, { "key": "Wave Amplitude", "value": "0.01" }, { "key": "Wave Frequency", "value": "1.0" }] }, "node_379": { "id": "node_379", "x": 675.2020112430201, "y": 2156.397546517089, "title": "Set Vertex Wind", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableWind", "type": "boolean" }, { "name": "Wind Speed", "type": "value" }, { "name": "Wind Strength", "type": "value" }, { "name": "Wind HeightInfluence", "type": "value" }, { "name": "Wind Turbulence", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "R_BOX" }, { "key": "enableWind", "value": "true" }, { "key": "Wind Speed", "value": "0.1" }, { "key": "Wind Strength", "value": "0.1" }, { "key": "Wind HeightInfluence", "value": "0.1" }, { "key": "Wind Turbulence", "value": "0.1" }] }, "node_380": { "id": "node_380", "x": 552.1799804123478, "y": 2803.3450515604704, "title": "Set CanvasInline", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "canvaInlineProgram", "type": "function" }, { "name": "specialCanvas2dArg", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "BANNER1" }, { "key": "canvaInlineProgram", "value": "function (ctx, canvas) {}" }, { "key": "specialCanvas2dArg", "value": "{ hue: 100, glow: 1, text: 'Balance : 1000', fontSize: 30, flicker: 0.01,  middle: true}" }], "noselfExec": "true" }, "node_382": { "id": "node_382", "x": 2677.2700073026435, "y": 231.24250636550374, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_383": { "id": "node_383", "title": "Get String", "x": 2780.999977204145, "y": 553.118674995782, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL1" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_384": { "id": "node_384", "title": "Starts With [string]", "x": 3132.9308460640964, "y": 370.21204215496925, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_385": { "id": "node_385", "title": "if", "x": 3158.974776623208, "y": 527.616542933595, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_2", "pin": "setIntensity", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "reference" }, "type": "any" }, { "id": "link_3", "from": { "node": "node_4", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "intensity" }, "type": "value" }, { "id": "link_4", "from": { "node": "node_2", "pin": "setPosY", "type": "object", "out": true }, "to": { "node": "node_7", "pin": "reference" }, "type": "any" }, { "id": "link_5", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_6", "from": { "node": "node_5", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_7", "pin": "y2" }, "type": "value" }, { "id": "link_9", "from": { "node": "node_2", "pin": "setColorR", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "reference" }, "type": "any" }, { "id": "link_10", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_11", "from": { "node": "node_11", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_10", "pin": "colorR" }, "type": "value" }, { "id": "link_12", "from": { "node": "node_10", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_13", "from": { "node": "node_2", "pin": "setColorB", "type": "object", "out": true }, "to": { "node": "node_12", "pin": "reference" }, "type": "any" }, { "id": "link_14", "from": { "node": "node_13", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_12", "pin": "colorB" }, "type": "value" }, { "id": "link_15", "from": { "node": "node_2", "pin": "setColorG", "type": "object", "out": true }, "to": { "node": "node_14", "pin": "reference" }, "type": "any" }, { "id": "link_16", "from": { "node": "node_12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_14", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_15", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_14", "pin": "colorG" }, "type": "value" }, { "id": "link_18", "from": { "node": "node_16", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_17", "pin": "exec" }, "type": "action" }, { "id": "link_20", "from": { "node": "node_18", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "texturePath" }, "type": "any" }, { "id": "link_26", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "texturePath" }, "type": "any" }, { "id": "link_27", "from": { "node": "node_17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_24", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_26", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_52", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_43", "pin": "rotation" }, "type": "any" }, { "id": "link_53", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_43", "pin": "x" }, "type": "any" }, { "id": "link_55", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_48", "pin": "rotation" }, "type": "any" }, { "id": "link_57", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_48", "pin": "x" }, "type": "any" }, { "id": "link_58", "from": { "node": "node_48", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_50", "pin": "exec" }, "type": "action" }, { "id": "link_59", "from": { "node": "node_50", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_49", "pin": "exec" }, "type": "action" }, { "id": "link_60", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_49", "pin": "rotation" }, "type": "any" }, { "id": "link_61", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_49", "pin": "x" }, "type": "any" }, { "id": "link_95", "from": { "node": "node_69", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_96", "from": { "node": "node_24", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_71", "pin": "exec" }, "type": "action" }, { "id": "link_97", "from": { "node": "node_71", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_72", "pin": "exec" }, "type": "action" }, { "id": "link_98", "from": { "node": "node_70", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_99", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "texturePath" }, "type": "any" }, { "id": "link_100", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "texturePath" }, "type": "any" }, { "id": "link_104", "from": { "node": "node_77", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_105", "from": { "node": "node_78", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_77", "pin": "value" }, "type": "object" }, { "id": "link_113", "from": { "node": "node_65", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_84", "pin": "exec" }, "type": "action" }, { "id": "link_115", "from": { "node": "node_43", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_85", "pin": "exec" }, "type": "action" }, { "id": "link_116", "from": { "node": "node_85", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_48", "pin": "exec" }, "type": "action" }, { "id": "link_117", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_87", "pin": "rotation" }, "type": "any" }, { "id": "link_119", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_89", "pin": "rotation" }, "type": "any" }, { "id": "link_120", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_87", "pin": "x" }, "type": "any" }, { "id": "link_122", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_89", "pin": "x" }, "type": "any" }, { "id": "link_134", "from": { "node": "node_98", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_97", "pin": "input" }, "type": "value" }, { "id": "link_137", "from": { "node": "node_89", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_100", "pin": "exec" }, "type": "action" }, { "id": "link_138", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_102", "pin": "rotation" }, "type": "any" }, { "id": "link_143", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_102", "pin": "x" }, "type": "any" }, { "id": "link_144", "from": { "node": "node_100", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_102", "pin": "exec" }, "type": "action" }, { "id": "link_166", "from": { "node": "node_115", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_116", "pin": "input" }, "type": "value" }, { "id": "link_172", "from": { "node": "node_118", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_119", "pin": "input" }, "type": "value" }, { "id": "link_174", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_121", "pin": "rotation" }, "type": "any" }, { "id": "link_175", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "y" }, "type": "any" }, { "id": "link_176", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "z" }, "type": "any" }, { "id": "link_178", "from": { "node": "node_119", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "x" }, "type": "any" }, { "id": "link_179", "from": { "node": "node_119", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_121", "pin": "exec" }, "type": "action" }, { "id": "link_182", "from": { "node": "node_128", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_126", "pin": "pitch" }, "type": "value" }, { "id": "link_186", "from": { "node": "node_126", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_132", "pin": "exec" }, "type": "action" }, { "id": "link_188", "from": { "node": "node_130", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_132", "pin": "y2" }, "type": "value" }, { "id": "link_193", "from": { "node": "node_131", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_137", "pin": "z" }, "type": "value" }, { "id": "link_194", "from": { "node": "node_132", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_137", "pin": "exec" }, "type": "action" }, { "id": "link_195", "from": { "node": "node_137", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_77", "pin": "exec" }, "type": "action" }, { "id": "link_207", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_142", "pin": "rotation" }, "type": "any" }, { "id": "link_208", "from": { "node": "node_116", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_142", "pin": "exec" }, "type": "action" }, { "id": "link_211", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "y" }, "type": "any" }, { "id": "link_212", "from": { "node": "node_116", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "x" }, "type": "any" }, { "id": "link_213", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "z" }, "type": "any" }, { "id": "link_218", "from": { "node": "node_49", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_150", "pin": "exec" }, "type": "action" }, { "id": "link_219", "from": { "node": "node_150", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_149", "pin": "exec" }, "type": "action" }, { "id": "link_220", "from": { "node": "node_149", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_87", "pin": "exec" }, "type": "action" }, { "id": "link_235", "from": { "node": "node_84", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_160", "pin": "exec" }, "type": "action" }, { "id": "link_236", "from": { "node": "node_160", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_43", "pin": "exec" }, "type": "action" }, { "id": "link_237", "from": { "node": "node_161", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_160", "pin": "value" }, "type": "object" }, { "id": "link_243", "from": { "node": "node_164", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "A" }, "type": "any" }, { "id": "link_244", "from": { "node": "node_162", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "B" }, "type": "any" }, { "id": "link_245", "from": { "node": "node_165", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_65", "pin": "condition" }, "type": "boolean" }, { "id": "link_248", "from": { "node": "node_168", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_167", "pin": "value" }, "type": "object" }, { "id": "link_249", "from": { "node": "node_167", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_169", "pin": "exec" }, "type": "action" }, { "id": "link_250", "from": { "node": "node_102", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_97", "pin": "exec" }, "type": "action" }, { "id": "link_251", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_172", "pin": "rotation" }, "type": "any" }, { "id": "link_252", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_172", "pin": "x" }, "type": "any" }, { "id": "link_255", "from": { "node": "node_172", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_116", "pin": "exec" }, "type": "action" }, { "id": "link_256", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_174", "pin": "x" }, "type": "any" }, { "id": "link_259", "from": { "node": "node_174", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_119", "pin": "exec" }, "type": "action" }, { "id": "link_260", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_174", "pin": "rotation" }, "type": "any" }, { "id": "link_261", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_177", "pin": "rotation" }, "type": "any" }, { "id": "link_262", "from": { "node": "node_97", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_177", "pin": "exec" }, "type": "action" }, { "id": "link_267", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "y" }, "type": "any" }, { "id": "link_268", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "z" }, "type": "any" }, { "id": "link_269", "from": { "node": "node_176", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "a" }, "type": "value" }, { "id": "link_270", "from": { "node": "node_180", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "b" }, "type": "value" }, { "id": "link_282", "from": { "node": "node_97", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "x" }, "type": "any" }, { "id": "link_283", "from": { "node": "node_184", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "a" }, "type": "value" }, { "id": "link_284", "from": { "node": "node_186", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "b" }, "type": "value" }, { "id": "link_297", "from": { "node": "node_194", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_167", "pin": "exec" }, "type": "action" }, { "id": "link_300", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_196", "pin": "x" }, "type": "any" }, { "id": "link_301", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_196", "pin": "rotation" }, "type": "any" }, { "id": "link_302", "from": { "node": "node_195", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_196", "pin": "exec" }, "type": "action" }, { "id": "link_303", "from": { "node": "node_196", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_194", "pin": "exec" }, "type": "action" }, { "id": "link_304", "from": { "node": "node_87", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_197", "pin": "exec" }, "type": "action" }, { "id": "link_305", "from": { "node": "node_197", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_198", "pin": "exec" }, "type": "action" }, { "id": "link_306", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_198", "pin": "x" }, "type": "any" }, { "id": "link_307", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_198", "pin": "rotation" }, "type": "any" }, { "id": "link_308", "from": { "node": "node_198", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_199", "pin": "exec" }, "type": "action" }, { "id": "link_309", "from": { "node": "node_199", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_89", "pin": "exec" }, "type": "action" }, { "id": "link_310", "from": { "node": "node_65", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_200", "pin": "exec" }, "type": "action" }, { "id": "link_316", "from": { "node": "node_205", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_208", "pin": "v" }, "type": "value" }, { "id": "link_318", "from": { "node": "node_208", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_207", "pin": "exec" }, "type": "action" }, { "id": "link_319", "from": { "node": "node_207", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_320", "from": { "node": "node_209", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_207", "pin": "v" }, "type": "value" }, { "id": "link_321", "from": { "node": "node_20", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_211", "pin": "exec" }, "type": "action" }, { "id": "link_322", "from": { "node": "node_22", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_211", "pin": "v" }, "type": "value" }, { "id": "link_323", "from": { "node": "node_211", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_208", "pin": "exec" }, "type": "action" }, { "id": "link_352", "from": { "node": "node_231", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "a" }, "type": "value" }, { "id": "link_355", "from": { "node": "node_237", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "b" }, "type": "value" }, { "id": "link_362", "from": { "node": "node_233", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_241", "pin": "rotation" }, "type": "any" }, { "id": "link_363", "from": { "node": "node_236", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "y" }, "type": "any" }, { "id": "link_365", "from": { "node": "node_239", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "z" }, "type": "any" }, { "id": "link_366", "from": { "node": "node_231", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_243", "pin": "exec" }, "type": "action" }, { "id": "link_367", "from": { "node": "node_243", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "x" }, "type": "any" }, { "id": "link_368", "from": { "node": "node_243", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_241", "pin": "exec" }, "type": "action" }, { "id": "link_380", "from": { "node": "node_254", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_255", "pin": "rayDirection" }, "type": "object" }, { "id": "link_382", "from": { "node": "node_252", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_255", "pin": "objectName" }, "type": "string" }, { "id": "link_392", "from": { "node": "node_258", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_255", "pin": "exec" }, "type": "action" }, { "id": "link_402", "from": { "node": "node_261", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_258", "pin": "exec" }, "type": "action" }, { "id": "link_409", "from": { "node": "node_258", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "a" }, "type": "value" }, { "id": "link_411", "from": { "node": "node_269", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_255", "pin": "strength" }, "type": "value" }, { "id": "link_414", "from": { "node": "node_271", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_261", "pin": "exec" }, "type": "action" }, { "id": "link_415", "from": { "node": "node_271", "pin": "mid", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "b" }, "type": "value" }, { "id": "link_416", "from": { "node": "node_271", "pin": "beat", "type": "boolean", "out": true }, "to": { "node": "node_261", "pin": "condition" }, "type": "boolean" }, { "id": "link_426", "from": { "node": "node_280", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_276", "pin": "exec" }, "type": "action" }, { "id": "link_427", "from": { "node": "node_280", "pin": "objectNames", "type": "object", "out": true }, "to": { "node": "node_281", "pin": "array" }, "type": "any" }, { "id": "link_429", "from": { "node": "node_281", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_282", "pin": "exec" }, "type": "action" }, { "id": "link_430", "from": { "node": "node_281", "pin": "array", "type": "any", "out": true }, "to": { "node": "node_282", "pin": "array" }, "type": "any" }, { "id": "link_431", "from": { "node": "node_282", "pin": "loop", "type": "action", "out": true }, "to": { "node": "node_284", "pin": "exec" }, "type": "action" }, { "id": "link_432", "from": { "node": "node_282", "pin": "item", "type": "any", "out": true }, "to": { "node": "node_284", "pin": "objectName" }, "type": "string" }, { "id": "link_434", "from": { "node": "node_271", "pin": "high", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "a" }, "type": "value" }, { "id": "link_435", "from": { "node": "node_255", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_288", "pin": "exec" }, "type": "action" }, { "id": "link_436", "from": { "node": "node_275", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_288", "pin": "condition" }, "type": "boolean" }, { "id": "link_437", "from": { "node": "node_288", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_287", "pin": "exec" }, "type": "action" }, { "id": "link_438", "from": { "node": "node_287", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_281", "pin": "exec" }, "type": "action" }, { "id": "link_439", "from": { "node": "node_287", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "b" }, "type": "value" }, { "id": "link_440", "from": { "node": "node_286", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_284", "pin": "strength" }, "type": "value" }, { "id": "link_441", "from": { "node": "node_289", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_284", "pin": "rayDirection" }, "type": "object" }, { "id": "link_443", "from": { "node": "node_290", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_280", "pin": "exec" }, "type": "action" }, { "id": "link_450", "from": { "node": "node_241", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_271", "pin": "exec" }, "type": "action" }, { "id": "link_462", "from": { "node": "node_72", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_309", "pin": "exec" }, "type": "action" }, { "id": "link_463", "from": { "node": "node_308", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_464", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "texturePath" }, "type": "any" }, { "id": "link_465", "from": { "node": "node_311", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_466", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "texturePath" }, "type": "any" }, { "id": "link_467", "from": { "node": "node_309", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_312", "pin": "exec" }, "type": "action" }, { "id": "link_505", "from": { "node": "node_349", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_507", "from": { "node": "node_352", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "texturePath" }, "type": "any" }, { "id": "link_518", "from": { "node": "node_367", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_126", "pin": "exec" }, "type": "action" }, { "id": "link_521", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_367", "pin": "yaw" }, "type": "any" }, { "id": "link_522", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "x2" }, "type": "any" }, { "id": "link_523", "from": { "node": "node_146", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_371", "pin": "exec" }, "type": "action" }, { "id": "link_524", "from": { "node": "node_371", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_367", "pin": "exec" }, "type": "action" }, { "id": "link_526", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "p" }, "type": "any" }, { "id": "link_527", "from": { "node": "node_350", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_373", "pin": "exec" }, "type": "action" }, { "id": "link_533", "from": { "node": "node_377", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_375", "pin": "exec" }, "type": "action" }, { "id": "link_534", "from": { "node": "node_375", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_350", "pin": "exec" }, "type": "action" }, { "id": "link_536", "from": { "node": "node_373", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_378", "pin": "exec" }, "type": "action" }, { "id": "link_537", "from": { "node": "node_378", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_379", "pin": "exec" }, "type": "action" }, { "id": "link_538", "from": { "node": "node_215", "pin": "reference", "type": "function", "out": true }, "to": { "node": "node_380", "pin": "canvaInlineProgram" }, "type": "function" }, { "id": "link_539", "from": { "node": "node_379", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_380", "pin": "exec" }, "type": "action" }, { "id": "link_541", "from": { "node": "node_383", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_384", "pin": "prefix" }, "type": "string" }, { "id": "link_542", "from": { "node": "node_382", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_384", "pin": "input" }, "type": "string" }, { "id": "link_543", "from": { "node": "node_384", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_385", "pin": "condition" }, "type": "boolean" }, { "id": "link_544", "from": { "node": "node_382", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_385", "pin": "exec" }, "type": "action" }, { "id": "link_545", "from": { "node": "node_385", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_65", "pin": "exec" }, "type": "action" }, { "id": "link_546", "from": { "node": "node_177", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_181", "pin": "exec" }, "type": "action" }, { "id": "link_547", "from": { "node": "node_181", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_172", "pin": "exec" }, "type": "action" }, { "id": "link_548", "from": { "node": "node_142", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_188", "pin": "exec" }, "type": "action" }, { "id": "link_549", "from": { "node": "node_188", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_174", "pin": "exec" }, "type": "action" }, { "id": "link_550", "from": { "node": "node_121", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_195", "pin": "exec" }, "type": "action" }], "nodeCounter": 386, "linkCounter": 551, "pan": [-6861, -2577], "variables": { "number": { "LIGHT_POWER": 8, "LIGHT_Y": 65, "COLOR_RED": 1, "COLOR_BLUE": 1, "COLOR_GREEN": 1, "bloomPower": 1, "SMALL_INV_ROT_SPEED": -100, "SPIN_SPEED": 1e4, "ZERO": 0, "RESULT_ANGLE": null, "CAMERA_INIT_PITCH": -0.1, "CAMERA_Y": 3.5, "CAMERA_Z": -12, "DELTA_INV_ON_STOP": 1e3, "NEGATIVE": -1, "BLUR_EFFECT": 3, "BLOOM_KNEE": 1, "MULTIPLY_CURVE": 20 }, "boolean": { "DINAMIC_OBJS_READY": true, "WAVE_EFFECT": true }, "string": { "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.webp", "REEL_TEX": "res/textures/slot/reel1.png", "START_SPIN": "start-spin", "CUBE_TEX": "res/textures/cube-g1.webp", "REEL1": "REEL_2" }, "object": { "SPIN_STATUS": { "status": "free" }, "FREE": { "status": "free" }, "USED_STATUS": { "status": "used" }, "RAY_DIR": [1, 0, 0] } } };
+var graph_default = { "nodes": { "node_2": { "noExec": true, "id": "node_2", "title": "Get Scene Light", "x": 372.15625, "y": 416.046875, "category": "scene", "inputs": [], "outputs": [{ "name": "ambientFactor", "type": "value" }, { "name": "setPosX", "type": "object" }, { "name": "setPosY", "type": "object" }, { "name": "setPosZ", "type": "object" }, { "name": "setIntensity", "type": "object" }, { "name": "setInnerCutoff", "type": "object" }, { "name": "setOuterCutoff", "type": "object" }, { "name": "setColor", "type": "object" }, { "name": "setColorR", "type": "object" }, { "name": "setColorB", "type": "object" }, { "name": "setColorG", "type": "object" }, { "name": "setRange", "type": "object" }, { "name": "setAmbientFactor", "type": "object" }, { "name": "setShadowBias", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "light0" }], "builtIn": true, "accessObjectLiteral": "window.app?.lightContainer", "exposeProps": ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"] }, "node_3": { "id": "node_3", "title": "reffunctions", "x": 977.34375, "y": 357.4375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "intensity", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_4": { "id": "node_4", "title": "Get Number", "x": 686.953125, "y": 400.53125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_POWER" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_5": { "id": "node_5", "title": "Get Number", "x": 682.8125, "y": 602.140625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_7": { "id": "node_7", "title": "reffunctions", "x": 988.78125, "y": 557.28125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_10": { "id": "node_10", "title": "reffunctions", "x": 989.671875, "y": 731.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorR", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_11": { "id": "node_11", "title": "Get Number", "x": 698.609375, "y": 789.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_RED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_12": { "id": "node_12", "title": "reffunctions", "x": 1005.078125, "y": 947.953125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorB", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_13": { "id": "node_13", "title": "Get Number", "x": 713.515625, "y": 995.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_BLUE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_14": { "id": "node_14", "title": "reffunctions", "x": 989.984375, "y": 1199.3125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorG", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_15": { "id": "node_15", "title": "Get Number", "x": 740.1006469726562, "y": 1241.9687805175781, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_GREEN" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_16": { "noExec": true, "id": "node_16", "title": "Get Scene Object", "x": 1323.5625, "y": 1496.8125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_17": { "id": "node_17", "x": 1603.234375, "y": 1239.390625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_18": { "id": "node_18", "title": "Get String", "x": 1295.5625, "y": 1325.265625, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_20": { "id": "node_20", "title": "functions", "x": -17.28125, "y": 17.765625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "activateBloomEffect" }], "accessObjectLiteral": "app", "fnName": "activateBloomEffect", "descFunc": "activateBloomEffect" }, "node_22": { "id": "node_22", "title": "Get Number", "x": 128.828125, "y": 221.390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "bloomPower" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_24": { "id": "node_24", "x": 2020.515625, "y": 1696.265625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_25": { "id": "node_25", "title": "Get String", "x": 1221.40625, "y": 1987.234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_26": { "noExec": true, "id": "node_26", "title": "Get Scene Object", "x": 1706.9375, "y": 1755.78125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_42": { "noExec": true, "id": "node_42", "title": "Get Scene Object", "x": 3181.890625, "y": 1338.546875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_43": { "id": "node_43", "x": 3566.53125, "y": 1326.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_44": { "id": "node_44", "title": "Get Number", "x": 3215.9375, "y": 1842.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SMALL_INV_ROT_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_45": { "noExec": true, "id": "node_45", "title": "Get Scene Object", "x": 3187.828125, "y": 1599.359375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_46": { "noExec": true, "id": "node_46", "title": "Get Scene Object", "x": 3195.609375, "y": 2016.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_48": { "id": "node_48", "x": 3566.46875, "y": 1701, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_49": { "id": "node_49", "x": 3574.5625, "y": 2060.640625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_50": { "id": "node_50", "title": "SetTimeout", "x": 3579.765625, "y": 1884.234375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_65": { "id": "node_65", "title": "if", "x": 3154.484375, "y": 719.640625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }] }, "node_69": { "noExec": true, "id": "node_69", "title": "Get Scene Object", "x": 1705.015625, "y": 1972.59375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_70": { "noExec": true, "id": "node_70", "title": "Get Scene Object", "x": 1706.4375, "y": 2193.75, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_71": { "id": "node_71", "x": 2023.84375, "y": 1928.5625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_72": { "id": "node_72", "x": 2021.96875, "y": 2152.53125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_77": { "id": "node_77", "title": "Set Object", "x": -272.625, "y": 9.171875, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_78": { "id": "node_78", "title": "Get Object", "x": -271.75, "y": 168.84375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_84": { "id": "node_84", "title": "Print", "x": 3437.34375, "y": 797.8125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS IS FREE TO PLAY" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_85": { "id": "node_85", "title": "SetTimeout", "x": 3554.40625, "y": 1527.28125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_86": { "id": "node_86", "title": "Get Number", "x": 4025.125, "y": 1846.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPIN_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_87": { "id": "node_87", "x": 4277.9375, "y": 1504.921875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_89": { "id": "node_89", "x": 4306.96875, "y": 2103.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_97": { "id": "node_97", "title": "Function", "x": 5406.890625, "y": 1280.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_98": { "id": "node_98", "title": "GenRandInt", "x": 5180.90625, "y": 1401.8125, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_99": { "id": "node_99", "title": "Get Number", "x": 5091.109375, "y": 2146.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_100": { "id": "node_100", "title": "SetTimeout", "x": 4716.15625, "y": 1556.875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_102": { "id": "node_102", "x": 4921.765625, "y": 1272.671875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_104": { "noExec": true, "id": "node_104", "title": "Get Scene Object", "x": 5421.203125, "y": 1565.96875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_109": { "id": "node_109", "title": "Get Number", "x": 6485.46875, "y": 3241.625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_113": { "noExec": true, "id": "node_113", "title": "Get Scene Object", "x": 5486.765625, "y": 2273.46875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_115": { "id": "node_115", "title": "GenRandInt", "x": 5819.71875, "y": 2246.890625, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_116": { "id": "node_116", "title": "Function", "x": 6078.734375, "y": 2163.59375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_118": { "id": "node_118", "title": "GenRandInt", "x": 5855.5, "y": 3006.875, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_119": { "id": "node_119", "title": "Function", "x": 6183.046875, "y": 2990.25, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_120": { "noExec": true, "id": "node_120", "title": "Get Scene Object", "x": 5513.84375, "y": 3075.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_121": { "id": "node_121", "x": 6522.609375, "y": 3010.75, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_126": { "id": "node_126", "title": "functions", "x": -718.80908203125, "y": -307.0694580078125, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_128": { "id": "node_128", "title": "Get Number", "x": -1016.638916015625, "y": -180.72222900390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_INIT_PITCH" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_130": { "id": "node_130", "title": "Get Number", "x": -1005.2430419921875, "y": 24.24652099609375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_131": { "id": "node_131", "title": "Get Number", "x": -998.861083984375, "y": 238.2430419921875, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Z" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_132": { "id": "node_132", "title": "functions", "x": -686.140625, "y": -41.90625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setY" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setY", "descFunc": "setY" }, "node_137": { "id": "node_137", "title": "functions", "x": -688.15625, "y": 181.71875, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "z", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setZ" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setZ", "descFunc": "setZ" }, "node_139": { "id": "node_139", "title": "Get Number", "x": 5417.203125, "y": 1811.234375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_142": { "id": "node_142", "x": 6558.296875, "y": 2190.84375, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_144": { "id": "node_144", "title": "Get Number", "x": 6347.265625, "y": 2632.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_146": { "id": "node_146", "title": "onLoad", "x": -1718.1807250976562, "y": -728.7395935058594, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_149": { "id": "node_149", "x": 3850.359375, "y": 1616.234375, "title": "Play MP3", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "key", "type": "string", "default": "audio" }, { "name": "src", "type": "string", "default": "" }, { "name": "clones", "type": "value", "default": 1 }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "created", "value": true }, { "key": "key", "value": "start_spin" }, { "key": "src", "value": "res/audios/spin.mp3" }], "noselfExec": "true" }, "node_150": { "id": "node_150", "title": "SetTimeout", "x": 3818.0625, "y": 1951.421875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_160": { "id": "node_160", "title": "Set Object", "x": 3442.03125, "y": 996.734375, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": "" }], "finished": true }, "node_161": { "id": "node_161", "title": "Get Object", "x": 3155.234375, "y": 1053.75, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "USED_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_162": { "id": "node_162", "title": "Get Object", "x": 2519.8125, "y": 930.875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_164": { "id": "node_164", "title": "Get Object", "x": 2523.875, "y": 781.109375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_165": { "id": "node_165", "title": "A != B", "x": 2857.375, "y": 897.234375, "category": "compare", "inputs": [{ "name": "A", "type": "any" }, { "name": "B", "type": "any" }], "outputs": [{ "name": "result", "type": "boolean" }] }, "node_167": { "id": "node_167", "title": "Set Object", "x": 7844.84375, "y": 2837.28125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_168": { "id": "node_168", "title": "Get Object", "x": 7966.9375, "y": 3035.078125, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_169": { "id": "node_169", "title": "Print", "x": 8093.671875, "y": 2833.359375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "MASHINE IS FREE " }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_170": { "id": "node_170", "title": "Comment", "x": 2790.890625, "y": 748.046875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "Equal and NoEqual only compare nodes \nwho works with objects !!!" }] }, "node_172": { "id": "node_172", "x": 5761.578125, "y": 2051.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_174": { "id": "node_174", "x": 5978.875, "y": 2834.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_176": { "id": "node_176", "title": "Get Number", "x": 5711.625, "y": 1683.859375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_177": { "id": "node_177", "x": 5950.9375, "y": 1361.5, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_179": { "id": "node_179", "title": "Mul", "x": 5988.328125, "y": 1788.34375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_180": { "id": "node_180", "title": "Get Number", "x": 5738.21875, "y": 1860.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_181": { "id": "node_181", "title": "SetTimeout", "x": 6245.046875, "y": 1577.140625, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_184": { "id": "node_184", "title": "Get Number", "x": 6065.84375, "y": 2406.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_185": { "id": "node_185", "title": "Mul", "x": 6293.59375, "y": 2485.90625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_186": { "id": "node_186", "title": "Get Number", "x": 6055.53125, "y": 2574.125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_188": { "id": "node_188", "title": "SetTimeout", "x": 6662.84375, "y": 2619.09375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_194": { "id": "node_194", "title": "SetTimeout", "x": 7510.78125, "y": 2875.953125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_195": { "id": "node_195", "title": "SetTimeout", "x": 6881.125, "y": 3011.046875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_196": { "id": "node_196", "x": 7210.9375, "y": 3164.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_197": { "id": "node_197", "title": "SetTimeout", "x": 4286.1875, "y": 1649.359375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_198": { "id": "node_198", "x": 4300.8125, "y": 1804.625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_199": { "id": "node_199", "title": "SetTimeout", "x": 4303.109375, "y": 1959.21875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_200": { "id": "node_200", "title": "Print", "x": 3452.515625, "y": 594.296875, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS USED" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_205": { "id": "node_205", "title": "Get Number", "x": 409.59375, "y": 217.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLUR_EFFECT" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_206": { "id": "node_206", "title": "Comment", "x": 7031.359375, "y": 2832.375, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "NOW STOP SPINING" }] }, "node_207": { "id": "node_207", "title": "functions", "x": 984.359375, "y": 62.625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setKnee" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setKnee", "descFunc": "setKnee" }, "node_208": { "id": "node_208", "title": "functions", "x": 709.546875, "y": 63.234375, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setBlurRadius" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setBlurRadius", "descFunc": "setBlurRadius" }, "node_209": { "id": "node_209", "title": "Get Number", "x": 743.1875, "y": 238.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLOOM_KNEE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_211": { "id": "node_211", "title": "functions", "x": 431.140625, "y": 28.140625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setIntensity" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setIntensity", "descFunc": "setIntensity" }, "node_215": { "id": "node_215", "title": "Function", "x": 369.7292175292969, "y": 2556.8612670898438, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "ctx", "type": "value" }, { "name": "canvas", "type": "value" }, { "name": "arg", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "neonTextEffect" }, "node_231": { "id": "node_231", "x": 992.65625, "y": 3119.546875, "title": "Curve", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "name", "type": "string" }, { "name": "delta", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "name", "value": "Curve1" }], "curve": { "name": "node_231", "keys": [{ "time": 0, "value": 0, "inTangent": 0, "outTangent": 0 }, { "time": 1, "value": 1, "inTangent": 0, "outTangent": 0 }], "length": 1, "loop": true, "samples": 128, "baked": null }, "noselfExec": "true" }, "node_233": { "noExec": true, "id": "node_233", "title": "Get Scene Object", "x": 1247.1875, "y": 2880.078125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "BANNER1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_236": { "id": "node_236", "title": "Mul", "x": 1363.453125, "y": 3296.296875, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_237": { "id": "node_237", "title": "Get Number", "x": 1038.3125, "y": 3386.328125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "MULTIPLY_CURVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_239": { "id": "node_239", "title": "Get Number", "x": 1357.515625, "y": 3480.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_241": { "id": "node_241", "x": 1727.015625, "y": 3126.765625, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_243": { "id": "node_243", "title": "getNumberLiteral", "x": 1351.953125, "y": 3126.109375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "90" }], "noselfExec": "true" }, "node_252": { "noExec": true, "id": "node_252", "title": "Get Scene Object", "x": 3139.484375, "y": 3452.890625, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "CAMERA_JUMPER" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_254": { "id": "node_254", "title": "Get Object", "x": 3141, "y": 3715.921875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_255": { "id": "node_255", "x": 3489.953125, "y": 3351.296875, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_258": { "id": "node_258", "title": "getNumberLiteral", "x": 3089.09375, "y": 3074.984375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "0.03" }], "noselfExec": "true" }, "node_261": { "id": "node_261", "title": "if", "x": 2792.125, "y": 3138.71875, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "true" }], "noselfExec": "true" }, "node_269": { "id": "node_269", "title": "Mul", "x": 3153.6875, "y": 3274.625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_271": { "id": "node_271", "x": 2370.59375, "y": 3180.625, "title": "Audio Reactive Node", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "audioSrc", "type": "string" }, { "name": "loop", "type": "boolean" }, { "name": "thresholdBeat", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "low", "type": "value" }, { "name": "mid", "type": "value" }, { "name": "high", "type": "value" }, { "name": "energy", "type": "value" }, { "name": "beat", "type": "boolean" }], "fields": [{ "key": "audioSrc", "value": "audionautix-black-fly.mp3" }, { "key": "loop", "value": true }, { "key": "thresholdBeat", "value": 0.7 }, { "key": "created", "value": true, "disabled": true }], "noselfExec": "true", "_loading": false, "_beatCooldown": 0 }, "node_275": { "id": "node_275", "title": "Get Boolean", "x": 3489.921875, "y": 3641.328125, "category": "value", "outputs": [{ "name": "result", "type": "boolean" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_276": { "id": "node_276", "title": "Set Boolean", "x": 2913.078125, "y": 2589.90625, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": "true" }], "finished": true }, "node_280": { "id": "node_280", "x": 2458.84375, "y": 2502.921875, "title": "Generator Pyramid", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "levels", "type": "value" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "objectNames", "type": "object" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/cube-g1.webp" }, { "key": "name", "value": "TEST" }, { "key": "levels", "value": "5" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": 10 }, { "key": "delay", "value": "50" }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_281": { "id": "node_281", "type": "getArray", "title": "Get Array", "x": 4353.375, "y": 3439.109375, "fields": [{ "key": "array", "value": [] }], "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "array", "type": "any" }] }, "node_282": { "id": "node_282", "title": "For Each", "type": "forEach", "x": 4596.390625, "y": 3454.578125, "state": { "item": "TEST_54", "index": 54 }, "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "loop", "type": "action" }, { "name": "completed", "type": "action" }, { "name": "item", "type": "any" }, { "name": "index", "type": "value" }] }, "node_284": { "id": "node_284", "x": 4928.7606201171875, "y": 3606.062744140625, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_286": { "id": "node_286", "title": "Mul", "x": 4376.5625, "y": 3749.234375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_287": { "id": "node_287", "title": "getNumberLiteral", "x": 4052.7466430664062, "y": 3551.3613891601562, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": "0.02" }], "noselfExec": "true" }, "node_288": { "id": "node_288", "title": "if", "x": 3794.234375, "y": 3402.265625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }], "noselfExec": "true" }, "node_289": { "id": "node_289", "title": "Get Object", "x": 4691.159912109375, "y": 3881.0072021484375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_290": { "id": "node_290", "title": "Set Boolean", "x": 2114.84375, "y": 2644.125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": false }], "finished": true }, "node_308": { "noExec": true, "id": "node_308", "title": "Get Scene Object", "x": 2356.765625, "y": 1721.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "L_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_309": { "id": "node_309", "x": 2723.4375, "y": 1888.484375, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_310": { "id": "node_310", "title": "Get String", "x": 2483.796875, "y": 2028.75, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "CUBE_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_311": { "noExec": true, "id": "node_311", "title": "Get Scene Object", "x": 2349.734375, "y": 2185, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "R_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_312": { "id": "node_312", "x": 2715.484375, "y": 2184.0625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_313": { "id": "node_313", "title": "Comment", "x": 1832.203125, "y": 2625.671875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON LOAD TEST CASE \n" }] }, "node_314": { "id": "node_314", "title": "Comment", "x": 710.796875, "y": 3127.1875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON DRAW \n" }] }, "node_349": { "noExec": true, "id": "node_349", "title": "Get Scene Object", "x": -124.2569580078125, "y": 1362.0798950195312, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_TOP" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_350": { "id": "node_350", "x": 210.10760498046875, "y": 1170.34033203125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_352": { "id": "node_352", "title": "Get String", "x": -137.607666015625, "y": 1198.6771240234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_363": { "id": "node_363", "title": "getNumberLiteral", "x": -1410.1007080078125, "y": -269.3333740234375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 1 }], "noselfExec": "true" }, "node_367": { "id": "node_367", "title": "functions", "x": -1021.892578125, "y": -538.3471984863281, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "yaw", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setYaw" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setYaw", "descFunc": "setYaw" }, "node_370": { "id": "node_370", "title": "Get Number", "x": -1736.3228759765625, "y": -465.6805725097656, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_371": { "id": "node_371", "title": "functions", "x": -1355.045166015625, "y": -740.0625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "p", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_373": { "noExec": true, "id": "node_373", "title": "Set Shader Graph", "x": 437.08539681682487, "y": 1545.4947693566085, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "objectName": "objectName", "type": "string" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "selectedShader", "value": "ScrollTex" }, { "key": "objectName", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.shaderGraph" }, "node_375": { "id": "node_375", "title": "SetTimeout", "x": -103.77256028580496, "y": 946.6400761224659, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_377": { "id": "node_377", "title": "onLoad", "x": -364.1959955202632, "y": 855.4715120458612, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_378": { "id": "node_378", "x": 665.8666738935068, "y": 1803.8184464830729, "title": "Set Vertex Wave", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "intensity", "type": "value" }, { "name": "enableWave", "type": "boolean" }, { "name": "Wave Speed", "type": "value" }, { "name": "Wave Amplitude", "type": "value" }, { "name": "Wave Frequency", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "L_BOX" }, { "key": "enableWave", "value": "true" }, { "key": "Wave Speed", "value": "0.01" }, { "key": "Wave Amplitude", "value": "0.01" }, { "key": "Wave Frequency", "value": "1.0" }] }, "node_379": { "id": "node_379", "x": 675.2020112430201, "y": 2156.397546517089, "title": "Set Vertex Wind", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableWind", "type": "boolean" }, { "name": "Wind Speed", "type": "value" }, { "name": "Wind Strength", "type": "value" }, { "name": "Wind HeightInfluence", "type": "value" }, { "name": "Wind Turbulence", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "R_BOX" }, { "key": "enableWind", "value": "true" }, { "key": "Wind Speed", "value": "0.1" }, { "key": "Wind Strength", "value": "0.1" }, { "key": "Wind HeightInfluence", "value": "0.1" }, { "key": "Wind Turbulence", "value": "0.1" }] }, "node_380": { "id": "node_380", "x": 552.1799804123478, "y": 2803.3450515604704, "title": "Set CanvasInline", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "canvaInlineProgram", "type": "function" }, { "name": "specialCanvas2dArg", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "BANNER1" }, { "key": "canvaInlineProgram", "value": "function (ctx, canvas) {}" }, { "key": "specialCanvas2dArg", "value": "{ hue: 100, glow: 1, text: 'Balance : 1000', fontSize: 30, flicker: 0.01,  middle: true}" }], "noselfExec": "true" }, "node_382": { "id": "node_382", "x": 2677.2700073026435, "y": 231.24250636550374, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_383": { "id": "node_383", "title": "Get String", "x": 2780.999977204145, "y": 553.118674995782, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL1" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_384": { "id": "node_384", "title": "Starts With [string]", "x": 3132.9308460640964, "y": 370.21204215496925, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_385": { "id": "node_385", "title": "if", "x": 3158.974776623208, "y": 527.616542933595, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_2", "pin": "setIntensity", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "reference" }, "type": "any" }, { "id": "link_3", "from": { "node": "node_4", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "intensity" }, "type": "value" }, { "id": "link_4", "from": { "node": "node_2", "pin": "setPosY", "type": "object", "out": true }, "to": { "node": "node_7", "pin": "reference" }, "type": "any" }, { "id": "link_5", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_6", "from": { "node": "node_5", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_7", "pin": "y2" }, "type": "value" }, { "id": "link_9", "from": { "node": "node_2", "pin": "setColorR", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "reference" }, "type": "any" }, { "id": "link_10", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_11", "from": { "node": "node_11", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_10", "pin": "colorR" }, "type": "value" }, { "id": "link_12", "from": { "node": "node_10", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_13", "from": { "node": "node_2", "pin": "setColorB", "type": "object", "out": true }, "to": { "node": "node_12", "pin": "reference" }, "type": "any" }, { "id": "link_14", "from": { "node": "node_13", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_12", "pin": "colorB" }, "type": "value" }, { "id": "link_15", "from": { "node": "node_2", "pin": "setColorG", "type": "object", "out": true }, "to": { "node": "node_14", "pin": "reference" }, "type": "any" }, { "id": "link_16", "from": { "node": "node_12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_14", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_15", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_14", "pin": "colorG" }, "type": "value" }, { "id": "link_18", "from": { "node": "node_16", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_17", "pin": "exec" }, "type": "action" }, { "id": "link_20", "from": { "node": "node_18", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "texturePath" }, "type": "any" }, { "id": "link_26", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "texturePath" }, "type": "any" }, { "id": "link_27", "from": { "node": "node_17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_24", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_26", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_52", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_43", "pin": "rotation" }, "type": "any" }, { "id": "link_53", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_43", "pin": "x" }, "type": "any" }, { "id": "link_55", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_48", "pin": "rotation" }, "type": "any" }, { "id": "link_57", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_48", "pin": "x" }, "type": "any" }, { "id": "link_58", "from": { "node": "node_48", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_50", "pin": "exec" }, "type": "action" }, { "id": "link_59", "from": { "node": "node_50", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_49", "pin": "exec" }, "type": "action" }, { "id": "link_60", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_49", "pin": "rotation" }, "type": "any" }, { "id": "link_61", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_49", "pin": "x" }, "type": "any" }, { "id": "link_95", "from": { "node": "node_69", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_96", "from": { "node": "node_24", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_71", "pin": "exec" }, "type": "action" }, { "id": "link_97", "from": { "node": "node_71", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_72", "pin": "exec" }, "type": "action" }, { "id": "link_98", "from": { "node": "node_70", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_99", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "texturePath" }, "type": "any" }, { "id": "link_100", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "texturePath" }, "type": "any" }, { "id": "link_104", "from": { "node": "node_77", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_105", "from": { "node": "node_78", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_77", "pin": "value" }, "type": "object" }, { "id": "link_113", "from": { "node": "node_65", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_84", "pin": "exec" }, "type": "action" }, { "id": "link_115", "from": { "node": "node_43", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_85", "pin": "exec" }, "type": "action" }, { "id": "link_116", "from": { "node": "node_85", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_48", "pin": "exec" }, "type": "action" }, { "id": "link_117", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_87", "pin": "rotation" }, "type": "any" }, { "id": "link_119", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_89", "pin": "rotation" }, "type": "any" }, { "id": "link_120", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_87", "pin": "x" }, "type": "any" }, { "id": "link_122", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_89", "pin": "x" }, "type": "any" }, { "id": "link_134", "from": { "node": "node_98", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_97", "pin": "input" }, "type": "value" }, { "id": "link_137", "from": { "node": "node_89", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_100", "pin": "exec" }, "type": "action" }, { "id": "link_138", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_102", "pin": "rotation" }, "type": "any" }, { "id": "link_143", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_102", "pin": "x" }, "type": "any" }, { "id": "link_144", "from": { "node": "node_100", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_102", "pin": "exec" }, "type": "action" }, { "id": "link_166", "from": { "node": "node_115", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_116", "pin": "input" }, "type": "value" }, { "id": "link_172", "from": { "node": "node_118", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_119", "pin": "input" }, "type": "value" }, { "id": "link_174", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_121", "pin": "rotation" }, "type": "any" }, { "id": "link_175", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "y" }, "type": "any" }, { "id": "link_176", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "z" }, "type": "any" }, { "id": "link_178", "from": { "node": "node_119", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "x" }, "type": "any" }, { "id": "link_179", "from": { "node": "node_119", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_121", "pin": "exec" }, "type": "action" }, { "id": "link_182", "from": { "node": "node_128", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_126", "pin": "pitch" }, "type": "value" }, { "id": "link_186", "from": { "node": "node_126", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_132", "pin": "exec" }, "type": "action" }, { "id": "link_188", "from": { "node": "node_130", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_132", "pin": "y2" }, "type": "value" }, { "id": "link_193", "from": { "node": "node_131", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_137", "pin": "z" }, "type": "value" }, { "id": "link_194", "from": { "node": "node_132", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_137", "pin": "exec" }, "type": "action" }, { "id": "link_195", "from": { "node": "node_137", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_77", "pin": "exec" }, "type": "action" }, { "id": "link_207", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_142", "pin": "rotation" }, "type": "any" }, { "id": "link_208", "from": { "node": "node_116", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_142", "pin": "exec" }, "type": "action" }, { "id": "link_211", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "y" }, "type": "any" }, { "id": "link_212", "from": { "node": "node_116", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "x" }, "type": "any" }, { "id": "link_213", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "z" }, "type": "any" }, { "id": "link_218", "from": { "node": "node_49", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_150", "pin": "exec" }, "type": "action" }, { "id": "link_219", "from": { "node": "node_150", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_149", "pin": "exec" }, "type": "action" }, { "id": "link_220", "from": { "node": "node_149", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_87", "pin": "exec" }, "type": "action" }, { "id": "link_235", "from": { "node": "node_84", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_160", "pin": "exec" }, "type": "action" }, { "id": "link_236", "from": { "node": "node_160", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_43", "pin": "exec" }, "type": "action" }, { "id": "link_237", "from": { "node": "node_161", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_160", "pin": "value" }, "type": "object" }, { "id": "link_243", "from": { "node": "node_164", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "A" }, "type": "any" }, { "id": "link_244", "from": { "node": "node_162", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "B" }, "type": "any" }, { "id": "link_245", "from": { "node": "node_165", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_65", "pin": "condition" }, "type": "boolean" }, { "id": "link_248", "from": { "node": "node_168", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_167", "pin": "value" }, "type": "object" }, { "id": "link_249", "from": { "node": "node_167", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_169", "pin": "exec" }, "type": "action" }, { "id": "link_250", "from": { "node": "node_102", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_97", "pin": "exec" }, "type": "action" }, { "id": "link_251", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_172", "pin": "rotation" }, "type": "any" }, { "id": "link_252", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_172", "pin": "x" }, "type": "any" }, { "id": "link_255", "from": { "node": "node_172", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_116", "pin": "exec" }, "type": "action" }, { "id": "link_256", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_174", "pin": "x" }, "type": "any" }, { "id": "link_259", "from": { "node": "node_174", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_119", "pin": "exec" }, "type": "action" }, { "id": "link_260", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_174", "pin": "rotation" }, "type": "any" }, { "id": "link_261", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_177", "pin": "rotation" }, "type": "any" }, { "id": "link_262", "from": { "node": "node_97", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_177", "pin": "exec" }, "type": "action" }, { "id": "link_267", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "y" }, "type": "any" }, { "id": "link_268", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "z" }, "type": "any" }, { "id": "link_269", "from": { "node": "node_176", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "a" }, "type": "value" }, { "id": "link_270", "from": { "node": "node_180", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "b" }, "type": "value" }, { "id": "link_282", "from": { "node": "node_97", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "x" }, "type": "any" }, { "id": "link_283", "from": { "node": "node_184", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "a" }, "type": "value" }, { "id": "link_284", "from": { "node": "node_186", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "b" }, "type": "value" }, { "id": "link_297", "from": { "node": "node_194", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_167", "pin": "exec" }, "type": "action" }, { "id": "link_300", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_196", "pin": "x" }, "type": "any" }, { "id": "link_301", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_196", "pin": "rotation" }, "type": "any" }, { "id": "link_302", "from": { "node": "node_195", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_196", "pin": "exec" }, "type": "action" }, { "id": "link_303", "from": { "node": "node_196", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_194", "pin": "exec" }, "type": "action" }, { "id": "link_304", "from": { "node": "node_87", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_197", "pin": "exec" }, "type": "action" }, { "id": "link_305", "from": { "node": "node_197", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_198", "pin": "exec" }, "type": "action" }, { "id": "link_306", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_198", "pin": "x" }, "type": "any" }, { "id": "link_307", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_198", "pin": "rotation" }, "type": "any" }, { "id": "link_308", "from": { "node": "node_198", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_199", "pin": "exec" }, "type": "action" }, { "id": "link_309", "from": { "node": "node_199", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_89", "pin": "exec" }, "type": "action" }, { "id": "link_310", "from": { "node": "node_65", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_200", "pin": "exec" }, "type": "action" }, { "id": "link_316", "from": { "node": "node_205", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_208", "pin": "v" }, "type": "value" }, { "id": "link_318", "from": { "node": "node_208", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_207", "pin": "exec" }, "type": "action" }, { "id": "link_319", "from": { "node": "node_207", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_320", "from": { "node": "node_209", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_207", "pin": "v" }, "type": "value" }, { "id": "link_321", "from": { "node": "node_20", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_211", "pin": "exec" }, "type": "action" }, { "id": "link_322", "from": { "node": "node_22", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_211", "pin": "v" }, "type": "value" }, { "id": "link_323", "from": { "node": "node_211", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_208", "pin": "exec" }, "type": "action" }, { "id": "link_352", "from": { "node": "node_231", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "a" }, "type": "value" }, { "id": "link_355", "from": { "node": "node_237", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "b" }, "type": "value" }, { "id": "link_362", "from": { "node": "node_233", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_241", "pin": "rotation" }, "type": "any" }, { "id": "link_363", "from": { "node": "node_236", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "y" }, "type": "any" }, { "id": "link_365", "from": { "node": "node_239", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "z" }, "type": "any" }, { "id": "link_366", "from": { "node": "node_231", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_243", "pin": "exec" }, "type": "action" }, { "id": "link_367", "from": { "node": "node_243", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "x" }, "type": "any" }, { "id": "link_368", "from": { "node": "node_243", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_241", "pin": "exec" }, "type": "action" }, { "id": "link_380", "from": { "node": "node_254", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_255", "pin": "rayDirection" }, "type": "object" }, { "id": "link_382", "from": { "node": "node_252", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_255", "pin": "objectName" }, "type": "string" }, { "id": "link_392", "from": { "node": "node_258", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_255", "pin": "exec" }, "type": "action" }, { "id": "link_402", "from": { "node": "node_261", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_258", "pin": "exec" }, "type": "action" }, { "id": "link_409", "from": { "node": "node_258", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "a" }, "type": "value" }, { "id": "link_411", "from": { "node": "node_269", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_255", "pin": "strength" }, "type": "value" }, { "id": "link_414", "from": { "node": "node_271", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_261", "pin": "exec" }, "type": "action" }, { "id": "link_415", "from": { "node": "node_271", "pin": "mid", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "b" }, "type": "value" }, { "id": "link_416", "from": { "node": "node_271", "pin": "beat", "type": "boolean", "out": true }, "to": { "node": "node_261", "pin": "condition" }, "type": "boolean" }, { "id": "link_426", "from": { "node": "node_280", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_276", "pin": "exec" }, "type": "action" }, { "id": "link_427", "from": { "node": "node_280", "pin": "objectNames", "type": "object", "out": true }, "to": { "node": "node_281", "pin": "array" }, "type": "any" }, { "id": "link_429", "from": { "node": "node_281", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_282", "pin": "exec" }, "type": "action" }, { "id": "link_430", "from": { "node": "node_281", "pin": "array", "type": "any", "out": true }, "to": { "node": "node_282", "pin": "array" }, "type": "any" }, { "id": "link_431", "from": { "node": "node_282", "pin": "loop", "type": "action", "out": true }, "to": { "node": "node_284", "pin": "exec" }, "type": "action" }, { "id": "link_432", "from": { "node": "node_282", "pin": "item", "type": "any", "out": true }, "to": { "node": "node_284", "pin": "objectName" }, "type": "string" }, { "id": "link_434", "from": { "node": "node_271", "pin": "high", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "a" }, "type": "value" }, { "id": "link_435", "from": { "node": "node_255", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_288", "pin": "exec" }, "type": "action" }, { "id": "link_436", "from": { "node": "node_275", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_288", "pin": "condition" }, "type": "boolean" }, { "id": "link_437", "from": { "node": "node_288", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_287", "pin": "exec" }, "type": "action" }, { "id": "link_438", "from": { "node": "node_287", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_281", "pin": "exec" }, "type": "action" }, { "id": "link_439", "from": { "node": "node_287", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "b" }, "type": "value" }, { "id": "link_440", "from": { "node": "node_286", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_284", "pin": "strength" }, "type": "value" }, { "id": "link_441", "from": { "node": "node_289", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_284", "pin": "rayDirection" }, "type": "object" }, { "id": "link_443", "from": { "node": "node_290", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_280", "pin": "exec" }, "type": "action" }, { "id": "link_450", "from": { "node": "node_241", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_271", "pin": "exec" }, "type": "action" }, { "id": "link_462", "from": { "node": "node_72", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_309", "pin": "exec" }, "type": "action" }, { "id": "link_463", "from": { "node": "node_308", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_464", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "texturePath" }, "type": "any" }, { "id": "link_465", "from": { "node": "node_311", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_466", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "texturePath" }, "type": "any" }, { "id": "link_467", "from": { "node": "node_309", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_312", "pin": "exec" }, "type": "action" }, { "id": "link_505", "from": { "node": "node_349", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_507", "from": { "node": "node_352", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "texturePath" }, "type": "any" }, { "id": "link_518", "from": { "node": "node_367", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_126", "pin": "exec" }, "type": "action" }, { "id": "link_521", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_367", "pin": "yaw" }, "type": "any" }, { "id": "link_522", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "x2" }, "type": "any" }, { "id": "link_523", "from": { "node": "node_146", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_371", "pin": "exec" }, "type": "action" }, { "id": "link_524", "from": { "node": "node_371", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_367", "pin": "exec" }, "type": "action" }, { "id": "link_526", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "p" }, "type": "any" }, { "id": "link_527", "from": { "node": "node_350", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_373", "pin": "exec" }, "type": "action" }, { "id": "link_533", "from": { "node": "node_377", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_375", "pin": "exec" }, "type": "action" }, { "id": "link_534", "from": { "node": "node_375", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_350", "pin": "exec" }, "type": "action" }, { "id": "link_536", "from": { "node": "node_373", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_378", "pin": "exec" }, "type": "action" }, { "id": "link_537", "from": { "node": "node_378", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_379", "pin": "exec" }, "type": "action" }, { "id": "link_538", "from": { "node": "node_215", "pin": "reference", "type": "function", "out": true }, "to": { "node": "node_380", "pin": "canvaInlineProgram" }, "type": "function" }, { "id": "link_539", "from": { "node": "node_379", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_380", "pin": "exec" }, "type": "action" }, { "id": "link_541", "from": { "node": "node_383", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_384", "pin": "prefix" }, "type": "string" }, { "id": "link_542", "from": { "node": "node_382", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_384", "pin": "input" }, "type": "string" }, { "id": "link_543", "from": { "node": "node_384", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_385", "pin": "condition" }, "type": "boolean" }, { "id": "link_544", "from": { "node": "node_382", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_385", "pin": "exec" }, "type": "action" }, { "id": "link_545", "from": { "node": "node_385", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_65", "pin": "exec" }, "type": "action" }, { "id": "link_546", "from": { "node": "node_177", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_181", "pin": "exec" }, "type": "action" }, { "id": "link_547", "from": { "node": "node_181", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_172", "pin": "exec" }, "type": "action" }, { "id": "link_548", "from": { "node": "node_142", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_188", "pin": "exec" }, "type": "action" }, { "id": "link_549", "from": { "node": "node_188", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_174", "pin": "exec" }, "type": "action" }, { "id": "link_550", "from": { "node": "node_121", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_195", "pin": "exec" }, "type": "action" }], "nodeCounter": 386, "linkCounter": 551, "pan": [-6861, -2577], "variables": { "number": { "LIGHT_POWER": 8, "LIGHT_Y": 65, "COLOR_RED": 1, "COLOR_BLUE": 1, "COLOR_GREEN": 1, "bloomPower": 1, "SMALL_INV_ROT_SPEED": -100, "SPIN_SPEED": 1e4, "ZERO": 0, "RESULT_ANGLE": null, "CAMERA_INIT_PITCH": -0.1, "CAMERA_Y": 3.5, "CAMERA_Z": -12, "DELTA_INV_ON_STOP": 1e3, "NEGATIVE": -1, "BLUR_EFFECT": 3, "BLOOM_KNEE": 1, "MULTIPLY_CURVE": 20 }, "boolean": { "DINAMIC_OBJS_READY": true, "WAVE_EFFECT": true }, "string": { "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.webp", "REEL_TEX": "res/textures/slot/reel1-lod0.webp", "START_SPIN": "start-spin", "CUBE_TEX": "res/textures/cube-g1.webp", "REEL1": "REEL_2" }, "object": { "SPIN_STATUS": { "status": "free" }, "FREE": { "status": "free" }, "USED_STATUS": { "status": "used" }, "RAY_DIR": [1, 0, 0] } } };
 
 // ../../../../projects/Test1/shader-graphs.js
 var shaderGraphsProdc = [

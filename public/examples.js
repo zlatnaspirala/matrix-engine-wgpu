@@ -28367,10 +28367,6 @@ exports.CulledRenderPass = void 0;
 /**
  * @description
  * MEWGPU - Scene Culling System for massive scenes.
- */
-/**
- * @description
- * MEWGPU - Scene Culling System for massive scenes.
  * Optimized with static array caching to eliminate runtime memory allocation.
  */
 class CulledRenderPass {
@@ -36454,6 +36450,18 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           sampler: {
             type: 'comparison'
           }
+        }, {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'float'
+          }
+        }, {
+          binding: 3,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'filtering'
+          }
         }]
       });
       this.effects = {};
@@ -36960,7 +36968,7 @@ class SpotLight {
     this.direction = _wgpuMatrix.vec3.create();
     this.intensity = 20.0;
     this.color = _wgpuMatrix.vec3.create(1.0, 1.0, 1.0);
-    this._lightBuffer = new Float32Array(36);
+    this._lightBuffer = new Float32Array(44);
     this._diffScratch = _wgpuMatrix.vec3.create();
     this._dirScratch = _wgpuMatrix.vec3.create();
     this._viewMatrix = _wgpuMatrix.mat4.create();
@@ -37012,6 +37020,9 @@ class SpotLight {
     };
     this.shadowTextureView = shadowPassView;
     this.shadowSampler = shadowSampler;
+    this._goboRect = new Float32Array([0, 0, 0.125, 1]);
+    this.goboAtlasView = null;
+    this.goboAtlasSampler = null;
     this.renderPassDescriptor = {
       label: "descriptor shadowPass[SpotLight]",
       colorAttachments: [],
@@ -37337,7 +37348,7 @@ class SpotLight {
       },
       primitive: this.primitive
     });
-    this.getMainPassBindGroup = function (mesh) {
+    this.getMainPassBindGroup = mesh => {
       const key = mesh.name;
       if (this.mainPassBindGroupContainer[key]) return this.mainPassBindGroupContainer[key];
       const entries = [{
@@ -37346,20 +37357,17 @@ class SpotLight {
       }, {
         binding: 1,
         resource: this.shadowSampler
+      }, {
+        binding: 2,
+        resource: this.goboAtlasView
+      }, {
+        binding: 3,
+        resource: this.goboAtlasSampler
       }];
-      if (this.hasProjection) {
-        entries.push({
-          binding: 2,
-          resource: this.projectedTexture
-        });
-        entries.push({
-          binding: 3,
-          resource: this.projectedSampler
-        });
-      }
       this.mainPassBindGroupContainer[key] = this.device.createBindGroup({
-        label: 'mainPassBindGroup for mesh',
-        layout: this.hasProjection ? mesh.mainPassBindGroupLayoutProjected : mesh.mainPassBindGroupLayout,
+        label: 'mainPassBindGroup [gobo] for mesh',
+        layout: mesh.mainPassBindGroupLayout,
+        // layout must include bindings 2+3 (see mesh patch)
         entries
       });
       return this.mainPassBindGroupContainer[key];
@@ -37389,6 +37397,29 @@ class SpotLight {
     this._lightBufferDirty = true;
     return true;
   }
+  setGobo(rect, atlas) {
+    this._goboRect.set(rect);
+    this.goboAtlasView = atlas.view;
+    this.goboAtlasSampler = atlas.sampler;
+    this._lightBufferDirty = true;
+    // Invalidate bind group cache — binding 2/3 now point at atlas
+    this.mainPassBindGroupContainer = {};
+  }
+
+  /**
+   * Removes gobo from this light — reverts to white sentinel (no effect).
+   * @param {GoboAtlas} atlas - needed to keep binding slots valid (white pixel)
+   */
+  clearGobo(atlas) {
+    this._goboRect[0] = 0;
+    this._goboRect[1] = 0;
+    this._goboRect[2] = 1 / atlas.maxSlots; // u_max of slot 0
+    this._goboRect[3] = 1;
+    this.goboAtlasView = atlas.view; // still bind atlas, just white rect
+    this.goboAtlasSampler = atlas.sampler;
+    this._lightBufferDirty = true;
+    this.mainPassBindGroupContainer = {};
+  }
 
   /**
    * Returns the packed Float32Array for the spotlight uniform array.
@@ -37412,7 +37443,12 @@ class SpotLight {
     b[17] = this.ambientFactor;
     b[18] = this.shadowBias;
     b[19] = 0.0;
-    b.set(m, 20);
+    b.set(m, 20); // mat4 → offsets 20-35
+    b.set(this._goboRect, 36); // vec4 → offsets 36-39  [u_min, v_min, u_max, v_max]
+    b[40] = 0.0; // padding
+    b[41] = 0.0;
+    b[42] = 0.0;
+    b[43] = 0.0;
     this._lightBufferDirty = false;
     return b;
   }
@@ -42461,7 +42497,7 @@ exports.default = MEMeshObj;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.cullingPass = void 0;
+exports.noShadowPass = exports.cullingPass = void 0;
 var _utils = require("../utils");
 // no integrated yet
 let cullingPass = function () {
@@ -42619,6 +42655,132 @@ let cullingPass = function () {
   }
 };
 exports.cullingPass = cullingPass;
+let noShadowPass = function () {
+  const now2 = performance.now();
+  this.now = now2 * 0.001;
+  this.lastFrameMS = this.now;
+  this.autoUpdate.forEach(_ => _.update());
+  requestAnimationFrame(this.frame);
+  try {
+    let commandEncoder = this.device.createCommandEncoder();
+    if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
+    this.updateLights();
+    const camera = this.getCamera();
+    this._sceneData[44] = (performance.now() - this.startTime) / 1000;
+    this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
+    if (camera._dirtyAngle || camera._dirty) {
+      this.getTransformationMatrix(camera, now2);
+      camera.update();
+    }
+    const len = this.mainRenderBundle.length;
+    for (let i = 0; i < len; i++) {
+      const mesh = this.mainRenderBundle[i];
+      mesh.updateInstanceData?.(mesh.modelMatrix);
+      if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
+      mesh.position.update();
+      mesh.updateModelUniformBuffer(i);
+      if (mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
+      if (mesh.update) mesh.update(now2);
+      if (mesh.isVideo) mesh.updateVideoTexture();
+      if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
+
+      // ← ADD THIS: Update world-space bounding sphere if mesh moved
+      mesh.updateBoundingSphere?.();
+    }
+
+    // ← ADD THIS: Frustum cull all meshes before rendering (1-2ms overhead)
+    const cullStartMs = performance.now();
+    this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
+    const cullTimeMs = performance.now() - cullStartMs;
+    // console.log(`Cull: ${cullTimeMs.toFixed(2)}ms`); // Uncomment to measure
+
+    this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
+    let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
+    pass.setBindGroup(0, this.sceneBindGroup);
+
+    // ← CHANGE: Use visibleOpaqueMeshes instead of opaqueBuckets
+    for (const [pipeline, meshes] of this.culledRenderPass.visibleOpaqueMeshes) {
+      pass.setPipeline(pipeline);
+      let l = null;
+      for (const mesh of meshes) {
+        if (mesh.materialBindGroup !== l) {
+          pass.setBindGroup(1, mesh.materialBindGroup);
+          l = mesh.materialBindGroup;
+        }
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+
+    // ← CHANGE: Use visibleTransparentMeshes instead of transparentBuckets
+    for (const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
+      pass.setPipeline(pipeline);
+      for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.materialBindGroup);
+        pass.setBindGroup(2, mesh.modelBindGroup);
+        if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
+        if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
+        mesh.drawElements(pass, this.lightContainer);
+      }
+    }
+    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
+      const mesh = this.mainRenderBundle[meshIndex];
+      if (mesh.effects) {
+        for (const effectName in mesh.effects) {
+          const effect = mesh.effects[effectName];
+          if (effect === null || effect.enabled === false) continue;
+          if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+          effect.render(pass, mesh, camera.VP);
+        }
+      }
+    }
+    pass.end();
+    if (this.ssrPass.enabled === true) {
+      mat4.invert(camera.VP, this._invViewProj);
+      this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
+      this.ssrPass.render(commandEncoder, {
+        sceneTextureView: this.sceneTextureView,
+        normalTextureView: this.normalTextureView,
+        mainDepthView: this.mainDepthView,
+        mainDepthTexture: this.mainDepthTexture,
+        worldPosTextureView: this.worldPosTextureView
+      });
+    }
+    if (this.volumetricPass.enabled === true) {
+      if (this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
+      this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
+      for (let i = 0; i < this.lightContainer.length; i++) {
+        const light = this.lightContainer[i];
+        this._volumetricLightUniforms.viewProjectionMatrix = light.viewProjMatrix;
+        this._volumetricLightUniforms.direction = light.direction;
+        this.volumetricPass.render(commandEncoder, this.sceneTextureView, this.mainDepthView, this.shadowArrayView, this._volumetricUniforms, this._volumetricLightUniforms);
+      }
+    }
+    const canvasTexture = this.context.getCurrentTexture();
+    if (this._lastCanvasTex !== canvasTexture) {
+      this._lastCanvasTex = canvasTexture;
+      this._canvasView = canvasTexture.createView();
+    }
+    if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+    this.finalPS.colorAttachments[0].view = this._canvasView;
+    pass = commandEncoder.beginRenderPass(this.finalPS);
+    pass.setPipeline(this.presentPipeline);
+    pass.setBindGroup(0, this._activeBindGroup);
+    pass.draw(6);
+    pass.end();
+    this.submitQueue[0] = commandEncoder.finish();
+    this.device.queue.submit(this.submitQueue);
+    this.submitQueue[0] = null;
+    if (this.collisionSystem) this.collisionSystem.update();
+    this.graphUpdate(this.now);
+    this.blendQueue.length = 0;
+  } catch (err) {
+    if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, _utils.LOG_WARN);
+  }
+};
+exports.noShadowPass = noShadowPass;
 
 },{"../utils":90}],76:[function(require,module,exports){
 "use strict";
