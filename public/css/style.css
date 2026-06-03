@@ -1886,8 +1886,8 @@ svg.connections {
 
 .fancy-grid-bg.dark {
   background:
-    radial-gradient(circle at 20% 30%,
-      rgba(0, 115, 255, 0.2),
+    radial-gradient(circle at 30% 0%,
+      rgba(0, 115, 255, 0.818),
       transparent 40%
     ),
     linear-gradient(
