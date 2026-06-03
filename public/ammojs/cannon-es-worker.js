@@ -208,6 +208,13 @@ class MatrixCannon {
     body.quaternion.copy(quat);
     body.isKinematic = isKinematic;
     this.world.addBody(body);
+
+    // test 
+    console.log('this.world.broadphase.dirty',this.world.broadphase.dirty)
+    this.world.broadphase.dirty = true;
+// or for cannon-es:
+    this.world.broadphase.needsUpdate = true;
+    //
     return this._registerBody(body, pOptions);
   }
 

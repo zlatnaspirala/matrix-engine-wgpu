@@ -30,7 +30,8 @@ export async function physicsBodiesGenerator(
   scale = [1, 1, 1],
   sum = 20,
   delay = 500,
-  mesh = null) {
+  mesh = null,
+  posOffset = {x: 0, y: 0, z: 0}) {   // <-- add this
 
   return new Promise((resolve) => {
     let engine = this;
@@ -39,26 +40,28 @@ export async function physicsBodiesGenerator(
     function handler(m) {
       let ALL = [];
       let RAY = {enabled: (raycast == true ? true : false), radius: 1};
-      for(var x = 0;x < sum;x++) {
+      for(let x = 0;x < sum;x++) {
         const cubeName = name + '_' + x;
         setTimeout(() => {
-
           engine.addMeshObj({
             material: {type: material},
-            position: pos,
+            position: {
+              x: pos.x + (Math.random() - 0.5) * posOffset.x,
+              y: pos.y + (Math.random() - 0.5) * posOffset.y,
+              z: pos.z + (Math.random() - 0.5) * posOffset.z
+            },
             rotation: rot,
             rotationSpeed: {x: 0, y: 0, z: 0},
-            texturesPaths: [texturePath],
+            texturesPaths: typeof texturePath === 'string' ? [texturePath] : [texturePath[x]],
             name: cubeName,
             mesh: m.mesh,
             physics: {
               enabled: true,
               geometry: geometry,
-              group: 2 // cannon
+              group: 2
             },
             raycast: RAY
           });
-          // cache
           const o = app.getSceneObjectByName(cubeName);
           runtimeCacheObjs.push(o);
           local.push(o.name);
@@ -74,7 +77,6 @@ export async function physicsBodiesGenerator(
           }
         }
       }, delay * sum * 3)
-
     }
 
     if(geometry == "Cube") {
@@ -82,7 +84,6 @@ export async function physicsBodiesGenerator(
     } else if(geometry == "Sphere") {
       downloadMeshes(inputSphere, handler, {scale: scale})
     }
-
   })
 }
 

@@ -1,14 +1,15 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {addRaycastsListener} from "../src/engine/raycast.js";
+import {addRaycastsAABBListener, addRaycastsListener} from "../src/engine/raycast.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 import {PVector} from "../src/engine/matrix-class.js";
 import {isMobile} from "../src/engine/utils.js";
 
 export var loadDrumCannon = function() {
-  let drumCannon = new MatrixEngineWGPU({
+  let DRUM = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    useCannon: true,
+    // useCannon: true,
+    useJolt: true,
     fastRender: 0.9,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -19,63 +20,23 @@ export var loadDrumCannon = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
-    drumCannon.addLight();
-    addRaycastsListener();
+    DRUM.addLight();
+    addRaycastsAABBListener();
     addEventListener('PhysicsReady', () => {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         plane: "./res/meshes/blender/plane.obj",
+        planeZ: "./res/meshes/obj/plane-z.obj",
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj",
         side: "./res/meshes/obj/drumpart.obj",
         side2: "./res/meshes/obj/drumpart2.obj"
       }, onGround, {scale: [1, 1, 1]})
-      // drumCannon.matrixPhysics.speedUpSimulation(4);
-
-      // drumCannon.physicsBodiesChain();
-      // // drumCannon.physicsBodiesGeneratorDeepPyramid(
-      // //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
-      // //   "./res/textures/gold-1.webp", "pyr", 2, true, [1, 1, 1], 2, 400
-      // // );
-
-      // // Buildin options
-      // app.physicsBodiesGeneratorWall("standard",
-      //   {x: -4.5, y: 0, z: -10}, {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",],
-      //   'my_set_walls', "2x2", true, [1, 1, 1], 2, 70);
-
-      let strength = 10;
-      drumCannon.canvas.addEventListener("ray.hit.event", (e) => {
-        console.log('ray.hit.event detected');
-        let b = app.matrixPhysics.getBodyByName(e.detail.hitObject.name);
-        app.matrixPhysics.applyImpulse(b, new PVector(
-          e.detail.rayDirection[0] * strength,
-          e.detail.rayDirection[1] * strength,
-          e.detail.rayDirection[2] * strength))
-      });
+      // DRUM.matrixPhysics.speedUpSimulation(4);
+      // DRUM.physicsBodiesChain();
     })
 
     async function onGround(m) {
-
-      // const myComplexGeometry = drumCannon.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 8, y: 4, z: -6},
-      //   rotation: {x: 0, y: 0, z: 0.02},
-      //   scale: [3, 3, 3],
-      //   texturesPaths: ['./res/textures/slot/reel1-lod0.webp'],
-      //   name: 'MyHull',
-      //   mesh: m.reel,
-      //   physics: {
-      //     enabled: true,
-      //     mass: 2,
-      //     geometry: "ConvexHull",
-      //     vertices: m.reel.vertices,
-      //     indices: m.reel.indices,
-      //     group: 2,
-      //     mask: -1,
-      //   },
-      //   raycast: {enabled: true, radius: 1}
-      // });
 
       let cam = app.getCamera();
       cam.setYaw(-0.03);
@@ -84,7 +45,7 @@ export var loadDrumCannon = function() {
       cam.setY(13);
       cam._dirtyAngle = true;
 
-      drumCannon.addMeshObj({
+      DRUM.addMeshObj({
         position: {x: 0, y: -0.5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -95,9 +56,8 @@ export var loadDrumCannon = function() {
         physics: {enabled: false}
       });
 
-      // DRUM
-      // BOTTOM
-      const drum0 = drumCannon.addMeshObj({
+      // DRUM BOTTOM
+      const drum0 = DRUM.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 14.5, z: -20},
         rotation: {x: 0, y: 0, z: 0},
@@ -112,10 +72,10 @@ export var loadDrumCannon = function() {
           geometry: "Cube",
           group: 1,
         },
-        raycast: {enabled: true, radius: 1}
+        raycast: {enabled: false, radius: 1}
       })
 
-      const drum1 = drumCannon.addMeshObj({
+      const drum1 = DRUM.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 21, z: -13.5},
         rotation: {x: 20, y: 0, z: 0},
@@ -133,10 +93,10 @@ export var loadDrumCannon = function() {
           indices: m.reel.indices,
           group: 1,
         },
-        raycast: {enabled: true, radius: 1}
+        raycast: {enabled: false, radius: 1}
       })
 
-      const drum2 = drumCannon.addMeshObj({
+      const drum2 = DRUM.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 21, z: -27.5},
         rotation: {x: -20, y: 0, z: 0},
@@ -153,10 +113,10 @@ export var loadDrumCannon = function() {
           indices: m.reel.indices,
           group: 1,
         },
-        raycast: {enabled: true, radius: 1}
+        raycast: {enabled: false, radius: 1}
       })
 
-      const drum3 = drumCannon.addMeshObj({
+      const drum3 = DRUM.addMeshObj({
         material: {type: 'standard'},
         position: {x: 5.5, y: 21, z: -20},
         rotation: {x: 0, y: 0, z: 0},
@@ -169,38 +129,33 @@ export var loadDrumCannon = function() {
           mass: 0,
           enabled: true,
           geometry: "Cube",
-          vertices: m.reel.vertices,
-          indices: m.reel.indices,
-          group: 1,
-          mask: 2,
-        },
-        raycast: {enabled: true, radius: 1}
-      })
-
-      const drum4 = drumCannon.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: -5.5, y: 21, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [0.5, 10, 8],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_l2',
-        mesh: m.cube,
-        physics: {
-          mass: 0,
-          enabled: true,
-          kinematic: true,
-          geometry: "Cube",
           group: 1,
           // mask: 2,
         },
+        raycast: {enabled: false, radius: 1}
+      })
+
+      const drum4 = DRUM.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: -7, y: 21, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [2, 10, 8],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_l2',
+        mesh: m.planeZ,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube",
+          group: 1,
+        },
         raycast: {enabled: true, radius: 1}
       })
 
 
 
-
-      // drumCannon.addProceduralMeshObj({
+      // DRUM.addProceduralMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 10, y: 15, z: -17},
       //   rotation: {x: 0, y: 0, z: 0},
@@ -222,7 +177,7 @@ export var loadDrumCannon = function() {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      // drumCannon.addProceduralMeshObj({
+      // DRUM.addProceduralMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 6, y: 15, z: -17},
       //   rotation: {x: 0, y: 0, z: 0},
@@ -244,7 +199,7 @@ export var loadDrumCannon = function() {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      // drumCannon.addProceduralMeshObj({
+      // DRUM.addProceduralMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 1, y: 3, z: -7},
       //   rotation: {x: 0, y: 0, z: 0},
@@ -265,50 +220,49 @@ export var loadDrumCannon = function() {
       //   },
       //   raycast: {enabled: true, radius: 1}
       // });
-
       // not isolated bug yet - selecting not precise!
       setTimeout(async () => {
+        drum0.setBlend(0.1)
+        drum1.setBlend(0.1)
+        drum2.setBlend(0.1)
+        drum3.setBlend(0.1)
+        drum4.setBlend(0.1)
 
+        let textures = [];
 
-        drum0.setBlend(0.5)
-        drum1.setBlend(0.5)
-        drum2.setBlend(0.4)
-        drum3.setBlend(0.4)
-        drum4.setBlend(0.4)
+        for (var j=1;j< 40;j++) {
+          textures.push(`res/textures/numbers/${j}.png`)
+        }
 
-        drumCannon.physicsBodiesGenerator(
+        DRUM.physicsBodiesGenerator(
           "standard",
-          {x: 0, y: 150, z: -20},
+          {x: 0, y: 50, z: -20},
           {x: 0, y: 0, z: 0},
-          "res/textures/star1.png",
+          textures,
           "testGen",
           "Sphere",
           false,
           [1, 1, 1],
-          15, 1
+          35, 100, null,
+          {x: 1.1, y: 1.1, z: 1.1} // offset - just little to not get ball on ball effect
         ).then((T) => {
-
-
-          // app.matrixPhysics.createBoundedSpace(T, {x: 0, y: 15, z: -20}, {x: 5, y: 5, z: 5});
-
-
           console.log(T)
-          setTimeout(async () => {app.matrixPhysics.lotteryMachineShake(T, 0.001)}, 4000)
-
-          //  app.matrixPhysics.createSphereBoundary(T, {x: 0, y: 25, z: -20}, 20);
-
+          DRUM.canvas.addEventListener("ray.hit.event", (e) => {
+            console.log('ray.hit.event detected');
+            if(e.detail.hitObject.name.startsWith('bure_l2')) {
+              app.matrixPhysics.lotteryMachineShake(T, 250)
+            }
+          });
+          // setTimeout(async () => {app.matrixPhysics.lotteryMachineShake(T, 0.001)}, 4000)
         })
 
-
-
-
-        //   console.log(T + "<<<<<<<<<<<<<<<<<<<>>>>>")
       }, 2500)
 
       if(isMobile() == false) app.activateBloomEffect();
-      drumCannon.lightContainer[0].setPosY(14);
-      drumCannon.lightContainer[0].setIntensity(24);
+      DRUM.lightContainer[0].setPosY(45);
+      DRUM.lightContainer[0].setIntensity(80);
     }
+
   })
-  window.app = drumCannon;
+  window.app = DRUM;
 }

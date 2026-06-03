@@ -262,7 +262,7 @@ class MatrixJolt {
   }
 
   _addSphere(pOptions) {
-    return this._createBody(pOptions, new this.Jolt.SphereShape(pOptions.scale[0], null));
+    return this._createBody(pOptions, new this.Jolt.SphereShape(pOptions.scale[0] * 1.25, null));
   }
 
   _addBox(pOptions) {
@@ -335,6 +335,20 @@ class MatrixJolt {
     Jolt.destroy(settings);
     return body;
   }
+
+lotteryMachineShake(ids, strength = 25) {
+  ids.forEach(id => {
+    const body = this.rigidBodies[id];
+    if(!body) return;
+
+    const fx = (Math.random() - 0.5) * 2 * strength;
+    const fy = Math.random() * 2 * strength;
+    const fz = (Math.random() - 0.5) * 2 * strength;
+
+    this.bodyInterface.ActivateBody(body.GetID());
+    this.bodyInterface.AddForce(body.GetID(), new this.Jolt.Vec3(fx, fy, fz));
+  });
+}
 
   _addBvhMesh(pOptions) {
     const Jolt = this.Jolt;
@@ -650,5 +664,6 @@ self.onmessage = async ({data}) => {
 
     // new
     case 'isSleeping': jolt.isSleeping(data.idx); break;
+    case 'lotteryMachineShake': jolt.lotteryMachineShake(data.ids, data.strength); break;
   }
 };
