@@ -1851,10 +1851,9 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var loadDrumCannon = function () {
   let DRUM = new _world.default({
     canvasSize: 'fullscreen',
-    // useCannon: true,
     useJolt: true,
     fastRender: 0.9,
-    MAX_SPOTLIGHTS: 1,
+    MAX_SPOTLIGHTS: 4,
     MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
@@ -1891,6 +1890,8 @@ var loadDrumCannon = function () {
       cam.setZ(0);
       cam.setY(13);
       cam._dirtyAngle = true;
+
+      // Ground
       DRUM.addMeshObj({
         position: {
           x: 0,
@@ -1915,6 +1916,7 @@ var loadDrumCannon = function () {
           enabled: false
         }
       });
+      let drumY = 14.5;
 
       // DRUM BOTTOM
       const drum0 = DRUM.addMeshObj({
@@ -1923,7 +1925,7 @@ var loadDrumCannon = function () {
         },
         position: {
           x: 0,
-          y: 14.5,
+          y: drumY,
           z: -20
         },
         rotation: {
@@ -1939,6 +1941,40 @@ var loadDrumCannon = function () {
         scale: [4.3, 0.5, 4.3],
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_bottom',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube",
+          group: 1
+        },
+        raycast: {
+          enabled: false,
+          radius: 1
+        }
+      });
+      const drumTop = DRUM.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: drumY + 14,
+          z: -22
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [5, 1, 7],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'bure_top1',
         mesh: m.cube,
         physics: {
           enabled: true,
@@ -2138,27 +2174,6 @@ var loadDrumCannon = function () {
       //   raycast: {enabled: true, radius: 1}
       // });
 
-      // DRUM.addProceduralMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 1, y: 3, z: -7},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1_low.webp'],
-      //   meshA: MeshMorpher.cone(1, 3, false),
-      //   meshB: MeshMorpher.cube(1),
-      //   name: `morph_cone`,
-      //   physics: {
-      //     enabled: true,
-      //     geometry: "Cone",
-      //     mass: 1,
-      //     radius: 1,
-      //     height: 3,
-      //     group: 2,
-      //     mask: -1,
-      //   },
-      //   raycast: {enabled: true, radius: 1}
-      // });
       // not isolated bug yet - selecting not precise!
       setTimeout(async () => {
         drum0.setBlend(0.1);
@@ -2178,7 +2193,7 @@ var loadDrumCannon = function () {
           x: 0,
           y: 0,
           z: 0
-        }, textures, "testGen", "Sphere", false, [1, 1, 1], 35, 100, null, {
+        }, textures, "balls", "Sphere", false, [1, 1, 1], 35, 100, null, {
           x: 1.1,
           y: 1.1,
           z: 1.1
