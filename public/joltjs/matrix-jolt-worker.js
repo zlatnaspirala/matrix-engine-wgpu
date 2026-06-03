@@ -147,7 +147,7 @@ class MatrixJolt {
         cmd: "collision",
         body0Name: b1.name,
         body1Name: b2.name,
-        normal: this._arr, manifold: manifold
+        normal: this._arr, manifold: manifold,
       });
       this.Jolt.destroy(p);
     };
@@ -453,6 +453,7 @@ lotteryMachineShake(ids, strength = 25) {
   setBodyTransform(idx, x, y, z) {
     const b = this.rigidBodies[idx];
     this._vector0.Set(x, y, z);
+    // this.bodyInterface.SetMotionType(idx, this.Jolt.EMotionType_Kinematic, this.Jolt.EActivation_Activate);
     if(b) this.bodyInterface.SetPosition(b.GetID(), this._vector0, this.Jolt.EActivation_Activate);
   }
 

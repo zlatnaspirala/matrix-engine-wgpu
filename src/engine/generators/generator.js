@@ -31,7 +31,7 @@ export async function physicsBodiesGenerator(
   sum = 20,
   delay = 500,
   mesh = null,
-  posOffset = {x: 0, y: 0, z: 0}) {   // <-- add this
+  posOffset = {x: 0, y: 0, z: 0}) {
 
   return new Promise((resolve) => {
     let engine = this;
@@ -76,7 +76,7 @@ export async function physicsBodiesGenerator(
             resolve(ALL);
           }
         }
-      }, delay * sum * 3)
+      }, delay * sum * 1.1)
     }
 
     if(geometry == "Cube") {
