@@ -458,16 +458,14 @@ class MatrixJolt {
     if(b) this.bodyInterface.SetPosition(b.GetID(), this._vector0, this.Jolt.EActivation_Activate);
   }
 
-setKinematicTransform(idx, x, y, z) {
-  const b = this.rigidBodies[idx];
-  if (!b) return;
-  const id = b.GetID();
-  this._vector0.Set(x, y, z);
-  const rot = this.bodyInterface.GetRotation(id);
-  this.bodyInterface.SetPositionAndRotationWhenChanged(
-    id, this._vector0, rot, this.Jolt.EActivation_Activate
-  );
-}
+  setKinematicTransform(idx, x, y, z) {
+    const b = this.rigidBodies[idx];
+    if(!b) return;
+    const id = b.GetID();
+    this._vector0.Set(x, y, z);
+    const rot = this.bodyInterface.GetRotation(id);
+    this.bodyInterface.SetPositionAndRotationWhenChanged(id, this._vector0, rot, this.Jolt.EActivation_Activate);
+  }
 
   clearBody(idx) {
     const b = this.rigidBodies[idx];
@@ -591,27 +589,27 @@ setKinematicTransform(idx, x, y, z) {
     }
   }
 
-switchToKinematic(idx) {
-  const Jolt = this.Jolt;
-  const b = this.rigidBodies[idx];
-  if (!b) return;
+  switchToKinematic(idx) {
+    const Jolt = this.Jolt;
+    const b = this.rigidBodies[idx];
+    if(!b) return;
 
-  const id = b.GetID();
+    const id = b.GetID();
 
-  // zero velocity while still dynamic
-  this.bodyInterface.SetLinearVelocity(id, this._zero);
-  this.bodyInterface.SetAngularVelocity(id, this._zero);
+    // zero velocity while still dynamic
+    this.bodyInterface.SetLinearVelocity(id, this._zero);
+    this.bodyInterface.SetAngularVelocity(id, this._zero);
 
-  // switch motion type
-  this.bodyInterface.SetMotionType(id, Jolt.EMotionType_Kinematic, Jolt.EActivation_Activate);
+    // switch motion type
+    this.bodyInterface.SetMotionType(id, Jolt.EMotionType_Kinematic, Jolt.EActivation_Activate);
 
-  // hard teleport — no velocity computed
-  const pos = this.bodyInterface.GetPosition(id);
-  const rot = this.bodyInterface.GetRotation(id);
-  this.bodyInterface.SetPositionAndRotationWhenChanged(id, pos, rot, Jolt.EActivation_DontActivate);
+    // hard teleport — no velocity computed
+    const pos = this.bodyInterface.GetPosition(id);
+    const rot = this.bodyInterface.GetRotation(id);
+    this.bodyInterface.SetPositionAndRotationWhenChanged(id, pos, rot, Jolt.EActivation_DontActivate);
 
-  b.isKinematic = true;
-}
+    b.isKinematic = true;
+  }
   switchToDinamic(idx) {
     const b = this.rigidBodies[idx];
     this.bodyInterface.SetMotionType(
@@ -640,7 +638,7 @@ switchToKinematic(idx) {
     if(!snap) return;
     const bi = this.bodyInterface;
     const ids = this.bodyIDs;
-    
+
     const count = ids.length;
     for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;

@@ -1,10 +1,9 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener, addRaycastsListener} from "../src/engine/raycast.js";
-import {MeshMorpher} from "../src/engine/procedural-mesh.js";
-import {PVector} from "../src/engine/matrix-class.js";
+// import {MeshMorpher} from "../src/engine/procedural-mesh.js";
+// import {PVector} from "../src/engine/matrix-class.js";
 import {isMobile} from "../src/engine/utils.js";
-import {spiralDown} from "../src/engine/procedures/sceneobjectKinematics.js";
 
 export var loadDrumCannon = function() {
   let DRUM = new MatrixEngineWGPU({
@@ -43,13 +42,12 @@ export var loadDrumCannon = function() {
       cam.setZ(0);
       cam.setY(13);
       cam._dirtyAngle = true;
-
       // Ground
       DRUM.addMeshObj({
         position: {x: 0, y: -0.5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [25, 0.1, 25],
+        scale: [35, 1, 35],
         texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
         name: 'ground',
         mesh: m.plane,
@@ -65,7 +63,7 @@ export var loadDrumCannon = function() {
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [4.3, 0.5, 4.3],
-        texturesPaths: ['./res/textures/floor1.webp'],
+        // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_bottom',
         mesh: m.cube,
         physics: {
@@ -120,7 +118,7 @@ export var loadDrumCannon = function() {
         position: {x: -3.3, y: drumY + 15, z: -13},
         rotation: {x: -7, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [1.3, 1.3, 1],
+        scale: [1.35, 1.35, 1],
         // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_topBlock1',
         mesh: m.cube,
@@ -139,7 +137,7 @@ export var loadDrumCannon = function() {
         position: {x: 3.3, y: drumY + 15, z: -13},
         rotation: {x: -7, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [1.3, 1.3, 1],
+        scale: [1.35, 1.35, 1],
         // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_topBlock2',
         mesh: m.cube,
@@ -176,7 +174,7 @@ export var loadDrumCannon = function() {
         rotation: {x: 20, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [4.5, 8, 0.5],
-        texturesPaths: ['./res/textures/floor1.webp'],
+        // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_r1',
         mesh: m.cube,
         physics: {
@@ -197,7 +195,7 @@ export var loadDrumCannon = function() {
         rotation: {x: -20, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [4.5, 8, 0.5],
-        texturesPaths: ['./res/textures/floor1.webp'],
+        // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_r2',
         mesh: m.cube,
         physics: {
@@ -217,7 +215,7 @@ export var loadDrumCannon = function() {
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [0.5, 10, 8],
-        texturesPaths: ['./res/textures/floor1.webp'],
+        // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_l1',
         mesh: m.cube,
         physics: {
@@ -236,9 +234,9 @@ export var loadDrumCannon = function() {
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [2, 10, 8],
-        texturesPaths: ['./res/textures/floor1.webp'],
+        // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_l2',
-        mesh: m.planeZ,
+        mesh: m.cube,
         physics: {
           mass: 0,
           enabled: true,
@@ -253,8 +251,8 @@ export var loadDrumCannon = function() {
         position: {x: 0, y: drumY + 10, z: -35},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [5, 0.5, 5],
-        texturesPaths: ['./res/textures/floor1.webp'],
+        scale: [5, 1, 5],
+        // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'ballcatch',
         mesh: m.cube,
         physics: {
@@ -265,7 +263,6 @@ export var loadDrumCannon = function() {
         },
         raycast: {enabled: false, radius: 1}
       })
-
 
       // not isolated bug yet - selecting not precise!
       setTimeout(async () => {
@@ -324,29 +321,29 @@ export var loadDrumCannon = function() {
         })
       }, 2500)
 
-      /**
- * @param {number} idx - Body Index
- * @param {number} t - Progress 0 to 1
- * @param {Object} config - { radius, height, rotations, centerX, centerZ }
- */
-      DRUM.animateSpiral = function(idx, t, config) {
-        const {radius, height, rotations, centerX, centerZ} = config;
+      DRUM.animateSpiral = (idx, delay, opts) => {
+        const {radius, height, rotations, centerX, centerZ, startY, duration = 5.0} = opts;
+        const totalFrames = Math.round(duration * 60);
+        let frame = 0;
+        setTimeout(() => {
+          const interval = setInterval(() => {
+            if(frame >= totalFrames) {
+              clearInterval(interval);
+              app.matrixPhysics.setKinematicTransform(idx, centerX, height, centerZ);
+              return;
+            }
+            const t = frame / totalFrames;
+            const eased = t * t * (3 - 2 * t);          // smoothstep
+            const r = radius * (1 - eased);              // shrinks to 0
+            const angle = t * Math.PI * 2 * rotations;   // winds in
 
-        // 1. Calculate Spiral Math
-        // Angle increases based on rotations, t moves from 0 to 1
-        const angle = t * rotations * 2 * Math.PI;
-
-        // Radius shrinks as it goes down (to settle in center)
-        const currentRadius = radius * (1 - t);
-
-        const x = centerX + Math.cos(angle) * currentRadius;
-        const z = centerZ + Math.sin(angle) * currentRadius;
-
-        // Height goes from top to bottom
-        const y = config.startY - (t * height);
-
-        // 2. Apply movement
-        app.matrixPhysics.setKinematicTransform(idx, x, y, z);
+            const x = centerX + Math.cos(angle) * r;
+            const z = centerZ + Math.sin(angle) * r;
+            const y = startY + (height - startY) * eased;
+            app.matrixPhysics.setKinematicTransform(idx, x, y, z);
+            frame++;
+          }, 1000 / 60);
+        }, delay);
       }
 
       DRUM.matrixPhysics.detectCollision = (e) => {
@@ -360,45 +357,46 @@ export var loadDrumCannon = function() {
           const index = app.BALLS_ID.indexOf(ID);
           if(index > -1) {
             let sliced = app.BALLS_ID.splice(index, 1);
-            console.log('SLICED : ', sliced);
             DRUM.SLICED.push(sliced);
           }
         } else if(body0Name === "bure_bottom" && body1Name.startsWith("balls_") ||
           body1Name === "bure_bottom" && body0Name.startsWith("balls_")) {
           const ID = app.matrixPhysics.getBodyByName(body1Name);
           if(app.BALLS_ID && app.BALLS_ID.indexOf(ID) === -1) {
-            console.log('sliced check passed get activated again')
+            // console.log('sliced check passed get activated again')
             app.BALLS_ID.push(ID);
           }
         } else if(body1Name === "ballcatch" && body0Name.startsWith("balls_") ||
           body0Name === "ballcatch" && body1Name.startsWith("balls_")) {
           const ID = app.matrixPhysics.getBodyByName(body1Name);
           console.log('DETECTED WIN BALL', e.detail);
+          const winNumbers = DRUM.SLICED.length;
+          if(winNumbers === 10) {
+            console.log('DETECTED LAST WIN BALL', e.detail);
+            DRUM.updaterDrum.checkWin = false;
+          }
           app.matrixPhysics.switchToKinematic(ID);
           setTimeout(() => {
-            app.matrixPhysics.setKinematicTransform(ID, 10,20,-20)
-            // app.animateSpiral(ID, 0, {
-            //   radius: 5,
-            //   height: 0,
-            //   rotations: 0,
-            //   centerX: 20,
-            //   centerZ: -20,
-            //   startY: 15
-            // });
-          }, 260)
-
+            // app.matrixPhysics.setKinematicTransform(ID, 10, 20, -20)
+            app.animateSpiral(ID, 200, {
+              radius: 15,
+              rotations: 5,
+              centerX: 0,
+              centerZ: -15,
+              startY: 25,
+              height: 0 + winNumbers * 3,
+              duration: 5.0
+            });
+          }, 100);
         }
-
       };
 
       DRUM.updaterDrum = {
         checkWin: false,
         c: 0,
         update: function() {
-          // console.log('cehck win', this.checkWin)
           this.c++;
           if(this.checkWin === true && this.c > 10) {
-            // app.matrixPhysics.
             app.matrixPhysics.lotteryMachineShake(app.BALLS_ID, 300)
             this.c = 0;
           }
