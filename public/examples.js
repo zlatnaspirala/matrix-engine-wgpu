@@ -1847,6 +1847,7 @@ var _raycast = require("../src/engine/raycast.js");
 var _proceduralMesh = require("../src/engine/procedural-mesh.js");
 var _matrixClass = require("../src/engine/matrix-class.js");
 var _utils = require("../src/engine/utils.js");
+var _sceneobjectKinematics = require("../src/engine/procedures/sceneobjectKinematics.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadDrumCannon = function () {
   let DRUM = new _world.default({
@@ -1994,7 +1995,7 @@ var loadDrumCannon = function () {
         },
         position: {
           x: 10,
-          y: drumY + 21,
+          y: drumY + 20.5,
           z: -22
         },
         rotation: {
@@ -2042,7 +2043,7 @@ var loadDrumCannon = function () {
           y: 0,
           z: 0
         },
-        scale: [1.5, 1, 1],
+        scale: [1.3, 1.3, 1],
         // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_topBlock1',
         mesh: m.cube,
@@ -2076,7 +2077,7 @@ var loadDrumCannon = function () {
           y: 0,
           z: 0
         },
-        scale: [1.5, 1, 1],
+        scale: [1.3, 1.3, 1],
         // texturesPaths: ['./res/textures/floor1.webp'],
         name: 'bure_topBlock2',
         mesh: m.cube,
@@ -2131,7 +2132,7 @@ var loadDrumCannon = function () {
         },
         position: {
           x: 0,
-          y: 21,
+          y: drumY + 6.5,
           z: -13.5
         },
         rotation: {
@@ -2168,7 +2169,7 @@ var loadDrumCannon = function () {
         },
         position: {
           x: 0,
-          y: 21,
+          y: drumY + 6.5,
           z: -27.5
         },
         rotation: {
@@ -2204,7 +2205,7 @@ var loadDrumCannon = function () {
         },
         position: {
           x: 5.5,
-          y: 21,
+          y: 22.5,
           z: -20
         },
         rotation: {
@@ -2239,7 +2240,7 @@ var loadDrumCannon = function () {
         },
         position: {
           x: -7,
-          y: 21,
+          y: 22.5,
           z: -20
         },
         rotation: {
@@ -2267,6 +2268,40 @@ var loadDrumCannon = function () {
           radius: 1
         }
       });
+      const ballcatch = DRUM.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: drumY + 10,
+          z: -35
+        },
+        rotation: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [5, 0.5, 5],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'ballcatch',
+        mesh: m.cube,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "Cube",
+          group: 1
+        },
+        raycast: {
+          enabled: false,
+          radius: 1
+        }
+      });
 
       // not isolated bug yet - selecting not precise!
       setTimeout(async () => {
@@ -2277,6 +2312,9 @@ var loadDrumCannon = function () {
         drum4.setBlend(0.1);
         drumTop.setBlend(0.1);
         drumTopAngled.setBlend(0.1);
+        drumTopTop.setBlend(0.1);
+        drumTopBlockCube1.setBlend(0.1);
+        drumTopBlockCube2.setBlend(0.1);
         let toptopID = DRUM.matrixPhysics.getBodyByName('toptop');
         let topID = DRUM.matrixPhysics.getBodyByName('bure_top1');
         let textures = [];
@@ -2300,6 +2338,8 @@ var loadDrumCannon = function () {
           console.log(T);
           DRUM.BALLS_ID = T;
           DRUM.BALLS_ID_INIT = T;
+          DRUM.SLICED = [];
+          // DRUM.FIRST_TEST
           DRUM.canvas.addEventListener("ray.hit.event", e => {
             console.log('ray.hit.event detected');
             if (e.detail.hitObject.name.startsWith('bure_l2')) {
@@ -2309,7 +2349,7 @@ var loadDrumCannon = function () {
           setTimeout(async () => {
             console.log(' ssss ', toptopID);
             app.matrixPhysics.setBodyTransform(toptopID, 0, 35, -22);
-            app.matrixPhysics.setBodyTransform(topID, 0, 29, -22);
+            app.matrixPhysics.setBodyTransform(topID, 0, 29.5, -22);
             // app.matrixPhysics.lotteryMachineShake(T, 0.001)
             setTimeout(() => {
               DRUM.updaterDrum.checkWin = true;
@@ -2317,19 +2357,70 @@ var loadDrumCannon = function () {
           }, 500);
         });
       }, 2500);
+
+      /**
+      * @param {number} idx - Body Index
+      * @param {number} t - Progress 0 to 1
+      * @param {Object} config - { radius, height, rotations, centerX, centerZ }
+      */
+      DRUM.animateSpiral = function (idx, t, config) {
+        const {
+          radius,
+          height,
+          rotations,
+          centerX,
+          centerZ
+        } = config;
+
+        // 1. Calculate Spiral Math
+        // Angle increases based on rotations, t moves from 0 to 1
+        const angle = t * rotations * 2 * Math.PI;
+
+        // Radius shrinks as it goes down (to settle in center)
+        const currentRadius = radius * (1 - t);
+        const x = centerX + Math.cos(angle) * currentRadius;
+        const z = centerZ + Math.sin(angle) * currentRadius;
+
+        // Height goes from top to bottom
+        const y = config.startY - t * height;
+
+        // 2. Apply movement
+        app.matrixPhysics.setKinematicTransform(idx, x, y, z);
+      };
       DRUM.matrixPhysics.detectCollision = e => {
         const body0Name = e.detail.body0Name;
         const body1Name = e.detail.body1Name;
         const rayDirection = e.detail.rayDirection;
         if (body0Name === "toptop" && body1Name.startsWith("balls_") || body1Name === "toptop" && body0Name.startsWith("balls_")) {
-          console.log('DETECTED WIN BALL', e.detail);
+          // console.log('DETECTED POTENCIAL WIN BALL', e.detail)
           const ID = app.matrixPhysics.getBodyByName(body1Name);
           const index = app.BALLS_ID.indexOf(ID);
           if (index > -1) {
-            app.BALLS_ID.splice(index, 1);
+            let sliced = app.BALLS_ID.splice(index, 1);
+            console.log('SLICED : ', sliced);
+            DRUM.SLICED.push(sliced);
           }
-          // DRUM.BALLS_ID
-          // app.matrixPhysics.applyImpulse(ball, new PVector(rayDirection[0] * 0.015, 0, rayDirection[2] * 0.015));
+        } else if (body0Name === "bure_bottom" && body1Name.startsWith("balls_") || body1Name === "bure_bottom" && body0Name.startsWith("balls_")) {
+          const ID = app.matrixPhysics.getBodyByName(body1Name);
+          if (app.BALLS_ID && app.BALLS_ID.indexOf(ID) === -1) {
+            console.log('sliced check passed get activated again');
+            app.BALLS_ID.push(ID);
+          }
+        } else if (body1Name === "ballcatch" && body0Name.startsWith("balls_") || body0Name === "ballcatch" && body1Name.startsWith("balls_")) {
+          const ID = app.matrixPhysics.getBodyByName(body1Name);
+          console.log('DETECTED WIN BALL', e.detail);
+          app.matrixPhysics.switchToKinematic(ID);
+          setTimeout(() => {
+            app.matrixPhysics.setKinematicTransform(ID, 10, 20, -20);
+            // app.animateSpiral(ID, 0, {
+            //   radius: 5,
+            //   height: 0,
+            //   rotations: 0,
+            //   centerX: 20,
+            //   centerZ: -20,
+            //   startY: 15
+            // });
+          }, 260);
         }
       };
       DRUM.updaterDrum = {
@@ -2347,7 +2438,7 @@ var loadDrumCannon = function () {
       };
       DRUM.autoUpdate.push(DRUM.updaterDrum);
       if ((0, _utils.isMobile)() == false) app.activateBloomEffect();
-      DRUM.lightContainer[0].setPosY(45);
+      DRUM.lightContainer[0].setPosY(55);
       DRUM.lightContainer[0].setIntensity(80);
     }
   });
@@ -2355,7 +2446,7 @@ var loadDrumCannon = function () {
 };
 exports.loadDrumCannon = loadDrumCannon;
 
-},{"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/procedural-mesh.js":85,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],9:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":68,"../src/engine/matrix-class.js":73,"../src/engine/procedural-mesh.js":85,"../src/engine/procedures/sceneobjectKinematics.js":88,"../src/engine/raycast.js":89,"../src/engine/utils.js":90,"../src/world.js":143}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33455,7 +33546,7 @@ async function physicsBodiesGenerator(material = "standard", pos, rot, texturePa
             resolve(ALL);
           }
         }
-      }, delay * sum * 1.1);
+      }, delay * sum * 1.2);
     }
     if (geometry == "Cube") {
       (0, _loaderObj.downloadMeshes)(inputCube, handler, {
@@ -43275,20 +43366,18 @@ class PhysicsBridge {
   }
   setKinematicTransform(idx, x, y, z = 0) {
     let count = 0;
-    const idxArr = this._kinematicIdx;
-    const posArr = this._kinematicPos;
     for (const [idx_, meObj] of this._bodyIndexMap) {
       if (!meObj.isKinematic && idx_ !== idx) continue;
       console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
-      meObj.position.setPosition(x, y, 0);
+      meObj.position.setPosition(x, y, z);
       count++;
       console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if (count > 0) {
       console.log('Sending to Worker:', {
-        idxArr,
-        posArr
+        x,
+        y
       });
       this._worker.postMessage({
         cmd: 'setKinematicTransform',
@@ -43431,6 +43520,20 @@ class PhysicsBridge {
     if (idx === undefined) return;
     this._worker.postMessage({
       cmd: 'deactivate',
+      idx
+    });
+  }
+  switchToKinematic(idx) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'switchToKinematic',
+      idx
+    });
+  }
+  switchToDinamic(idx) {
+    if (idx === undefined) return;
+    this._worker.postMessage({
+      cmd: 'switchToDinamic',
       idx
     });
   }
@@ -47162,6 +47265,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.animateRotationY = animateRotationY;
 exports.snapRotateY = snapRotateY;
+exports.spiralDown = spiralDown;
 function snapRotateY(targetObject, start, end, steps = 10) {
   let currentStep = 0;
   const interval = setInterval(() => {
@@ -47193,6 +47297,29 @@ function animateRotationY(targetObject, targetAngle, duration = 1000) {
     }
   }
   requestAnimationFrame(step);
+}
+function spiralDown(idx, startX, startY, startZ, targetX, targetY, targetZ, duration = 3.0) {
+  const totalFrames = Math.round(duration * 60);
+  let frame = 0;
+  const interval = setInterval(() => {
+    if (frame >= totalFrames) {
+      clearInterval(interval);
+      app.matrixPhysics.setKinematicTransform(idx, targetX, targetY, targetZ);
+      return;
+    }
+    const t = frame / totalFrames; // 0 → 1
+    const eased = t * t * (3 - 2 * t); // smoothstep
+
+    // radius shrinks to 0 at center
+    const radius = (1 - eased) * 2.0;
+    const angle = t * Math.PI * 8; // 4 full rotations
+
+    const x = targetX + Math.cos(angle) * radius;
+    const z = targetZ + Math.sin(angle) * radius;
+    const y = startY + (targetY - startY) * eased;
+    app.matrixPhysics.setKinematicTransform(idx, x, y, z);
+    frame++;
+  }, 1000 / 60);
 }
 
 },{}],89:[function(require,module,exports){

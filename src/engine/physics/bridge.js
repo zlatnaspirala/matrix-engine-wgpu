@@ -92,18 +92,16 @@ export class PhysicsBridge {
 
   setKinematicTransform(idx, x, y, z = 0) {
     let count = 0;
-    const idxArr = this._kinematicIdx;
-    const posArr = this._kinematicPos;
     for(const [idx_, meObj] of this._bodyIndexMap) {
       if(!meObj.isKinematic && idx_ !== idx) continue;
       console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
-      meObj.position.setPosition(x, y, 0);
+      meObj.position.setPosition(x, y, z);
       count++;
       console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if(count > 0) {
-      console.log('Sending to Worker:', {idxArr, posArr});
+      console.log('Sending to Worker:', {x, y});
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idx, x: x, y: y, z: z});
     }
   }
@@ -177,6 +175,16 @@ export class PhysicsBridge {
   deactivatePhysics(idx) {
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'deactivate', idx});
+  }
+
+  switchToKinematic(idx) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'switchToKinematic', idx});
+  }
+
+  switchToDinamic(idx) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'switchToDinamic', idx});
   }
 
   setSleepingThresholds(idx, linear, angular) {

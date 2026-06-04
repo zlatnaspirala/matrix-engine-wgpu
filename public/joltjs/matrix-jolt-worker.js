@@ -85,6 +85,8 @@ class MatrixJolt {
     this._vector0 = new Jolt.Vec3();
     this._vector1 = new Jolt.Vec3();
     this._vector2 = new Jolt.Vec3();
+    this._q = new Jolt.Quat(0, 0, 0, 1);
+    this._zero = new Jolt.Vec3(0, 0, 0);
     this._arr = [0, 0, 0];
     this._initPhysics(options.groundY ?? 0);
   }
@@ -240,9 +242,8 @@ class MatrixJolt {
       layer = LAYER_MOVING;
     }
 
-    const settings = new Jolt.BodyCreationSettings(shape,
-      new Jolt.RVec3(pos.x, pos.y, pos.z), q, motionType, layer);
-
+    const settings = new Jolt.BodyCreationSettings(shape, new Jolt.RVec3(pos.x, pos.y, pos.z), q, motionType, layer);
+    settings.set_mAllowDynamicOrKinematic(true);
     if(!isStatic) {
       settings.mOverrideMassProperties = Jolt.EOverrideMassProperties_CalculateInertia;
       settings.mMassPropertiesOverride.mMass = pOptions.mass || 1;
@@ -336,19 +337,19 @@ class MatrixJolt {
     return body;
   }
 
-lotteryMachineShake(ids, strength = 25) {
-  ids.forEach(id => {
-    const body = this.rigidBodies[id];
-    if(!body) return;
+  lotteryMachineShake(ids, strength = 25) {
+    ids.forEach(id => {
+      const body = this.rigidBodies[id];
+      if(!body) return;
 
-    const fx = (Math.random() - 0.5) * 2 * strength;
-    const fy = Math.random() * 2 * strength;
-    const fz = (Math.random() - 0.5) * 2 * strength;
+      const fx = (Math.random() - 0.5) * 2 * strength;
+      const fy = Math.random() * 2 * strength;
+      const fz = (Math.random() - 0.5) * 2 * strength;
 
-    this.bodyInterface.ActivateBody(body.GetID());
-    this.bodyInterface.AddForce(body.GetID(), new this.Jolt.Vec3(fx, fy, fz));
-  });
-}
+      this.bodyInterface.ActivateBody(body.GetID());
+      this.bodyInterface.AddForce(body.GetID(), new this.Jolt.Vec3(fx, fy, fz));
+    });
+  }
 
   _addBvhMesh(pOptions) {
     const Jolt = this.Jolt;
@@ -457,11 +458,16 @@ lotteryMachineShake(ids, strength = 25) {
     if(b) this.bodyInterface.SetPosition(b.GetID(), this._vector0, this.Jolt.EActivation_Activate);
   }
 
-  setKinematicTransform(idx, x, y, z) {
-    const b = this.rigidBodies[idx];
-    this._vector0.Set(x, y, z);
-    if(b) this.bodyInterface.MoveKinematic(b.GetID(), this._vector0, this.Jolt.Quat.prototype.sIdentity(), 1 / 60);
-  }
+setKinematicTransform(idx, x, y, z) {
+  const b = this.rigidBodies[idx];
+  if (!b) return;
+  const id = b.GetID();
+  this._vector0.Set(x, y, z);
+  const rot = this.bodyInterface.GetRotation(id);
+  this.bodyInterface.SetPositionAndRotationWhenChanged(
+    id, this._vector0, rot, this.Jolt.EActivation_Activate
+  );
+}
 
   clearBody(idx) {
     const b = this.rigidBodies[idx];
@@ -574,7 +580,6 @@ lotteryMachineShake(ids, strength = 25) {
     self.postMessage({cmd: 'getPosition', id: msgID, position: {x: t.GetX(), y: t.GetY(), z: t.GetZ()}});
   }
 
-
   isSleeping(idx, msgID) {
     const body = this.rigidBodies[idx];
     if(!body) {
@@ -584,6 +589,36 @@ lotteryMachineShake(ids, strength = 25) {
         self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
       }
     }
+  }
+
+switchToKinematic(idx) {
+  const Jolt = this.Jolt;
+  const b = this.rigidBodies[idx];
+  if (!b) return;
+
+  const id = b.GetID();
+
+  // zero velocity while still dynamic
+  this.bodyInterface.SetLinearVelocity(id, this._zero);
+  this.bodyInterface.SetAngularVelocity(id, this._zero);
+
+  // switch motion type
+  this.bodyInterface.SetMotionType(id, Jolt.EMotionType_Kinematic, Jolt.EActivation_Activate);
+
+  // hard teleport — no velocity computed
+  const pos = this.bodyInterface.GetPosition(id);
+  const rot = this.bodyInterface.GetRotation(id);
+  this.bodyInterface.SetPositionAndRotationWhenChanged(id, pos, rot, Jolt.EActivation_DontActivate);
+
+  b.isKinematic = true;
+}
+  switchToDinamic(idx) {
+    const b = this.rigidBodies[idx];
+    this.bodyInterface.SetMotionType(
+      b.GetID(),
+      this.Jolt.EMotionType_Dynamic,
+      this.Jolt.EActivation_Activate
+    );
   }
 
   speedUpSimulation(v) {
@@ -605,12 +640,13 @@ lotteryMachineShake(ids, strength = 25) {
     if(!snap) return;
     const bi = this.bodyInterface;
     const ids = this.bodyIDs;
+    
     const count = ids.length;
     for(let i = 0;i < count;i++) {
       const base = i * FLOATS_PER_BODY;
       const id = ids[i];
-      // OPTIMIZATION
-      if(!bi.IsActive(id)) {
+      const body = this.rigidBodies[i];
+      if(!bi.IsActive(id) && !body.isKinematic) {
         snap[base + 7] = 0;
         continue;
       }
@@ -662,9 +698,10 @@ self.onmessage = async ({data}) => {
     case 'speedUpSimulation': jolt.speedUpSimulation(data.value); break;
     case 'removeRigidBody': jolt.removeRigidBody(data.idx, data.flags); break;
     case 'createChain': jolt.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
-
     // new
     case 'isSleeping': jolt.isSleeping(data.idx); break;
+    case 'switchToKinematic': jolt.switchToKinematic(data.idx); break;
+    case 'switchToDinamic': jolt.switchToDinamic(data.idx); break;
     case 'lotteryMachineShake': jolt.lotteryMachineShake(data.ids, data.strength); break;
   }
 };

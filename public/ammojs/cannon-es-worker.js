@@ -210,9 +210,9 @@ class MatrixCannon {
     this.world.addBody(body);
 
     // test 
-    console.log('this.world.broadphase.dirty',this.world.broadphase.dirty)
+    console.log('this.world.broadphase.dirty', this.world.broadphase.dirty)
     this.world.broadphase.dirty = true;
-// or for cannon-es:
+    // or for cannon-es:
     this.world.broadphase.needsUpdate = true;
     //
     return this._registerBody(body, pOptions);
@@ -709,6 +709,26 @@ class MatrixCannon {
     }
   }
 
+  switchToKinematic(idx) {
+    const b = this.rigidBodies[idx];
+    if(b) {
+      b.type = this.CANNON.Body.KINEMATIC;
+      b.mass = 0;
+      b.updateMassProperties();
+      b.velocity.set(0, 0, 0);
+      b.angularVelocity.set(0, 0, 0);
+    }
+  }
+
+  switchToDinamic(idx) {
+    const b = this.rigidBodies[idx];
+    if(b) {
+      b.type = this.CANNON.Body.DYNAMIC;
+      b.mass = 1;
+      b.updateMassProperties();
+      b.wakeUp();
+    }
+  }
 
   // WIP TEST
   createSphereBoundary(ids, center, radius) {
@@ -819,6 +839,7 @@ self.onmessage = async ({data}) => {
     case 'createSphereBoundary': cannon.createSphereBoundary(data.idxs, data.pos, data.radius); break;
     case 'lotteryMachineShake': cannon.lotteryMachineShake(data.ids, data.strength); break;
     case 'isSleeping': cannon.isSleeping(data.idx, data.id); break;
-
+    case 'switchToKinematic': cannon.switchToKinematic(data.idx); break;
+    case 'switchToDinamic': cannon.switchToDinamic(data.idx); break;
   }
 };
