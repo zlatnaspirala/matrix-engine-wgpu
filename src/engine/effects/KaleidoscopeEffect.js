@@ -121,7 +121,7 @@ export class KaleidoscopeEffect {
     this.activeRotate = config.activeRotate ?? defaults.activeRotate;
 
     this._initPipeline();
-    this.setGeometry("quad", this.scale);
+    this.setGeometry(shape, this.scale);
 
     this._localMatrix = mat4.create();
     this._finalMatrix = mat4.create();

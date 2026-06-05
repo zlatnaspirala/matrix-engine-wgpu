@@ -3,7 +3,11 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener, addRaycastsListener} from "../src/engine/raycast.js";
 // import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 // import {PVector} from "../src/engine/matrix-class.js";
-import {isMobile} from "../src/engine/utils.js";
+import {geometryTypes, isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {KaleidoscopeEmitter} from "../src/engine/effects/kaleidoscopeEffectInstance.js";
+import {kaleidoscopeEffectInstance} from "../src/shaders/kale/kale.wgsl.js";
+import {KaleidoscopeEffect, KaleidoscopePresets} from "../src/engine/effects/KaleidoscopeEffect.js";
+import {physicsBodiesChain} from "../src/engine/generators/generator.js";
 
 export var loadDrumCannon = function() {
   let DRUM = new MatrixEngineWGPU({
@@ -28,27 +32,52 @@ export var loadDrumCannon = function() {
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj",
         side: "./res/meshes/obj/drumpart.obj",
-        side2: "./res/meshes/obj/drumpart2.obj"
+        side2: "./res/meshes/obj/drumpart2.obj",
+        drum: "./res/meshes/blender/drum.obj"
       }, onGround, {scale: [1, 1, 1]})
       // DRUM.matrixPhysics.speedUpSimulation(4);
-      // DRUM.physicsBodiesChain();
+      app.physicsBodiesChain('standard', {x: -25, y: 40, z: -15}, undefined, ['./res/textures/star-fantazy.png']);
     })
 
     async function onGround(m) {
       let cam = app.getCamera();
       cam.setYaw(0);
-      cam.setPitch(-0.1);
-      cam.setZ(10);
-      cam.setY(33);
+      cam.setPitch(-0.15);
+      cam.setZ(25);
+      cam.setY(24);
       cam._dirtyAngle = true;
+
       // Ground
-      DRUM.addMeshObj({
+      let floor = DRUM.addMeshObj({
         position: {x: 0, y: -0.5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [35, 1, 35],
-        texturesPaths: ['res/icons/editor/chatgpt-gen-bg-inv.webp'],
+        texturesPaths: ['res/icons/512.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'ground',
+        mesh: m.plane,
+        physics: {enabled: false}
+      });
+
+      let icon = DRUM.addMeshObj({
+        material: {type: 'mirror'},
+        envMapParams: {
+          baseColorMix: 0.85,                // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+          reflectivity: 0.75,               // 25% reflection blend
+          illuminateColor: [1, 0.7, 0.2], // Soft cyan
+          illuminateStrength: 1.5,          // Gentle rim
+          illuminatePulse: 0.1,             // No pulse (static)
+          fresnelPower: 1,                  // Medium-sharp edge
+          envLodBias: 5.5,
+          usePlanarReflection: false,       // ✅ Env map mode
+        },
+        position: {x: 20, y: 20.5, z: -10},
+        rotation: {x: 90, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 1},
+        scale: [5, 1, 5],
+        texturesPaths: ['res/icons/512.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'icon',
         mesh: m.plane,
         physics: {enabled: false}
       });
@@ -161,11 +190,30 @@ export var loadDrumCannon = function() {
           raycast: {enabled: false, radius: 1}
         });
 
+
+        // visual drum object
+        const drumFinal = app.addMeshObj({
+          material: {type: 'standard'},
+          position: o(0, -21, 0),
+          rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+          scale: [5, 5, 5], name: 'drumFinal', mesh: m.drum,
+          physics: {enabled: false, mass: 0, geometry: 'Cube', group: 1},
+          raycast: {enabled: false, radius: 1},
+          pointerEffect: {
+            enabled: true,
+            flameEmitter: true,
+            flameEffect: true
+          }
+        });
+
+        DRUM.drumFinal = drumFinal;
+
         const parts = [drum0, drum1, drum2, drum3, drum4,
           drumTop, drumTopAngled, drumTopTop,
-          drumTopBlockCube1, drumTopBlockCube2];
+          drumTopBlockCube1, drumTopBlockCube2, ballcatch];
 
-        setTimeout(() => parts.forEach(p => p.setBlend(0.4)), 400);
+        drumFinal.setBlend(0.2)
+        setTimeout(() => parts.forEach(p => p.setBlend(0.01)), 200);
 
         return {
           drum0, drum1, drum2, drum3, drum4,
@@ -179,20 +227,52 @@ export var loadDrumCannon = function() {
 
       DRUM.drumConfig = {cx: 0, drumY: 21, cz: -20};
 
+      let sky = DRUM.addMeshObj({
+        material: {type: 'dark', share: true},
+        position: {x: 0, y: -1, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [100, 100, 100],
+        rotationSpeed: {x: 0, y: 0.2, z: 0},
+        texturesPaths: ['./res/textures/spiral-1.webp'],
+        name: 'sky',
+        mesh: m.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
+
       const drum = createDrum(DRUM, m, 0, 21, -20);
 
       // not isolated bug yet - selecting not precise!
       setTimeout(async () => {
-        // drum0.setBlend(0.1)
-        // drum1.setBlend(0.1)
-        // drum2.setBlend(0.1)
-        // drum3.setBlend(0.1)
-        // drum4.setBlend(0.1)
-        // drumTop.setBlend(0.1)
-        // drumTopAngled.setBlend(0.1)
-        // drumTopTop.setBlend(0.1)
-        // drumTopBlockCube1.setBlend(0.1)
-        // drumTopBlockCube2.setBlend(0.1)
+        sky.setAmbient(0.18, 0, 0.05);
+        floor.effects.kale = new KaleidoscopeEmitter(DRUM.device, 'rgba16float', 30, DRUM.cameraBuffer);
+        // just for dev
+        DRUM.sky = sky;
+        DRUM.drumFinal.effects.kale = new KaleidoscopeEffect(DRUM.device, 'rgba16float',
+          'diamond', KaleidoscopePresets.fast, DRUM.cameraBuffer);
+
+        const keys = Object.keys(geometryTypes);
+        const randomType = keys[Math.floor(Math.random() * keys.length)];
+        DRUM.drumFinal.effects.flameEffect.setGeometry(randomType, 10);
+        DRUM.drumFinal.effects.flameEmitter.recreateVertexDataCrazzy(5);
+
+        DRUM.drumFinal.effects.kale = new KaleidoscopeEmitter(DRUM.device, 'rgba16float', 30, DRUM.cameraBuffer);
+        DRUM.drumFinal.effects.kale.recreateVertexDataCrazzy(randomIntFromTo(1, 3));
+        DRUM.drumFinal.effects.kale.setIntensity(randomIntFromTo(1, 6));
+
+
+        const checker2 = floor.createCheckerboardTexture(256, 128, [0, 10, 0, 0], [120, 0, 0, 255]);
+        let samplerTest = DRUM.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat',
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(12, 12);
+
 
         let toptopID = DRUM.matrixPhysics.getBodyByName('toptop');
         let topID = DRUM.matrixPhysics.getBodyByName('bure_top1');
@@ -237,28 +317,23 @@ export var loadDrumCannon = function() {
             }, 500)
           }, 500)
         })
-      }, 2500)
+      }, 1500)
 
       DRUM.faceCamera = (idx, duration = 1.0) => {
         const totalFrames = Math.round(duration * 60);
         let frame = 0;
-
         const targetAngle = Math.PI; // face toward +Z (camera)
-
+        // move later to autoUpdate []
         const interval = setInterval(() => {
           if(frame >= totalFrames) {
             clearInterval(interval);
             return;
           }
-
           const t = frame / totalFrames;
           const eased = t * t * (3 - 2 * t);
           const angle = targetAngle * eased;
-
-          // Y-axis rotation quaternion
           const qy = Math.sin(angle * 0.5);
           const qw = Math.cos(angle * 0.5);
-
           app.matrixPhysics.setKinematicRotation(idx, 0, qy, 0, qw);
           frame++;
         }, 1000 / 60);
@@ -318,14 +393,26 @@ export var loadDrumCannon = function() {
           if(slot === 5) {
             console.log('DETECTED LAST WIN BALL', e.detail);
             DRUM.updaterDrum.checkWin = false;
-
             setTimeout(() => {
               DRUM.SLICED_PERMAMENT.forEach((ballID) => {
                 app.faceCamera(ballID, 1)
               });
+              setTimeout(() => {
+                // transport to drum
+                DRUM.SLICED_PERMAMENT.forEach((ballID) => {
+                  app.matrixPhysics.setKinematicTransform(ballID, 0, 26, -15);
+                  app.matrixPhysics.switchToDinamic(ballID);
+                });
+                setTimeout(() => {
+                  // reset 
+                  DRUM.SLICED_PERMAMENT.length = 0;
+                  DRUM.SLICED.length = 0;
+                  DRUM.BALLS_ID = DRUM.BALLS_ID_INIT;
+                  DRUM.updaterDrum.checkWin = true;
+                }, 2000)
 
-            } , 4000)
-
+              }, 8000)
+            }, 4500)
           }
           app.faceCamera(ID, 5)
           app.matrixPhysics.switchToKinematic(ID);
@@ -354,16 +441,16 @@ export var loadDrumCannon = function() {
       };
 
       const NUM_LIGHTS = 4;
-      const ORBIT_RADIUS = 5;
+      const ORBIT_RADIUS = 15;
       const ORBIT_SPEED = 1;
       const TARGET = {x: 0, y: 25, z: -10};
 
       // Light colors cycling around the hue wheel
       const LIGHT_COLORS = [
-        [2.0, 0.2, 0.2],  // red
-        [1.0, 0.6, 0.1],  // orange
-        [0.2, 0.2, 2.0],  // blue
-        [1.0, 2.0, 0.1],  // yellow
+        [10.0, 0.2, 0.2],  // red
+        [1.0, 1.6, 0.1],  // orange
+        [0.2, 0.2, 10.0],  // blue
+        [1.0, 10.0, 3.1],  // yellow
         [0.2, 1.0, 0.2],  // green
         [0.1, 1.0, 0.6],  // teal
         [0.1, 0.6, 1.0],  // sky
@@ -381,8 +468,8 @@ export var loadDrumCannon = function() {
         const light = DRUM.lightContainer[i];
         const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
         const color = LIGHT_COLORS[i];
-        light.setIntensity(45);
-        light.color = color;
+        light.setIntensity(55);
+        light.setColor(color);
         const heightOffset = Math.sin(angleOffset) * 2;
         light.setPosition(
           TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,

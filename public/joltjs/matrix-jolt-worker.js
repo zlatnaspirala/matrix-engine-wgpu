@@ -550,29 +550,32 @@ class MatrixJolt {
     const Jolt = this.Jolt;
     const space = marginSpace * size;
     if(!this.constraints) this.constraints = [];
-
     for(let i = 1;i < ids.length;i++) {
       const bodyA = this.rigidBodies[ids[i]];
       const bodyB = this.rigidBodies[ids[i - 1]];
       if(!bodyA || !bodyB) continue;
-      const settings1 = new Jolt.PointConstraintSettings();
-      settings1.mPoint1 = new Jolt.Vec3(-size, size + space, 0);
-      settings1.mPoint2 = new Jolt.Vec3(-size, -size - space, 0);
-      const settings2 = new Jolt.PointConstraintSettings();
-      settings2.mPoint1 = new Jolt.Vec3(size, size + space, 0);
-      settings2.mPoint2 = new Jolt.Vec3(size, -size - space, 0);
-      const c1 = settings1.Create(bodyA, bodyB);
-      const c2 = settings2.Create(bodyA, bodyB);
+      // bodyB's bottom-left → bodyA's top-left
+      const s1 = new Jolt.PointConstraintSettings();
+      s1.mSpace = Jolt.EConstraintSpace_LocalToBodyCOM;
+      s1.mPoint1 = new Jolt.Vec3(-size, -(size + space), 0); // bodyA top (local)
+      s1.mPoint2 = new Jolt.Vec3(-size, (size + space), 0);  // bodyB bottom (local)
+      // bodyB's bottom-right → bodyA's top-right
+      const s2 = new Jolt.PointConstraintSettings();
+      s2.mSpace = Jolt.EConstraintSpace_LocalToBodyCOM;
+      s2.mPoint1 = new Jolt.Vec3(size, -(size + space), 0);
+      s2.mPoint2 = new Jolt.Vec3(size, (size + space), 0);
+      const c1 = s1.Create(bodyA, bodyB);
+      const c2 = s2.Create(bodyA, bodyB);
       this.physicsSystem.AddConstraint(c1);
       this.physicsSystem.AddConstraint(c2);
       this.constraints.push(c1, c2);
     }
-    // anchor
+
     const anchor = this.rigidBodies[ids[0]];
     if(anchor) {
-      this.bodyInterface.SetMotionType(anchor, Jolt.EMotionType_Static);
-      this.bodyInterface.SetLinearVelocity(anchor, new Jolt.Vec3(0, 0, 0));
-      this.bodyInterface.SetAngularVelocity(anchor, new Jolt.Vec3(0, 0, 0));
+      this.bodyInterface.SetMotionType(anchor.GetID(), Jolt.EMotionType_Static);
+      this.bodyInterface.SetLinearVelocity(anchor.GetID(), new Jolt.Vec3(0, 0, 0));
+      this.bodyInterface.SetAngularVelocity(anchor.GetID(), new Jolt.Vec3(0, 0, 0));
     }
   }
 
@@ -620,6 +623,7 @@ class MatrixJolt {
 
     b.isKinematic = true;
   }
+
   switchToDinamic(idx) {
     const b = this.rigidBodies[idx];
     this.bodyInterface.SetMotionType(

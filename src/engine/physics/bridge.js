@@ -19,7 +19,6 @@ export class PhysicsBridge {
     this._queue = [];
     this.wPhysicsSteps = 1;
     this._worker.onmessage = ({data}) => this._onMessage(data);
-
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
     this.pCollisionEventArg = {
       detail: {
@@ -28,7 +27,6 @@ export class PhysicsBridge {
         rayDirection: [0, 0, 0]
       }
     };
-
     this.detectCollision = (e) => {};
     this.tempRot = mat4.create();
     this._paused = false;
@@ -237,7 +235,6 @@ export class PhysicsBridge {
     this._bodyIndexMap.delete(idx);
   }
 
-  // cannones ---
   createChain(ids, size = 0.5, mass = 0.3, marginSpace = 0.1) {
     this._worker.postMessage({cmd: 'createChain', ids, size, mass, marginSpace});
   }
@@ -307,7 +304,6 @@ export class PhysicsBridge {
   _onMessage(data) {
     switch(data.cmd) {
       case 'ready':
-      // this._worker.onmessage = ({data}) => this._onMessage(data);
       case 'bodyAdded':
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
@@ -320,7 +316,6 @@ export class PhysicsBridge {
         this.pCollisionEventArg.detail.body0Name = data.body0Name;
         this.pCollisionEventArg.detail.body1Name = data.body1Name;
         this.pCollisionEventArg.detail.rayDirection = data.normal;
-        // document.dispatchEvent(this.pCollisionEvent);
         this.detectCollision(this.pCollisionEventArg);
         break;
       case 'constraintAdded':
