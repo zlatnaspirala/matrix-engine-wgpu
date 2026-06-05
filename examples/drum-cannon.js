@@ -354,16 +354,16 @@ export var loadDrumCannon = function() {
       };
 
       const NUM_LIGHTS = 4;
-      const ORBIT_RADIUS = 20;
+      const ORBIT_RADIUS = 5;
       const ORBIT_SPEED = 1;
-      const TARGET = {x: 0, y: 30, z: -12};
+      const TARGET = {x: 0, y: 25, z: -10};
 
       // Light colors cycling around the hue wheel
       const LIGHT_COLORS = [
-        [1.0, 0.2, 0.2],  // red
+        [2.0, 0.2, 0.2],  // red
         [1.0, 0.6, 0.1],  // orange
-        [0.2, 0.2, 1.0],  // blue
-        [1.0, 1.0, 0.1],  // yellow
+        [0.2, 0.2, 2.0],  // blue
+        [1.0, 2.0, 0.1],  // yellow
         [0.2, 1.0, 0.2],  // green
         [0.1, 1.0, 0.6],  // teal
         [0.1, 0.6, 1.0],  // sky
