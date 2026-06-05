@@ -1867,7 +1867,6 @@ var loadDrumCannon = function () {
       a: 1
     }
   }, () => {
-    DRUM.addLight();
     (0, _raycast.addRaycastsAABBListener)();
     addEventListener('PhysicsReady', () => {
       (0, _loaderObj.downloadMeshes)({
@@ -1886,10 +1885,10 @@ var loadDrumCannon = function () {
     });
     async function onGround(m) {
       let cam = app.getCamera();
-      cam.setYaw(-0.03);
-      cam.setPitch(-0.49);
-      cam.setZ(0);
-      cam.setY(13);
+      cam.setYaw(0);
+      cam.setPitch(-0.1);
+      cam.setZ(10);
+      cam.setY(33);
       cam._dirtyAngle = true;
       // Ground
       DRUM.addMeshObj({
@@ -1916,404 +1915,375 @@ var loadDrumCannon = function () {
           enabled: false
         }
       });
-      let drumY = 14.5;
-
-      // DRUM BOTTOM
-      const drum0 = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: drumY,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [4.3, 0.5, 4.3],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_bottom',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube",
-          group: 1
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
-      const drumTop = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 10,
-          y: drumY + 17,
-          z: -22
-        },
-        rotation: {
-          x: -7,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [5, 1, 7],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_top1',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          kinematic: true,
-          mass: 0,
-          geometry: "Cube",
-          layer: 0
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
-      const drumTopTop = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 10,
-          y: drumY + 20.5,
-          z: -22
-        },
-        rotation: {
-          x: -7,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [5, 1, 7],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'toptop',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          kinematic: true,
-          mass: 0,
-          geometry: "Cube",
-          layer: 0
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
-      const drumTopBlockCube1 = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: -3.3,
-          y: drumY + 15,
-          z: -13
-        },
-        rotation: {
-          x: -7,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [1.35, 1.35, 1],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_topBlock1',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube",
-          layer: 0
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
-      const drumTopBlockCube2 = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 3.3,
-          y: drumY + 15,
-          z: -13
-        },
-        rotation: {
-          x: -7,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [1.35, 1.35, 1],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_topBlock2',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube",
-          layer: 0
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
-      const drumTopAngled = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: drumY + 18,
-          z: -11.5
-        },
-        rotation: {
-          x: 50,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [5.5, 1, 4],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_topA',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube",
-          group: 1
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
-      const drum1 = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: drumY + 6.5,
-          z: -13.5
-        },
-        rotation: {
-          x: 20,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [4.5, 8, 0.5],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_r1',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          // kinematic: true,
-          mass: 0,
-          geometry: "Cube",
-          vertices: m.reel.vertices,
-          indices: m.reel.indices,
-          group: 1
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
-      const drum2 = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: drumY + 6.5,
-          z: -27.5
-        },
-        rotation: {
-          x: -20,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [4.5, 8, 0.5],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_r2',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube",
-          vertices: m.reel.vertices,
-          indices: m.reel.indices,
-          group: 1
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
-      const drum3 = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 5.5,
-          y: 22.5,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [0.5, 10, 8],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_l1',
-        mesh: m.cube,
-        physics: {
-          mass: 0,
-          enabled: true,
-          geometry: "Cube",
-          group: 1
-          // mask: 2,
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
-      const drum4 = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: -7,
-          y: 22.5,
-          z: -20
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [2, 10, 8],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'bure_l2',
-        mesh: m.cube,
-        physics: {
-          mass: 0,
-          enabled: true,
-          geometry: "Cube",
-          group: 1
-        },
-        raycast: {
-          enabled: true,
-          radius: 1
-        }
-      });
-      const ballcatch = DRUM.addMeshObj({
-        material: {
-          type: 'standard'
-        },
-        position: {
-          x: 0,
-          y: drumY + 10,
-          z: -35
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        scale: [5, 1, 5],
-        // texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'ballcatch',
-        mesh: m.cube,
-        physics: {
-          enabled: true,
-          mass: 0,
-          geometry: "Cube",
-          group: 1
-        },
-        raycast: {
-          enabled: false,
-          radius: 1
-        }
-      });
+      function createDrum(app, m, cx, drumY, cz) {
+        const o = (dx, dy, dz) => ({
+          x: cx + dx,
+          y: drumY + dy,
+          z: cz + dz
+        });
+        const drum0 = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(0, 0, 0),
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [4.3, 0.5, 4.3],
+          name: 'bure_bottom',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: 'Cube',
+            group: 1
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const drumTop = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(10, 17, -2),
+          rotation: {
+            x: -7,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [5, 1, 7],
+          name: 'bure_top1',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            kinematic: true,
+            mass: 0,
+            geometry: 'Cube',
+            layer: 0
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const drumTopTop = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(10, 19.5, -2),
+          rotation: {
+            x: -7,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [5, 1, 7],
+          name: 'toptop',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            kinematic: true,
+            mass: 0,
+            geometry: 'Cube',
+            layer: 0
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const drumTopBlockCube1 = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(-3.3, 15.8, +7),
+          rotation: {
+            x: -7,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [1.45, 1.45, 1],
+          name: 'bure_topBlock1',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: 'Cube',
+            layer: 0
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const drumTopBlockCube2 = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(3.3, 15.8, +7),
+          rotation: {
+            x: -7,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [1.45, 1.45, 1],
+          name: 'bure_topBlock2',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: 'Cube',
+            layer: 0
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const drumTopAngled = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(0, 18, +8.5),
+          rotation: {
+            x: 50,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [5.5, 1, 4],
+          name: 'bure_topA',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: 'Cube',
+            group: 1
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const drum1 = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(0, 6.5, +6.5),
+          rotation: {
+            x: 20,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [4.5, 8, 0.5],
+          name: 'bure_r1',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: 'Cube',
+            vertices: m.reel.vertices,
+            indices: m.reel.indices,
+            group: 1
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const drum2 = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(0, 6.5, -7.5),
+          rotation: {
+            x: -20,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [4.5, 8, 0.5],
+          name: 'bure_r2',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: 'Cube',
+            vertices: m.reel.vertices,
+            indices: m.reel.indices,
+            group: 1
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const drum3 = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(5.5, 8, 0),
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [0.5, 10, 8],
+          name: 'bure_l1',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: 'Cube',
+            group: 1
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const drum4 = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(-7, 8, 0),
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [2, 10, 8],
+          name: 'bure_l2',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: 'Cube',
+            group: 1
+          },
+          raycast: {
+            enabled: true,
+            radius: 1
+          }
+        });
+        const ballcatch = app.addMeshObj({
+          material: {
+            type: 'standard'
+          },
+          position: o(0, 10, -15),
+          rotation: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          rotationSpeed: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          scale: [5, 1, 5],
+          name: 'ballcatch',
+          mesh: m.cube,
+          physics: {
+            enabled: true,
+            mass: 0,
+            geometry: 'Cube',
+            group: 1
+          },
+          raycast: {
+            enabled: false,
+            radius: 1
+          }
+        });
+        const parts = [drum0, drum1, drum2, drum3, drum4, drumTop, drumTopAngled, drumTopTop, drumTopBlockCube1, drumTopBlockCube2];
+        setTimeout(() => parts.forEach(p => p.setBlend(0.4)), 400);
+        return {
+          drum0,
+          drum1,
+          drum2,
+          drum3,
+          drum4,
+          drumTop,
+          drumTopTop,
+          drumTopAngled,
+          drumTopBlockCube1,
+          drumTopBlockCube2,
+          ballcatch,
+          toptopName: 'toptop',
+          topName: 'bure_top1'
+        };
+      }
+      DRUM.drumConfig = {
+        cx: 0,
+        drumY: 21,
+        cz: -20
+      };
+      const drum = createDrum(DRUM, m, 0, 21, -20);
 
       // not isolated bug yet - selecting not precise!
       setTimeout(async () => {
-        drum0.setBlend(0.1);
-        drum1.setBlend(0.1);
-        drum2.setBlend(0.1);
-        drum3.setBlend(0.1);
-        drum4.setBlend(0.1);
-        drumTop.setBlend(0.1);
-        drumTopAngled.setBlend(0.1);
-        drumTopTop.setBlend(0.1);
-        drumTopBlockCube1.setBlend(0.1);
-        drumTopBlockCube2.setBlend(0.1);
+        // drum0.setBlend(0.1)
+        // drum1.setBlend(0.1)
+        // drum2.setBlend(0.1)
+        // drum3.setBlend(0.1)
+        // drum4.setBlend(0.1)
+        // drumTop.setBlend(0.1)
+        // drumTopAngled.setBlend(0.1)
+        // drumTopTop.setBlend(0.1)
+        // drumTopBlockCube1.setBlend(0.1)
+        // drumTopBlockCube2.setBlend(0.1)
+
         let toptopID = DRUM.matrixPhysics.getBodyByName('toptop');
         let topID = DRUM.matrixPhysics.getBodyByName('bure_top1');
         let textures = [];
@@ -2338,6 +2308,7 @@ var loadDrumCannon = function () {
           DRUM.BALLS_ID = T;
           DRUM.BALLS_ID_INIT = T;
           DRUM.SLICED = [];
+          DRUM.SLICED_PERMAMENT = [];
           // DRUM.FIRST_TEST
           DRUM.canvas.addEventListener("ray.hit.event", e => {
             console.log('ray.hit.event detected');
@@ -2346,16 +2317,41 @@ var loadDrumCannon = function () {
             }
           });
           setTimeout(async () => {
-            console.log(' ssss ', toptopID);
-            app.matrixPhysics.setBodyTransform(toptopID, 0, 35, -22);
-            app.matrixPhysics.setBodyTransform(topID, 0, 29.5, -22);
-            // app.matrixPhysics.lotteryMachineShake(T, 0.001)
+            // console.log(' ssss ', toptopID)
+            const {
+              cx,
+              drumY,
+              cz
+            } = DRUM.drumConfig;
+            app.matrixPhysics.setBodyTransform(toptopID, cx - 1.5, drumY + 20, cz - 2);
+            app.matrixPhysics.setBodyTransform(topID, cx - 1.5, drumY + 15, cz - 2);
             setTimeout(() => {
               DRUM.updaterDrum.checkWin = true;
             }, 500);
           }, 500);
         });
       }, 2500);
+      DRUM.faceCamera = (idx, duration = 1.0) => {
+        const totalFrames = Math.round(duration * 60);
+        let frame = 0;
+        const targetAngle = Math.PI; // face toward +Z (camera)
+
+        const interval = setInterval(() => {
+          if (frame >= totalFrames) {
+            clearInterval(interval);
+            return;
+          }
+          const t = frame / totalFrames;
+          const eased = t * t * (3 - 2 * t);
+          const angle = targetAngle * eased;
+
+          // Y-axis rotation quaternion
+          const qy = Math.sin(angle * 0.5);
+          const qw = Math.cos(angle * 0.5);
+          app.matrixPhysics.setKinematicRotation(idx, 0, qy, 0, qw);
+          frame++;
+        }, 1000 / 60);
+      };
       DRUM.animateSpiral = (idx, delay, opts) => {
         const {
           radius,
@@ -2398,7 +2394,7 @@ var loadDrumCannon = function () {
           const index = app.BALLS_ID.indexOf(ID);
           if (index > -1) {
             let sliced = app.BALLS_ID.splice(index, 1);
-            DRUM.SLICED.push(sliced);
+            DRUM.SLICED.push(sliced[0]);
           }
         } else if (body0Name === "bure_bottom" && body1Name.startsWith("balls_") || body1Name === "bure_bottom" && body0Name.startsWith("balls_")) {
           const ID = app.matrixPhysics.getBodyByName(body1Name);
@@ -2409,24 +2405,28 @@ var loadDrumCannon = function () {
         } else if (body1Name === "ballcatch" && body0Name.startsWith("balls_") || body0Name === "ballcatch" && body1Name.startsWith("balls_")) {
           const ID = app.matrixPhysics.getBodyByName(body1Name);
           console.log('DETECTED WIN BALL', e.detail);
-          const winNumbers = DRUM.SLICED.length;
-          if (winNumbers === 10) {
+          DRUM.SLICED_PERMAMENT.push(ID);
+          const slot = DRUM.SLICED_PERMAMENT.length;
+          if (slot === 5) {
             console.log('DETECTED LAST WIN BALL', e.detail);
             DRUM.updaterDrum.checkWin = false;
+            setTimeout(() => {
+              DRUM.SLICED_PERMAMENT.forEach(ballID => {
+                app.faceCamera(ballID, 1);
+              });
+            }, 4000);
           }
+          app.faceCamera(ID, 5);
           app.matrixPhysics.switchToKinematic(ID);
-          setTimeout(() => {
-            // app.matrixPhysics.setKinematicTransform(ID, 10, 20, -20)
-            app.animateSpiral(ID, 200, {
-              radius: 15,
-              rotations: 5,
-              centerX: 0,
-              centerZ: -15,
-              startY: 25,
-              height: 0 + winNumbers * 3,
-              duration: 5.0
-            });
-          }, 100);
+          app.animateSpiral(ID, 200, {
+            radius: 15,
+            rotations: 5,
+            centerX: 0,
+            centerZ: -15,
+            startY: 25,
+            height: 0 + slot * 3,
+            duration: 5.0
+          });
         }
       };
       DRUM.updaterDrum = {
@@ -2435,15 +2435,70 @@ var loadDrumCannon = function () {
         update: function () {
           this.c++;
           if (this.checkWin === true && this.c > 10) {
-            app.matrixPhysics.lotteryMachineShake(app.BALLS_ID, 300);
+            app.matrixPhysics.lotteryMachineShake(app.BALLS_ID, 270);
             this.c = 0;
           }
         }
       };
+      const NUM_LIGHTS = 4;
+      const ORBIT_RADIUS = 20;
+      const ORBIT_SPEED = 1;
+      const TARGET = {
+        x: 0,
+        y: 30,
+        z: -12
+      };
+
+      // Light colors cycling around the hue wheel
+      const LIGHT_COLORS = [[1.0, 0.2, 0.2],
+      // red
+      [1.0, 0.6, 0.1],
+      // orange
+      [0.2, 0.2, 1.0],
+      // blue
+      [1.0, 1.0, 0.1],
+      // yellow
+      [0.2, 1.0, 0.2],
+      // green
+      [0.1, 1.0, 0.6],
+      // teal
+      [0.1, 0.6, 1.0],
+      // sky
+      [0.6, 0.1, 1.0],
+      // purple
+      [1.0, 0.1, 0.8],
+      // pink
+      [1.0, 0.1, 0.4] // rose
+      ];
+      for (let i = 0; i < NUM_LIGHTS; i++) {
+        DRUM.addLight();
+      }
+
+      // Set up lights evenly spaced around the circle
+      for (let i = 0; i < NUM_LIGHTS; i++) {
+        const light = DRUM.lightContainer[i];
+        const angleOffset = i / NUM_LIGHTS * Math.PI * 2;
+        const color = LIGHT_COLORS[i];
+        light.setIntensity(45);
+        light.color = color;
+        const heightOffset = Math.sin(angleOffset) * 2;
+        light.setPosition(TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS);
+        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
+        light.orbitAngle = angleOffset;
+        light.updater.push(light => {
+          light.orbitAngle += ORBIT_SPEED * 0.01;
+          const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
+          const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
+          const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
+          light.setPosition(x, height, z);
+          light.setTarget(TARGET.x, TARGET.y, TARGET.z);
+        });
+      }
       DRUM.autoUpdate.push(DRUM.updaterDrum);
-      if ((0, _utils.isMobile)() == false) app.activateBloomEffect();
-      DRUM.lightContainer[0].setPosY(55);
-      DRUM.lightContainer[0].setIntensity(80);
+      if ((0, _utils.isMobile)() == false) {
+        app.activateBloomEffect();
+        app.bloomPass.setBlurRadius(1);
+      }
     }
   });
   window.app = DRUM;
@@ -43352,14 +43407,9 @@ class PhysicsBridge {
       posArr[base + 1] = meObj.position.y;
       posArr[base + 2] = meObj.position.z;
       count++;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if (count > 0) {
-      console.log('Sending to Worker:', {
-        idxArr,
-        posArr
-      });
       this._worker.postMessage({
         cmd: 'setKinematicTransform',
         count,
@@ -43368,21 +43418,25 @@ class PhysicsBridge {
       });
     }
   }
+  setKinematicRotation(idx, x, y, z, w = 1) {
+    this._worker.postMessage({
+      cmd: 'setKinematicRotation',
+      idx: idx,
+      x: x,
+      y: y,
+      z: z,
+      w: w
+    });
+  }
   setKinematicTransform(idx, x, y, z = 0) {
     let count = 0;
     for (const [idx_, meObj] of this._bodyIndexMap) {
       if (!meObj.isKinematic && idx_ !== idx) continue;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
       meObj.position.setPosition(x, y, z);
       count++;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if (count > 0) {
-      console.log('Sending to Worker:', {
-        x,
-        y
-      });
       this._worker.postMessage({
         cmd: 'setKinematicTransform',
         count,

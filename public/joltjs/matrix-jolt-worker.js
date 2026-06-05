@@ -280,7 +280,6 @@ class MatrixJolt {
   }
 
   _addCylinder(pOptions) {
-    // const Jolt = this.Jolt;
     const halfHeight = pOptions.scale ? pOptions.scale[1] : (pOptions.height || 2) * 0.5;
     const radius = pOptions.scale ? pOptions.scale[0] : (pOptions.radius || 1);
     const shape = new this.Jolt.CylinderShape(halfHeight, radius);
@@ -349,6 +348,17 @@ class MatrixJolt {
       this.bodyInterface.ActivateBody(body.GetID());
       this.bodyInterface.AddForce(body.GetID(), new this.Jolt.Vec3(fx, fy, fz));
     });
+  }
+
+  setKinematicRotation(idx, qx, qy, qz, qw) {
+    const b = this.rigidBodies[idx];
+    if(!b) return;
+    const id = b.GetID();
+    const pos = this.bodyInterface.GetPosition(id);
+    this._q.Set(qx, qy, qz, qw);
+    this.bodyInterface.SetPositionAndRotationWhenChanged(
+      id, pos, this._q, this.Jolt.EActivation_DontActivate
+    );
   }
 
   _addBvhMesh(pOptions) {
@@ -701,5 +711,6 @@ self.onmessage = async ({data}) => {
     case 'switchToKinematic': jolt.switchToKinematic(data.idx); break;
     case 'switchToDinamic': jolt.switchToDinamic(data.idx); break;
     case 'lotteryMachineShake': jolt.lotteryMachineShake(data.ids, data.strength); break;
+    case 'setKinematicRotation': jolt.setKinematicRotation(data.idx, data.x, data.y, data.z, data.w); break;
   }
 };

@@ -81,27 +81,26 @@ export class PhysicsBridge {
       posArr[base + 1] = meObj.position.y;
       posArr[base + 2] = meObj.position.z;
       count++;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if(count > 0) {
-      console.log('Sending to Worker:', {idxArr, posArr});
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idxArr, pos: posArr});
     }
+  }
+
+  setKinematicRotation(idx, x, y, z, w = 1) {
+    this._worker.postMessage({cmd: 'setKinematicRotation', idx: idx, x: x, y: y, z: z, w: w});
   }
 
   setKinematicTransform(idx, x, y, z = 0) {
     let count = 0;
     for(const [idx_, meObj] of this._bodyIndexMap) {
       if(!meObj.isKinematic && idx_ !== idx) continue;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
       meObj.position.setPosition(x, y, z);
       count++;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if(count > 0) {
-      console.log('Sending to Worker:', {x, y});
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idx, x: x, y: y, z: z});
     }
   }
