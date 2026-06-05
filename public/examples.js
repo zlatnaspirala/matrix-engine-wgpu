@@ -28771,7 +28771,7 @@ class KaleidoscopeEffect {
     this.localRotation = config.localRotation ?? defaults.localRotation;
     this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
-    this.setGeometry("quad", this.scale);
+    this.setGeometry(shape, this.scale);
     this._localMatrix = _wgpuMatrix.mat4.create();
     this._finalMatrix = _wgpuMatrix.mat4.create();
     this._uniformData = new Float32Array(32);
@@ -33455,7 +33455,7 @@ async function physicsBodiesGenerator(material = "standard", pos, rot, texturePa
             resolve(ALL);
           }
         }
-      }, delay * sum * 1.1);
+      }, delay * sum * 1.2);
     }
     if (geometry == "Cube") {
       (0, _loaderObj.downloadMeshes)(inputCube, handler, {
