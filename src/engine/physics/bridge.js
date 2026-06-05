@@ -19,7 +19,6 @@ export class PhysicsBridge {
     this._queue = [];
     this.wPhysicsSteps = 1;
     this._worker.onmessage = ({data}) => this._onMessage(data);
-
     this.pCollisionEvent = new CustomEvent('pCollision', {detail: {}});
     this.pCollisionEventArg = {
       detail: {
@@ -28,7 +27,6 @@ export class PhysicsBridge {
         rayDirection: [0, 0, 0]
       }
     };
-
     this.detectCollision = (e) => {};
     this.tempRot = mat4.create();
     this._paused = false;
@@ -81,29 +79,26 @@ export class PhysicsBridge {
       posArr[base + 1] = meObj.position.y;
       posArr[base + 2] = meObj.position.z;
       count++;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if(count > 0) {
-      console.log('Sending to Worker:', {idxArr, posArr});
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idxArr, pos: posArr});
     }
   }
 
+  setKinematicRotation(idx, x, y, z, w = 1) {
+    this._worker.postMessage({cmd: 'setKinematicRotation', idx: idx, x: x, y: y, z: z, w: w});
+  }
+
   setKinematicTransform(idx, x, y, z = 0) {
     let count = 0;
-    const idxArr = this._kinematicIdx;
-    const posArr = this._kinematicPos;
     for(const [idx_, meObj] of this._bodyIndexMap) {
       if(!meObj.isKinematic && idx_ !== idx) continue;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
-      meObj.position.setPosition(x, y, 0);
+      meObj.position.setPosition(x, y, z);
       count++;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if(count > 0) {
-      console.log('Sending to Worker:', {idxArr, posArr});
       this._worker.postMessage({cmd: 'setKinematicTransform', count, idx: idx, x: x, y: y, z: z});
     }
   }
@@ -179,6 +174,16 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'deactivate', idx});
   }
 
+  switchToKinematic(idx) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'switchToKinematic', idx});
+  }
+
+  switchToDinamic(idx) {
+    if(idx === undefined) return;
+    this._worker.postMessage({cmd: 'switchToDinamic', idx});
+  }
+
   setSleepingThresholds(idx, linear, angular) {
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'setSleepingThresholds', idx, linear, angular});
@@ -230,7 +235,6 @@ export class PhysicsBridge {
     this._bodyIndexMap.delete(idx);
   }
 
-  // cannones ---
   createChain(ids, size = 0.5, mass = 0.3, marginSpace = 0.1) {
     this._worker.postMessage({cmd: 'createChain', ids, size, mass, marginSpace});
   }
@@ -300,7 +304,6 @@ export class PhysicsBridge {
   _onMessage(data) {
     switch(data.cmd) {
       case 'ready':
-      // this._worker.onmessage = ({data}) => this._onMessage(data);
       case 'bodyAdded':
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
@@ -313,7 +316,6 @@ export class PhysicsBridge {
         this.pCollisionEventArg.detail.body0Name = data.body0Name;
         this.pCollisionEventArg.detail.body1Name = data.body1Name;
         this.pCollisionEventArg.detail.rayDirection = data.normal;
-        // document.dispatchEvent(this.pCollisionEvent);
         this.detectCollision(this.pCollisionEventArg);
         break;
       case 'constraintAdded':

@@ -37,3 +37,30 @@ export function animateRotationY(targetObject, targetAngle, duration = 1000) {
 
   requestAnimationFrame(step);
 }
+
+export function spiralDown(idx, startX, startY, startZ, targetX, targetY, targetZ, duration = 3.0) {
+  const totalFrames = Math.round(duration * 60);
+  let frame = 0;
+
+  const interval = setInterval(() => {
+    if (frame >= totalFrames) {
+      clearInterval(interval);
+      app.matrixPhysics.setKinematicTransform(idx, targetX, targetY, targetZ);
+      return;
+    }
+
+    const t = frame / totalFrames;           // 0 → 1
+    const eased = t * t * (3 - 2 * t);      // smoothstep
+
+    // radius shrinks to 0 at center
+    const radius = (1 - eased) * 2.0;
+    const angle = t * Math.PI * 8;          // 4 full rotations
+
+    const x = targetX + Math.cos(angle) * radius;
+    const z = targetZ + Math.sin(angle) * radius;
+    const y = startY + (targetY - startY) * eased;
+
+    app.matrixPhysics.setKinematicTransform(idx, x, y, z);
+    frame++;
+  }, 1000 / 60);
+}

@@ -589,6 +589,28 @@ class MatrixAmmoWorker {
     this.rigidBodies[idx].setCollisionFlags(flags);
   }
 
+  switchToKinematic(idx) {
+    const b = this.rigidBodies[idx];
+    if(b) {
+      body.setCollisionFlags(2);
+      const localInertia = this._zero;
+      body.setMassProps(0, localInertia);
+      body.updateInertiaTensor();
+      body.setActivationState(4);
+    }
+  }
+
+  switchToDynamic(idx) {
+    const b = this.rigidBodies[idx];
+    b.setCollisionFlags(0);
+    const localInertia = this._zero;
+    b.getCollisionShape().calculateLocalInertia(1, localInertia);
+    b.setMassProps(1, localInertia);
+    b.updateInertiaTensor();
+    b.setActivationState(1);
+    b.activate();
+  }
+
   removeRigidBody(idx) {
     const b = this.rigidBodies[idx];
     if(b) this.dynamicsWorld.removeRigidBody(b);
@@ -698,5 +720,7 @@ self.onmessage = async ({data}) => {
 
     // new
     case 'isSleeping': ammo.isSleeping(data.idx); break;
+    case 'switchToKinematic': ammo.switchToKinematic(data.idx); break;
+    case 'switchToDinamic': ammo.switchToDinamic(data.idx); break;
   }
 };
