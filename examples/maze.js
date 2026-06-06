@@ -114,8 +114,6 @@ export var mazeGame = function() {
         }
       }
 
-      // console.log('__________________')
-
       const light = maze.lightContainer[0];
       light.setPosition(0, 200, 0)
       light.setIntensity(8.5);
@@ -123,7 +121,7 @@ export var mazeGame = function() {
       maze.cameras.firstPersonCamera.movementSpeed = 0.1;
       maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
       maze.cameras.firstPersonCamera.setPosition(-49, 10.40, -49);
-      // close space
+
       let test2 = maze.addMeshObj({
         shadowsCast: false,
         material: {type: 'standard'},

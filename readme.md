@@ -948,11 +948,10 @@ All you needed to start kurento and openvidu and interconnect this nodejs server
 https://github.com/zlatnaspirala/matrix-stream/blob/main/middleware/server.js
 
 
-
 See example code at `./examples/games/moba/`
 
 Buildin net sync basic:
-Lets say app is engine root object and net is networking object.
+Let's say app is engine root object and net is networking object.
 webRTC tech with openvidu server middleware server
 
 ```js
@@ -1051,8 +1050,25 @@ In this case FORCE_FULL_SCREEN is true by default.
 Pushed notification click anywhere to start the engine.
 
 Note for MAX_SPOTLIGHTS :
-If you wanna override values from MECOnfig or even urlParam than use :
+If you wanna override values from MECOnfig or even urlParam than use in main engine arg pass:
 
+new MatrixEngineWGPU({
+    canvasSize: 'fullscreen',
+    fastRender: 0.9,
+    render: 'culling',
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: 'firstPersonCamera',
+      // type: 'WASD',
+      responseCoef: 1000
+    },
+    clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
+  }, () => { ... })
+
+Exclude from culling: `floor.ignoreCulling = true;`
+  
 ---
 
 ## About `main.js`
