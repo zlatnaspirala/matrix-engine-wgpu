@@ -50,7 +50,7 @@ class MatrixJolt {
     this.joltInterface = null;
     this.physicsSystem = null;
     this.bodyInterface = null;
-    this.setSpeedUp = 3;
+    this.speedUp = 3;
     this.options = {roundDimension: 100, gravity: 10};
     this._sab = null;
     this._snapshot = null;
@@ -634,7 +634,7 @@ class MatrixJolt {
   }
 
   speedUpSimulation(v) {
-    this.setSpeedUp = v;
+    this.speedUp = v;
   }
 
   removeRigidBody(idx) {
@@ -645,7 +645,7 @@ class MatrixJolt {
 
   step() {
     if(!this.joltInterface) return;
-    for(let i = 0;i < this.setSpeedUp;i++) {
+    for(let i = 0;i < this.speedUp;i++) {
       this.joltInterface.Step(1 / 30, 1);
     }
     const snap = this._snapshot;

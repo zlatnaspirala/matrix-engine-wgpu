@@ -20,7 +20,7 @@ export var loadDrumCannon = function() {
       type: 'WASD',
       responseCoef: 1000
     },
-    clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
+    clearColor: {r: 0, b: 0, g: 0, a: 1}
   }, () => {
 
     addRaycastsAABBListener();
@@ -36,7 +36,8 @@ export var loadDrumCannon = function() {
         drum: "./res/meshes/blender/drum.obj"
       }, onGround, {scale: [1, 1, 1]})
       // DRUM.matrixPhysics.speedUpSimulation(4);
-      app.physicsBodiesChain('standard', {x: -25, y: 40, z: -15}, undefined, ['./res/textures/star-fantazy.png']);
+
+      if (isMobile() === false) app.physicsBodiesChain('standard', {x: -25, y: 40, z: -15}, undefined, ['./res/textures/star-fantazy.png']);
     })
 
     async function onGround(m) {
