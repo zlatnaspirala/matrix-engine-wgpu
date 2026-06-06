@@ -534,6 +534,20 @@ class MatrixCannon {
     });
   }
 
+  getQuaternion(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) {
+      self.postMessage({cmd: 'getQuaternion', id: msgID, position: null});
+      return;
+    }
+    const r = body.quaternion;
+    self.postMessage({
+      cmd: 'getQuaternion',
+      id: msgID,
+      quaternion: {x: r.x, y: r.y, z: r.z, w: r.w}
+    });
+  }
+
   speedUpSimulation(v) {this.speedUpSimulation = v}
 
   createChain(ids, size = 0.5, marginSpace = 0.05) {
@@ -830,6 +844,7 @@ self.onmessage = async ({data}) => {
     case 'setGravityScale': cannon.setGravityScale(data.idx, data.scale); break;
     case 'explode': cannon.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'getPosition': cannon.getPosition(data.idx, data.id); break;
+    case 'getQuaternion': cannon.getQuaternion(data.idx, data.id); break;
     case 'speedUpSimulation': cannon.speedUpSimulation(data.value); break;
     case 'setCollisionFlags': cannon.setCollisionFlags(data.idx, data.flags); break;
     case 'removeRigidBody': cannon.removeRigidBody(data.idx, data.flags); break;

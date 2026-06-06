@@ -20,6 +20,7 @@ export let dices = {
     // 
     let currentIndex = 0;
     for(var x = 1;x < 7;x++) {
+      console.log('DEBUG : app.matrixPhysics.getBodyByName ', app.matrixPhysics.getBodyByName(('CubePhysics' + x)).MEObject)
       app.matrixPhysics.getBodyByName(('CubePhysics' + x)).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
     }
   },
@@ -31,7 +32,7 @@ export let dices = {
     for(var key in this.SAVED_DICES) {
       let B = physics.getBodyByName(key);
       if(!B) continue;
-      physics.deactivatePhysics(B);
+      physics.switchToKinematic(B);
       physics.setBodyTransform(B, originVect);
       B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
       currentIndex += 3;
@@ -48,7 +49,7 @@ export let dices = {
     this.getAllDices().forEach((dice) => {
       const body = app.matrixPhysics.getBodyByName(dice.name);
       if(body) {
-        app.matrixPhysics.activatePhysics(body);
+        app.matrixPhysics.switchToDinamic(body);
       }
     });
   },
@@ -167,7 +168,7 @@ export let myDom = {
       });
       setupCanvasFilters();
       byId('messageBox').setAttribute('data-loaded', 'loaded');
-      document.getElementById('physicsSpeed').value = app.matrixPhysics.speedUpSimulation;
+      document.getElementById('physicsSpeed').value = 1; //app.matrixPhysics.speedUpSimulation;
       byId("physicsSpeed").addEventListener("change", (e) => {
         app.matrixPhysics.speedUpSimulation(parseInt(e.target.value))
       });

@@ -199,6 +199,11 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'setRollingFriction', idx, friction});
   }
 
+  getQuaternion(idx) {
+    if(idx === undefined) return;
+    return this._send('getQuaternion', {idx: idx});
+  }
+
   addHingeConstraint(idxA, idxB, options) {
     if(idxA === undefined || idxB === undefined || idxA === -1 || idxB === -1) {
       console.log('error in addHingeConstraint !!! ');

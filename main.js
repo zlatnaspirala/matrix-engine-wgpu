@@ -2,25 +2,26 @@ import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
 import {byId, LOG_FUNNY, mb, randomFloatFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb.js";
-import {addRaycastsListener} from "./src/engine/raycast.js";
+import {addRaycastsAABBListener, addRaycastsListener} from "./src/engine/raycast.js";
 
 export let application = new MatrixEngineWGPU({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
+  useCannon: true,
+  MAX_SPOTLIGHTS: 1,
+  MAX_BONES: 0,
   mainCameraParams: {
     type: 'WASD',
     responseCoef: 1000
   }
 }, () => {
 
-  // cache
   application.updateTitleEvent = new CustomEvent('updateTitle', {
     detail: {text: '', status: 'FREE'}
   });
   application.DICE_ROLL_EVENT = new CustomEvent('DICE.ROLL', {});
 
   application.addLight();
-  console.log('light added.')
   application.lightContainer[0].outerCutoff = 0.5;
   application.lightContainer[0].setPosZ(-16);
   application.lightContainer[0].setIntensity(6);
@@ -30,9 +31,8 @@ export let application = new MatrixEngineWGPU({
   application.globalAmbient[1] = 0.7;
   application.globalAmbient[2] = 0.7;
   application.activateBloomEffect();
-  application.bloomPass.setIntensity(5);
-  application.bloomPass.setKnee(25);
-  application.bloomPass.setBlurRadius(1300);
+  application.bloomPass.setIntensity(15);
+  application.bloomPass.setBlurRadius(3);
 
   const diceTexturePath = './res/meshes/jamb/dice.png';
 
@@ -87,30 +87,42 @@ export let application = new MatrixEngineWGPU({
   };
 
   // This code must be on top (Physics)
-  application.matrixPhysics.detectCollision = function() {
-    this.lastRoll = '';
-    this.presentScore = '';
-    let dispatcher = this.dynamicsWorld.getDispatcher();
-    let numManifolds = dispatcher.getNumManifolds();
-    for(let i = 0;i < numManifolds;i++) {
-      let contactManifold = dispatcher.getManifoldByIndexInternal(i);
-      if(this.ground.kB == contactManifold.getBody0().kB ||
-        this.ground.kB == contactManifold.getBody1().kB) {
-        if(this.ground.kB == contactManifold.getBody0().kB) {
-          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody1());
-          var testR = contactManifold.getBody1().getWorldTransform().getRotation();
-        }
-        if(this.ground.kB == contactManifold.getBody1().kB) {
-          var MY_DICE_NAME = this.getNameByBody(contactManifold.getBody0());
-          var testR = contactManifold.getBody0().getWorldTransform().getRotation();
-        }
-        var passed = false;
+  application.matrixPhysics.detectCollision = async(e) => {
 
-        const quatPlain = {x: testR.x(), y: testR.y(), z: testR.z(), w: testR.w()};
-        this._onGroundContact(MY_DICE_NAME, quatPlain);
-      }
+    const body0Name = e.detail.body0Name;
+    const body1Name = e.detail.body1Name;
+
+    let diceName = null;
+
+    if(body0Name === 'ground') {
+      diceName = body1Name;
     }
-  }
+
+    if(body1Name === 'ground') {
+      diceName = body0Name;
+    }
+
+    if(!diceName) return;
+
+    // Get body id
+    const bodyId = application.matrixPhysics.getBodyByName(diceName);
+    if(bodyId == null) return;
+
+    const q = await application.matrixPhysics.getQuaternion(bodyId);
+    if(!q) return;
+
+    const quatPlain = {
+      x: q.quaternion.x,
+      y: q.quaternion.y,
+      z: q.quaternion.z,
+      w: q.quaternion.w
+    };
+
+    application.matrixPhysics._onGroundContact(
+      diceName,
+      quatPlain
+    );
+  };
 
   application.matrixPhysics._onGroundContact = (bodyName, quatPlain) => {
     const face = application.matrixPhysics.detectTopFaceFromQuat(quatPlain);
@@ -122,8 +134,7 @@ export let application = new MatrixEngineWGPU({
     }
   };
 
-  addRaycastsListener();
-  // addRaycastsAABBListener();
+  addRaycastsAABBListener();
 
   application.canvas.addEventListener("ray.hit.event", (e) => {
     // console.log('ray.hit.event');
@@ -160,15 +171,15 @@ export let application = new MatrixEngineWGPU({
     myDom.createJamb();
     myDom.addDraggerForTable();
     myDom.createBlocker();
-    app.matrixPhysics.speedUpSimulation(10);
+    app.matrixPhysics.speedUpSimulation(2);
 
     downloadMeshes({
       cube: "./res/meshes/jamb/dice.obj",
     }, onLoadObj, {scale: [0.5, 0.5, 0.5], swap: [null]})
 
     downloadMeshes({
-      bg: "./res/meshes/jamb/bg.obj",
-    }, onLoadObjFloor, {scale: [3, 1, 3], swap: [null]})
+      bg: "./res/meshes/shapes/cube.obj",
+    }, onLoadObjFloor, {scale: [1, 1, 1], swap: [null]})
 
     downloadMeshes({
       mainTitle: "./res/meshes/jamb/jamb-title.obj",
@@ -176,16 +187,17 @@ export let application = new MatrixEngineWGPU({
 
     downloadMeshes({
       cube: "./res/meshes/jamb/dice.obj",
-    }, onLoadObjWallCenter, {scale: [50, 10, 10], swap: [null]})
+    }, onLoadObjWallCenter, {scale: [1, 1, 1], swap: [null]})
 
     downloadMeshes({
       cube: "./res/meshes/jamb/dice.obj",
     }, (m) => {
       // right
       application.addMeshObj({
-        position: {x: 25, y: 5.5, z: -25},
+        position: {x: 25, y: 1, z: -25},
         rotation: {x: 0, y: -22, z: 0},
-        scale: [25, 10, 4],
+        scale: [10, 1, 1],
+        useScale: false,
         texturesPaths: ['./res/meshes/jamb/text.png'],
         name: 'wallRight',
         mesh: m.cube,
@@ -198,11 +210,12 @@ export let application = new MatrixEngineWGPU({
       })
 
       application.addMeshObj({
-        position: {x: -25, y: 5.5, z: -25},
+        position: {x: -25, y: 1, z: -25},
         rotation: {x: 0, y: 22, z: 0},
-        scale: [25, 10, 4],
+        scale: [10, 1, 1],
         texturesPaths: ['./res/meshes/jamb/text.png'],
         name: 'wallLeft',
+        useScale: false,
         mesh: m.cube,
         physics: {
           mass: 0,
@@ -211,7 +224,7 @@ export let application = new MatrixEngineWGPU({
         },
         raycast: {enabled: false, radius: 2},
       })
-    }, {scale: [25, 10, 4], swap: [null]})
+    }, {scale: [1, 1, 1], swap: [null]})
 
   })
 
@@ -219,9 +232,10 @@ export let application = new MatrixEngineWGPU({
     application.myLoadedMeshesWalls = m;
     // WALLS Center
     application.addMeshObj({
-      position: {x: 0, y: 5, z: -45},
+      position: {x: 0, y: 5, z: -25},
       rotation: {x: 0, y: 0, z: 0},
-      scale: [50, 10, 10],
+      scale: [15, 5, 2],
+      useScale: false,
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'wallCenter',
       mesh: m.cube,
@@ -239,7 +253,7 @@ export let application = new MatrixEngineWGPU({
     // Add logo text top
     application.addMeshObj({
       position: {x: 0, y: 5, z: -15},
-      rotation: {x: 0, y: 0, z: 0},
+      rotation: {x: 90, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'mainTitle',
       mesh: m.mainTitle,
@@ -258,16 +272,16 @@ export let application = new MatrixEngineWGPU({
       // BODY x, y, z, rotX, rotY, RotZ
       app.matrixPhysics.setKinematicTransform(
         app.matrixPhysics.getBodyByName('mainTitle'), 0, 0, 0, 1)
-      app.matrixPhysics.setKinematicTransform(
-        app.matrixPhysics.getBodyByName('bg'), 0, -10, 0, 0, 0, 0)
+      // app.matrixPhysics.setKinematicTransform(   app.matrixPhysics.getBodyByName('bg'), 0, -10, 0, 0, 0, 0)
     }, 1200);
   }
 
   function onLoadObjFloor(m) {
     application.myLoadedMeshes = m;
     application.addMeshObj({
-      scale: [10, 0.1, 0.1],
-      position: {x: 0, y: 6, z: -10},
+      scale: [10, 1, 10],
+      // useScale: false,
+      position: {x: 0, y: 0, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/bg.png'],
       name: 'bg',
