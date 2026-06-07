@@ -10,33 +10,41 @@ export let dices = {
   pickDice: function(dice) {
     if(Object.keys(this.SAVED_DICES).length >= 5) {
       console.log("⚠️ You can only select up to 5 dice!");
-      return; // prevent adding more
+      return;
     }
     this.SAVED_DICES[dice] = this.R[dice]
     this.refreshSelectedBox()
   },
 
+  unPickDice: function(dice) {
+    if(Object.keys(this.SAVED_DICES).length == 0) {
+      console.log("⚠️ no dice in selected box!");
+      return;
+    }
+    delete this.SAVED_DICES[dice];
+    let B = app.matrixAmmo.getBodyByName(dice);
+    app.matrixPhysics.switchToDinamic(B);
+    console.log("⚠️ UNPICK TEST  dice in selected box!");
+    // this.refreshSelectedBox()
+  },
+
   setStartUpPosition: () => {
-    // 
-    let currentIndex = 0;
     for(var x = 1;x < 7;x++) {
       console.log('DEBUG : app.matrixPhysics.getBodyByName ', app.matrixPhysics.getBodyByName(('CubePhysics' + x)).MEObject)
       const id = app.matrixPhysics.getBodyByName(('CubePhysics' + x));
-      app.matrixPhysics.setKinematicTransform(id, -5 + currentIndex * 5, 2, -15)
-      // .MEObject.position.setPosition();
+      app.matrixPhysics.setKinematicTransform(id, -6 + x * 2, 2, -15)
     }
   },
 
   refreshSelectedBox: function(arg) {
     let currentIndex = 0;
     const physics = app.matrixPhysics;
-    const originVect = new PVector(0, 0, 0);
-    for(var key in this.SAVED_DICES) {
-      let B = physics.getBodyByName(key);
+    for(var name in this.SAVED_DICES) {
+      let B = physics.getBodyByName(name);
       if(!B) continue;
       physics.switchToKinematic(B);
-      physics.setBodyTransform(B, originVect);
-      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
+      physics.setBodyTransform(B, 0, 0, 0);
+      physics.setKinematicTransform(B, -5 + currentIndex, 5, -16);
       currentIndex += 3;
     }
   },
@@ -72,8 +80,10 @@ export let dices = {
 
     for(let i = 1;i <= 6;i++) {
       const key = "CubePhysics" + i;
-      if(key in this.SAVED_DICES) continue; 
-      activeRollingCount++; // count how many are still active
+      if(key in this.SAVED_DICES) continue;
+      activeRollingCount++;
+      console.log(' ker  ', key)
+      console.log(' ker  ', this.R)
       if(typeof this.R[key] === 'undefined') {
         allReady = false;
         break;
@@ -82,7 +92,11 @@ export let dices = {
     console.log('test checkall ')
     // Dynamic threshold: min wait time based on rolling dice
     const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
-    if(allReady && this.C > minWait) {
+    // 1. Get the keys as an array
+    const keys = Object.keys(this.R); // ["id", "name", "role"]
+    const count = keys.length;
+    if(allReady && this.C > minWait || count === 6) {
+      console.log('test checkall all done ')
       dispatchEvent(new CustomEvent('all-done', {detail: {}}));
       this.C = 0;
     }

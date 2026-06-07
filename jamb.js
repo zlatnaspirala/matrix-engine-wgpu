@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
-import {byId, LOG_FUNNY, mb, randomFloatFromTo} from "./src/engine/utils.js";
+import {byId, LOG_FUNNY, mb, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
 import {dices, myDom} from "./examples/games/jamb/jamb-script.js";
 import {addRaycastsAABBListener, addRaycastsListener} from "./src/engine/raycast.js";
 
@@ -22,19 +22,20 @@ export let application = new MatrixEngineWGPU({
   application.DICE_ROLL_EVENT = new CustomEvent('DICE.ROLL', {});
 
   application.addLight();
-  application.lightContainer[0].outerCutoff = 0.5;
-  application.lightContainer[0].setPosZ(-16);
-  application.lightContainer[0].setIntensity(6);
+  application.lightContainer[0].outerCutoff = 0.8;
+  application.lightContainer[0].setPosZ(-10);
+  application.lightContainer[0].setIntensity(4);
   application.lightContainer[0].setTargetZ(-20);
-  application.lightContainer[0].setPosY(9);
-  application.globalAmbient[0] = 0.7;
-  application.globalAmbient[1] = 0.7;
-  application.globalAmbient[2] = 0.7;
+  application.lightContainer[0].setPosY(25);
+  application.globalAmbient[0] = 1.7;
+  application.globalAmbient[1] = .7;
+  application.globalAmbient[2] = .5;
   application.activateBloomEffect();
   application.bloomPass.setIntensity(1);
-  application.bloomPass.setBlurRadius(2);
+  application.bloomPass.setBlurRadius(1);
 
-  const diceTexturePath = './res/meshes/jamb/dice.png';
+  // const diceTexturePath = './res/meshes/jamb/gemini-dice.webp';
+  const diceTexturePath = './res/meshes/jamb/dice2.webp';
 
   // Dom operations
   application.userState = {
@@ -112,55 +113,23 @@ export let application = new MatrixEngineWGPU({
     };
   };
 
-
-  // This code must be on top (Physics)
   application.matrixPhysics.detectCollision = async (e) => {
-
-
     const body0Name = e.detail.body0Name;
     const body1Name = e.detail.body1Name;
-
     let diceName = null;
-
-    if(body0Name === 'ground') {
-      diceName = body1Name;
-    }
-
-    if(body1Name === 'ground') {
-      diceName = body0Name;
-    }
-
-    console.log('..................');
+    if(body0Name === 'ground') {diceName = body1Name;}
+    if(body1Name === 'ground') {diceName = body0Name;}
     if(!diceName) return;
-
-    // Get body id
     const bodyId = application.matrixPhysics.getBodyByName(diceName);
     if(bodyId == null) return;
-
     setTimeout(async () => {
       const is = await application.matrixPhysics.isSleeping(bodyId);
-      if(is === false) {
-        console.log(' not sleep')
-        return;
-      }
-
+      if(is === false) {return;}
       const q = await application.matrixPhysics.getQuaternion(bodyId);
       if(!q) return;
-
-      const quatPlain = {
-        x: q.x,
-        y: q.y,
-        z: q.z,
-        w: q.w
-      };
-
-      application.matrixPhysics._onGroundContact(
-        diceName,
-        quatPlain,
-        bodyId
-      );
-    }, 4000)
-
+      const quatPlain = {x: q.x, y: q.y, z: q.z, w: q.w};
+      application.matrixPhysics._onGroundContact(diceName, quatPlain, bodyId);
+    }, 2000);
   };
 
   application.matrixPhysics._onGroundContact = async (bodyName, quatPlain, bodyId) => {
@@ -186,6 +155,14 @@ export let application = new MatrixEngineWGPU({
 
     if(application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name)
+      // but if in SAVED 
+      const allNames = Object.keys(application.dices.SAVED_DICES);
+      if(allNames.indexOf(e.detail.hitObject.name) !== -1) {
+        // -
+        console.log("UNPICK THIS.", e.detail.hitObject.name)
+        application.dices.unPickDice(e.detail.hitObject.name)
+        return;
+      }
     } else if(application.dices.STATUS == "SELECT_DICES_1" ||
       application.dices.STATUS == "SELECT_DICES_2" ||
       application.dices.STATUS == "FINISHED") {
@@ -194,8 +171,19 @@ export let application = new MatrixEngineWGPU({
         console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name)
         return;
       }
-      console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name)
-      application.dices.pickDice(e.detail.hitObject.name)
+
+      const allNames = Object.keys(application.dices.SAVED_DICES);
+      if(allNames.indexOf(e.detail.hitObject.name) !== -1) {
+        // -
+        console.log("UNPICK2 THIS.", e.detail.hitObject.name)
+        application.dices.unPickDice(e.detail.hitObject.name)
+        return;
+      } else {
+        console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name)
+        application.dices.pickDice(e.detail.hitObject.name)
+      }
+
+
     }
   });
 
@@ -234,7 +222,7 @@ export let application = new MatrixEngineWGPU({
     }, (m) => {
       // right
       application.addMeshObj({
-        position: {x: 15, y: 5, z: -18},
+        position: {x: 21, y: 5, z: -21},
         rotation: {x: 0, y: -22, z: 0},
         scale: [10, 10, 1],
         useScale: false,
@@ -250,7 +238,7 @@ export let application = new MatrixEngineWGPU({
       })
 
       application.addMeshObj({
-        position: {x: -15, y: 5, z: -18},
+        position: {x: -21, y: 5, z: -21},
         rotation: {x: 0, y: 22, z: 0},
         scale: [10, 10, 1],
         texturesPaths: ['./res/meshes/jamb/text.png'],
@@ -272,7 +260,7 @@ export let application = new MatrixEngineWGPU({
     application.myLoadedMeshesWalls = m;
     // WALL Center
     application.addMeshObj({
-      position: {x: 0, y: 5, z: -22},
+      position: {x: 0, y: 5, z: -28},
       rotation: {x: 0, y: 0, z: 0},
       scale: [15, 10, 2],
       useScale: false,
@@ -291,38 +279,33 @@ export let application = new MatrixEngineWGPU({
   function onLoadObjOther(m) {
     application.myLoadedMeshes = m;
     // Add logo text top
-    application.addMeshObj({
-      position: {x: 0, y: 5, z: -15},
+    application.mainTitle = application.addMeshObj({
+      position: {x: 0, y: 11, z: -21},
       rotation: {x: 90, y: 0, z: 0},
+      rotationSpeed: {x: 1, y: 0, z: 0},
+      scale: [1.6, 1.6, 1.6],
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'mainTitle',
       mesh: m.mainTitle,
       physics: {
-        mass: 0,
-        enabled: true,
-        geometry: "Cube"
+        enabled: false,
       },
       raycast: {enabled: false, radius: 2},
     })
     setTimeout(() => {
-      app.cameras.WASD.setYaw(-6.21);
-      app.cameras.WASD.setPitch(-0.32);
+      app.cameras.WASD.setYaw(0);
+      app.cameras.WASD.setPitch(0.1);
       app.cameras.WASD.setZ(0);
-      app.cameras.WASD.setY(3.76);
-      // BODY x, y, z, rotX, rotY, RotZ
-      app.matrixPhysics.setKinematicTransform(
-        app.matrixPhysics.getBodyByName('mainTitle'), 0, 0, 0, 1)
-      // app.matrixPhysics.setKinematicTransform(   app.matrixPhysics.getBodyByName('bg'), 0, -10, 0, 0, 0, 0)
-    }, 1200);
+      app.cameras.WASD.setY(4);
+    }, 500);
   }
 
   function onLoadObjFloor(m) {
-    // application.myLoadedMeshes = m;
     application.addMeshObj({
       scale: [25, 1, 25],
       position: {x: 0, y: -1, z: -10},
       rotation: {x: 0, y: 0, z: 0},
-      texturesPaths: ['./res/meshes/jamb/bg.png'],
+      texturesPaths: ['./res/meshes/jamb/bg.webp'],
       name: 'floor',
       mesh: m.bg,
       physics: {
@@ -445,13 +428,12 @@ export let application = new MatrixEngineWGPU({
         removeEventListener('dice-4', dice4Click)
         removeEventListener('dice-5', dice5Click)
         removeEventListener('dice-6', dice6Click)
-        console.log(`%cFINAL<preliminar> ${dices.R}`, LOG_FUNNY)
+        // console.log(`%cFINAL<preliminar> ${dices.R}`, LOG_FUNNY)
         application.TOLERANCE = 0;
-        console.log('se camera position 2')
-        app.cameras.WASD.setYaw(0.01);
         app.cameras.WASD.setPitch(-1.26);
         app.cameras.WASD.setZ(-18);
         app.cameras.WASD.setY(19);
+        app.mainTitle.position.translateByZ(-24);
 
         if(dices.STATUS == "FREE_TO_PLAY" || dices.STATUS == "IN_PLAY") {
           dices.STATUS = "SELECT_DICES_1";
@@ -490,10 +472,11 @@ export let application = new MatrixEngineWGPU({
         app.dices.activateAllDicesPhysics();
       }, 1000);
 
+      app.mainTitle.position.translateByZ(-21)
       app.cameras.WASD.setYaw(0);
       app.cameras.WASD.setPitch(0);
       app.cameras.WASD.setZ(0);
-      app.cameras.WASD.setY(3.76);
+      app.cameras.WASD.setY(4);
 
       app.updateTitleEvent.detail.text = app.label.get.hand1;
       app.updateTitleEvent.detail.status = 'FREE';
@@ -502,58 +485,45 @@ export let application = new MatrixEngineWGPU({
 
     // ACTIONS
     let dice1Click = (e) => {
-      // console.log('>>>>>>>> diceclick 1 :::  ', e)
       dices.R[e.detail.cubeId] = '1';
       dices.checkAll()
     };
 
     let dice2Click = (e) => {
-      console.log('>>>>>>>> diceclick 2 :::  ', e)
       dices.R[e.detail.cubeId] = '2';
       dices.checkAll()
     };
 
     let dice3Click = (e) => {
-      console.log('>>>>>>>> diceclick 3 :::  ', e)
       dices.R[e.detail.cubeId] = '3';
       dices.checkAll()
     };
 
     let dice4Click = (e) => {
-      console.log('>>>>>>>> diceclick 4 :::  ', e)
       dices.R[e.detail.cubeId] = '4';
       dices.checkAll()
     }
 
     let dice5Click = (e) => {
-      console.log('>>>>>>>> diceclick 5 :::  ', e)
       dices.R[e.detail.cubeId] = '5';
       dices.checkAll()
     }
 
     let dice6Click = (e) => {
-      // console.info('DICE 6', e.detail)
-      console.log('>>>>>>>> diceclick 6 :::  ', e)
       dices.R[e.detail.cubeId] = '6';
       dices.checkAll()
     }
 
     function shootDice(x) {
       setTimeout(() => {
-        // app.matrixPhysics.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(
-        //   randomFloatFromTo(3, 12), 9, 9
-        // ))
-        // app.matrixPhysics.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3(
-        //   randomFloatFromTo(-5, 5), 15, -20
-        // ))
         const body = app.matrixPhysics.getBodyByName(`CubePhysics${x}`);
         app.matrixPhysics.shootBody(
           body,
-          randomFloatFromTo(-5, 5), 15, -20,   // linear
-          randomFloatFromTo(3, 12), 9, 9        // angular
+          randomFloatFromTo(-4, 4), randomIntFromTo(15, 20), randomIntFromTo(-45, -65), // linear
+          randomFloatFromTo(3, 12), randomIntFromTo(2, 20), 9                           // angular
         );
         setTimeout(() => app.matrixSounds.play('roll'), 1500);
-      }, 200 * x)
+      }, 100 * x)
     }
 
     application.activateDiceClickListener = (index) => {
@@ -583,21 +553,16 @@ export let application = new MatrixEngineWGPU({
       if(dices.STATUS == "FREE_TO_PLAY") {
         app.matrixSounds.play('start')
         dices.STATUS = "IN_PLAY";
-
         app.updateTitleEvent.detail.text = app.label.get.hand1;
         app.updateTitleEvent.detail.status = 'inplay';
-
-        console.log('app.updateTitleEvent ...');
+        // console.log('IN_PLAY');
         dispatchEvent(app.updateTitleEvent);
-
-
         addEventListener('dice-1', dice1Click)
         addEventListener('dice-2', dice2Click)
         addEventListener('dice-3', dice3Click)
         addEventListener('dice-4', dice4Click)
         addEventListener('dice-5', dice5Click)
         addEventListener('dice-6', dice6Click)
-
         for(var x = 1;x < 7;x++) {
           shootDice(x)
         }

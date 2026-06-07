@@ -149,31 +149,38 @@ let dices = exports.dices = {
   pickDice: function (dice) {
     if (Object.keys(this.SAVED_DICES).length >= 5) {
       console.log("⚠️ You can only select up to 5 dice!");
-      return; // prevent adding more
+      return;
     }
     this.SAVED_DICES[dice] = this.R[dice];
     this.refreshSelectedBox();
   },
+  unPickDice: function (dice) {
+    if (Object.keys(this.SAVED_DICES).length == 0) {
+      console.log("⚠️ no dice in selected box!");
+      return;
+    }
+    delete this.SAVED_DICES[dice];
+    let B = app.matrixAmmo.getBodyByName(dice);
+    app.matrixPhysics.switchToDinamic(B);
+    console.log("⚠️ UNPICK TEST  dice in selected box!");
+    // this.refreshSelectedBox()
+  },
   setStartUpPosition: () => {
-    // 
-    let currentIndex = 0;
     for (var x = 1; x < 7; x++) {
       console.log('DEBUG : app.matrixPhysics.getBodyByName ', app.matrixPhysics.getBodyByName('CubePhysics' + x).MEObject);
       const id = app.matrixPhysics.getBodyByName('CubePhysics' + x);
-      app.matrixPhysics.setKinematicTransform(id, -5 + currentIndex * 5, 2, -15);
-      // .MEObject.position.setPosition();
+      app.matrixPhysics.setKinematicTransform(id, -6 + x * 2, 2, -15);
     }
   },
   refreshSelectedBox: function (arg) {
     let currentIndex = 0;
     const physics = app.matrixPhysics;
-    const originVect = new _matrixClass.PVector(0, 0, 0);
-    for (var key in this.SAVED_DICES) {
-      let B = physics.getBodyByName(key);
+    for (var name in this.SAVED_DICES) {
+      let B = physics.getBodyByName(name);
       if (!B) continue;
       physics.switchToKinematic(B);
-      physics.setBodyTransform(B, originVect);
-      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
+      physics.setBodyTransform(B, 0, 0, 0);
+      physics.setKinematicTransform(B, -5 + currentIndex, 5, -16);
       currentIndex += 3;
     }
   },
@@ -207,7 +214,9 @@ let dices = exports.dices = {
     for (let i = 1; i <= 6; i++) {
       const key = "CubePhysics" + i;
       if (key in this.SAVED_DICES) continue;
-      activeRollingCount++; // count how many are still active
+      activeRollingCount++;
+      console.log(' ker  ', key);
+      console.log(' ker  ', this.R);
       if (typeof this.R[key] === 'undefined') {
         allReady = false;
         break;
@@ -216,7 +225,11 @@ let dices = exports.dices = {
     console.log('test checkall ');
     // Dynamic threshold: min wait time based on rolling dice
     const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
-    if (allReady && this.C > minWait) {
+    // 1. Get the keys as an array
+    const keys = Object.keys(this.R); // ["id", "name", "role"]
+    const count = keys.length;
+    if (allReady && this.C > minWait || count === 6) {
+      console.log('test checkall all done ');
       dispatchEvent(new CustomEvent('all-done', {
         detail: {}
       }));
@@ -1340,18 +1353,20 @@ let application = exports.application = new _world.default({
   });
   application.DICE_ROLL_EVENT = new CustomEvent('DICE.ROLL', {});
   application.addLight();
-  application.lightContainer[0].outerCutoff = 0.5;
-  application.lightContainer[0].setPosZ(-16);
-  application.lightContainer[0].setIntensity(6);
+  application.lightContainer[0].outerCutoff = 0.8;
+  application.lightContainer[0].setPosZ(-10);
+  application.lightContainer[0].setIntensity(4);
   application.lightContainer[0].setTargetZ(-20);
-  application.lightContainer[0].setPosY(9);
-  application.globalAmbient[0] = 0.7;
-  application.globalAmbient[1] = 0.7;
-  application.globalAmbient[2] = 0.7;
+  application.lightContainer[0].setPosY(25);
+  application.globalAmbient[0] = 1.7;
+  application.globalAmbient[1] = .7;
+  application.globalAmbient[2] = .5;
   application.activateBloomEffect();
   application.bloomPass.setIntensity(1);
-  application.bloomPass.setBlurRadius(2);
-  const diceTexturePath = './res/meshes/jamb/dice.png';
+  application.bloomPass.setBlurRadius(1);
+
+  // const diceTexturePath = './res/meshes/jamb/gemini-dice.webp';
+  const diceTexturePath = './res/meshes/jamb/dice2.webp';
 
   // Dom operations
   application.userState = {
@@ -1429,8 +1444,6 @@ let application = exports.application = new _world.default({
       z: iz * qw + iw * -qz + ix * -qy - iy * -qx
     };
   };
-
-  // This code must be on top (Physics)
   application.matrixPhysics.detectCollision = async e => {
     const body0Name = e.detail.body0Name;
     const body1Name = e.detail.body1Name;
@@ -1441,16 +1454,12 @@ let application = exports.application = new _world.default({
     if (body1Name === 'ground') {
       diceName = body0Name;
     }
-    console.log('..................');
     if (!diceName) return;
-
-    // Get body id
     const bodyId = application.matrixPhysics.getBodyByName(diceName);
     if (bodyId == null) return;
     setTimeout(async () => {
       const is = await application.matrixPhysics.isSleeping(bodyId);
       if (is === false) {
-        console.log(' not sleep');
         return;
       }
       const q = await application.matrixPhysics.getQuaternion(bodyId);
@@ -1462,7 +1471,7 @@ let application = exports.application = new _world.default({
         w: q.w
       };
       application.matrixPhysics._onGroundContact(diceName, quatPlain, bodyId);
-    }, 4000);
+    }, 2000);
   };
   application.matrixPhysics._onGroundContact = async (bodyName, quatPlain, bodyId) => {
     const face = await application.matrixPhysics.getDiceFace(bodyId);
@@ -1486,13 +1495,29 @@ let application = exports.application = new _world.default({
     }
     if (application.dices.STATUS == "FREE_TO_PLAY") {
       console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name);
+      // but if in SAVED 
+      const allNames = Object.keys(application.dices.SAVED_DICES);
+      if (allNames.indexOf(e.detail.hitObject.name) !== -1) {
+        // -
+        console.log("UNPICK THIS.", e.detail.hitObject.name);
+        application.dices.unPickDice(e.detail.hitObject.name);
+        return;
+      }
     } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2" || application.dices.STATUS == "FINISHED") {
       if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
         console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name);
         return;
       }
-      console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
-      application.dices.pickDice(e.detail.hitObject.name);
+      const allNames = Object.keys(application.dices.SAVED_DICES);
+      if (allNames.indexOf(e.detail.hitObject.name) !== -1) {
+        // -
+        console.log("UNPICK2 THIS.", e.detail.hitObject.name);
+        application.dices.unPickDice(e.detail.hitObject.name);
+        return;
+      } else {
+        console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
+        application.dices.pickDice(e.detail.hitObject.name);
+      }
     }
   });
 
@@ -1538,9 +1563,9 @@ let application = exports.application = new _world.default({
       // right
       application.addMeshObj({
         position: {
-          x: 15,
+          x: 21,
           y: 5,
-          z: -18
+          z: -21
         },
         rotation: {
           x: 0,
@@ -1564,9 +1589,9 @@ let application = exports.application = new _world.default({
       });
       application.addMeshObj({
         position: {
-          x: -15,
+          x: -21,
           y: 5,
-          z: -18
+          z: -21
         },
         rotation: {
           x: 0,
@@ -1600,7 +1625,7 @@ let application = exports.application = new _world.default({
       position: {
         x: 0,
         y: 5,
-        z: -22
+        z: -28
       },
       rotation: {
         x: 0,
@@ -1626,24 +1651,28 @@ let application = exports.application = new _world.default({
   function onLoadObjOther(m) {
     application.myLoadedMeshes = m;
     // Add logo text top
-    application.addMeshObj({
+    application.mainTitle = application.addMeshObj({
       position: {
         x: 0,
-        y: 5,
-        z: -15
+        y: 11,
+        z: -21
       },
       rotation: {
         x: 90,
         y: 0,
         z: 0
       },
+      rotationSpeed: {
+        x: 1,
+        y: 0,
+        z: 0
+      },
+      scale: [1.6, 1.6, 1.6],
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'mainTitle',
       mesh: m.mainTitle,
       physics: {
-        mass: 0,
-        enabled: true,
-        geometry: "Cube"
+        enabled: false
       },
       raycast: {
         enabled: false,
@@ -1651,17 +1680,13 @@ let application = exports.application = new _world.default({
       }
     });
     setTimeout(() => {
-      app.cameras.WASD.setYaw(-6.21);
-      app.cameras.WASD.setPitch(-0.32);
+      app.cameras.WASD.setYaw(0);
+      app.cameras.WASD.setPitch(0.1);
       app.cameras.WASD.setZ(0);
-      app.cameras.WASD.setY(3.76);
-      // BODY x, y, z, rotX, rotY, RotZ
-      app.matrixPhysics.setKinematicTransform(app.matrixPhysics.getBodyByName('mainTitle'), 0, 0, 0, 1);
-      // app.matrixPhysics.setKinematicTransform(   app.matrixPhysics.getBodyByName('bg'), 0, -10, 0, 0, 0, 0)
-    }, 1200);
+      app.cameras.WASD.setY(4);
+    }, 500);
   }
   function onLoadObjFloor(m) {
-    // application.myLoadedMeshes = m;
     application.addMeshObj({
       scale: [25, 1, 25],
       position: {
@@ -1674,7 +1699,7 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      texturesPaths: ['./res/meshes/jamb/bg.png'],
+      texturesPaths: ['./res/meshes/jamb/bg.webp'],
       name: 'floor',
       mesh: m.bg,
       physics: {
@@ -1883,13 +1908,12 @@ let application = exports.application = new _world.default({
         removeEventListener('dice-4', dice4Click);
         removeEventListener('dice-5', dice5Click);
         removeEventListener('dice-6', dice6Click);
-        console.log(`%cFINAL<preliminar> ${_jambScript.dices.R}`, _utils.LOG_FUNNY);
+        // console.log(`%cFINAL<preliminar> ${dices.R}`, LOG_FUNNY)
         application.TOLERANCE = 0;
-        console.log('se camera position 2');
-        app.cameras.WASD.setYaw(0.01);
         app.cameras.WASD.setPitch(-1.26);
         app.cameras.WASD.setZ(-18);
         app.cameras.WASD.setY(19);
+        app.mainTitle.position.translateByZ(-24);
         if (_jambScript.dices.STATUS == "FREE_TO_PLAY" || _jambScript.dices.STATUS == "IN_PLAY") {
           _jambScript.dices.STATUS = "SELECT_DICES_1";
           console.log(`%cStatus<SELECT_DICES_1>`, _utils.LOG_FUNNY);
@@ -1924,10 +1948,11 @@ let application = exports.application = new _world.default({
       setTimeout(() => {
         app.dices.activateAllDicesPhysics();
       }, 1000);
+      app.mainTitle.position.translateByZ(-21);
       app.cameras.WASD.setYaw(0);
       app.cameras.WASD.setPitch(0);
       app.cameras.WASD.setZ(0);
-      app.cameras.WASD.setY(3.76);
+      app.cameras.WASD.setY(4);
       app.updateTitleEvent.detail.text = app.label.get.hand1;
       app.updateTitleEvent.detail.status = 'FREE';
       dispatchEvent(app.updateTitleEvent);
@@ -1935,51 +1960,38 @@ let application = exports.application = new _world.default({
 
     // ACTIONS
     let dice1Click = e => {
-      // console.log('>>>>>>>> diceclick 1 :::  ', e)
       _jambScript.dices.R[e.detail.cubeId] = '1';
       _jambScript.dices.checkAll();
     };
     let dice2Click = e => {
-      console.log('>>>>>>>> diceclick 2 :::  ', e);
       _jambScript.dices.R[e.detail.cubeId] = '2';
       _jambScript.dices.checkAll();
     };
     let dice3Click = e => {
-      console.log('>>>>>>>> diceclick 3 :::  ', e);
       _jambScript.dices.R[e.detail.cubeId] = '3';
       _jambScript.dices.checkAll();
     };
     let dice4Click = e => {
-      console.log('>>>>>>>> diceclick 4 :::  ', e);
       _jambScript.dices.R[e.detail.cubeId] = '4';
       _jambScript.dices.checkAll();
     };
     let dice5Click = e => {
-      console.log('>>>>>>>> diceclick 5 :::  ', e);
       _jambScript.dices.R[e.detail.cubeId] = '5';
       _jambScript.dices.checkAll();
     };
     let dice6Click = e => {
-      // console.info('DICE 6', e.detail)
-      console.log('>>>>>>>> diceclick 6 :::  ', e);
       _jambScript.dices.R[e.detail.cubeId] = '6';
       _jambScript.dices.checkAll();
     };
     function shootDice(x) {
       setTimeout(() => {
-        // app.matrixPhysics.getBodyByName(`CubePhysics${x}`).setAngularVelocity(new Ammo.btVector3(
-        //   randomFloatFromTo(3, 12), 9, 9
-        // ))
-        // app.matrixPhysics.getBodyByName(`CubePhysics${x}`).setLinearVelocity(new Ammo.btVector3(
-        //   randomFloatFromTo(-5, 5), 15, -20
-        // ))
         const body = app.matrixPhysics.getBodyByName(`CubePhysics${x}`);
-        app.matrixPhysics.shootBody(body, (0, _utils.randomFloatFromTo)(-5, 5), 15, -20,
+        app.matrixPhysics.shootBody(body, (0, _utils.randomFloatFromTo)(-4, 4), (0, _utils.randomIntFromTo)(15, 20), (0, _utils.randomIntFromTo)(-45, -65),
         // linear
-        (0, _utils.randomFloatFromTo)(3, 12), 9, 9 // angular
+        (0, _utils.randomFloatFromTo)(3, 12), (0, _utils.randomIntFromTo)(2, 20), 9 // angular
         );
         setTimeout(() => app.matrixSounds.play('roll'), 1500);
-      }, 200 * x);
+      }, 100 * x);
     }
     application.activateDiceClickListener = index => {
       console.log('activateDiceClickListener ', index);
@@ -2009,7 +2021,7 @@ let application = exports.application = new _world.default({
         _jambScript.dices.STATUS = "IN_PLAY";
         app.updateTitleEvent.detail.text = app.label.get.hand1;
         app.updateTitleEvent.detail.status = 'inplay';
-        console.log('app.updateTitleEvent ...');
+        // console.log('IN_PLAY');
         dispatchEvent(app.updateTitleEvent);
         addEventListener('dice-1', dice1Click);
         addEventListener('dice-2', dice2Click);
