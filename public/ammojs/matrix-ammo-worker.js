@@ -606,11 +606,11 @@ class MatrixAmmoWorker {
   switchToKinematic(idx) {
     const b = this.rigidBodies[idx];
     if(b) {
-      body.setCollisionFlags(2);
+      b.setCollisionFlags(2);
       const localInertia = this._zero;
-      body.setMassProps(0, localInertia);
-      body.updateInertiaTensor();
-      body.setActivationState(4);
+      b.setMassProps(0, localInertia);
+      b.updateInertiaTensor();
+      b.setActivationState(4);
     }
   }
 
@@ -628,7 +628,7 @@ class MatrixAmmoWorker {
   removeRigidBody(idx) {
     const b = this.rigidBodies[idx];
     if(b) this.dynamicsWorld.removeRigidBody(b);
-    this.rigidBodies.slice(idx, 1);
+    this.rigidBodies.splice(idx, 1);
   }
 
   setBodyTransform(idx, x, y, z) {
@@ -731,9 +731,8 @@ self.onmessage = async ({data}) => {
     case 'removeRigidBody': ammo.removeRigidBody(data.idx, data.flags); break;
     case 'speedUpSimulation': ammo.speedUpSimulation(data.value); break;
     case 'createChain': ammo.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
-    // new
     case 'getQuaternion': ammo.getQuaternion(data.idx, data.id); break;
-    case 'isSleeping': ammo.isSleeping(data.idx); break;
+    case 'isSleeping': ammo.isSleeping(data.idx, data.id); break;
     case 'switchToKinematic': ammo.switchToKinematic(data.idx); break;
     case 'switchToDinamic': ammo.switchToDinamic(data.idx); break;
   }

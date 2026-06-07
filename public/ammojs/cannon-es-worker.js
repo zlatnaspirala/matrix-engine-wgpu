@@ -98,6 +98,7 @@ class MatrixCannon {
     // 3. ADD THIS: Broadphase optimization for containers
     this.world.broadphase = new CANNON.SAPBroadphase(this.world);
 
+    this.world.allowSleep = true;
 
     // Tweak contact properties. Contact stiffness - use to make softer/harder contacts
     // this.world.defaultContactMaterial.contactEquationStiffness = 1e9
@@ -122,10 +123,21 @@ class MatrixCannon {
     groundBody.collisionFilterGroup = LAYER_WORLD;
     groundBody.collisionFilterMask = LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING;
 
+    groundBody.name = 'ground';
+    const idx = this.rigidBodies.length;
+    this.rigidBodies.push(groundBody);
+    this.bodyMap.set(groundBody, idx);
+    this._allocBuffer(this.rigidBodies.length);
+    if(this._snapshot) {
+      const base = idx * FLOATS_PER_BODY;
+      this._snapshot[base + 0] = 0;
+      this._snapshot[base + 1] = 0;
+      this._snapshot[base + 2] = 0;
+    }
     this.world.addBody(groundBody);
     this.world.addEventListener('beginContact', (e) => {
-      const b1Idx = this.bodyMap.get(e.body);
-      const b2Idx = this.bodyMap.get(e.target);
+      const b1Idx = this.bodyMap.get(e.bodyA);
+      const b2Idx = this.bodyMap.get(e.bodyB);
       if(b1Idx !== undefined && b2Idx !== undefined) {
         const b1 = this.rigidBodies[b1Idx];
         const b2 = this.rigidBodies[b2Idx];
@@ -196,7 +208,8 @@ class MatrixCannon {
       mass: mass,
       shape: shape,
       collisionFilterGroup: group,
-      collisionFilterMask: mask
+      collisionFilterMask: mask,
+      allowSleep: true
     };
 
     if(pOptions.restitution !== undefined) bodyOptions.restitution = pOptions.restitution;
@@ -207,14 +220,15 @@ class MatrixCannon {
     body.position.set(pos.x, pos.y, pos.z);
     body.quaternion.copy(quat);
     body.isKinematic = isKinematic;
+    // no arg for now
+    body.allowSleep = true;
+    body.sleepSpeedLimit = 0.1;
+    body.sleepTimeLimit = 0.5;
+    body.angularDamping = 0.9;
+    body.linearDamping = 0.9;
     this.world.addBody(body);
-
-    // test 
-    console.log('this.world.broadphase.dirty', this.world.broadphase.dirty)
     this.world.broadphase.dirty = true;
-    // or for cannon-es:
     this.world.broadphase.needsUpdate = true;
-    //
     return this._registerBody(body, pOptions);
   }
 
@@ -362,6 +376,7 @@ class MatrixCannon {
   shootBody(idx, lx, ly, lz, ax, ay, az) {
     const b = this.rigidBodies[idx];
     if(b) {
+      b.wakeUp();
       b.velocity.set(lx, ly, lz);
       b.angularVelocity.set(ax, ay, az);
     }
@@ -548,6 +563,49 @@ class MatrixCannon {
     });
   }
 
+  getDiceFace(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    const q = body.quaternion; // Cannon body's quaternion (x, y, z, w)
+
+    // Local vectors for the dice faces
+    const faces = [
+      {face: 5, v: [0, 1, 0]},  // UP
+      {face: 6, v: [0, -1, 0]}, // DOWN
+      {face: 2, v: [1, 0, 0]},  // RIGHT
+      {face: 3, v: [-1, 0, 0]}, // LEFT
+      {face: 1, v: [0, 0, 1]},  // FRONT
+      {face: 4, v: [0, 0, -1]}  // BACK
+    ];
+
+    let maxDot = -Infinity;
+    let bestFace = 1;
+
+    for(const f of faces) {
+      // Rotate the local vector by the quaternion (Manual math)
+      // This calculates: q * v * q^-1
+      const [vx, vy, vz] = f.v;
+      const tx = 2 * (q.y * vz - q.z * vy);
+      const ty = 2 * (q.z * vx - q.x * vz);
+      const tz = 2 * (q.x * vy - q.y * vx);
+      const rx = vx + q.w * tx + (q.y * tz - q.z * ty);
+      const ry = vy + q.w * ty + (q.z * tx - q.x * tz);
+      const rz = vz + q.w * tz + (q.x * ty - q.y * tx);
+
+      // Dot product with World UP [0, 1, 0] is just the Y component (ry)
+      if(ry > maxDot) {
+        maxDot = ry;
+        bestFace = f.face;
+      }
+    }
+
+    self.postMessage({
+      cmd: 'getDiceFace',
+      id: msgID,
+      face: bestFace
+    });
+  }
+
+
   speedUpSimulation(v) {this.speedUpSimulation = v}
 
   createChain(ids, size = 0.5, marginSpace = 0.05) {
@@ -714,11 +772,14 @@ class MatrixCannon {
     });
   }
 
-  isSleeping(idx) {
+  isSleeping(idx, msgID) {
     const b = this.rigidBodies[idx];
     if(b) {
       if(b.sleepState === 2) {
         console.log("The object is currently asleep.");
+        self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});
+      } else {
+        self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
       }
     }
   }
@@ -845,6 +906,8 @@ self.onmessage = async ({data}) => {
     case 'explode': cannon.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'getPosition': cannon.getPosition(data.idx, data.id); break;
     case 'getQuaternion': cannon.getQuaternion(data.idx, data.id); break;
+    case 'getDiceFace': cannon.getDiceFace(data.idx, data.id); break;
+
     case 'speedUpSimulation': cannon.speedUpSimulation(data.value); break;
     case 'setCollisionFlags': cannon.setCollisionFlags(data.idx, data.flags); break;
     case 'removeRigidBody': cannon.removeRigidBody(data.idx, data.flags); break;

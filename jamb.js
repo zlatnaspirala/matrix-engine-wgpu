@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "./src/world.js";
 import {downloadMeshes} from './src/engine/loader-obj.js';
 import {byId, LOG_FUNNY, mb, randomFloatFromTo} from "./src/engine/utils.js";
-import {dices, myDom} from "./examples/games/jamb/jamb.js";
+import {dices, myDom} from "./examples/games/jamb/jamb-script.js";
 import {addRaycastsAABBListener, addRaycastsListener} from "./src/engine/raycast.js";
 
 export let application = new MatrixEngineWGPU({
@@ -31,8 +31,8 @@ export let application = new MatrixEngineWGPU({
   application.globalAmbient[1] = 0.7;
   application.globalAmbient[2] = 0.7;
   application.activateBloomEffect();
-  application.bloomPass.setIntensity(15);
-  application.bloomPass.setBlurRadius(3);
+  application.bloomPass.setIntensity(1);
+  application.bloomPass.setBlurRadius(2);
 
   const diceTexturePath = './res/meshes/jamb/dice.png';
 
@@ -46,29 +46,55 @@ export let application = new MatrixEngineWGPU({
   application.activateDiceClickListener = null;
 
   // Detect which face is on top from a plain quaternion {x, y, z, w}
-  application.matrixPhysics.detectTopFaceFromQuat = (q) => {
-    const faces = [
-      {face: 1, vec: [0, 1, 0]},
-      {face: 2, vec: [0, -1, 0]},
-      {face: 3, vec: [0, 0, 1]},
-      {face: 4, vec: [0, 0, -1]},
-      {face: 5, vec: [1, 0, 0]},
-      {face: 6, vec: [-1, 0, 0]}
-    ];
+  // application.matrixPhysics.detectTopFaceFromQuat = (q) => {
 
-    let maxDot = -Infinity;
-    let topFace = null;
+  //   // 1. Get the direction each face is pointing in World Space
+  //   const worldRight = new CANNON.Vec3(1, 0, 0);
+  //   const worldUp    = new CANNON.Vec3(0, 1, 0);
+  //   const worldFwd   = new CANNON.Vec3(0, 0, 1);
 
-    for(const f of faces) {
-      const v = application.matrixPhysics.applyQuatToVec(q, f.vec);
-      if(v.y > maxDot) {
-        maxDot = v.y;
-        topFace = f.face;
-      }
-    }
+  //   // 2. Rotate these by the body's orientation
+  //   body.quaternion.vmult(worldRight, worldRight);
+  //   body.quaternion.vmult(worldUp, worldUp);
+  //   body.quaternion.vmult(worldFwd, worldFwd);
 
-    return topFace;
-  };
+  //   // 3. The face with the highest Y value (pointing at the sky) is the winner
+  //   const candidates = [
+  //       { face: 1, vec: worldUp },    // Top
+  //       { face: 6, vec: worldUp.negate() }, // Bottom
+  //       { face: 2, vec: worldRight }, // Right
+  //       { face: 5, vec: worldRight.negate() }, // Left
+  //       { face: 3, vec: worldFwd },   // Front
+  //       { face: 4, vec: worldFwd.negate() }    // Back
+  //   ];
+
+  //   return candidates.reduce((best, current) => 
+  //       current.vec.y > best.vec.y ? current : best
+  //   ).face;
+
+  //   return;
+  //   const faces = [
+  //     {face: 1, vec: [0, 1, 0]},
+  //     {face: 2, vec: [0, -1, 0]},
+  //     {face: 3, vec: [0, 0, 1]},
+  //     {face: 4, vec: [0, 0, -1]},
+  //     {face: 5, vec: [1, 0, 0]},
+  //     {face: 6, vec: [-1, 0, 0]}
+  //   ];
+
+  //   let maxDot = -Infinity;
+  //   let topFace = null;
+
+  //   for(const f of faces) {
+  //     const v = application.matrixPhysics.applyQuatToVec(q, f.vec);
+  //     if(v.y > maxDot) {
+  //       maxDot = v.y;
+  //       topFace = f.face;
+  //     }
+  //   }
+
+  //   return topFace;
+  // };
 
   application.matrixPhysics.applyQuatToVec = (q, vec) => {
     const [x, y, z] = vec;
@@ -86,8 +112,10 @@ export let application = new MatrixEngineWGPU({
     };
   };
 
+
   // This code must be on top (Physics)
-  application.matrixPhysics.detectCollision = async(e) => {
+  application.matrixPhysics.detectCollision = async (e) => {
+
 
     const body0Name = e.detail.body0Name;
     const body1Name = e.detail.body1Name;
@@ -102,30 +130,42 @@ export let application = new MatrixEngineWGPU({
       diceName = body0Name;
     }
 
+    console.log('..................');
     if(!diceName) return;
 
     // Get body id
     const bodyId = application.matrixPhysics.getBodyByName(diceName);
     if(bodyId == null) return;
 
-    const q = await application.matrixPhysics.getQuaternion(bodyId);
-    if(!q) return;
+    setTimeout(async () => {
+      const is = await application.matrixPhysics.isSleeping(bodyId);
+      if(is === false) {
+        console.log(' not sleep')
+        return;
+      }
 
-    const quatPlain = {
-      x: q.quaternion.x,
-      y: q.quaternion.y,
-      z: q.quaternion.z,
-      w: q.quaternion.w
-    };
+      const q = await application.matrixPhysics.getQuaternion(bodyId);
+      if(!q) return;
 
-    application.matrixPhysics._onGroundContact(
-      diceName,
-      quatPlain
-    );
+      const quatPlain = {
+        x: q.x,
+        y: q.y,
+        z: q.z,
+        w: q.w
+      };
+
+      application.matrixPhysics._onGroundContact(
+        diceName,
+        quatPlain,
+        bodyId
+      );
+    }, 4000)
+
   };
 
-  application.matrixPhysics._onGroundContact = (bodyName, quatPlain) => {
-    const face = application.matrixPhysics.detectTopFaceFromQuat(quatPlain);
+  application.matrixPhysics._onGroundContact = async (bodyName, quatPlain, bodyId) => {
+    const face = await application.matrixPhysics.getDiceFace(bodyId);
+    console.log('TEST FACE', face)
     if(face) {
       application.matrixPhysics.lastRoll = face.toString();
       dispatchEvent(new CustomEvent(`dice-${face}`, {
@@ -137,10 +177,10 @@ export let application = new MatrixEngineWGPU({
   addRaycastsAABBListener();
 
   application.canvas.addEventListener("ray.hit.event", (e) => {
-    // console.log('ray.hit.event');
+    console.log('ray.hit.event', byId('topTitleDOM'));
     if(byId('topTitleDOM') && byId('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' &&
       byId('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
-      console.log('no hit in middle of game ...');
+      console.log('no hit in middle of game ...', e.detail.hitObject.name);
       return;
     }
 
@@ -194,9 +234,9 @@ export let application = new MatrixEngineWGPU({
     }, (m) => {
       // right
       application.addMeshObj({
-        position: {x: 25, y: 1, z: -25},
+        position: {x: 15, y: 5, z: -18},
         rotation: {x: 0, y: -22, z: 0},
-        scale: [10, 1, 1],
+        scale: [10, 10, 1],
         useScale: false,
         texturesPaths: ['./res/meshes/jamb/text.png'],
         name: 'wallRight',
@@ -210,9 +250,9 @@ export let application = new MatrixEngineWGPU({
       })
 
       application.addMeshObj({
-        position: {x: -25, y: 1, z: -25},
+        position: {x: -15, y: 5, z: -18},
         rotation: {x: 0, y: 22, z: 0},
-        scale: [10, 1, 1],
+        scale: [10, 10, 1],
         texturesPaths: ['./res/meshes/jamb/text.png'],
         name: 'wallLeft',
         useScale: false,
@@ -230,11 +270,11 @@ export let application = new MatrixEngineWGPU({
 
   function onLoadObjWallCenter(m) {
     application.myLoadedMeshesWalls = m;
-    // WALLS Center
+    // WALL Center
     application.addMeshObj({
-      position: {x: 0, y: 5, z: -25},
+      position: {x: 0, y: 5, z: -22},
       rotation: {x: 0, y: 0, z: 0},
-      scale: [15, 5, 2],
+      scale: [15, 10, 2],
       useScale: false,
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'wallCenter',
@@ -277,19 +317,18 @@ export let application = new MatrixEngineWGPU({
   }
 
   function onLoadObjFloor(m) {
-    application.myLoadedMeshes = m;
+    // application.myLoadedMeshes = m;
     application.addMeshObj({
-      scale: [10, 1, 10],
-      // useScale: false,
-      position: {x: 0, y: 0, z: -10},
+      scale: [25, 1, 25],
+      position: {x: 0, y: -1, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       texturesPaths: ['./res/meshes/jamb/bg.png'],
-      name: 'bg',
+      name: 'floor',
       mesh: m.bg,
       physics: {
-        collide: false,
+        // collide: false,
         mass: 0,
-        enabled: true,
+        enabled: false,
         geometry: "Cube"
       },
       raycast: {enabled: false, radius: 2},
@@ -463,32 +502,38 @@ export let application = new MatrixEngineWGPU({
 
     // ACTIONS
     let dice1Click = (e) => {
+      // console.log('>>>>>>>> diceclick 1 :::  ', e)
       dices.R[e.detail.cubeId] = '1';
       dices.checkAll()
     };
 
     let dice2Click = (e) => {
+      console.log('>>>>>>>> diceclick 2 :::  ', e)
       dices.R[e.detail.cubeId] = '2';
       dices.checkAll()
     };
 
     let dice3Click = (e) => {
+      console.log('>>>>>>>> diceclick 3 :::  ', e)
       dices.R[e.detail.cubeId] = '3';
       dices.checkAll()
     };
 
     let dice4Click = (e) => {
+      console.log('>>>>>>>> diceclick 4 :::  ', e)
       dices.R[e.detail.cubeId] = '4';
       dices.checkAll()
     }
 
     let dice5Click = (e) => {
+      console.log('>>>>>>>> diceclick 5 :::  ', e)
       dices.R[e.detail.cubeId] = '5';
       dices.checkAll()
     }
 
     let dice6Click = (e) => {
       // console.info('DICE 6', e.detail)
+      console.log('>>>>>>>> diceclick 6 :::  ', e)
       dices.R[e.detail.cubeId] = '6';
       dices.checkAll()
     }
@@ -512,6 +557,7 @@ export let application = new MatrixEngineWGPU({
     }
 
     application.activateDiceClickListener = (index) => {
+      console.log('activateDiceClickListener ', index)
       index = parseInt(index);
       switch(index) {
         case 1:
@@ -540,7 +586,10 @@ export let application = new MatrixEngineWGPU({
 
         app.updateTitleEvent.detail.text = app.label.get.hand1;
         app.updateTitleEvent.detail.status = 'inplay';
+
+        console.log('app.updateTitleEvent ...');
         dispatchEvent(app.updateTitleEvent);
+
 
         addEventListener('dice-1', dice1Click)
         addEventListener('dice-2', dice2Click)

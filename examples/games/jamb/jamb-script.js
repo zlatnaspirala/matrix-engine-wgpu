@@ -21,7 +21,9 @@ export let dices = {
     let currentIndex = 0;
     for(var x = 1;x < 7;x++) {
       console.log('DEBUG : app.matrixPhysics.getBodyByName ', app.matrixPhysics.getBodyByName(('CubePhysics' + x)).MEObject)
-      app.matrixPhysics.getBodyByName(('CubePhysics' + x)).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
+      const id = app.matrixPhysics.getBodyByName(('CubePhysics' + x));
+      app.matrixPhysics.setKinematicTransform(id, -5 + currentIndex * 5, 2, -15)
+      // .MEObject.position.setPosition();
     }
   },
 
@@ -41,8 +43,8 @@ export let dices = {
 
   resetBodyAboveFloor: function(body, z = -14) {
     const pos = {x: -1 + Math.random(), y: 3, z: z};
-    this.setBodyTransform(body, pos);
-    body.activate(true);
+    app.matrixPhysics.setBodyTransform(body, pos.x, pos.y, pos.z);
+    app.matrixPhysics.activate(body, true);
   },
 
   activateAllDicesPhysics: function() {
@@ -70,13 +72,14 @@ export let dices = {
 
     for(let i = 1;i <= 6;i++) {
       const key = "CubePhysics" + i;
-      if(key in this.SAVED_DICES) continue; // skip saved ones
+      if(key in this.SAVED_DICES) continue; 
       activeRollingCount++; // count how many are still active
       if(typeof this.R[key] === 'undefined') {
         allReady = false;
         break;
       }
     }
+    console.log('test checkall ')
     // Dynamic threshold: min wait time based on rolling dice
     const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
     if(allReady && this.C > minWait) {
@@ -358,6 +361,7 @@ export let myDom = {
     topTitleDOM.setAttribute('data-gamestatus', 'FREE');
     document.body.appendChild(topTitleDOM);
     addEventListener('updateTitle', (e) => {
+
       typeText('topTitleDOM', e.detail.text);
       topTitleDOM.setAttribute('data-gamestatus', e.detail.status);
     })

@@ -204,6 +204,11 @@ export class PhysicsBridge {
     return this._send('getQuaternion', {idx: idx});
   }
 
+  getDiceFace(idx) {
+    if(idx === undefined) return;
+    return this._send('getDiceFace', {idx: idx});
+  }
+
   addHingeConstraint(idxA, idxB, options) {
     if(idxA === undefined || idxB === undefined || idxA === -1 || idxB === -1) {
       console.log('error in addHingeConstraint !!! ');
@@ -329,6 +334,14 @@ export class PhysicsBridge {
         break;
       case 'getPosition':
         this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+      case 'getQuaternion':
+        this._pending.get(data.id)?.(data.quaternion);
+        this._pending.delete(data.id);
+        break;
+      case 'getDiceFace':
+        this._pending.get(data.id)?.(data.face);
         this._pending.delete(data.id);
         break;
       case 'isSleeping':

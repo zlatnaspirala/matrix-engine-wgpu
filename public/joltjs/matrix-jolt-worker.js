@@ -711,7 +711,7 @@ self.onmessage = async ({data}) => {
     case 'removeRigidBody': jolt.removeRigidBody(data.idx, data.flags); break;
     case 'createChain': jolt.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
     // new
-    case 'isSleeping': jolt.isSleeping(data.idx); break;
+    case 'isSleeping': jolt.isSleeping(data.idx, data.id); break;
     case 'switchToKinematic': jolt.switchToKinematic(data.idx); break;
     case 'switchToDinamic': jolt.switchToDinamic(data.idx); break;
     case 'lotteryMachineShake': jolt.lotteryMachineShake(data.ids, data.strength); break;
