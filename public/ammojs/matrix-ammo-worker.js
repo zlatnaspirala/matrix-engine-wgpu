@@ -10,9 +10,7 @@ class MatrixAmmoWorker {
     this.dynamicsWorld = null;
     this.rigidBodies = [];
     this.speedUp = 1;
-    this.speedUpSimulation = (v) => {
-      this.speedUp = v;
-    }
+    this.speedUpSimulation = (v) => {this.speedUp = v;}
     this.maxSubSteps = 1;
     this.options = {roundDimensionX: 100, roundDimensionY: 100, gravity: -10};
     this._snapshot = null;
@@ -23,13 +21,10 @@ class MatrixAmmoWorker {
     this._origin = null;
     this._quat = null;
     this._axis = null;
-
     this._pivotsA = null;
     this._pivotsB = null;
-
     this.lastCollisionState = new Set();
     this._currentCollisions = new Set();
-
     this._keyColl = '';
   }
 
@@ -76,10 +71,6 @@ class MatrixAmmoWorker {
     this.dynamicsWorld.addRigidBody(groundBody, group, mask);
     if(!this.ptrToName) this.ptrToName = new Map();
     this.ptrToName.set(Ammo.getPointer(groundBody), 'ground');
-  }
-
-  speedUpSimulation(v) {
-    this.speedUp = v;
   }
 
   _allocBuffer(bodyCount) {
@@ -524,6 +515,20 @@ class MatrixAmmoWorker {
     self.postMessage({cmd: 'getPosition', id: msgID, position: {x: origin.x(), y: origin.y(), z: origin.z()}});
   }
 
+  getQuaternion(idx, msgID) {
+    const body = this.rigidBodies[idx];
+    if(!body) {
+      self.postMessage({cmd: 'getQuaternion', id: msgID, quaternion: null});
+      return;
+    }
+    const rotation = body.getWorldTransform().getRotation();
+    self.postMessage({
+      cmd: 'getQuaternion',
+      id: msgID,
+      quaternion: {x: rotation.x(), y: rotation.y(), z: rotation.z(), w: rotation.w()}
+    });
+  }
+
   setGravity(x, y, z) {
     this._origin2.setValue(x, y, z);
     this.dynamicsWorld.setGravity(this._origin2);
@@ -578,7 +583,6 @@ class MatrixAmmoWorker {
     const body = this.rigidBodies[idx];
     if(!body) return;
     if(body.isActive()) {
-      console.log("The body is moving or active.");
       self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
     } else {
       self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});
@@ -592,15 +596,15 @@ class MatrixAmmoWorker {
   switchToKinematic(idx) {
     const b = this.rigidBodies[idx];
     if(b) {
-      body.setCollisionFlags(2);
+      b.setCollisionFlags(2);
       const localInertia = this._zero;
-      body.setMassProps(0, localInertia);
-      body.updateInertiaTensor();
-      body.setActivationState(4);
+      b.setMassProps(0, localInertia);
+      b.updateInertiaTensor();
+      b.setActivationState(4);
     }
   }
 
-  switchToDynamic(idx) {
+  switchToDinamic(idx) {
     const b = this.rigidBodies[idx];
     b.setCollisionFlags(0);
     const localInertia = this._zero;
@@ -614,7 +618,7 @@ class MatrixAmmoWorker {
   removeRigidBody(idx) {
     const b = this.rigidBodies[idx];
     if(b) this.dynamicsWorld.removeRigidBody(b);
-    this.rigidBodies.slice(idx, 1);
+    this.rigidBodies.splice(idx, 1);
   }
 
   setBodyTransform(idx, x, y, z) {
@@ -717,9 +721,8 @@ self.onmessage = async ({data}) => {
     case 'removeRigidBody': ammo.removeRigidBody(data.idx, data.flags); break;
     case 'speedUpSimulation': ammo.speedUpSimulation(data.value); break;
     case 'createChain': ammo.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
-
-    // new
-    case 'isSleeping': ammo.isSleeping(data.idx); break;
+    case 'getQuaternion': ammo.getQuaternion(data.idx, data.id); break;
+    case 'isSleeping': ammo.isSleeping(data.idx, data.id); break;
     case 'switchToKinematic': ammo.switchToKinematic(data.idx); break;
     case 'switchToDinamic': ammo.switchToDinamic(data.idx); break;
   }

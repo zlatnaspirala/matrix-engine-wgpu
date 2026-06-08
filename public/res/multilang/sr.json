@@ -19,8 +19,8 @@
   "roll": "Igraj",
   "settings": "Podešavanja",
   "hand": "Ručno",
-  "up": "Gore",
-  "down": "Dole",
+  "up": "<br>Gore",
+  "down": "<br>Dole",
   "free": "Slob.",
   "cornerText": "zlatna",
   "poker":"Poker",
@@ -38,7 +38,7 @@
   "choosename":"Izaberi alias:",
   "table":"Tabla",
   "aboutword":"Info",
-  "about":"Jamb 3d deluxe je moderna 3D igra sa kockicama u potpunosti izgrađena pomoću MatrixEngineWGPU-a, visokoperformansnog rendering endžina zasnovanog na WebGPU-u, razvijenog za kreiranje interaktivne grafike direktno u pregledaču. Igra pruža glatke vizuelne efekte, realističnu fiziku kockica i zanimljivo korisničko iskustvo — sve bez potrebe za bilo kakvim dodacima ili instalacijama.\n  Ovaj projekat je pokretan otvorenim tehnologijama i dizajniran je da bude lagan, brz i veoma prilagodljiv. Odličan je primer kako se WebGPU može koristiti za interaktivni sadržaj u realnom vremenu. \n 🔗 Preuzmite / Isprobajte: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 Licenca: \n Osnovni endžin i projekat Jamb 3d deluxe objavljeni su pod GPL v3 licencom, što ih čini besplatnim i otvorenog koda za ličnu i komercijalnu upotrebu — sve dok poštujete uslove licence. \n Bez obzira da li ste programer, igrač ili entuzijasta, Jamb 3d deluxe je zabavan način da iskusite potencijal moderne 3D tehnologije zasnovane na pregledaču.",
+  "about":"Jamb 3d deluxe je moderna 3D igra sa kockicama u potpunosti izgrađena pomoću MatrixEngineWGPU-a, visokoperformansnog rendering endžina zasnovanog na WebGPU-u, razvijenog za kreiranje interaktivne grafike direktno u pregledaču. Igra pruža glatke vizuelne efekte, realističnu fiziku kockica i zanimljivo korisničko iskustvo — sve bez potrebe za bilo kakvim dodacima ili instalacijama.\n  Ovaj projekat je pokretan otvorenim tehnologijama i dizajniran je da bude lagan, brz i veoma prilagodljiv. Odličan je primer kako se WebGPU može koristiti za interaktivni sadržaj u realnom vremenu. \n 🔗 Preuzmite / Isprobajte: \n github.com/zlatnaspirala/matrix-engine-wgpu \n 🛠 Licenca: \n Osnovni endžin i projekat Jamb 3d deluxe objavljeni su pod GPL v3 licencom, što ih čini besplatnim i otvorenog koda za ličnu i komercijalnu upotrebu — sve dok poštujete uslove licence. \n Bez obzira da li ste programer, igrač ili entuzijasta, Jamb 3d deluxe je zabavan način da iskusite potencijal moderne web 3D tehnologije.",
 
   "leaderboard": "Top lista",
   "letthegame": "Neka igra pocne!",
@@ -58,9 +58,8 @@
   "skeletonz": "Skeletonz — nemirni ratnik od kostiju i senke, ponovo ustao da se bori bez straha.",
   "erika": "Erika se kreće kao senka: tiho, precizno i oprezno. Nosii jednu strelu tamne boje — jednostavnu, smrtonosnu i ličnu.",
   "arissa": "Arissa skriva svoju moć iza mirnog pogleda i praznih ruku. Nema mača ni štapa — samo tamne sfere koje priziva čim borba počne.",
-
   "gameplayused":"Forest Of Hollow Blood za sada ima samo jedan kanal za gameplay. Sacekajte da se trenutna partija zavrsi...",
-
   "nogold" : "Nedovoljno zlata!",
-  "invertorysecret" : "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
+  "invertorysecret" : "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis",
+  "lightMove": "Pokretna svetla"
 }

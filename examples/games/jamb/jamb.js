@@ -1,1273 +1,631 @@
-import {PVector} from "../../../src/engine/matrix-class.js";
-import {LOG_FUNNY, LOG_INFO, LOG_MATRIX, byId, mb, setupCanvasFilters, typeText} from "../../../src/engine/utils.js";
-import {settingsBox, welcomeBoxHTML} from "./html-content.js";
+import MatrixEngineWGPU from "../../../src/world.js";
+import {downloadMeshes} from '../../../src/engine/loader-obj.js';
+import {byId, LOG_FUNNY, mb, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
+import {dices, myDom} from "./jamb-script.js";
+import {addRaycastsAABBListener, addRaycastsListener} from "../../../src/engine/raycast.js";
 
-export let dices = {
-  C: 0,
-  STATUS: 'FREE_TO_PLAY',
-  R: {},
-  SAVED_DICES: {},
-  pickDice: function(dice) {
-    if(Object.keys(this.SAVED_DICES).length >= 5) {
-      console.log("⚠️ You can only select up to 5 dice!");
-      return; // prevent adding more
-    }
-    this.SAVED_DICES[dice] = this.R[dice]
-    this.refreshSelectedBox()
-  },
+export let application = new MatrixEngineWGPU({
+  useSingleRenderPass: true,
+  canvasSize: 'fullscreen',
+  useCannon: true,
+  MAX_SPOTLIGHTS: 4,
+  MAX_BONES: 0,
+  mainCameraParams: {
+    type: 'WASD',
+    responseCoef: 1000
+  }
+}, () => {
 
-  setStartUpPosition: () => {
-    // 
-    let currentIndex = 0;
-    for(var x = 1;x < 7;x++) {
-      app.matrixPhysics.getBodyByName(('CubePhysics' + x)).MEObject.position.setPosition(-5 + currentIndex * 5, 2, -15);
-    }
-  },
+  application.updateTitleEvent = new CustomEvent('updateTitle', {
+    detail: {text: '', status: 'FREE'}
+  });
+  application.DICE_ROLL_EVENT = new CustomEvent('DICE.ROLL', {});
+  application.diceFaceEvents = [
+    new CustomEvent(`dice-1`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-2`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-3`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-4`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-5`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-6`, {detail: {result: ``, cubeId: ''}})
+  ];
 
-  refreshSelectedBox: function(arg) {
-    let currentIndex = 0;
-    const physics = app.matrixPhysics;
-    const originVect = new PVector(0, 0, 0);
-    for(var key in this.SAVED_DICES) {
-      let B = physics.getBodyByName(key);
-      if(!B) continue;
-      physics.deactivatePhysics(B);
-      physics.setBodyTransform(B, originVect);
-      B.MEObject.position.setPosition(-5 + currentIndex, 5, -16);
-      currentIndex += 3;
-    }
-  },
+  const NUM_LIGHTS = 4;
+  const ORBIT_RADIUS = 8;
+  const ORBIT_SPEED = 0.6;
+  const TARGET = {x: 0, y: 0, z: -10};
 
-  resetBodyAboveFloor: function(body, z = -14) {
-    const pos = {x: -1 + Math.random(), y: 3, z: z};
-    this.setBodyTransform(body, pos);
-    body.activate(true);
-  },
+  const LIGHT_COLORS = [
+    [10.0, 0.2, 0.2],
+    [1.0, 10.6, 0.1],
+    [0.2, 0.2, 11.0],
+    [1.0, 11.0, 0.1],
+  ];
 
-  activateAllDicesPhysics: function() {
-    this.getAllDices().forEach((dice) => {
-      const body = app.matrixPhysics.getBodyByName(dice.name);
-      if(body) {
-        app.matrixPhysics.activatePhysics(body);
-      }
-    });
-  },
+  for(let i = 0;i < NUM_LIGHTS;i++) {
+    application.addLight();
+    application.lightContainer[i].outerCutoff = 0.8;
+    application.lightContainer[i].setPosZ(-10);
+    application.lightContainer[i].setPosX(-2 + i * 2);
+    application.lightContainer[i].setIntensity(2);
+    application.lightContainer[i].setTargetZ(-20);
+    application.lightContainer[i].setPosY(25);
+  }
 
-  getAllDices: function() {
-    return app.mainRenderBundle.filter(item => item.name.indexOf("CubePhysics") !== -1);
-  },
-
-  getDiceByName: function(name) {
-    return app.mainRenderBundle.find(item => item.name === name);
-  },
-
-  checkAll: function() {
-    this.C++;
-
-    let activeRollingCount = 0;
-    let allReady = true;
-
-    for(let i = 1;i <= 6;i++) {
-      const key = "CubePhysics" + i;
-      if(key in this.SAVED_DICES) continue; // skip saved ones
-      activeRollingCount++; // count how many are still active
-      if(typeof this.R[key] === 'undefined') {
-        allReady = false;
-        break;
-      }
-    }
-    // Dynamic threshold: min wait time based on rolling dice
-    const minWait = Math.max(200, activeRollingCount * 200); // e.g. 1 die => 200, 5 dice => 1000, 6 dice => 1200
-    if(allReady && this.C > minWait) {
-      dispatchEvent(new CustomEvent('all-done', {detail: {}}));
-      this.C = 0;
-    }
-  },
-
-  validatePass: function() {
-    if(Object.keys(this.SAVED_DICES).length !== 5) {
-      console.log('%cBLOCK', LOG_FUNNY)
-      mb.error(`Must select (minimum) 5 dices before add results...`);
-      return false;
-    }
-    if(dices.STATUS != "FINISHED") {
-      console.log('%cBLOCK', LOG_FUNNY)
-      mb.error(`STATUS IS ${dices.STATUS}, please wait for results...`);
-      app.matrixSounds.play('block')
-      return false;
-    } else {
-      return true;
+  application.makeMyLightMoveByY = () => {
+    for(let i = 0;i < NUM_LIGHTS;i++) {
+      const light = application.lightContainer[i];
+      const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
+      const color = LIGHT_COLORS[i];
+      light.setIntensity(8.5);
+      light.color = color;
+      // Orbit height varies slightly per light for more visual interest
+      const heightOffset = Math.sin(angleOffset) * 2;
+      light.setPosition(
+        TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
+        4 + heightOffset,
+        TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
+      );
+      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
+      // Each light orbits at its own phase offset
+      light.orbitAngle = angleOffset;
+      light.updater.push((light) => {
+        light.orbitAngle += ORBIT_SPEED * 0.01;
+        const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
+        const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
+        const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
+        light.setPosition(x, height, z);
+        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
+      });
     }
   }
-};
 
-export let myDom = {
-
-  state: {
-    rowDown: []
-  },
-
-  memoNumberRow: [],
-
-  hideSettings: function() {
-    byId('blocker').style.display = 'none';
-    byId('messageBox').style.display = 'none';
-  },
-
-  createMenu: function() {
-
-    var root = document.createElement('div')
-    root.id = 'hud';
-    root.style.position = 'absolute';
-    root.style.right = '10%';
-    root.style.top = '10%';
-
-    var help = document.createElement('div')
-    help.id = 'HELP';
-    help.classList.add('btn')
-    help.innerHTML = `<span data-label="help"></span>`;
-    help.addEventListener('click', () => {
-      if(byId('helpBox').style.display != 'none') {
-        byId('helpBox').style.display = 'none';
+  application.disableMyLightMoveByY = () => {
+    for(let i = 0;i < NUM_LIGHTS;i++) {
+      const light = application.lightContainer[i];
+      light.updater = [];
+      if(i === 0) {
+        light.setIntensity(8.5);
+        light.setPosition(0, 18, -11);
+        light.setTarget(0, 2, -21);
       } else {
-        byId('helpBox').style.display = 'block';
+        // Disable remaining lights
+        light.setIntensity(0);
       }
+    }
+  };
+
+  application.globalAmbient[0] = 1.7;
+  application.globalAmbient[1] = .7;
+  application.globalAmbient[2] = .5;
+  application.activateBloomEffect();
+  application.bloomPass.setIntensity(1);
+  application.bloomPass.setBlurRadius(1);
+
+  // const diceTexturePath = './res/meshes/jamb/gemini-dice.webp';
+  const diceTexturePath = './res/meshes/jamb/dice3.webp';
+
+  // Dom operations
+  application.userState = {
+    name: 'Guest',
+    points: 0
+  };
+  application.myDom = myDom;
+  application.dices = dices;
+  application.activateDiceClickListener = null;
+
+  application.matrixPhysics.applyQuatToVec = (q, vec) => {
+    const [x, y, z] = vec;
+    const qx = q.x, qy = q.y, qz = q.z, qw = q.w;
+
+    const ix = qw * x + qy * z - qz * y;
+    const iy = qw * y + qz * x - qx * z;
+    const iz = qw * z + qx * y - qy * x;
+    const iw = -qx * x - qy * y - qz * z;
+
+    return {
+      x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
+      y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
+      z: iz * qw + iw * -qz + ix * -qy - iy * -qx
+    };
+  };
+
+  application.matrixPhysics.detectCollision = async (e) => {
+    const body0Name = e.detail.body0Name;
+    const body1Name = e.detail.body1Name;
+    let diceName = false;
+    if(body0Name === 'ground') diceName = body1Name;
+    if(body1Name === 'ground') diceName = body0Name;
+    if(diceName === false) {
+      // console.log('prevent no ground')
+      return;
+    }
+
+    const bodyId = application.matrixPhysics.getBodyByName(diceName);
+    if(bodyId == null) return;
+
+    const waitForSleep = () => new Promise((resolve) => {
+      let attempts = 0;
+      const check = async () => {
+        attempts++;
+        if(attempts > 60) {resolve(); return;}
+        const is = await application.matrixPhysics.isSleeping(bodyId);
+        if(is) {
+          resolve();
+        } else {
+          setTimeout(check, 150);
+        }
+      };
+      setTimeout(check, 4000);
     });
 
-    var table = document.createElement('div')
-    table.id = 'showHideTableDOM';
-    table.classList.add('btn')
-    table.innerHTML = `<span data-label="table"></span>`;
-    table.addEventListener('click', () => {
-      this.showHideJambTable()
-    });
+    await waitForSleep();
+    application.matrixPhysics._onGroundContact(diceName, bodyId);
+  };
 
-    var settings = document.createElement('div')
-    settings.id = 'settings';
-    settings.classList.add('btn')
-    settings.innerHTML = `<span data-label="settings"></span>`;
-    settings.addEventListener('click', () => {
-      if(document.getElementById('messageBox').getAttribute('data-loaded') != null) {
-        byId('blocker').style.display = 'flex';
-        byId('messageBox').style.display = 'unset';
+  application.matrixPhysics._onGroundContact = async (bodyName, bodyId) => {
+    const face = await application.matrixPhysics.getDiceFace(bodyId);
+    console.log('FACE: ', face)
+    if(face) {
+      application.matrixPhysics.lastRoll = face.toString();
+      application.diceFaceEvents[face - 1].detail.result = `dice-${face}`;
+      application.diceFaceEvents[face - 1].detail.cubeId = bodyName;
+      dispatchEvent(application.diceFaceEvents[face - 1]);
+    }
+  };
+
+  addRaycastsAABBListener();
+
+  application.canvas.addEventListener("ray.hit.event", (e) => {
+    console.log('ray.hit.event', byId('topTitleDOM'));
+    if(byId('topTitleDOM') && byId('topTitleDOM').getAttribute('data-gamestatus') != 'FREE' &&
+      byId('topTitleDOM').getAttribute('data-gamestatus') != 'status-select') {
+      console.log('no hit in middle of game ...', e.detail.hitObject.name);
+      return;
+    }
+
+    if(application.dices.STATUS == "FREE_TO_PLAY") {
+      console.log("hit cube status free to play prevent pick. ", e.detail.hitObject.name)
+      // but if in SAVED 
+      const allNames = Object.keys(application.dices.SAVED_DICES);
+      if(allNames.indexOf(e.detail.hitObject.name) !== -1) {
+        // -
+        console.log("UNPICK THIS.", e.detail.hitObject.name)
+        application.dices.unPickDice(e.detail.hitObject.name)
         return;
       }
-      byId('messageBox').innerHTML = settingsBox;
-      byId('blocker').style.display = 'flex';
-      byId('messageBox').style.display = 'unset';
-      dispatchEvent(new CustomEvent('updateLang', {}))
-
-      byId('settingsAudios').click()
-      byId('settingsAudios').addEventListener('change', (e) => {
-        if(e.target.checked == true) {
-          app.matrixSounds.unmuteAll();
-        } else {
-          app.matrixSounds.muteAll();
-        }
-      });
-      setupCanvasFilters();
-      byId('messageBox').setAttribute('data-loaded', 'loaded');
-      document.getElementById('physicsSpeed').value = app.matrixPhysics.speedUpSimulation;
-      byId("physicsSpeed").addEventListener("change", (e) => {
-        app.matrixPhysics.speedUpSimulation(parseInt(e.target.value))
-      });
-
-    })
-
-    // test help
-    var helpBox = document.createElement('div')
-    helpBox.id = 'helpBox';
-    helpBox.style.position = 'absolute';
-    helpBox.style.right = '20%';
-    helpBox.style.zIndex = '2';
-    helpBox.style.top = '15%';
-    helpBox.style.width = '60%';
-    helpBox.style.height = '50%';
-    helpBox.style.fontSize = '100%';
-    helpBox.classList.add('btn');
-    helpBox.addEventListener('click', () => {
-      byId('helpBox').style.display = 'none';
-    });
-    document.body.appendChild(helpBox)
-    console.log('what is dom, ', byId('helpBox'))
-    typeText('helpBox', app.label.get.about, 10);
-    //
-    var roll = document.createElement('div')
-    roll.id = 'hud-roll';
-    roll.classList.add('btn');
-    roll.innerHTML = `<span data-label="roll"></span>`;
-    roll.addEventListener('click', () => {
-      app.ROLL()
-    })
-
-    var separator = document.createElement('div')
-    separator.innerHTML = `✨maximumroulette.com✨`;
-
-    root.append(settings)
-    root.append(table);
-    root.append(help)
-    root.append(separator)
-    root.append(roll)
-
-    document.body.appendChild(root)
-
-    // global access
-    // app.label.update()
-    dispatchEvent(new CustomEvent('updateLang', {}))
-  },
-
-  createBlocker: function() {
-    var root = document.createElement('div')
-    root.id = 'blocker';
-
-    var messageBox = document.createElement('div')
-    messageBox.id = 'messageBox';
-
-    // console.log('TEST', app.label.get)
-    messageBox.innerHTML = welcomeBoxHTML;
-
-
-    let initialMsgBoxEvent = function() {
-      console.log('click on msgbox')
-      byId('messageBox').innerHTML = ``;
-      byId('blocker').style.display = 'none';
-      myDom.createMenu();
-      messageBox.removeEventListener('click', initialMsgBoxEvent)
-
-      document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
-        el.addEventListener('mouseenter', () => {
-          app.matrixSounds.play('hover');
-        });
-      });
-    };
-    root.append(messageBox)
-    document.body.appendChild(root);
-    app.label.update();
-    document.querySelectorAll('.btn, .fancy-label, .fancy-title').forEach(el => {
-      el.addEventListener('mouseenter', () => {
-        app.matrixSounds.play('hover');
-      });
-    });
-
-    setTimeout(() => {
-      byId('startFromWelcome').addEventListener('click', initialMsgBoxEvent)
-    }, 200);
-  },
-
-  createJamb: function() {
-    var root = document.createElement('div')
-    root.id = 'jambTable';
-    root.style.position = 'absolute';
-
-    var dragHandler = document.createElement('div')
-    dragHandler.id = 'dragHandler';
-    dragHandler.classList.add('dragHandler')
-    dragHandler.innerHTML = "⇅ Drag";
-    root.append(dragHandler)
-
-    var rowHeader = document.createElement('div')
-    rowHeader.id = 'rowHeader';
-    rowHeader.style.top = '10px';
-    rowHeader.style.left = '10px';
-    rowHeader.style.width = '200px';
-    rowHeader.innerHTML = '<span data-label="cornerText"></span><span id="user-points">0</span>';
-    root.appendChild(rowHeader);
-    rowHeader.classList.add('fancy-label')
-
-    var rowDown = document.createElement('div')
-    rowDown.id = 'rowDown';
-    rowDown.style.top = '10px';
-    rowDown.style.left = '10px';
-    rowDown.style.width = '200px';
-    rowDown.innerHTML = '↓<span data-label="down"></span>';
-    rowDown.classList.add('fancy-label')
-    rowDown.classList.add('btn')
-    root.appendChild(rowDown);
-
-    var rowFree = document.createElement('div')
-    rowFree.id = 'rowFree';
-    rowFree.style.top = '10px';
-    rowFree.style.left = '10px';
-    rowFree.style.width = '200px';
-    rowFree.innerHTML = '↕<span data-label="free"></span>';
-    rowFree.classList.add('fancy-label')
-    rowFree.classList.add('btn')
-    root.appendChild(rowFree);
-
-    var rowUp = document.createElement('div')
-    rowUp.id = 'rowUp';
-    rowUp.style.top = '10px';
-    rowUp.style.left = '10px';
-    rowUp.style.width = '200px';
-    rowUp.innerHTML = '↑<span data-label="up"></span>';
-    rowUp.classList.add('fancy-label')
-    rowUp.classList.add('btn')
-    root.appendChild(rowUp);
-
-    var rowHand = document.createElement('div')
-    rowHand.id = 'rowHand';
-    rowHand.style.top = '10px';
-    rowHand.style.left = '10px';
-    rowHand.style.width = '200px';
-    rowHand.innerHTML = '<span data-label="hand"></span>';
-    rowHand.classList.add('fancy-label')
-    rowHand.classList.add('btn')
-    root.appendChild(rowHand);
-
-    // INJECT TABLE HEADER ROW
-    this.createLeftHeaderRow(rowHeader);
-    this.createRowDown(rowDown);
-    this.createRowFree(rowFree);
-    this.createRow(rowUp);
-    this.createRow(rowHand);
-
-    this.createSelectedBox();
-
-    document.body.appendChild(root);
-    // console.log('JambTable added.')
-  },
-
-  showHideJambTable: () => {
-    const panel = document.getElementById('jambTable');
-    if(panel.classList.contains('show')) {
-      panel.classList.remove('show');
-      panel.classList.add('hide');
-      // Delay actual hiding from layout to finish animation
-      setTimeout(() => {
-        panel.style.display = 'none';
-      }, 300);
-    } else {
-      panel.style.display = 'flex';
-      setTimeout(() => {
-        panel.classList.remove('hide');
-        panel.classList.add('show');
-      }, 10); // allow repaint
-    }
-  },
-  createSelectedBox: function() {
-    var topTitleDOM = document.createElement('div')
-    topTitleDOM.id = 'topTitleDOM';
-    topTitleDOM.style.width = 'auto';
-    topTitleDOM.style.position = 'absolute';
-    topTitleDOM.style.left = '35%';
-    topTitleDOM.style.fontSize = '175%';
-    topTitleDOM.style.top = '4%';
-    topTitleDOM.style.background = '#7d7d7d8c';
-    topTitleDOM.innerHTML = app.label.get.ready + ", " + app.userState.name + '.';
-    topTitleDOM.setAttribute('data-gamestatus', 'FREE');
-    document.body.appendChild(topTitleDOM);
-    addEventListener('updateTitle', (e) => {
-      typeText('topTitleDOM', e.detail.text);
-      topTitleDOM.setAttribute('data-gamestatus', e.detail.status);
-    })
-  },
-
-  createLeftHeaderRow: function(myRoot) {
-    for(var x = 1;x < 7;x++) {
-      var rowNumber = document.createElement('div')
-      rowNumber.id = 'rowNumber' + x;
-      rowNumber.style.top = '10px';
-      rowNumber.style.left = '10px';
-      rowNumber.style.width = 'auto';
-      rowNumber.style.background = '#7d7d7d8c';
-      rowNumber.innerHTML = `<span>${x}</span>`;
-      myRoot.appendChild(rowNumber);
-    }
-
-    var rowNumberSum = document.createElement('div')
-    rowNumberSum.id = 'H_rowNumberSum';
-
-    rowNumberSum.style.width = 'auto';
-    rowNumberSum.style.background = '#7d7d7d8c';
-    rowNumberSum.innerHTML = `Σ`;
-    myRoot.appendChild(rowNumberSum);
-
-    var rowMax = document.createElement('div')
-    rowMax.id = 'H_rowMax';
-    rowMax.style.width = 'auto';
-    rowMax.style.background = '#7d7d7d8c';
-    rowMax.innerHTML = `<span data-label="MAX"></span>`;
-    myRoot.appendChild(rowMax);
-
-    var rowMin = document.createElement('div')
-    rowMin.id = 'H_rowMax';
-    rowMin.style.width = 'auto';
-    rowMin.style.background = '#7d7d7d8c';
-    rowMin.innerHTML = `<span data-label="MIN"></span>`;
-    myRoot.appendChild(rowMin);
-
-    var rowMaxMinSum = document.createElement('div')
-    rowMaxMinSum.id = 'H_rowMaxMinSum';
-    rowMaxMinSum.style.width = 'auto';
-    rowMaxMinSum.style.background = '#7d7d7d8c';
-    rowMaxMinSum.innerHTML = `Σ`;
-    myRoot.appendChild(rowMaxMinSum);
-
-    var largeStraight = document.createElement('div')
-    largeStraight.id = 'H_largeStraight';
-    largeStraight.style.width = 'auto';
-    largeStraight.style.background = '#7d7d7d8c';
-    largeStraight.innerHTML = `<span data-label="straight"></span>`;
-    myRoot.appendChild(largeStraight);
-
-    var threeOfAKind = document.createElement('div')
-    threeOfAKind.id = 'H_threeOfAKind';
-    threeOfAKind.style.width = 'auto';
-    threeOfAKind.style.background = '#7d7d7d8c';
-    threeOfAKind.innerHTML = `<span data-label="threeOf"></span>`;
-    myRoot.appendChild(threeOfAKind);
-
-    var fullHouse = document.createElement('div')
-    fullHouse.id = 'H_fullHouse';
-    fullHouse.style.width = 'auto';
-    fullHouse.style.background = '#7d7d7d8c';
-    fullHouse.innerHTML = `<span data-label="fullhouse"></span>`;
-    myRoot.appendChild(fullHouse);
-
-    var poker = document.createElement('div')
-    poker.id = 'H_poker';
-    poker.style.width = 'auto';
-    poker.style.background = '#7d7d7d8c';
-    poker.innerHTML = `<span data-label="poker"></span>`;
-    myRoot.appendChild(poker);
-
-    var jamb = document.createElement('div')
-    jamb.id = 'H_jamb';
-    jamb.style.width = 'auto';
-    jamb.style.background = '#7d7d7d8c';
-    jamb.innerHTML = `<span data-label="jamb"></span>`;
-    myRoot.appendChild(jamb);
-
-    var rowSum = document.createElement('div')
-    rowSum.id = 'H_rowSum';
-    rowSum.style.width = 'auto';
-    rowSum.style.background = '#7d7d7d8c';
-    rowSum.innerHTML = `Σ`;
-    myRoot.appendChild(rowSum);
-
-    var rowSumFINAL = document.createElement('div')
-    rowSumFINAL.id = 'H_rowSumFINAL';
-    rowSumFINAL.style.width = 'auto';
-    rowSumFINAL.style.background = '#7d7d7d8c';
-    rowSumFINAL.innerHTML = `<spam data-label="final"></span>`;
-    myRoot.appendChild(rowSumFINAL);
-  },
-
-  createRow: function(myRoot) {
-    for(var x = 1;x < 7;x++) {
-      var rowNumber = document.createElement('div')
-      rowNumber.id = 'rowNumber' + x;
-      rowNumber.style.top = '10px';
-      rowNumber.style.left = '10px';
-      rowNumber.style.width = 'auto';
-      rowNumber.style.background = '#7d7d7d8c';
-      rowNumber.innerHTML = `-`;
-      rowNumber.addEventListener('click', () => {
-        console.log('LOG THIS ', this)
-        // works
-        // rowDown
-        if(this.state.rowDown.length == 0) {
-          console.log('it is no play yet in this row ', this)
-
-        }
-      })
-      myRoot.appendChild(rowNumber);
-    }
-
-    var rowNumberSum = document.createElement('div')
-    rowNumberSum.id = 'rowNumberSum';
-
-    rowNumberSum.style.width = 'auto';
-    rowNumberSum.style.background = '#7d7d7d8c';
-    rowNumberSum.innerHTML = `-`;
-    myRoot.appendChild(rowNumberSum);
-
-    var rowMax = document.createElement('div')
-    rowMax.id = 'rowMax';
-    rowMax.style.width = 'auto';
-    rowMax.style.background = '#7d7d7d8c';
-    rowMax.innerHTML = `-`;
-    myRoot.appendChild(rowMax);
-
-    var rowMin = document.createElement('div')
-    rowMin.id = 'rowMax';
-    rowMin.style.width = 'auto';
-    rowMin.style.background = '#7d7d7d8c';
-    rowMin.innerHTML = `-`;
-    myRoot.appendChild(rowMin);
-
-    var rowMaxMinSum = document.createElement('div')
-    rowMaxMinSum.id = 'rowMaxMinSum';
-    rowMaxMinSum.style.width = 'auto';
-    rowMaxMinSum.style.background = '#7d7d7d8c';
-    rowMaxMinSum.innerHTML = `-`;
-    myRoot.appendChild(rowMaxMinSum);
-
-    var largeStraight = document.createElement('div')
-    largeStraight.id = 'largeStraight';
-    largeStraight.style.width = 'auto';
-    largeStraight.style.background = '#7d7d7d8c';
-    largeStraight.innerHTML = `-`;
-    myRoot.appendChild(largeStraight);
-
-    var threeOfAKind = document.createElement('div')
-    threeOfAKind.id = 'down_threeOfAKind';
-    threeOfAKind.style.width = 'auto';
-    threeOfAKind.style.background = '#7d7d7d8c';
-    threeOfAKind.innerHTML = `-`;
-    myRoot.appendChild(threeOfAKind);
-
-    var fullHouse = document.createElement('div')
-    fullHouse.id = 'fullHouse';
-    fullHouse.style.width = 'auto';
-    fullHouse.style.background = '#7d7d7d8c';
-    fullHouse.innerHTML = `-`;
-    myRoot.appendChild(fullHouse);
-
-    var poker = document.createElement('div')
-    poker.id = 'poker';
-    poker.style.width = 'auto';
-    poker.style.background = '#7d7d7d8c';
-    poker.innerHTML = `-`;
-    myRoot.appendChild(poker);
-
-    var jamb = document.createElement('div')
-    jamb.id = 'jamb';
-    jamb.style.width = 'auto';
-    jamb.style.background = '#7d7d7d8c';
-    jamb.innerHTML = `-`;
-    myRoot.appendChild(jamb);
-
-    var rowSum = document.createElement('div')
-    rowSum.id = 'rowSum';
-    rowSum.style.width = 'auto';
-    rowSum.style.background = '#7d7d7d8c';
-    rowSum.innerHTML = `-`;
-    myRoot.appendChild(rowSum);
-
-
-  },
-
-  createRowFree: function(myRoot) {
-    for(var x = 1;x < 7;x++) {
-      var rowNumber = document.createElement('div')
-      rowNumber.id = 'free-rowNumber' + x;
-      rowNumber.style.top = '10px';
-      rowNumber.style.left = '10px';
-      rowNumber.style.width = 'auto';
-      rowNumber.style.background = '#7d7d7d8c';
-      rowNumber.innerHTML = `-`;
-      rowNumber.addEventListener('click', (e) => {
-        if(dices.validatePass() == false) return;
-        var getName = e.target.id;
-        getName = getName.replace('free-rowNumber', '')
-        var count23456 = 0;
-        for(let key in dices.SAVED_DICES) {
-          if(parseInt(dices.R[key]) == parseInt(getName)) {
-            count23456++;
-          }
-        }
-        this.state.rowDown.push((count23456 * parseInt(getName)))
-        e.target.innerHTML = (count23456 * parseInt(getName));
-        if(parseInt(getName) == 6) {
-          myDom.calcFreeNumbers()
-        }
-        dices.STATUS = "FREE_TO_PLAY";
-        dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-      })
-      myRoot.appendChild(rowNumber);
-    }
-
-    var rowNumberSum = document.createElement('div')
-    rowNumberSum.id = 'free-rowNumberSum';
-    rowNumberSum.style.width = 'auto';
-    rowNumberSum.style.background = '#7d7d7d8c';
-    rowNumberSum.innerHTML = `-`;
-    myRoot.appendChild(rowNumberSum);
-
-    var rowMax = document.createElement('div')
-    rowMax.id = 'free-rowMax';
-    rowMax.style.width = 'auto';
-    rowMax.style.background = '#7d7d7d8c';
-    rowMax.innerHTML = `-`;
-    rowMax.addEventListener("click", this.calcFreeRowMax);
-    myRoot.appendChild(rowMax);
-
-    var rowMin = document.createElement('div')
-    rowMin.id = 'free-rowMin';
-    rowMin.style.width = 'auto';
-    rowMin.style.background = '#7d7d7d8c';
-    rowMin.innerHTML = `-`;
-    rowMin.addEventListener('click', this.calcFreeRowMin);
-    myRoot.appendChild(rowMin);
-
-    var rowMaxMinSum = document.createElement('div')
-    rowMaxMinSum.id = 'free-rowMaxMinSum';
-    rowMaxMinSum.style.width = 'auto';
-    rowMaxMinSum.style.background = '#7d7d7d8c';
-    rowMaxMinSum.innerHTML = `-`;
-    myRoot.appendChild(rowMaxMinSum);
-
-    var largeStraight = document.createElement('div')
-    largeStraight.id = 'free-largeStraight';
-    largeStraight.style.width = 'auto';
-    largeStraight.style.background = '#7d7d7d8c';
-    largeStraight.innerHTML = `-`;
-    largeStraight.addEventListener('click', this.attachFreeKenta);
-    myRoot.appendChild(largeStraight);
-
-    var threeOfAKind = document.createElement('div')
-    threeOfAKind.id = 'free-threeOfAKind';
-    threeOfAKind.style.width = 'auto';
-    threeOfAKind.style.background = '#7d7d7d8c';
-    threeOfAKind.innerHTML = `-`;
-    threeOfAKind.addEventListener('click', this.attachFreeTrilling)
-    myRoot.appendChild(threeOfAKind);
-
-    var fullHouse = document.createElement('div')
-    fullHouse.id = 'free-fullHouse';
-    fullHouse.style.width = 'auto';
-    fullHouse.style.background = '#7d7d7d8c';
-    fullHouse.innerHTML = `-`;
-    fullHouse.addEventListener('click', this.attachFreeFullHouse)
-    myRoot.appendChild(fullHouse);
-
-    var poker = document.createElement('div')
-    poker.id = 'free-poker';
-    poker.style.width = 'auto';
-    poker.style.background = '#7d7d7d8c';
-    poker.innerHTML = `-`;
-    poker.addEventListener('click', this.attachFreePoker)
-    myRoot.appendChild(poker);
-
-    var jamb = document.createElement('div')
-    jamb.id = 'free-jamb';
-    jamb.style.width = 'auto';
-    jamb.style.background = '#7d7d7d8c';
-    jamb.innerHTML = `-`;
-    jamb.addEventListener('click', this.attachFreeJamb)
-    myRoot.appendChild(jamb);
-
-    var rowSum = document.createElement('div')
-    rowSum.id = 'free-rowSum';
-    rowSum.style.width = 'auto';
-    rowSum.style.background = '#7d7d7d8c';
-    rowSum.innerHTML = `-`;
-    myRoot.appendChild(rowSum);
-  },
-
-  createRowDown: function(myRoot) {
-    for(var x = 1;x < 7;x++) {
-      var rowNumber = document.createElement('div')
-      rowNumber.id = 'down-rowNumber' + x;
-      rowNumber.style.top = '10px';
-      rowNumber.style.left = '10px';
-      rowNumber.style.width = 'auto';
-      rowNumber.style.background = '#7d7d7d8c';
-      rowNumber.style.cursor = 'pointer';
-      rowNumber.innerHTML = `-`;
-
-      this.memoNumberRow.push(rowNumber)
-      // initial
-      if(x == 1) {
-        rowNumber.classList.add('canPlay')
-      }
-
-      rowNumber.addEventListener('click', (e) => {
-
-        if(dices.validatePass() == false) return;
-
-        var getName = e.target.id;
-        getName = getName.replace('down-rowNumber', '')
-        if(this.state.rowDown.length == 0) {
-          console.log('LOG ', getName)
-          if(parseInt(getName) == 1) {
-            var count1 = 0;
-            for(let key in dices.SAVED_DICES) {
-              if(parseInt(dices.R[key]) == 1) {
-                console.log('yeap', dices.R)
-                count1++;
-              }
-            }
-            this.state.rowDown.push(count1)
-            e.target.innerHTML = count1;
-            e.target.classList.remove('canPlay')
-            this.memoNumberRow[1].classList.add('canPlay')
-            dices.STATUS = "FREE_TO_PLAY";
-            dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-          } else {
-            console.log('BLOCK')
-
-          }
-        } else {
-          if(this.state.rowDown.length > 0) {
-            if(parseInt(getName) == this.state.rowDown.length + 1) {
-              console.log('moze za ', parseInt(getName))
-              var count23456 = 0;
-              for(let key in dices.SAVED_DICES) {
-                if(parseInt(dices.R[key]) == parseInt(getName)) {
-                  console.log('yeap', dices.R)
-                  count23456++;
-                }
-              }
-              this.state.rowDown.push((count23456 * parseInt(getName)))
-              //
-              e.target.innerHTML = (count23456 * parseInt(getName));
-              if(parseInt(getName) == 6) {
-                // calc sum
-                console.log('calc sum for numb ~ ')
-                //  this.state.rowDown.length + 1
-                myDom.calcDownNumbers()
-                e.target.classList.remove('canPlay')
-                this.rowMax.classList.add('canPlay')
-              } else {
-                e.target.classList.remove('canPlay')
-                this.memoNumberRow[parseInt(getName)].classList.add('canPlay')
-              }
-              dices.STATUS = "FREE_TO_PLAY";
-              dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-            } else {
-              console.log('BLOCK')
-            }
-          }
-        }
-      })
-      myRoot.appendChild(rowNumber);
-    }
-
-    var rowNumberSum = document.createElement('div')
-    rowNumberSum.id = 'down-rowNumberSum';
-
-    rowNumberSum.style.width = 'auto';
-    rowNumberSum.style.background = '#7d7d7d8c';
-    rowNumberSum.innerHTML = `-`;
-    myRoot.appendChild(rowNumberSum);
-
-    var rowMax = document.createElement('div')
-    rowMax.id = 'down-rowMax';
-    rowMax.style.width = 'auto';
-    rowMax.style.background = '#7d7d7d8c';
-    rowMax.innerHTML = `-`;
-    myRoot.appendChild(rowMax);
-    this.rowMax = rowMax;
-    // this.rowMax.addEventListener("click", (e) => {
-    //   e.target.classList.remove('canPlay')
-    //   this.rowMin.classList.add('canPlay')
-    // })
-
-    var rowMin = document.createElement('div')
-    rowMin.id = 'down-rowMin';
-    rowMin.style.width = 'auto';
-    rowMin.style.background = '#7d7d7d8c';
-    rowMin.innerHTML = `-`;
-    // this.rowMin = rowMin;
-    myRoot.appendChild(rowMin);
-    var rowMaxMinSum = document.createElement('div')
-    rowMaxMinSum.id = 'down-rowMaxMinSum';
-    rowMaxMinSum.style.width = 'auto';
-    rowMaxMinSum.style.background = '#7d7d7d8c';
-    rowMaxMinSum.innerHTML = `-`;
-    myRoot.appendChild(rowMaxMinSum);
-
-    var largeStraight = document.createElement('div')
-    largeStraight.id = 'down-largeStraight';
-    largeStraight.style.width = 'auto';
-    largeStraight.style.background = '#7d7d7d8c';
-    largeStraight.innerHTML = `-`;
-    myRoot.appendChild(largeStraight);
-
-    var threeOfAKind = document.createElement('div')
-    threeOfAKind.id = 'down-threeOfAKind';
-    threeOfAKind.style.width = 'auto';
-    threeOfAKind.style.background = '#7d7d7d8c';
-    threeOfAKind.innerHTML = `-`;
-    myRoot.appendChild(threeOfAKind);
-
-    var fullHouse = document.createElement('div')
-    fullHouse.id = 'down-fullHouse';
-    fullHouse.style.width = 'auto';
-    fullHouse.style.background = '#7d7d7d8c';
-    fullHouse.innerHTML = `-`;
-    myRoot.appendChild(fullHouse);
-
-    var poker = document.createElement('div')
-    poker.id = 'down-poker';
-    poker.style.width = 'auto';
-    poker.style.background = '#7d7d7d8c';
-    poker.innerHTML = `-`;
-    myRoot.appendChild(poker);
-
-    var jamb = document.createElement('div')
-    jamb.id = 'down-jamb';
-    jamb.style.width = 'auto';
-    jamb.style.background = '#7d7d7d8c';
-    jamb.innerHTML = `-`;
-    myRoot.appendChild(jamb);
-
-    var rowSum = document.createElement('div')
-    rowSum.id = 'down-rowSum';
-    rowSum.style.width = 'auto';
-    rowSum.style.background = '#7d7d7d8c';
-    rowSum.innerHTML = `-`;
-    myRoot.appendChild(rowSum);
-  },
-
-  calcDownNumbers: function() {
-    var s = 0;
-    this.state.rowDown.forEach((i) => {
-      console.log(parseFloat(i))
-      s += parseFloat(i)
-    })
-    byId('down-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
-    byId('down-rowNumberSum').innerHTML = s;
-    // console.log('this.rowMax also set free to plat status', this.rowMax)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-    this.rowMax.addEventListener("click", this.calcDownRowMax)
-  },
-
-  // free row start
-
-  calcFreeNumbers: function() {
-    var s = 0;
-    this.state.rowDown.forEach((i) => {
-      console.log(parseFloat(i))
-      s += parseFloat(i)
-    })
-    byId('free-rowNumberSum').style.background = 'rgb(113 0 0 / 55%)';
-    byId('free-rowNumberSum').innerHTML = s;
-    // console.log('this.rowMax also set free to plat status', this.rowMax)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-    byId('free-rowMax').addEventListener("click", this.calc)
-  },
-
-  calcFreeRowMax: (e) => {
-    if(dices.validatePass() == false) return;
-    var test = 0;
-    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
-    for(var key in dices.R) {
-      if(key != keyLessNum) {
-        test += parseFloat(dices.R[key]);
-      }
-    }
-    e.target.innerHTML = test;
-    // now attach next event.
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    byId('free-rowMax').removeEventListener("click", this.calcFreeRowMax);
-  },
-
-  calcFreeRowMin: () => {
-    if(dices.validatePass() == false) return;
-    var maxTestKey = Object.keys(dices.R).reduce(function(a, b) {return dices.R[a] > dices.R[b] ? a : b});
-    var test = 0;
-    for(var key in dices.R) {
-      if(key != maxTestKey) {
-        test += parseFloat(dices.R[key])
+    } else if(application.dices.STATUS == "SELECT_DICES_1" ||
+      application.dices.STATUS == "SELECT_DICES_2" ||
+      application.dices.STATUS == "FINISHED") {
+
+      const allNames = Object.keys(application.dices.SAVED_DICES);
+      if(allNames.indexOf(e.detail.hitObject.name) !== -1) {
+        console.log("UNPICK2 THIS.", e.detail.hitObject.name)
+        application.dices.unPickDice(e.detail.hitObject.name)
+        return;
       } else {
-        console.log('not calc dice ', dices.R[key])
+        if(Object.keys(application.dices.SAVED_DICES).length >= 5) {
+          console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name)
+          return;
+        }
+        console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name)
+        application.dices.pickDice(e.detail.hitObject.name)
       }
     }
-    byId('free-rowMin').innerHTML = test;
-    byId('free-rowMin').removeEventListener('click', this.calcFreeRowMin);
-    // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat(byId('free-rowMax').innerHTML) - parseFloat(byId('free-rowMin').innerHTML)
-    byId('free-rowMaxMinSum').innerHTML = SUMMINMAX;
-    myDom.incrasePoints(SUMMINMAX);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
+  });
 
-  attachFreeKenta: function() {
-    if(dices.validatePass() == false) return;
+  // Sounds
+  application.matrixSounds.createAudio('start', 'res/audios/start.mp3', 1)
+  application.matrixSounds.createAudio('block', 'res/audios/block.mp3', 6)
+  application.matrixSounds.createAudio('dice1', 'res/audios/dice1.mp3', 6)
+  application.matrixSounds.createAudio('dice2', 'res/audios/dice2.mp3', 6)
+  application.matrixSounds.createAudio('hover', 'res/audios/feel.mp3', 3)
+  application.matrixSounds.createAudio('roll', 'res/audios/dice-roll.mp3', 2)
 
-    console.log('Test free kenta :', dices.R)
-    var result = app.myDom.checkForDuplicate()[0];
-    var testArray = app.myDom.checkForDuplicate()[1];
-    console.log('TEST duplik: ' + result);
-    if(result.length == 2) {
-      console.log('TEST duplik less 3 : ' + result);
-      var locPrevent = false;
-      testArray.forEach((item, index, array) => {
-        if(result[0].value == item.value && locPrevent == false) {
-          console.log('detect by value item.value', item.value)
-          locPrevent = true;
-          array.splice(index, 1);
-        }
+  addEventListener('PhysicsReady', () => {
+    myDom.createJamb();
+    myDom.addDraggerForTable();
+    myDom.createBlocker();
+    app.matrixPhysics.speedUpSimulation(5);
+
+    downloadMeshes({
+      cube: "./res/meshes/jamb/dice.obj",
+    }, onLoadObj, {scale: [1, 1, 1], swap: [null]})
+
+    downloadMeshes({
+      bg: "./res/meshes/shapes/cube.obj",
+    }, onLoadObjFloor, {scale: [1, 1, 1], swap: [null]})
+
+    downloadMeshes({
+      mainTitle: "./res/meshes/jamb/jamb-title.obj",
+    }, onLoadObjOther, {scale: [3, 2, 3], swap: [null]})
+
+    downloadMeshes({
+      cube: "./res/meshes/jamb/dice.obj",
+    }, onLoadObjWallCenter, {scale: [1, 1, 1], swap: [null]})
+
+    downloadMeshes({
+      cube: "./res/meshes/jamb/dice.obj",
+    }, (m) => {
+      // right
+      application.addMeshObj({
+        position: {x: 21, y: 5, z: -21},
+        rotation: {x: 0, y: -22, z: 0},
+        scale: [10, 10, 1],
+        useScale: false,
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallRight',
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: {enabled: false, radius: 2},
       })
-      // if we catch  1 and 6 in same stack then it is not possible for kenta...
-      var test1 = false, test6 = false;
-      testArray.forEach((item, index, array) => {
-        if(item.value == 1) {
-          test1 = true;
-        } else if(item.value == 6) {
-          test6 = true;
-        }
+
+      application.addMeshObj({
+        position: {x: -21, y: 5, z: -21},
+        rotation: {x: 0, y: 22, z: 0},
+        scale: [10, 10, 1],
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'wallLeft',
+        useScale: false,
+        mesh: m.cube,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: {enabled: false, radius: 2},
       })
-      if(test1 == true && test6 == true) {
-        byId('free-largeStraight').innerHTML = `0`;
-      } else if(test1 == true) {
-        byId('free-largeStraight').innerHTML = 15 + 50;
-        myDom.incrasePoints(15 + 50);
-      } else if(test6 == true) {
-        byId('free-largeStraight').innerHTML = 20 + 50;
-        myDom.incrasePoints(20 + 50);
-      }
-    } else if(result < 2) {
-      byId('free-largeStraight').innerHTML = 66;
-      myDom.incrasePoints(66);
-    } else {
-      // zero value
-      byId('free-largeStraight').innerHTML = `0`;
-    }
-    byId('free-largeStraight').removeEventListener('click', this.attachFreeKenta)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
+    }, {scale: [1, 1, 1], swap: [null]})
 
-  attachFreeTrilling: function() {
-    if(dices.validatePass() == false) return;
+  })
 
-    var result = app.myDom.checkForDuplicate()[0];
-    // var testArray = app.myDom.checkForDuplicate()[1];
-    // console.log('DUPLICATE FOR TRILING ', result);
-    if(result.length > 2) {
-      var testWin = 0;
-      var TEST = app.myDom.checkForAllDuplicate();
-      console.log('DUPLICATE FOR TRILING TEST ', TEST);
-      for(var key in TEST) {
-        if(TEST[key] > 2) {
-          // win
-          var getDiceID = parseInt(key.replace('value__', ''))
-          testWin = getDiceID * 3;
-        }
-      }
-      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
-      if(testWin > 0) {
-        byId('free-threeOfAKind').innerHTML = 20 + testWin;
-        myDom.incrasePoints(20 + testWin);
-      }
-    } else {
-      byId('free-threeOfAKind').innerHTML = 0;
-    }
-    byId('free-threeOfAKind').removeEventListener('click', this.attachFreeTrilling)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
-
-  attachFreeFullHouse: function() {
-
-    if(dices.validatePass() == false) return;
-
-    var TEST = app.myDom.checkForAllDuplicate();
-    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
-    var win = 0;
-    var testPair = false;
-    var testTrilling = false;
-    var testWinPair = 0;
-    var testWinTrilling = 0;
-    for(var key in TEST) {
-      if(TEST[key] == 2) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''))
-        testWinPair = getDiceID * 2;
-        testPair = true;
-      } else if(TEST[key] == 3) {
-        var getDiceID = parseInt(key.replace('value__', ''))
-        testWinTrilling = getDiceID * 3;
-        testTrilling = true;
-      }
-    }
-    if(testPair == true && testTrilling == true) {
-      win = testWinPair + testWinTrilling;
-      byId('free-fullHouse').innerHTML = win + 30;
-      myDom.incrasePoints(win + 30);
-    } else {
-      byId('free-fullHouse').innerHTML = 0;
-    }
-
-    byId('free-fullHouse').removeEventListener('click', this.attachFreeFullHouse)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
-
-  attachFreePoker: function() {
-    if(dices.validatePass() == false) return;
-
-    var TEST = app.myDom.checkForAllDuplicate();
-    // console.log('DUPLICATE FOR poker 40 + TEST ');
-    for(var key in TEST) {
-      if(TEST[key] == 4 || TEST[key] > 4) {
-        var getDiceID = parseInt(key.replace('value__', ''))
-        var win = getDiceID * 4;
-        byId('free-poker').innerHTML = win + 40;
-        myDom.incrasePoints(win + 40);
-      }
-    }
-    byId('free-poker').removeEventListener('click', this.attachFreePoker)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
-
-  attachFreeJamb: function() {
-    if(dices.validatePass() == false) return;
-    // console.log('<GAMEPLAY><FREE ROW IS FEELED>')
-    var TEST = app.myDom.checkForAllDuplicate();
-    for(var key in TEST) {
-      if(TEST[key] == 5) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''))
-        var win = getDiceID * 5;
-        byId('free-poker').innerHTML = win + 50;
-        myDom.incrasePoints(win + 50);
-      }
-    }
-    byId('free-jamb').removeEventListener('click', this.attachFreeJamb)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
-  // end of free row
-
-  calcDownRowMax: (e) => {
-    if(dices.validatePass() == false) return;
-    e.target.classList.remove('canPlay');
-    byId('down-rowMin').classList.add('canPlay');
-    var test = 0;
-    let keyLessNum = Object.keys(dices.R).reduce((key, v) => dices.R[v] < dices.R[key] ? v : key);
-    // console.log('FIND MIN DICE TO REMOVE FROM SUM ', keyLessNum);
-    for(var key in dices.SAVED_DICES) {
-      if(key != keyLessNum) {
-        test += parseFloat(dices.R[key]);
-      }
-    }
-    e.target.innerHTML = test;
-    // now attach next event.
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}));
-    byId('down-rowMax').removeEventListener("click", myDom.calcDownRowMax);
-    byId('down-rowMin').addEventListener('click', myDom.calcDownRowMin);
-  },
-
-  incrasePoints: function(arg) {
-    byId('user-points').innerHTML = parseInt(byId('user-points').innerHTML) + parseInt(arg);
-  },
-
-  calcDownRowMin: () => {
-    if(dices.validatePass() == false) return;
-    byId('down-rowMin').classList.remove('canPlay')
-    console.log('MIN ENABLED')
-    var maxTestKey = Object.keys(dices.R).reduce(function(a, b) {return dices.R[a] > dices.R[b] ? a : b});
-    var test = 0;
-    for(var key in dices.R) {
-      // if(key != maxTestKey) {
-      test += parseFloat(dices.R[key])
-      // } else {
-      //   console.log('not calc dice ', dices.R[key])
-      // }
-    }
-    byId('down-rowMin').innerHTML = test;
-    byId('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
-    // calc max min dont forget rules for bonus +30
-    var SUMMINMAX = parseFloat(byId('down-rowMax').innerHTML) - parseFloat(byId('down-rowMin').innerHTML)
-    byId('down-rowMaxMinSum').innerHTML = SUMMINMAX;
-    myDom.incrasePoints(SUMMINMAX);
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-    byId('down-largeStraight').classList.add('canPlay');
-    byId('down-largeStraight').addEventListener('click', myDom.attachKenta)
-    byId('down-rowMin').removeEventListener('click', myDom.calcDownRowMin);
-  },
-
-  checkForDuplicate: function() {
-    var testArray = [];
-    for(var key in dices.SAVED_DICES) {
-      var gen = {myId: key, value: dices.R[key]};
-      testArray.push(gen);
-    }
-    var result = Object.values(testArray.reduce((c, v) => {
-      let k = v.value;
-      c[k] = c[k] || [];
-      c[k].push(v);
-      return c;
-    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
-
-    return [result, testArray];
-  },
-
-  checkForAllDuplicate: function() {
-    var testArray = [];
-    for(var key in dices.SAVED_DICES) {
-      var gen = {myId: key, value: dices.R[key]};
-      testArray.push(gen);
-    }
-    // console.log('testArray ', testArray)
-    var result = Object.values(testArray.reduce((c, v) => {
-      let k = v.value;
-      c[k] = c[k] || [];
-      c[k].push(v);
-      return c;
-    }, {})).reduce((c, v) => v.length > 1 ? c.concat(v) : c, []);
-    var discret = {};
-    result.forEach((item, index, array) => {
-      if(typeof discret['value__' + item.value] === 'undefined') {
-        discret['value__' + item.value] = 1;
-      } else {
-        discret['value__' + item.value] += 1;
-      }
+  function onLoadObjWallCenter(m) {
+    application.myLoadedMeshesWalls = m;
+    // WALL Center
+    application.addMeshObj({
+      position: {x: 0, y: 5, z: -28},
+      rotation: {x: 0, y: 0, z: 0},
+      scale: [15, 12, 2],
+      useScale: false,
+      texturesPaths: ['./res/meshes/jamb/text.png'],
+      name: 'wallCenter',
+      mesh: m.cube,
+      physics: {
+        mass: 0,
+        enabled: true,
+        geometry: "Cube"
+      },
+      raycast: {enabled: false, radius: 2},
     })
-    return discret;
-  },
-
-  attachKenta: function() {
-    console.log('Test kenta  ', dices.SAVED_DICES)
-    byId('down-largeStraight').classList.remove('canPlay')
-    var result = app.myDom.checkForDuplicate()[0];
-    var testArray = app.myDom.checkForDuplicate()[1];
-    console.log('TEST duplik: ' + result);
-    if(result.length > 0) {
-      console.log('TEST duplik l : ' + result);
-      var locPrevent = false;
-      testArray.forEach((item, index, array) => {
-        if(result[0].value == item.value && locPrevent == false) {
-          console.log('detect by value item.value', item.value)
-          locPrevent = true;
-          array.splice(index, 1);
-        }
-      })
-      byId('down-largeStraight').innerHTML = `0`;
-
-    } else if(result < 2) {
-      byId('down-largeStraight').innerHTML = 66;
-      myDom.incrasePoints(66);
-    } else {
-      // zero value
-      byId('down-largeStraight').innerHTML = `0`;
-    }
-    byId('down-threeOfAKind').addEventListener('click', myDom.attachDownTrilling)
-    byId('down-largeStraight').removeEventListener('click', myDom.attachKenta)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
-
-  attachDownTrilling: function() {
-    var result = app.myDom.checkForDuplicate()[0];
-    // var testArray = app.myDom.checkForDuplicate()[1];
-    // console.log('DUPLICATE FOR TRILING ', result);
-    if(result.length > 2) {
-      var testWin = 0;
-      var TEST = app.myDom.checkForAllDuplicate();
-      console.log('DUPLICATE FOR TRILING TEST ', TEST);
-      for(var key in TEST) {
-        if(TEST[key] > 2) {
-          // win
-          var getDiceID = parseInt(key.replace('value__', ''))
-          testWin = getDiceID * 3;
-        }
-      }
-      console.log('DUPLICATE FOR TRILING 30 + TEST ', testWin);
-      byId('down-threeOfAKind').innerHTML = 20 + testWin;
-      myDom.incrasePoints(20 + testWin);
-    } else {
-      byId('down-threeOfAKind').innerHTML = 0;
-    }
-    byId('down-threeOfAKind').removeEventListener('click', myDom.attachDownTrilling)
-    byId('down-fullHouse').addEventListener('click', myDom.attachDownFullHouse)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
-
-  attachDownFullHouse: function() {
-    var TEST = app.myDom.checkForAllDuplicate();
-    // console.log('DUPLICATE FOR FULL HOUSE 30 + TEST ');
-    var win = 0;
-    var testPair = false;
-    var testTrilling = false;
-    var testWinPair = 0;
-    var testWinTrilling = 0;
-    for(var key in TEST) {
-      if(TEST[key] == 2) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''))
-        testWinPair = getDiceID * 2;
-        testPair = true;
-      } else if(TEST[key] == 3) {
-        var getDiceID = parseInt(key.replace('value__', ''))
-        testWinTrilling = getDiceID * 3;
-        testTrilling = true;
-      }
-    }
-    if(testPair == true && testTrilling == true) {
-      win = testWinPair + testWinTrilling;
-      byId('down-fullHouse').innerHTML = win + 30;
-      myDom.incrasePoints(win + 30);
-    } else {
-      byId('down-fullHouse').innerHTML = 0;
-    }
-    byId('down-poker').addEventListener('click', myDom.attachDownPoker)
-    byId('down-fullHouse').removeEventListener('click', myDom.attachDownFullHouse)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
-
-  attachDownPoker: function() {
-    var TEST = app.myDom.checkForAllDuplicate();
-    // console.log('DUPLICATE FOR poker 40 + TEST ');
-    for(var key in TEST) {
-      if(TEST[key] == 4 || TEST[key] > 4) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''))
-        var win = getDiceID * 4;
-        byId('down-poker').innerHTML = win + 40;
-        myDom.incrasePoints(win + 40);
-      }
-    }
-    byId('down-poker').removeEventListener('click', myDom.attachDownPoker)
-    byId('down-jamb').addEventListener('click', myDom.attachDownJamb)
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
-
-  attachDownJamb: function() {
-    byId('down-jamb').removeEventListener('click', myDom.attachDownJamb)
-    console.log('<GAMEPLAY><DOWN ROW IS FEELED>')
-    var TEST = app.myDom.checkForAllDuplicate();
-    for(var key in TEST) {
-      if(TEST[key] == 5 || TEST[key] > 5) {
-        // win
-        var getDiceID = parseInt(key.replace('value__', ''))
-        var win = getDiceID * 5;
-        byId('down-poker').innerHTML = win + 50;
-        myDom.incrasePoints(win + 50);
-      }
-    }
-    dices.STATUS = "FREE_TO_PLAY";
-    dispatchEvent(new CustomEvent('FREE_TO_PLAY', {}))
-  },
-
-  isDragging: false,
-  offsetX: 0,
-  offsetY: 0,
-  addDraggerForTable: () => {
-    byId('dragHandler').addEventListener('pointerdown', (e) => {
-      myDom.isDragging = true;
-      const rect = byId('jambTable').getBoundingClientRect();
-      myDom.offsetX = e.clientX - rect.left;
-      myDom.offsetY = e.clientY - rect.top;
-      byId('dragHandler').setPointerCapture(e.pointerId);
-    });
-
-    byId('dragHandler').addEventListener('pointermove', (e) => {
-      if(myDom.isDragging) {
-        byId('jambTable').style.left = `${e.clientX - myDom.offsetX}px`;
-        byId('jambTable').style.top = `${e.clientY - myDom.offsetY}px`;
-      }
-    });
-
-    byId('dragHandler').addEventListener('pointerup', (e) => {
-      myDom.isDragging = false;
-      byId('dragHandler').releasePointerCapture(e.pointerId);
-    });
   }
 
-}
+  function onLoadObjOther(m) {
+    application.myLoadedMeshes = m;
+    // Add logo text top
+    application.mainTitle = application.addMeshObj({
+      position: {x: 0, y: 11, z: -21},
+      rotation: {x: 90, y: 0, z: 0},
+      rotationSpeed: {x: 1, y: 0, z: 0},
+      scale: [1.6, 1.6, 1.6],
+      texturesPaths: ['./res/meshes/jamb/text.png'],
+      name: 'mainTitle',
+      mesh: m.mainTitle,
+      physics: {
+        enabled: false,
+      },
+      raycast: {enabled: false, radius: 2},
+    })
+    setTimeout(() => {
+      app.cameras.WASD.setYaw(0);
+      app.cameras.WASD.setPitch(0.1);
+      app.cameras.WASD.setZ(0);
+      app.cameras.WASD.setY(4);
+    }, 500);
+  }
+
+  function onLoadObjFloor(m) {
+    application.addMeshObj({
+      scale: [25, 1, 25],
+      position: {x: 0, y: -1, z: -10},
+      rotation: {x: 0, y: 0, z: 0},
+      texturesPaths: ['./res/meshes/jamb/bg.webp'],
+      name: 'floor',
+      mesh: m.bg,
+      physics: {
+        // collide: false,
+        mass: 0,
+        enabled: false,
+        geometry: "Cube"
+      },
+      raycast: {enabled: false, radius: 2},
+    })
+  }
+
+  function onLoadObj(m) {
+    application.myLoadedMeshes = m;
+    // Add dices
+    const diceScale = [0.8, 0.8, 0.8];
+    application.addMeshObj({
+      position: {x: 0, y: 6, z: -10},
+      rotation: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics1',
+      mesh: m.cube,
+      raycast: {enabled: true, radius: 2},
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    })
+
+    application.addMeshObj({
+      position: {x: -5, y: 4, z: -14},
+      rotation: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics2',
+      mesh: m.cube,
+      raycast: {enabled: true, radius: 2},
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    })
+
+    application.addMeshObj({
+      position: {x: 4, y: 8, z: -10},
+      rotation: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics3',
+      mesh: m.cube,
+      raycast: {enabled: true, radius: 2},
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    })
+
+    application.addMeshObj({
+      position: {x: 3, y: 4, z: -10},
+      rotation: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics4',
+      mesh: m.cube,
+      raycast: {enabled: true, radius: 2},
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    })
+
+    application.addMeshObj({
+      position: {x: -2, y: 4, z: -13},
+      rotation: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics5',
+      mesh: m.cube,
+      raycast: {enabled: true, radius: 2},
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    })
+
+    application.addMeshObj({
+      position: {x: -4, y: 6, z: -9},
+      rotation: {x: 0, y: 0, z: 0},
+      rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
+      texturesPaths: [diceTexturePath],
+      useUVShema4x2: true,
+      name: 'CubePhysics6',
+      mesh: m.cube,
+      raycast: {enabled: true, radius: 2},
+      physics: {
+        enabled: true,
+        geometry: "Cube"
+      }
+    })
+
+    application.TOLERANCE = 0;
+    let allDiceDoneProcedure = () => {
+      console.log("ALL DONE", application.TOLERANCE)
+      application.TOLERANCE++;
+      if(application.TOLERANCE >= 1) {
+        removeEventListener('dice-1', dice1Click)
+        removeEventListener('dice-2', dice2Click)
+        removeEventListener('dice-3', dice3Click)
+        removeEventListener('dice-4', dice4Click)
+        removeEventListener('dice-5', dice5Click)
+        removeEventListener('dice-6', dice6Click)
+        // console.log(`%cFINAL<preliminar> ${dices.R}`, LOG_FUNNY)
+        application.TOLERANCE = 0;
+        app.cameras.WASD.setPitch(-1.26);
+        app.cameras.WASD.setZ(-18);
+        app.cameras.WASD.setY(19);
+        app.mainTitle.position.translateByZ(-24);
+        app.cameras.WASD._dirtyAngle = true;
+
+        if(dices.STATUS == "FREE_TO_PLAY" || dices.STATUS == "IN_PLAY") {
+          dices.STATUS = "SELECT_DICES_1";
+          console.log(`%cStatus<SELECT_DICES_1>`, LOG_FUNNY)
+          setTimeout(() => {
+            app.updateTitleEvent.detail.text = app.label.get.freetoroll;
+            app.updateTitleEvent.detail.status = 'FREE';
+            dispatchEvent(app.updateTitleEvent);
+          }, 500);
+        } else if(dices.STATUS == "SELECT_DICES_1") {
+          dices.STATUS = "SELECT_DICES_2";
+          setTimeout(() => {
+            app.updateTitleEvent.detail.text = app.label.get.freetoroll;
+            app.updateTitleEvent.detail.status = 'FREE';
+            dispatchEvent(app.updateTitleEvent);
+          }, 500);
+          console.log(`%cStatus<SELECT_DICES_2>`, LOG_FUNNY)
+        } else if(dices.STATUS == "SELECT_DICES_2") {
+          dices.STATUS = "FINISHED";
+          console.log(`%cStatus<FINISHED>`, LOG_FUNNY)
+          app.updateTitleEvent.detail.text = app.label.get.pick5;
+          app.updateTitleEvent.detail.status = 'status-select';
+          dispatchEvent(app.updateTitleEvent);
+        }
+      }
+    };
+
+    addEventListener('all-done', allDiceDoneProcedure);
+
+    addEventListener('FREE_TO_PLAY', () => {
+      // Big reset
+      console.log(`%c<Big reset needed ...>`, LOG_FUNNY)
+      app.dices.SAVED_DICES = {};
+      app.dices.setStartUpPosition();
+      setTimeout(() => {
+        app.dices.activateAllDicesPhysics();
+      }, 1000);
+
+      app.mainTitle.position.translateByZ(-21)
+      app.cameras.WASD.setYaw(0);
+      app.cameras.WASD.setPitch(0);
+      app.cameras.WASD.setZ(0);
+      app.cameras.WASD.setY(4);
+      app.cameras.WASD._dirtyAngle = true;
+
+      app.updateTitleEvent.detail.text = app.label.get.hand1;
+      app.updateTitleEvent.detail.status = 'FREE';
+      dispatchEvent(app.updateTitleEvent);
+    })
+
+    // ACTIONS
+    let dice1Click = (e) => {
+      dices.R[e.detail.cubeId] = '1';
+      dices.checkAll()
+    };
+
+    let dice2Click = (e) => {
+      dices.R[e.detail.cubeId] = '2';
+      dices.checkAll()
+    };
+
+    let dice3Click = (e) => {
+      dices.R[e.detail.cubeId] = '3';
+      dices.checkAll()
+    };
+
+    let dice4Click = (e) => {
+      dices.R[e.detail.cubeId] = '4';
+      dices.checkAll()
+    }
+
+    let dice5Click = (e) => {
+      dices.R[e.detail.cubeId] = '5';
+      dices.checkAll()
+    }
+
+    let dice6Click = (e) => {
+      dices.R[e.detail.cubeId] = '6';
+      dices.checkAll()
+    }
+
+    function shootDice(x) {
+      setTimeout(() => {
+        const body = app.matrixPhysics.getBodyByName(`CubePhysics${x}`);
+        app.matrixPhysics.shootBody(
+          body,
+          randomFloatFromTo(-5, 15), randomIntFromTo(35, 45), randomIntFromTo(-55, -65), // linear
+          randomFloatFromTo(5, 15), randomIntFromTo(50, 60), 20                          // angular
+        );
+        setTimeout(() => app.matrixSounds.play('roll'), 100);
+      }, 100 * x)
+    }
+
+    application.activateDiceClickListener = (index) => {
+      console.log('activateDiceClickListener ', index)
+      index = parseInt(index);
+      switch(index) {
+        case 1:
+          addEventListener('dice-1', dice1Click)
+        case 2:
+          addEventListener('dice-2', dice2Click)
+        case 3:
+          addEventListener('dice-3', dice3Click)
+        case 4:
+          addEventListener('dice-4', dice4Click)
+        case 5:
+          addEventListener('dice-5', dice5Click)
+        case 6:
+          addEventListener('dice-6', dice6Click)
+      }
+    };
+
+    let rollProcedure = () => {
+      if(topTitleDOM.getAttribute('data-gamestatus') != 'FREE') {
+        console.log('validation fails...');
+        return;
+      }
+
+      if(dices.STATUS == "FREE_TO_PLAY") {
+
+        app.dices.R = {};  // clear previous roll results
+        app.dices.C = 0;
+
+        app.matrixSounds.play('start')
+        dices.STATUS = "IN_PLAY";
+        app.updateTitleEvent.detail.text = app.label.get.hand1;
+        app.updateTitleEvent.detail.status = 'inplay';
+        // console.log('IN_PLAY');
+        dispatchEvent(app.updateTitleEvent);
+        addEventListener('dice-1', dice1Click)
+        addEventListener('dice-2', dice2Click)
+        addEventListener('dice-3', dice3Click)
+        addEventListener('dice-4', dice4Click)
+        addEventListener('dice-5', dice5Click)
+        addEventListener('dice-6', dice6Click)
+        for(var x = 1;x < 7;x++) {
+          shootDice(x)
+        }
+      } else if(dices.STATUS == "SELECT_DICES_1" || dices.STATUS == "SELECT_DICES_2") {
+        // Now no selected dices still rolling
+        for(let i = 1;i <= 6;i++) {
+          const key = "CubePhysics" + i;
+          if(!(key in app.dices.SAVED_DICES)) {
+            // console.log("Still in game last char is id : ", key[key.length - 1]);
+            application.activateDiceClickListener(parseInt(key[key.length - 1]))
+            shootDice(key[key.length - 1])
+          } else {
+            application.activateDiceClickListener(parseInt(key[key.length - 1]))
+          }
+        }
+        app.updateTitleEvent.detail.text = dices.STATUS == "SELECT_DICES_1" ? app.label.get.hand1 : app.label.get.hand2;
+        app.updateTitleEvent.detail.status = 'inplay';
+        dispatchEvent(app.updateTitleEvent);
+      } else if(dices.STATUS == "FINISHED") {
+        mb.error('No more roll...');
+        mb.show('Pick up 5 dices');
+      }
+    }
+
+    addEventListener('DICE.ROLL', rollProcedure)
+    app.ROLL = () => {
+      dispatchEvent(app.DICE_ROLL_EVENT);
+    };
+  }
+})
+
+window.app = application

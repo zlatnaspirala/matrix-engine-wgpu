@@ -1866,8 +1866,8 @@ var loadDrumCannon = function () {
     },
     clearColor: {
       r: 0,
-      b: 0.122,
-      g: 0.122,
+      b: 0,
+      g: 0,
       a: 1
     }
   }, () => {
@@ -1885,12 +1885,14 @@ var loadDrumCannon = function () {
       }, onGround, {
         scale: [1, 1, 1]
       });
-      // DRUM.matrixPhysics.speedUpSimulation(4);
-      app.physicsBodiesChain('standard', {
-        x: -25,
-        y: 40,
-        z: -15
-      }, undefined, ['./res/textures/star-fantazy.png']);
+      if ((0, _utils.isMobile)() === false) {
+        app.physicsBodiesChain('standard', {
+          x: -25,
+          y: 40,
+          z: -15
+        }, undefined, ['./res/textures/star-fantazy.png']);
+        app.matrixPhysics.speedUpSimulation(5);
+      }
     });
     async function onGround(m) {
       let cam = app.getCamera();
@@ -2404,9 +2406,11 @@ var loadDrumCannon = function () {
         const randomType = keys[Math.floor(Math.random() * keys.length)];
         DRUM.drumFinal.effects.flameEffect.setGeometry(randomType, 10);
         DRUM.drumFinal.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        DRUM.drumFinal.effects.kale = new _kaleidoscopeEffectInstance.KaleidoscopeEmitter(DRUM.device, 'rgba16float', 30, DRUM.cameraBuffer);
-        DRUM.drumFinal.effects.kale.recreateVertexDataCrazzy((0, _utils.randomIntFromTo)(1, 3));
-        DRUM.drumFinal.effects.kale.setIntensity((0, _utils.randomIntFromTo)(1, 6));
+
+        // DRUM.drumFinal.effects.kale = new KaleidoscopeEmitter(DRUM.device, 'rgba16float', 30, DRUM.cameraBuffer);
+        // DRUM.drumFinal.effects.kale.recreateVertexDataCrazzy(randomIntFromTo(1, 3));
+        // DRUM.drumFinal.effects.kale.setIntensity(randomIntFromTo(1, 6));
+
         const checker2 = floor.createCheckerboardTexture(256, 128, [0, 10, 0, 0], [120, 0, 0, 255]);
         let samplerTest = DRUM.device.createSampler({
           magFilter: 'nearest',
@@ -6434,16 +6438,12 @@ var mazeGame = function () {
           }
         }
       }
-
-      // console.log('__________________')
-
       const light = maze.lightContainer[0];
       light.setPosition(0, 200, 0);
       light.setIntensity(8.5);
       maze.cameras.firstPersonCamera.movementSpeed = 0.1;
       maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
       maze.cameras.firstPersonCamera.setPosition(-49, 10.40, -49);
-      // close space
       let test2 = maze.addMeshObj({
         shadowsCast: false,
         material: {
@@ -43766,6 +43766,18 @@ class PhysicsBridge {
       friction
     });
   }
+  getQuaternion(idx) {
+    if (idx === undefined) return;
+    return this._send('getQuaternion', {
+      idx: idx
+    });
+  }
+  getDiceFace(idx) {
+    if (idx === undefined) return;
+    return this._send('getDiceFace', {
+      idx: idx
+    });
+  }
   addHingeConstraint(idxA, idxB, options) {
     if (idxA === undefined || idxB === undefined || idxA === -1 || idxB === -1) {
       console.log('error in addHingeConstraint !!! ');
@@ -43955,6 +43967,14 @@ class PhysicsBridge {
         break;
       case 'getPosition':
         this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+      case 'getQuaternion':
+        this._pending.get(data.id)?.(data.quaternion);
+        this._pending.delete(data.id);
+        break;
+      case 'getDiceFace':
+        this._pending.get(data.id)?.(data.face);
         this._pending.delete(data.id);
         break;
       case 'isSleeping':

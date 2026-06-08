@@ -924,6 +924,7 @@ canvaInlineProgram: (ctx, canvas) => {
 
 ### Note
 
+Warn can be disabled from MECongif.logLoopError (bool).
 If this happen less then 15 times (Loading procces) then it is ok probably...
 
 ```json
@@ -948,11 +949,10 @@ All you needed to start kurento and openvidu and interconnect this nodejs server
 https://github.com/zlatnaspirala/matrix-stream/blob/main/middleware/server.js
 
 
-
 See example code at `./examples/games/moba/`
 
 Buildin net sync basic:
-Lets say app is engine root object and net is networking object.
+Let's say app is engine root object and net is networking object.
 webRTC tech with openvidu server middleware server
 
 ```js
@@ -1027,16 +1027,14 @@ Access from code:
 urlQuery.lang;
 ```
 
-### [From 1.10.0] Configure render from url link
+Also render config can be controlled:
 
-// URL PARAMS ----------- defaults
-SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
-MAX_BONES: isMobile() == true ? 80 : 100,
-PHYSICS_GROUND_Y: -1,
-PHYSICS_GROUND_BYX: 100,
-PHYSICS_GROUND_BYZ: 100,
-GRAVITY_Y_AXIS: -10,
-FORCE_FULL_SCREEN: false,
+?PHYSICS_GROUND_Y=1
+?fs=true               // Force-Fullscreen
+?MAX_BONES=0           // optimisation [use this for mobile devices]
+?MAX_SPOTLIGHTS=1      // optimisation [use this for mobile devices]
+?SHADOW_RES=250        // optimisation [use this for mobile devices]
+?GRAVITY_Y_AXIS=10     // optimisation [use this for mobile devices]
 
 Use it :
 `matrix-engine-wgpu/public/examples?demo=1&SHADOW_RES=250`
@@ -1051,20 +1049,32 @@ In this case FORCE_FULL_SCREEN is true by default.
 Pushed notification click anywhere to start the engine.
 
 Note for MAX_SPOTLIGHTS :
-If you wanna override values from MECOnfig or even urlParam than use :
+If you wanna override values from MECOnfig or even urlParam than use in main engine arg pass:
+```js
+new MatrixEngineWGPU({
+    canvasSize: 'fullscreen',
+    fastRender: 0.9,
+    render: 'culling',
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: 'firstPersonCamera',
+      // type: 'WASD',
+      responseCoef: 1000
+    },
+    clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
+  }, () => { ... })
+```
 
+Exclude (for example floor/ground) from culling: `floor.ignoreCulling = true;`
 ---
 
-## About `main.js`
+## About `empty.js`
 
-`main.js` is the main instance for the jamb 3d deluxe game template.
-It contains the game context, e.g., `dices`.
-
-What ever you find here onder main.js is open source part.
-Next level of upgrade is commercial part.
-
-For a clean startup without extra logic, use `empty.js`.
+For a clean startup without extra logic, use engine build `empty.js`.
 This minimal build is ideal for online editors like CodePen or StackOverflow snippets.
+It is the plain text JavaScript ready for exec.
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/3d-jamb.png?raw=true" />
 

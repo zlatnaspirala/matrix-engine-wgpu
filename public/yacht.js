@@ -232,13 +232,9 @@ let dices = exports.dices = {
         break;
       }
     }
-    console.log('test checkall !!!!!!!!!!!allReady ', allReady);
-    // Dynamic threshold: min wait time based on rolling dice
-    const minWait = 5;
-    const keys = Object.keys(this.R);
-    const count = keys.length;
-    if (allReady && this.C > minWait) {
-      console.log('test checkall all done ');
+    // console.log('allReady ', allReady)
+    if (allReady && this.C > activeRollingCount) {
+      // console.log('test checkall all done ')
       dispatchEvent(dices.allDoneEvent);
       this.C = 0;
     }
@@ -285,7 +281,7 @@ let myDom = exports.myDom = {
           status: 'finished'
         }
       }));
-      console.log('GAME END!!');
+      console.log('GAME END!');
       return true;
     }
   },
@@ -1760,6 +1756,8 @@ let myDom = exports.myDom = {
   }
 };
 
+// app.makeMyLightMoveByY()
+
 },{"../../../src/engine/utils.js":63,"./html-content.js":1}],3:[function(require,module,exports){
 "use strict";
 
@@ -1767,11 +1765,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.application = void 0;
-var _world = _interopRequireDefault(require("./src/world.js"));
-var _loaderObj = require("./src/engine/loader-obj.js");
-var _utils = require("./src/engine/utils.js");
-var _jambScript = require("./examples/games/jamb/jamb-script.js");
-var _raycast = require("./src/engine/raycast.js");
+var _world = _interopRequireDefault(require("../../../src/world.js"));
+var _loaderObj = require("../../../src/engine/loader-obj.js");
+var _utils = require("../../../src/engine/utils.js");
+var _jambScript = require("./jamb-script.js");
+var _raycast = require("../../../src/engine/raycast.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 let application = exports.application = new _world.default({
   useSingleRenderPass: true,
@@ -1830,14 +1828,7 @@ let application = exports.application = new _world.default({
     y: 0,
     z: -10
   };
-  const LIGHT_COLORS = [[10.0, 0.2, 0.2],
-  // red
-  [1.0, 10.6, 0.1],
-  // orange
-  [0.2, 0.2, 11.0],
-  // blue
-  [1.0, 11.0, 0.1] // yellow
-  ];
+  const LIGHT_COLORS = [[10.0, 0.2, 0.2], [1.0, 10.6, 0.1], [0.2, 0.2, 11.0], [1.0, 11.0, 0.1]];
   for (let i = 0; i < NUM_LIGHTS; i++) {
     application.addLight();
     application.lightContainer[i].outerCutoff = 0.8;
@@ -1847,9 +1838,6 @@ let application = exports.application = new _world.default({
     application.lightContainer[i].setTargetZ(-20);
     application.lightContainer[i].setPosY(25);
   }
-
-  // application.addLight();
-
   application.makeMyLightMoveByY = () => {
     for (let i = 0; i < NUM_LIGHTS; i++) {
       const light = application.lightContainer[i];
@@ -1861,7 +1849,6 @@ let application = exports.application = new _world.default({
       const heightOffset = Math.sin(angleOffset) * 2;
       light.setPosition(TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS, 4 + heightOffset, TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS);
       light.setTarget(TARGET.x, TARGET.y, TARGET.z);
-
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
       light.updater.push(light => {
@@ -1874,7 +1861,20 @@ let application = exports.application = new _world.default({
       });
     }
   };
-  application.disableMyLightMoveByY = () => {};
+  application.disableMyLightMoveByY = () => {
+    for (let i = 0; i < NUM_LIGHTS; i++) {
+      const light = application.lightContainer[i];
+      light.updater = [];
+      if (i === 0) {
+        light.setIntensity(8.5);
+        light.setPosition(0, 18, -11);
+        light.setTarget(0, 2, -21);
+      } else {
+        // Disable remaining lights
+        light.setIntensity(0);
+      }
+    }
+  };
   application.globalAmbient[0] = 1.7;
   application.globalAmbient[1] = .7;
   application.globalAmbient[2] = .5;
@@ -1928,7 +1928,7 @@ let application = exports.application = new _world.default({
         if (attempts > 60) {
           resolve();
           return;
-        } // ~10s hard timeout
+        }
         const is = await application.matrixPhysics.isSleeping(bodyId);
         if (is) {
           resolve();
@@ -1936,7 +1936,7 @@ let application = exports.application = new _world.default({
           setTimeout(check, 150);
         }
       };
-      setTimeout(check, 4000); // first check after 1s
+      setTimeout(check, 4000);
     });
     await waitForSleep();
     application.matrixPhysics._onGroundContact(diceName, bodyId);
@@ -1996,7 +1996,7 @@ let application = exports.application = new _world.default({
     _jambScript.myDom.createJamb();
     _jambScript.myDom.addDraggerForTable();
     _jambScript.myDom.createBlocker();
-    app.matrixPhysics.speedUpSimulation(2);
+    app.matrixPhysics.speedUpSimulation(5);
     (0, _loaderObj.downloadMeshes)({
       cube: "./res/meshes/jamb/dice.obj"
     }, onLoadObj, {
@@ -2096,7 +2096,7 @@ let application = exports.application = new _world.default({
         y: 0,
         z: 0
       },
-      scale: [15, 10, 2],
+      scale: [15, 12, 2],
       useScale: false,
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'wallCenter',
@@ -2181,7 +2181,7 @@ let application = exports.application = new _world.default({
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
     // Add dices
-    const diceScale = [1.1, 1.1, 1.1];
+    const diceScale = [0.8, 0.8, 0.8];
     application.addMeshObj({
       position: {
         x: 0,
@@ -2453,9 +2453,9 @@ let application = exports.application = new _world.default({
     function shootDice(x) {
       setTimeout(() => {
         const body = app.matrixPhysics.getBodyByName(`CubePhysics${x}`);
-        app.matrixPhysics.shootBody(body, (0, _utils.randomFloatFromTo)(-4, 4), (0, _utils.randomIntFromTo)(25, 30), (0, _utils.randomIntFromTo)(-45, -65),
+        app.matrixPhysics.shootBody(body, (0, _utils.randomFloatFromTo)(-5, 15), (0, _utils.randomIntFromTo)(35, 45), (0, _utils.randomIntFromTo)(-55, -65),
         // linear
-        (0, _utils.randomFloatFromTo)(3, 12), (0, _utils.randomIntFromTo)(12, 20), 9 // angular
+        (0, _utils.randomFloatFromTo)(5, 15), (0, _utils.randomIntFromTo)(50, 60), 20 // angular
         );
         setTimeout(() => app.matrixSounds.play('roll'), 100);
       }, 100 * x);
@@ -2529,7 +2529,7 @@ let application = exports.application = new _world.default({
 });
 window.app = application;
 
-},{"./examples/games/jamb/jamb-script.js":2,"./src/engine/loader-obj.js":43,"./src/engine/raycast.js":62,"./src/engine/utils.js":63,"./src/world.js":116}],4:[function(require,module,exports){
+},{"../../../src/engine/loader-obj.js":43,"../../../src/engine/raycast.js":62,"../../../src/engine/utils.js":63,"../../../src/world.js":116,"./jamb-script.js":2}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36271,6 +36271,8 @@ class PhysicsBridge {
       }
     };
     this.detectCollision = e => {};
+    this.collisionPersisted = e => {};
+    this.collisionRemoved = e => {};
     this.tempRot = _wgpuMatrix.mat4.create();
     this._paused = false;
     this.updates = [];
@@ -36739,6 +36741,20 @@ class PhysicsBridge {
         this.pCollisionEventArg.detail.body1Name = data.body1Name;
         this.pCollisionEventArg.detail.rayDirection = data.normal;
         this.detectCollision(this.pCollisionEventArg);
+        break;
+      case 'collisionPersisted':
+        // only jolt
+        this.pCollisionEventArg.detail.body0Name = data.body0Name;
+        this.pCollisionEventArg.detail.body1Name = data.body1Name;
+        this.pCollisionEventArg.detail.rayDirection = null;
+        this.collisionPersisted(this.pCollisionEventArg);
+        break;
+      case 'collisionRemoved':
+        // only jolt
+        this.pCollisionEventArg.detail.body0Name = data.body0ID;
+        this.pCollisionEventArg.detail.body1Name = data.body1ID;
+        this.pCollisionEventArg.detail.rayDirection = null;
+        this.collisionRemoved(this.pCollisionEventArg);
         break;
       case 'constraintAdded':
         this._pending.get(data.id)?.(data.idx);

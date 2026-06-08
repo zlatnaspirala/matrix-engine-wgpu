@@ -50,7 +50,7 @@ class MatrixJolt {
     this.joltInterface = null;
     this.physicsSystem = null;
     this.bodyInterface = null;
-    this.setSpeedUp = 3;
+    this.speedUp = 3;
     this.options = {roundDimension: 100, gravity: 10};
     this._sab = null;
     this._snapshot = null;
@@ -127,11 +127,26 @@ class MatrixJolt {
     };
 
     contactListener.OnContactPersisted = (body1Ptr, body2Ptr, manifoldPtr, settingsPtr) => {
-      // Triggered every step the bodies remain in contact
+      const b1 = Jolt.wrapPointer(body1Ptr, Jolt.Body);
+      const b2 = Jolt.wrapPointer(body2Ptr, Jolt.Body);
+      if(!b1.name) b1.name = "NO_NAME";
+      if(!b2.name) b2.name = "NO_NAME";
+      self.postMessage({
+        cmd: "collisionPersisted",
+        body0Name: b1.name,
+        body1Name: b2.name,
+      });
     };
 
     contactListener.OnContactRemoved = (subShapePairPtr) => {
-      // Your cleanup logic here
+      const pair = Jolt.wrapPointer(subShapePairPtr, Jolt.SubShapeIDPair);
+      const b1ID = pair.GetBody1ID().GetIndexAndSequenceNumber();
+      const b2ID = pair.GetBody2ID().GetIndexAndSequenceNumber();
+      self.postMessage({
+        cmd: "collisionRemoved",
+        body0ID: b1ID,
+        body1ID: b2ID,
+      });
     };
 
     contactListener.OnContactAdded = (bodyA, bodyB, manifold, settings) => {
@@ -586,8 +601,6 @@ class MatrixJolt {
       return;
     }
     const t = body.GetWorldTransform().GetTranslation();
-    const pos = this.bodyInterface.GetPosition(body.GetID());
-    console.log(pos.GetX(), pos.GetY(), pos.GetZ());
     self.postMessage({cmd: 'getPosition', id: msgID, position: {x: t.GetX(), y: t.GetY(), z: t.GetZ()}});
   }
 
@@ -634,7 +647,7 @@ class MatrixJolt {
   }
 
   speedUpSimulation(v) {
-    this.setSpeedUp = v;
+    this.speedUp = v;
   }
 
   removeRigidBody(idx) {
@@ -645,7 +658,7 @@ class MatrixJolt {
 
   step() {
     if(!this.joltInterface) return;
-    for(let i = 0;i < this.setSpeedUp;i++) {
+    for(let i = 0;i < this.speedUp;i++) {
       this.joltInterface.Step(1 / 30, 1);
     }
     const snap = this._snapshot;
@@ -710,8 +723,7 @@ self.onmessage = async ({data}) => {
     case 'speedUpSimulation': jolt.speedUpSimulation(data.value); break;
     case 'removeRigidBody': jolt.removeRigidBody(data.idx, data.flags); break;
     case 'createChain': jolt.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
-    // new
-    case 'isSleeping': jolt.isSleeping(data.idx); break;
+    case 'isSleeping': jolt.isSleeping(data.idx, data.id); break;
     case 'switchToKinematic': jolt.switchToKinematic(data.idx); break;
     case 'switchToDinamic': jolt.switchToDinamic(data.idx); break;
     case 'lotteryMachineShake': jolt.lotteryMachineShake(data.ids, data.strength); break;

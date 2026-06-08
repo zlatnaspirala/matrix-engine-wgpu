@@ -1,12 +1,12 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "1.14.1",
+  "version": "1.15.7",
   "description": "Culling 1.14.0 , HZB Ray 1.12.0 MOBA MOBILE ADAPTATION 1.11.0 Big upgrade 1.9.5 ProceduralMesh Morph - 1.9.1 Env maps, 1.9.0 au gen graph tool backend ollama free service. 1.8.8 [setMaterial, water effect, shaderEditor done, audiosReactive node low, mid, high, beat, curve node and curve editor] 1.8.4[Bloom implemented] [1.8.2]For visual scripting added fetch, getArra and forEach. Networking implemented - based on kurento openvidu server. fix arcball camera,instanced draws added also effect pipeline blend with instancing option.Normalmap added, Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "scripts": {
     "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
     "examples": "watchify examples.js -p [esmify --noImplicitAny] -o public/examples.js",
-    "main": "watchify main.js -p [esmify --noImplicitAny] -o public/app.js",
+    "jamb": "watchify ./examples/games/jamb/jamb.js -p [esmify --noImplicitAny] -o public/yacht.js",
     "demo1": "watchify demo1.js -p [esmify --noImplicitAny] -o public/app.js",
     "empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
     "build.jamb": "browserify main.js -p esmify > public/app.js",
@@ -91,6 +91,9 @@
     "create-webgpu-from-graphs",
     "canvas-texture",
     "video-texture",
-    "camera-texture"
+    "camera-texture",
+    "free-games",
+    "free-js-games-code",
+    "open-source-games"
   ]
 }
