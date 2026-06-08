@@ -85,13 +85,9 @@ export let dices = {
         break;
       }
     }
-    console.log('test checkall !!!!!!!!!!!allReady ', allReady)
-    // Dynamic threshold: min wait time based on rolling dice
-    const minWait = 5;
-    const keys = Object.keys(this.R);
-    const count = keys.length;
-    if(allReady && this.C > minWait) {
-      console.log('test checkall all done ')
+    // console.log('allReady ', allReady)
+    if(allReady && this.C > activeRollingCount) {
+      // console.log('test checkall all done ')
       dispatchEvent(dices.allDoneEvent);
       this.C = 0;
     }
@@ -136,7 +132,7 @@ export let myDom = {
     if(byId('up-rowNumber1').innerHTML != '-' &&
       byId('down-jamb').innerHTML != '-') {
       dispatchEvent(new CustomEvent('updateTitle', {detail: {text: 'Game finished.', status: 'finished'}}));
-      console.log('GAME END!!')
+      console.log('GAME END!')
       return true;
     }
   },
@@ -1727,3 +1723,5 @@ export let myDom = {
     });
   }
 }
+
+// app.makeMyLightMoveByY()

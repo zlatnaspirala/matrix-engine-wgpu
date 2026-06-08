@@ -35,15 +35,14 @@ export let application = new MatrixEngineWGPU({
   const TARGET = {x: 0, y: 0, z: -10};
 
   const LIGHT_COLORS = [
-    [10.0, 0.2, 0.2],  // red
-    [1.0, 10.6, 0.1],  // orange
-    [0.2, 0.2, 11.0],  // blue
-    [1.0, 11.0, 0.1],  // yellow
+    [10.0, 0.2, 0.2],
+    [1.0, 10.6, 0.1],
+    [0.2, 0.2, 11.0],
+    [1.0, 11.0, 0.1],
   ];
 
   for(let i = 0;i < NUM_LIGHTS;i++) {
     application.addLight();
-
     application.lightContainer[i].outerCutoff = 0.8;
     application.lightContainer[i].setPosZ(-10);
     application.lightContainer[i].setPosX(-2 + i * 2);
@@ -51,9 +50,6 @@ export let application = new MatrixEngineWGPU({
     application.lightContainer[i].setTargetZ(-20);
     application.lightContainer[i].setPosY(25);
   }
-
-  // application.addLight();
-
 
   application.makeMyLightMoveByY = () => {
     for(let i = 0;i < NUM_LIGHTS;i++) {
@@ -70,10 +66,8 @@ export let application = new MatrixEngineWGPU({
         TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
       );
       light.setTarget(TARGET.x, TARGET.y, TARGET.z);
-
       // Each light orbits at its own phase offset
       light.orbitAngle = angleOffset;
-
       light.updater.push((light) => {
         light.orbitAngle += ORBIT_SPEED * 0.01;
         const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
@@ -86,7 +80,18 @@ export let application = new MatrixEngineWGPU({
   }
 
   application.disableMyLightMoveByY = () => {
-
+    for(let i = 0;i < NUM_LIGHTS;i++) {
+      const light = application.lightContainer[i];
+      light.updater = [];
+      if(i === 0) {
+        light.setIntensity(8.5);
+        light.setPosition(0, 18, -11);
+        light.setTarget(0, 2, -21);
+      } else {
+        // Disable remaining lights
+        light.setIntensity(0);
+      }
+    }
   };
 
   application.globalAmbient[0] = 1.7;
@@ -142,7 +147,7 @@ export let application = new MatrixEngineWGPU({
       let attempts = 0;
       const check = async () => {
         attempts++;
-        if(attempts > 60) {resolve(); return;} // ~10s hard timeout
+        if(attempts > 60) {resolve(); return;}
         const is = await application.matrixPhysics.isSleeping(bodyId);
         if(is) {
           resolve();
@@ -150,7 +155,7 @@ export let application = new MatrixEngineWGPU({
           setTimeout(check, 150);
         }
       };
-      setTimeout(check, 4000); // first check after 1s
+      setTimeout(check, 4000);
     });
 
     await waitForSleep();
@@ -220,7 +225,7 @@ export let application = new MatrixEngineWGPU({
     myDom.createJamb();
     myDom.addDraggerForTable();
     myDom.createBlocker();
-    app.matrixPhysics.speedUpSimulation(2);
+    app.matrixPhysics.speedUpSimulation(5);
 
     downloadMeshes({
       cube: "./res/meshes/jamb/dice.obj",
@@ -283,7 +288,7 @@ export let application = new MatrixEngineWGPU({
     application.addMeshObj({
       position: {x: 0, y: 5, z: -28},
       rotation: {x: 0, y: 0, z: 0},
-      scale: [15, 10, 2],
+      scale: [15, 12, 2],
       useScale: false,
       texturesPaths: ['./res/meshes/jamb/text.png'],
       name: 'wallCenter',
@@ -342,7 +347,7 @@ export let application = new MatrixEngineWGPU({
   function onLoadObj(m) {
     application.myLoadedMeshes = m;
     // Add dices
-    const diceScale = [1.1, 1.1, 1.1];
+    const diceScale = [0.8, 0.8, 0.8];
     application.addMeshObj({
       position: {x: 0, y: 6, z: -10},
       rotation: {x: 0, y: 0, z: 0},
@@ -543,8 +548,8 @@ export let application = new MatrixEngineWGPU({
         const body = app.matrixPhysics.getBodyByName(`CubePhysics${x}`);
         app.matrixPhysics.shootBody(
           body,
-          randomFloatFromTo(-4, 4), randomIntFromTo(25, 30), randomIntFromTo(-45, -65), // linear
-          randomFloatFromTo(3, 12), randomIntFromTo(12, 20), 9                           // angular
+          randomFloatFromTo(-5, 15), randomIntFromTo(35, 45), randomIntFromTo(-55, -65), // linear
+          randomFloatFromTo(5, 15), randomIntFromTo(50, 60), 20                          // angular
         );
         setTimeout(() => app.matrixSounds.play('roll'), 100);
       }, 100 * x)

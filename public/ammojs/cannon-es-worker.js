@@ -208,8 +208,8 @@ class MatrixCannon {
     body.allowSleep = true;
     body.sleepSpeedLimit = 0.1;
     body.sleepTimeLimit = 0.5;
-    body.angularDamping = 0.9;
-    body.linearDamping = 0.9;
+    body.angularDamping = 0.5;
+    body.linearDamping = 0.8;
     this.world.addBody(body);
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
@@ -493,7 +493,6 @@ class MatrixCannon {
       c.disableMotor();
     }
     c.setMotorSpeed(targetVel);
-    console.log('C props:', c);
     if(maxTorque != null) c.setMotorMaxForce(maxTorque);
   }
 
@@ -737,7 +736,6 @@ class MatrixCannon {
     const b = this.rigidBodies[idx];
     if(b) {
       if(b.sleepState === 2) {
-        console.log("The object is currently asleep.");
         self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});
       } else {
         self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});

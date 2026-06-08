@@ -35,9 +35,11 @@ export var loadDrumCannon = function() {
         side2: "./res/meshes/obj/drumpart2.obj",
         drum: "./res/meshes/blender/drum.obj"
       }, onGround, {scale: [1, 1, 1]})
-      // DRUM.matrixPhysics.speedUpSimulation(4);
 
-      if (isMobile() === false) app.physicsBodiesChain('standard', {x: -25, y: 40, z: -15}, undefined, ['./res/textures/star-fantazy.png']);
+      if(isMobile() === false) {
+        app.physicsBodiesChain('standard', {x: -25, y: 40, z: -15}, undefined, ['./res/textures/star-fantazy.png']);
+        app.matrixPhysics.speedUpSimulation(5);
+      }
     })
 
     async function onGround(m) {
@@ -259,9 +261,9 @@ export var loadDrumCannon = function() {
         DRUM.drumFinal.effects.flameEffect.setGeometry(randomType, 10);
         DRUM.drumFinal.effects.flameEmitter.recreateVertexDataCrazzy(5);
 
-        DRUM.drumFinal.effects.kale = new KaleidoscopeEmitter(DRUM.device, 'rgba16float', 30, DRUM.cameraBuffer);
-        DRUM.drumFinal.effects.kale.recreateVertexDataCrazzy(randomIntFromTo(1, 3));
-        DRUM.drumFinal.effects.kale.setIntensity(randomIntFromTo(1, 6));
+        // DRUM.drumFinal.effects.kale = new KaleidoscopeEmitter(DRUM.device, 'rgba16float', 30, DRUM.cameraBuffer);
+        // DRUM.drumFinal.effects.kale.recreateVertexDataCrazzy(randomIntFromTo(1, 3));
+        // DRUM.drumFinal.effects.kale.setIntensity(randomIntFromTo(1, 6));
 
 
         const checker2 = floor.createCheckerboardTexture(256, 128, [0, 10, 0, 0], [120, 0, 0, 255]);

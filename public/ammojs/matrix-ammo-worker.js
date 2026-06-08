@@ -10,9 +10,7 @@ class MatrixAmmoWorker {
     this.dynamicsWorld = null;
     this.rigidBodies = [];
     this.speedUp = 1;
-    this.speedUpSimulation = (v) => {
-      this.speedUp = v;
-    }
+    this.speedUpSimulation = (v) => {this.speedUp = v;}
     this.maxSubSteps = 1;
     this.options = {roundDimensionX: 100, roundDimensionY: 100, gravity: -10};
     this._snapshot = null;
@@ -23,13 +21,10 @@ class MatrixAmmoWorker {
     this._origin = null;
     this._quat = null;
     this._axis = null;
-
     this._pivotsA = null;
     this._pivotsB = null;
-
     this.lastCollisionState = new Set();
     this._currentCollisions = new Set();
-
     this._keyColl = '';
   }
 
@@ -76,10 +71,6 @@ class MatrixAmmoWorker {
     this.dynamicsWorld.addRigidBody(groundBody, group, mask);
     if(!this.ptrToName) this.ptrToName = new Map();
     this.ptrToName.set(Ammo.getPointer(groundBody), 'ground');
-  }
-
-  speedUpSimulation(v) {
-    this.speedUp = v;
   }
 
   _allocBuffer(bodyCount) {
@@ -592,7 +583,6 @@ class MatrixAmmoWorker {
     const body = this.rigidBodies[idx];
     if(!body) return;
     if(body.isActive()) {
-      console.log("The body is moving or active.");
       self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: false});
     } else {
       self.postMessage({cmd: 'isSleeping', id: msgID, isSleeping: true});

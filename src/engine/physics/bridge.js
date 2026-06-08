@@ -28,6 +28,8 @@ export class PhysicsBridge {
       }
     };
     this.detectCollision = (e) => {};
+    this.collisionPersisted = (e) => {};
+    this.collisionRemoved = (e) => {};
     this.tempRot = mat4.create();
     this._paused = false;
     this.updates = [];
@@ -327,6 +329,18 @@ export class PhysicsBridge {
         this.pCollisionEventArg.detail.body1Name = data.body1Name;
         this.pCollisionEventArg.detail.rayDirection = data.normal;
         this.detectCollision(this.pCollisionEventArg);
+        break;
+      case 'collisionPersisted': // only jolt
+        this.pCollisionEventArg.detail.body0Name = data.body0Name;
+        this.pCollisionEventArg.detail.body1Name = data.body1Name;
+        this.pCollisionEventArg.detail.rayDirection = null;
+        this.collisionPersisted(this.pCollisionEventArg);
+        break;
+      case 'collisionRemoved': // only jolt
+        this.pCollisionEventArg.detail.body0Name = data.body0ID;
+        this.pCollisionEventArg.detail.body1Name = data.body1ID;
+        this.pCollisionEventArg.detail.rayDirection = null;
+        this.collisionRemoved(this.pCollisionEventArg);
         break;
       case 'constraintAdded':
         this._pending.get(data.id)?.(data.idx);
