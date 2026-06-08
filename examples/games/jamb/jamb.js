@@ -1,8 +1,8 @@
-import MatrixEngineWGPU from "./src/world.js";
-import {downloadMeshes} from './src/engine/loader-obj.js';
-import {byId, LOG_FUNNY, mb, randomFloatFromTo, randomIntFromTo} from "./src/engine/utils.js";
-import {dices, myDom} from "./examples/games/jamb/jamb-script.js";
-import {addRaycastsAABBListener, addRaycastsListener} from "./src/engine/raycast.js";
+import MatrixEngineWGPU from "../../../src/world.js";
+import {downloadMeshes} from '../../../src/engine/loader-obj.js';
+import {byId, LOG_FUNNY, mb, randomFloatFromTo, randomIntFromTo} from "../../../src/engine/utils.js";
+import {dices, myDom} from "./jamb-script.js";
+import {addRaycastsAABBListener, addRaycastsListener} from "../../../src/engine/raycast.js";
 
 export let application = new MatrixEngineWGPU({
   useSingleRenderPass: true,
@@ -192,25 +192,19 @@ export let application = new MatrixEngineWGPU({
       application.dices.STATUS == "SELECT_DICES_2" ||
       application.dices.STATUS == "FINISHED") {
 
-
       const allNames = Object.keys(application.dices.SAVED_DICES);
       if(allNames.indexOf(e.detail.hitObject.name) !== -1) {
-        // -
         console.log("UNPICK2 THIS.", e.detail.hitObject.name)
         application.dices.unPickDice(e.detail.hitObject.name)
         return;
       } else {
-
         if(Object.keys(application.dices.SAVED_DICES).length >= 5) {
           console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name)
           return;
         }
-
         console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name)
         application.dices.pickDice(e.detail.hitObject.name)
       }
-
-
     }
   });
 

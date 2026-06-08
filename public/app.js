@@ -1971,7 +1971,6 @@ let application = exports.application = new _world.default({
     } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2" || application.dices.STATUS == "FINISHED") {
       const allNames = Object.keys(application.dices.SAVED_DICES);
       if (allNames.indexOf(e.detail.hitObject.name) !== -1) {
-        // -
         console.log("UNPICK2 THIS.", e.detail.hitObject.name);
         application.dices.unPickDice(e.detail.hitObject.name);
         return;
