@@ -10,6 +10,13 @@ export let settingsBox = `
         <span class="sliderSwitch round"></span>
       </label>
     </div>
+    <div>
+      <span data-label="lightMove"></span>
+      <label class="switch">
+        <input id="settingsLight" type="checkbox">
+        <span class="sliderSwitch round"></span>
+      </label>
+    </div>
       <div style="margin-top:20px;margin-bottom:15px;">
         <span style="font-size: larger;margin-bottom:15px" data-label="graphics"></span>
         <p></p>
@@ -103,7 +110,7 @@ export let settingsBox = `
       </button>
     </div>
 
-    <img src="res/icons/512.webp" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
+    <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
   </div>
 </div>`;
 
@@ -112,7 +119,7 @@ export let welcomeBoxHTML =
      <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
      <div style="display:flex;flex-direction:column;align-items: center;margin:20px;padding: 10px;">
        <span style="width:100%" data-label="choosename"></span>
-       <input style="text-align: center;height:50px;font-size:100%;width:250px" class="fancy-label" type="text" value="Guest" />
+       <input id='nickId' style="text-align: center;height:50px;font-size:100%;width:250px" class="fancy-label" type="text" value="" />
       </div>
      <button id="startFromWelcome" class="btn" ><span style="font-size:30px;margin:15px;padding:10px" data-label="startGame"></span></button> <br>
      <div><span class="fancy-label" data-label="changeLang"></span></div> 

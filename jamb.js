@@ -8,7 +8,7 @@ export let application = new MatrixEngineWGPU({
   useSingleRenderPass: true,
   canvasSize: 'fullscreen',
   useCannon: true,
-  MAX_SPOTLIGHTS: 1,
+  MAX_SPOTLIGHTS: 4,
   MAX_BONES: 0,
   mainCameraParams: {
     type: 'WASD',
@@ -20,13 +20,75 @@ export let application = new MatrixEngineWGPU({
     detail: {text: '', status: 'FREE'}
   });
   application.DICE_ROLL_EVENT = new CustomEvent('DICE.ROLL', {});
+  application.diceFaceEvents = [
+    new CustomEvent(`dice-1`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-2`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-3`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-4`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-5`, {detail: {result: ``, cubeId: ''}}),
+    new CustomEvent(`dice-6`, {detail: {result: ``, cubeId: ''}})
+  ];
 
-  application.addLight();
-  application.lightContainer[0].outerCutoff = 0.8;
-  application.lightContainer[0].setPosZ(-10);
-  application.lightContainer[0].setIntensity(4);
-  application.lightContainer[0].setTargetZ(-20);
-  application.lightContainer[0].setPosY(25);
+  const NUM_LIGHTS = 4;
+  const ORBIT_RADIUS = 8;
+  const ORBIT_SPEED = 0.6;
+  const TARGET = {x: 0, y: 0, z: -10};
+
+  const LIGHT_COLORS = [
+    [10.0, 0.2, 0.2],  // red
+    [1.0, 10.6, 0.1],  // orange
+    [0.2, 0.2, 11.0],  // blue
+    [1.0, 11.0, 0.1],  // yellow
+  ];
+
+  for(let i = 0;i < NUM_LIGHTS;i++) {
+    application.addLight();
+
+    application.lightContainer[i].outerCutoff = 0.8;
+    application.lightContainer[i].setPosZ(-10);
+    application.lightContainer[i].setPosX(-2 + i * 2);
+    application.lightContainer[i].setIntensity(2);
+    application.lightContainer[i].setTargetZ(-20);
+    application.lightContainer[i].setPosY(25);
+  }
+
+  // application.addLight();
+
+
+  application.makeMyLightMoveByY = () => {
+    for(let i = 0;i < NUM_LIGHTS;i++) {
+      const light = application.lightContainer[i];
+      const angleOffset = (i / NUM_LIGHTS) * Math.PI * 2;
+      const color = LIGHT_COLORS[i];
+      light.setIntensity(8.5);
+      light.color = color;
+      // Orbit height varies slightly per light for more visual interest
+      const heightOffset = Math.sin(angleOffset) * 2;
+      light.setPosition(
+        TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
+        4 + heightOffset,
+        TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
+      );
+      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
+
+      // Each light orbits at its own phase offset
+      light.orbitAngle = angleOffset;
+
+      light.updater.push((light) => {
+        light.orbitAngle += ORBIT_SPEED * 0.01;
+        const height = 4 + Math.sin(light.orbitAngle + angleOffset) * 2;
+        const x = TARGET.x + Math.cos(light.orbitAngle) * ORBIT_RADIUS;
+        const z = TARGET.z + Math.sin(light.orbitAngle) * ORBIT_RADIUS;
+        light.setPosition(x, height, z);
+        light.setTarget(TARGET.x, TARGET.y, TARGET.z);
+      });
+    }
+  }
+
+  application.disableMyLightMoveByY = () => {
+
+  };
+
   application.globalAmbient[0] = 1.7;
   application.globalAmbient[1] = .7;
   application.globalAmbient[2] = .5;
@@ -35,7 +97,7 @@ export let application = new MatrixEngineWGPU({
   application.bloomPass.setBlurRadius(1);
 
   // const diceTexturePath = './res/meshes/jamb/gemini-dice.webp';
-  const diceTexturePath = './res/meshes/jamb/dice2.webp';
+  const diceTexturePath = './res/meshes/jamb/dice3.webp';
 
   // Dom operations
   application.userState = {
@@ -45,57 +107,6 @@ export let application = new MatrixEngineWGPU({
   application.myDom = myDom;
   application.dices = dices;
   application.activateDiceClickListener = null;
-
-  // Detect which face is on top from a plain quaternion {x, y, z, w}
-  // application.matrixPhysics.detectTopFaceFromQuat = (q) => {
-
-  //   // 1. Get the direction each face is pointing in World Space
-  //   const worldRight = new CANNON.Vec3(1, 0, 0);
-  //   const worldUp    = new CANNON.Vec3(0, 1, 0);
-  //   const worldFwd   = new CANNON.Vec3(0, 0, 1);
-
-  //   // 2. Rotate these by the body's orientation
-  //   body.quaternion.vmult(worldRight, worldRight);
-  //   body.quaternion.vmult(worldUp, worldUp);
-  //   body.quaternion.vmult(worldFwd, worldFwd);
-
-  //   // 3. The face with the highest Y value (pointing at the sky) is the winner
-  //   const candidates = [
-  //       { face: 1, vec: worldUp },    // Top
-  //       { face: 6, vec: worldUp.negate() }, // Bottom
-  //       { face: 2, vec: worldRight }, // Right
-  //       { face: 5, vec: worldRight.negate() }, // Left
-  //       { face: 3, vec: worldFwd },   // Front
-  //       { face: 4, vec: worldFwd.negate() }    // Back
-  //   ];
-
-  //   return candidates.reduce((best, current) => 
-  //       current.vec.y > best.vec.y ? current : best
-  //   ).face;
-
-  //   return;
-  //   const faces = [
-  //     {face: 1, vec: [0, 1, 0]},
-  //     {face: 2, vec: [0, -1, 0]},
-  //     {face: 3, vec: [0, 0, 1]},
-  //     {face: 4, vec: [0, 0, -1]},
-  //     {face: 5, vec: [1, 0, 0]},
-  //     {face: 6, vec: [-1, 0, 0]}
-  //   ];
-
-  //   let maxDot = -Infinity;
-  //   let topFace = null;
-
-  //   for(const f of faces) {
-  //     const v = application.matrixPhysics.applyQuatToVec(q, f.vec);
-  //     if(v.y > maxDot) {
-  //       maxDot = v.y;
-  //       topFace = f.face;
-  //     }
-  //   }
-
-  //   return topFace;
-  // };
 
   application.matrixPhysics.applyQuatToVec = (q, vec) => {
     const [x, y, z] = vec;
@@ -116,30 +127,44 @@ export let application = new MatrixEngineWGPU({
   application.matrixPhysics.detectCollision = async (e) => {
     const body0Name = e.detail.body0Name;
     const body1Name = e.detail.body1Name;
-    let diceName = null;
-    if(body0Name === 'ground') {diceName = body1Name;}
-    if(body1Name === 'ground') {diceName = body0Name;}
-    if(!diceName) return;
+    let diceName = false;
+    if(body0Name === 'ground') diceName = body1Name;
+    if(body1Name === 'ground') diceName = body0Name;
+    if(diceName === false) {
+      console.log('prevent no ground')
+      return;
+    }
+
     const bodyId = application.matrixPhysics.getBodyByName(diceName);
     if(bodyId == null) return;
-    setTimeout(async () => {
-      const is = await application.matrixPhysics.isSleeping(bodyId);
-      if(is === false) {return;}
-      const q = await application.matrixPhysics.getQuaternion(bodyId);
-      if(!q) return;
-      const quatPlain = {x: q.x, y: q.y, z: q.z, w: q.w};
-      application.matrixPhysics._onGroundContact(diceName, quatPlain, bodyId);
-    }, 2000);
+
+    const waitForSleep = () => new Promise((resolve) => {
+      let attempts = 0;
+      const check = async () => {
+        attempts++;
+        if(attempts > 60) {resolve(); return;} // ~10s hard timeout
+        const is = await application.matrixPhysics.isSleeping(bodyId);
+        if(is) {
+          resolve();
+        } else {
+          setTimeout(check, 150);
+        }
+      };
+      setTimeout(check, 4000); // first check after 1s
+    });
+
+    await waitForSleep();
+    application.matrixPhysics._onGroundContact(diceName, bodyId);
   };
 
-  application.matrixPhysics._onGroundContact = async (bodyName, quatPlain, bodyId) => {
+  application.matrixPhysics._onGroundContact = async (bodyName, bodyId) => {
     const face = await application.matrixPhysics.getDiceFace(bodyId);
-    console.log('TEST FACE', face)
+    console.log('FACE: ', face)
     if(face) {
       application.matrixPhysics.lastRoll = face.toString();
-      dispatchEvent(new CustomEvent(`dice-${face}`, {
-        detail: {result: `dice-${face}`, cubeId: bodyName}
-      }));
+      application.diceFaceEvents[face - 1].detail.result = `dice-${face}`;
+      application.diceFaceEvents[face - 1].detail.cubeId = bodyName;
+      dispatchEvent(application.diceFaceEvents[face - 1]);
     }
   };
 
@@ -203,7 +228,7 @@ export let application = new MatrixEngineWGPU({
 
     downloadMeshes({
       cube: "./res/meshes/jamb/dice.obj",
-    }, onLoadObj, {scale: [0.5, 0.5, 0.5], swap: [null]})
+    }, onLoadObj, {scale: [1, 1, 1], swap: [null]})
 
     downloadMeshes({
       bg: "./res/meshes/shapes/cube.obj",
@@ -318,20 +343,21 @@ export let application = new MatrixEngineWGPU({
     })
   }
 
-  function onLoadObj(m, originScale) {
+  function onLoadObj(m) {
     application.myLoadedMeshes = m;
     // Add dices
+    const diceScale = [1.1, 1.1, 1.1];
     application.addMeshObj({
       position: {x: 0, y: 6, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
       texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics1',
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
-        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -341,13 +367,13 @@ export let application = new MatrixEngineWGPU({
       position: {x: -5, y: 4, z: -14},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
       texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics2',
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
-        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -357,13 +383,13 @@ export let application = new MatrixEngineWGPU({
       position: {x: 4, y: 8, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
       texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics3',
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
-        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -373,13 +399,13 @@ export let application = new MatrixEngineWGPU({
       position: {x: 3, y: 4, z: -10},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
       texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics4',
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
-        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -389,13 +415,13 @@ export let application = new MatrixEngineWGPU({
       position: {x: -2, y: 4, z: -13},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
       texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics5',
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
-        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -405,13 +431,13 @@ export let application = new MatrixEngineWGPU({
       position: {x: -4, y: 6, z: -9},
       rotation: {x: 0, y: 0, z: 0},
       rotationSpeed: {x: 0, y: 0, z: 0},
+      scale: diceScale,
       texturesPaths: [diceTexturePath],
       useUVShema4x2: true,
       name: 'CubePhysics6',
       mesh: m.cube,
       raycast: {enabled: true, radius: 2},
       physics: {
-        scale: originScale,
         enabled: true,
         geometry: "Cube"
       }
@@ -434,6 +460,7 @@ export let application = new MatrixEngineWGPU({
         app.cameras.WASD.setZ(-18);
         app.cameras.WASD.setY(19);
         app.mainTitle.position.translateByZ(-24);
+        app.cameras.WASD._dirtyAngle = true;
 
         if(dices.STATUS == "FREE_TO_PLAY" || dices.STATUS == "IN_PLAY") {
           dices.STATUS = "SELECT_DICES_1";
@@ -477,6 +504,7 @@ export let application = new MatrixEngineWGPU({
       app.cameras.WASD.setPitch(0);
       app.cameras.WASD.setZ(0);
       app.cameras.WASD.setY(4);
+      app.cameras.WASD._dirtyAngle = true;
 
       app.updateTitleEvent.detail.text = app.label.get.hand1;
       app.updateTitleEvent.detail.status = 'FREE';
@@ -519,10 +547,10 @@ export let application = new MatrixEngineWGPU({
         const body = app.matrixPhysics.getBodyByName(`CubePhysics${x}`);
         app.matrixPhysics.shootBody(
           body,
-          randomFloatFromTo(-4, 4), randomIntFromTo(15, 20), randomIntFromTo(-45, -65), // linear
-          randomFloatFromTo(3, 12), randomIntFromTo(2, 20), 9                           // angular
+          randomFloatFromTo(-4, 4), randomIntFromTo(25, 30), randomIntFromTo(-45, -65), // linear
+          randomFloatFromTo(3, 12), randomIntFromTo(12, 20), 9                           // angular
         );
-        setTimeout(() => app.matrixSounds.play('roll'), 1500);
+        setTimeout(() => app.matrixSounds.play('roll'), 100);
       }, 100 * x)
     }
 
@@ -550,7 +578,12 @@ export let application = new MatrixEngineWGPU({
         console.log('validation fails...');
         return;
       }
+
       if(dices.STATUS == "FREE_TO_PLAY") {
+
+        app.dices.R = {};  // clear previous roll results
+        app.dices.C = 0;
+
         app.matrixSounds.play('start')
         dices.STATUS = "IN_PLAY";
         app.updateTitleEvent.detail.text = app.label.get.hand1;

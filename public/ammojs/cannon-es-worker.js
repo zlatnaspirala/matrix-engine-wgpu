@@ -44,9 +44,7 @@ class MatrixCannon {
     this.CANNON = null;
     this.world = null;
     this.speedUp = 1;
-    this.speedUpSimulation = (v) => {
-      this.speedUp = v;
-    };
+    this.speedUpSimulation = (v) => {this.speedUp = v};
     this.options = {roundDimension: 100, gravity: 10};
     this._snapshot = null;
     this._useSAB = false;
@@ -82,47 +80,32 @@ class MatrixCannon {
 
   _initPhysics(GROUND_Y, iterations = 5, tolerance) {
     const CANNON = this.CANNON;
+
+    this._vecTemp1 = new this.CANNON.Vec3(0, 0, 0);
+    this._v1 = new CANNON.Vec3();
+    this._v2 = new CANNON.Vec3();
+    this._q1 = new CANNON.Quaternion();
+
     this.world = new CANNON.World();
     this.world.gravity.set(0, -this.options.gravity, 0);
-
     // 1. Use standard GSSolver for stability
     const solver = new CANNON.GSSolver();
     solver.iterations = iterations;
     solver.tolerance = tolerance;
     this.world.solver = solver;
-
-    // 2. Softer contacts prevent the "teleporting" / "ghosting" effect
+    // Softer contacts prevent the "teleporting" / "ghosting" effect
     this.world.defaultContactMaterial.contactEquationStiffness = 1e6;
     this.world.defaultContactMaterial.contactEquationRelaxation = 10;
-
-    // 3. ADD THIS: Broadphase optimization for containers
+    // Broadphase optimization for containers
     this.world.broadphase = new CANNON.SAPBroadphase(this.world);
-
     this.world.allowSleep = true;
-
-    // Tweak contact properties. Contact stiffness - use to make softer/harder contacts
-    // this.world.defaultContactMaterial.contactEquationStiffness = 1e9
-    // this.world.defaultContactMaterial.contactEquationRelaxation = 4;
-    // world.quatNormalizeFast = true
-    // world.quatNormalizeSkip = 8    // ...and we do not have to normalize every step.
-
-    // const solver = new CANNON.GSSolver()
-    // solver.iterations = iterations;
-    // solver.tolerance = tolerance;
-    // this.world.solver = new CANNON.SplitSolver(solver)
-
-
     const groundShape = new CANNON.Box(
       new CANNON.Vec3(this.options.roundDimension, 1, this.options.roundDimension)
     );
-    const groundBody = new CANNON.Body({
-      mass: 0,
-      shape: groundShape
-    });
+    const groundBody = new CANNON.Body({mass: 0, shape: groundShape});
     groundBody.position.set(0, GROUND_Y, 0);
     groundBody.collisionFilterGroup = LAYER_WORLD;
     groundBody.collisionFilterMask = LAYER_BALL | LAYER_FLIPPER | LAYER_MOVING;
-
     groundBody.name = 'ground';
     const idx = this.rigidBodies.length;
     this.rigidBodies.push(groundBody);
@@ -135,13 +118,16 @@ class MatrixCannon {
       this._snapshot[base + 2] = 0;
     }
     this.world.addBody(groundBody);
+
+    console.log('groundBody halfExtents:', groundBody.shapes[0].halfExtents);
+    console.log('groundBody position:', groundBody.position);
+
     this.world.addEventListener('beginContact', (e) => {
       const b1Idx = this.bodyMap.get(e.bodyA);
       const b2Idx = this.bodyMap.get(e.bodyB);
       if(b1Idx !== undefined && b2Idx !== undefined) {
         const b1 = this.rigidBodies[b1Idx];
         const b2 = this.rigidBodies[b2Idx];
-        // console.log(`Collision added between Body ${b1Idx} and Body ${b2Idx}`);
         if(!b1.name) b1.name = "NO_NAME";
         if(!b2.name) b2.name = "NO_NAME";
         self.postMessage({
@@ -197,6 +183,7 @@ class MatrixCannon {
     const rx = degToRad(rot.x || 0);
     const ry = degToRad(rot.y || 0);
     const rz = degToRad(rot.z || 0);
+
     const quat = new CANNON.Quaternion();
     quat.setFromEuler(rx, ry, rz);
     const isKinematic = pOptions.kinematic || pOptions.state === 4;
@@ -218,6 +205,7 @@ class MatrixCannon {
     const body = new CANNON.Body(bodyOptions);
     if(pOptions.sensor) body.isSensor = true;
     body.position.set(pos.x, pos.y, pos.z);
+    // body.position.set(pos.x, pos.y, pos.z);
     body.quaternion.copy(quat);
     body.isKinematic = isKinematic;
     // no arg for now
@@ -226,6 +214,13 @@ class MatrixCannon {
     body.sleepTimeLimit = 0.5;
     body.angularDamping = 0.9;
     body.linearDamping = 0.9;
+
+
+    if (pOptions.name.indexOf('CubePhysic') !== -1) {
+    console.log('box halfExtents:', body.shapes[0].halfExtents);
+    console.log('body position:', body.position);
+    }
+
     this.world.addBody(body);
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
@@ -238,10 +233,13 @@ class MatrixCannon {
   }
 
   _addBox(pOptions) {
+    if (pOptions.name.indexOf('CubeP') !== -1) console.log('_addBox scale:', pOptions.scale);
     const s = pOptions.scale || [1, 1, 1];
-    const shape = new this.CANNON.Box(
-      new this.CANNON.Vec3(s[0], s[1], s[2])
-    );
+    const hx = s[0] / 2, hy = s[1] / 2, hz = s[2] / 2;
+    const shape = new this.CANNON.Box(new this.CANNON.Vec3(
+      pOptions.scale[0],
+      pOptions.scale[1],
+      pOptions.scale[2]));
     return this._createBody(pOptions, shape);
   }
 
@@ -298,7 +296,6 @@ class MatrixCannon {
     const v = pOptions.vertices;
     const idx = pOptions.indices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
-    // const [sx, sy, sz] = [1, 1, 1];
     const vertices = [];
     for(let i = 0;i < v.length;i += 3) {
       vertices.push(
@@ -307,26 +304,8 @@ class MatrixCannon {
         v[i + 2] * sz
       );
     }
-
     const shape = new CANNON.ConvexPolyhedron(vertices, idx);
-
     return this._createBody(pOptions, shape);
-    // const body = new CANNON.Body({mass: pOptions.mass});
-    // body.addShape(shape);
-
-    // const rot = pOptions.rotation || {x: 0, y: 0, z: 0};
-    // const rx = degToRad(rot.x || 0);
-    // const ry = degToRad(rot.y || 0);
-    // const rz = degToRad(rot.z || 0);
-    // const quat = new CANNON.Quaternion();
-    // quat.setFromEuler(rx, ry, rz);
-
-    // const pos = pOptions.position || {x: 0, y: 0, z: 0};
-    // body.position.set(pos.x, pos.y, pos.z);
-    // body.quaternion.copy(quat);
-
-    // this.world.addBody(body);
-    // return this._registerBody(body, pOptions);
   }
 
   _addBvhMesh(pOptions) {
@@ -334,17 +313,14 @@ class MatrixCannon {
     const v = pOptions.vertices;
     const idx = pOptions.indices;
     const [sx, sy, sz] = pOptions.scale ?? [1, 1, 1];
-
     const vertices = [];
     for(let i = 0;i < v.length;i += 3) {
       vertices.push(v[i] * sx, v[i + 1] * sy, v[i + 2] * sz);
     }
-
     const indices = [];
     for(let i = 0;i < idx.length;i += 3) {
       indices.push([idx[i], idx[i + 1], idx[i + 2]]);
     }
-
     const shape = new CANNON.Trimesh(vertices, indices);
     const body = new CANNON.Body({mass: 0});
     body.addShape(shape);
@@ -357,10 +333,8 @@ class MatrixCannon {
   applyImpulse(idx, x, y, z) {
     const b = this.rigidBodies[idx];
     if(b) {
-      b.applyImpulse(
-        new this.CANNON.Vec3(x, y, z),
-        b.position
-      );
+
+      b.applyImpulse(new this.CANNON.Vec3(x, y, z), b.position);
     }
   }
 
@@ -570,9 +544,9 @@ class MatrixCannon {
     // Local vectors for the dice faces
     const faces = [
       {face: 5, v: [0, 1, 0]},  // UP
-      {face: 6, v: [0, -1, 0]}, // DOWN
+      {face: 3, v: [0, -1, 0]}, // DOWN
       {face: 2, v: [1, 0, 0]},  // RIGHT
-      {face: 3, v: [-1, 0, 0]}, // LEFT
+      {face: 6, v: [-1, 0, 0]}, // LEFT
       {face: 1, v: [0, 0, 1]},  // FRONT
       {face: 4, v: [0, 0, -1]}  // BACK
     ];
@@ -604,7 +578,6 @@ class MatrixCannon {
       face: bestFace
     });
   }
-
 
   speedUpSimulation(v) {this.speedUpSimulation = v}
 
@@ -838,7 +811,7 @@ class MatrixCannon {
   step() {
     if(!this.world) return;
     for(let i = 0;i < this.speedUp;i++) {
-      this.world.step(1 / 30);
+      this.world.step(1 / 60);
     }
     const snap = this._snapshot;
     if(!snap) return;
@@ -907,11 +880,9 @@ self.onmessage = async ({data}) => {
     case 'getPosition': cannon.getPosition(data.idx, data.id); break;
     case 'getQuaternion': cannon.getQuaternion(data.idx, data.id); break;
     case 'getDiceFace': cannon.getDiceFace(data.idx, data.id); break;
-
     case 'speedUpSimulation': cannon.speedUpSimulation(data.value); break;
     case 'setCollisionFlags': cannon.setCollisionFlags(data.idx, data.flags); break;
     case 'removeRigidBody': cannon.removeRigidBody(data.idx, data.flags); break;
-    // new
     case 'createChain': cannon.createChain(data.ids, data.size, data.mass, data.marginSpace); break;
     case 'createBoundedSpace': cannon.createBoundedSpace(data.ids, data.pos, data.size); break;
     case 'createSphereBoundary': cannon.createSphereBoundary(data.idxs, data.pos, data.radius); break;
