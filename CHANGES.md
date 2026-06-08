@@ -1,6 +1,10 @@
+
 ## CHANGES [Started from feb 2026]
 
+
 [1.15.x]
+ - Jamb (yacht) game synced with last ver of core + mobile supported.
+ - JOLT worker improved for OnContactRemoved and OnContactPersisted (detect) override fn's.
  - geo effects fixed for moba prepare
  - added Sprite2DPAck class
  - no default physics any more must be
