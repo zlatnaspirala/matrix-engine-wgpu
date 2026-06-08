@@ -1916,7 +1916,7 @@ let application = exports.application = new _world.default({
     if (body0Name === 'ground') diceName = body1Name;
     if (body1Name === 'ground') diceName = body0Name;
     if (diceName === false) {
-      console.log('prevent no ground');
+      // console.log('prevent no ground')
       return;
     }
     const bodyId = application.matrixPhysics.getBodyByName(diceName);
@@ -1969,10 +1969,6 @@ let application = exports.application = new _world.default({
         return;
       }
     } else if (application.dices.STATUS == "SELECT_DICES_1" || application.dices.STATUS == "SELECT_DICES_2" || application.dices.STATUS == "FINISHED") {
-      if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
-        console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name);
-        return;
-      }
       const allNames = Object.keys(application.dices.SAVED_DICES);
       if (allNames.indexOf(e.detail.hitObject.name) !== -1) {
         // -
@@ -1980,6 +1976,10 @@ let application = exports.application = new _world.default({
         application.dices.unPickDice(e.detail.hitObject.name);
         return;
       } else {
+        if (Object.keys(application.dices.SAVED_DICES).length >= 5) {
+          console.log("PREVENTED SELECT1/2 pick.", e.detail.hitObject.name);
+          return;
+        }
         console.log("hit cube status SELECT1/2 pick.", e.detail.hitObject.name);
         application.dices.pickDice(e.detail.hitObject.name);
       }

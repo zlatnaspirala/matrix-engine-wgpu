@@ -118,10 +118,6 @@ class MatrixCannon {
       this._snapshot[base + 2] = 0;
     }
     this.world.addBody(groundBody);
-
-    console.log('groundBody halfExtents:', groundBody.shapes[0].halfExtents);
-    console.log('groundBody position:', groundBody.position);
-
     this.world.addEventListener('beginContact', (e) => {
       const b1Idx = this.bodyMap.get(e.bodyA);
       const b2Idx = this.bodyMap.get(e.bodyB);
@@ -214,13 +210,6 @@ class MatrixCannon {
     body.sleepTimeLimit = 0.5;
     body.angularDamping = 0.9;
     body.linearDamping = 0.9;
-
-
-    if (pOptions.name.indexOf('CubePhysic') !== -1) {
-    console.log('box halfExtents:', body.shapes[0].halfExtents);
-    console.log('body position:', body.position);
-    }
-
     this.world.addBody(body);
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
@@ -233,9 +222,8 @@ class MatrixCannon {
   }
 
   _addBox(pOptions) {
-    if (pOptions.name.indexOf('CubeP') !== -1) console.log('_addBox scale:', pOptions.scale);
     const s = pOptions.scale || [1, 1, 1];
-    const hx = s[0] / 2, hy = s[1] / 2, hz = s[2] / 2;
+    // const hx = s[0] / 2, hy = s[1] / 2, hz = s[2] / 2;
     const shape = new this.CANNON.Box(new this.CANNON.Vec3(
       pOptions.scale[0],
       pOptions.scale[1],
