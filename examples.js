@@ -32,6 +32,7 @@ import {loadSprite1} from "./examples/2D-world.js";
 import {loadSprite2} from "./examples/2D-world-matter.js";
 import {loadDrumCannon} from "./examples/drum-cannon.js";
 import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
+import {loadGaussianSplat} from "./examples/gaussian-splat.js";
 
 window.urlQ = urlQuery;
 
@@ -81,7 +82,7 @@ byId('loadKCollision').addEventListener("click", () => switchDemo('22'));
 byId('loadSprite1').addEventListener("click", () => switchDemo('23'));
 byId('loadSprite2').addEventListener("click", () => switchDemo('24'));
 byId('loadDrumCannon').addEventListener("click", () => switchDemo('25'));
-
+byId('loadGaussianSplat').addEventListener("click", () => switchDemo('26'));
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
@@ -138,6 +139,8 @@ if(urlQ['demo'] === '1') {
   loadSprite2();
 } else if(urlQ['demo'] === '25') {
   loadDrumCannon();
+}  else if(urlQ['demo'] === '26') {
+  loadGaussianSplat();
 } else {
   loadObjFile();
 }
