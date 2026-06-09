@@ -27,22 +27,18 @@ export class GaussianSplatLayer {
     this.indexCount = 0;
 
     // Settings
-    this.splatScale = 1.0;
+    this.splatScale =2.0;
     this.depthTest = true;
   }
 
-  /**
-   * Load PLY file from URL or File object
-   */
   async loadPLY(source) {
     try {
       let arrayBuffer;
-
-      if (typeof source === 'string') {
+      if(typeof source === 'string') {
         const response = await fetch(source);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if(!response.ok) throw new Error(`HTTP ${response.status}`);
         arrayBuffer = await response.arrayBuffer();
-      } else if (source instanceof File) {
+      } else if(source instanceof File) {
         arrayBuffer = await source.arrayBuffer();
       } else {
         throw new Error('Source must be URL string or File object');
@@ -50,20 +46,15 @@ export class GaussianSplatLayer {
 
       this.splatData = this._parsePLY(arrayBuffer);
       this.vertexCount = this.splatData.positions.length / 3;
-
       console.log(`✓ Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] → [${this.aabbMax}]`);
-
       await this._initializeGPU();
       return this;
-    } catch (err) {
+    } catch(err) {
       console.error('Splat load error:', err);
       throw err;
     }
   }
 
-  /**
-   * Parse PLY binary format
-   */
   _parsePLY(arrayBuffer) {
     const view = new DataView(arrayBuffer);
     const uint8 = new Uint8Array(arrayBuffer);
@@ -75,16 +66,16 @@ export class GaussianSplatLayer {
     let vertexCount = 0;
     const properties = [];
 
-    for (let i = 0; i < lines.length; i++) {
+    for(let i = 0;i < lines.length;i++) {
       const line = lines[i].trim();
       headerEnd += line.length + 1;
 
-      if (line.startsWith('element vertex')) {
+      if(line.startsWith('element vertex')) {
         vertexCount = parseInt(line.split(' ')[2]);
-      } else if (line.startsWith('property')) {
+      } else if(line.startsWith('property')) {
         const parts = line.split(' ');
-        properties.push({ type: parts[1], name: parts[2] });
-      } else if (line === 'end_header') {
+        properties.push({type: parts[1], name: parts[2]});
+      } else if(line === 'end_header') {
         break;
       }
     }
@@ -99,7 +90,7 @@ export class GaussianSplatLayer {
     const rotations = new Float32Array(vertexCount * 4);
     const opacities = new Uint8Array(vertexCount);
 
-    for (let i = 0; i < vertexCount; i++) {
+    for(let i = 0;i < vertexCount;i++) {
       const offset = dataStart + i * stride;
 
       const x = view.getFloat32(offset + offsets.x, true);
@@ -160,10 +151,10 @@ export class GaussianSplatLayer {
 
   _calculateStride(properties) {
     let stride = 0;
-    for (const prop of properties) {
-      if (prop.type === 'float') stride += 4;
-      else if (prop.type === 'uchar') stride += 1;
-      else if (prop.type === 'double') stride += 8;
+    for(const prop of properties) {
+      if(prop.type === 'float') stride += 4;
+      else if(prop.type === 'uchar') stride += 1;
+      else if(prop.type === 'double') stride += 8;
     }
     return stride;
   }
@@ -172,11 +163,11 @@ export class GaussianSplatLayer {
     const offsets = {};
     let current = 0;
 
-    for (const prop of properties) {
+    for(const prop of properties) {
       offsets[prop.name] = current;
-      if (prop.type === 'float') current += 4;
-      else if (prop.type === 'uchar') current += 1;
-      else if (prop.type === 'double') current += 8;
+      if(prop.type === 'float') current += 4;
+      else if(prop.type === 'uchar') current += 1;
+      else if(prop.type === 'double') current += 8;
     }
 
     return offsets;
@@ -186,14 +177,11 @@ export class GaussianSplatLayer {
     return 1.0 / (1.0 + Math.exp(-x));
   }
 
-  /**
-   * Initialize GPU resources
-   */
   async _initializeGPU() {
     // Vertex buffer: interleaved position + color + scale + rotation
     const vertexData = new Float32Array(this.vertexCount * 14);
 
-    for (let i = 0; i < this.vertexCount; i++) {
+    for(let i = 0;i < this.vertexCount;i++) {
       let idx = i * 14;
       vertexData[idx++] = this.splatData.positions[i * 3 + 0];
       vertexData[idx++] = this.splatData.positions[i * 3 + 1];
@@ -223,7 +211,7 @@ export class GaussianSplatLayer {
     // Index buffer: quads (2 triangles per splat)
     const quadIndices = new Uint16Array(this.vertexCount * 6);
     let idx = 0;
-    for (let i = 0; i < this.vertexCount; i++) {
+    for(let i = 0;i < this.vertexCount;i++) {
       const base = i * 4;
       quadIndices[idx++] = base;
       quadIndices[idx++] = base + 1;
@@ -248,40 +236,48 @@ export class GaussianSplatLayer {
       {
         arrayStride: 56,
         attributes: [
-          { shaderLocation: 0, offset: 0, format: 'float32x3' },    // position
-          { shaderLocation: 1, offset: 12, format: 'float32x4' },   // color + opacity
-          { shaderLocation: 2, offset: 28, format: 'float32x3' },   // scale
-          { shaderLocation: 3, offset: 40, format: 'float32x4' }    // rotation
+          {shaderLocation: 0, offset: 0, format: 'float32x3'},    // position
+          {shaderLocation: 1, offset: 12, format: 'float32x4'},   // color + opacity
+          {shaderLocation: 2, offset: 28, format: 'float32x3'},   // scale
+          {shaderLocation: 3, offset: 40, format: 'float32x4'}    // rotation
         ]
       }
     ];
 
-    // Bind group layout (use shared cameraBuffer)
+    console.log("splatScale =", this.splatScale);
+
+    this.scaleBuffer = this.device.createBuffer({
+      label: 'Splat scale buffer',
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true,
+    });
+    new Float32Array(this.scaleBuffer.getMappedRange()).set([this.splatScale, 0, 0, 0]);
+    this.scaleBuffer.unmap();
+
+    this.modelBuffer = this.device.createBuffer({size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
+
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: { type: 'uniform' }
-        }
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},  // camera
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},  // model
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}   // scale
       ]
     });
 
-    // Bind group (bind the cameraBuffer at binding 0)
     this.bindGroup = this.device.createBindGroup({
-      label: 'Splat bind group',
       layout: bindGroupLayout,
       entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } }
+        {binding: 0, resource: {buffer: this.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.modelBuffer}},
+        {binding: 2, resource: {buffer: this.scaleBuffer}}
       ]
     });
 
-    // Pipeline layout
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
     });
 
-    // Create shader and pipeline
     const shaderCode = this._getRenderShaderCode();
     const shaderModule = this.device.createShaderModule({
       label: 'Splat shader',
@@ -315,12 +311,13 @@ export class GaussianSplatLayer {
               }
             }
           },
-          { format: 'rgba16float' },
-          { format: 'rgba16float' }
+          {format: 'rgba16float'},
+          {format: 'rgba16float'}
         ]
       },
       primitive: {
-        topology: 'triangle-list',
+        // topology: 'triangle-list',
+        topology: 'point-list',
         cullMode: 'none'
       },
       depthStencil: {
@@ -331,17 +328,26 @@ export class GaussianSplatLayer {
     });
   }
 
-  /**
-   * WGSL shader code
-   */
   _getRenderShaderCode() {
     return `
-struct UniformData {
-  mvp: mat4x4<f32>,
-  splatScale: f32,
+struct Camera {
+  mvp: mat4x4<f32>
 };
 
-@group(0) @binding(0) var<uniform> uniforms: UniformData;
+struct Model {
+  matrix: mat4x4<f32>,
+};
+
+struct Scale {
+  factor: f32,
+  pad0: f32,
+  pad1: f32,
+  pad2: f32,
+};
+
+@group(0) @binding(0) var<uniform> camera: Camera;
+@group(0) @binding(1) var<uniform> model: Model;
+@group(0) @binding(2) var<uniform> scale: Scale;
 
 struct VertexInput {
   @location(0) position: vec3<f32>,
@@ -366,12 +372,19 @@ struct FragOut {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
   var out: VertexOutput;
+
+   let scaledPos = in.position * scale.factor;
+  // let scaledPos = in.position * 4.0;
+
+  let worldPos = model.matrix * vec4<f32>(scaledPos, 1.0);
+
+  // let clipPos = camera.mvp * worldPos;
+  let clipPos = camera.mvp * worldPos;
   
-  let clipPos = uniforms.mvp * vec4<f32>(in.position, 1.0);
   out.clipPos = clipPos;
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
-  out.worldPos = in.position;
+  out.worldPos = worldPos.xyz;
   
   return out;
 }
@@ -379,58 +392,28 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> FragOut {
   var out: FragOut;
-  
-  // Gaussian falloff
-  let dist = length(in.worldPos) * 2.0;
-  let gaussian = exp(-dist * dist * 2.0) * in.opacity;
-  
-  if (gaussian < 0.01) {
-    discard;
-  }
-  
-  out.color = vec4<f32>(in.color, gaussian);
+  out.color = vec4<f32>(in.color, in.opacity);
   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
   out.worldPos = vec4<f32>(in.worldPos, 1.0);
-  
   return out;
 }
-    `;
+  `;
   }
 
-  /**
-   * Render splatses
-   */
   render(pass, mesh, viewProjMatrix) {
-    if (!this.renderPipeline || !this.vertexBuffer) return;
-
-    // Write viewProjMatrix to shared cameraBuffer
+    this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-
-    // Render
+    const scaleData = new Float32Array([this.splatScale, 0, 0, 0]);
+    this.device.queue.writeBuffer(this.scaleBuffer, 0, scaleData);
     pass.setPipeline(this.renderPipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount, 1, 0, 0);
+    pass.draw(this.vertexCount, 1, 0, 0);
   }
 
-  /**
-   * Set splat rendering scale
-   */
-  setScale(scale) {
-    this.splatScale = scale;
-  }
+  setScale(scale) {this.splatScale = scale}
+  getAABB() {return {min: this.aabbMin, max: this.aabbMax}}
 
-  /**
-   * Get AABB
-   */
-  getAABB() {
-    return { min: this.aabbMin, max: this.aabbMax };
-  }
-
-  /**
-   * Cleanup
-   */
   destroy() {
     this.vertexBuffer?.destroy();
     this.indexBuffer?.destroy();
@@ -448,14 +431,19 @@ export class GaussianSplatScene {
     this.splatLayers = [];
   }
 
-  async initialize(plyPath) {
-    const splatLayer = new GaussianSplatLayer(this.device, this.format, this.cameraBuffer);
+  updateInstanceData(baseModelMatrix) {
     
+  }
+
+  async initialize(plyPath, scale = 1) {
+    const splatLayer = new GaussianSplatLayer(this.device, this.format, this.cameraBuffer);
     try {
+      if(scale) splatLayer.setScale(scale);
       await splatLayer.loadPLY(plyPath);
+      
       this.splatLayers.push(splatLayer);
       console.log('✓ Splat scene initialized');
-    } catch (err) {
+    } catch(err) {
       console.error('Failed to load splat:', err);
     }
   }
@@ -463,28 +451,20 @@ export class GaussianSplatScene {
   async addSplat(source, options = {}) {
     const splatLayer = new GaussianSplatLayer(this.device, this.format, this.cameraBuffer);
     await splatLayer.loadPLY(source);
-
-    if (options.scale) splatLayer.setScale(options.scale);
-    if (options.depthTest !== undefined) splatLayer.depthTest = options.depthTest;
-
+    if(options.scale) splatLayer.setScale(options.scale);
+    if(options.depthTest !== undefined) splatLayer.depthTest = options.depthTest;
     this.splatLayers.push(splatLayer);
     return splatLayer;
   }
 
-  /**
-   * Render all splats (effect interface)
-   */
   render(pass, mesh, viewProjMatrix) {
-    for (const splat of this.splatLayers) {
+    for(const splat of this.splatLayers) {
       splat.render(pass, mesh, viewProjMatrix);
     }
   }
 
-  /**
-   * Cleanup
-   */
   destroy() {
-    for (const splat of this.splatLayers) {
+    for(const splat of this.splatLayers) {
       splat.destroy();
     }
     this.splatLayers = [];

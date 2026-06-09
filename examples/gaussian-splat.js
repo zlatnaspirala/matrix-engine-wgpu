@@ -67,9 +67,9 @@ export var loadGaussianSplat = function() {
       let MYCUBE = gaussianSplat.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 4, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
+        rotation: {x: 90, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [3, 5, 1],
+        scale: [1, 1, 1],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
@@ -78,7 +78,7 @@ export var loadGaussianSplat = function() {
         pointerEffect: {enabled: true}
       })
 
-      gaussianSplat.lightContainer[0].setIntensity(15);
+      gaussianSplat.lightContainer[0].setIntensity(165);
       gaussianSplat.activateBloomEffect();
       gaussianSplat.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       gaussianSplat.lightContainer[0].behavior.value_ = -1;
@@ -86,7 +86,7 @@ export var loadGaussianSplat = function() {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       })
-      gaussianSplat.lightContainer[0].setPosition(0, 15, -10);
+      gaussianSplat.lightContainer[0].setPosition(0, 55, -10);
       gaussianSplat.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
@@ -94,8 +94,7 @@ export var loadGaussianSplat = function() {
         window.MYCUBE = MYCUBE;
         // constructor(device, format, cameraBuffer)
         MYCUBE.effects.splat = new GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
-
-        MYCUBE.effects.splat.initialize('./res/meshes/ply/test.ply');
+        MYCUBE.effects.splat.initialize('./res/meshes/ply/test.ply', 10);
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);

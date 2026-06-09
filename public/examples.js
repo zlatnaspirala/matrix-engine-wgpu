@@ -4824,7 +4824,7 @@ var loadGaussianSplat = function () {
           z: -10
         },
         rotation: {
-          x: 0,
+          x: 90,
           y: 0,
           z: 0
         },
@@ -4833,7 +4833,7 @@ var loadGaussianSplat = function () {
           y: 0,
           z: 0
         },
-        scale: [3, 5, 1],
+        scale: [1, 1, 1],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
@@ -4848,7 +4848,7 @@ var loadGaussianSplat = function () {
           enabled: true
         }
       });
-      gaussianSplat.lightContainer[0].setIntensity(15);
+      gaussianSplat.lightContainer[0].setIntensity(165);
       gaussianSplat.activateBloomEffect();
       gaussianSplat.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       gaussianSplat.lightContainer[0].behavior.value_ = -1;
@@ -4856,13 +4856,13 @@ var loadGaussianSplat = function () {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       });
-      gaussianSplat.lightContainer[0].setPosition(0, 15, -10);
+      gaussianSplat.lightContainer[0].setPosition(0, 55, -10);
       gaussianSplat.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         window.MYCUBE = MYCUBE;
         // constructor(device, format, cameraBuffer)
         MYCUBE.effects.splat = new _splat.GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
-        MYCUBE.effects.splat.initialize('./res/meshes/ply/test.ply');
+        MYCUBE.effects.splat.initialize('./res/meshes/ply/test.ply', 10);
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
@@ -32807,13 +32807,9 @@ class GaussianSplatLayer {
     this.indexCount = 0;
 
     // Settings
-    this.splatScale = 1.0;
+    this.splatScale = 2.0;
     this.depthTest = true;
   }
-
-  /**
-   * Load PLY file from URL or File object
-   */
   async loadPLY(source) {
     try {
       let arrayBuffer;
@@ -32836,10 +32832,6 @@ class GaussianSplatLayer {
       throw err;
     }
   }
-
-  /**
-   * Parse PLY binary format
-   */
   _parsePLY(arrayBuffer) {
     const view = new DataView(arrayBuffer);
     const uint8 = new Uint8Array(arrayBuffer);
@@ -32937,10 +32929,6 @@ class GaussianSplatLayer {
   _sigmoid(x) {
     return 1.0 / (1.0 + Math.exp(-x));
   }
-
-  /**
-   * Initialize GPU resources
-   */
   async _initializeGPU() {
     // Vertex buffer: interleaved position + color + scale + rotation
     const vertexData = new Float32Array(this.vertexCount * 14);
@@ -33020,8 +33008,19 @@ class GaussianSplatLayer {
       } // rotation
       ]
     }];
-
-    // Bind group layout (use shared cameraBuffer)
+    console.log("splatScale =", this.splatScale);
+    this.scaleBuffer = this.device.createBuffer({
+      label: 'Splat scale buffer',
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Float32Array(this.scaleBuffer.getMappedRange()).set([this.splatScale, 0, 0, 0]);
+    this.scaleBuffer.unmap();
+    this.modelBuffer = this.device.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [{
         binding: 0,
@@ -33029,27 +33028,47 @@ class GaussianSplatLayer {
         buffer: {
           type: 'uniform'
         }
-      }]
+      },
+      // camera
+      {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      },
+      // model
+      {
+        binding: 2,
+        visibility: GPUShaderStage.VERTEX,
+        buffer: {
+          type: 'uniform'
+        }
+      } // scale
+      ]
     });
-
-    // Bind group (bind the cameraBuffer at binding 0)
     this.bindGroup = this.device.createBindGroup({
-      label: 'Splat bind group',
       layout: bindGroupLayout,
       entries: [{
         binding: 0,
         resource: {
           buffer: this.cameraBuffer
         }
+      }, {
+        binding: 1,
+        resource: {
+          buffer: this.modelBuffer
+        }
+      }, {
+        binding: 2,
+        resource: {
+          buffer: this.scaleBuffer
+        }
       }]
     });
-
-    // Pipeline layout
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
     });
-
-    // Create shader and pipeline
     const shaderCode = this._getRenderShaderCode();
     const shaderModule = this.device.createShaderModule({
       label: 'Splat shader',
@@ -33087,7 +33106,8 @@ class GaussianSplatLayer {
         }]
       },
       primitive: {
-        topology: 'triangle-list',
+        // topology: 'triangle-list',
+        topology: 'point-list',
         cullMode: 'none'
       },
       depthStencil: {
@@ -33097,18 +33117,26 @@ class GaussianSplatLayer {
       }
     });
   }
-
-  /**
-   * WGSL shader code
-   */
   _getRenderShaderCode() {
     return `
-struct UniformData {
-  mvp: mat4x4<f32>,
-  splatScale: f32,
+struct Camera {
+  mvp: mat4x4<f32>
 };
 
-@group(0) @binding(0) var<uniform> uniforms: UniformData;
+struct Model {
+  matrix: mat4x4<f32>,
+};
+
+struct Scale {
+  factor: f32,
+  pad0: f32,
+  pad1: f32,
+  pad2: f32,
+};
+
+@group(0) @binding(0) var<uniform> camera: Camera;
+@group(0) @binding(1) var<uniform> model: Model;
+@group(0) @binding(2) var<uniform> scale: Scale;
 
 struct VertexInput {
   @location(0) position: vec3<f32>,
@@ -33133,12 +33161,19 @@ struct FragOut {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
   var out: VertexOutput;
+
+   let scaledPos = in.position * scale.factor;
+  // let scaledPos = in.position * 4.0;
+
+  let worldPos = model.matrix * vec4<f32>(scaledPos, 1.0);
+
+  // let clipPos = camera.mvp * worldPos;
+  let clipPos = camera.mvp * worldPos;
   
-  let clipPos = uniforms.mvp * vec4<f32>(in.position, 1.0);
   out.clipPos = clipPos;
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
-  out.worldPos = in.position;
+  out.worldPos = worldPos.xyz;
   
   return out;
 }
@@ -33146,61 +33181,32 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> FragOut {
   var out: FragOut;
-  
-  // Gaussian falloff
-  let dist = length(in.worldPos) * 2.0;
-  let gaussian = exp(-dist * dist * 2.0) * in.opacity;
-  
-  if (gaussian < 0.01) {
-    discard;
-  }
-  
-  out.color = vec4<f32>(in.color, gaussian);
+  out.color = vec4<f32>(in.color, in.opacity);
   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
   out.worldPos = vec4<f32>(in.worldPos, 1.0);
-  
   return out;
 }
-    `;
+  `;
   }
-
-  /**
-   * Render splatses
-   */
   render(pass, mesh, viewProjMatrix) {
-    if (!this.renderPipeline || !this.vertexBuffer) return;
-
-    // Write viewProjMatrix to shared cameraBuffer
+    this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-
-    // Render
+    const scaleData = new Float32Array([this.splatScale, 0, 0, 0]);
+    this.device.queue.writeBuffer(this.scaleBuffer, 0, scaleData);
     pass.setPipeline(this.renderPipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint16');
-    pass.drawIndexed(this.indexCount, 1, 0, 0);
+    pass.draw(this.vertexCount, 1, 0, 0);
   }
-
-  /**
-   * Set splat rendering scale
-   */
   setScale(scale) {
     this.splatScale = scale;
   }
-
-  /**
-   * Get AABB
-   */
   getAABB() {
     return {
       min: this.aabbMin,
       max: this.aabbMax
     };
   }
-
-  /**
-   * Cleanup
-   */
   destroy() {
     this.vertexBuffer?.destroy();
     this.indexBuffer?.destroy();
@@ -33218,9 +33224,11 @@ class GaussianSplatScene {
     this.cameraBuffer = cameraBuffer;
     this.splatLayers = [];
   }
-  async initialize(plyPath) {
+  updateInstanceData(baseModelMatrix) {}
+  async initialize(plyPath, scale = 1) {
     const splatLayer = new GaussianSplatLayer(this.device, this.format, this.cameraBuffer);
     try {
+      if (scale) splatLayer.setScale(scale);
       await splatLayer.loadPLY(plyPath);
       this.splatLayers.push(splatLayer);
       console.log('✓ Splat scene initialized');
@@ -33236,19 +33244,11 @@ class GaussianSplatScene {
     this.splatLayers.push(splatLayer);
     return splatLayer;
   }
-
-  /**
-   * Render all splats (effect interface)
-   */
   render(pass, mesh, viewProjMatrix) {
     for (const splat of this.splatLayers) {
       splat.render(pass, mesh, viewProjMatrix);
     }
   }
-
-  /**
-   * Cleanup
-   */
   destroy() {
     for (const splat of this.splatLayers) {
       splat.destroy();
