@@ -27,7 +27,7 @@ export class GaussianSplatLayer {
     this.indexCount = 0;
 
     // Settings
-    this.splatScale =2.0;
+    this.splatScale = 2.0;
     this.depthTest = true;
   }
 
@@ -372,20 +372,13 @@ struct FragOut {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
   var out: VertexOutput;
-
-   let scaledPos = in.position * scale.factor;
-  // let scaledPos = in.position * 4.0;
-
+  let scaledPos = in.position * scale.factor;
   let worldPos = model.matrix * vec4<f32>(scaledPos, 1.0);
-
-  // let clipPos = camera.mvp * worldPos;
   let clipPos = camera.mvp * worldPos;
-  
   out.clipPos = clipPos;
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
   out.worldPos = worldPos.xyz;
-  
   return out;
 }
 
@@ -396,8 +389,7 @@ fn fs_main(in: VertexOutput) -> FragOut {
   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
   out.worldPos = vec4<f32>(in.worldPos, 1.0);
   return out;
-}
-  `;
+}`;
   }
 
   render(pass, mesh, viewProjMatrix) {
@@ -432,7 +424,7 @@ export class GaussianSplatScene {
   }
 
   updateInstanceData(baseModelMatrix) {
-    
+
   }
 
   async initialize(plyPath, scale = 1) {
@@ -440,7 +432,7 @@ export class GaussianSplatScene {
     try {
       if(scale) splatLayer.setScale(scale);
       await splatLayer.loadPLY(plyPath);
-      
+
       this.splatLayers.push(splatLayer);
       console.log('✓ Splat scene initialized');
     } catch(err) {
