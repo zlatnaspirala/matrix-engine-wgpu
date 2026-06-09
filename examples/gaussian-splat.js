@@ -3,7 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
-import {GaussianSplatScene} from "../src/engine/effects/splat.js";
+import {GaussianSplatScene, SplatColorAnimator} from "../src/engine/effects/splat.js";
 
 export var loadGaussianSplat = function() {
 
@@ -26,7 +26,7 @@ export var loadGaussianSplat = function() {
       ball: "./res/meshes/blender/sphere.obj",
       cube: "./res/meshes/blender/cube.obj",
       // car: "./res/meshes/ply/d.obj"
-     },
+    },
       onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
 
@@ -93,15 +93,33 @@ export var loadGaussianSplat = function() {
       gaussianSplat.lightContainer[0].setPosition(0, 45, -10);
       gaussianSplat.lightContainer[0].setTarget(0, 0, -10);
 
-      setTimeout(() => {
-
+      setTimeout(async() => {
         window.MYCUBE = MYCUBE;
-        // constructor(device, format, cameraBuffer)
+
+        MYCUBE.setBlend(0.01);
+
         MYCUBE.effects.splat = new GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
-        MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
+        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
+        const animator = new SplatColorAnimator(
+          app.device,
+          layer.positions,
+          layer.vertexCount,
+          layer.colorBuffer
+        );
+        // // 'rings' | 'wave' | 'zones' | 'pulse'
+        animator.setMode('pulse');
+        animator.setScale(0.8);
+        animator.setSpeed(0.8);
+        layer.colorBuffer = animator.colorBuffer;
+        app.autoUpdate.push(animator);
+
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-        // MYCUBE.effects.flameEmitter.setIntensity(100);
-        // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
+         MYCUBE.effects.flameEmitter.setIntensity(100);
+         MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
+
+         MYCUBE.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+          array[i].color = [0, 11, 0, 0.7];
+        })
 
         let cam = app.getCamera();
         cam.setYaw(-0.03);

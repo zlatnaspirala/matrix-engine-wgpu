@@ -1,35 +1,41 @@
-import {mat4} from "wgpu-matrix";
 import {randomIntFromTo} from "../utils";
 
 /**
+ * @description
  * Gaussian Splat PLY Loader & Renderer
  * Integrated with engine effect system (cameraBuffer pattern)
+ * Part of MEWGPU Effect system
+ *
+ * @filename
+ * splat.js
+ *
+ * @Licence
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file,
+ * You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (c) 2026 Nikola Lukić zlatnaspirala@gmail.com
  */
-
 export class GaussianSplatLayer {
   constructor(device, format, cameraBuffer, topology = "point-list") {
     this.device = device;
     this.format = format;
-    this.cameraBuffer = cameraBuffer;  // Use engine's camera buffer
+    this.cameraBuffer = cameraBuffer;
     this.queue = device.queue;
     this.topology = topology;
-
-    // Splat data
     this.splatData = null;
     this.vertexCount = 0;
     this.aabbMin = [Infinity, Infinity, Infinity];
     this.aabbMax = [-Infinity, -Infinity, -Infinity];
-
-    // GPU resources
     this.vertexBuffer = null;
     this.indexBuffer = null;
     this.vertexBufferLayout = null;
     this.bindGroup = null;
     this.renderPipeline = null;
     this.indexCount = 0;
-
-    // Settings
     this.splatScale = 2.0;
+    this._scaleData = new Float32Array([this.splatScale, 0, 0, 0]);
     this.depthTest = true;
   }
 
@@ -45,7 +51,6 @@ export class GaussianSplatLayer {
       } else {
         throw new Error('Source must be URL string or File object');
       }
-
       this.splatData = this._parsePLY(arrayBuffer);
       this.vertexCount = this.splatData.positions.length / 3;
       console.log(`✓ Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] → [${this.aabbMax}]`);
@@ -60,18 +65,14 @@ export class GaussianSplatLayer {
   _parsePLY(arrayBuffer) {
     const view = new DataView(arrayBuffer);
     const uint8 = new Uint8Array(arrayBuffer);
-
     let headerEnd = 0;
     const headerStr = new TextDecoder().decode(uint8.slice(0, 2048));
     const lines = headerStr.split('\n');
-
     let vertexCount = 0;
     const properties = [];
-
     for(let i = 0;i < lines.length;i++) {
       const line = lines[i].trim();
       headerEnd += line.length + 1;
-
       if(line.startsWith('element vertex')) {
         vertexCount = parseInt(line.split(' ')[2]);
       } else if(line.startsWith('property')) {
@@ -81,24 +82,19 @@ export class GaussianSplatLayer {
         break;
       }
     }
-
     const stride = this._calculateStride(properties);
     const offsets = this._getPropertyOffsets(properties);
     const dataStart = headerEnd;
-
     const positions = new Float32Array(vertexCount * 3);
     const splatColors = new Float32Array(vertexCount * 4);
     const scales = new Float32Array(vertexCount * 3);
     const rotations = new Float32Array(vertexCount * 4);
     const opacities = new Uint8Array(vertexCount);
-
     for(let i = 0;i < vertexCount;i++) {
       const offset = dataStart + i * stride;
-
       const x = view.getFloat32(offset + offsets.x, true);
       const y = view.getFloat32(offset + offsets.y, true);
       const z = view.getFloat32(offset + offsets.z, true);
-
       positions[i * 3 + 0] = x;
       positions[i * 3 + 1] = y;
       positions[i * 3 + 2] = z;
@@ -113,7 +109,6 @@ export class GaussianSplatLayer {
       // const r = this._sigmoid(view.getFloat32(offset + offsets.f_dc_0, true));
       // const g = this._sigmoid(view.getFloat32(offset + offsets.f_dc_1, true));
       // const b = this._sigmoid(view.getFloat32(offset + offsets.f_dc_2, true));
-
       const r = randomIntFromTo(0, 10);
       const g = randomIntFromTo(0, 10);
       const b = randomIntFromTo(0, 10);
@@ -130,29 +125,17 @@ export class GaussianSplatLayer {
       scales[i * 3 + 0] = scale_0;
       scales[i * 3 + 1] = scale_1;
       scales[i * 3 + 2] = scale_2;
-
       const rot_0 = view.getFloat32(offset + offsets.rot_0, true);
       const rot_1 = view.getFloat32(offset + offsets.rot_1, true);
       const rot_2 = view.getFloat32(offset + offsets.rot_2, true);
       const rot_3 = view.getFloat32(offset + offsets.rot_3, true);
-
       rotations[i * 4 + 0] = rot_0;
       rotations[i * 4 + 1] = rot_1;
       rotations[i * 4 + 2] = rot_2;
       rotations[i * 4 + 3] = rot_3;
-
       opacities[i] = view.getUint8(offset + offsets.opacity);
     }
-
-    return {
-      vertexCount,
-      positions,
-      splatColors,
-      scales,
-      rotations,
-      opacities,
-      properties
-    };
+    return {vertexCount, positions, splatColors, scales, rotations, opacities, properties};
   }
 
   _calculateStride(properties) {
@@ -168,25 +151,20 @@ export class GaussianSplatLayer {
   _getPropertyOffsets(properties) {
     const offsets = {};
     let current = 0;
-
     for(const prop of properties) {
       offsets[prop.name] = current;
       if(prop.type === 'float') current += 4;
       else if(prop.type === 'uchar') current += 1;
       else if(prop.type === 'double') current += 8;
     }
-
     return offsets;
   }
 
-  _sigmoid(x) {
-    return 1.0 / (1.0 + Math.exp(-x));
-  }
+  _sigmoid(x) {return 1.0 / (1.0 + Math.exp(-x));}
 
   async _initializeGPU() {
     // Vertex buffer: interleaved position + color + scale + rotation
     const vertexData = new Float32Array(this.vertexCount * 14);
-
     for(let i = 0;i < this.vertexCount;i++) {
       let idx = i * 14;
       vertexData[idx++] = this.splatData.positions[i * 3 + 0];
@@ -214,43 +192,70 @@ export class GaussianSplatLayer {
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
 
-    // Index buffer: quads (2 triangles per splat)
-    const quadIndices = new Uint16Array(this.vertexCount * 6);
-    let idx = 0;
+    const initialColors = new Float32Array(this.vertexCount * 4);
     for(let i = 0;i < this.vertexCount;i++) {
-      const base = i * 4;
-      quadIndices[idx++] = base;
-      quadIndices[idx++] = base + 1;
-      quadIndices[idx++] = base + 2;
-      quadIndices[idx++] = base + 1;
-      quadIndices[idx++] = base + 3;
-      quadIndices[idx++] = base + 2;
+      initialColors[i * 4 + 0] = this.splatData.splatColors[i * 4 + 0];
+      initialColors[i * 4 + 1] = this.splatData.splatColors[i * 4 + 1];
+      initialColors[i * 4 + 2] = this.splatData.splatColors[i * 4 + 2];
+      initialColors[i * 4 + 3] = this.splatData.splatColors[i * 4 + 3];
     }
 
-    this.indexBuffer = this.device.createBuffer({
-      label: 'Splat index buffer',
-      size: quadIndices.byteLength,
+    this.colorBuffer = this.device.createBuffer({
+      label: 'splat-color',
+      size: initialColors.byteLength,
       mappedAtCreation: true,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
-    new Uint16Array(this.indexBuffer.getMappedRange()).set(quadIndices);
-    this.indexBuffer.unmap();
-    this.indexCount = quadIndices.length;
+    new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
+    this.colorBuffer.unmap()
 
-    // Vertex buffer layout
+    // Expose positions + vertexCount for the animator
+    this.positions = this.splatData.positions;
+    this.vertexCount = this.splatData.vertexCount;
+
+    // // Index buffer: quads (2 triangles per splat)
+    // const quadIndices = new Uint16Array(this.vertexCount * 6);
+    // let idx = 0;
+    // for(let i = 0;i < this.vertexCount;i++) {
+    //   const base = i * 4;
+    //   quadIndices[idx++] = base;
+    //   quadIndices[idx++] = base + 1;
+    //   quadIndices[idx++] = base + 2;
+    //   quadIndices[idx++] = base + 1;
+    //   quadIndices[idx++] = base + 3;
+    //   quadIndices[idx++] = base + 2;
+    // }
+
+    // this.indexBuffer = this.device.createBuffer({
+    //   label: 'Splat index buffer',
+    //   size: quadIndices.byteLength,
+    //   mappedAtCreation: true,
+    //   usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+    // });
+    // new Uint16Array(this.indexBuffer.getMappedRange()).set(quadIndices);
+    // this.indexBuffer.unmap();
+    // this.indexCount = quadIndices.length;
+
     this.vertexBufferLayout = [
       {
+        // buffer 0: position + (ignored color slot) + scale + rotation
         arrayStride: 56,
+        stepMode: 'vertex',
         attributes: [
-          {shaderLocation: 0, offset: 0, format: 'float32x3'},    // position
-          {shaderLocation: 1, offset: 12, format: 'float32x4'},   // color + opacity
-          {shaderLocation: 2, offset: 28, format: 'float32x3'},   // scale
-          {shaderLocation: 3, offset: 40, format: 'float32x4'}    // rotation
+          {shaderLocation: 0, offset: 0, format: 'float32x3'},
+          {shaderLocation: 2, offset: 28, format: 'float32x3'},
+          {shaderLocation: 3, offset: 40, format: 'float32x4'},
+        ]
+      },
+      {
+        // buffer 1: animated rgba color
+        arrayStride: 16,
+        stepMode: 'vertex',
+        attributes: [
+          {shaderLocation: 1, offset: 0, format: 'float32x4'},
         ]
       }
     ];
-
-    console.log("splatScale =", this.splatScale);
 
     this.scaleBuffer = this.device.createBuffer({
       label: 'Splat scale buffer',
@@ -265,9 +270,9 @@ export class GaussianSplatLayer {
 
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},  // camera
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},  // model
-        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}   // scale
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
       ]
     });
 
@@ -323,7 +328,6 @@ export class GaussianSplatLayer {
       },
       primitive: {
         topology: this.topology,
-        // stripIndexFormat: 'uint16',
         cullMode: 'none'
       },
       depthStencil: {
@@ -401,15 +405,19 @@ fn fs_main(in: VertexOutput) -> FragOut {
   render(pass, mesh, viewProjMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    const scaleData = new Float32Array([this.splatScale, 0, 0, 0]);
-    this.device.queue.writeBuffer(this.scaleBuffer, 0, scaleData);
+    this.device.queue.writeBuffer(this.scaleBuffer, 0, this._scaleData);
     pass.setPipeline(this.renderPipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.colorBuffer);
     pass.draw(this.vertexCount, 1, 0, 0);
   }
 
-  setScale(scale) {this.splatScale = scale}
+  setScale(scale) {
+    this.splatScale = scale;
+    this._scaleData[0] = scale;
+  }
+
   getAABB() {return {min: this.aabbMin, max: this.aabbMax}}
 
   destroy() {
@@ -436,12 +444,12 @@ export class GaussianSplatScene {
     try {
       if(scale) splatLayer.setScale(scale);
       await splatLayer.loadPLY(plyPath);
-
       this.splatLayers.push(splatLayer);
-      console.log('✓ Splat scene initialized');
     } catch(err) {
       console.error('Failed to load splat:', err);
+      return false;
     }
+    return splatLayer;
   }
 
   async addSplat(source, options = {}) {
@@ -475,44 +483,32 @@ export class SplatColorAnimator {
    * @param {Float32Array} positions  — flat xyz array from parsedPLY, length = vertexCount * 3
    * @param {number} vertexCount
    */
-  constructor(device, positions, vertexCount) {
+  constructor(device, positions, vertexCount, colorBuffer) {
     this.device = device;
     this.positions = positions;
     this.vertexCount = vertexCount;
-
     // Precompute per-splat data we'll reuse every frame
     this._precompute();
-
-    // CPU-side color scratch buffer (rgba f32)
+    this.colorBuffer = colorBuffer;
     this._colorCPU = new Float32Array(vertexCount * 4);
-
-    // GPU color buffer — separate from interleaved vertex data
-    this.colorBuffer = device.createBuffer({
-      label: 'splat-color-anim',
-      size: this._colorCPU.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    });
-
-    this.mode = 'rings';     // 'rings' | 'wave' | 'zones' | 'pulse'
+    // 'rings' | 'wave' | 'zones' | 'pulse'
+    this.mode = 'rings';
     this.speed = 1.0;
-    this.scale = 60.0;        // color range 1–100 feel: pump this up
-
+    this.scale = 60.0;
     this._zoneCache = null;
+    this._colorFrameSkip = 2;
+    this._colorFrameCount = 0;
   }
 
   _precompute() {
     const p = this.positions;
     const n = this.vertexCount;
-
-    // Centroid
     let cx = 0, cy = 0, cz = 0;
     for(let i = 0;i < n;i++) {
       cx += p[i * 3]; cy += p[i * 3 + 1]; cz += p[i * 3 + 2];
     }
     cx /= n; cy /= n; cz /= n;
     this._centroid = [cx, cy, cz];
-
-    // Per-splat radial distance from centroid
     this._radii = new Float32Array(n);
     let maxR = 0;
     for(let i = 0;i < n;i++) {
@@ -522,8 +518,6 @@ export class SplatColorAnimator {
       if(r > maxR) maxR = r;
     }
     this._maxR = maxR || 1;
-
-    // Per-splat normalized positions (used by wave)
     this._normPos = new Float32Array(n * 3);
     for(let i = 0;i < n;i++) {
       this._normPos[i * 3] = (p[i * 3] - cx) / this._maxR;
@@ -532,17 +526,13 @@ export class SplatColorAnimator {
     }
   }
 
-  // ── public API ───────────────────────────────────────────────────────────
-
   setMode(mode) {this.mode = mode; this._zoneCache = null;}
   setSpeed(s) {this.speed = s;}
   setScale(s) {this.scale = s;}  // 1–100
 
-  /**
-   * Call once per frame. Writes updated colors to GPU.
-   * @param {number} t  — elapsed time in seconds
-   */
   update(t) {
+    this._colorFrameCount++;
+    if(this._colorFrameCount % this._colorFrameSkip !== 0) return;
     const tt = t * this.speed;
     switch(this.mode) {
       case 'rings': this._modeRings(tt); break;
@@ -552,8 +542,6 @@ export class SplatColorAnimator {
     }
     this.device.queue.writeBuffer(this.colorBuffer, 0, this._colorCPU);
   }
-
-  // ── modes ────────────────────────────────────────────────────────────────
 
   _modeRings(t) {
     const c = this._colorCPU;
@@ -605,19 +593,18 @@ export class SplatColorAnimator {
     const sc = this.scale;
     const n = this.vertexCount;
     const np = this._normPos;
-
-    // 5 zone centers drifting on a sphere surface
     const ZONES = 5;
-    if(!this._zoneCache) {
-      this._zoneCache = Array.from({length: ZONES}, (_, i) => ({
+
+    if(!this._zoneSeeds) {
+      this._zoneSeeds = Array.from({length: ZONES}, (_, i) => ({
         phi: (i / ZONES) * Math.PI * 2,
         theta: (i % 3) * Math.PI / 3,
         hue: i / ZONES,
       }));
     }
 
-    // Drift zone centers
-    const centers = this._zoneCache.map((z, i) => {
+    // Compute drifting centers fresh from seeds + t  ← fix: derive, don't mutate
+    const centers = this._zoneSeeds.map((z, i) => {
       const phi = z.phi + t * (0.12 + i * 0.04);
       const theta = z.theta + t * (0.07 + i * 0.03);
       return {
@@ -630,8 +617,6 @@ export class SplatColorAnimator {
 
     for(let i = 0;i < n;i++) {
       const nx = np[i * 3], ny = np[i * 3 + 1], nz = np[i * 3 + 2];
-
-      // Soft-nearest-zone: weighted blend of all zones by inverse distance
       let wr = 0, wg = 0, wb = 0, ws = 0;
       for(const z of centers) {
         const dx = nx - z.x, dy = ny - z.y, dz = nz - z.z;
@@ -640,7 +625,6 @@ export class SplatColorAnimator {
         const [r, g, b] = _hsl(z.hue, 0.85, 0.5);
         wr += r * w; wg += g * w; wb += b * w; ws += w;
       }
-
       c[i * 4] = (wr / ws) * sc;
       c[i * 4 + 1] = (wg / ws) * sc;
       c[i * 4 + 2] = (wb / ws) * sc;
@@ -653,25 +637,26 @@ export class SplatColorAnimator {
     const sc = this.scale;
     const n = this.vertexCount;
 
-    // 3 pulses at different frequencies
     const pulses = [
-      {freq: 0.8, hue: 0.0},   // red ring
-      {freq: 0.55, hue: 0.33},   // green ring
-      {freq: 0.35, hue: 0.66},   // blue ring
+      {freq: 0.8, hue: 0.0},
+      {freq: 0.55, hue: 0.33},
+      {freq: 0.35, hue: 0.66},
     ];
 
     for(let i = 0;i < n;i++) {
-      const rn = this._radii[i] / this._maxR;    // 0..1
-
+      const rn = this._radii[i] / this._maxR;
       let r = 0, g = 0, b = 0;
+
       for(const p of pulses) {
-        // Sharp front: fract(rn - t * freq) → thin bright band
         const front = _fract(rn - t * p.freq);
-        const band = Math.max(0, 1.0 - front * 12.0);   // thin spike
+        // Wider band + soft falloff so splats aren't invisible between pulses
+        const band = Math.pow(Math.max(0, 1.0 - front * 5.0), 2.0);
+        // Ambient base so splats are always visible even outside the band
+        const ambient = 0.15;
         const [pr, pg, pb] = _hsl(p.hue, 1.0, 0.55);
-        r += pr * band;
-        g += pg * band;
-        b += pb * band;
+        r += pr * (band + ambient);
+        g += pg * (band + ambient);
+        b += pb * (band + ambient);
       }
 
       c[i * 4] = Math.min(r, 1.0) * sc;

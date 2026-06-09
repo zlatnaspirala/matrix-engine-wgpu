@@ -1128,7 +1128,7 @@ export default class MatrixEngineWGPU {
     const now2 = performance.now();
     this.now = now2 * 0.001;
     this.lastFrameMS = this.now;
-    this.autoUpdate.forEach((_) => _.update())
+    this.autoUpdate.forEach((_) => _.update(this.now))
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
