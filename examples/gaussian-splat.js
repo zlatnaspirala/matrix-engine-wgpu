@@ -71,7 +71,7 @@ export var loadGaussianSplat = function() {
       let MYCUBE = gaussianSplat.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 4, z: -10},
-        rotation: {x: -90, y: 0, z: 0},
+        rotation: {x: -90, y: 0, z: 180},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [1, 1, 1],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
@@ -79,7 +79,7 @@ export var loadGaussianSplat = function() {
         mesh: m.cube,
         raycast: {enabled: true, radius: 1},
         physics: {enabled: false},
-        pointerEffect: {enabled: true}
+        pointerEffect: {enabled: true, flameEmitter: true}
       })
 
       gaussianSplat.lightContainer[0].setIntensity(165);
@@ -98,9 +98,8 @@ export var loadGaussianSplat = function() {
         window.MYCUBE = MYCUBE;
         // constructor(device, format, cameraBuffer)
         MYCUBE.effects.splat = new GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
-        MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12);
+        MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
 

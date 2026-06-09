@@ -4811,7 +4811,7 @@ var loadGaussianSplat = function () {
         rotation: {
           x: -90,
           y: 0,
-          z: 0
+          z: 180
         },
         rotationSpeed: {
           x: 0,
@@ -4830,7 +4830,8 @@ var loadGaussianSplat = function () {
           enabled: false
         },
         pointerEffect: {
-          enabled: true
+          enabled: true,
+          flameEmitter: true
         }
       });
       gaussianSplat.lightContainer[0].setIntensity(165);
@@ -4847,9 +4848,8 @@ var loadGaussianSplat = function () {
         window.MYCUBE = MYCUBE;
         // constructor(device, format, cameraBuffer)
         MYCUBE.effects.splat = new _splat.GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
-        MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12);
+        MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-
         // MYCUBE.effects.flameEmitter.setIntensity(100);
         // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
 
@@ -32763,8 +32763,9 @@ exports.PointerEffect = PointerEffect;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.GaussianSplatScene = exports.GaussianSplatLayer = void 0;
+exports.SplatColorAnimator = exports.GaussianSplatScene = exports.GaussianSplatLayer = void 0;
 var _wgpuMatrix = require("wgpu-matrix");
+var _utils = require("../utils");
 /**
  * Gaussian Splat PLY Loader & Renderer
  * Integrated with engine effect system (cameraBuffer pattern)
@@ -32863,9 +32864,14 @@ class GaussianSplatLayer {
       this.aabbMax[0] = Math.max(this.aabbMax[0], x);
       this.aabbMax[1] = Math.max(this.aabbMax[1], y);
       this.aabbMax[2] = Math.max(this.aabbMax[2], z);
-      const r = this._sigmoid(view.getFloat32(offset + offsets.f_dc_0, true));
-      const g = this._sigmoid(view.getFloat32(offset + offsets.f_dc_1, true));
-      const b = this._sigmoid(view.getFloat32(offset + offsets.f_dc_2, true));
+
+      // const r = this._sigmoid(view.getFloat32(offset + offsets.f_dc_0, true));
+      // const g = this._sigmoid(view.getFloat32(offset + offsets.f_dc_1, true));
+      // const b = this._sigmoid(view.getFloat32(offset + offsets.f_dc_2, true));
+
+      const r = (0, _utils.randomIntFromTo)(0, 10);
+      const g = (0, _utils.randomIntFromTo)(0, 10);
+      const b = (0, _utils.randomIntFromTo)(0, 10);
       splatColors[i * 4 + 0] = r;
       splatColors[i * 4 + 1] = g;
       splatColors[i * 4 + 2] = b;
@@ -33203,8 +33209,8 @@ class GaussianSplatScene {
     this.splatLayers = [];
   }
   updateInstanceData(baseModelMatrix) {}
-  async initialize(plyPath, scale = 1) {
-    const splatLayer = new GaussianSplatLayer(this.device, this.format, this.cameraBuffer);
+  async initialize(plyPath, scale = 1, topology = 'point-list') {
+    const splatLayer = new GaussianSplatLayer(this.device, this.format, this.cameraBuffer, topology);
     try {
       if (scale) splatLayer.setScale(scale);
       await splatLayer.loadPLY(plyPath);
@@ -33234,9 +33240,302 @@ class GaussianSplatScene {
     this.splatLayers = [];
   }
 }
-exports.GaussianSplatScene = GaussianSplatScene;
 
-},{"wgpu-matrix":41}],62:[function(require,module,exports){
+// SplatColorAnimator.js
+exports.GaussianSplatScene = GaussianSplatScene;
+class SplatColorAnimator {
+  /**
+   * @param {GPUDevice} device
+   * @param {Float32Array} positions  — flat xyz array from parsedPLY, length = vertexCount * 3
+   * @param {number} vertexCount
+   */
+  constructor(device, positions, vertexCount) {
+    this.device = device;
+    this.positions = positions;
+    this.vertexCount = vertexCount;
+
+    // Precompute per-splat data we'll reuse every frame
+    this._precompute();
+
+    // CPU-side color scratch buffer (rgba f32)
+    this._colorCPU = new Float32Array(vertexCount * 4);
+
+    // GPU color buffer — separate from interleaved vertex data
+    this.colorBuffer = device.createBuffer({
+      label: 'splat-color-anim',
+      size: this._colorCPU.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.mode = 'rings'; // 'rings' | 'wave' | 'zones' | 'pulse'
+    this.speed = 1.0;
+    this.scale = 60.0; // color range 1–100 feel: pump this up
+
+    this._zoneCache = null;
+  }
+  _precompute() {
+    const p = this.positions;
+    const n = this.vertexCount;
+
+    // Centroid
+    let cx = 0,
+      cy = 0,
+      cz = 0;
+    for (let i = 0; i < n; i++) {
+      cx += p[i * 3];
+      cy += p[i * 3 + 1];
+      cz += p[i * 3 + 2];
+    }
+    cx /= n;
+    cy /= n;
+    cz /= n;
+    this._centroid = [cx, cy, cz];
+
+    // Per-splat radial distance from centroid
+    this._radii = new Float32Array(n);
+    let maxR = 0;
+    for (let i = 0; i < n; i++) {
+      const dx = p[i * 3] - cx,
+        dy = p[i * 3 + 1] - cy,
+        dz = p[i * 3 + 2] - cz;
+      const r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      this._radii[i] = r;
+      if (r > maxR) maxR = r;
+    }
+    this._maxR = maxR || 1;
+
+    // Per-splat normalized positions (used by wave)
+    this._normPos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      this._normPos[i * 3] = (p[i * 3] - cx) / this._maxR;
+      this._normPos[i * 3 + 1] = (p[i * 3 + 1] - cy) / this._maxR;
+      this._normPos[i * 3 + 2] = (p[i * 3 + 2] - cz) / this._maxR;
+    }
+  }
+
+  // ── public API ───────────────────────────────────────────────────────────
+
+  setMode(mode) {
+    this.mode = mode;
+    this._zoneCache = null;
+  }
+  setSpeed(s) {
+    this.speed = s;
+  }
+  setScale(s) {
+    this.scale = s;
+  } // 1–100
+
+  /**
+   * Call once per frame. Writes updated colors to GPU.
+   * @param {number} t  — elapsed time in seconds
+   */
+  update(t) {
+    const tt = t * this.speed;
+    switch (this.mode) {
+      case 'rings':
+        this._modeRings(tt);
+        break;
+      case 'wave':
+        this._modeWave(tt);
+        break;
+      case 'zones':
+        this._modeZones(tt);
+        break;
+      case 'pulse':
+        this._modePulse(tt);
+        break;
+    }
+    this.device.queue.writeBuffer(this.colorBuffer, 0, this._colorCPU);
+  }
+
+  // ── modes ────────────────────────────────────────────────────────────────
+
+  _modeRings(t) {
+    const c = this._colorCPU;
+    const sc = this.scale;
+    const n = this.vertexCount;
+    for (let i = 0; i < n; i++) {
+      // normalised radius 0..1, shift over time
+      const rn = this._radii[i] / this._maxR;
+      const hue = (rn * 6.0 + t * 0.4) % 1.0; // 6 rings cycling
+
+      const [r, g, b] = _hsl(hue, 0.9, 0.5);
+      c[i * 4] = r * sc;
+      c[i * 4 + 1] = g * sc;
+      c[i * 4 + 2] = b * sc;
+      c[i * 4 + 3] = 1.0;
+    }
+  }
+  _modeWave(t) {
+    const c = this._colorCPU;
+    const sc = this.scale;
+    const n = this.vertexCount;
+    const np = this._normPos;
+
+    // Sweep direction rotates over time
+    const ax = Math.cos(t * 0.2);
+    const az = Math.sin(t * 0.2);
+    for (let i = 0; i < n; i++) {
+      const proj = np[i * 3] * ax + np[i * 3 + 2] * az; // dot with sweep axis
+      const wave = Math.sin(proj * Math.PI * 4.0 - t * 2.0); // 4 crests
+      const v = wave * 0.5 + 0.5; // 0..1
+
+      // Two-colour crossfade: cold blue → hot coral
+      const r = 0.05 + v * 0.95;
+      const g = 0.15 + v * 0.3;
+      const b = 0.95 - v * 0.85;
+      c[i * 4] = r * sc;
+      c[i * 4 + 1] = g * sc;
+      c[i * 4 + 2] = b * sc;
+      c[i * 4 + 3] = 1.0;
+    }
+  }
+  _modeZones(t) {
+    const c = this._colorCPU;
+    const sc = this.scale;
+    const n = this.vertexCount;
+    const np = this._normPos;
+
+    // 5 zone centers drifting on a sphere surface
+    const ZONES = 5;
+    if (!this._zoneCache) {
+      this._zoneCache = Array.from({
+        length: ZONES
+      }, (_, i) => ({
+        phi: i / ZONES * Math.PI * 2,
+        theta: i % 3 * Math.PI / 3,
+        hue: i / ZONES
+      }));
+    }
+
+    // Drift zone centers
+    const centers = this._zoneCache.map((z, i) => {
+      const phi = z.phi + t * (0.12 + i * 0.04);
+      const theta = z.theta + t * (0.07 + i * 0.03);
+      return {
+        x: Math.sin(theta) * Math.cos(phi),
+        y: Math.cos(theta),
+        z: Math.sin(theta) * Math.sin(phi),
+        hue: (z.hue + t * 0.05) % 1.0
+      };
+    });
+    for (let i = 0; i < n; i++) {
+      const nx = np[i * 3],
+        ny = np[i * 3 + 1],
+        nz = np[i * 3 + 2];
+
+      // Soft-nearest-zone: weighted blend of all zones by inverse distance
+      let wr = 0,
+        wg = 0,
+        wb = 0,
+        ws = 0;
+      for (const z of centers) {
+        const dx = nx - z.x,
+          dy = ny - z.y,
+          dz = nz - z.z;
+        const d2 = dx * dx + dy * dy + dz * dz + 0.001;
+        const w = 1.0 / d2;
+        const [r, g, b] = _hsl(z.hue, 0.85, 0.5);
+        wr += r * w;
+        wg += g * w;
+        wb += b * w;
+        ws += w;
+      }
+      c[i * 4] = wr / ws * sc;
+      c[i * 4 + 1] = wg / ws * sc;
+      c[i * 4 + 2] = wb / ws * sc;
+      c[i * 4 + 3] = 1.0;
+    }
+  }
+  _modePulse(t) {
+    const c = this._colorCPU;
+    const sc = this.scale;
+    const n = this.vertexCount;
+
+    // 3 pulses at different frequencies
+    const pulses = [{
+      freq: 0.8,
+      hue: 0.0
+    },
+    // red ring
+    {
+      freq: 0.55,
+      hue: 0.33
+    },
+    // green ring
+    {
+      freq: 0.35,
+      hue: 0.66
+    } // blue ring
+    ];
+    for (let i = 0; i < n; i++) {
+      const rn = this._radii[i] / this._maxR; // 0..1
+
+      let r = 0,
+        g = 0,
+        b = 0;
+      for (const p of pulses) {
+        // Sharp front: fract(rn - t * freq) → thin bright band
+        const front = _fract(rn - t * p.freq);
+        const band = Math.max(0, 1.0 - front * 12.0); // thin spike
+        const [pr, pg, pb] = _hsl(p.hue, 1.0, 0.55);
+        r += pr * band;
+        g += pg * band;
+        b += pb * band;
+      }
+      c[i * 4] = Math.min(r, 1.0) * sc;
+      c[i * 4 + 1] = Math.min(g, 1.0) * sc;
+      c[i * 4 + 2] = Math.min(b, 1.0) * sc;
+      c[i * 4 + 3] = 1.0;
+    }
+  }
+  destroy() {
+    this.colorBuffer?.destroy();
+  }
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+exports.SplatColorAnimator = SplatColorAnimator;
+function _hsl(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(h * 6 % 2 - 1));
+  const m = l - c / 2;
+  let r = 0,
+    g = 0,
+    b = 0;
+  const hi = h * 6 | 0;
+  if (hi === 0) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (hi === 1) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (hi === 2) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (hi === 3) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (hi === 4) {
+    r = x;
+    g = 0;
+    b = c;
+  } else {
+    r = c;
+    g = 0;
+    b = x;
+  }
+  return [r + m, g + m, b + m];
+}
+function _fract(x) {
+  return x - Math.floor(x);
+}
+
+},{"../utils":92,"wgpu-matrix":41}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
