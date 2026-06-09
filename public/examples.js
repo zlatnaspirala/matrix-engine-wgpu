@@ -4756,6 +4756,7 @@ var loadGaussianSplat = function () {
     (0, _loaderObj.downloadMeshes)({
       ball: "./res/meshes/blender/sphere.obj",
       cube: "./res/meshes/blender/cube.obj"
+      // car: "./res/meshes/ply/d.obj"
     }, onLoadObj, {
       scale: [1, 1, 1]
     });
@@ -4786,11 +4787,11 @@ var loadGaussianSplat = function () {
       //   material: {type: 'standard', share: true},
       //   position: {x: 0, y: -1, z: -20},
       //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [100, 100, 100],
-      //   rotationSpeed: {x: 0, y: 0.1, z: 0},
+      //   scale: [1, 1, 1],
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
       //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
       //   name: 'sky',
-      //   mesh: m.ball,
+      //   mesh: m.car,
       //   physics: {
       //     enabled: false,
       //     geometry: "Sphere"
@@ -4840,13 +4841,13 @@ var loadGaussianSplat = function () {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       });
-      gaussianSplat.lightContainer[0].setPosition(0, 55, -10);
+      gaussianSplat.lightContainer[0].setPosition(0, 45, -10);
       gaussianSplat.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         window.MYCUBE = MYCUBE;
         // constructor(device, format, cameraBuffer)
         MYCUBE.effects.splat = new _splat.GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
-        MYCUBE.effects.splat.initialize('./res/meshes/ply/test.ply', 10);
+        MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12);
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
         // MYCUBE.effects.flameEmitter.setIntensity(100);
@@ -32770,11 +32771,12 @@ var _wgpuMatrix = require("wgpu-matrix");
  */
 
 class GaussianSplatLayer {
-  constructor(device, format, cameraBuffer) {
+  constructor(device, format, cameraBuffer, topology = "point-list") {
     this.device = device;
     this.format = format;
     this.cameraBuffer = cameraBuffer; // Use engine's camera buffer
     this.queue = device.queue;
+    this.topology = topology;
 
     // Splat data
     this.splatData = null;
@@ -33090,8 +33092,8 @@ class GaussianSplatLayer {
         }]
       },
       primitive: {
-        // topology: 'triangle-list',
-        topology: 'point-list',
+        topology: this.topology,
+        // stripIndexFormat: 'uint16',
         cullMode: 'none'
       },
       depthStencil: {

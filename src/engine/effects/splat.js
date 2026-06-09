@@ -6,11 +6,12 @@ import {mat4} from "wgpu-matrix";
  */
 
 export class GaussianSplatLayer {
-  constructor(device, format, cameraBuffer) {
+  constructor(device, format, cameraBuffer, topology="point-list") {
     this.device = device;
     this.format = format;
     this.cameraBuffer = cameraBuffer;  // Use engine's camera buffer
     this.queue = device.queue;
+    this.topology = topology;
 
     // Splat data
     this.splatData = null;
@@ -316,8 +317,8 @@ export class GaussianSplatLayer {
         ]
       },
       primitive: {
-        // topology: 'triangle-list',
-        topology: 'point-list',
+        topology: this.topology,
+        // stripIndexFormat: 'uint16',
         cullMode: 'none'
       },
       depthStencil: {

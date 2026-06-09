@@ -35010,7 +35010,7 @@ var MeshMorpher = class {
 
 // ../../../engine/generators/generator.js
 var local = [];
-async function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2, name2 = "gen1", geometry = "Cube", raycast2 = false, scale4 = [1, 1, 1], sum2 = 20, delay2 = 500, mesh = null) {
+async function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2, name2 = "gen1", geometry = "Cube", raycast2 = false, scale4 = [1, 1, 1], sum2 = 20, delay2 = 500, mesh = null, posOffset = { x: 0, y: 0, z: 0 }) {
   return new Promise((resolve) => {
     let engine = this;
     const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
@@ -35018,22 +35018,25 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
     function handler(m) {
       let ALL = [];
       let RAY = { enabled: raycast2 == true ? true : false, radius: 1 };
-      for (var x2 = 0; x2 < sum2; x2++) {
+      for (let x2 = 0; x2 < sum2; x2++) {
         const cubeName = name2 + "_" + x2;
         setTimeout(() => {
           engine.addMeshObj({
             material: { type: material },
-            position: pos2,
+            position: {
+              x: pos2.x + (Math.random() - 0.5) * posOffset.x,
+              y: pos2.y + (Math.random() - 0.5) * posOffset.y,
+              z: pos2.z + (Math.random() - 0.5) * posOffset.z
+            },
             rotation: rot2,
             rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: [texturePath2],
+            texturesPaths: typeof texturePath2 === "string" ? [texturePath2] : [texturePath2[x2]],
             name: cubeName,
             mesh: m.mesh,
             physics: {
               enabled: true,
               geometry,
               group: 2
-              // cannon
             },
             raycast: RAY
           });
@@ -35043,14 +35046,14 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
         }, x2 * delay2);
       }
       setTimeout(() => {
-        for (let x3 = 0; x3 < local.length; x3++) {
-          const o1 = app.matrixPhysics.getBodyByName(local[x3]);
+        for (let x2 = 0; x2 < local.length; x2++) {
+          const o1 = app.matrixPhysics.getBodyByName(local[x2]);
           ALL.push(o1);
-          if (x3 == local.length - 1) {
+          if (x2 == local.length - 1) {
             resolve(ALL);
           }
         }
-      }, delay2 * sum2 * 3);
+      }, delay2 * sum2 * 1.2);
     }
     if (geometry == "Cube") {
       downloadMeshes(inputCube, handler, { scale: scale4 });
@@ -36376,6 +36379,10 @@ var PhysicsBridge = class {
     };
     this.detectCollision = (e2) => {
     };
+    this.collisionPersisted = (e2) => {
+    };
+    this.collisionRemoved = (e2) => {
+    };
     this.tempRot = mat4Impl.create();
     this._paused = false;
     this.updates = [];
@@ -36425,28 +36432,24 @@ var PhysicsBridge = class {
       posArr[base + 1] = meObj.position.y;
       posArr[base + 2] = meObj.position.z;
       count++;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if (count > 0) {
-      console.log("Sending to Worker:", { idxArr, posArr });
       this._worker.postMessage({ cmd: "setKinematicTransform", count, idx: idxArr, pos: posArr });
     }
   }
+  setKinematicRotation(idx, x2, y2, z, w = 1) {
+    this._worker.postMessage({ cmd: "setKinematicRotation", idx, x: x2, y: y2, z, w });
+  }
   setKinematicTransform(idx, x2, y2, z = 0) {
     let count = 0;
-    const idxArr = this._kinematicIdx;
-    const posArr = this._kinematicPos;
     for (const [idx_, meObj] of this._bodyIndexMap) {
       if (!meObj.isKinematic && idx_ !== idx) continue;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
-      meObj.position.setPosition(x2, y2, 0);
+      meObj.position.setPosition(x2, y2, z);
       count++;
-      console.log(`Writing index ${idx} at pos: ${meObj.position.x}, ${meObj.position.y}`);
     }
     this._kinematicCount = count;
     if (count > 0) {
-      console.log("Sending to Worker:", { idxArr, posArr });
       this._worker.postMessage({ cmd: "setKinematicTransform", count, idx, x: x2, y: y2, z });
     }
   }
@@ -36508,6 +36511,14 @@ var PhysicsBridge = class {
     if (idx === void 0) return;
     this._worker.postMessage({ cmd: "deactivate", idx });
   }
+  switchToKinematic(idx) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "switchToKinematic", idx });
+  }
+  switchToDinamic(idx) {
+    if (idx === void 0) return;
+    this._worker.postMessage({ cmd: "switchToDinamic", idx });
+  }
   setSleepingThresholds(idx, linear, angular) {
     if (idx === void 0) return;
     this._worker.postMessage({ cmd: "setSleepingThresholds", idx, linear, angular });
@@ -36519,6 +36530,14 @@ var PhysicsBridge = class {
   setRollingFriction(idx, friction) {
     if (idx === void 0) return;
     this._worker.postMessage({ cmd: "setRollingFriction", idx, friction });
+  }
+  getQuaternion(idx) {
+    if (idx === void 0) return;
+    return this._send("getQuaternion", { idx });
+  }
+  getDiceFace(idx) {
+    if (idx === void 0) return;
+    return this._send("getDiceFace", { idx });
   }
   addHingeConstraint(idxA, idxB, options2) {
     if (idxA === void 0 || idxB === void 0 || idxA === -1 || idxB === -1) {
@@ -36549,7 +36568,6 @@ var PhysicsBridge = class {
     this._worker.postMessage({ cmd: "removeRigidBody", idx });
     this._bodyIndexMap.delete(idx);
   }
-  // cannones ---
   createChain(ids, size2 = 0.5, mass = 0.3, marginSpace = 0.1) {
     this._worker.postMessage({ cmd: "createChain", ids, size: size2, mass, marginSpace });
   }
@@ -36608,7 +36626,6 @@ var PhysicsBridge = class {
   _onMessage(data) {
     switch (data.cmd) {
       case "ready":
-      // this._worker.onmessage = ({data}) => this._onMessage(data);
       case "bodyAdded":
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
@@ -36623,12 +36640,32 @@ var PhysicsBridge = class {
         this.pCollisionEventArg.detail.rayDirection = data.normal;
         this.detectCollision(this.pCollisionEventArg);
         break;
+      case "collisionPersisted":
+        this.pCollisionEventArg.detail.body0Name = data.body0Name;
+        this.pCollisionEventArg.detail.body1Name = data.body1Name;
+        this.pCollisionEventArg.detail.rayDirection = null;
+        this.collisionPersisted(this.pCollisionEventArg);
+        break;
+      case "collisionRemoved":
+        this.pCollisionEventArg.detail.body0Name = data.body0ID;
+        this.pCollisionEventArg.detail.body1Name = data.body1ID;
+        this.pCollisionEventArg.detail.rayDirection = null;
+        this.collisionRemoved(this.pCollisionEventArg);
+        break;
       case "constraintAdded":
         this._pending.get(data.id)?.(data.idx);
         this._pending.delete(data.id);
         break;
       case "getPosition":
         this._pending.get(data.id)?.(data.position);
+        this._pending.delete(data.id);
+        break;
+      case "getQuaternion":
+        this._pending.get(data.id)?.(data.quaternion);
+        this._pending.delete(data.id);
+        break;
+      case "getDiceFace":
+        this._pending.get(data.id)?.(data.face);
         this._pending.delete(data.id);
         break;
       case "isSleeping":
@@ -37481,7 +37518,7 @@ var KaleidoscopeEffect = class {
     this.localRotation = config.localRotation ?? defaults.localRotation;
     this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
-    this.setGeometry("quad", this.scale);
+    this.setGeometry(shape, this.scale);
     this._localMatrix = mat4Impl.create();
     this._finalMatrix = mat4Impl.create();
     this._uniformData = new Float32Array(32);
@@ -38175,7 +38212,7 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.15.5 [The beast] ", LOG_FUNNY);
+    console.log("%c Version 1.15.7 [The beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
