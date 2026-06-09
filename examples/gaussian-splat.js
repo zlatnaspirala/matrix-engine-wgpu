@@ -31,20 +31,20 @@ export var loadGaussianSplat = function() {
 
 
     function onGround(m) {
-      gaussianSplat.addMeshObj({
-        material: {type: 'standard', share: true},
-        position: {x: 0, y: -5, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp'], //, './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'floor',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      })
+      // gaussianSplat.addMeshObj({
+      //   material: {type: 'standard', share: true},
+      //   position: {x: 0, y: -5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/floor1.webp'], //, './res/textures/env-maps/sky1_lod_mid.webp'],
+      //   name: 'floor',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // })
     }
 
     async function onLoadObj(m) {
@@ -67,7 +67,7 @@ export var loadGaussianSplat = function() {
       let MYCUBE = gaussianSplat.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 4, z: -10},
-        rotation: {x: 90, y: 0, z: 0},
+        rotation: {x: -90, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [1, 1, 1],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],

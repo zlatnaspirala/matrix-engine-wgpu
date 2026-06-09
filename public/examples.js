@@ -4766,36 +4766,20 @@ var loadGaussianSplat = function () {
     });
     (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
     function onGround(m) {
-      gaussianSplat.addMeshObj({
-        material: {
-          type: 'standard',
-          share: true
-        },
-        position: {
-          x: 0,
-          y: -5,
-          z: -10
-        },
-        rotation: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        rotationSpeed: {
-          x: 0,
-          y: 0,
-          z: 0
-        },
-        texturesPaths: ['./res/textures/floor1.webp'],
-        //, './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'floor',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
+      // gaussianSplat.addMeshObj({
+      //   material: {type: 'standard', share: true},
+      //   position: {x: 0, y: -5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/floor1.webp'], //, './res/textures/env-maps/sky1_lod_mid.webp'],
+      //   name: 'floor',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // })
     }
     async function onLoadObj(m) {
       // gaussianSplat.addMeshObj({
@@ -4824,7 +4808,7 @@ var loadGaussianSplat = function () {
           z: -10
         },
         rotation: {
-          x: 90,
+          x: -90,
           y: 0,
           z: 0
         },
