@@ -8,6 +8,7 @@ export var loadCameraTexture = function() {
 
   let cameraTexture = new MatrixEngineWGPU({
     fastRender: 0.9,
+    dontUsePhysics: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -19,14 +20,14 @@ export var loadCameraTexture = function() {
     addRaycastsAABBListener();
     cameraTexture.addLight();
 
-    addEventListener('PhysicsReady', () => {
+    // addEventListener('PhysicsReady', () => {
       downloadMeshes({
         welcomeText: "./res/meshes/blender/piramyd.obj",
         // sphere: "./res/meshes/blender/sphere.obj",
         // cube: "./res/meshes/blender/cube.obj",
       }, onLoadObj,
         {scale: [1, 1, 1]})
-    })
+    // })
 
     function onLoadObj(m) {
 

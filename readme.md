@@ -1248,6 +1248,8 @@ You may use, modify, and sell projects based on this code — just keep this not
 
   "Dancing girl" (https://skfb.ly/p7vNU) by planetrey.com is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
+  Skeletal system by: Aidan Sanderson - from blender addson blenderKit.
+
 ---
 
 ### BSD 3-Clause License (from WebGPU Samples)

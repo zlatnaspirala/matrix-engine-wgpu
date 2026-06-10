@@ -1,3 +1,5 @@
+Skeletal system by :
+Aidan Sanderson 
+from blender addson blenderKit.
 
 
-https://www.cgtrader.com/items/3162494/download-page

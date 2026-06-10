@@ -8322,6 +8322,7 @@ var Materials = class {
       this.video.addEventListener("canplaythrough", () => {
         if (this.video.readyState >= 3) {
           this.externalTexture = this.device.importExternalTexture({ source: this.video });
+          console.log("++++ > 3   ++++  " + this.externalTexture);
           if (!this.externalTexture) alert("ERROR " + this.externalTexture);
           this.sampler = this.device.createSampler({
             magFilter: "linear",
@@ -8366,7 +8367,7 @@ var Materials = class {
           setTimeout(() => {
             this.createMaterialBindGroupVideo();
             this.setupPipeline();
-          }, 1);
+          }, 100);
           return;
         } catch (err) {
           console.info("\u274C Failed to access camera:", err);
@@ -38863,7 +38864,7 @@ var MatrixEngineWGPU = class {
     const now2 = performance.now();
     this.now = now2 * 1e-3;
     this.lastFrameMS = this.now;
-    this.autoUpdate.forEach((_) => _.update());
+    this.autoUpdate.forEach((_) => _.update(this.now));
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();

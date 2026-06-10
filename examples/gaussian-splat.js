@@ -138,9 +138,8 @@ export var loadGaussianSplat = function() {
         cam.setY(17);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 700);
-    }
 
+        
     setInterval(() => {
       const memoI = randomIntFromTo(90, 150);
       MYCUBE.effects.flameEmitter.setIntensity(memoI);
@@ -153,11 +152,15 @@ export var loadGaussianSplat = function() {
         e.color = memoC;
       })
       setRandomMode()
-      console.log("memo color : " + memoC);
-      console.log("memo scale : " + memoS);
-      console.log("memo intes : " + memoI);
-      console.log("memo memoCONFIG : " + memoCONFIG);
+      // console.log("memo color : " + memoC);
+      // console.log("memo scale : " + memoS);
+      // console.log("memo intes : " + memoI);
+      // console.log("memo memoCONFIG : " + memoCONFIG);
     }, 2000)
+
+      }, 1500);
+    }
+
 
   })
   window.app = gaussianSplat;

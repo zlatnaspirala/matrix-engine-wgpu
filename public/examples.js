@@ -4882,25 +4882,25 @@ var loadGaussianSplat = function () {
         cam.setY(17);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 700);
+        setInterval(() => {
+          const memoI = (0, _utils.randomIntFromTo)(90, 150);
+          MYCUBE.effects.flameEmitter.setIntensity(memoI);
+          const memoCONFIG = (0, _utils.randomIntFromTo)(5, 15);
+          MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
+          let memoS = [(0, _utils.randomIntFromTo)(90, 150), (0, _utils.randomIntFromTo)(90, 150), (0, _utils.randomIntFromTo)(90, 150)];
+          let memoC = [(0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100)];
+          MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
+            e.currentScale = memoS;
+            e.color = memoC;
+          });
+          setRandomMode();
+          // console.log("memo color : " + memoC);
+          // console.log("memo scale : " + memoS);
+          // console.log("memo intes : " + memoI);
+          // console.log("memo memoCONFIG : " + memoCONFIG);
+        }, 2000);
+      }, 1500);
     }
-    setInterval(() => {
-      const memoI = (0, _utils.randomIntFromTo)(90, 150);
-      MYCUBE.effects.flameEmitter.setIntensity(memoI);
-      const memoCONFIG = (0, _utils.randomIntFromTo)(5, 15);
-      MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
-      let memoS = [(0, _utils.randomIntFromTo)(90, 150), (0, _utils.randomIntFromTo)(90, 150), (0, _utils.randomIntFromTo)(90, 150)];
-      let memoC = [(0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100)];
-      MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
-        e.currentScale = memoS;
-        e.color = memoC;
-      });
-      setRandomMode();
-      console.log("memo color : " + memoC);
-      console.log("memo scale : " + memoS);
-      console.log("memo intes : " + memoI);
-      console.log("memo memoCONFIG : " + memoCONFIG);
-    }, 2000);
   });
   window.app = gaussianSplat;
 };

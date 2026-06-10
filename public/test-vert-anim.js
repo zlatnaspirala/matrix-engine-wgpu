@@ -38863,7 +38863,7 @@ var MatrixEngineWGPU = class {
     const now2 = performance.now();
     this.now = now2 * 1e-3;
     this.lastFrameMS = this.now;
-    this.autoUpdate.forEach((_) => _.update());
+    this.autoUpdate.forEach((_) => _.update(this.now));
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
