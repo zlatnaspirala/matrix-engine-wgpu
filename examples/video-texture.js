@@ -26,13 +26,11 @@ export var loadVideoTexture = function() {
       }
     })
 
-    addEventListener('PhysicsReady', () => {
-      downloadMeshes({
-        piramyd: "./res/meshes/blender/piramyd.obj",
-        cube: "./res/meshes/blender/cube.obj",
-      }, onLoadObj,
-        {scale: [1, 1, 1]})
-    })
+    downloadMeshes({
+      piramyd: "./res/meshes/blender/piramyd.obj",
+      cube: "./res/meshes/blender/cube.obj",
+    }, onLoadObj,
+      {scale: [1, 1, 1]})
 
     function onLoadObj(m) {
       videoTexture.myLoadedMeshes = m;

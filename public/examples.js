@@ -1015,6 +1015,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 var loadCameraTexture = function () {
   let cameraTexture = new _world.default({
     fastRender: 0.9,
+    dontUsePhysics: true,
     canvasSize: 'fullscreen',
     mainCameraParams: {
       type: 'WASD',
@@ -1027,17 +1028,20 @@ var loadCameraTexture = function () {
       a: 1
     }
   }, () => {
+    console.log('.............');
     (0, _raycast.addRaycastsAABBListener)();
     cameraTexture.addLight();
-    addEventListener('PhysicsReady', () => {
-      (0, _loaderObj.downloadMeshes)({
-        welcomeText: "./res/meshes/blender/piramyd.obj"
-        // sphere: "./res/meshes/blender/sphere.obj",
-        // cube: "./res/meshes/blender/cube.obj",
-      }, onLoadObj, {
-        scale: [1, 1, 1]
-      });
+
+    // addEventListener('PhysicsReady', () => {
+    (0, _loaderObj.downloadMeshes)({
+      welcomeText: "./res/meshes/blender/piramyd.obj"
+      // sphere: "./res/meshes/blender/sphere.obj",
+      // cube: "./res/meshes/blender/cube.obj",
+    }, onLoadObj, {
+      scale: [1, 1, 1]
     });
+    // })
+
     function onLoadObj(m) {
       cameraTexture.addProceduralMeshObj({
         position: {
@@ -8420,13 +8424,11 @@ var loadVideoTexture = function () {
         videoTexture.getSceneObjectByName('MyVideoTex').video.play();
       }
     });
-    addEventListener('PhysicsReady', () => {
-      (0, _loaderObj.downloadMeshes)({
-        piramyd: "./res/meshes/blender/piramyd.obj",
-        cube: "./res/meshes/blender/cube.obj"
-      }, onLoadObj, {
-        scale: [1, 1, 1]
-      });
+    (0, _loaderObj.downloadMeshes)({
+      piramyd: "./res/meshes/blender/piramyd.obj",
+      cube: "./res/meshes/blender/cube.obj"
+    }, onLoadObj, {
+      scale: [1, 1, 1]
     });
     function onLoadObj(m) {
       videoTexture.myLoadedMeshes = m;
@@ -41839,7 +41841,7 @@ class Materials {
           this.externalTexture = this.device.importExternalTexture({
             source: this.video
           });
-          // console.log('++++ > 3   ++++  ' + this.externalTexture);
+          console.log('++++ > 3   ++++  ' + this.externalTexture);
           if (!this.externalTexture) alert('ERROR ' + this.externalTexture);
           this.sampler = this.device.createSampler({
             magFilter: 'linear',
@@ -41894,7 +41896,7 @@ class Materials {
           setTimeout(() => {
             this.createMaterialBindGroupVideo();
             this.setupPipeline();
-          }, 1);
+          }, 100);
           return;
         } catch (err) {
           console.info("❌ Failed to access camera:", err);
