@@ -4730,7 +4730,6 @@ var _world = _interopRequireDefault(require("../src/world.js"));
 var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
-var _genTex = require("../src/engine/effects/gen-tex2.js");
 var _splat = require("../src/engine/effects/splat.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadGaussianSplat = function () {
@@ -4751,6 +4750,7 @@ var loadGaussianSplat = function () {
       a: 1
     }
   }, () => {
+    let animator;
     gaussianSplat.addLight();
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
     (0, _loaderObj.downloadMeshes)({
@@ -4766,6 +4766,16 @@ var loadGaussianSplat = function () {
       scale: [30, 0.5, 30]
     });
     (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
+    const modes = ['rings', 'wave', 'zones', 'pulse'];
+    // Function to set a random mode
+    function setRandomMode() {
+      const randomIndex = Math.floor(Math.random() * modes.length);
+      const selectedMode = modes[randomIndex];
+      animator.setMode(selectedMode);
+      animator.setScale((0, _utils.randomFloatFromTo)(0.2, 10));
+      animator.setSpeed((0, _utils.randomFloatFromTo)(0.2, 4));
+      console.log(`Mode set to: ${selectedMode}`);
+    }
     function onGround(m) {
       // gaussianSplat.addMeshObj({
       //   material: {type: 'standard', share: true},
@@ -4846,44 +4856,57 @@ var loadGaussianSplat = function () {
       gaussianSplat.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(async () => {
         window.MYCUBE = MYCUBE;
-        MYCUBE.setBlend(0.01);
+        MYCUBE.setBlend(0.001);
         MYCUBE.effects.splat = new _splat.GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
         const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
-        const animator = new _splat.SplatColorAnimator(app.device, layer.positions, layer.vertexCount, layer.colorBuffer);
-        // // 'rings' | 'wave' | 'zones' | 'pulse'
+        animator = new _splat.SplatColorAnimator(app.device, layer.positions, layer.vertexCount, layer.colorBuffer);
         animator.setMode('pulse');
         animator.setScale(0.8);
         animator.setSpeed(0.8);
         layer.colorBuffer = animator.colorBuffer;
         app.autoUpdate.push(animator);
-
-        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+        // just for dev
+        window.animator = animator;
         MYCUBE.effects.flameEmitter.setIntensity(100);
         MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
+        MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
+          e.currentScale = [110, 110, 110];
+        });
         MYCUBE.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 11, 0, 0.7];
         });
         let cam = app.getCamera();
-        cam.setYaw(-0.03);
-        cam.setPitch(-0.49);
-        cam.setZ(0);
-        cam.setY(10);
+        cam.setYaw(0);
+        cam.setPitch(-0.15);
+        cam.setZ(7);
+        cam.setY(17);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 700);
     }
-    gaussianSplat.canvas.addEventListener("ray.hit.event", e => {
-      console.log('ray.hit.event detected');
-      if (e.detail.hitObject.name.startsWith('cube')) {
-        //
-      }
-    });
+    setInterval(() => {
+      const memoI = (0, _utils.randomIntFromTo)(90, 150);
+      MYCUBE.effects.flameEmitter.setIntensity(memoI);
+      const memoCONFIG = (0, _utils.randomIntFromTo)(5, 15);
+      MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
+      let memoS = [(0, _utils.randomIntFromTo)(90, 150), (0, _utils.randomIntFromTo)(90, 150), (0, _utils.randomIntFromTo)(90, 150)];
+      let memoC = [(0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100)];
+      MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
+        e.currentScale = memoS;
+        e.color = memoC;
+      });
+      setRandomMode();
+      console.log("memo color : " + memoC);
+      console.log("memo scale : " + memoS);
+      console.log("memo intes : " + memoI);
+      console.log("memo memoCONFIG : " + memoCONFIG);
+    }, 2000);
   });
   window.app = gaussianSplat;
 };
 exports.loadGaussianSplat = loadGaussianSplat;
 
-},{"../src/engine/effects/gen-tex2.js":54,"../src/engine/effects/splat.js":61,"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],12:[function(require,module,exports){
+},{"../src/engine/effects/splat.js":61,"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
