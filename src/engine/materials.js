@@ -248,6 +248,7 @@ export default class Materials {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
     this.setupPipeline();
+    // app.buildRenderBuckets();
   }
 
   createCheckerboardTexture(size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
@@ -656,11 +657,11 @@ export default class Materials {
           GPUTextureUsage.COPY_DST |
           GPUTextureUsage.RENDER_ATTACHMENT,
       });
-      this.video = null;
+      // this.video = null;
 
       this.updateVideoTexture();
       this.createMaterialBindGroupVideo();
-      // setTimeout(() => this.setupPipeline() , 200)
+      setTimeout(() => this.setupPipeline() , 200)
       // little strange
       // this.isVideo = false;
       // this.video = document.createElement('video');
@@ -683,7 +684,7 @@ export default class Materials {
           this.createMaterialBindGroupVideo();
           this.setupPipeline();
           resolve();
-          // Very interest 
+          // Very interest
           const ci1 = document.getElementById('ci1')
           if(ci1) {
             document.body.removeChild(ci1);
@@ -791,7 +792,7 @@ export default class Materials {
 
   createMaterialBindGroupVideo() {
     // if(!this.externalTexture) return;
-    // console.log('SET VIDEO BIND GROUP')
+    console.log('SET VIDEO BIND GROUP')
     if(this.video == null) {
       this.materialBindGroup = this.device.createBindGroup({
         label: 'materialVideoBGL',
