@@ -908,7 +908,7 @@ async function aiGenGraphCall(msg, ws) {
       SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
 
     // provider ='groq'
-    if(msg.prompt.msg.prompt === 'groq') {
+    if(msg.prompt.provider === 'groq') {
       matrixGroq.aiGenGraphCall(msg.prompt).then((r) => {
         console.log('GROQ service....>>>>', res_list)
         ws.send(JSON.stringify({
