@@ -8536,7 +8536,6 @@ var Materials = class {
     }
   }
   createMaterialBindGroupVideo() {
-    console.log("SET VIDEO BIND GROUP");
     if (this.video == null) {
       this.materialBindGroup = this.device.createBindGroup({
         label: "materialVideoBGL",
@@ -23490,7 +23489,7 @@ var MEEditorClient = class {
       this.ws.send(o2);
     });
     document.addEventListener("save-graph", (e2) => {
-      console.info("%cSave graph <signal>", LOG_FUNNY_ARCADE);
+      console.info(`%cSave graph <signal> ${e2.detail}`, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-graph",
         graphData: e2.detail.data
@@ -29651,6 +29650,7 @@ LIST OF INTEREST OBJECT:
         this.triggerNode(node2.id);
       }
       let value = node2._returnCache;
+      console.log("value................", value);
       if (typeof value === "string") {
         try {
           if (node2.title == "Get String") {
@@ -30028,6 +30028,7 @@ LIST OF INTEREST OBJECT:
         const value = this.getVariable(type2, varField.value);
         n._returnCache = value;
         if (n.displayEl) {
+          console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", type2);
           if (type2 === "object") {
             n.displayEl.textContent = value !== void 0 ? JSON.stringify(value) : "{}";
           } else if (typeof value === "number") {
@@ -30455,7 +30456,6 @@ LIST OF INTEREST OBJECT:
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram,
@@ -30922,6 +30922,7 @@ LIST OF INTEREST OBJECT:
   getVariable(type2, key) {
     const entry = this.variables[type2]?.[key];
     if (entry === void 0) return void 0;
+    console.log("...............................sssss");
     if (entry && typeof entry === "object" && "value" in entry) {
       return entry.value;
     }
@@ -31698,15 +31699,15 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("\u269B Enable physics (Ammo, Jolt, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("\u269B  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
+        let pId = prompt("\u269B  Choose physics library [jolt=1 ammo=2 cannones=3 matter=4] (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent("cnp", {
@@ -32056,15 +32057,15 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("\u269B Enable physics (Jolt, Ammo, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 matter=4  \n (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
       document.dispatchEvent(new CustomEvent("cnp", {
         detail: { name: name2, features }

@@ -205,7 +205,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('save-graph', (e) => {
-      console.info('%cSave graph <signal>', LOG_FUNNY_ARCADE);
+      console.info(`%cSave graph <signal> ${ e.detail}`, LOG_FUNNY_ARCADE);
       let o = {
         action: "save-graph",
         graphData: e.detail.data

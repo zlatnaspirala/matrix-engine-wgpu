@@ -757,7 +757,6 @@ export default class MEMeshObj extends Materials {
   }
 
   setupPipeline() {
-    console.log('TEST SETUP ')
     const pm = PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';

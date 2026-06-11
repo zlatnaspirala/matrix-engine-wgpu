@@ -792,7 +792,7 @@ export default class Materials {
 
   createMaterialBindGroupVideo() {
     // if(!this.externalTexture) return;
-    console.log('SET VIDEO BIND GROUP')
+    // console.log('SET VIDEO BIND GROUP')
     if(this.video == null) {
       this.materialBindGroup = this.device.createBindGroup({
         label: 'materialVideoBGL',

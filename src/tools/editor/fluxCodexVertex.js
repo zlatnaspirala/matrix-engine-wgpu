@@ -695,6 +695,12 @@ export default class FluxCodexVertex {
   _refreshVarsList(container) {
     container.innerHTML = "";
 
+    for(const key in this._varInputs) {
+      this._varInputs[key].onchange = null;
+      this._varInputs[key].oninput = null;
+    }
+    this._varInputs = {};
+
     const colors = {
       number: "#4fc3f7",
       boolean: "#aed581",
@@ -739,11 +745,14 @@ export default class FluxCodexVertex {
           border: "1px solid #333",
         });
 
-        input.oninput = () => {
+        input.onchange = () => {
           if(type === "object") {
             try {
-              this.variables.object[name] = JSON.parse(input.value);
-            } catch {
+              let parsed;
+              parsed = (new Function("return " + input.value))();
+              this.variables.object[name] = parsed;
+            } catch(err) {
+              console.log('err in vars editox:', err);
               return;
             }
           } else if(type === "number") {
@@ -753,6 +762,8 @@ export default class FluxCodexVertex {
           } else {
             this.variables.string[name] = input.value;
           }
+
+          this.notifyVariableChanged(type, name)
         };
 
         const btnGet = document.createElement("button");
@@ -3134,8 +3145,7 @@ LIST OF INTEREST OBJECT:
   }
 
   setVariable(type, key, value) {
-    if(!this.variables[type][key]) return;
-
+    // if(!this.variables[type][key]) return;
     console.log('Test -setVariable  value', value);
 
     this.variables[type][key].value = value;
@@ -3200,6 +3210,7 @@ LIST OF INTEREST OBJECT:
     }
 
     const saveInputValue = () => {
+      console.log('sadasd')
       let val;
       if(field.type === "object") {
         try {
@@ -3214,6 +3225,7 @@ LIST OF INTEREST OBJECT:
       field.value = val;
 
       // existing logic stays
+
       if(node.isGetterNode && field.key === "var") {
         this.notifyVariableChanged("object", val);
       }
@@ -3546,7 +3558,6 @@ LIST OF INTEREST OBJECT:
         this.triggerNode(node.id);
       }
       let value = node._returnCache;
-      // Optional: parse string to array
       if(typeof value === "string") {
         try {
           if(node.title == "Get String") {
@@ -3985,6 +3996,7 @@ LIST OF INTEREST OBJECT:
         n._returnCache = value;
         // Update visual label if exists
         if(n.displayEl) {
+          // console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', type)
           if(type === "object") {
             n.displayEl.textContent =
               value !== undefined ? JSON.stringify(value) : "{}";
@@ -4046,7 +4058,7 @@ LIST OF INTEREST OBJECT:
     if(n.isVariableNode) {
       const type = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find(f => f.key === "var");
-
+      console.log("isVariableNode set object ", value);
       if(varField && varField.value) {
 
         let value = this.getValue(nodeId, "value");
@@ -4260,7 +4272,7 @@ LIST OF INTEREST OBJECT:
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
-        let rotSpeed = this.getValue(nodeId, "rotSpeed");        
+        let rotSpeed = this.getValue(nodeId, "rotSpeed");
         let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
         let rot = this.getValue(nodeId, "rot");
         let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
@@ -4461,7 +4473,7 @@ LIST OF INTEREST OBJECT:
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
+        // console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,
@@ -4793,7 +4805,7 @@ LIST OF INTEREST OBJECT:
     } else if(n.title === "Set RotateX") {
       const rot = this.getValue(nodeId, "rotation");
       if(rot?.setRotateX) {
-        
+
         rot.setRotateX(this.getValue(nodeId, "x"));
       }
       this.enqueueOutputs(n, "execOut");
@@ -5120,7 +5132,7 @@ LIST OF INTEREST OBJECT:
 
   compileGraph() {
     // This is save !!!
-    // console.log("SAVE:", this.nodes)
+    console.log("SAVE:", this.nodes)
     const bundle = {
       nodes: this.nodes,
       links: this.links,

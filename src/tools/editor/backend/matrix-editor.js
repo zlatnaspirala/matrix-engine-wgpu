@@ -29,11 +29,15 @@ const watchers = new Map();
 const wss = new WebSocketServer({port: 1243});
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
+console.log("\x1b[93m%s\x1b[0m", "- MEWGPU EditorX                         -");
+console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[93m%s\x1b[0m", "- Start you new project                  -");
 console.log("\x1b[93m%s\x1b[0m", "- Load project                           -");
-console.log("\x1b[93m%s\x1b[0m", "- from ./public/matrix-engine.html       -");
+console.log("\x1b[93m%s\x1b[0m", "- StartUp at ./public/matrix-engine.html -");
+console.log("\x1b[93m%s\x1b[0m", "- Wait self redirection to               -");
+console.log("\x1b[93m%s\x1b[0m", "- ./public/<PROJECT_NAME>.html           -");
 console.log("\x1b[93m%s\x1b[0m", "- When you create a project next time    -");
-console.log("\x1b[93m%s\x1b[0m", "- you can go directly to /MyProject.html -");
+console.log("\x1b[93m%s\x1b[0m", "- you go directly to /<PROJECT_NAME>.html-");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Editorx -> Support SceneEditor, FluxCodexVertex Graph and FragmentShader Graph");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Project can be created from editor and from code, can't be combinated.");
@@ -52,7 +56,7 @@ async function buildAllProjectsOnStartup() {
     if(!dir.isDirectory()) continue;
     const projectName = dir.name;
     const entry = path.join(PROJECTS_DIR, projectName, "app-gen.js");
-    // app graph
+    // App graph
     const graphFile = path.join(PROJECTS_DIR, projectName, "graph.js");
     try {
       await fs.access(graphFile);
@@ -233,12 +237,12 @@ import {addRaycastsListener} from "../../src/engine/raycast.js";
 function CBoptions(p, n, pName, physicsLib, camera) {
   return `
   {
-  ${p ? 
-    physicsLib == 1 ? 'useJolt: true,' : 
-    physicsLib == 2 ? 'useAmmo: true,' : 
-    physicsLib == 3 ? 'useCannon: true,' :
-    physicsLib == 4 ? 'useMatter: true,' :
-     'dontUsePhysics: true,' : 'dontUsePhysics: true,'}
+  ${p ?
+      physicsLib == 1 ? 'useJolt: true,' :
+        physicsLib == 2 ? 'useAmmo: true,' :
+          physicsLib == 3 ? 'useCannon: true,' :
+            physicsLib == 4 ? 'useMatter: true,' :
+              'dontUsePhysics: true,' : 'dontUsePhysics: true,'}
   useEditor: true,
   projectType: "created from editor",
   ${pName ? `projectName: '${pName}',` : ""}
@@ -364,9 +368,7 @@ async function buildProject(projectName, ws, payload) {
     return;
   }
 
-  // const entry = `${PROJECTS_DIR}\\${projectName}\\app-gen.js`;
   const entry = path.join(PROJECTS_DIR, projectName, "app-gen.js");
-  // const outfile = `${PUBLIC_DIR}\\${projectName}.js`;
   const outfile = path.join(PUBLIC_DIR, `${projectName}.js`);
   const context = await esbuild.context({
     entryPoints: [entry],
@@ -389,7 +391,6 @@ async function buildProject(projectName, ws, payload) {
 
   const htmldoc = new CodeBuilder();
   htmldoc.addLine(createHTMLProjectDocument(projectName));
-  // const outHtmlFile = `${PUBLIC_DIR}\\${projectName}.html`;
   const outHtmlFile = path.join(PUBLIC_DIR, `${projectName}.html`);
   htmldoc.saveTo(outHtmlFile);
 
@@ -414,7 +415,7 @@ async function stopWatch(projectName, ws) {
     return;
   }
 
-  await ctx.dispose();       // <- STOP WATCH
+  await ctx.dispose();
   watchers.delete(projectName);
   console.log("🛑 Watch stopped for", projectName);
   ws.send(JSON.stringify({
@@ -473,9 +474,9 @@ async function fileDetail(msg, ws) {
       path: folder,
       isFile: stat.isFile(),
       isDirectory: stat.isDirectory(),
-      size: stat.size,          // bytes
-      created: stat.birthtime,  // Date
-      modified: stat.mtime,     // Date
+      size: stat.size,
+      created: stat.birthtime,
+      modified: stat.mtime,
     };
     ws.send(JSON.stringify({
       ok: true,
@@ -550,6 +551,7 @@ async function saveMethods(msg, ws) {
 
 // FLUXCODEXSHADER
 async function saveGraph(msg, ws) {
+  console.log('.............savevg PROJECT_NAME', msg.graphData );
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "graph.js");
