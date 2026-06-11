@@ -26632,6 +26632,9 @@ class WASDCamera {
       });
       canvas.addEventListener('pointermove', e => {
         if (e.pointerType === 'mouse' && this._mouseDown) {
+          if (window.__isDragging === true) {
+            return;
+          }
           const dx = e.movementX * this.MOUSE_SENS;
           const dy = e.movementY * this.MOUSE_SENS;
           this.yaw -= dx * this.rotationSpeed;
@@ -27493,6 +27496,9 @@ class FirstPersonCamera {
     });
     if ((0, _utils.isMobile)() === false) canvas.addEventListener('pointermove', e => {
       if (e.pointerType === 'mouse' && this._mouseDown) {
+        if (window.__isDragging === true) {
+          return;
+        }
         const dx = e.movementX * this.MOUSE_SENS;
         const dy = e.movementY * this.MOUSE_SENS;
         this.yaw -= dx * this.rotationSpeed;
@@ -31481,6 +31487,7 @@ class GizmoEffect {
     this.selectedAxis = 0;
     this.movementScale = 0.035;
     this.isDragging = false;
+    window.__isDragging = false;
     this.dragAxis = 0;
     this.parentMesh = null;
 
@@ -31693,6 +31700,7 @@ class GizmoEffect {
         // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if (this.isDragging && e.buttons === 0) {
         this.isDragging = false;
+        window.__isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       } else {
@@ -31721,8 +31729,9 @@ class GizmoEffect {
           this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
           document.dispatchEvent(this.editorUpdateScaleEvent);
         }
-        console.log('this.isDragging = false;');
+        console.log('this.isDragging = false');
         this.isDragging = false;
+        window.__isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       }
@@ -31749,6 +31758,7 @@ class GizmoEffect {
       this._updateGizmoSettings();
       console.log('this.isDragging = true;');
       this.isDragging = true;
+      window.__isDragging = true;
     }
   }
   _getAxisScreenDirection(axisIndex) {
@@ -41539,6 +41549,7 @@ class Materials {
     this.material.fromGraph = graphShader;
     this.material.type = newType;
     this.setupPipeline();
+    // app.buildRenderBuckets();
   }
   createCheckerboardTexture(size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
     const mipLevelCount = Math.floor(Math.log2(size)) + 1;
@@ -41962,10 +41973,11 @@ class Materials {
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
-      this.video = null;
+      // this.video = null;
+
       this.updateVideoTexture();
       this.createMaterialBindGroupVideo();
-      // setTimeout(() => this.setupPipeline() , 200)
+      setTimeout(() => this.setupPipeline(), 200);
       // little strange
       // this.isVideo = false;
       // this.video = document.createElement('video');
@@ -41987,7 +41999,7 @@ class Materials {
           this.createMaterialBindGroupVideo();
           this.setupPipeline();
           resolve();
-          // Very interest 
+          // Very interest
           const ci1 = document.getElementById('ci1');
           if (ci1) {
             document.body.removeChild(ci1);
@@ -42114,7 +42126,7 @@ class Materials {
   }
   createMaterialBindGroupVideo() {
     // if(!this.externalTexture) return;
-    // console.log('SET VIDEO BIND GROUP')
+    console.log('SET VIDEO BIND GROUP');
     if (this.video == null) {
       this.materialBindGroup = this.device.createBindGroup({
         label: 'materialVideoBGL',
@@ -43446,6 +43458,7 @@ class MEMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
   setupPipeline() {
+    console.log('TEST SETUP ');
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -43875,11 +43888,11 @@ let cullingPass = function () {
       if (mesh.isVideo) mesh.updateVideoTexture();
       if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
 
-      // ← ADD THIS: Update world-space bounding sphere if mesh moved
+      // : Update world-space bounding sphere if mesh moved
       mesh.updateBoundingSphere?.();
     }
 
-    // ← ADD THIS: Frustum cull all meshes before rendering (1-2ms overhead)
+    // : Frustum cull all meshes before rendering (1-2ms overhead)
     const cullStartMs = performance.now();
     this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
     const cullTimeMs = performance.now() - cullStartMs;
@@ -44001,11 +44014,11 @@ let noShadowPass = function () {
       if (mesh.isVideo) mesh.updateVideoTexture();
       if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
 
-      // ← ADD THIS: Update world-space bounding sphere if mesh moved
+      // : Update world-space bounding sphere if mesh moved
       mesh.updateBoundingSphere?.();
     }
 
-    // ← ADD THIS: Frustum cull all meshes before rendering (1-2ms overhead)
+    // : Frustum cull all meshes before rendering (1-2ms overhead)
     const cullStartMs = performance.now();
     this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
     const cullTimeMs = performance.now() - cullStartMs;
@@ -52466,7 +52479,7 @@ fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
     let result = mirrorParams.illuminateColor
         * mirrorParams.illuminateStrength
         * rim * pulse * shimmer;
-    return clamp(result, vec3f(0.0), vec3f(1.0)); // ← ADD THIS
+    return clamp(result, vec3f(0.0), vec3f(1.0)); // 
 }
 
 // Mirror specular: sharp GGX lobe biased toward near-zero roughness

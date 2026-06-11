@@ -61,11 +61,11 @@ export let cullingPass = function() {
       if(mesh.isVideo) mesh.updateVideoTexture();
       if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
 
-      // ← ADD THIS: Update world-space bounding sphere if mesh moved
+      // : Update world-space bounding sphere if mesh moved
       mesh.updateBoundingSphere?.();
     }
 
-    // ← ADD THIS: Frustum cull all meshes before rendering (1-2ms overhead)
+    // : Frustum cull all meshes before rendering (1-2ms overhead)
     const cullStartMs = performance.now();
     this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
     const cullTimeMs = performance.now() - cullStartMs;
@@ -200,11 +200,11 @@ export let noShadowPass = function() {
       if(mesh.isVideo) mesh.updateVideoTexture();
       if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
 
-      // ← ADD THIS: Update world-space bounding sphere if mesh moved
+      // : Update world-space bounding sphere if mesh moved
       mesh.updateBoundingSphere?.();
     }
 
-    // ← ADD THIS: Frustum cull all meshes before rendering (1-2ms overhead)
+    // : Frustum cull all meshes before rendering (1-2ms overhead)
     const cullStartMs = performance.now();
     this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
     const cullTimeMs = performance.now() - cullStartMs;

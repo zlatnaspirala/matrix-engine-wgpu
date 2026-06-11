@@ -624,12 +624,6 @@ let app = new MatrixEngineWGPU(
  }, 800);
  // ME END REEL_1 updateRotx
  
-  // ME START REEL_2 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('REEL_2').position.SetY(3);
- }, 800);
- // ME END REEL_2 updatePosy
- 
   // ME START REEL_TOP updatePosy
  setTimeout(() => {
   app.getSceneObjectByName('REEL_TOP').position.SetY(3.0350000000000033);
@@ -659,6 +653,12 @@ let app = new MatrixEngineWGPU(
   app.getSceneObjectByName('REEL_2').position.SetX(0.07);
  }, 800);
  // ME END REEL_2 updatePosx
+ 
+  // ME START REEL_2 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('REEL_2').position.SetY(3);
+ }, 800);
+ // ME END REEL_2 updatePosy
  
  // [MAIN_REPLACE2]
 

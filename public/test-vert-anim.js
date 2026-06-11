@@ -2447,6 +2447,9 @@ var WASDCamera = class _WASDCamera {
       }, { passive: false });
       canvas.addEventListener("pointermove", (e2) => {
         if (e2.pointerType === "mouse" && this._mouseDown) {
+          if (window.__isDragging === true) {
+            return;
+          }
           const dx = e2.movementX * this.MOUSE_SENS;
           const dy = e2.movementY * this.MOUSE_SENS;
           this.yaw -= dx * this.rotationSpeed;
@@ -3056,6 +3059,9 @@ var FirstPersonCamera = class _FirstPersonCamera {
     }, { passive: false });
     if (isMobile() === false) canvas.addEventListener("pointermove", (e2) => {
       if (e2.pointerType === "mouse" && this._mouseDown) {
+        if (window.__isDragging === true) {
+          return;
+        }
         const dx = e2.movementX * this.MOUSE_SENS;
         const dy = e2.movementY * this.MOUSE_SENS;
         this.yaw -= dx * this.rotationSpeed;
@@ -6164,7 +6170,7 @@ fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
     let result = mirrorParams.illuminateColor
         * mirrorParams.illuminateStrength
         * rim * pulse * shimmer;
-    return clamp(result, vec3f(0.0), vec3f(1.0)); // \u2190 ADD THIS
+    return clamp(result, vec3f(0.0), vec3f(1.0)); // 
 }
 
 // Mirror specular: sharp GGX lobe biased toward near-zero roughness
@@ -8322,6 +8328,7 @@ var Materials = class {
       this.video.addEventListener("canplaythrough", () => {
         if (this.video.readyState >= 3) {
           this.externalTexture = this.device.importExternalTexture({ source: this.video });
+          console.log("++++ > 3   ++++  " + this.externalTexture);
           if (!this.externalTexture) alert("ERROR " + this.externalTexture);
           this.sampler = this.device.createSampler({
             magFilter: "linear",
@@ -8366,7 +8373,7 @@ var Materials = class {
           setTimeout(() => {
             this.createMaterialBindGroupVideo();
             this.setupPipeline();
-          }, 1);
+          }, 100);
           return;
         } catch (err) {
           console.info("\u274C Failed to access camera:", err);
@@ -8427,9 +8434,9 @@ var Materials = class {
         format: "rgba8unorm",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
       });
-      this.video = null;
       this.updateVideoTexture();
       this.createMaterialBindGroupVideo();
+      setTimeout(() => this.setupPipeline(), 200);
     }
     if (this.video) await new Promise((resolve) => {
       this.video.requestVideoFrameCallback(() => {
@@ -8529,6 +8536,7 @@ var Materials = class {
     }
   }
   createMaterialBindGroupVideo() {
+    console.log("SET VIDEO BIND GROUP");
     if (this.video == null) {
       this.materialBindGroup = this.device.createBindGroup({
         label: "materialVideoBGL",
@@ -9018,6 +9026,7 @@ var GizmoEffect = class {
     this.selectedAxis = 0;
     this.movementScale = 0.035;
     this.isDragging = false;
+    window.__isDragging = false;
     this.dragAxis = 0;
     this.parentMesh = null;
     this.editorUpdatePosEvent = new CustomEvent("web.editor.update.pos", {
@@ -9323,6 +9332,7 @@ var GizmoEffect = class {
         this._handleDrag(e2);
       } else if (this.isDragging && e2.buttons === 0) {
         this.isDragging = false;
+        window.__isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       } else {
@@ -9350,8 +9360,9 @@ var GizmoEffect = class {
           this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
           document.dispatchEvent(this.editorUpdateScaleEvent);
         }
-        console.log("this.isDragging = false;");
+        console.log("this.isDragging = false");
         this.isDragging = false;
+        window.__isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       }
@@ -9372,6 +9383,7 @@ var GizmoEffect = class {
       this._updateGizmoSettings();
       console.log("this.isDragging = true;");
       this.isDragging = true;
+      window.__isDragging = true;
     }
   }
   _getAxisScreenDirection(axisIndex) {
@@ -13326,6 +13338,7 @@ var MEMeshObj = class extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x2, y2]));
   }
   setupPipeline() {
+    console.log("TEST SETUP ");
     const pm = PipelineManager.get();
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
@@ -39403,11 +39416,8 @@ var app2 = new MatrixEngineWGPU(
     setTimeout(() => {
       app3.getSceneObjectByName("SUB16").scale[2] = 2;
     }, 800);
-    setTimeout(() => {
-      app3.getSceneObjectByName("SUB16").position.SetY(4.035);
-    }, 800);
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-      let texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+      let texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
       app3.addMeshObj({
         position: { x: 0, y: 0, z: -20 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -39419,12 +39429,6 @@ var app2 = new MatrixEngineWGPU(
         physics: { enabled: false, geometry: "Cube" }
       });
     }, { scale: [1, 1, 1] });
-    setTimeout(() => {
-      app3.getSceneObjectByName("OCEAN").position.SetX(-7.665);
-    }, 800);
-    setTimeout(() => {
-      app3.getSceneObjectByName("OCEAN").position.SetY(7.245000000000001);
-    }, 800);
     setTimeout(() => {
       app3.getSceneObjectByName("OCEAN").scale[0] = 2;
     }, 800);
@@ -39438,7 +39442,7 @@ var app2 = new MatrixEngineWGPU(
       app3.getSceneObjectByName("FLOOR").position.SetY(-1.2750000000000001);
     }, 800);
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-      let texturesPaths = ["./res/meshes/blender/cube-g1-extra_low.png"];
+      let texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
       app3.addMeshObj({
         position: { x: 0, y: 0, z: -20 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -39467,6 +39471,15 @@ var app2 = new MatrixEngineWGPU(
     }, 800);
     setTimeout(() => {
       app3.getSceneObjectByName("FLOOR").position.SetZ(-19.96556934602543);
+    }, 800);
+    setTimeout(() => {
+      app3.getSceneObjectByName("SUB16").position.SetY(3.7900000000000027);
+    }, 800);
+    setTimeout(() => {
+      app3.getSceneObjectByName("OCEAN").position.SetX(-7.454999999999907);
+    }, 800);
+    setTimeout(() => {
+      app3.getSceneObjectByName("OCEAN").position.SetY(8.259999999999986);
     }, 800);
   }
 );
