@@ -143,6 +143,7 @@ export class WASDCamera {
 
       canvas.addEventListener('pointermove', e => {
         if(e.pointerType === 'mouse' && this._mouseDown) {
+          if(window.__isDragging === true) {return}
           const dx = e.movementX * this.MOUSE_SENS;
           const dy = e.movementY * this.MOUSE_SENS;
           this.yaw -= dx * this.rotationSpeed;
@@ -849,6 +850,7 @@ export class FirstPersonCamera {
 
     if(isMobile() === false) canvas.addEventListener('pointermove', e => {
       if(e.pointerType === 'mouse' && this._mouseDown) {
+        if(window.__isDragging === true) {return}
         const dx = e.movementX * this.MOUSE_SENS;
         const dy = e.movementY * this.MOUSE_SENS;
         this.yaw -= dx * this.rotationSpeed;

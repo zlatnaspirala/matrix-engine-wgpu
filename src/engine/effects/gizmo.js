@@ -12,6 +12,7 @@ export class GizmoEffect {
     this.selectedAxis = 0;
     this.movementScale = 0.035;
     this.isDragging = false;
+    window.__isDragging = false;
     this.dragAxis = 0;
     this.parentMesh = null;
 
@@ -171,6 +172,7 @@ export class GizmoEffect {
         // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if(this.isDragging && e.buttons === 0) {
         this.isDragging = false;
+        window.__isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       } else {
@@ -200,8 +202,9 @@ export class GizmoEffect {
           this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
           document.dispatchEvent(this.editorUpdateScaleEvent);
         }
-        console.log('this.isDragging = false;')
+        console.log('this.isDragging = false');
         this.isDragging = false;
+        window.__isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       }
@@ -227,6 +230,7 @@ export class GizmoEffect {
       this._updateGizmoSettings();
       console.log('this.isDragging = true;')
       this.isDragging = true;
+      window.__isDragging = true;
     }
   }
 

@@ -231,7 +231,7 @@ fn computeMirrorIlluminate(N: vec3f, V: vec3f, fragPos: vec3f) -> vec3f {
     let result = mirrorParams.illuminateColor
         * mirrorParams.illuminateStrength
         * rim * pulse * shimmer;
-    return clamp(result, vec3f(0.0), vec3f(1.0)); // ← ADD THIS
+    return clamp(result, vec3f(0.0), vec3f(1.0)); // 
 }
 
 // Mirror specular: sharp GGX lobe biased toward near-zero roughness

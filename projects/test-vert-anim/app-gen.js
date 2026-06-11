@@ -102,16 +102,9 @@ app.addLight();
  }, 800);
  // ME END SUB16 updateScale2
  
-  // ME START SUB16 updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('SUB16').position.SetY(4.035);
- }, 800);
- // ME END SUB16 updatePosy
- 
- 
-       // ME START OCEAN addCube
+  // ME START OCEAN addCube
  downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
-   let texturesPaths = ['./res/meshes/blender/cube-g1-extra_low.png']; 
+   let texturesPaths = ['./res/textures/cube-g1-extra_low.png']; 
    app.addMeshObj({
      position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
      texturesPaths: [texturesPaths],
@@ -124,19 +117,7 @@ app.addLight();
  // ME END OCEAN addCube
  
 
-       // ME START OCEAN updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('OCEAN').position.SetX(-7.665);
- }, 800);
- // ME END OCEAN updatePosx
- 
-    // ME START OCEAN updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('OCEAN').position.SetY(7.245000000000001);
- }, 800);
- // ME END OCEAN updatePosy
- 
-  // ME START OCEAN updateScale0
+       // ME START OCEAN updateScale0
  setTimeout(() => {
   app.getSceneObjectByName('OCEAN').scale[0] = 2;
  }, 800);
@@ -163,7 +144,7 @@ app.addLight();
  
        // ME START WAVE addCube
  downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
-   let texturesPaths = ['./res/meshes/blender/cube-g1-extra_low.png']; 
+   let texturesPaths = ['./res/textures/cube-g1-extra_low.png']; 
    app.addMeshObj({
      position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
      texturesPaths: [texturesPaths],
@@ -211,6 +192,24 @@ app.addLight();
   app.getSceneObjectByName('FLOOR').position.SetZ(-19.96556934602543);
  }, 800);
  // ME END FLOOR updatePosz
+ 
+         // ME START SUB16 updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('SUB16').position.SetY(3.7900000000000027);
+ }, 800);
+ // ME END SUB16 updatePosy
+ 
+  // ME START OCEAN updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('OCEAN').position.SetX(-7.454999999999907);
+ }, 800);
+ // ME END OCEAN updatePosx
+ 
+  // ME START OCEAN updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('OCEAN').position.SetY(8.259999999999986);
+ }, 800);
+ // ME END OCEAN updatePosy
  
  // [MAIN_REPLACE2]
 })
