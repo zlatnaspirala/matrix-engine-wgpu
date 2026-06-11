@@ -3,7 +3,7 @@ import Groq from "groq-sdk";
 
 export class AiGroq {
   constructor(model) {
-    this.model = "llama-3.1-70b-versatile";
+    this.model = "llama-3.3-70b-versatile";
   }
 
   async aiGenGraphCall(i) {
