@@ -53841,9 +53841,9 @@ class EditorHud {
         physics: false,
         networking: false
       };
-      if (confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("⚛ Enable physics (Ammo, Jolt, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("⚛  Choose physics library: jolt=1 ammo=2 cannones=3 matter=4(Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
@@ -54242,9 +54242,9 @@ class EditorHud {
         physics: false,
         networking: false
       };
-      if (confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("⚛ Enable physics (Ammo, Jolt, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 matter=4 (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
@@ -54260,13 +54260,14 @@ class EditorHud {
     });
     this.showAboutModal = () => {
       alert(`
-  ✔️ Support for 3D objects and scene transformations
-  ✔️ Ammo.js physics integration
+  ✔️ Support for 3D objects and scene transformations.
+  ✔️ Ammo.js/Jolt/CannonES/MatterJS physics worker bridge integration.
   ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend
   ✔️ Event system
   🎯 Save system - direct code line [file-protocol]
   🎯 Adding Visual Scripting System called 
      FlowCodexVertex (deactivete from top menu)(activate on pressing F4 key)
+     FluxCodesShader for shader node system.
      Source code: https://github.com/zlatnaspirala/matrix-engine-wgpu
      More at https://maximumroulette.com
         `);

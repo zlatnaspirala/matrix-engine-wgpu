@@ -1,16 +1,19 @@
 import {aiConfig} from "../config.js";
-// import {SYSTEM_PROMPT} from "./test-prompt1.js";
 import {Ollama} from "ollama";
 
 export class AiOllama {
-  constructor() {}
+  constructor(model) {
+    // qwen3.5:27b
+    // qwen3.6:35b
+    this.model = "gpt-oss:120b";
+  }
   async aiGenGraphCall(i) {
     const ollama = new Ollama({
       host: "https://ollama.com",
       headers: {Authorization: "Bearer " + aiConfig.ollama},
     });
     const response = await ollama.chat({
-      model: "gpt-oss:120b",
+      model: this.model,
       messages: [
         {role: "system", content: i.finalSysPrompt},
         {role: "user", content: i.task}

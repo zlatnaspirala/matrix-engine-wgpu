@@ -107,9 +107,8 @@ export function catalogToText(catalog) {
 }
 
 export let tasks = [
-  "On load print hello world",
   "On load create a cube named box1 at position 0 0 0",
-  "Create a the labyrinth using generatorWall",
+  "Create a the house using multiply generatorWall, use different size to costruct whole house with 3 rooms.",
   "Set texture for floor object",
   "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",

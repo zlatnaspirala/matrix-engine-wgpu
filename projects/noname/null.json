@@ -1,0 +1,10 @@
+{
+  "redirect": true,
+  "id": "noname",
+  "name": "noname",
+  "absolutePath": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects\\noname\\null.json",
+  "PROJECTS_DIR": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects",
+  "projectData": "noname\\null.json",
+  "physics": false,
+  "networking": false
+}

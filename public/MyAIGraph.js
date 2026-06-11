@@ -39410,10 +39410,10 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/tutorial-2/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 188.34460239409304, "y": 164.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 541.8179030935556, "y": 128.84555844274547, "title": "Add Procedural Mesh", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "meshA", "type": "string" }, { "name": "meshB", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "meshA", "value": "cube" }, { "key": "meshB", "value": "sphere" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:5, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "editorGen1" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[3,3,3]" }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_3": { "id": "node_3", "title": "SetTimeout", "x": 875.2192618386248, "y": 220.04975124490676, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "2000" }], "builtIn": true }, "node_6": { "id": "node_6", "x": 1172.0101126535392, "y": 288.1566211881626, "title": "Set Morph ProceduralMesh", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "index", "type": "value" }, { "name": "interval", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "editorGen1" }, { "key": "index", "value": 1 }, { "key": "interval", "value": 2e3 }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_2", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_6", "pin": "exec" }, "type": "action" }], "nodeCounter": 7, "linkCounter": 4, "pan": [-601, -51], "variables": { "number": {}, "boolean": {}, "string": {}, "object": { "POSITION": { "x": 0, "y": 1, "z": -10 } } } };
+// ../../../../projects/MyAIGraph/graph.js
+var graph_default = { "nodes": [], "links": [{ "id": "l4", "from": { "node": "n7", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n8", "pin": "exec" }, "type": "action" }, { "id": "l5", "from": { "node": "n8", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n10", "pin": "exec" }, "type": "action" }, { "id": "l6", "from": { "node": "n9", "pin": "result", "type": "string", "out": true }, "to": { "node": "n10", "pin": "value" }, "type": "string" }, { "id": "l7", "from": { "node": "n11", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n12", "pin": "exec" }, "type": "action" }, { "id": "l8", "from": { "node": "n12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n13", "pin": "exec" }, "type": "action" }, { "id": "l9", "from": { "node": "n13", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n14", "pin": "exec" }, "type": "action" }, { "id": "l10", "from": { "node": "n14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n15", "pin": "exec" }, "type": "action" }, { "id": "l11", "from": { "node": "n16", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n17", "pin": "exec" }, "type": "action" }, { "id": "l12", "from": { "node": "n17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n18", "pin": "exec" }, "type": "action" }, { "id": "l13", "from": { "node": "n18", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n19", "pin": "exec" }, "type": "action" }], "nodeCounter": 20, "linkCounter": 14, "pan": [-47, 190], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
-// ../../../../projects/tutorial-2/shader-graphs.js
+// ../../../../projects/MyAIGraph/shader-graphs.js
 var shaderGraphsProdc = [
   {
     "name": "fragShaderGraph",
@@ -39433,13 +39433,13 @@ var shaderGraphsProdc = [
   }
 ];
 
-// ../../../../projects/tutorial-2/app-gen.js
+// ../../../../projects/MyAIGraph/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
-    dontUsePhysics: true,
+    useCannon: true,
     useEditor: true,
     projectType: "created from editor",
-    projectName: "tutorial-2",
+    projectName: "MyAIGraph",
     canvasSize: "fullscreen",
     mainCameraParams: {
       type: "WASD",
@@ -39448,33 +39448,35 @@ var app2 = new MatrixEngineWGPU(
     clearColor: { r: 0, b: 0, g: 0, a: 1 }
   },
   (app3) => {
-    app3.graph = graph_default;
-    shaderGraphsProdc.forEach((gShader) => {
-      let shaderReady = JSON.parse(gShader.content);
-      app3.shadersPack[gShader.name] = shaderReady.final;
-      if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
-    });
-    addRaycastsListener("canvas1", "mousedown");
-    app3.getCamera().setPosition(0, 4, 0);
-    app3.addLight();
-    downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
-      let texturesPaths = ["./res/textures/floor1.webp"];
-      app3.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 0, y: 0, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths,
-        name: "FLOOR",
-        mesh: m.mesh,
-        raycast: { enabled: true, radius: 2 },
-        physics: { enabled: false, geometry: "Cube" },
-        pointerEffect: {
-          enabled: true,
-          gizmoEffect: true
-        }
+    addEventListener("PhysicsReady", async () => {
+      app3.graph = graph_default;
+      shaderGraphsProdc.forEach((gShader) => {
+        let shaderReady = JSON.parse(gShader.content);
+        app3.shadersPack[gShader.name] = shaderReady.final;
+        if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
       });
-    }, { scale: [25, 1, 25] });
+      addRaycastsListener("canvas1", "mousedown");
+      app3.getCamera().setPosition(0, 4, 0);
+      app3.addLight();
+      downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
+        let texturesPaths = ["./res/textures/floor1.webp"];
+        app3.addMeshObj({
+          material: { type: "standard" },
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths,
+          name: "FLOOR",
+          mesh: m.mesh,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" },
+          pointerEffect: {
+            enabled: true,
+            gizmoEffect: true
+          }
+        });
+      }, { scale: [25, 1, 25] });
+    });
   }
 );
 window.app = app2;
@@ -39488,4 +39490,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=tutorial-2.js.map
+//# sourceMappingURL=MyAIGraph.js.map

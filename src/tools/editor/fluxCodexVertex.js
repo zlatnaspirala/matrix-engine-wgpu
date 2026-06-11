@@ -47,6 +47,9 @@ import {catalogToText, generateAICatalog, providers, tasks} from "./generateAISc
 export let runtimeCacheObjs = [];
 
 export default class FluxCodexVertex {
+
+  __experimental__RESOURCES_FOR_GRAPH = new RESOURCES_FOR_GRAPH();
+
   constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
     this.toolTip = toolTip;
@@ -457,7 +460,7 @@ export default class FluxCodexVertex {
     saveVPopup.style.webkitTextStrokeWidth = "0px";
     saveVPopup.addEventListener("click", () => {
       // becouse blur input!
-     setTimeout(()=>this.compileGraph(), 100)
+      setTimeout(() => this.compileGraph(), 100)
     });
     popup.appendChild(saveVPopup);
 
@@ -478,8 +481,8 @@ export default class FluxCodexVertex {
       position: "absolute",
       top: "10%",
       left: "5%",
-      width: "50%",
-      height: "70%",
+      width: "65%",
+      height: "80%",
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
     repeating-linear-gradient(
@@ -537,6 +540,16 @@ export default class FluxCodexVertex {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt)
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = 'manualInput';
+    checkbox.value = 'ai-task';
+    checkbox.onchange = function(e) {
+      console.log(e)
+    }
+    popup.appendChild(checkbox);
+
     const label2 = document.createElement("span");
     label2.innerText = `Select provider [Only OLLAMA for now]`;
     popup.appendChild(label2);
@@ -562,6 +575,7 @@ export default class FluxCodexVertex {
     call.addEventListener("click", (e) => {
       if(selectPrompt.selectedIndex > 0) {
         // use select task...
+        console.log(' use select task...')
       }
       if(e.target.getAttribute("data-ai-status") == null) {
         e.target.setAttribute("data-ai-status", "wip");
@@ -574,9 +588,11 @@ export default class FluxCodexVertex {
         }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
+      const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
+      console.log(`%cAI TASK SERVICE:${providers[IDPROVIDER]}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
         detail: {
-          provider: providers[0], // hardcode
+          provider: providers[IDPROVIDER],
           task: selectPrompt.selectedOptions[0].innerText
         }
       }));
@@ -1944,7 +1960,7 @@ export default class FluxCodexVertex {
       }),
 
       setMorphProcMesh: (id, x, y) => ({
-        id, x, y, title: "Set Morph",
+        id, x, y, title: "Set Morph ProceduralMesh",
         category: "action",
         inputs: [
           {name: "exec", type: "action"},
@@ -4290,6 +4306,20 @@ LIST OF INTEREST OBJECT:
 
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if(n.title === "Set Morph ProceduralMesh") {
+        const objectName = this.getValue(nodeId, "objectName");
+        const interval = this.getValue(nodeId, "interval");
+        let morphIndex = this.getValue(nodeId, "index");
+        if(!objectName) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        console.warn("[Set morph to] arg:", morphIndex);
+        let o = app.getSceneObjectByName(objectName);
+        o.morphTo(morphIndex, interval);
+        this.enqueueOutputs(n, "execOut");
+        return;
       } else if(n.title === "Add OBJ") {
         const path = this.getValue(nodeId, "path");
         const texturePath = this.getValue(nodeId, "texturePath");
@@ -5554,4 +5584,17 @@ LIST OF INTEREST OBJECT:
     };
   }
 
+}
+
+class RESOURCES_FOR_GRAPH {
+
+  obj = [];
+  glb = [];
+  images = [];
+
+  constructor() {
+    addEventListener('editorx-update-assets-list', (e) => {
+      console.log(' editorx-update-assets-list ', e.detail)
+    })
+  }
 }

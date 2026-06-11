@@ -216,6 +216,8 @@ wss.on("connection", ws => {
         updateScale(msg, ws);
       } else if(msg.action == "useScale") {
         useScale(msg, ws);
+      } else if(msg.action == "sendClientResourceFullData") {
+        internal_navFolder(msg, ws);
       }
 
     } catch(err) {
@@ -551,7 +553,7 @@ async function saveMethods(msg, ws) {
 
 // FLUXCODEXSHADER
 async function saveGraph(msg, ws) {
-  console.log('.............savevg PROJECT_NAME', msg.graphData );
+  console.log('.............savevg PROJECT_NAME', msg.graphData);
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "graph.js");
@@ -894,30 +896,63 @@ async function aiGenGraphCall(msg, ws) {
   internal_navFolder({rootFolder: PUBLIC_RES, name: "textures"}, ws).then((res) => {
     let res_list_tex = res[0];
     let res_list_obj = res[1];
+    let res_list_glb = res[2];
+    let res_list_mp3 = res[3];
+    let res_list_mp4 = res[4];
     const listOfTexs = res_list_tex.map(t => t.relativePath).join(", ");
     const listOfObjs = res_list_obj.map(t => t.relativePath).join(", ");
-    msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(SYSTEM_PROMPT, listOfTexs, listOfObjs);
-    matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
-      // console.log('result from ai tool service....>>>>', res_list)
-      ws.send(JSON.stringify({
-        ok: true,
-        aiGenGraph: 'OK',
-        aiGenNodes: r
-      }));
-    })
+    const listOfGlbs = res_list_glb.map(t => t.relativePath).join(", ");
+    const listOfMp3s = res_list_mp3.map(t => t.relativePath).join(", ");
+    const listOfMp4s = res_list_mp4.map(t => t.relativePath).join(", ");
+    msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+      SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+
+    // provider ='groq'
+    if(msg.prompt.msg.prompt === 'groq') {
+      matrixGroq.aiGenGraphCall(msg.prompt).then((r) => {
+        console.log('GROQ service....>>>>', res_list)
+        ws.send(JSON.stringify({
+          ok: true,
+          aiGenGraph: 'OK',
+          aiGenNodes: r
+        }));
+      })
+    } else {
+      matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
+        // console.log('result from ai tool service....>>>>', res_list)
+        ws.send(JSON.stringify({
+          ok: true,
+          aiGenGraph: 'OK',
+          aiGenNodes: r
+        }));
+      })
+    }
   });
 }
 
 async function internal_navFolder(data, ws) {
   return new Promise(async (resolve, reject) => {
     if(!data.rootFolder) {reject('no root folder'); return;}
+    console.log('<RES FILENAMES>');
     const folderTex = path.join(data.rootFolder, data.name);
+    const folderAudios = path.join(data.rootFolder, "audios");
+    const folderVideos = path.join(data.rootFolder, "videos");
+    const folderObjs = path.join(data.rootFolder, "meshes");
+
+    // bad but still good for lazy
+    let listOfPngs2 = await getAllFilenamesFrom(folderObjs, ".png")
+    let listOfwebp2 = await getAllFilenamesFrom(folderObjs, ".webp")
+    let listOfjpeg2 = await getAllFilenamesFrom(folderObjs, ".jpeg")
+
     let listOfPngs = await getAllFilenamesFrom(folderTex, ".png");
     let listOfJpgs = await getAllFilenamesFrom(folderTex, ".jpg");
-    let listOfTexures = [...listOfJpgs, ...listOfPngs];
-    // console.log('result RES FILENAMES....>>>>', listOfPngs);
-    const folderObjs = path.join(data.rootFolder, "meshes");
+    let listOfwebp = await getAllFilenamesFrom(folderTex, ".webp");
+    let listOfTexures = [...listOfJpgs, ...listOfPngs, ...listOfwebp, ...listOfPngs2, ...listOfjpeg2, listOfwebp2];
+
     let listOfObjs = await getAllFilenamesFrom(folderObjs, ".obj")
+    let listOfGlbs = await getAllFilenamesFrom(folderObjs, ".glb")
+    let listOfMp3 = await getAllFilenamesFrom(folderAudios, ".mp3")
+    let listOfMp4 = await getAllFilenamesFrom(folderVideos, ".mp4")
     ws.send(JSON.stringify({
       // IMPLEMENT LATER ! on front can be used for texture drop down in fcv graph.
       listAssetsForGraph: "list-assets",
@@ -925,10 +960,13 @@ async function internal_navFolder(data, ws) {
       rootFolder: path.join(data.rootFolder, data.name),
       resources: {
         objs: listOfObjs.map(d => ({name: d.name, relativePath: d.relativePath})),
-        textures: listOfPngs.map(d => ({name: d.name, relativePath: d.relativePath}))
+        textures: listOfTexures.map(d => ({name: d.name, relativePath: d.relativePath})),
+        glbs: listOfGlbs.map(d => ({name: d.name, relativePath: d.relativePath})),
+        mp3: listOfMp3.map(d => ({name: d.name, relativePath: d.relativePath})),
+        mp4: listOfMp4.map(d => ({name: d.name, relativePath: d.relativePath})),
       }
     }));
-    resolve([listOfTexures, listOfObjs]);
+    resolve([listOfTexures, listOfObjs, listOfGlbs, listOfMp3, listOfMp4]);
   })
 }
 

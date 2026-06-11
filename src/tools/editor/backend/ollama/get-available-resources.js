@@ -1,19 +1,10 @@
 export let AvailableResources = {
 
-  injectResManifest: function(systemPrompt, texs, objs) {
-    // Process the list before injecting
-    // const textureFiles = rawResourceList
-    //   .filter(res => res.name.includes('.')) // Only include files with extensions (skips folders)
-    //   .map(res => {
-    //     const fullPath = `${res.path}/${res.name}`.replace(/\\/g, '/');
-    //     return fullPath.startsWith('/') ? fullPath.substring(1) : fullPath;
-    //   });
-    // const formattedList = textureFiles.join(", ");
+  injectResManifest: function(systemPrompt, texs, objs, glbs, mp3, mp4) {
     return systemPrompt.replace("____INJECT_RES_MANIFEST____", this.constructData(texs, objs));
   },
 
-  constructData: function(texs, objs) {
-    return `### RESOURCE_MANIFEST
+  constructData: function(texs, objs, glbs , mp3, mp4) {return `### RESOURCE_MANIFEST
 The system has access to specific local files. Use these ONLY.
 
 [AVAILABLE_TEXTURES]
@@ -32,6 +23,16 @@ ${texs}
 [AVAILABLE_OBJS]
 ${objs}
 
+[AVAILABLE_GLB]
+${glbs}
+
+[AVAILABLE_AUDIOS]
+${mp3}
+
+[AVAILABLE_VIDEOS]
+${mp4}
+
+
 [PATH_SELECTION_RULES]
 1. STRICT FILENAME MATCHING: You are forbidden from inventing filenames. 
 2. EXTENSION MATCHING: Ensure you use the full name including .obj .
@@ -39,6 +40,7 @@ ${objs}
    - If user says "slot" or "reel", look for "reel.obj".
    - If user says "cube" or "box", look for "cube.obj".
    - If user says "plane", use "plane.obj".
+   - If user says vertex animate , use sufix sub look for "plane-sub64.obj".
 4. DEFAULT: If the visual style is unspecified, use "res/meshes/blender/cube.obj".
 5. NEVER leave a path empty if the node requires one.
 

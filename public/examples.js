@@ -42126,7 +42126,7 @@ class Materials {
   }
   createMaterialBindGroupVideo() {
     // if(!this.externalTexture) return;
-    console.log('SET VIDEO BIND GROUP');
+    // console.log('SET VIDEO BIND GROUP')
     if (this.video == null) {
       this.materialBindGroup = this.device.createBindGroup({
         label: 'materialVideoBGL',
@@ -43458,7 +43458,6 @@ class MEMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
   setupPipeline() {
-    console.log('TEST SETUP ');
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -58555,7 +58554,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('save-graph', e => {
-      console.info('%cSave graph <signal>', _utils.LOG_FUNNY_ARCADE);
+      console.info(`%cSave graph <signal> ${e.detail}`, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "save-graph",
         graphData: e.detail.data
@@ -58602,7 +58601,8 @@ class MEEditorClient {
     document.addEventListener('get-shader-graphs', () => {
       console.info('%cget-shader-graphs <signal>', _utils.LOG_FUNNY_ARCADE);
       let o = {
-        action: "get-shader-graphs"
+        action: "get-shader-graphs",
+        projectName: location.href.split('/public/')[1].split(".")[0]
       };
       o = JSON.stringify(o);
       this.ws.send(o);
@@ -59540,6 +59540,7 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMorphProcMesh')">MorphTo ProcMesh</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
@@ -59656,54 +59657,78 @@ var _webgpuGltf = require("../../engine/loaders/webgpu-gltf");
 class EditorProvider {
   constructor(core) {
     this.core = core;
+    this._ev = {
+      updatePos: new CustomEvent('web.editor.update.pos', {
+        detail: {}
+      }),
+      updateRot: new CustomEvent('web.editor.update.rot', {
+        detail: {}
+      }),
+      updateScale: new CustomEvent('web.editor.update.scale', {
+        detail: {}
+      }),
+      updateUseScale: new CustomEvent('web.editor.update.useScale', {
+        detail: {}
+      })
+    };
     this.addEditorEvents();
   }
   getNameFromPath(p) {
-    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, ""); // + (this.core.mainRenderBundle.length);
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
   addEditorEvents() {
     document.addEventListener('web.editor.input', e => {
       console.log("[EDITOR-input]: ", e.detail);
-      // Saves methods
       switch (e.detail.propertyId) {
         case 'position':
           {
             console.log('change signal for pos', e.detail);
-            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
-              detail: e.detail
-            }));
+            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') {
+              this._ev.updatePos.detail.inputFor = e.detail.inputFor;
+              this._ev.updatePos.detail.property = e.detail.property;
+              this._ev.updatePos.detail.propertyId = e.detail.propertyId;
+              this._ev.updatePos.detail.value = e.detail.value;
+              document.dispatchEvent(this._ev.updatePos);
+            }
             break;
           }
         case 'rotation':
           {
             console.log('[signal][rot]');
-            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
-              detail: e.detail
-            }));
+            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') {
+              this._ev.updateRot.detail.inputFor = e.detail.inputFor;
+              this._ev.updateRot.detail.property = e.detail.property;
+              this._ev.updateRot.detail.propertyId = e.detail.propertyId;
+              this._ev.updateRot.detail.value = e.detail.value;
+              document.dispatchEvent(this._ev.updateRot);
+            }
             break;
           }
         case 'scale':
           {
             console.log('[signal][scale]');
             if (e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
-              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-                detail: e.detail
-              }));
+              this._ev.updateScale.detail.inputFor = e.detail.inputFor;
+              this._ev.updateScale.detail.property = e.detail.property;
+              this._ev.updateScale.detail.propertyId = e.detail.propertyId;
+              this._ev.updateScale.detail.value = e.detail.value;
+              document.dispatchEvent(this._ev.updateScale);
             }
             break;
           }
         default:
           console.log('changes not saved.');
       }
-      // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
-      // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if (e.detail.property == "no info") {
-        // console.warn("What is useScale !!! ", e.detail.value);
         sceneObj[e.detail.propertyId] = e.detail.value;
-        if (e.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent('web.editor.update.useScale', {
-          detail: e.detail
-        }));
+        if (e.detail.propertyId === "useScale") {
+          this._ev.updateUseScale.detail.inputFor = e.detail.inputFor;
+          this._ev.updateUseScale.detail.property = e.detail.property;
+          this._ev.updateUseScale.detail.propertyId = e.detail.propertyId;
+          this._ev.updateUseScale.detail.value = e.detail.value;
+          document.dispatchEvent(this._ev.updateUseScale);
+        }
         return;
       }
       if (sceneObj) {
@@ -59714,8 +59739,6 @@ class EditorProvider {
       }
     });
     document.addEventListener('web.editor.addCube', e => {
-      // console.log("[web.editor.addCube]: ", e.detail);
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, m => {
@@ -59737,7 +59760,6 @@ class EditorProvider {
             z: 0
           },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: "" + e.detail.index,
           mesh: m.cube,
           raycast: {
@@ -59754,7 +59776,6 @@ class EditorProvider {
       });
     });
     document.addEventListener('web.editor.addSphere', e => {
-      // console.log("[web.editor.addCube]: ", e.detail);
       (0, _loaderObj.downloadMeshes)({
         mesh: "./res/meshes/shapes/sphere.obj"
       }, m => {
@@ -59776,7 +59797,6 @@ class EditorProvider {
             z: 0
           },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e.detail.index,
           mesh: m.mesh,
           raycast: {
@@ -59795,7 +59815,6 @@ class EditorProvider {
     document.addEventListener('web.editor.addGlb', async e => {
       console.log("[web.editor.addGlb]: ", e.detail.path);
       e.detail.path = e.detail.path.replace('\\res', 'res');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD GLB
       var glbFile01 = await fetch(e.detail.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
       this.core.addGlbObj({
         material: {
@@ -59816,7 +59835,6 @@ class EditorProvider {
       console.log("[web.editor.addObj]: ", e.detail);
       e.detail.path = e.detail.path.replace('\\res', 'res');
       e.detail.path = e.detail.path.replace(/\\/g, '/');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       (0, _loaderObj.downloadMeshes)({
         objMesh: `${e.detail.path}`
       }, m => {
@@ -59838,7 +59856,6 @@ class EditorProvider {
             z: 0
           },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e.detail.index,
           mesh: m.objMesh,
           raycast: {
@@ -59854,14 +59871,10 @@ class EditorProvider {
         scale: [1, 1, 1]
       });
     });
-
-    // delete
     document.addEventListener('web.editor.delete', e => {
       console.log("[web.editor.delete]: ", e.detail.fullName);
       this.core.removeSceneObjectByName(e.detail.fullName);
     });
-
-    // update procedure
   }
 }
 exports.default = EditorProvider;
@@ -60004,7 +60017,9 @@ class FragmentShaderGraph {
       const nodeElements = container[0].querySelectorAll('.nodeShader');
       nodeElements.forEach(el => el.remove());
     }
-    this.connectionLayer.redrawAll();
+    if (this.connectionLayer) {
+      this.connectionLayer.redrawAll();
+    }
   }
 }
 exports.FragmentShaderGraph = FragmentShaderGraph;
@@ -62798,7 +62813,8 @@ class FluxCodexVertex {
     saveVPopup.style.fontWeight = "bold";
     saveVPopup.style.webkitTextStrokeWidth = "0px";
     saveVPopup.addEventListener("click", () => {
-      this.compileGraph();
+      // becouse blur input!
+      setTimeout(() => this.compileGraph(), 100);
     });
     popup.appendChild(saveVPopup);
     document.body.appendChild(popup);
@@ -63033,6 +63049,11 @@ class FluxCodexVertex {
   }
   _refreshVarsList(container) {
     container.innerHTML = "";
+    for (const key in this._varInputs) {
+      this._varInputs[key].onchange = null;
+      this._varInputs[key].oninput = null;
+    }
+    this._varInputs = {};
     const colors = {
       number: "#4fc3f7",
       boolean: "#aed581",
@@ -63072,11 +63093,14 @@ class FluxCodexVertex {
           color: "#fff",
           border: "1px solid #333"
         });
-        input.oninput = () => {
+        input.onchange = () => {
           if (type === "object") {
             try {
-              this.variables.object[name] = JSON.parse(input.value);
-            } catch {
+              let parsed;
+              parsed = new Function("return " + input.value)();
+              this.variables.object[name] = parsed;
+            } catch (err) {
+              console.log('err in vars editox:', err);
               return;
             }
           } else if (type === "number") {
@@ -63086,6 +63110,7 @@ class FluxCodexVertex {
           } else {
             this.variables.string[name] = input.value;
           }
+          this.notifyVariableChanged(type, name);
         };
         const btnGet = document.createElement("button");
         btnGet.innerText = "Get";
@@ -64459,6 +64484,41 @@ class FluxCodexVertex {
           type: "action"
         }],
         fields: [],
+        noselfExec: "true"
+      }),
+      setMorphProcMesh: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Morph ProceduralMesh",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "objectName",
+          type: "string"
+        }, {
+          name: "index",
+          type: "number"
+        }, {
+          name: "interval",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "objectName",
+          value: "FLOOR"
+        }, {
+          key: "index",
+          value: 1
+        }, {
+          key: "interval",
+          value: 2000
+        }],
         noselfExec: "true"
       }),
       setVideoTexture: (id, x, y) => ({
@@ -66607,7 +66667,7 @@ LIST OF INTEREST OBJECT:
     return null;
   }
   setVariable(type, key, value) {
-    if (!this.variables[type][key]) return;
+    // if(!this.variables[type][key]) return;
     console.log('Test -setVariable  value', value);
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
@@ -66663,6 +66723,7 @@ LIST OF INTEREST OBJECT:
       input.style.cursor = "default";
     }
     const saveInputValue = () => {
+      console.log('sadasd');
       let val;
       if (field.type === "object") {
         try {
@@ -66676,6 +66737,7 @@ LIST OF INTEREST OBJECT:
       field.value = val;
 
       // existing logic stays
+
       if (node.isGetterNode && field.key === "var") {
         this.notifyVariableChanged("object", val);
       }
@@ -66985,7 +67047,6 @@ LIST OF INTEREST OBJECT:
         this.triggerNode(node.id);
       }
       let value = node._returnCache;
-      // Optional: parse string to array
       if (typeof value === "string") {
         try {
           if (node.title == "Get String") {
@@ -67389,6 +67450,7 @@ LIST OF INTEREST OBJECT:
         n._returnCache = value;
         // Update visual label if exists
         if (n.displayEl) {
+          // console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', type)
           if (type === "object") {
             n.displayEl.textContent = value !== undefined ? JSON.stringify(value) : "{}";
           } else if (typeof value === "number") {
@@ -67441,6 +67503,7 @@ LIST OF INTEREST OBJECT:
     if (n.isVariableNode) {
       const type = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find(f => f.key === "var");
+      console.log("isVariableNode set object ", value);
       if (varField && varField.value) {
         let value = this.getValue(nodeId, "value");
         // if 0 probably no pin connection
@@ -67633,6 +67696,20 @@ LIST OF INTEREST OBJECT:
           app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
           // createdField.value = true;
         }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Morph ProceduralMesh") {
+        const objectName = this.getValue(nodeId, "objectName");
+        const interval = this.getValue(nodeId, "interval");
+        let morphIndex = this.getValue(nodeId, "index");
+        if (!objectName) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        console.warn("[Set morph to] arg:", morphIndex);
+        let o = app.getSceneObjectByName(objectName);
+        o.morphTo(morphIndex, interval);
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Add OBJ") {
@@ -67857,7 +67934,7 @@ LIST OF INTEREST OBJECT:
           _utils.mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
+        // console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,
@@ -68470,7 +68547,7 @@ LIST OF INTEREST OBJECT:
   }
   compileGraph() {
     // This is save !!!
-    // console.log("SAVE:", this.nodes)
+    console.log("SAVE:", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -69306,15 +69383,15 @@ class EditorHud {
         physics: false,
         networking: false
       };
-      if (confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("⚛ Enable physics (Ammo, Jolt, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("⚛  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
+        let pId = prompt("⚛  Choose physics library [jolt=1 ammo=2 cannones=3 matter=4] (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent('cnp', {
@@ -69335,10 +69412,8 @@ class EditorHud {
     };
 
     // byId('start-prod-build').onclick = () => {
-    //   //
+    // 
     //   console.log('.......start-prod-build.......');
-    //   console.log('................................')
-
     // };
 
     // OBJECT LEVEL
@@ -69683,15 +69758,15 @@ class EditorHud {
         physics: false,
         networking: false
       };
-      if (confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("⚛ Enable physics (Jolt, Ammo, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 matter=4  \n (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
 
       // console.log(features);

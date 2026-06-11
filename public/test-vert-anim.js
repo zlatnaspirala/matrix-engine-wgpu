@@ -24072,7 +24072,9 @@ var FragmentShaderGraph = class {
       const nodeElements = container[0].querySelectorAll(".nodeShader");
       nodeElements.forEach((el2) => el2.remove());
     }
-    this.connectionLayer.redrawAll();
+    if (this.connectionLayer) {
+      this.connectionLayer.redrawAll();
+    }
   }
 };
 var CompileContext = class {
@@ -26319,9 +26321,8 @@ var CurveStore = class {
 
 // ../generateAISchema.js
 var tasks = [
-  "On load print hello world",
   "On load create a cube named box1 at position 0 0 0",
-  "Create a the labyrinth using generatorWall",
+  "Create a the house using multiply generatorWall, use different size to costruct whole house with 3 rooms.",
   "Set texture for floor object",
   "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
@@ -26352,6 +26353,7 @@ var providers = [
 // ../fluxCodexVertex.js
 var runtimeCacheObjs = [];
 var FluxCodexVertex = class {
+  __experimental__RESOURCES_FOR_GRAPH = new RESOURCES_FOR_GRAPH();
   constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
     this.toolTip = toolTip;
@@ -26704,7 +26706,7 @@ var FluxCodexVertex = class {
     saveVPopup.style.fontWeight = "bold";
     saveVPopup.style.webkitTextStrokeWidth = "0px";
     saveVPopup.addEventListener("click", () => {
-      this.compileGraph();
+      setTimeout(() => this.compileGraph(), 100);
     });
     popup.appendChild(saveVPopup);
     document.body.appendChild(popup);
@@ -26723,8 +26725,8 @@ var FluxCodexVertex = class {
       position: "absolute",
       top: "10%",
       left: "5%",
-      width: "50%",
-      height: "70%",
+      width: "65%",
+      height: "80%",
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
     repeating-linear-gradient(
@@ -26782,6 +26784,14 @@ var FluxCodexVertex = class {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "manualInput";
+    checkbox.value = "ai-task";
+    checkbox.onchange = function(e2) {
+      console.log(e2);
+    };
+    popup.appendChild(checkbox);
     const label2 = document.createElement("span");
     label2.innerText = `Select provider [Only OLLAMA for now]`;
     popup.appendChild(label2);
@@ -26805,6 +26815,7 @@ var FluxCodexVertex = class {
     call.style.webkitTextStrokeWidth = "0px";
     call.addEventListener("click", (e2) => {
       if (selectPrompt.selectedIndex > 0) {
+        console.log(" use select task...");
       }
       if (e2.target.getAttribute("data-ai-status") == null) {
         e2.target.setAttribute("data-ai-status", "wip");
@@ -26817,10 +26828,11 @@ var FluxCodexVertex = class {
         }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
+      const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
+      console.log(`%cAI TASK SERVICE:${providers[IDPROVIDER]}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent("aiGenGraphCall", {
         detail: {
-          provider: providers[0],
-          // hardcode
+          provider: providers[IDPROVIDER],
           task: selectPrompt.selectedOptions[0].innerText
         }
       }));
@@ -27980,6 +27992,28 @@ var FluxCodexVertex = class {
           { name: "execOut", type: "action" }
         ],
         fields: [],
+        noselfExec: "true"
+      }),
+      setMorphProcMesh: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Morph ProceduralMesh",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "objectName", type: "string" },
+          { name: "index", type: "number" },
+          { name: "interval", type: "number" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        fields: [
+          { key: "objectName", value: "FLOOR" },
+          { key: "index", value: 1 },
+          { key: "interval", value: 2e3 }
+        ],
         noselfExec: "true"
       }),
       setVideoTexture: (id2, x2, y2) => ({
@@ -30280,6 +30314,20 @@ LIST OF INTEREST OBJECT:
         }
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if (n.title === "Set Morph ProceduralMesh") {
+        const objectName2 = this.getValue(nodeId, "objectName");
+        const interval = this.getValue(nodeId, "interval");
+        let morphIndex = this.getValue(nodeId, "index");
+        if (!objectName2) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        console.warn("[Set morph to] arg:", morphIndex);
+        let o2 = app.getSceneObjectByName(objectName2);
+        o2.morphTo(morphIndex, interval);
+        this.enqueueOutputs(n, "execOut");
+        return;
       } else if (n.title === "Add OBJ") {
         const path = this.getValue(nodeId, "path");
         const texturePath = this.getValue(nodeId, "texturePath");
@@ -31414,6 +31462,16 @@ LIST OF INTEREST OBJECT:
       x: (clientX - bRect.left) / this.state.zoom,
       y: (clientY - bRect.top) / this.state.zoom
     };
+  }
+};
+var RESOURCES_FOR_GRAPH = class {
+  obj = [];
+  glb = [];
+  images = [];
+  constructor() {
+    addEventListener("editorx-update-assets-list", (e2) => {
+      console.log(" editorx-update-assets-list ", e2.detail);
+    });
   }
 };
 
@@ -33021,6 +33079,7 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
+      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMorphProcMesh')">MorphTo ProcMesh</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
