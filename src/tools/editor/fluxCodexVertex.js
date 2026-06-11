@@ -5108,7 +5108,8 @@ LIST OF INTEREST OBJECT:
     let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled)
     if(getCurrentGIzmoObj.length > 0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
 
-    byId("app").style.opacity = 0.5;
+    byId("app").style.display = 'none';
+
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => (n._returnCache = undefined));
     Object.values(this.nodes)

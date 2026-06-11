@@ -68462,7 +68462,7 @@ LIST OF INTEREST OBJECT:
     }
     let getCurrentGIzmoObj = app.mainRenderBundle.filter(o => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled);
     if (getCurrentGIzmoObj.length > 0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
-    (0, _utils.byId)("app").style.opacity = 0.5;
+    (0, _utils.byId)("app").style.display = 'none';
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => n._returnCache = undefined);
     Object.values(this.nodes).filter(n => n.category === "event" && n.title === "onLoad").forEach(n => this.triggerNode(n.id));

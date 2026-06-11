@@ -234,7 +234,7 @@ function CBoptions(p, n, pName, physicsLib, camera) {
   ${pName ? `projectName: '${pName}',` : ""}
   canvasSize: 'fullscreen',
   mainCameraParams: {
-    type:  ${ camera == 1 ? 'WASD' : camera == 2 ? "firstPersonCamera" : camera == 3 ? "RPG" : camera == 4 ? "cinematicCamera" : "WASD"},
+    type:  ${ camera == 1 ? '"WASD"' : camera == 2 ? '"firstPersonCamera"' : camera == 3 ? '"RPG"' : camera == 4 ? '"cinematicCamera"' : '"WASD"'},
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0, g: 0, a: 1}
