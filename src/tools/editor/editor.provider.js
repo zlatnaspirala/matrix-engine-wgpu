@@ -10,17 +10,23 @@ import {uploadGLBModel} from "../../engine/loaders/webgpu-gltf";
 export default class EditorProvider {
   constructor(core) {
     this.core = core;
+    this._ev = {
+      updatePos:      new CustomEvent('web.editor.update.pos',      { detail: {} }),
+      updateRot:      new CustomEvent('web.editor.update.rot',      { detail: {} }),
+      updateScale:    new CustomEvent('web.editor.update.scale',    { detail: {} }),
+      updateUseScale: new CustomEvent('web.editor.update.useScale', { detail: {} }),
+    };
     this.addEditorEvents();
   }
 
   getNameFromPath(p) {
-    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, ""); // + (this.core.mainRenderBundle.length);
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
 
   addEditorEvents() {
     document.addEventListener('web.editor.input', (e) => {
       console.log("[EDITOR-input]: ", e.detail);
-      // Saves methods
+
       switch(e.detail.propertyId) {
         case 'position':
           {
@@ -28,9 +34,13 @@ export default class EditorProvider {
             if(e.detail.property == 'x' ||
               e.detail.property == 'y' ||
               e.detail.property == 'z'
-            ) document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
-              detail: e.detail
-            }));
+            ) {
+              this._ev.updatePos.detail.inputFor   = e.detail.inputFor;
+              this._ev.updatePos.detail.property   = e.detail.property;
+              this._ev.updatePos.detail.propertyId = e.detail.propertyId;
+              this._ev.updatePos.detail.value      = e.detail.value;
+              document.dispatchEvent(this._ev.updatePos);
+            }
             break;
           }
         case 'rotation':
@@ -39,33 +49,45 @@ export default class EditorProvider {
             if(e.detail.property == 'x' ||
               e.detail.property == 'y' ||
               e.detail.property == 'z'
-            ) document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
-              detail: e.detail
-            }));
+            ) {
+              this._ev.updateRot.detail.inputFor   = e.detail.inputFor;
+              this._ev.updateRot.detail.property   = e.detail.property;
+              this._ev.updateRot.detail.propertyId = e.detail.propertyId;
+              this._ev.updateRot.detail.value      = e.detail.value;
+              document.dispatchEvent(this._ev.updateRot);
+            }
             break;
           }
         case 'scale':
           {
             console.log('[signal][scale]');
-            if(e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
-              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-                detail: e.detail
-              }));
+            if(e.detail.property == '0' ||
+              e.detail.property == '1' ||
+              e.detail.property == '2'
+            ) {
+              this._ev.updateScale.detail.inputFor   = e.detail.inputFor;
+              this._ev.updateScale.detail.property   = e.detail.property;
+              this._ev.updateScale.detail.propertyId = e.detail.propertyId;
+              this._ev.updateScale.detail.value      = e.detail.value;
+              document.dispatchEvent(this._ev.updateScale);
             }
             break;
           }
         default:
           console.log('changes not saved.')
       }
-      // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
-      // InFly Method
+
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
 
       if(e.detail.property == "no info") {
-        // console.warn("What is useScale !!! ", e.detail.value);
         sceneObj[e.detail.propertyId] = e.detail.value;
-
-        if(e.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent('web.editor.update.useScale', {detail: e.detail}));
+        if(e.detail.propertyId === "useScale") {
+          this._ev.updateUseScale.detail.inputFor   = e.detail.inputFor;
+          this._ev.updateUseScale.detail.property   = e.detail.property;
+          this._ev.updateUseScale.detail.propertyId = e.detail.propertyId;
+          this._ev.updateUseScale.detail.value      = e.detail.value;
+          document.dispatchEvent(this._ev.updateUseScale);
+        }
         return;
       }
 
@@ -78,8 +100,6 @@ export default class EditorProvider {
     });
 
     document.addEventListener('web.editor.addCube', (e) => {
-      // console.log("[web.editor.addCube]: ", e.detail);
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
         const texturesPaths = './res/textures/cube-g1-extra_low.png';
         this.core.addMeshObj({
@@ -87,7 +107,6 @@ export default class EditorProvider {
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: "" + e.detail.index,
           mesh: m.cube,
           raycast: {enabled: true, radius: 2},
@@ -100,7 +119,6 @@ export default class EditorProvider {
     });
 
     document.addEventListener('web.editor.addSphere', (e) => {
-      // console.log("[web.editor.addCube]: ", e.detail);
       downloadMeshes({mesh: "./res/meshes/shapes/sphere.obj"}, (m) => {
         const texturesPaths = './res/textures/cube-g1-extra_low.png';
         this.core.addMeshObj({
@@ -108,7 +126,6 @@ export default class EditorProvider {
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e.detail.index,
           mesh: m.mesh,
           raycast: {enabled: true, radius: 2},
@@ -123,7 +140,6 @@ export default class EditorProvider {
     document.addEventListener('web.editor.addGlb', async (e) => {
       console.log("[web.editor.addGlb]: ", e.detail.path);
       e.detail.path = e.detail.path.replace('\\res', 'res');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD GLB
       var glbFile01 = await fetch(e.detail.path).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObj({
         material: {type: 'power', useTextureFromGlb: true},
@@ -138,7 +154,6 @@ export default class EditorProvider {
       console.log("[web.editor.addObj]: ", e.detail);
       e.detail.path = e.detail.path.replace('\\res', 'res');
       e.detail.path = e.detail.path.replace(/\\/g, '/');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       downloadMeshes({objMesh: `${e.detail.path}`}, (m) => {
         const texturesPaths = './res/textures/cube-g1-extra_low.png';
         this.core.addMeshObj({
@@ -146,7 +161,6 @@ export default class EditorProvider {
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e.detail.index,
           mesh: m.objMesh,
           raycast: {enabled: true, radius: 2},
@@ -158,14 +172,9 @@ export default class EditorProvider {
       }, {scale: [1, 1, 1]});
     });
 
-    // delete
     document.addEventListener('web.editor.delete', (e) => {
       console.log("[web.editor.delete]: ", e.detail.fullName);
-
       this.core.removeSceneObjectByName(e.detail.fullName);
     });
-
-    // update procedure
-
   }
 }

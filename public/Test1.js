@@ -2466,40 +2466,40 @@ var WASDCamera = class _WASDCamera {
       }, { passive: true });
     }
     this._keyInterval = null;
-    const setDigital = (e2, value) => {
+    const setDigital = (e2, value2) => {
       switch (e2.code) {
         case "ArrowUp":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "ArrowDown":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "ArrowLeft":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "ArrowRight":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "KeyW":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "KeyS":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "KeyA":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "KeyD":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "KeyV":
-          this._digital.up = value;
+          this._digital.up = value2;
           break;
         case "KeyC":
-          this._digital.down = value;
+          this._digital.down = value2;
           break;
       }
-      if (value == true && this._keyInterval === null) {
+      if (value2 == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -2718,34 +2718,34 @@ var RPGCamera = class _RPGCamera {
     this._dirty = true;
   }
   _setupKeyboard() {
-    const setDigital = (e2, value) => {
+    const setDigital = (e2, value2) => {
       switch (e2.code) {
         case "KeyW":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "KeyS":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "KeyA":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "KeyD":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "ArrowUp":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "ArrowDown":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "ArrowLeft":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "ArrowRight":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
       }
-      if (value && this._keyInterval === null) {
+      if (value2 && this._keyInterval === null) {
         this._detachedFromFollow = true;
         this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
       } else {
@@ -3077,34 +3077,34 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    const setDigital = (e2, value) => {
+    const setDigital = (e2, value2) => {
       switch (e2.code) {
         case "KeyW":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "KeyS":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "KeyA":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "KeyD":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "ArrowUp":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "ArrowDown":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "ArrowLeft":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "ArrowRight":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
       }
-      if (value == true && this._keyInterval === null) {
+      if (value2 == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -13206,8 +13206,8 @@ var MEMeshObj = class extends Materials {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+        setIntensity: (value2) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -13337,7 +13337,6 @@ var MEMeshObj = class extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x2, y2]));
   }
   setupPipeline() {
-    console.log("TEST SETUP ");
     const pm = PipelineManager.get();
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
@@ -16415,25 +16414,25 @@ var MEBvhJoint = class {
     let r2 = [0, 0, 0];
     for (let i = 0; i < this.channels.length; i++) {
       const channel = this.channels[i];
-      const value = frameData[this.channelOffset + i];
+      const value2 = frameData[this.channelOffset + i];
       switch (channel) {
         case "Xposition":
-          t[0] = value;
+          t[0] = value2;
           break;
         case "Yposition":
-          t[1] = value;
+          t[1] = value2;
           break;
         case "Zposition":
-          t[2] = value;
+          t[2] = value2;
           break;
         case "Xrotation":
-          r2[0] = degToRad2(value);
+          r2[0] = degToRad2(value2);
           break;
         case "Yrotation":
-          r2[1] = degToRad2(value);
+          r2[1] = degToRad2(value2);
           break;
         case "Zrotation":
-          r2[2] = degToRad2(value);
+          r2[2] = degToRad2(value2);
           break;
       }
     }
@@ -20875,8 +20874,8 @@ var HPBarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value) {
-    const clamped = value < 0 ? 0 : value > 1 ? 1 : value;
+  setProgress(value2) {
+    const clamped = value2 < 0 ? 0 : value2 > 1 ? 1 : value2;
     if (this.progress !== clamped) {
       this.progress = clamped;
       this._progressDirty = true;
@@ -21024,8 +21023,8 @@ var MANABarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value) {
-    this.progress = Math.max(0, Math.min(1, value));
+  setProgress(value2) {
+    this.progress = Math.max(0, Math.min(1, value2));
   }
   setColor(r2, g, b, a = 1) {
     this.color = [r2, g, b, a];
@@ -22224,8 +22223,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+        setIntensity: (value2) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -23621,6 +23620,12 @@ var MEEditorClient = class {
 var EditorProvider = class {
   constructor(core) {
     this.core = core;
+    this._ev = {
+      updatePos: new CustomEvent("web.editor.update.pos", { detail: {} }),
+      updateRot: new CustomEvent("web.editor.update.rot", { detail: {} }),
+      updateScale: new CustomEvent("web.editor.update.scale", { detail: {} }),
+      updateUseScale: new CustomEvent("web.editor.update.useScale", { detail: {} })
+    };
     this.addEditorEvents();
   }
   getNameFromPath(p) {
@@ -23632,24 +23637,34 @@ var EditorProvider = class {
       switch (e2.detail.propertyId) {
         case "position": {
           console.log("change signal for pos", e2.detail);
-          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
-            detail: e2.detail
-          }));
+          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") {
+            this._ev.updatePos.detail.inputFor = e2.detail.inputFor;
+            this._ev.updatePos.detail.property = e2.detail.property;
+            this._ev.updatePos.detail.propertyId = e2.detail.propertyId;
+            this._ev.updatePos.detail.value = e2.detail.value;
+            document.dispatchEvent(this._ev.updatePos);
+          }
           break;
         }
         case "rotation": {
           console.log("[signal][rot]");
-          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
-            detail: e2.detail
-          }));
+          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") {
+            this._ev.updateRot.detail.inputFor = e2.detail.inputFor;
+            this._ev.updateRot.detail.property = e2.detail.property;
+            this._ev.updateRot.detail.propertyId = e2.detail.propertyId;
+            this._ev.updateRot.detail.value = e2.detail.value;
+            document.dispatchEvent(this._ev.updateRot);
+          }
           break;
         }
         case "scale": {
           console.log("[signal][scale]");
           if (e2.detail.property == "0" || e2.detail.property == "1" || e2.detail.property == "2") {
-            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-              detail: e2.detail
-            }));
+            this._ev.updateScale.detail.inputFor = e2.detail.inputFor;
+            this._ev.updateScale.detail.property = e2.detail.property;
+            this._ev.updateScale.detail.propertyId = e2.detail.propertyId;
+            this._ev.updateScale.detail.value = e2.detail.value;
+            document.dispatchEvent(this._ev.updateScale);
           }
           break;
         }
@@ -23659,7 +23674,13 @@ var EditorProvider = class {
       let sceneObj = this.core.getSceneObjectByName(e2.detail.inputFor);
       if (e2.detail.property == "no info") {
         sceneObj[e2.detail.propertyId] = e2.detail.value;
-        if (e2.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent("web.editor.update.useScale", { detail: e2.detail }));
+        if (e2.detail.propertyId === "useScale") {
+          this._ev.updateUseScale.detail.inputFor = e2.detail.inputFor;
+          this._ev.updateUseScale.detail.property = e2.detail.property;
+          this._ev.updateUseScale.detail.propertyId = e2.detail.propertyId;
+          this._ev.updateUseScale.detail.value = e2.detail.value;
+          document.dispatchEvent(this._ev.updateUseScale);
+        }
         return;
       }
       if (sceneObj) {
@@ -23677,7 +23698,6 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: "" + e2.detail.index,
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
@@ -23696,7 +23716,6 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.mesh,
           raycast: { enabled: true, radius: 2 },
@@ -23730,7 +23749,6 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.objMesh,
           raycast: { enabled: true, radius: 2 },
@@ -24091,17 +24109,17 @@ var CompileContext = class {
     }
     this.resolving.add(key);
     const conn = this.shaderGraph.getInput(node2, pin);
-    let value;
+    let value2;
     if (conn) {
-      value = this.resolve(conn.fromNode, conn.fromPin);
+      value2 = this.resolve(conn.fromNode, conn.fromPin);
     } else {
       if (node2.inputs && pin in node2.inputs) {
-        value = node2.inputs[pin].default;
+        value2 = node2.inputs[pin].default;
       } else {
-        value = void 0;
+        value2 = void 0;
       }
     }
-    const result2 = node2.build(pin, value, this);
+    const result2 = node2.build(pin, value2, this);
     if (result2?.out !== void 0) {
       this.cache.set(key, result2.out);
     }
@@ -24140,9 +24158,9 @@ var ShaderNode = class {
   default(pin) {
     return this.inputs[pin]?.default ?? "0.0";
   }
-  build(_, value, ctx) {
+  build(_, value2, ctx) {
     return {
-      out: value,
+      out: value2,
       type: "f32"
     };
   }
@@ -24154,13 +24172,13 @@ var FragmentOutputNode = class extends ShaderNode {
   }
   build(_, __, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "color");
-    let value;
+    let value2;
     if (conn) {
-      value = ctx.resolve(conn.fromNode, conn.fromPin);
+      value2 = ctx.resolve(conn.fromNode, conn.fromPin);
     } else {
-      value = this.inputs.color.default;
+      value2 = this.inputs.color.default;
     }
-    ctx.outputs.outColor = value;
+    ctx.outputs.outColor = value2;
     return { out: ctx.outputs.outColor, type: "vec4f" };
   }
 };
@@ -24220,7 +24238,7 @@ var LightToColorNode = class extends ShaderNode {
       light: { default: "vec3f(1.0)" }
     };
   }
-  build(pin, value, ctx) {
+  build(pin, value2, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "light");
     let l;
     if (conn) {
@@ -24409,9 +24427,9 @@ var ContrastNode = class extends ShaderNode {
   }
 };
 var FloatNode = class extends ShaderNode {
-  constructor(value = 1) {
+  constructor(value2 = 1) {
     super("Float");
-    this.value = value;
+    this.value = value2;
   }
   build(_, __, ctx) {
     return {
@@ -25105,7 +25123,7 @@ svg path {
       const propsContainer = document.createElement("div");
       propsContainer.className = "node-properties";
       propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
-      function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
+      function addPropertyInput(label, propName, value2, type2 = "number", step = "0.01") {
         const row2 = document.createElement("div");
         row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
         const labelEl = document.createElement("label");
@@ -25113,7 +25131,7 @@ svg path {
         labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
         const input = document.createElement("input");
         input.type = type2;
-        input.value = value;
+        input.value = value2;
         input.step = step;
         input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
         input.addEventListener("input", () => {
@@ -25665,10 +25683,10 @@ var CurveEditor = class {
     const n2 = 1 - y2 / this.height;
     return this.valueMin + n2 * (this.valueMax - this.valueMin);
   }
-  _snap(value, steps) {
-    if (!this.snapEnabled) return value;
+  _snap(value2, steps) {
+    if (!this.snapEnabled) return value2;
     const range = this.valueMax - this.valueMin;
-    return Math.round((value - this.valueMin) / range * steps) / steps * range + this.valueMin;
+    return Math.round((value2 - this.valueMin) / range * steps) / steps * range + this.valueMin;
   }
   // VALUE EVALUATION (HERMITE)
   getValue(t) {
@@ -26440,11 +26458,11 @@ var FluxCodexVertex = class {
     this.createContextMenu();
     document.addEventListener("fluxcodex.input.change", (e2) => {
       console.log("fluxcodex.input.change");
-      const { nodeId: nodeId2, field, value } = e2.detail;
+      const { nodeId: nodeId2, field, value: value2 } = e2.detail;
       const node2 = this.nodes.find((n2) => n2.id === nodeId2);
       if (!node2) return;
       if (node2.type !== "getSubObject") return;
-      this.handleGetSubObject(node2, value);
+      this.handleGetSubObject(node2, value2);
       if (field !== "path") return;
     });
     document.addEventListener("web.editor.addMp3", (e2) => {
@@ -26915,6 +26933,11 @@ var FluxCodexVertex = class {
   }
   _refreshVarsList(container) {
     container.innerHTML = "";
+    for (const key in this._varInputs) {
+      this._varInputs[key].onchange = null;
+      this._varInputs[key].oninput = null;
+    }
+    this._varInputs = {};
     const colors = {
       number: "#4fc3f7",
       boolean: "#aed581",
@@ -26954,11 +26977,14 @@ var FluxCodexVertex = class {
           color: "#fff",
           border: "1px solid #333"
         });
-        input.oninput = () => {
+        input.onchange = () => {
           if (type2 === "object") {
             try {
-              this.variables.object[name2] = JSON.parse(input.value);
-            } catch {
+              let parsed;
+              parsed = new Function("return " + input.value)();
+              this.variables.object[name2] = parsed;
+            } catch (err) {
+              console.log("err in vars editox:", err);
               return;
             }
           } else if (type2 === "number") {
@@ -26968,6 +26994,7 @@ var FluxCodexVertex = class {
           } else {
             this.variables.string[name2] = input.value;
           }
+          this.notifyVariableChanged(type2, name2);
         };
         const btnGet = document.createElement("button");
         btnGet.innerText = "Get";
@@ -27381,9 +27408,9 @@ var FluxCodexVertex = class {
     if (!obj2) return;
     node2.outputs = [];
     node2.exposeProps.forEach((p) => {
-      const value = this.getByPath(obj2, p);
-      if (value !== void 0) {
-        const type2 = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
+      const value2 = this.getByPath(obj2, p);
+      if (value2 !== void 0) {
+        const type2 = typeof value2 === "number" ? "number" : typeof value2 === "string" ? "string" : "object";
         node2.outputs.push({ name: p, type: type2 });
       }
     });
@@ -29294,10 +29321,9 @@ LIST OF INTEREST OBJECT:
     }
     return null;
   }
-  setVariable(type2, key, value) {
-    if (!this.variables[type2][key]) return;
-    console.log("Test -setVariable  value", value);
-    this.variables[type2][key].value = value;
+  setVariable(type2, key, value2) {
+    console.log("Test -setVariable  value", value2);
+    this.variables[type2][key].value = value2;
     this.notifyVariableChanged(type2, key);
   }
   updateArrayNode(node2, newValue) {
@@ -29349,6 +29375,7 @@ LIST OF INTEREST OBJECT:
       input.style.cursor = "default";
     }
     const saveInputValue = () => {
+      console.log("sadasd");
       let val;
       if (field.type === "object") {
         try {
@@ -29649,19 +29676,18 @@ LIST OF INTEREST OBJECT:
       if (node2._returnCache === void 0) {
         this.triggerNode(node2.id);
       }
-      let value = node2._returnCache;
-      console.log("value................", value);
-      if (typeof value === "string") {
+      let value2 = node2._returnCache;
+      if (typeof value2 === "string") {
         try {
           if (node2.title == "Get String") {
           } else {
-            value = JSON.parse(value);
+            value2 = JSON.parse(value2);
           }
         } catch (e2) {
           console.warn("[getValue][json parse err]:", e2);
         }
       }
-      return value;
+      return value2;
     }
     const link = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === pinName);
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
@@ -30025,16 +30051,15 @@ LIST OF INTEREST OBJECT:
       const varField = n.fields?.find((f) => f.key === "var");
       if (varField && varField.value) {
         const type2 = n.title.replace("Get ", "").toLowerCase();
-        const value = this.getVariable(type2, varField.value);
-        n._returnCache = value;
+        const value2 = this.getVariable(type2, varField.value);
+        n._returnCache = value2;
         if (n.displayEl) {
-          console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", type2);
           if (type2 === "object") {
-            n.displayEl.textContent = value !== void 0 ? JSON.stringify(value) : "{}";
-          } else if (typeof value === "number") {
-            n.displayEl.textContent = value.toFixed(3);
+            n.displayEl.textContent = value2 !== void 0 ? JSON.stringify(value2) : "{}";
+          } else if (typeof value2 === "number") {
+            n.displayEl.textContent = value2.toFixed(3);
           } else {
-            n.displayEl.textContent = String(value);
+            n.displayEl.textContent = String(value2);
           }
         }
       }
@@ -30077,21 +30102,22 @@ LIST OF INTEREST OBJECT:
     if (n.isVariableNode) {
       const type2 = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find((f) => f.key === "var");
+      console.log("isVariableNode set object ", value);
       if (varField && varField.value) {
-        let value = this.getValue(nodeId, "value");
+        let value2 = this.getValue(nodeId, "value");
         if (n.title == "Set Object") {
-          if (value == 0) {
+          if (value2 == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
           }
         } else {
-          if (value == 0) {
+          if (value2 == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
-            value = JSON.parse(varliteral.value);
+            value2 = JSON.parse(varliteral.value);
           } else {
-            console.log("set object ", value);
-            this.variables[type2][varField.value] = { value };
+            console.log("set object ", value2);
+            this.variables[type2][varField.value] = { value: value2 };
           }
         }
         this.notifyVariableChanged(type2, varField.value);
@@ -30101,11 +30127,11 @@ LIST OF INTEREST OBJECT:
             const vf2 = node2.fields?.find((f) => f.key === "var");
             if (vf2 && vf2.value === varField.value && node2.displayEl) {
               if (type2 === "object") {
-                node2.displayEl.textContent = JSON.stringify(value);
+                node2.displayEl.textContent = JSON.stringify(value2);
               } else {
-                node2.displayEl.textContent = typeof value === "number" ? value.toFixed(3) : String(value);
+                node2.displayEl.textContent = typeof value2 === "number" ? value2.toFixed(3) : String(value2);
               }
-              node2._returnCache = value;
+              node2._returnCache = value2;
             }
           }
         }
@@ -30922,7 +30948,6 @@ LIST OF INTEREST OBJECT:
   getVariable(type2, key) {
     const entry = this.variables[type2]?.[key];
     if (entry === void 0) return void 0;
-    console.log("...............................sssss");
     if (entry && typeof entry === "object" && "value" in entry) {
       return entry.value;
     }
@@ -31061,6 +31086,7 @@ LIST OF INTEREST OBJECT:
     byId("graph-status").innerHTML = "\u{1F534}";
   }
   compileGraph() {
+    console.log("SAVE:", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -31069,7 +31095,7 @@ LIST OF INTEREST OBJECT:
       pan: this.state.pan,
       variables: this.variables
     };
-    function saveReplacer(key, value) {
+    function saveReplacer(key, value2) {
       if (key === "fn") return void 0;
       if (key === "accessObject") return void 0;
       if (key === "_returnCache") return void 0;
@@ -31078,7 +31104,7 @@ LIST OF INTEREST OBJECT:
       if (key === "_loading") return false;
       if (key === "_energyHistory") return void 0;
       if (key === "_beatCooldown") return 0;
-      return value;
+      return value2;
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
@@ -31132,12 +31158,12 @@ LIST OF INTEREST OBJECT:
   exportToJSON() {
     const bundle = this._buildSaveBundle();
     console.log(bundle);
-    function saveReplacer(key, value) {
+    function saveReplacer(key, value2) {
       if (key === "fn") return void 0;
       if (key === "accessObject") return void 0;
       if (key === "_returnCache") return void 0;
       if (key === "_listenerAttached") return false;
-      return value;
+      return value2;
     }
     const json = JSON.stringify(bundle, saveReplacer);
     const blob = new Blob([json], { type: "application/json" });
@@ -34011,8 +34037,8 @@ var ProceduralMeshObj = class extends Materials {
         this.vertexAnimParams[26] = speed;
         this.updateVertexAnimBuffer();
       },
-      setIntensity: (value) => {
-        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+      setIntensity: (value2) => {
+        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
         this.updateVertexAnimBuffer();
       },
       getIntensity: () => {
@@ -36571,8 +36597,8 @@ var PhysicsBridge = class {
   clearBody(idx) {
     this._worker.postMessage({ cmd: "clearBody", idx });
   }
-  speedUpSimulation(value) {
-    this._worker.postMessage({ cmd: "speedUpSimulation", value });
+  speedUpSimulation(value2) {
+    this._worker.postMessage({ cmd: "speedUpSimulation", value: value2 });
   }
   setCollisionFlags(idx, flags) {
     if (idx === void 0 || idx === -1) return;

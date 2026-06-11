@@ -455,7 +455,10 @@ export default class FluxCodexVertex {
     saveVPopup.style.height = "70px";
     saveVPopup.style.fontWeight = "bold";
     saveVPopup.style.webkitTextStrokeWidth = "0px";
-    saveVPopup.addEventListener("click", () => {this.compileGraph()});
+    saveVPopup.addEventListener("click", () => {
+      // becouse blur input!
+     setTimeout(()=>this.compileGraph(), 100)
+    });
     popup.appendChild(saveVPopup);
 
     document.body.appendChild(popup);
@@ -1937,6 +1940,26 @@ export default class FluxCodexVertex {
           {name: "execOut", type: "action"}
         ],
         fields: [],
+        noselfExec: "true"
+      }),
+
+      setMorphProcMesh: (id, x, y) => ({
+        id, x, y, title: "Set Morph",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "objectName", type: "string"},
+          {name: "index", type: "number"},
+          {name: "interval", type: "number"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "objectName", value: "FLOOR"},
+          {key: "index", value: 1},
+          {key: "interval", value: 2000},
+        ],
         noselfExec: "true"
       }),
 

@@ -39373,10 +39373,10 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/tutorial-1/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 266.34460239409304, "y": 106.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 593.6141493868672, "y": 118.99371971348523, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:3, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[2,2,2]" }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true", "_subCache": {}, "_needsRebuild": false, "_pinsBuilt": true }, "node_3": { "id": "node_3", "title": "Get Object", "x": 299.58220305088577, "y": 308.1247929072962, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "ROTSPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_3", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_2", "pin": "rotSpeed" }, "type": "object" }], "nodeCounter": 4, "linkCounter": 3, "pan": [-367, -42], "variables": { "number": {}, "boolean": {}, "string": {}, "object": { "ROTSPEED": { "x": 0, "y": 1, "z": 0 } } } };
+// ../../../../projects/tutorial-2/graph.js
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 254.34460239409304, "y": 127.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 631.8179030935556, "y": 132.84555844274547, "title": "Add Procedural Mesh", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "meshA", "type": "string" }, { "name": "meshB", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "meshA", "value": "cube" }, { "key": "meshB", "value": "sphere" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:3, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "editorGen1" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }], "nodeCounter": 3, "linkCounter": 2, "pan": [-165, -32], "variables": { "number": {}, "boolean": {}, "string": {}, "object": { "POSITION": { "x": 0, "y": 1, "z": -10 } } } };
 
-// ../../../../projects/tutorial-1/shader-graphs.js
+// ../../../../projects/tutorial-2/shader-graphs.js
 var shaderGraphsProdc = [
   {
     "name": "fragShaderGraph",
@@ -39396,13 +39396,13 @@ var shaderGraphsProdc = [
   }
 ];
 
-// ../../../../projects/tutorial-1/app-gen.js
+// ../../../../projects/tutorial-2/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
     dontUsePhysics: true,
     useEditor: true,
     projectType: "created from editor",
-    projectName: "tutorial-1",
+    projectName: "tutorial-2",
     canvasSize: "fullscreen",
     mainCameraParams: {
       type: "WASD",
@@ -39438,12 +39438,6 @@ var app2 = new MatrixEngineWGPU(
         }
       });
     }, { scale: [25, 1, 25] });
-    setTimeout(() => {
-      app3.getSceneObjectByName("FLOOR").position.SetX(1.3649999999999993);
-    }, 800);
-    setTimeout(() => {
-      app3.getSceneObjectByName("FLOOR").position.SetY(-5.285000000000005);
-    }, 800);
   }
 );
 window.app = app2;
@@ -39457,4 +39451,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=tutorial-1.js.map
+//# sourceMappingURL=tutorial-2.js.map

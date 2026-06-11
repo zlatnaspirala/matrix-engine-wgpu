@@ -11,7 +11,7 @@ let app = new MatrixEngineWGPU(
   dontUsePhysics: true,
   useEditor: true,
   projectType: "created from editor",
-  projectName: 'tutorial-1',
+  projectName: 'tutorial-2',
   canvasSize: 'fullscreen',
   mainCameraParams: {
     type:  "WASD",
@@ -56,18 +56,6 @@ app.addLight();
       // ME END FLOOR addCube
 
   
-    // ME START FLOOR updatePosx
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetX(1.3649999999999993);
- }, 800);
- // ME END FLOOR updatePosx
- 
-   // ME START FLOOR updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(-5.285000000000005);
- }, 800);
- // ME END FLOOR updatePosy
- 
- // [MAIN_REPLACE2]
+// [MAIN_REPLACE2]
 })
 window.app = app;
