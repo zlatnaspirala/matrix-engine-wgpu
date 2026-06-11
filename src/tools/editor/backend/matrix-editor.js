@@ -3,6 +3,12 @@ import fs from "fs/promises";
 import {WebSocketServer} from "ws";
 import esbuild from "esbuild";
 
+/**
+ * @description
+ * Main edotpr backend script.
+ * @note 
+ * This is node.js script
+ */
 const ENGINE_PATH = path.resolve("../../../../");
 const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
 const PUBLIC_RES = path.join(PUBLIC_DIR, "res");
@@ -224,17 +230,21 @@ import {addRaycastsListener} from "../../src/engine/raycast.js";
 `;
 }
 
-// ammo is default
 function CBoptions(p, n, pName, physicsLib, camera) {
   return `
   {
-  ${p ? physicsLib == 1 ? 'useJolt: true,' : physicsLib == 3 ? 'useCannon: true,' : '' : 'dontUsePhysics: true,'}
+  ${p ? 
+    physicsLib == 1 ? 'useJolt: true,' : 
+    physicsLib == 2 ? 'useAmmo: true,' : 
+    physicsLib == 3 ? 'useCannon: true,' :
+    physicsLib == 4 ? 'useMatter: true,' :
+     'dontUsePhysics: true,' : 'dontUsePhysics: true,'}
   useEditor: true,
   projectType: "created from editor",
   ${pName ? `projectName: '${pName}',` : ""}
   canvasSize: 'fullscreen',
   mainCameraParams: {
-    type:  ${ camera == 1 ? '"WASD"' : camera == 2 ? '"firstPersonCamera"' : camera == 3 ? '"RPG"' : camera == 4 ? '"cinematicCamera"' : '"WASD"'},
+    type:  ${camera == 1 ? '"WASD"' : camera == 2 ? '"firstPersonCamera"' : camera == 3 ? '"RPG"' : camera == 4 ? '"cinematicCamera"' : '"WASD"'},
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0, g: 0, a: 1}
@@ -287,7 +297,7 @@ async function cnp(ws, msg) {
 
   content.addLine(`// Avoid position y 0 vs floor zero !`);
   content.addLine(`app.getCamera().setPosition(0,4,0)`);
-  
+
   // graph
   content.addLine(`// [light]`);
   content.addLine(`app.addLight();`);
@@ -538,7 +548,7 @@ async function saveMethods(msg, ws) {
   });
 }
 
-// FluxCodexVertex
+// FLUXCODEXSHADER
 async function saveGraph(msg, ws) {
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
@@ -588,18 +598,20 @@ async function saveShaderGraph(msg, ws) {
 }
 
 async function loadShaderGraph(msg, ws) {
+  console.log("[loadShaderGraph] ");
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   await fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "shader-graphs.js");
   let graphs = [];
   try {
     const existingContent = await fs.readFile(file, "utf8");
-    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*?\]);?\s*$/);
     if(match) {
-      graphs = JSON.parse(match[1]);
+      const cleaned = match[1].replace(/,\s*([}\]])/g, '$1');
+      graphs = JSON.parse(cleaned);
     }
   } catch(err) {
-    console.log("[loadShaderGraph]No existing shader-graphs.js, creating new");
+    console.log("[getShaderGraphs] error :", err);
   }
   let newGraph;
   // Find and update, or add new
@@ -623,16 +635,16 @@ async function getShaderGraphs(msg, ws) {
   await fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "shader-graphs.js");
   let graphs = [];
-try {
-  const existingContent = await fs.readFile(file, "utf8");
-  const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*?\]);?\s*$/);
-  if(match) {
-    const cleaned = match[1].replace(/,\s*([}\]])/g, '$1');
-    graphs = JSON.parse(cleaned);
+  try {
+    const existingContent = await fs.readFile(file, "utf8");
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*?\]);?\s*$/);
+    if(match) {
+      const cleaned = match[1].replace(/,\s*([}\]])/g, '$1');
+      graphs = JSON.parse(cleaned);
+    }
+  } catch(err) {
+    console.log("[getShaderGraphs] error :", err);
   }
-} catch(err) {
-  console.log("[getShaderGraphs] error :", err);
-}
   ws.send(JSON.stringify({
     ok: true,
     methodLoads: 'OK',
