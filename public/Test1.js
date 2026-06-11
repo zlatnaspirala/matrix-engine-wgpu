@@ -23537,7 +23537,8 @@ var MEEditorClient = class {
     document.addEventListener("get-shader-graphs", () => {
       console.info("%cget-shader-graphs <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
-        action: "get-shader-graphs"
+        action: "get-shader-graphs",
+        projectName: location.href.split("/public/")[1].split(".")[0]
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -31052,7 +31053,7 @@ LIST OF INTEREST OBJECT:
     }
     let getCurrentGIzmoObj = app.mainRenderBundle.filter((o2) => o2.effects.gizmoEffect && o2.effects.gizmoEffect.enabled);
     if (getCurrentGIzmoObj.length > 0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
-    byId("app").style.opacity = 0.5;
+    byId("app").style.display = "none";
     this.initEventNodes();
     Object.values(this.nodes).forEach((n2) => n2._returnCache = void 0);
     Object.values(this.nodes).filter((n2) => n2.category === "event" && n2.title === "onLoad").forEach((n2) => this.triggerNode(n2.id));

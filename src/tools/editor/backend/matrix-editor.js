@@ -373,7 +373,7 @@ async function buildProject(projectName, ws, payload) {
   });
   await context.watch();
   console.log(`Watching & bundling ${projectName} → ${outfile}`);
-  watchers.set(projectName, context); // <- store watcher
+  watchers.set(projectName, context);
   PROJECT_NAME = projectName;
   console.log(`👀 Started watcher for ${projectName}`);
 
@@ -566,11 +566,9 @@ async function saveShaderGraph(msg, ws) {
       graphs = JSON.parse(match[1]);
     }
   } catch(err) {
-    console.log("No existing shader-graphs.js, creating new");
+    console.log("[saveShaderGraph]No existing shader-graphs.js, creating new");
   }
-  // const newGraph = JSON.parse(msg.graphData);
   const newGraph = msg.graphData;
-  // console.log("No existing shader-graphs.js, creating new");
   // Find and update, or add new
   const existingIndex = graphs.findIndex(g => g.name === newGraph.name);
   if(existingIndex !== -1) {
@@ -601,7 +599,7 @@ async function loadShaderGraph(msg, ws) {
       graphs = JSON.parse(match[1]);
     }
   } catch(err) {
-    console.log("No existing shader-graphs.js, creating new");
+    console.log("[loadShaderGraph]No existing shader-graphs.js, creating new");
   }
   let newGraph;
   // Find and update, or add new
@@ -620,17 +618,21 @@ async function loadShaderGraph(msg, ws) {
 }
 
 async function getShaderGraphs(msg, ws) {
-  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  console.log("[getShaderGraphs] msg.projectName ", msg.projectName);
+  const folderPerProject = path.join(PROJECTS_DIR, msg.projectName);
   await fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "shader-graphs.js");
   let graphs = [];
-  try {
-    const existingContent = await fs.readFile(file, "utf8");
-    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
-    if(match) graphs = JSON.parse(match[1])
-  } catch(err) {
-    console.log("No existing shader-graphs.js, creating new");
+try {
+  const existingContent = await fs.readFile(file, "utf8");
+  const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*?\]);?\s*$/);
+  if(match) {
+    const cleaned = match[1].replace(/,\s*([}\]])/g, '$1');
+    graphs = JSON.parse(cleaned);
   }
+} catch(err) {
+  console.log("[getShaderGraphs] error :", err);
+}
   ws.send(JSON.stringify({
     ok: true,
     methodLoads: 'OK',

@@ -23537,7 +23537,8 @@ var MEEditorClient = class {
     document.addEventListener("get-shader-graphs", () => {
       console.info("%cget-shader-graphs <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
-        action: "get-shader-graphs"
+        action: "get-shader-graphs",
+        projectName: location.href.split("/public/")[1].split(".")[0]
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
