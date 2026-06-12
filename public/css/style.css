@@ -1924,3 +1924,19 @@ svg.connections {
     25%       { transform: translateX(-4px); }
     75%       { transform: translateX(4px); }
 }
+
+.themePhysics {
+border: 1px solid rgb(6, 166, 0);
+}
+.themeStrings {
+border: 1px solid rgb(0, 251, 171);
+}
+.themeMedia {
+border: 1px solid rgb(251 0 158);
+}
+.themeAgnostic {
+border: 1px solid rgb(0, 79, 251);
+}
+.themeLogic {
+border: 1px solid rgb(251, 33, 0);
+}

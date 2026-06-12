@@ -42,7 +42,7 @@ export var testCannonES = function() {
       app.physicsBodiesGeneratorWall("standard",
         {x: -4.5, y: 1, z: -10}, {x: 0, y: 0, z: 0},
         ["./res/textures/rust.jpg",],
-        'my_set_walls', "5x3", true, [1, 1, 1], 2, 350);
+        'my_set_walls', "5x3", true, [1, 1, 1], 2.05, 1000, "ByZ");
 
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {

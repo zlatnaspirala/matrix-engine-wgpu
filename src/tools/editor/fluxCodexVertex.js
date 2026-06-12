@@ -1804,7 +1804,9 @@ export default class FluxCodexVertex {
           {name: "raycast", type: "boolean"},
           {name: "scale", type: "object"},
           {name: "spacing", type: "number"},
-          {name: "delay", type: "number"}
+          {name: "delay", type: "number"},
+          {name: "orientation", type: "string"},
+          {name: "spacingByY", type: "number"},
         ],
         outputs: [
           {name: "execOut", type: "action"}
@@ -1821,6 +1823,8 @@ export default class FluxCodexVertex {
           {key: "spacing", value: 10},
           {key: "delay", value: 500},
           {key: "created", value: false},
+          {key: "orientation", value: "ByX"},
+          {key: "spacingByY", value: 3},
         ],
         noselfExec: "true"
       }),
@@ -4287,6 +4291,8 @@ LIST OF INTEREST OBJECT:
         let raycast = this.getValue(nodeId, "raycast");
         let scale = this.getValue(nodeId, "scale");
         let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
         // spec adaptation
         if(raycast == "true") {raycast = true} else {raycast = false;}
         if(typeof delay == 'string') delay = parseInt(delay);
@@ -4300,7 +4306,8 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay,
+            ori, spacingByY);
           // createdField.value = true;
         }
 

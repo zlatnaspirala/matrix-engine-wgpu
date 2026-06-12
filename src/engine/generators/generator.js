@@ -30,7 +30,7 @@ export async function physicsBodiesGenerator(
   scale = [1, 1, 1],
   sum = 20,
   delay = 500,
-  mesh = null, 
+  mesh = null,
   posOffset = {x: 0, y: 0, z: 0}) {
 
   return new Promise((resolve) => {
@@ -108,9 +108,10 @@ export function physicsBodiesGeneratorWall(
   size = "10x3",
   raycast = false,
   scale = [1, 1, 1],
-  spacing = 2,
+  spacing = 2.1,
   delay = 200,
-  useMeshPath = "./res/meshes/blender/cube.obj") {
+  orientationOfwall = "ByX", spacingY = 3,
+  useMeshPath = "./res/meshes/blender/cube.obj",) {
   const engine = this;
   const [width, height] = size
     .toLowerCase()
@@ -128,6 +129,18 @@ export function physicsBodiesGeneratorWall(
       for(let x = 0;x < width;x++) {
         const cubeName = `${name}_${index}`;
         setTimeout(() => {
+
+          let __x = 0, __y = 0, __z = 0;
+          if(orientationOfwall === 'ByX') {
+            __x = x * spacing;
+            __y = y * spacing + spacingY;
+            __z = 0;
+          } else if(orientationOfwall === 'ByZ') {
+            __x = 0;
+            __y = y * spacing + spacingY;
+            __z = x * spacing;
+          }
+
           engine.addMeshObj({
             material: {type: material},
             envMapParams: (material == 'mirror' ? {
@@ -142,9 +155,9 @@ export function physicsBodiesGeneratorWall(
               usePlanarReflection: false,       // ✅ Env map mode - wip
             } : undefined),
             position: {
-              x: pos.x + x * spacing,
-              y: pos.y + y * spacing + 2.8,
-              z: pos.z
+              x: pos.x + __x,
+              y: pos.y + __y,
+              z: pos.z + __z
             },
             rotation: rot,
             rotationSpeed: {x: 0, y: 0, z: 0},

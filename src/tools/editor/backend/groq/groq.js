@@ -3,7 +3,8 @@ import Groq from "groq-sdk";
 
 export class AiGroq {
   constructor(model) {
-    this.model = "llama-3.3-70b-versatile";
+    this.model = 'llama-3.1-8b-instant';
+    // this.model = "llama-3.3-70b-versatile";
   }
 
   async aiGenGraphCall(i) {
@@ -17,7 +18,7 @@ export class AiGroq {
         {role: "user", content: i.task}
       ],
       temperature: 0.2,
-      stream: true
+      stream: false
     });
     for await(const chunk of response) {
       process.stdout.write(

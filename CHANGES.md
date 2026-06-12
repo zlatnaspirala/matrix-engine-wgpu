@@ -3,6 +3,7 @@
 
 
 [1.15.x]
+ - Graph part synced - improvment for ai tool - gen graphs
  - Jamb (yacht) game synced with last ver of core + mobile supported.
  - JOLT worker improved for OnContactRemoved and OnContactPersisted (detect) override fn's.
  - geo effects fixed for moba prepare

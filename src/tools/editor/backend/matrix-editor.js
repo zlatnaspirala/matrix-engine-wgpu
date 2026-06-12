@@ -5,9 +5,9 @@ import esbuild from "esbuild";
 
 /**
  * @description
- * Main edotpr backend script.
+ * Main EditorX backend script.
  * @note 
- * This is node.js script
+ * This is node.js script.
  */
 const ENGINE_PATH = path.resolve("../../../../");
 const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
@@ -19,7 +19,7 @@ import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
 import {AiGroq} from "./groq/groq.js";
 import {AiOllama} from "./ollama/ollama.js";
 import {AvailableResources} from "./ollama/get-available-resources.js";
-import {SYSTEM_PROMPT} from "./ollama/test-prompt1.js";
+import {SYSTEM_PROMPT, SYSTEM_PROMPT_MINI} from "./ollama/test-prompt1.js";
 
 let PROJECT_NAME = "";
 
@@ -904,11 +904,12 @@ async function aiGenGraphCall(msg, ws) {
     const listOfGlbs = res_list_glb.map(t => t.relativePath).join(", ");
     const listOfMp3s = res_list_mp3.map(t => t.relativePath).join(", ");
     const listOfMp4s = res_list_mp4.map(t => t.relativePath).join(", ");
-    msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
-      SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
 
-    // provider ='groq'
     if(msg.prompt.provider === 'groq') {
+
+      msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+        SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+
       matrixGroq.aiGenGraphCall(msg.prompt).then((r) => {
         console.log('GROQ service....>>>>', res_list)
         ws.send(JSON.stringify({
@@ -918,6 +919,10 @@ async function aiGenGraphCall(msg, ws) {
         }));
       })
     } else {
+
+      msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+        SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+
       matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
         // console.log('result from ai tool service....>>>>', res_list)
         ws.send(JSON.stringify({

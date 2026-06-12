@@ -7351,7 +7351,7 @@ var testCannonES = function () {
         x: 0,
         y: 0,
         z: 0
-      }, ["./res/textures/rust.jpg"], 'my_set_walls', "5x3", true, [1, 1, 1], 2, 350);
+      }, ["./res/textures/rust.jpg"], 'my_set_walls', "5x3", true, [1, 1, 1], 2.05, 1000, "ByZ");
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
@@ -34744,7 +34744,7 @@ async function physicsBodiesGenerator(material = "standard", pos, rot, texturePa
  * @param {Array} scale
  * @param {number} spacing    distance between cubes
  */
-function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
+function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2.1, delay = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
   const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
   console.log(width);
@@ -34762,6 +34762,18 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
       for (let x = 0; x < width; x++) {
         const cubeName = `${name}_${index}`;
         setTimeout(() => {
+          let __x = 0,
+            __y = 0,
+            __z = 0;
+          if (orientationOfwall === 'ByX') {
+            __x = x * spacing;
+            __y = y * spacing + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === 'ByZ') {
+            __x = 0;
+            __y = y * spacing + spacingY;
+            __z = x * spacing;
+          }
           engine.addMeshObj({
             material: {
               type: material
@@ -34785,9 +34797,9 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
               usePlanarReflection: false // ✅ Env map mode - wip
             } : undefined,
             position: {
-              x: pos.x + x * spacing,
-              y: pos.y + y * spacing + 2.8,
-              z: pos.z
+              x: pos.x + __x,
+              y: pos.y + __y,
+              z: pos.z + __z
             },
             rotation: rot,
             rotationSpeed: {
@@ -59535,38 +59547,38 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
-      <span>Scene objects [agnostic]</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMorphProcMesh')">MorphTo ProcMesh</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexAnim')">Set VertexAnim Intesity</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWave')">Set Vertex Wave</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWind')">Set Vertex Wind</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexPulse')">Set Vertex Pulse</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
+      <span class="themeAgnostic" >Scene objects [agnostic]</span>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setMorphProcMesh')">MorphTo ProcMesh</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexAnim')">Set VertexAnim Intesity</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexWave')">Set Vertex Wave</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexWind')">Set Vertex Wind</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexPulse')">Set Vertex Pulse</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
@@ -59577,30 +59589,30 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumberLiteral')">Get Number Literal</button>
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-      <span>Media</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
-      <span>Physics</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
+      <span class="themeMedia">Media</span>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
+      <span class="themePhysics">Physics</span>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
       <span>String Operations</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
 
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
@@ -62410,6 +62422,7 @@ var _generateAISchema = require("./generateAISchema.js");
 // Engine agnostic
 let runtimeCacheObjs = exports.runtimeCacheObjs = [];
 class FluxCodexVertex {
+  __experimental__RESOURCES_FOR_GRAPH = new RESOURCES_FOR_GRAPH();
   constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
     this.toolTip = toolTip;
@@ -62833,8 +62846,8 @@ class FluxCodexVertex {
       position: "absolute",
       top: "10%",
       left: "5%",
-      width: "50%",
-      height: "70%",
+      width: "65%",
+      height: "80%",
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
     repeating-linear-gradient(
@@ -62892,6 +62905,14 @@ class FluxCodexVertex {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = 'manualInput';
+    checkbox.value = 'ai-task';
+    checkbox.onchange = function (e) {
+      console.log(e);
+    };
+    popup.appendChild(checkbox);
     const label2 = document.createElement("span");
     label2.innerText = `Select provider [Only OLLAMA for now]`;
     popup.appendChild(label2);
@@ -62916,6 +62937,7 @@ class FluxCodexVertex {
     call.addEventListener("click", e => {
       if (selectPrompt.selectedIndex > 0) {
         // use select task...
+        console.log(' use select task...');
       }
       if (e.target.getAttribute("data-ai-status") == null) {
         e.target.setAttribute("data-ai-status", "wip");
@@ -62928,10 +62950,11 @@ class FluxCodexVertex {
         }
       }
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, _utils.LOG_FUNNY_ARCADE);
+      const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
+      console.log(`%cAI TASK SERVICE:${_generateAISchema.providers[IDPROVIDER]}`, _utils.LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
         detail: {
-          provider: _generateAISchema.providers[0],
-          // hardcode
+          provider: _generateAISchema.providers[IDPROVIDER],
           task: selectPrompt.selectedOptions[0].innerText
         }
       }));
@@ -64143,6 +64166,12 @@ class FluxCodexVertex {
         }, {
           name: "delay",
           type: "number"
+        }, {
+          name: "orientation",
+          type: "string"
+        }, {
+          name: "spacingByY",
+          type: "number"
         }],
         outputs: [{
           name: "execOut",
@@ -64181,6 +64210,12 @@ class FluxCodexVertex {
         }, {
           key: "created",
           value: false
+        }, {
+          key: "orientation",
+          value: "ByX"
+        }, {
+          key: "spacingByY",
+          value: 3
         }],
         noselfExec: "true"
       }),
@@ -67676,6 +67711,8 @@ LIST OF INTEREST OBJECT:
         let raycast = this.getValue(nodeId, "raycast");
         let scale = this.getValue(nodeId, "scale");
         let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
         // spec adaptation
         if (raycast == "true") {
           raycast = true;
@@ -67693,7 +67730,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay, ori, spacingByY);
           // createdField.value = true;
         }
         this.enqueueOutputs(n, "execOut");
@@ -68915,6 +68952,16 @@ LIST OF INTEREST OBJECT:
   }
 }
 exports.default = FluxCodexVertex;
+class RESOURCES_FOR_GRAPH {
+  obj = [];
+  glb = [];
+  images = [];
+  constructor() {
+    addEventListener('editorx-update-assets-list', e => {
+      console.log(' editorx-update-assets-list ', e.detail);
+    });
+  }
+}
 
 },{"../../engine/matrix-class.js":75,"../../engine/utils":92,"./curve-editor":136,"./generateAISchema.js":142}],142:[function(require,module,exports){
 "use strict";
@@ -69040,7 +69087,7 @@ function catalogToText(catalog) {
   }
   return out;
 }
-let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
+let tasks = exports.tasks = ["On load create a cube named box1 at position 0 0 0", "Create a the house using multiply generatorWall, use different size to costruct whole house with 3 rooms.", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq"];
 
 },{}],143:[function(require,module,exports){

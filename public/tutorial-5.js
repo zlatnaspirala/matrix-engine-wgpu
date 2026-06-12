@@ -39439,10 +39439,10 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/tutorial-2/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 188.34460239409304, "y": 164.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 541.8179030935556, "y": 128.84555844274547, "title": "Add Procedural Mesh", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "meshA", "type": "string" }, { "name": "meshB", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "meshA", "value": "cube" }, { "key": "meshB", "value": "sphere" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:5, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "editorGen1" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[3,3,3]" }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_3": { "id": "node_3", "title": "SetTimeout", "x": 875.2192618386248, "y": 220.04975124490676, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "2000" }], "builtIn": true }, "node_6": { "id": "node_6", "x": 1172.0101126535392, "y": 288.1566211881626, "title": "Set Morph ProceduralMesh", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "index", "type": "value" }, { "name": "interval", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "editorGen1" }, { "key": "index", "value": 1 }, { "key": "interval", "value": 2e3 }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_2", "from": { "node": "node_2", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_3", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_6", "pin": "exec" }, "type": "action" }], "nodeCounter": 7, "linkCounter": 4, "pan": [-601, -51], "variables": { "number": {}, "boolean": {}, "string": {}, "object": { "POSITION": { "x": 0, "y": 1, "z": -10 } } } };
+// ../../../../projects/tutorial-5/graph.js
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 347.34460239409304, "y": 172.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_4": { "id": "node_4", "title": "Get String", "x": 909.9035804758671, "y": 585.6507244694712, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "OrientationWallByX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_6": { "id": "node_6", "title": "Get Object", "x": 334.31528258052674, "y": 356.40297300926034, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "positionofwall1" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_7": { "id": "node_7", "title": "Get Object", "x": 906.3386398274909, "y": 353.9172360896436, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "positionForwall2" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_8": { "id": "node_8", "title": "Get String", "x": 334.7140989017252, "y": 573.9514680245968, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "OrientationWallByX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_9": { "id": "node_9", "x": 622.1526394755799, "y": 185.67726342855266, "title": "Generator Wall", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }, { "name": "orientation", "type": "string" }, { "name": "spacingByY", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "TEST" }, { "key": "size", "value": "10x3" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": "2.02" }, { "key": "delay", "value": 500 }, { "key": "created", "value": false }, { "key": "orientation", "value": "ByX" }, { "key": "spacingByY", "value": 3 }], "noselfExec": "true" }, "node_10": { "id": "node_10", "x": 1155.1906958504926, "y": 176.31964728900758, "title": "Generator Wall", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }, { "name": "orientation", "type": "string" }, { "name": "spacingByY", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "TEST" }, { "key": "size", "value": "10x3" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": "2.02" }, { "key": "delay", "value": 500 }, { "key": "created", "value": false }, { "key": "orientation", "value": "ByX" }, { "key": "spacingByY", "value": 3 }], "noselfExec": "true" }, "node_12": { "id": "node_12", "title": "Get String", "x": 1404.7255835184012, "y": 591.9865277645915, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "OrientationOfWall" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_13": { "id": "node_13", "title": "Get Object", "x": 1421.0371939806737, "y": 347.6082605051385, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "positionwall3" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_14": { "id": "node_14", "x": 1702.9730138839698, "y": 231.4886134134498, "title": "Generator Wall", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }, { "name": "orientation", "type": "string" }, { "name": "spacingByY", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "TEST" }, { "key": "size", "value": "10x3" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": "2.03" }, { "key": "delay", "value": 500 }, { "key": "created", "value": false }, { "key": "orientation", "value": "ByX" }, { "key": "spacingByY", "value": 3 }], "noselfExec": "true" }, "node_15": { "id": "node_15", "title": "SetTimeout", "x": 2010.683528930218, "y": 380.5894210114444, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "20000" }], "builtIn": true }, "node_16": { "id": "node_16", "x": 2381.448916516342, "y": 343.7115340016506, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:20, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "roof" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[15,1,15]" }, { "key": "isPhysicsBody", "type": false, "value": "true" }, { "key": "isInstancedObj", "type": false, "value": "" }, { "key": "created", "value": false }], "noselfExec": "true" } }, "links": [{ "id": "link_8", "from": { "node": "node_9", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_9", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_9", "pin": "exec" }, "type": "action" }, { "id": "link_10", "from": { "node": "node_6", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_9", "pin": "pos" }, "type": "object" }, { "id": "link_11", "from": { "node": "node_8", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_9", "pin": "orientation" }, "type": "string" }, { "id": "link_12", "from": { "node": "node_4", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_10", "pin": "orientation" }, "type": "string" }, { "id": "link_13", "from": { "node": "node_7", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "pos" }, "type": "object" }, { "id": "link_17", "from": { "node": "node_10", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_14", "pin": "exec" }, "type": "action" }, { "id": "link_18", "from": { "node": "node_13", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_14", "pin": "pos" }, "type": "object" }, { "id": "link_19", "from": { "node": "node_12", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_14", "pin": "orientation" }, "type": "string" }, { "id": "link_20", "from": { "node": "node_14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_15", "pin": "exec" }, "type": "action" }, { "id": "link_21", "from": { "node": "node_15", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_16", "pin": "exec" }, "type": "action" }], "nodeCounter": 17, "linkCounter": 22, "pan": [-1786, -210], "variables": { "number": {}, "boolean": {}, "string": { "OrientationOfWall": "ByZ", "OrientationWallByX": "ByX", "welcome": "welcome here" }, "object": { "positionofwall1": { "x": -7, "y": 2, "z": -30 }, "positionForwall2": { "x": -7, "y": 2, "z": -10 }, "positionwall3": { "x": -9.5, "y": 2, "z": -29 } } } };
 
-// ../../../../projects/tutorial-2/shader-graphs.js
+// ../../../../projects/tutorial-5/shader-graphs.js
 var shaderGraphsProdc = [
   {
     "name": "fragShaderGraph",
@@ -39462,13 +39462,13 @@ var shaderGraphsProdc = [
   }
 ];
 
-// ../../../../projects/tutorial-2/app-gen.js
+// ../../../../projects/tutorial-5/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
-    dontUsePhysics: true,
+    useCannon: true,
     useEditor: true,
     projectType: "created from editor",
-    projectName: "tutorial-2",
+    projectName: "tutorial-5",
     canvasSize: "fullscreen",
     mainCameraParams: {
       type: "WASD",
@@ -39477,33 +39477,38 @@ var app2 = new MatrixEngineWGPU(
     clearColor: { r: 0, b: 0, g: 0, a: 1 }
   },
   (app3) => {
-    app3.graph = graph_default;
-    shaderGraphsProdc.forEach((gShader) => {
-      let shaderReady = JSON.parse(gShader.content);
-      app3.shadersPack[gShader.name] = shaderReady.final;
-      if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
-    });
-    addRaycastsListener("canvas1", "mousedown");
-    app3.getCamera().setPosition(0, 4, 0);
-    app3.addLight();
-    downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
-      let texturesPaths = ["./res/textures/floor1.webp"];
-      app3.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 0, y: 0, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths,
-        name: "FLOOR",
-        mesh: m.mesh,
-        raycast: { enabled: true, radius: 2 },
-        physics: { enabled: false, geometry: "Cube" },
-        pointerEffect: {
-          enabled: true,
-          gizmoEffect: true
-        }
+    addEventListener("PhysicsReady", async () => {
+      app3.graph = graph_default;
+      shaderGraphsProdc.forEach((gShader) => {
+        let shaderReady = JSON.parse(gShader.content);
+        app3.shadersPack[gShader.name] = shaderReady.final;
+        if (typeof shaderReady.final === "undefined") console.warn(`Shader ${shaderReady.name} is not compiled.`);
       });
-    }, { scale: [25, 1, 25] });
+      addRaycastsListener("canvas1", "mousedown");
+      app3.getCamera().setPosition(0, 4, 0);
+      app3.addLight();
+      downloadMeshes({ mesh: "./res/meshes/blender/plane.obj" }, (m) => {
+        let texturesPaths = ["./res/textures/floor1.webp"];
+        app3.addMeshObj({
+          material: { type: "standard" },
+          position: { x: 0, y: 0, z: -20 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths,
+          name: "FLOOR",
+          mesh: m.mesh,
+          raycast: { enabled: true, radius: 2 },
+          physics: { enabled: false, geometry: "Cube" },
+          pointerEffect: {
+            enabled: true,
+            gizmoEffect: true
+          }
+        });
+      }, { scale: [25, 1, 25] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetZ(-20);
+      }, 800);
+    });
   }
 );
 window.app = app2;
@@ -39517,4 +39522,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=tutorial-2.js.map
+//# sourceMappingURL=tutorial-5.js.map
