@@ -26347,7 +26347,8 @@ var tasks = [
 ];
 var providers = [
   "ollama",
-  "groq"
+  "groq",
+  "anthropic"
 ];
 
 // ../fluxCodexVertex.js
@@ -26793,7 +26794,7 @@ var FluxCodexVertex = class {
     };
     popup.appendChild(checkbox);
     const label2 = document.createElement("span");
-    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    label2.innerText = `Select provider`;
     popup.appendChild(label2);
     const selectPromptProvider = document.createElement("select");
     selectPromptProvider.style.width = "400px";

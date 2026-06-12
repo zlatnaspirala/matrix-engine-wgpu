@@ -50,6 +50,7 @@ console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 let matrixOllama = new AiOllama();
 let matrixGroq = new AiGroq();
 let matrixAiAnthropic = new AiAnthropic();
+let matrixGoogleAI = new AiAnthropic();
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");
@@ -920,13 +921,22 @@ async function aiGenGraphCall(msg, ws) {
           aiGenNodes: r
         }));
       })
-    } else if(msg.prompt.provider === 'anthropic') {
-
+    } else if(msg.prompt.provider === 'google') {
+      // 
       msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
         SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
-
       matrixAiAnthropic.aiGenGraphCall(msg.prompt).then((r) => {
-        console.log('GROQ service....>>>>', res_list)
+        ws.send(JSON.stringify({
+          ok: true,
+          aiGenGraph: 'OK',
+          aiGenNodes: r
+        }));
+      })
+    } else if(msg.prompt.provider === 'anthropic') {
+      // no free quota
+      msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+        SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+      matrixAiAnthropic.aiGenGraphCall(msg.prompt).then((r) => {
         ws.send(JSON.stringify({
           ok: true,
           aiGenGraph: 'OK',
@@ -937,7 +947,7 @@ async function aiGenGraphCall(msg, ws) {
 
       msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
         SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
-
+        // no free quota at the moment 
       matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
         // console.log('result from ai tool service....>>>>', res_list)
         ws.send(JSON.stringify({
