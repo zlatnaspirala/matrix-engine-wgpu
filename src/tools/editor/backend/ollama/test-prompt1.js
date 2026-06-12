@@ -126,6 +126,8 @@ Fields:
 - scale : object
 - spacing : number
 - delay : number
+- orientation : string
+- spacingByY : number
 - created : boolean
 noselfExec: true
 
@@ -9037,6 +9039,8 @@ Fields:
 - scale : object
 - spacing : number
 - delay : number
+- orientation : string
+- spacingByY : number
 - created : boolean
 noselfExec: true
 

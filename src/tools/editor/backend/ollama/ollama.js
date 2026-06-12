@@ -6,6 +6,7 @@ export class AiOllama {
     // qwen3.5:27b
     // qwen3.6:35b
     this.model = "gpt-oss:120b";
+    this.stream = false;
   }
   async aiGenGraphCall(i) {
     const ollama = new Ollama({
@@ -18,13 +19,17 @@ export class AiOllama {
         {role: "system", content: i.finalSysPrompt},
         {role: "user", content: i.task}
       ],
-      stream: true,
+      stream: false,
     });
     let fullText = "";
-    for await(const part of response) {
-      const chunk = part.message?.content || "";
-      fullText += chunk;
-      process.stdout.write(chunk);
+    if(this.stream === true) {
+      for await(const part of response) {
+        const chunk = part.message?.content || "";
+        fullText += chunk;
+        process.stdout.write(chunk);
+      }
+    } else {
+      fullText = response.message?.content || "";
     }
     return fullText;
   }

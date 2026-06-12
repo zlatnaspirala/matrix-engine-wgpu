@@ -27853,9 +27853,9 @@ var FluxCodexVertex = class {
           { key: "scale", value: [1, 1, 1] },
           { key: "spacing", value: 10 },
           { key: "delay", value: 500 },
-          { key: "created", value: false },
           { key: "orientation", value: "ByX" },
-          { key: "spacingByY", value: 3 }
+          { key: "spacingByY", value: 3 },
+          { key: "created", value: false }
         ],
         noselfExec: "true"
       }),
@@ -39441,10 +39441,10 @@ var MatrixEngineWGPU = class {
   };
 };
 
-// ../../../../projects/MyAIGraph/graph.js
-var graph_default = { "nodes": [], "links": [{ "id": "l4", "from": { "node": "n7", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n8", "pin": "exec" }, "type": "action" }, { "id": "l5", "from": { "node": "n8", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n10", "pin": "exec" }, "type": "action" }, { "id": "l6", "from": { "node": "n9", "pin": "result", "type": "string", "out": true }, "to": { "node": "n10", "pin": "value" }, "type": "string" }, { "id": "l7", "from": { "node": "n11", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n12", "pin": "exec" }, "type": "action" }, { "id": "l8", "from": { "node": "n12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n13", "pin": "exec" }, "type": "action" }, { "id": "l9", "from": { "node": "n13", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n14", "pin": "exec" }, "type": "action" }, { "id": "l10", "from": { "node": "n14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n15", "pin": "exec" }, "type": "action" }, { "id": "l11", "from": { "node": "n16", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n17", "pin": "exec" }, "type": "action" }, { "id": "l12", "from": { "node": "n17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n18", "pin": "exec" }, "type": "action" }, { "id": "l13", "from": { "node": "n18", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n19", "pin": "exec" }, "type": "action" }], "nodeCounter": 20, "linkCounter": 14, "pan": [-47, 190], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+// ../../../../projects/tutorial-6/graph.js
+var graph_default = { "nodes": { "n2": { "id": "n2", "title": "onLoad", "x": 22, "y": 109, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n3": { "id": "n3", "title": "Generator Wall", "x": 437, "y": 99, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }, { "name": "orientation", "type": "string" }, { "name": "spacingByY", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:5, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "wall_front" }, { "key": "size", "value": "10x3" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": "1,1,1" }, { "key": "spacing", "value": "2" }, { "key": "delay", "value": "500" }, { "key": "orientation", "value": "ByX" }, { "key": "spacingByY", "value": "3" }, { "key": "created", "value": "" }], "noselfExec": true }, "n7": { "id": "n7", "title": "Generator Wall", "x": 1350, "y": 100, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }, { "name": "orientation", "type": "string" }, { "name": "spacingByY", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:2, z:0}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "wall_internal" }, { "key": "size", "value": "10x3" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[1,1,1]" }, { "key": "spacing", "value": "2" }, { "key": "delay", "value": "2" }, { "key": "orientation", "value": "ByZ" }, { "key": "spacingByY", "value": "3" }, { "key": "created", "value": "" }], "noselfExec": true }, "n8": { "id": "n8", "title": "addObj", "x": 1600, "y": 100, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:5, z:0}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "roof" }, { "key": "raycast", "value": false }, { "key": "scale", "value": "[15,1,15]" }, { "key": "isPhysicsBody", "value": true }, { "key": "isInstancedObj", "value": false }, { "key": "created", "value": "" }], "noselfExec": true }, "n9": { "id": "n9", "title": "setString", "x": 1850, "y": 100, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "string" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "HOUSE_STATUS" }, { "key": "literal", "value": "House built" }] }, "n10": { "id": "n10", "title": "getString", "x": 2100, "y": 100, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "HOUSE_STATUS" }], "displayEl": {} }, "n11": { "id": "n11", "title": "Print", "x": 2350, "y": 100, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "House Status" }], "noselfExec": true, "displayEl": {} } }, "links": [{ "id": "l1", "from": { "node": "n2", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n3", "pin": "exec" }, "type": "action" }, { "id": "l6", "from": { "node": "n7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n8", "pin": "exec" }, "type": "action" }, { "id": "l7", "from": { "node": "n8", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n9", "pin": "exec" }, "type": "action" }, { "id": "l8", "from": { "node": "n9", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n11", "pin": "exec" }, "type": "action" }, { "id": "l9", "from": { "node": "n10", "pin": "result", "type": "string", "out": true }, "to": { "node": "n11", "pin": "value" }, "type": "string" }], "nodeCounter": 12, "linkCounter": 10, "pan": [-112, 77], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
-// ../../../../projects/MyAIGraph/shader-graphs.js
+// ../../../../projects/tutorial-6/shader-graphs.js
 var shaderGraphsProdc = [
   {
     "name": "fragShaderGraph",
@@ -39464,13 +39464,13 @@ var shaderGraphsProdc = [
   }
 ];
 
-// ../../../../projects/MyAIGraph/app-gen.js
+// ../../../../projects/tutorial-6/app-gen.js
 var app2 = new MatrixEngineWGPU(
   {
     useCannon: true,
     useEditor: true,
     projectType: "created from editor",
-    projectName: "MyAIGraph",
+    projectName: "tutorial-6",
     canvasSize: "fullscreen",
     mainCameraParams: {
       type: "WASD",
@@ -39521,4 +39521,4 @@ bvh-loader/module/bvh-loader.js:
    * @license GPL-V3
    *)
 */
-//# sourceMappingURL=MyAIGraph.js.map
+//# sourceMappingURL=tutorial-6.js.map

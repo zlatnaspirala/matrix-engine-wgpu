@@ -108,7 +108,9 @@ export function catalogToText(catalog) {
 
 export let tasks = [
   "On load create a cube named box1 at position 0 0 0",
-  "Create a the house using multiply generatorWall, use different size to costruct whole house with 3 rooms.",
+
+  "Create a the house using multiply generatorWall , use different orientation param ('ByX and ByZ') to costruct whole house with 3 rooms and add roof (use single scaled cube phisics not generatorWall).",
+
   "Set texture for floor object",
   "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
@@ -134,5 +136,6 @@ export let tasks = [
 export let providers = [
   "ollama",
   "groq",
-  "anthropic"
+  "anthropic",
+  "goolge"
 ];

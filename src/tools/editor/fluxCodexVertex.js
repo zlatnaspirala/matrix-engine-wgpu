@@ -1813,7 +1813,7 @@ export default class FluxCodexVertex {
         ],
         fields: [
           {key: "material", value: "standard"},
-          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "pos", value: '{x:0, y:3, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
           {key: "texturePath", value: "res/textures/default.png"},
           {key: "name", value: "TEST"},
@@ -1822,9 +1822,9 @@ export default class FluxCodexVertex {
           {key: "scale", value: [1, 1, 1]},
           {key: "spacing", value: 10},
           {key: "delay", value: 500},
-          {key: "created", value: false},
           {key: "orientation", value: "ByX"},
           {key: "spacingByY", value: 3},
+          {key: "created", value: false},
         ],
         noselfExec: "true"
       }),

@@ -26322,7 +26322,7 @@ var CurveStore = class {
 // ../generateAISchema.js
 var tasks = [
   "On load create a cube named box1 at position 0 0 0",
-  "Create a the house using multiply generatorWall, use different size to costruct whole house with 3 rooms.",
+  "Create a the house using multiply generatorWall , use different orientation param ('ByX and ByZ') to costruct whole house with 3 rooms and add roof (use single scaled cube phisics not generatorWall).",
   "Set texture for floor object",
   "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
@@ -26348,7 +26348,8 @@ var tasks = [
 var providers = [
   "ollama",
   "groq",
-  "anthropic"
+  "anthropic",
+  "goolge"
 ];
 
 // ../fluxCodexVertex.js
@@ -27843,7 +27844,7 @@ var FluxCodexVertex = class {
         ],
         fields: [
           { key: "material", value: "standard" },
-          { key: "pos", value: "{x:0, y:0, z:-20}" },
+          { key: "pos", value: "{x:0, y:3, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
           { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
