@@ -14,6 +14,7 @@ RULES:
 - Do NOT include explanations or comments.
 - Positions (x,y) should be spaced horizontally by ~250 and vertically by ~120.
 - Use short incremental ids: nik1, nik2, nik3...
+- For GeneratorWall parameter 'size' is string with format eg.. "10x3" , it is not simple number !
 
 GRAPH STRUCTURE:
 {
@@ -8922,11 +8923,15 @@ Convert a natural language description into a graph made ONLY from the allowed n
 
 RULES:
 - Use ONLY node types explicitly listed.
+- My 3D scene use Y-up.
 - NEVER invent new node types.
 - Output ONLY valid JSON.
 - Do NOT include explanations or comments.
-- Positions (x,y) should be spaced horizontally by ~250 and vertically by ~120.
 - Use short incremental ids: nik1, nik2, nik3...
+- For GeneratorWall parameter 'size' is string with format eg.. "10x3" , it is not simple number !
+  also for scale values should be "[1,1,1]" !
+  ByX means we put new cubes folowing X axis.
+  See example : GRAPH ExampleGeneratorWallRoom
 
 GRAPH STRUCTURE:
 {
@@ -8938,13 +8943,6 @@ GRAPH STRUCTURE:
   "pan": [0,0],       // optional default camera pan
   "variables": {
     "number": {}, "boolean": {}, "string": {}, "object": {}
-  },
-  "rules": {
-    "execFlowOnly": true,
-    "allowCycles": false,
-    "outputFanout": true,
-    "inputSingleConnection": true,
-    "implicitCasts": ["number -> any", "boolean -> any"]
   }
 }
 
@@ -10183,22 +10181,18 @@ Link ids must be incremental: l1, l2, l3…
 
 
 GRAPH ExampleAddObjDefaultsNoPin
-
 {"nodes":{"n1":{"id":"n1","title":"onLoad","x":81.52081298828125,"y":125.53475952148438,"category":"event","inputs":[],"outputs":[{"name":"exec","type":"action"}],"fields":[]},"node_1":{"id":"node_1","x":428.25,"y":159.3194580078125,"title":"Add OBJ","category":"action","inputs":[{"name":"exec","type":"action"},{"name":"path","type":"string"},{"name":"material","type":"string"},{"name":"pos","type":"object"},{"name":"rot","type":"object"},{"name":"texturePath","type":"string"},{"name":"name","type":"string"},{"name":"raycast","type":"boolean"},{"name":"scale","type":"object"},{"name":"isPhysicsBody","type":"boolean"},{"name":"isInstancedObj","type":"boolean"}],"outputs":[{"name":"execOut","type":"action"},{"name":"complete","type":"action"},{"name":"error","type":"action"}],"fields":[{"key":"path","value":"res/meshes/shapes/cube.obj"},{"key":"material","value":"standard"},{"key":"pos","value":"{x:0, y:0, z:-20}"},{"key":"rot","value":"{x:0, y:0, z:0}"},{"key":"texturePath","value":"res/textures/star1.png"},{"key":"name","value":"TEST"},{"key":"raycast","value":"true"},{"key":"scale","value":"[3,1,3]"},{"key":"isPhysicsBody","type":false,"value":"false"},{"key":"isInstancedObj","type":false,"value":"false"},{"key":"created","value":"false"}],"noselfExec":"true"},"node_2":{"id":"node_2","title":"Print","x":763.8194580078125,"y":200.44097900390625,"category":"actionprint","inputs":[{"name":"exec","type":"action"},{"name":"value","type":"any"}],"outputs":[{"name":"execOut","type":"action"}],"fields":[{"key":"label","value":"Result"}],"builtIn":true,"noselfExec":"true","displayEl":{}},"node_3":{"id":"node_3","title":"Print","x":774.5104370117188,"y":467.1493225097656,"category":"actionprint","inputs":[{"name":"exec","type":"action"},{"name":"value","type":"any"}],"outputs":[{"name":"execOut","type":"action"}],"fields":[{"key":"label","value":"Result"}],"builtIn":true,"noselfExec":"true","displayEl":{}}},"links":[{"id":"link_1","from":{"node":"n1","pin":"exec","type":"action","out":true},"to":{"node":"node_1","pin":"exec"},"type":"action"},{"id":"link_2","from":{"node":"node_1","pin":"complete","type":"action","out":true},"to":{"node":"node_2","pin":"exec"},"type":"action"},{"id":"link_3","from":{"node":"node_1","pin":"error","type":"action","out":true},"to":{"node":"node_3","pin":"exec"},"type":"action"}],"nodeCounter":4,"linkCounter":4,"pan":[-12,106],"variables":{"number":{},"boolean":{},"string":{},"object":{}},"version":1}
 
 
 GRAPH ExampleAddProceduralAndMorphAfterInterval
-
 {"nodes":{"node_1":{"id":"node_1","title":"onLoad","x":188.34460239409304,"y":164.5731482201762,"category":"event","inputs":[],"outputs":[{"name":"exec","type":"action"}]},"node_2":{"id":"node_2","x":541.8179030935556,"y":128.84555844274547,"title":"Add Procedural Mesh","category":"action","inputs":[{"name":"exec","type":"action"},{"name":"meshA","type":"string"},{"name":"meshB","type":"string"},{"name":"material","type":"string"},{"name":"pos","type":"object"},{"name":"rot","type":"object"},{"name":"rotSpeed","type":"object"},{"name":"texturePath","type":"string"},{"name":"name","type":"string"},{"name":"raycast","type":"boolean"},{"name":"scale","type":"object"},{"name":"isPhysicsBody","type":"boolean"},{"name":"isInstancedObj","type":"boolean"}],"outputs":[{"name":"execOut","type":"action"},{"name":"complete","type":"action"},{"name":"error","type":"action"}],"fields":[{"key":"meshA","value":"cube"},{"key":"meshB","value":"sphere"},{"key":"material","value":"standard"},{"key":"pos","value":"{x:0, y:5, z:-20}"},{"key":"rot","value":"{x:0, y:0, z:0}"},{"key":"rotSpeed","value":"{x:0, y:0, z:0}"},{"key":"texturePath","value":"res/textures/default.png"},{"key":"name","value":"editorGen1"},{"key":"raycast","value":true},{"key":"scale","value":"[3,3,3]"},{"key":"isPhysicsBody","type":false},{"key":"isInstancedObj","type":false},{"key":"created","value":false}],"noselfExec":"true"},"node_3":{"id":"node_3","title":"SetTimeout","x":875.2192618386248,"y":220.04975124490676,"category":"timer","inputs":[{"name":"exec","type":"action"},{"name":"delay","type":"value"}],"outputs":[{"name":"execOut","type":"action"}],"fields":[{"key":"delay","value":"2000"}],"builtIn":true},"node_6":{"id":"node_6","x":1172.0101126535392,"y":288.1566211881626,"title":"Set Morph ProceduralMesh","category":"action","inputs":[{"name":"exec","type":"action"},{"name":"objectName","type":"string"},{"name":"index","type":"value"},{"name":"interval","type":"value"}],"outputs":[{"name":"execOut","type":"action"}],"fields":[{"key":"objectName","value":"editorGen1"},{"key":"index","value":1},{"key":"interval","value":2000}],"noselfExec":"true"}},"links":[{"id":"link_1","from":{"node":"node_1","pin":"exec","type":"action","out":true},"to":{"node":"node_2","pin":"exec"},"type":"action"},{"id":"link_2","from":{"node":"node_2","pin":"complete","type":"action","out":true},"to":{"node":"node_3","pin":"exec"},"type":"action"},{"id":"link_3","from":{"node":"node_3","pin":"execOut","type":"action","out":true},"to":{"node":"node_6","pin":"exec"},"type":"action"}],"nodeCounter":7,"linkCounter":4,"pan":[-601,-51],"variables":{"number":{},"boolean":{},"string":{},"object":{"POSITION":{"x":0,"y":1,"z":-10}}}}
 
 
 GRAPH ExampleAddConstRotationAndDisableRaycastHit
-
 {"nodes":{"node_1":{"id":"node_1","title":"onLoad","x":299.34460239409304,"y":127.5731482201762,"category":"event","inputs":[],"outputs":[{"name":"exec","type":"action"}]},"node_2":{"id":"node_2","title":"Get Object","x":266.847084359539,"y":271.74406450351313,"category":"value","outputs":[{"name":"result","type":"object"}],"fields":[{"key":"var","value":"ConstantRotVALUE"}],"isGetterNode":true,"displayEl":{}},"node_3":{"id":"node_3","title":"Get Boolean","x":262.638374192059,"y":466.9230116899904,"category":"value","outputs":[{"name":"result","type":"boolean"}],"fields":[{"key":"var","value":"ISITRAYCATEHITACTIVE"}],"isGetterNode":true,"displayEl":{}},"node_4":{"id":"node_4","x":581.223798707078,"y":211.0188479181686,"title":"Add OBJ","category":"action","inputs":[{"name":"exec","type":"action"},{"name":"path","type":"string"},{"name":"material","type":"string"},{"name":"pos","type":"object"},{"name":"rot","type":"object"},{"name":"rotSpeed","type":"object"},{"name":"texturePath","type":"string"},{"name":"name","type":"string"},{"name":"raycast","type":"boolean"},{"name":"scale","type":"object"},{"name":"isPhysicsBody","type":"boolean"},{"name":"isInstancedObj","type":"boolean"}],"outputs":[{"name":"execOut","type":"action"},{"name":"complete","type":"action"},{"name":"error","type":"action"}],"fields":[{"key":"path","value":"res/meshes/blender/cube.obj"},{"key":"material","value":"standard"},{"key":"pos","value":"{x:0, y:0, z:-20}"},{"key":"rot","value":"{x:0, y:0, z:0}"},{"key":"rotSpeed","value":"{x:0, y:0, z:0}"},{"key":"texturePath","value":"res/textures/default.png"},{"key":"name","value":"TEST"},{"key":"raycast","value":true},{"key":"scale","value":[1,1,1]},{"key":"isPhysicsBody","type":false},{"key":"isInstancedObj","type":false},{"key":"created","value":false}],"noselfExec":"true"}},"links":[{"id":"link_1","from":{"node":"node_3","pin":"result","type":"boolean","out":true},"to":{"node":"node_4","pin":"raycast"},"type":"boolean"},{"id":"link_2","from":{"node":"node_2","pin":"result","type":"object","out":true},"to":{"node":"node_4","pin":"rotSpeed"},"type":"object"},{"id":"link_3","from":{"node":"node_1","pin":"exec","type":"action","out":true},"to":{"node":"node_4","pin":"exec"},"type":"action"}],"nodeCounter":5,"linkCounter":4,"pan":[-498,-24],"variables":{"number":{},"boolean":{"ISITRAYCATEHITACTIVE":false},"string":{},"object":{"ConstantRotVALUE":{"x":0,"y":10,"z":0}}}};
 
 
 GRAPH ExamplesAddObjUseSоmePins
-
 {
   "nodes": {
     "n1": {
@@ -10566,8 +10560,8 @@ GRAPH ExamplesAddObjUseSоmePins
   "version": 1
 }
 
-GRAPH ExampleGeneratorWallRoom NOTE "Explanation : This is 3 walls thay are almost touch but not, and roof is on top and there is overhang. It is real physics."
 
+GRAPH ExampleGeneratorWallRoom NOTE "Explanation : This is 3 walls thay are almost touch but not, and roof is on top and there is overhang. It is real physics."
 {"nodes":[],"links":[{"id":"l14","from":{"node":"n17","pin":"exec","type":"action","out":true},"to":{"node":"n18","pin":"exec"},"type":"action"},{"id":"l15","from":{"node":"n18","pin":"execOut","type":"action","out":true},"to":{"node":"n19","pin":"exec"},"type":"action"},{"id":"l16","from":{"node":"n19","pin":"value","type":"value","out":true},"to":{"node":"n20","pin":"delay"},"type":"value"},{"id":"l17","from":{"node":"n19","pin":"execOut","type":"action","out":true},"to":{"node":"n20","pin":"exec"},"type":"action"},{"id":"l18","from":{"node":"n20","pin":"execOut","type":"action","out":true},"to":{"node":"n21","pin":"exec"},"type":"action"},{"id":"l19","from":{"node":"n21","pin":"execOut","type":"action","out":true},"to":{"node":"n22","pin":"exec"},"type":"action"},{"id":"l20","from":{"node":"n22","pin":"value","type":"value","out":true},"to":{"node":"n23","pin":"delay"},"type":"value"},{"id":"l21","from":{"node":"n22","pin":"execOut","type":"action","out":true},"to":{"node":"n23","pin":"exec"},"type":"action"},{"id":"l22","from":{"node":"n23","pin":"execOut","type":"action","out":true},"to":{"node":"n24","pin":"exec"},"type":"action"}],"nodeCounter":25,"linkCounter":23,"pan":[51,121],"variables":{"number":{},"boolean":{},"string":{},"object":{}}};
 
 `;
