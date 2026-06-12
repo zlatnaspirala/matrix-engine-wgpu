@@ -26322,11 +26322,14 @@ var CurveStore = class {
 // ../generateAISchema.js
 var tasks = [
   "On load create a cube named box1 at position 0 0 0",
-  `Create a the house using multiply generatorWall,
+  `Create a the house using multiply generatorWall - this is just one wall it is not ROOM !!! use minimum 3 walls ,
   - between calls of generatorWall add setTimeout with interval 4 sec (4000 ms it is in ms)
-  - Spacing (cube is unit 2) use 2.03 - for Y positions use always 1 or 2 or more never 0
-  - roof is last when all other has been builded
-  - use different orientation param ('ByX and ByZ') to costruct whole house with 2 rooms and add roof (use single scaled cube phisics not generatorWall).`,
+  - generatorWall must have delay 500 ms !
+  - generatorWall Spacing use 2.03 - for Y positions use always 1 or 2 or more never 0
+  - roof is last added when all other has been builded , Use timeout with big interval (use scaled cube)
+  - use different orientation param ('ByX and ByZ') to costruct whole house with 2 rooms and add roof (use single scaled cube phisics not generatorWall).
+  - roof must be centered to fall on all others 
+  `,
   "Set texture for floor object",
   "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
@@ -26353,7 +26356,7 @@ var providers = [
   "ollama",
   "groq",
   "anthropic",
-  "goolge"
+  "google"
 ];
 
 // ../fluxCodexVertex.js
@@ -26443,6 +26446,7 @@ var FluxCodexVertex = class {
       console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE);
       byId("graphGenJSON").value = e2.detail;
       byId("ai-status").removeAttribute("data-ai-status");
+      byId("ai-status").style.color = "";
     });
     document.addEventListener("keydown", (e2) => {
       const target = e2.composedPath && e2.composedPath()[0] || e2.target || document.activeElement;
@@ -26792,20 +26796,27 @@ var FluxCodexVertex = class {
     popup.appendChild(selectPrompt);
     const textAreaManualInput = document.createElement("textarea");
     textAreaManualInput.id = "textAreaManualInput";
-    textAreaManualInput.style.width = "400px";
-    textAreaManualInput.style.height = "300px";
+    textAreaManualInput.style.width = "450px";
+    textAreaManualInput.style.height = "180px";
+    textAreaManualInput.style.display = "none";
+    textAreaManualInput.style.position = "absolute";
+    textAreaManualInput.style.right = "15px";
+    textAreaManualInput.style.top = "15px";
+    textAreaManualInput.classList.add("btn4");
+    textAreaManualInput.value = "Hello , ";
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.id = "manualInput";
     checkbox.value = "not in use";
-    checkbox.style.display = "none";
     popup.appendChild(textAreaManualInput);
     checkbox.onchange = function(e2) {
-      console.log(e2.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-      if (!e2.checked) {
-        checkbox.style.display = "none";
+      console.log(e2.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+      if (!e2.target.checked) {
+        textAreaManualInput.style.display = "none";
+        selectPrompt.disabled = false;
       } else {
-        checkbox.style.display = "block";
+        textAreaManualInput.style.display = "block";
+        selectPrompt.disabled = true;
       }
     };
     popup.appendChild(checkbox);
@@ -26836,6 +26847,7 @@ var FluxCodexVertex = class {
       }
       if (e2.target.getAttribute("data-ai-status") == null) {
         e2.target.setAttribute("data-ai-status", "wip");
+        e2.target.style.color = "red";
       } else {
         if (e2.target.getAttribute("data-ai-status") == "wip") {
           console.info("gen ai tool call PREVENT ");
@@ -26844,13 +26856,14 @@ var FluxCodexVertex = class {
           console.info("gen ai tool call else ");
         }
       }
+      console.log(`%cAI TASK check input type:${checkbox.checked}`, LOG_FUNNY_ARCADE);
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
       const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
       console.log(`%cAI TASK SERVICE:${providers[IDPROVIDER]}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent("aiGenGraphCall", {
         detail: {
           provider: providers[IDPROVIDER],
-          task: selectPrompt.selectedOptions[0].innerText
+          task: checkbox.checked === true ? textAreaManualInput.value : selectPrompt.selectedOptions[0].innerText
         }
       }));
     });
@@ -26937,6 +26950,7 @@ var FluxCodexVertex = class {
     insertGraph.style.webkitTextStrokeWidth = "0px";
     insertGraph.addEventListener("click", async () => {
       console.log("TEST OVERRIDE", list.value);
+      list.value = list.value.replace(/```json/g, "").replace(/```/g, "").trim();
       let test = JSON.parse(list.value);
       this.mergeGraphBundle(test);
     });

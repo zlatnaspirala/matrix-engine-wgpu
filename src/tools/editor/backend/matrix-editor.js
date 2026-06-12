@@ -908,6 +908,8 @@ async function aiGenGraphCall(msg, ws) {
     const listOfMp3s = res_list_mp3.map(t => t.relativePath).join(", ");
     const listOfMp4s = res_list_mp4.map(t => t.relativePath).join(", ");
 
+          console.log('msg.prompt.provider....>>>>', msg.prompt.provider)
+
     if(msg.prompt.provider === 'groq') {
 
       msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
@@ -946,7 +948,7 @@ async function aiGenGraphCall(msg, ws) {
     } else {
 
       msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
-        SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+        SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
         // no free quota at the moment 
       matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
         // console.log('result from ai tool service....>>>>', res_list)

@@ -143,7 +143,8 @@ export default class FluxCodexVertex {
     document.addEventListener("on-ai-graph-response", e => {
       console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE);
       byId("graphGenJSON").value = e.detail;
-      byId('ai-status').removeAttribute('data-ai-status')
+      byId('ai-status').removeAttribute('data-ai-status');
+      byId('ai-status').style.color = '';
     });
     document.addEventListener("keydown", e => {
       const target = (e.composedPath && e.composedPath()[0]) || e.target || document.activeElement;
@@ -560,15 +561,13 @@ export default class FluxCodexVertex {
     popup.appendChild(textAreaManualInput)
     checkbox.onchange = function(e) {
       console.log(e.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-      if (!e.target.checked) {
+      if(!e.target.checked) {
         textAreaManualInput.style.display = 'none';
         selectPrompt.disabled = false;
       } else {
         textAreaManualInput.style.display = 'block';
         selectPrompt.disabled = true;
       }
-      
-      
     }
     popup.appendChild(checkbox);
 
@@ -601,6 +600,7 @@ export default class FluxCodexVertex {
       }
       if(e.target.getAttribute("data-ai-status") == null) {
         e.target.setAttribute("data-ai-status", "wip");
+        e.target.style.color = 'red';
       } else {
         if(e.target.getAttribute("data-ai-status") == "wip") {
           console.info('gen ai tool call PREVENT ')
@@ -609,13 +609,15 @@ export default class FluxCodexVertex {
           console.info('gen ai tool call else ')
         }
       }
+
+      console.log(`%cAI TASK check input type:${checkbox.checked}`, LOG_FUNNY_ARCADE);
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
       const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
       console.log(`%cAI TASK SERVICE:${providers[IDPROVIDER]}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
         detail: {
           provider: providers[IDPROVIDER],
-          task: selectPrompt.selectedOptions[0].innerText
+          task: checkbox.checked === true ? textAreaManualInput.value : selectPrompt.selectedOptions[0].innerText
         }
       }));
     });
@@ -706,6 +708,10 @@ export default class FluxCodexVertex {
     insertGraph.style.webkitTextStrokeWidth = "0px";
     insertGraph.addEventListener("click", async () => {
       console.log("TEST OVERRIDE", list.value);
+      list.value = list.value
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
       let test = JSON.parse(list.value)
       this.mergeGraphBundle(test)
     });

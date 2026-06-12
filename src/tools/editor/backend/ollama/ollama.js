@@ -5,7 +5,9 @@ export class AiOllama {
   constructor(model) {
     // qwen3.5:27b
     // qwen3.6:35b
-    this.model = "gpt-oss:120b";
+    this.model = "gemma4:31b-cloud";
+    // devstral-small-2
+    // this.model = "gpt-oss:120b";
     this.stream = false;
   }
   async aiGenGraphCall(i) {
@@ -13,6 +15,7 @@ export class AiOllama {
       host: "https://ollama.com",
       headers: {Authorization: "Bearer " + aiConfig.ollama},
     });
+    console.log('Ollama cloud called...')
     const response = await ollama.chat({
       model: this.model,
       messages: [

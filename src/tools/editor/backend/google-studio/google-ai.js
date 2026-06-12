@@ -7,8 +7,8 @@ export class AiGoogleStudio {
   }
 
   async aiGenGraphCall(i) {
-    const genAI = new GoogleGenerativeAI(aiConfig.googleStudio);
-
+    const genAI = new GoogleGenerativeAI(aiConfig.google);
+    console.log('AiGoogleStudio cloud called...')
     const model = genAI.getGenerativeModel({
       model: this.model,
       systemInstruction: i.finalSysPrompt,
