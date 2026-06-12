@@ -963,7 +963,7 @@ async function aiGenGraphCall(msg, ws) {
 async function internal_navFolder(data, ws) {
   return new Promise(async (resolve, reject) => {
     if(!data.rootFolder) {reject('no root folder'); return;}
-    console.log('<RES FILENAMES>');
+    console.log("🔨 Building resources data ..");
     const folderTex = path.join(data.rootFolder, data.name);
     const folderAudios = path.join(data.rootFolder, "audios");
     const folderVideos = path.join(data.rootFolder, "videos");

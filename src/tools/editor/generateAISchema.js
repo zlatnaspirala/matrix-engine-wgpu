@@ -109,7 +109,11 @@ export function catalogToText(catalog) {
 export let tasks = [
   "On load create a cube named box1 at position 0 0 0",
 
-  "Create a the house using multiply generatorWall , use different orientation param ('ByX and ByZ') to costruct whole house with 3 rooms and add roof (use single scaled cube phisics not generatorWall).",
+  `Create a the house using multiply generatorWall,
+  - between calls of generatorWall add setTimeout with interval 4 sec (4000 ms it is in ms)
+  - Spacing (cube is unit 2) use 2.03 - for Y positions use always 1 or 2 or more never 0
+  - roof is last when all other has been builded
+  - use different orientation param ('ByX and ByZ') to costruct whole house with 2 rooms and add roof (use single scaled cube phisics not generatorWall).`,
 
   "Set texture for floor object",
   "Create a cube and enable raycast",

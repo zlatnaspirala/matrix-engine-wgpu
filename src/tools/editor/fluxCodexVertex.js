@@ -541,12 +541,34 @@ export default class FluxCodexVertex {
     });
     popup.appendChild(selectPrompt)
 
+    const textAreaManualInput = document.createElement('textarea');
+    textAreaManualInput.id = 'textAreaManualInput';
+    textAreaManualInput.style.width = '450px';
+    textAreaManualInput.style.height = '180px';
+    textAreaManualInput.style.display = 'none';
+    textAreaManualInput.style.position = 'absolute';
+    textAreaManualInput.style.right = '15px';
+    textAreaManualInput.style.top = '15px';
+    textAreaManualInput.classList.add('btn4');
+    textAreaManualInput.value = "Hello , "
+
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.id = 'manualInput';
-    checkbox.value = 'ai-task';
+    checkbox.value = 'not in use';
+
+    popup.appendChild(textAreaManualInput)
     checkbox.onchange = function(e) {
-      console.log(e)
+      console.log(e.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+      if (!e.target.checked) {
+        textAreaManualInput.style.display = 'none';
+        selectPrompt.disabled = false;
+      } else {
+        textAreaManualInput.style.display = 'block';
+        selectPrompt.disabled = true;
+      }
+      
+      
     }
     popup.appendChild(checkbox);
 
@@ -1820,7 +1842,7 @@ export default class FluxCodexVertex {
           {key: "size", value: "10x3"},
           {key: "raycast", value: true},
           {key: "scale", value: [1, 1, 1]},
-          {key: "spacing", value: 10},
+          {key: "spacing", value: 2},
           {key: "delay", value: 500},
           {key: "orientation", value: "ByX"},
           {key: "spacingByY", value: 3},

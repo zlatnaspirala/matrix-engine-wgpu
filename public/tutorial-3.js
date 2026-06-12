@@ -26322,7 +26322,11 @@ var CurveStore = class {
 // ../generateAISchema.js
 var tasks = [
   "On load create a cube named box1 at position 0 0 0",
-  "Create a the house using multiply generatorWall , use different orientation param ('ByX and ByZ') to costruct whole house with 3 rooms and add roof (use single scaled cube phisics not generatorWall).",
+  `Create a the house using multiply generatorWall,
+  - between calls of generatorWall add setTimeout with interval 4 sec (4000 ms it is in ms)
+  - Spacing (cube is unit 2) use 2.03 - for Y positions use always 1 or 2 or more never 0
+  - roof is last when all other has been builded
+  - use different orientation param ('ByX and ByZ') to costruct whole house with 2 rooms and add roof (use single scaled cube phisics not generatorWall).`,
   "Set texture for floor object",
   "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
@@ -26786,12 +26790,23 @@ var FluxCodexVertex = class {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
+    const textAreaManualInput = document.createElement("textarea");
+    textAreaManualInput.id = "textAreaManualInput";
+    textAreaManualInput.style.width = "400px";
+    textAreaManualInput.style.height = "300px";
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.id = "manualInput";
-    checkbox.value = "ai-task";
+    checkbox.value = "not in use";
+    checkbox.style.display = "none";
+    popup.appendChild(textAreaManualInput);
     checkbox.onchange = function(e2) {
-      console.log(e2);
+      console.log(e2.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+      if (!e2.checked) {
+        checkbox.style.display = "none";
+      } else {
+        checkbox.style.display = "block";
+      }
     };
     popup.appendChild(checkbox);
     const label2 = document.createElement("span");
@@ -27851,11 +27866,11 @@ var FluxCodexVertex = class {
           { key: "size", value: "10x3" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
-          { key: "spacing", value: 10 },
+          { key: "spacing", value: 2 },
           { key: "delay", value: 500 },
-          { key: "created", value: false },
           { key: "orientation", value: "ByX" },
-          { key: "spacingByY", value: 3 }
+          { key: "spacingByY", value: 3 },
+          { key: "created", value: false }
         ],
         noselfExec: "true"
       }),

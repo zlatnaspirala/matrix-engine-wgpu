@@ -26322,7 +26322,11 @@ var CurveStore = class {
 // ../generateAISchema.js
 var tasks = [
   "On load create a cube named box1 at position 0 0 0",
-  "Create a the house using multiply generatorWall , use different orientation param ('ByX and ByZ') to costruct whole house with 3 rooms and add roof (use single scaled cube phisics not generatorWall).",
+  `Create a the house using multiply generatorWall,
+  - between calls of generatorWall add setTimeout with interval 4 sec (4000 ms it is in ms)
+  - Spacing (cube is unit 2) use 2.03 - for Y positions use always 1 or 2 or more never 0
+  - roof is last when all other has been builded
+  - use different orientation param ('ByX and ByZ') to costruct whole house with 2 rooms and add roof (use single scaled cube phisics not generatorWall).`,
   "Set texture for floor object",
   "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
@@ -26786,12 +26790,30 @@ var FluxCodexVertex = class {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
+    const textAreaManualInput = document.createElement("textarea");
+    textAreaManualInput.id = "textAreaManualInput";
+    textAreaManualInput.style.width = "450px";
+    textAreaManualInput.style.height = "180px";
+    textAreaManualInput.style.display = "none";
+    textAreaManualInput.style.position = "absolute";
+    textAreaManualInput.style.right = "15px";
+    textAreaManualInput.style.top = "15px";
+    textAreaManualInput.classList.add("btn4");
+    textAreaManualInput.value = "Hello , ";
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.id = "manualInput";
-    checkbox.value = "ai-task";
+    checkbox.value = "not in use";
+    popup.appendChild(textAreaManualInput);
     checkbox.onchange = function(e2) {
-      console.log(e2);
+      console.log(e2.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+      if (!e2.target.checked) {
+        textAreaManualInput.style.display = "none";
+        selectPrompt.disabled = false;
+      } else {
+        textAreaManualInput.style.display = "block";
+        selectPrompt.disabled = true;
+      }
     };
     popup.appendChild(checkbox);
     const label2 = document.createElement("span");
@@ -27851,7 +27873,7 @@ var FluxCodexVertex = class {
           { key: "size", value: "10x3" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
-          { key: "spacing", value: 10 },
+          { key: "spacing", value: 2 },
           { key: "delay", value: 500 },
           { key: "orientation", value: "ByX" },
           { key: "spacingByY", value: 3 },
@@ -39442,7 +39464,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/tutorial-6/graph.js
-var graph_default = { "nodes": { "n2": { "id": "n2", "title": "onLoad", "x": 22, "y": 109, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n3": { "id": "n3", "title": "Generator Wall", "x": 437, "y": 99, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }, { "name": "orientation", "type": "string" }, { "name": "spacingByY", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:5, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "wall_front" }, { "key": "size", "value": "10x3" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": "1,1,1" }, { "key": "spacing", "value": "2" }, { "key": "delay", "value": "500" }, { "key": "orientation", "value": "ByX" }, { "key": "spacingByY", "value": "3" }, { "key": "created", "value": "" }], "noselfExec": true }, "n7": { "id": "n7", "title": "Generator Wall", "x": 1350, "y": 100, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }, { "name": "orientation", "type": "string" }, { "name": "spacingByY", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:2, z:0}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "wall_internal" }, { "key": "size", "value": "10x3" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[1,1,1]" }, { "key": "spacing", "value": "2" }, { "key": "delay", "value": "2" }, { "key": "orientation", "value": "ByZ" }, { "key": "spacingByY", "value": "3" }, { "key": "created", "value": "" }], "noselfExec": true }, "n8": { "id": "n8", "title": "addObj", "x": 1600, "y": 100, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:5, z:0}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "roof" }, { "key": "raycast", "value": false }, { "key": "scale", "value": "[15,1,15]" }, { "key": "isPhysicsBody", "value": true }, { "key": "isInstancedObj", "value": false }, { "key": "created", "value": "" }], "noselfExec": true }, "n9": { "id": "n9", "title": "setString", "x": 1850, "y": 100, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "string" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "HOUSE_STATUS" }, { "key": "literal", "value": "House built" }] }, "n10": { "id": "n10", "title": "getString", "x": 2100, "y": 100, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "HOUSE_STATUS" }], "displayEl": {} }, "n11": { "id": "n11", "title": "Print", "x": 2350, "y": 100, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "House Status" }], "noselfExec": true, "displayEl": {} } }, "links": [{ "id": "l1", "from": { "node": "n2", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n3", "pin": "exec" }, "type": "action" }, { "id": "l6", "from": { "node": "n7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n8", "pin": "exec" }, "type": "action" }, { "id": "l7", "from": { "node": "n8", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n9", "pin": "exec" }, "type": "action" }, { "id": "l8", "from": { "node": "n9", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n11", "pin": "exec" }, "type": "action" }, { "id": "l9", "from": { "node": "n10", "pin": "result", "type": "string", "out": true }, "to": { "node": "n11", "pin": "value" }, "type": "string" }], "nodeCounter": 12, "linkCounter": 10, "pan": [-112, 77], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": [], "links": [{ "id": "l14", "from": { "node": "n17", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n18", "pin": "exec" }, "type": "action" }, { "id": "l15", "from": { "node": "n18", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n19", "pin": "exec" }, "type": "action" }, { "id": "l16", "from": { "node": "n19", "pin": "value", "type": "value", "out": true }, "to": { "node": "n20", "pin": "delay" }, "type": "value" }, { "id": "l17", "from": { "node": "n19", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n20", "pin": "exec" }, "type": "action" }, { "id": "l18", "from": { "node": "n20", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n21", "pin": "exec" }, "type": "action" }, { "id": "l19", "from": { "node": "n21", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n22", "pin": "exec" }, "type": "action" }, { "id": "l20", "from": { "node": "n22", "pin": "value", "type": "value", "out": true }, "to": { "node": "n23", "pin": "delay" }, "type": "value" }, { "id": "l21", "from": { "node": "n22", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n23", "pin": "exec" }, "type": "action" }, { "id": "l22", "from": { "node": "n23", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "n24", "pin": "exec" }, "type": "action" }], "nodeCounter": 25, "linkCounter": 23, "pan": [51, 121], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/tutorial-6/shader-graphs.js
 var shaderGraphsProdc = [
