@@ -3,6 +3,7 @@
 
 
 [1.15.x]
+ - Added `npm install @anthropic-ai/sdk` like new ai tool provider
  - Graph part synced - improvment for ai tool - gen graphs
  - Jamb (yacht) game synced with last ver of core + mobile supported.
  - JOLT worker improved for OnContactRemoved and OnContactPersisted (detect) override fn's.

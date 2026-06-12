@@ -551,7 +551,7 @@ export default class FluxCodexVertex {
     popup.appendChild(checkbox);
 
     const label2 = document.createElement("span");
-    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    label2.innerText = `Select provider`;
     popup.appendChild(label2);
     const selectPromptProvider = document.createElement("select");
     selectPromptProvider.style.width = '400px';

@@ -20,6 +20,7 @@ import {AiGroq} from "./groq/groq.js";
 import {AiOllama} from "./ollama/ollama.js";
 import {AvailableResources} from "./ollama/get-available-resources.js";
 import {SYSTEM_PROMPT, SYSTEM_PROMPT_MINI} from "./ollama/test-prompt1.js";
+import {AiAnthropic} from "./ai-anthropic/ai-anthropic.js";
 
 let PROJECT_NAME = "";
 
@@ -48,6 +49,7 @@ console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
 let matrixOllama = new AiOllama();
 let matrixGroq = new AiGroq();
+let matrixAiAnthropic = new AiAnthropic();
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");
@@ -911,6 +913,19 @@ async function aiGenGraphCall(msg, ws) {
         SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
 
       matrixGroq.aiGenGraphCall(msg.prompt).then((r) => {
+        console.log('GROQ service....>>>>', res_list)
+        ws.send(JSON.stringify({
+          ok: true,
+          aiGenGraph: 'OK',
+          aiGenNodes: r
+        }));
+      })
+    } else if(msg.prompt.provider === 'anthropic') {
+
+      msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+        SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+
+      matrixAiAnthropic.aiGenGraphCall(msg.prompt).then((r) => {
         console.log('GROQ service....>>>>', res_list)
         ws.send(JSON.stringify({
           ok: true,

@@ -133,5 +133,6 @@ export let tasks = [
 
 export let providers = [
   "ollama",
-  "groq"
+  "groq",
+  "anthropic"
 ];

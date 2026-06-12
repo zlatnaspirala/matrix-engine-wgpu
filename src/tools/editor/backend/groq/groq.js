@@ -3,7 +3,7 @@ import Groq from "groq-sdk";
 
 export class AiGroq {
   constructor(model) {
-    this.model = 'llama-3.1-8b-instant';
+    this.model = 'llama-3.1-8b-instant' 
     // this.model = "llama-3.3-70b-versatile";
   }
 

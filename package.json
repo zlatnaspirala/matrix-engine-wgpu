@@ -32,6 +32,7 @@
     "wgpu-matrix": "^2.0.0"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
     "bvh-loader": "1.0.10",
     "gl-matrix": "^3.4.4",
     "groq-sdk": "^0.37.0",
