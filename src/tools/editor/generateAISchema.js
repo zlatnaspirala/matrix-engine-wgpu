@@ -107,17 +107,12 @@ export function catalogToText(catalog) {
 }
 
 export let tasks = [
-  "On load create a cube named box1 at position 0 0 0",
+  "On load create a cube named box1 at position 0 0 0 and make const rotate by y axis.",
 
-  `Create a the house using multiply generatorWall - this is just one wall it is not ROOM !!! use minimum 3 walls ,
-  - between calls of generatorWall add setTimeout with interval 4 sec (4000 ms it is in ms)
-  - generatorWall must have delay 500 ms !
-  - generatorWall Spacing use 2.03 - for Y positions use always 1 or 2 or more never 0
-  - roof is last added when all other has been builded , Use timeout with big interval (use scaled cube)
-  - use different orientation param ('ByX and ByZ') to costruct whole house with 2 rooms and add roof (use single scaled cube phisics not generatorWall).
-  - roof must be centered to fall on all others 
+  `
+  Build the House with non physics cubes. All Cubes must have scale [1,1,1]. Build 3 floors, walls and roof.
+  Don't use generators, use addCube with physics enabled false!
   `,
-
 
   "Set texture for floor object",
   "Create a cube and enable raycast",

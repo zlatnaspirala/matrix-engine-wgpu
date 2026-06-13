@@ -37,6 +37,7 @@
  *
  * - MPL applies ONLY to this file
  */
+import {generatorWallNONPHYSICS} from "../../engine/generators/generator.js";
 import {PVector} from "../../engine/matrix-class.js";
 import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
 // import {MatrixMusicAsset} from "../../sounds/audioAsset";
@@ -551,7 +552,10 @@ export default class FluxCodexVertex {
     textAreaManualInput.style.right = '15px';
     textAreaManualInput.style.top = '15px';
     textAreaManualInput.classList.add('btn4');
-    textAreaManualInput.value = "Hello , "
+    textAreaManualInput.value = "Hello , ";
+
+    // just stop propagate becouse scene in bg
+    textAreaManualInput.addEventListener('keydown', (e) => e.stopPropagation())
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -609,6 +613,8 @@ export default class FluxCodexVertex {
           console.info('gen ai tool call else ')
         }
       }
+
+      byId('graphGenJSON').value = '';
 
       console.log(`%cAI TASK check input type:${checkbox.checked}`, LOG_FUNNY_ARCADE);
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
@@ -1820,6 +1826,45 @@ export default class FluxCodexVertex {
 
       generatorWall: (id, x, y) => ({
         id, x, y, title: "Generator Wall",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "size", type: "string"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "spacing", type: "number"},
+          {name: "delay", type: "number"},
+          {name: "orientation", type: "string"},
+          {name: "spacingByY", type: "number"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:3, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/default.png"},
+          {key: "name", value: "TEST"},
+          {key: "size", value: "10x3"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "spacing", value: 2},
+          {key: "delay", value: 500},
+          {key: "orientation", value: "ByX"},
+          {key: "spacingByY", value: 3},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
+      generatorWallNONPhysics: (id, x, y) => ({
+        id, x, y, title: "Generator Wall NONPhysics",
         category: "action",
         inputs: [
           {name: "exec", type: "action"},
@@ -3198,13 +3243,6 @@ LIST OF INTEREST OBJECT:
       }
     }
 
-    // TEST
-    // const catalog = generateAICatalog(nodeFactories);
-    // const systemCatalogText = catalogToText(catalog);
-    // console.log(systemCatalogText);
-    // localStorage.setItem('systemCatalogText', systemCatalogText);
-    // TEST
-
     if(spec) {
       const dom = this.createNodeDOM(spec);
       this.board.appendChild(dom);
@@ -3216,9 +3254,8 @@ LIST OF INTEREST OBJECT:
   }
 
   setVariable(type, key, value) {
-    // if(!this.variables[type][key]) return;
+    // deplaced
     console.log('Test -setVariable  value', value);
-
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
   }
@@ -4335,6 +4372,39 @@ LIST OF INTEREST OBJECT:
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
           app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay,
+            ori, spacingByY);
+          // createdField.value = true;
+        }
+
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Generator Wall NONPhysics") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
+        // spec adaptation
+        if(raycast == "true") {raycast = true} else {raycast = false;}
+        if(typeof delay == 'string') delay = parseInt(delay);
+        if(typeof pos == 'string') eval("pos = " + pos);
+        if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof scale == 'string') eval("scale = " + scale);
+        if(!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+          generatorWallNONPHYSICS(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay,
             ori, spacingByY);
           // createdField.value = true;
         }
@@ -5629,7 +5699,7 @@ class RESOURCES_FOR_GRAPH {
 
   constructor() {
     addEventListener('editorx-update-assets-list', (e) => {
-      console.log(' editorx-update-assets-list ', e.detail)
+      console.log('editorx-update-assets-list ', e.detail)
     })
   }
 }

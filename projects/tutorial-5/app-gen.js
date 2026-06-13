@@ -57,7 +57,7 @@ app.addLight();
       // ME END FLOOR addCube
 
   
- // ME START FLOOR updatePosz
+     // ME START FLOOR updatePosz
  setTimeout(() => {
   app.getSceneObjectByName('FLOOR').position.SetZ(-20);
  }, 800);

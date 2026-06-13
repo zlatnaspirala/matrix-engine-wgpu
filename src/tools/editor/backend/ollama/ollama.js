@@ -3,10 +3,10 @@ import {Ollama} from "ollama";
 
 export class AiOllama {
   constructor(model) {
-    this.model = "qwen3-coder:480b-cloud";
+    // this.model = "qwen3-coder:480b-cloud";
     // this.model = "gemma4:31b-cloud";
     // this.model = "devstral-small-2";
-    // this.model = "gpt-oss:120b";
+    this.model = "gpt-oss:120b";
     this.stream = false;
   }
   async aiGenGraphCall(i) {

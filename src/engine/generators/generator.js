@@ -270,9 +270,6 @@ export function physicsBodiesGeneratorDeepPyramid(
   spacing = 2,
   delay = 200
 ) {
-
-  const root = this;
-
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
@@ -312,15 +309,11 @@ export function physicsBodiesGeneratorDeepPyramid(
                 },
                 raycast: RAY
               });
-
               // const b = app.matrixPhysics.getBodyByName(cubeName);
-              // not resolved for now
               // setTimeout(() => stabilizeTowerBody(b, root) , 1000)
-
               const o = app.getSceneObjectByName(cubeName);
               runtimeCacheObjs.push(o);
               objects.push(o.name);
-
               if(currentIndex === lastIndex) {
                 // console.log("Last cube added!");
                 resolve(objects);
@@ -542,5 +535,82 @@ export function physicsBodiesChain(
     }, 500)
   }
 
+  downloadMeshes(inputCube, handler, {scale});
+}
+
+export function generatorWallNONPHYSICS (
+  material = "standard",
+  pos,
+  rot,
+  texturePath,
+  name = "wallCube",
+  size = "10x3",
+  raycast = false,
+  scale = [1, 1, 1],
+  spacing = 2.1,
+  delay = 200,
+  orientationOfwall = "ByX", spacingY = 3,
+  useMeshPath = "./res/meshes/blender/cube.obj",) {
+  const engine = this;
+  const [width, height] = size
+    .toLowerCase()
+    .split("x")
+    .map(n => parseInt(n, 10));
+
+  console.log('__________________________')
+  const inputCube = {mesh: useMeshPath};
+  function handler(m) {
+    let index = 0;
+    const RAY = {enabled: raycast, radius: 1};
+    for(let y = 0;y < height;y++) {
+      for(let x = 0;x < width;x++) {
+        const cubeName = `${name}_${index}`;
+        setTimeout(() => {
+          let __x = 0, __y = 0, __z = 0;
+          if(orientationOfwall === 'ByX') {
+            __x = x * spacing;
+            __y = y * spacing + spacingY;
+            __z = 0;
+          } else if(orientationOfwall === 'ByZ') {
+            __x = 0;
+            __y = y * spacing + spacingY;
+            __z = x * spacing;
+          }
+          engine.addMeshObj({
+            material: {type: material},
+            envMapParams: (material == 'mirror' ? {
+              baseColorMix: 0.5,
+              mirrorTint: [0.9, 0.95, 1.0],
+              reflectivity: 0.95,
+              illuminateColor: [0.3, 0.7, 1.0],
+              illuminateStrength: 0.4,
+              illuminatePulse: 0.01,
+              fresnelPower: 2.0,
+              envLodBias: 2.5,
+              usePlanarReflection: false,
+            } : undefined),
+            position: {
+              x: pos.x + __x,
+              y: pos.y + __y,
+              z: pos.z + __z
+            },
+            rotation: rot,
+            rotationSpeed: {x: 0, y: 0, z: 0},
+            texturesPaths: typeof texturePath == "object" ? texturePath : [texturePath],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: false,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          const o = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o);
+        }, index * delay)
+        index++;
+      }
+    }
+  }
   downloadMeshes(inputCube, handler, {scale});
 }
