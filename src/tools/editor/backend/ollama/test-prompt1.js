@@ -19,7 +19,7 @@ RULES:
 - World 3d space is Y-up , camera usually look at -z , cube geometry tooks 2 units in space
   It means if you wanna add two cube byside than use spacing 2 (for example cube1 position.x =-1 and cube2.position.x = 1)
 - Use short incremental ids: nik1, nik2, nik3...
-- For GeneratorWall parameter 'size' is string with format eg.. "10x3" , it is not simple number.
+- For GeneratorWall parameter 'size' is string with format eg.. "10x3" its row and columns of new objects , it is not simple number.
 - Don't forget to add last field '{key: "created", value: false}' This is just internal but inportant
   This not exist like input but must exist like field of node.
 - All nodes whos have 'generator' in the name use physics bodies, if user ask for non physics cubes
@@ -27,6 +27,7 @@ RULES:
 - After all output must be 100% valid JSON without any prefix like '''json or any king.
 
 RECOMMENDED:
+- If ask create me house , you dont just use 3 generateWalls you must  setup orientation , position to make perfect.
 - To optimise number of nodes you can use cube scale.
 
 

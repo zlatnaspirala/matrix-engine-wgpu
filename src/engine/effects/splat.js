@@ -547,12 +547,10 @@ export class SplatColorAnimator {
     const c = this._colorCPU;
     const sc = this.scale;
     const n = this.vertexCount;
-
     for(let i = 0;i < n;i++) {
       // normalised radius 0..1, shift over time
       const rn = this._radii[i] / this._maxR;
       const hue = (rn * 6.0 + t * 0.4) % 1.0;   // 6 rings cycling
-
       const [r, g, b] = _hsl(hue, 0.9, 0.5);
       c[i * 4] = r * sc;
       c[i * 4 + 1] = g * sc;

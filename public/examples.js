@@ -33401,7 +33401,6 @@ class SplatColorAnimator {
       // normalised radius 0..1, shift over time
       const rn = this._radii[i] / this._maxR;
       const hue = (rn * 6.0 + t * 0.4) % 1.0; // 6 rings cycling
-
       const [r, g, b] = _hsl(hue, 0.9, 0.5);
       c[i * 4] = r * sc;
       c[i * 4 + 1] = g * sc;
@@ -34631,6 +34630,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.addOBJ = addOBJ;
 exports.addProceduralOBJ = addProceduralOBJ;
+exports.generatorWallNONPHYSICS = generatorWallNONPHYSICS;
 exports.physicsBodiesChain = physicsBodiesChain;
 exports.physicsBodiesGenerator = physicsBodiesGenerator;
 exports.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid;
@@ -34907,7 +34907,6 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, textureP
  * @param {number} spacing
  */
 function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, texturePath, name = "pyramidCube", levels = 5, raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200) {
-  const root = this;
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = {
@@ -34958,11 +34957,8 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, text
                 },
                 raycast: RAY
               });
-
               // const b = app.matrixPhysics.getBodyByName(cubeName);
-              // not resolved for now
               // setTimeout(() => stabilizeTowerBody(b, root) , 1000)
-
               const o = app.getSceneObjectByName(cubeName);
               _fluxCodexVertex.runtimeCacheObjs.push(o);
               objects.push(o.name);
@@ -35183,6 +35179,82 @@ function physicsBodiesChain(material = "standard", pos = {
       }
       engine.matrixPhysics.createChain(ids, spacing, 0.5);
     }, 500);
+  }
+  (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+    scale
+  });
+}
+function generatorWallNONPHYSICS(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2.1, delay = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
+  const engine = this;
+  console.log('aaaaaa', engine);
+  const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
+  console.log('__________________________');
+  const inputCube = {
+    mesh: useMeshPath
+  };
+  function handler(m) {
+    let index = 0;
+    const RAY = {
+      enabled: raycast,
+      radius: 1
+    };
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const cubeName = `${name}_${index}`;
+        setTimeout(() => {
+          let __x = 0,
+            __y = 0,
+            __z = 0;
+          if (orientationOfwall === 'ByX') {
+            __x = x * spacing;
+            __y = y * spacing + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === 'ByZ') {
+            __x = 0;
+            __y = y * spacing + spacingY;
+            __z = x * spacing;
+          }
+          engine.addMeshObj({
+            material: {
+              type: material
+            },
+            envMapParams: material == 'mirror' ? {
+              baseColorMix: 0.5,
+              mirrorTint: [0.9, 0.95, 1.0],
+              reflectivity: 0.95,
+              illuminateColor: [0.3, 0.7, 1.0],
+              illuminateStrength: 0.4,
+              illuminatePulse: 0.01,
+              fresnelPower: 2.0,
+              envLodBias: 2.5,
+              usePlanarReflection: false
+            } : undefined,
+            position: {
+              x: pos.x + __x,
+              y: pos.y + __y,
+              z: pos.z + __z
+            },
+            rotation: rot,
+            rotationSpeed: {
+              x: 0,
+              y: 0,
+              z: 0
+            },
+            texturesPaths: typeof texturePath == "object" ? texturePath : [texturePath],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: false,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          const o = app.getSceneObjectByName(cubeName);
+          _fluxCodexVertex.runtimeCacheObjs.push(o);
+        }, index * delay);
+        index++;
+      }
+    }
   }
   (0, _loaderObj.downloadMeshes)(inputCube, handler, {
     scale
@@ -59579,6 +59651,8 @@ class Editor {
       <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
       <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
       <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
+      <span>Grids (non physics)</span>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorWallNONPhysics')">Generate Wall NONPhysics</button>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
@@ -62371,6 +62445,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.runtimeCacheObjs = exports.default = void 0;
+var _generator = require("../../engine/generators/generator.js");
 var _matrixClass = require("../../engine/matrix-class.js");
 var _utils = require("../../engine/utils");
 var _curveEditor = require("./curve-editor");
@@ -62531,6 +62606,7 @@ class FluxCodexVertex {
       console.info("%c<AI RESPONSE>", _utils.LOG_FUNNY_ARCADE);
       (0, _utils.byId)("graphGenJSON").value = e.detail;
       (0, _utils.byId)('ai-status').removeAttribute('data-ai-status');
+      (0, _utils.byId)('ai-status').style.color = '';
     });
     document.addEventListener("keydown", e => {
       const target = e.composedPath && e.composedPath()[0] || e.target || document.activeElement;
@@ -62905,16 +62981,37 @@ class FluxCodexVertex {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
+    const textAreaManualInput = document.createElement('textarea');
+    textAreaManualInput.id = 'textAreaManualInput';
+    textAreaManualInput.style.width = '450px';
+    textAreaManualInput.style.height = '180px';
+    textAreaManualInput.style.display = 'none';
+    textAreaManualInput.style.position = 'absolute';
+    textAreaManualInput.style.right = '15px';
+    textAreaManualInput.style.top = '15px';
+    textAreaManualInput.classList.add('btn4');
+    textAreaManualInput.value = "Hello , ";
+
+    // just stop propagate becouse scene in bg
+    textAreaManualInput.addEventListener('keydown', e => e.stopPropagation());
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.id = 'manualInput';
-    checkbox.value = 'ai-task';
+    checkbox.value = 'not in use';
+    popup.appendChild(textAreaManualInput);
     checkbox.onchange = function (e) {
-      console.log(e);
+      console.log(e.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+      if (!e.target.checked) {
+        textAreaManualInput.style.display = 'none';
+        selectPrompt.disabled = false;
+      } else {
+        textAreaManualInput.style.display = 'block';
+        selectPrompt.disabled = true;
+      }
     };
     popup.appendChild(checkbox);
     const label2 = document.createElement("span");
-    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    label2.innerText = `Select provider`;
     popup.appendChild(label2);
     const selectPromptProvider = document.createElement("select");
     selectPromptProvider.style.width = '400px';
@@ -62941,6 +63038,7 @@ class FluxCodexVertex {
       }
       if (e.target.getAttribute("data-ai-status") == null) {
         e.target.setAttribute("data-ai-status", "wip");
+        e.target.style.color = 'red';
       } else {
         if (e.target.getAttribute("data-ai-status") == "wip") {
           console.info('gen ai tool call PREVENT ');
@@ -62949,13 +63047,15 @@ class FluxCodexVertex {
           console.info('gen ai tool call else ');
         }
       }
+      (0, _utils.byId)('graphGenJSON').value = '';
+      console.log(`%cAI TASK check input type:${checkbox.checked}`, _utils.LOG_FUNNY_ARCADE);
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, _utils.LOG_FUNNY_ARCADE);
       const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
       console.log(`%cAI TASK SERVICE:${_generateAISchema.providers[IDPROVIDER]}`, _utils.LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
         detail: {
           provider: _generateAISchema.providers[IDPROVIDER],
-          task: selectPrompt.selectedOptions[0].innerText
+          task: checkbox.checked === true ? textAreaManualInput.value : selectPrompt.selectedOptions[0].innerText
         }
       }));
     });
@@ -63044,6 +63144,7 @@ class FluxCodexVertex {
     insertGraph.style.webkitTextStrokeWidth = "0px";
     insertGraph.addEventListener("click", async () => {
       console.log("TEST OVERRIDE", list.value);
+      list.value = list.value.replace(/```json/g, '').replace(/```/g, '').trim();
       let test = JSON.parse(list.value);
       this.mergeGraphBundle(test);
     });
@@ -64182,7 +64283,7 @@ class FluxCodexVertex {
           value: "standard"
         }, {
           key: "pos",
-          value: '{x:0, y:0, z:-20}'
+          value: '{x:0, y:3, z:-20}'
         }, {
           key: "rot",
           value: '{x:0, y:0, z:0}'
@@ -64203,19 +64304,111 @@ class FluxCodexVertex {
           value: [1, 1, 1]
         }, {
           key: "spacing",
-          value: 10
+          value: 2
         }, {
           key: "delay",
           value: 500
-        }, {
-          key: "created",
-          value: false
         }, {
           key: "orientation",
           value: "ByX"
         }, {
           key: "spacingByY",
           value: 3
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      generatorWallNONPhysics: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Generator Wall NONPhysics",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "size",
+          type: "string"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "spacing",
+          type: "number"
+        }, {
+          name: "delay",
+          type: "number"
+        }, {
+          name: "orientation",
+          type: "string"
+        }, {
+          name: "spacingByY",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: '{x:0, y:3, z:-20}'
+        }, {
+          key: "rot",
+          value: '{x:0, y:0, z:0}'
+        }, {
+          key: "texturePath",
+          value: "res/textures/default.png"
+        }, {
+          key: "name",
+          value: "TEST"
+        }, {
+          key: "size",
+          value: "10x3"
+        }, {
+          key: "raycast",
+          value: true
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "spacing",
+          value: 2
+        }, {
+          key: "delay",
+          value: 500
+        }, {
+          key: "orientation",
+          value: "ByX"
+        }, {
+          key: "spacingByY",
+          value: 3
+        }, {
+          key: "created",
+          value: false
         }],
         noselfExec: "true"
       }),
@@ -66685,14 +66878,6 @@ LIST OF INTEREST OBJECT:
         }
       }
     }
-
-    // TEST
-    // const catalog = generateAICatalog(nodeFactories);
-    // const systemCatalogText = catalogToText(catalog);
-    // console.log(systemCatalogText);
-    // localStorage.setItem('systemCatalogText', systemCatalogText);
-    // TEST
-
     if (spec) {
       const dom = this.createNodeDOM(spec);
       this.board.appendChild(dom);
@@ -66702,7 +66887,7 @@ LIST OF INTEREST OBJECT:
     return null;
   }
   setVariable(type, key, value) {
-    // if(!this.variables[type][key]) return;
+    // deplaced
     console.log('Test -setVariable  value', value);
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
@@ -67735,6 +67920,41 @@ LIST OF INTEREST OBJECT:
         }
         this.enqueueOutputs(n, "execOut");
         return;
+      } else if (n.title === "Generator Wall NONPhysics") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
+        // spec adaptation
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == 'string') delay = parseInt(delay);
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
+        if (typeof scale == 'string') eval("scale = " + scale);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          (0, _generator.generatorWallNONPHYSICS)(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay, ori, spacingByY);
+          // createdField.value = true;
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
       } else if (n.title === "Set Morph ProceduralMesh") {
         const objectName = this.getValue(nodeId, "objectName");
         const interval = this.getValue(nodeId, "interval");
@@ -68583,8 +68803,7 @@ LIST OF INTEREST OBJECT:
     (0, _utils.byId)("graph-status").innerHTML = '🔴';
   }
   compileGraph() {
-    // This is save !!!
-    console.log("SAVE:", this.nodes);
+    console.log("SAVE NODES: ", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -68594,8 +68813,16 @@ LIST OF INTEREST OBJECT:
       variables: this.variables
     };
     function saveReplacer(key, value) {
-      if (key === 'fn') return undefined;
-      if (key === 'accessObject') return undefined;
+      if (value instanceof Element) return undefined;
+      if (value instanceof Node) return undefined;
+      if (key === 'fn') {
+        console.log('stripping fn from', key);
+        return undefined;
+      }
+      if (key === 'accessObject') {
+        console.log('stripping accessObject');
+        return undefined;
+      }
       if (key === '_returnCache') return undefined;
       if (key === '_listenerAttached') return false;
       if (key === '_audio') return undefined;
@@ -68606,26 +68833,22 @@ LIST OF INTEREST OBJECT:
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    // ?
     this.saveGraphEvent.detail.data = d;
     document.dispatchEvent(this.saveGraphEvent);
-    // this.log("Graph saved to LocalStorage and final script");
   }
   clearStorage() {
     let ask = confirm("⚠️ This will delete all nodes. Are you sure?");
     if (ask) {
       this.clearAllNodes();
       localStorage.removeItem(this.SAVE_KEY);
-      this.compileGraph(); // not just save empty
+      this.compileGraph();
       // location.reload(true);
     }
   }
   clearAllNodes() {
-    // Remove node DOMs
     this.board.querySelectorAll(".node").forEach(n => n.remove());
-    // Clear data
-    this.nodes = [];
-    this.nodes.length = 0;
+    this.nodes = {};
+    // this.nodes.length = 0;
     this.links.length = 0;
     // Clear state
     this.state.selectedNode = null;
@@ -68958,12 +69181,12 @@ class RESOURCES_FOR_GRAPH {
   images = [];
   constructor() {
     addEventListener('editorx-update-assets-list', e => {
-      console.log(' editorx-update-assets-list ', e.detail);
+      console.log('editorx-update-assets-list ', e.detail);
     });
   }
 }
 
-},{"../../engine/matrix-class.js":75,"../../engine/utils":92,"./curve-editor":136,"./generateAISchema.js":142}],142:[function(require,module,exports){
+},{"../../engine/generators/generator.js":64,"../../engine/matrix-class.js":75,"../../engine/utils":92,"./curve-editor":136,"./generateAISchema.js":142}],142:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -69087,8 +69310,12 @@ function catalogToText(catalog) {
   }
   return out;
 }
-let tasks = exports.tasks = ["On load create a cube named box1 at position 0 0 0", "Create a the house using multiply generatorWall, use different size to costruct whole house with 3 rooms.", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
-let providers = exports.providers = ["ollama", "groq"];
+let tasks = exports.tasks = ["On load create a cube named box1 at position (0, 3, 0) and make const rotate by y axis.", `
+  Build the House with non physics cubes. All Cubes must have scale [1,1,1]. Build 3 floors, walls and roof.
+  MAke big house with space inside ! 
+  Don't use physics generators, use generatorWallNONPHYSICS.
+  `, "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ", "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.", "Create a cube and enable raycast, on hit make object translateByZ", "Create start from cubes - use nonphysics cubes.", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
+let providers = exports.providers = ["ollama", "groq", "anthropic", "google"];
 
 },{}],143:[function(require,module,exports){
 "use strict";

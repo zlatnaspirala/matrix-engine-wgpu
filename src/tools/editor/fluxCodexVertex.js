@@ -5289,8 +5289,7 @@ LIST OF INTEREST OBJECT:
   }
 
   compileGraph() {
-    // This is save !!!
-    console.log("SAVE:", this.nodes)
+    console.log("SAVE NODES: ", this.nodes)
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -5301,8 +5300,10 @@ LIST OF INTEREST OBJECT:
     };
 
     function saveReplacer(key, value) {
-      if(key === 'fn') return undefined;
-      if(key === 'accessObject') return undefined;
+      if(value instanceof Element) return undefined;
+      if(value instanceof Node) return undefined;
+      if(key === 'fn') {console.log('stripping fn from', key); return undefined;}
+      if(key === 'accessObject') {console.log('stripping accessObject'); return undefined;}
       if(key === '_returnCache') return undefined;
       if(key === '_listenerAttached') return false;
       if(key === '_audio') return undefined;
@@ -5311,13 +5312,10 @@ LIST OF INTEREST OBJECT:
       if(key === '_beatCooldown') return 0;
       return value;
     }
-
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    // ?
     this.saveGraphEvent.detail.data = d;
     document.dispatchEvent(this.saveGraphEvent);
-    // this.log("Graph saved to LocalStorage and final script");
   }
 
   clearStorage() {
@@ -5325,17 +5323,15 @@ LIST OF INTEREST OBJECT:
     if(ask) {
       this.clearAllNodes();
       localStorage.removeItem(this.SAVE_KEY);
-      this.compileGraph(); // not just save empty
+      this.compileGraph();
       // location.reload(true);
     }
   }
 
   clearAllNodes() {
-    // Remove node DOMs
     this.board.querySelectorAll(".node").forEach(n => n.remove());
-    // Clear data
-    this.nodes = [];
-    this.nodes.length = 0;
+    this.nodes = {};
+    // this.nodes.length = 0;
     this.links.length = 0;
     // Clear state
     this.state.selectedNode = null;

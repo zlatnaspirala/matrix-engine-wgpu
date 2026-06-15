@@ -28235,9 +28235,10 @@ var tasks = [
   "On load create a cube named box1 at position 0 0 0 and make const rotate by y axis.",
   `
   Build the House with non physics cubes. All Cubes must have scale [1,1,1]. Build 3 floors, walls and roof.
-  Don't use generators, use addCube with physics enabled false or to optimise number of nodes use generatorWallNONPHYSICS.
+  Don't use physics generators, use generatorWallNONPHYSICS.
   `,
-  "Set texture for floor object",
+  "Set texture for object with name 'FLOOR' . Use file with name 'cube-g1_low.webp' ",
+  "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.",
   "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
   "Create a pyramid of cubes with 4 levels",

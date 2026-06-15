@@ -27483,6 +27483,7 @@ function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 
 }
 function generatorWallNONPHYSICS(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
+  console.log("aaaaaa", engine);
   const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
   console.log("__________________________");
   const inputCube = { mesh: useMeshPath };
@@ -28232,15 +28233,16 @@ var CurveStore = class {
 
 // ../generateAISchema.js
 var tasks = [
-  "On load create a cube named box1 at position 0 0 0 and make const rotate by y axis.",
+  "On load create a cube named box1 at position (0, 3, 0) and make const rotate by y axis.",
   `
   Build the House with non physics cubes. All Cubes must have scale [1,1,1]. Build 3 floors, walls and roof.
+  MAke big house with space inside ! 
   Don't use physics generators, use generatorWallNONPHYSICS.
   `,
-  "Set texture for object with name 'FLOOR' . Use file with name 'cube-g1_low.webp' ",
+  "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ",
   "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.",
-  "Create a cube and enable raycast",
-  "Create 5 cubes in a row with spacing",
+  "Create a cube and enable raycast, on hit make object translateByZ",
+  "Create start from cubes - use nonphysics cubes.",
   "Create a pyramid of cubes with 4 levels",
   "Play mp3 audio on load",
   "Create audio reactive node from music",
@@ -33181,7 +33183,7 @@ LIST OF INTEREST OBJECT:
     byId("graph-status").innerHTML = "\u{1F534}";
   }
   compileGraph() {
-    console.log("SAVE:", this.nodes);
+    console.log("SAVE NODES: ", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -33191,8 +33193,16 @@ LIST OF INTEREST OBJECT:
       variables: this.variables
     };
     function saveReplacer(key, value2) {
-      if (key === "fn") return void 0;
-      if (key === "accessObject") return void 0;
+      if (value2 instanceof Element) return void 0;
+      if (value2 instanceof Node) return void 0;
+      if (key === "fn") {
+        console.log("stripping fn from", key);
+        return void 0;
+      }
+      if (key === "accessObject") {
+        console.log("stripping accessObject");
+        return void 0;
+      }
       if (key === "_returnCache") return void 0;
       if (key === "_listenerAttached") return false;
       if (key === "_audio") return void 0;
@@ -33216,8 +33226,7 @@ LIST OF INTEREST OBJECT:
   }
   clearAllNodes() {
     this.board.querySelectorAll(".node").forEach((n2) => n2.remove());
-    this.nodes = [];
-    this.nodes.length = 0;
+    this.nodes = {};
     this.links.length = 0;
     this.state.selectedNode = null;
     this.state.draggingNode = null;
@@ -39618,7 +39627,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/tutorial-5/graph.js
-var graph_default = { "nodes": [], "links": [{ "id": "l89", "from": { "node": "n105", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n106", "pin": "exec" }, "type": "action" }, { "id": "l90", "from": { "node": "n107", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n108", "pin": "exec" }, "type": "action" }], "nodeCounter": 109, "linkCounter": 91, "pan": [90, 77], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "node_137": { "id": "node_137", "title": "onLoad", "x": 484.53869514235475, "y": 109.57891690995103, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_138": { "id": "node_138", "title": "Print", "x": 804.2594920061345, "y": 123.60893090182105, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true" } }, "links": [{ "id": "link_107", "from": { "node": "node_137", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_138", "pin": "exec" }, "type": "action" }], "nodeCounter": 139, "linkCounter": 108, "pan": [-436, 72], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/tutorial-5/shader-graphs.js
 var shaderGraphsProdc = [

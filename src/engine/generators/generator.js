@@ -552,6 +552,7 @@ export function generatorWallNONPHYSICS (
   orientationOfwall = "ByX", spacingY = 3,
   useMeshPath = "./res/meshes/blender/cube.obj",) {
   const engine = this;
+  console.log('aaaaaa' , engine)
   const [width, height] = size
     .toLowerCase()
     .split("x")
