@@ -28235,9 +28235,10 @@ var tasks = [
   "On load create a cube named box1 at position 0 0 0 and make const rotate by y axis.",
   `
   Build the House with non physics cubes. All Cubes must have scale [1,1,1]. Build 3 floors, walls and roof.
-  Don't use generators, use addCube with physics enabled false!
+  Don't use physics generators, use generatorWallNONPHYSICS.
   `,
-  "Set texture for floor object",
+  "Set texture for object with name 'FLOOR' . Use file with name 'cube-g1_low.webp' ",
+  "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.",
   "Create a cube and enable raycast",
   "Create 5 cubes in a row with spacing",
   "Create a pyramid of cubes with 4 levels",
@@ -39617,7 +39618,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/tutorial-5/graph.js
-var graph_default = { "nodes": [], "links": [{ "id": "link_69", "from": { "node": "node_76", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_75", "pin": "exec" }, "type": "action" }, { "id": "link_70", "from": { "node": "node_77", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_78", "pin": "exec" }, "type": "action" }, { "id": "link_71", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_79", "pin": "exec" }, "type": "action" }], "nodeCounter": 80, "linkCounter": 72, "pan": [-165, -302], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": [], "links": [{ "id": "l89", "from": { "node": "n105", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n106", "pin": "exec" }, "type": "action" }, { "id": "l90", "from": { "node": "n107", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n108", "pin": "exec" }, "type": "action" }], "nodeCounter": 109, "linkCounter": 91, "pan": [90, 77], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/tutorial-5/shader-graphs.js
 var shaderGraphsProdc = [

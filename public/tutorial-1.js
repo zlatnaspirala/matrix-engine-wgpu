@@ -28235,7 +28235,7 @@ var tasks = [
   "On load create a cube named box1 at position 0 0 0 and make const rotate by y axis.",
   `
   Build the House with non physics cubes. All Cubes must have scale [1,1,1]. Build 3 floors, walls and roof.
-  Don't use generators, use addCube with physics enabled false!
+  Don't use generators, use addCube with physics enabled false or to optimise number of nodes use generatorWallNONPHYSICS.
   `,
   "Set texture for floor object",
   "Create a cube and enable raycast",
