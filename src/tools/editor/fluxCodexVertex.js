@@ -5330,13 +5330,11 @@ LIST OF INTEREST OBJECT:
   clearAllNodes() {
     this.board.querySelectorAll(".node").forEach(n => n.remove());
     this.nodes = {};
-    // this.nodes.length = 0;
+    this.nodeCounter = 0;
     this.links.length = 0;
-    // Clear state
     this.state.selectedNode = null;
     this.state.draggingNode = null;
     this.state.connectingPin = null;
-    // Optional: redraw connections
     this.updateLinks();
   }
 

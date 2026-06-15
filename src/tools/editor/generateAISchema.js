@@ -120,7 +120,7 @@ export let tasks = [
 
   "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.",
 
-  "Create a cube and enable raycast, on hit make object translateByZ",
+  "Create a nonPhysics Cube and enable raycast, on hit make object translateByZ",
 
   "Create start from cubes - use nonphysics cubes.",
 

@@ -25631,1917 +25631,6 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   document.dispatchEvent(new CustomEvent("load-shader-graph", { detail: key }));
 }
 
-// ../../../engine/procedural-mesh.js
-var ProceduralMeshObj = class extends Materials {
-  constructor(canvas, device2, context, o2, inputHandler, globalAmbient, cameraBuffer) {
-    super(device2, o2.material, null, o2.textureCache);
-    this.name = o2.name || genName(3);
-    this.done = false;
-    this.canvas = canvas;
-    this.device = device2;
-    this.context = context;
-    this.cameraBuffer = cameraBuffer;
-    this.globalAmbient = [...globalAmbient];
-    if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
-      o2.material.useBlend = false;
-    }
-    this.mType = MeshType.PROCEDURAL;
-    this.dontDrag = true;
-    this._translateVec = new Float32Array(3);
-    this._rotAxisVec = new Float32Array(3);
-    this._scaleVec = new Float32Array(3);
-    this._camVP = mat4Impl.create();
-    this.meshA = null;
-    this.meshB = null;
-    this.morphBlend = 0;
-    this.buildPipelineBucketsEvent = new CustomEvent("update-pipeine-buckets", {});
-    this.shadowsCast = true;
-    this.sceneBGL = o2.sceneBGL;
-    this.materialBGL = o2.materialBGL;
-    this.uniformBufferBindGroupLayout = o2.uniformBufferBindGroupLayout;
-    if (o2.meshA && o2.meshB) {
-      const pair = MeshMorpher.createMatchedPair(o2.meshA, o2.meshB, o2.resolutionU || 32, o2.resolutionV || 32);
-      this.meshA = pair.meshA;
-      this.meshB = pair.meshB;
-      this.vertexCount = pair.vertexCount;
-      this._validateMorphCompatibility();
-    } else if (o2.geometryA) {
-      console.warn(`%cPlease use meshA, meshB not geometryA.`, LOG_WARN);
-      this.meshA = this._loadGeometry(o2.geometryA);
-      this.meshB = o2.geometryB ? this._loadGeometry(o2.geometryB) : this._loadGeometry(o2.geometryA);
-      this._validateMorphCompatibility();
-    }
-    this.morphBlend = o2.morphBlend ?? 0;
-    this.morphAnimation = {
-      active: false,
-      startBlend: this.morphBlend,
-      targetBlend: 1,
-      duration: 1e3,
-      elapsed: 0,
-      onComplete: null
-    };
-    this.pointerEffect = o2.pointerEffect;
-    this._modelMatrix = mat4Impl.create();
-    this._posArray = new Float32Array(3);
-    this._scaleArray = new Float32Array(3);
-    this._rotAxisVec = new Float32Array(3);
-    this.inputHandler = inputHandler;
-    this.cameras = o2.cameras;
-    this.mainCameraParams = {
-      type: o2.mainCameraParams.type,
-      responseCoef: o2.mainCameraParams.responseCoef
-    };
-    this.lastFrameMS = 0;
-    this.position = new Position(o2.position.x, o2.position.y, o2.position.z);
-    this.rotation = new Rotation(o2.rotation.x, o2.rotation.y, o2.rotation.z);
-    this.rotation.rotationSpeed.x = o2.rotationSpeed?.x || 0;
-    this.rotation.rotationSpeed.y = o2.rotationSpeed?.y || 0;
-    this.rotation.rotationSpeed.z = o2.rotationSpeed?.z || 0;
-    this.scale = o2.scale || [1, 1, 1];
-    this.useScale = o2.useScale || false;
-    this.time = 0;
-    this.deltaTimeAdapter = 1;
-    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    this.raycast = o2.raycast || { enabled: false, radius: 2 };
-    this.pointerEffect = o2.pointerEffect || { enabled: false };
-    if (typeof o2.vertexWGSL !== "undefined") {
-      this.vertexWGSL = o2.vertexWGSL;
-    }
-    if (typeof o2.fragmentWGSL !== "undefined") {
-      this.fragmentWGSL = o2.fragmentWGSL;
-    }
-    this.runProgram = () => {
-      return new Promise(async (resolve) => {
-        this.shadowDepthTextureSize = 512;
-        this.modelViewProjectionMatrix = mat4Impl.create();
-        if (o2.texturesPaths && o2.texturesPaths.length > 0 && o2.textureCache) {
-          this.texturesPaths = [...o2.texturesPaths];
-          try {
-            await this.loadTex0(this.texturesPaths);
-          } catch (err) {
-            console.warn(`Failed to load texture, using default: ${err.message}`);
-            await this._createDefaultTexture();
-          }
-        } else {
-          await this._createDefaultTexture();
-        }
-        resolve();
-      });
-    };
-    this.runProgram().then(() => {
-      this._setupBuffers();
-      this._setupUniforms();
-      this.setupPipeline();
-      this.done = true;
-    });
-  }
-  // GEOMETRY LOADING old
-  _loadGeometry(spec2) {
-    const { type: type2, size: size2, segments, options: options2 } = spec2;
-    const geo2 = GeometryFactory.create(type2, size2, segments, options2);
-    return {
-      vertices: geo2.positions,
-      normals: this._generateNormals(geo2.positions, geo2.indices),
-      uvs: geo2.uvs,
-      indices: geo2.indices,
-      vertexCount: geo2.positions.length / 3
-    };
-  }
-  _generateNormals(positions, indices) {
-    const normals = new Float32Array(positions.length);
-    for (let i = 0; i < indices.length; i += 3) {
-      const i0 = indices[i] * 3;
-      const i1 = indices[i + 1] * 3;
-      const i2 = indices[i + 2] * 3;
-      const v0 = [positions[i0], positions[i0 + 1], positions[i0 + 2]];
-      const v1 = [positions[i1], positions[i1 + 1], positions[i1 + 2]];
-      const v2 = [positions[i2], positions[i2 + 1], positions[i2 + 2]];
-      const edge1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
-      const edge2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
-      let normal = [
-        edge1[1] * edge2[2] - edge1[2] * edge2[1],
-        edge1[2] * edge2[0] - edge1[0] * edge2[2],
-        edge1[0] * edge2[1] - edge1[1] * edge2[0]
-      ];
-      const len2 = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
-      if (len2 > 0) {
-        normal = normal.map((n2) => n2 / len2);
-      }
-      normals[i0] = normal[0];
-      normals[i0 + 1] = normal[1];
-      normals[i0 + 2] = normal[2];
-      normals[i1] = normal[0];
-      normals[i1 + 1] = normal[1];
-      normals[i1 + 2] = normal[2];
-      normals[i2] = normal[0];
-      normals[i2 + 1] = normal[1];
-      normals[i2 + 2] = normal[2];
-    }
-    return normals;
-  }
-  _validateMorphCompatibility() {
-    if (this.meshA.vertexCount !== this.meshB.vertexCount) {
-      console.warn(
-        `\u26A0\uFE0F Morph vertex count mismatch: A=${this.meshA.vertexCount}, B=${this.meshB.vertexCount}. Padding will be applied but results may be incorrect.`
-      );
-      this._padMeshesToMatch();
-    }
-  }
-  _padMeshesToMatch() {
-    const maxCount = Math.max(this.meshA.vertexCount, this.meshB.vertexCount);
-    if (this.meshA.vertexCount < maxCount) {
-      this.meshA = this._padMesh(this.meshA, maxCount);
-    }
-    if (this.meshB.vertexCount < maxCount) {
-      this.meshB = this._padMesh(this.meshB, maxCount);
-    }
-  }
-  _padMesh(mesh, targetCount) {
-    const padCount = targetCount - mesh.vertexCount;
-    const lastVertIdx = (mesh.vertexCount - 1) * 3;
-    const paddedVertices = new Float32Array(targetCount * 3);
-    paddedVertices.set(mesh.vertices);
-    for (let i = 0; i < padCount; i++) {
-      paddedVertices.set(
-        mesh.vertices.slice(lastVertIdx, lastVertIdx + 3),
-        (mesh.vertexCount + i) * 3
-      );
-    }
-    const paddedNormals = new Float32Array(targetCount * 3);
-    paddedNormals.set(mesh.normals);
-    for (let i = 0; i < padCount; i++) {
-      paddedNormals.set(
-        mesh.normals.slice(lastVertIdx, lastVertIdx + 3),
-        (mesh.vertexCount + i) * 3
-      );
-    }
-    const paddedUVs = new Float32Array(targetCount * 2);
-    paddedUVs.set(mesh.uvs);
-    const lastUVIdx = (mesh.vertexCount - 1) * 2;
-    for (let i = 0; i < padCount; i++) {
-      paddedUVs.set(
-        mesh.uvs.slice(lastUVIdx, lastUVIdx + 2),
-        (mesh.vertexCount + i) * 2
-      );
-    }
-    return {
-      vertices: paddedVertices,
-      normals: paddedNormals,
-      uvs: paddedUVs,
-      indices: mesh.indices,
-      vertexCount: targetCount
-    };
-  }
-  async _createDefaultTexture() {
-    const textureData = new Uint8Array([255, 255, 255, 255]);
-    const texture = this.device.createTexture({
-      size: [1, 1, 1],
-      format: "rgba8unorm",
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    this.device.queue.writeTexture(
-      { texture },
-      textureData,
-      { bytesPerRow: 4 },
-      { width: 1, height: 1 }
-    );
-    this.texture0 = texture;
-    this.meshTexture = texture;
-    this.meshTextureView = texture.createView();
-  }
-  _setupShadowDepthTexture() {
-    this.shadowDepthTexture = this.device.createTexture({
-      size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 20],
-      format: "depth32float",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-    });
-  }
-  _setupBuffers() {
-    this.context.configure({ device: this.device, format: this.presentationFormat, alphaMode: "premultiplied" });
-    const createBuffer = (data, usage = GPUBufferUsage.VERTEX) => {
-      const buf = this.device.createBuffer({ size: data.byteLength, usage, mappedAtCreation: true });
-      new data.constructor(buf.getMappedRange()).set(data);
-      buf.unmap();
-      return buf;
-    };
-    this.vertexBufferA = createBuffer(this.meshA.vertices);
-    this.vertexBufferB = createBuffer(this.meshB.vertices);
-    this.normalBufferA = createBuffer(this.meshA.normals);
-    this.normalBufferB = createBuffer(this.meshB.normals);
-    this.uvBuffer = createBuffer(this.meshA.uvs);
-    this.indexCount = this.meshA.indices.length;
-    this.indexBuffer = createBuffer(this.meshA.indices, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST);
-    const dummyJoints = new Uint32Array(this.vertexCount * 4).fill(0);
-    this.dummyJointsBuffer = createBuffer(dummyJoints);
-    const dummyWeights = new Float32Array(this.vertexCount * 4);
-    for (let i = 0; i < this.vertexCount; i++) dummyWeights.set([1, 0, 0, 0], i * 4);
-    this.dummyWeightsBuffer = createBuffer(dummyWeights);
-    this.vertexBuffers = [
-      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-      // posA
-      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] },
-      // normalA
-      { arrayStride: 2 * 4, attributes: [{ shaderLocation: 2, offset: 0, format: "float32x2" }] },
-      // uv
-      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 6, offset: 0, format: "float32x3" }] },
-      // posB
-      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 7, offset: 0, format: "float32x3" }] }
-      // normalB
-    ];
-    this.primitive = { topology: "triangle-list", cullMode: "none", frontFace: "ccw" };
-  }
-  _setupUniforms() {
-    this.effects = {};
-    if (this.pointerEffect && this.pointerEffect.enabled === true) {
-      let pf = navigator.gpu.getPreferredCanvasFormat();
-      if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
-        this.effects.pointer = new PointerEffect(this.device, "rgba16float", 1, this.cameraBuffer);
-      }
-      if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
-        this.effects.pointEffect = new PointEffect(this.device, "rgba16float", this.cameraBuffer);
-      }
-      if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
-        this.effects.gizmoEffect = new GizmoEffect(this.device, "rgba16float", this.cameraBuffer);
-      }
-      if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
-        this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", "torch", this.cameraBuffer);
-      }
-      if (typeof this.pointerEffect.gpuText !== "undefined" && this.pointerEffect.gpuText == true) {
-        this.effects.gpuText = new MSDFTextEffect(this.device, pf, "rgba16float", "torch", this.cameraBuffer);
-      }
-      if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
-        this.effects.flameEmitter = new FlameEmitter(this.device, "rgba16float", 20, this.cameraBuffer);
-      }
-      if (typeof this.pointerEffect.destructionEffect !== "undefined" && this.pointerEffect.destructionEffect == true) {
-        this.effects.destructionEffect = new DestructionEffect(this.device, "rgba16float", {
-          particleCount: 100,
-          duration: 2.5,
-          color: [0.6, 0.5, 0.4, 1]
-        }, this.cameraBuffer);
-      }
-    }
-    this.modelUniformBuffer = this.device.createBuffer({ size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.bonesBuffer = this.device.createBuffer({ size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.morphBlendBuffer = this.device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
-    this.vertexAnimParams = new Float32Array([
-      0,
-      0,
-      0,
-      0,
-      2,
-      0.1,
-      2,
-      0,
-      1.5,
-      0.3,
-      2,
-      0.5,
-      1,
-      0.1,
-      0,
-      0,
-      1,
-      0.5,
-      0,
-      0,
-      1,
-      0.05,
-      0.5,
-      0,
-      1,
-      0.05,
-      2,
-      0,
-      1,
-      0.1,
-      0,
-      0
-    ]);
-    this.vertexAnimBuffer = this.device.createBuffer({
-      label: "Vertex Animation Params",
-      size: this.vertexAnimParams.byteLength,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // model
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // bones
-        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // vertexAnim
-        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-        // morphBlend
-      ]
-    });
-    this.modelBindGroup = this.device.createBindGroup({
-      layout: this.uniformBufferBindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.modelUniformBuffer } },
-        { binding: 1, resource: { buffer: this.bonesBuffer } },
-        { binding: 2, resource: { buffer: this.vertexAnimBuffer } },
-        { binding: 3, resource: { buffer: this.morphBlendBuffer } }
-      ]
-    });
-    this.shadowBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // model
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // bones
-        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        // vertexAnim
-        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-        // morphBlend
-      ]
-    });
-    this.vertexAnim = {
-      active: false,
-      enableWave: () => {
-        this.vertexAnim.active = true;
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
-        this.updateVertexAnimBuffer();
-      },
-      disableWave: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WAVE;
-        this.updateVertexAnimBuffer();
-      },
-      enableWind: () => {
-        this.vertexAnim.active = true;
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
-        this.updateVertexAnimBuffer();
-      },
-      disableWind: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WIND;
-        this.updateVertexAnimBuffer();
-      },
-      enablePulse: () => {
-        this.vertexAnim.active = true;
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
-        this.updateVertexAnimBuffer();
-      },
-      disablePulse: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.PULSE;
-        this.updateVertexAnimBuffer();
-      },
-      enableTwist: () => {
-        this.vertexAnim.active = true;
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
-        this.updateVertexAnimBuffer();
-      },
-      disableTwist: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.TWIST;
-        this.updateVertexAnimBuffer();
-      },
-      enableNoise: () => {
-        this.vertexAnim.active = true;
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
-        this.updateVertexAnimBuffer();
-      },
-      disableNoise: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.NOISE;
-        this.updateVertexAnimBuffer();
-      },
-      enableOcean: () => {
-        this.vertexAnim.active = true;
-        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
-        this.updateVertexAnimBuffer();
-      },
-      disableOcean: () => {
-        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.OCEAN;
-        this.updateVertexAnimBuffer();
-      },
-      enable: (...effects) => {
-        this.vertexAnim.active = true;
-        effects.forEach((effect) => {
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
-        });
-        this.updateVertexAnimBuffer();
-      },
-      disable: (...effects) => {
-        effects.forEach((effect) => {
-          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS[effect.toUpperCase()];
-        });
-        this.updateVertexAnimBuffer();
-      },
-      disableAll: () => {
-        this.vertexAnimParams[1] = 0;
-        this.updateVertexAnimBuffer();
-      },
-      isEnabled: (effect) => {
-        return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;
-      },
-      setWaveParams: (speed, amplitude, frequency) => {
-        this.vertexAnimParams[4] = speed;
-        this.vertexAnimParams[5] = amplitude;
-        this.vertexAnimParams[6] = frequency;
-        this.updateVertexAnimBuffer();
-      },
-      setWindParams: (speed, strength, heightInfluence, turbulence) => {
-        this.vertexAnimParams[8] = speed;
-        this.vertexAnimParams[9] = strength;
-        this.vertexAnimParams[10] = heightInfluence;
-        this.vertexAnimParams[11] = turbulence;
-        this.updateVertexAnimBuffer();
-      },
-      setPulseParams: (speed, amount, centerX = 0, centerY = 0) => {
-        this.vertexAnimParams[12] = speed;
-        this.vertexAnimParams[13] = amount;
-        this.vertexAnimParams[14] = centerX;
-        this.vertexAnimParams[15] = centerY;
-        this.updateVertexAnimBuffer();
-      },
-      setTwistParams: (speed, amount) => {
-        this.vertexAnimParams[16] = speed;
-        this.vertexAnimParams[17] = amount;
-        this.updateVertexAnimBuffer();
-      },
-      setNoiseParams: (scale4, strength, speed) => {
-        this.vertexAnimParams[20] = scale4;
-        this.vertexAnimParams[21] = strength;
-        this.vertexAnimParams[22] = speed;
-        this.updateVertexAnimBuffer();
-      },
-      setOceanParams: (scale4, height, speed) => {
-        this.vertexAnimParams[24] = scale4;
-        this.vertexAnimParams[25] = height;
-        this.vertexAnimParams[26] = speed;
-        this.updateVertexAnimBuffer();
-      },
-      setIntensity: (value2) => {
-        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
-        this.updateVertexAnimBuffer();
-      },
-      getIntensity: () => {
-        return this.vertexAnimParams[2];
-      }
-    };
-    this.updateVertexAnimBuffer = () => {
-      this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-    };
-    this.vertexAnimParams[2] = 1;
-    this.updateVertexAnimBuffer();
-  }
-  setupPipeline() {
-    const pm = PipelineManager.get();
-    const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL();
-    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL() : this.getMaterial();
-    const vertexId = this.vertexWGSL ? "custom_proc" : "proc_morph";
-    const fragmentId = this.fragmentWGSL ? "custom_frag" : this.isVideo == true ? "video" : this.material.type;
-    const isMirror = this.material.type === "mirror";
-    const isWater = this.material.type === "water";
-    const isNormalMap = this.material.type === "normalmap";
-    const isVideo = this.isVideo === true;
-    const baseKey = {
-      vertexId,
-      fragmentId,
-      type: "procedural",
-      topology: this.primitive ? this.primitive.topology : "triangle-list",
-      cullMode: this.primitive ? this.primitive.cullMode : "none",
-      frontFace: this.primitive ? this.primitive.frontFace : "ccw",
-      format: "rgba16float",
-      morph: !this.vertexWGSL ? 1 : 0,
-      mirror: isMirror ? 1 : 0,
-      normalMap: isNormalMap ? 1 : 0,
-      isWater: isWater ? 1 : 0
-    };
-    let MKEY = structuredClone(baseKey);
-    MKEY.texturesPaths = this.texturesPaths.join();
-    this.material.pipelineKey = baseKey;
-    this.material.matKey = MKEY;
-    this.createBindGroupForRender(MKEY);
-    const layout = this.device.createPipelineLayout({
-      bindGroupLayouts: [
-        this.sceneBGL,
-        isVideo ? this.materialVideoBGL : this.materialBGL,
-        this.uniformBufferBindGroupLayout,
-        isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null
-      ]
-    });
-    const vertexState = {
-      entryPoint: "main",
-      module: this.device.createShaderModule({ code: vertexCode }),
-      buffers: this.vertexBuffers
-    };
-    const fragmentConstants = { shadowDepthTextureSize: this.shadowDepthTextureSize };
-    this.pipeline = pm.getPipeline({
-      key: buildPipelineKey({
-        ...baseKey,
-        transparent: false,
-        depthWrite: true
-      }),
-      pipeline: {
-        label: "Procedural Opaque Cached",
-        layout,
-        vertex: vertexState,
-        fragment: {
-          entryPoint: "main",
-          module: this.device.createShaderModule({ code: fragmentCode }),
-          targets: [
-            { format: "rgba16float" },
-            { format: "rgba16float" },
-            { format: "rgba16float" }
-          ],
-          constants: fragmentConstants
-        },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: "less",
-          format: "depth24plus"
-        },
-        primitive: this.primitive
-      }
-    });
-    this.pipelineTransparent = pm.getPipeline({
-      key: buildPipelineKey({
-        ...baseKey,
-        transparent: true,
-        depthWrite: false
-      }),
-      pipeline: {
-        label: "Procedural Transparent Cached",
-        layout,
-        vertex: vertexState,
-        fragment: {
-          entryPoint: "main",
-          module: this.device.createShaderModule({ code: fragmentCode }),
-          targets: [
-            {
-              format: "rgba16float",
-              blend: {
-                color: {
-                  srcFactor: "src-alpha",
-                  dstFactor: "one-minus-src-alpha",
-                  operation: "add"
-                },
-                alpha: {
-                  srcFactor: "one",
-                  dstFactor: "one-minus-src-alpha",
-                  operation: "add"
-                }
-              }
-            },
-            { format: "rgba16float" },
-            { format: "rgba16float" }
-          ],
-          constants: fragmentConstants
-        },
-        depthStencil: {
-          depthWriteEnabled: false,
-          depthCompare: "less",
-          format: "depth24plus"
-        },
-        primitive: this.primitive
-      }
-    });
-    dispatchEvent(this.buildPipelineBucketsEvent);
-  }
-  setMorphBlend(t) {
-    this.morphBlend = Math.max(0, Math.min(1, t));
-    if (this.morphBlendBuffer) {
-      this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
-    } else {
-      console.error("\u274C NO BUFFER in setMorphBlend.");
-    }
-  }
-  morphTo(targetBlend, duration = 1e3, onComplete) {
-    this.morphAnimation.active = true;
-    this.morphAnimation.startBlend = this.morphBlend;
-    this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
-    this.morphAnimation.duration = Math.max(duration, 100);
-    this.morphAnimation.elapsed = 0;
-    if (onComplete) this.morphAnimation.onComplete = onComplete;
-    this.morphAnimation.active = true;
-    this.morphAnimation.startBlend = this.morphBlend;
-    this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
-    this.morphAnimation.duration = duration;
-    this.morphAnimation.elapsed = 0;
-    if (this.morphAnimation.debug) {
-      console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} \u2192 ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
-    }
-  }
-  async destroyGeo(destructionType = "shatter", duration = 0.8, options2 = {}) {
-    const { onComplete = null, physics = null, debris = null, velocity = 1, lifetime = 3 } = options2;
-    const destructionFunc = this._getDestructionFunction(destructionType);
-    const pair = MeshMorpher.createMatchedPair(
-      this.currentShape || MeshMorpher.sphere(this.size),
-      destructionFunc,
-      32,
-      32
-    );
-    await this.morphTo(destructionFunc, duration);
-    if (debris) {
-      this.spawnDebris(null, destructionType, { velocity, lifetime });
-    }
-    if (onComplete) onComplete();
-  }
-  /**
-   * Get destruction preset function from MeshMorpher (now parametric)
-   */
-  _getDestructionFunction(type2) {
-    const presets = {
-      shatter: () => MeshMorpher.shatter(this.size, 8),
-      crumble: () => MeshMorpher.crumble(this.size, 4),
-      splinter: () => MeshMorpher.splinter(this.size, 12),
-      implode: () => MeshMorpher.implode(this.size, 0.1),
-      scatter: () => MeshMorpher.scatter(this.size, 0.3)
-    };
-    if (!presets[type2]) throw new Error(`Unknown destruction type: ${type2}`);
-    return presets[type2]();
-  }
-  /**
-   * Spawn individual physics chunks after morph
-   */
-  spawnDebris(physicsEngine, type2, options2 = {}) {
-  }
-  switchMesh(specA, specB) {
-    this.meshA = this._loadGeometry(specA);
-    this.meshB = this._loadGeometry(specB);
-    this._validateMorphCompatibility();
-    this.vertexBufferA?.destroy();
-    this.vertexBufferB?.destroy();
-    this.normalBufferA?.destroy();
-    this.normalBufferB?.destroy();
-    this.uvBuffer?.destroy();
-    this.indexBuffer?.destroy();
-    this._setupBuffers();
-    this.setMorphBlend(0);
-  }
-  updateMorphAnimation(deltaTime) {
-    if (!this.morphAnimation.active) return;
-    this.morphAnimation.elapsed += deltaTime;
-    const t = Math.min(1, this.morphAnimation.elapsed / this.morphAnimation.duration);
-    const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    const blend = this.morphAnimation.startBlend + (this.morphAnimation.targetBlend - this.morphAnimation.startBlend) * eased;
-    this.setMorphBlend(blend);
-    if (t >= 1) {
-      this.morphAnimation.active = false;
-      if (this.morphAnimation.onComplete) {
-        this.morphAnimation.onComplete(blend);
-      }
-    }
-  }
-  getModelMatrix(pos2, useScale = false) {
-    if (!this.itIsPhysicsBody) {
-      let modelMatrix = mat4Impl.identity(this._modelMatrix);
-      this._translateVec[0] = pos2.x;
-      this._translateVec[1] = pos2.y;
-      this._translateVec[2] = pos2.z;
-      mat4Impl.translate(modelMatrix, this._translateVec, modelMatrix);
-      mat4Impl.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
-      mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
-      mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
-      if (useScale == true) {
-        this._scaleVec[0] = this.scale[0];
-        this._scaleVec[1] = this.scale[1];
-        this._scaleVec[2] = this.scale[2];
-        mat4Impl.scale(modelMatrix, this._scaleVec, modelMatrix);
-      }
-      this.modelMatrix = modelMatrix;
-      return this.modelMatrix;
-    }
-    if (!this.modelMatrix) {
-      let modelMatrix = mat4Impl.identity(this._modelMatrix);
-      this.modelMatrix = modelMatrix;
-    }
-    return this.modelMatrix;
-  }
-  updateModelUniformBuffer() {
-    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
-    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
-  }
-  updateTime(time) {
-    this.time += time * this.deltaTimeAdapter;
-    this.vertexAnimParams[0] = this.time;
-    this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
-  }
-  drawElements(pass, lightContainer) {
-    pass.setVertexBuffer(0, this.vertexBufferA);
-    pass.setVertexBuffer(1, this.normalBufferA);
-    pass.setVertexBuffer(2, this.uvBuffer);
-    pass.setVertexBuffer(3, this.vertexBufferB);
-    pass.setVertexBuffer(4, this.normalBufferB);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount);
-  }
-  drawShadows(shadowPass) {
-    shadowPass.setVertexBuffer(0, this.vertexBufferA);
-    shadowPass.setVertexBuffer(1, this.normalBufferA);
-    shadowPass.setVertexBuffer(2, this.uvBuffer);
-    shadowPass.setVertexBuffer(3, this.vertexBufferB);
-    shadowPass.setVertexBuffer(4, this.normalBufferB);
-    shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
-    shadowPass.drawIndexed(this.indexCount);
-  }
-  getMainPipeline() {
-    return this.pipeline;
-  }
-  destroy() {
-    if (this._destroyed) return;
-    this._destroyed = true;
-    this.vertexBufferA?.destroy();
-    this.vertexBufferB?.destroy();
-    this.normalBufferA?.destroy();
-    this.normalBufferB?.destroy();
-    this.uvBuffer?.destroy();
-    this.indexBuffer?.destroy();
-    this.modelUniformBuffer?.destroy();
-    this.sceneUniformBuffer?.destroy();
-    this.morphBlendBuffer?.destroy();
-    this.vertexAnimBuffer?.destroy();
-    this.shadowDepthTexture?.destroy();
-    this.pipeline = null;
-    this.pipelineTransparent = null;
-    this.modelBindGroup = null;
-    this.sceneBindGroupForRender = null;
-    console.info(`\u{1F9F9} Destroyed ProceduralMesh: ${this.name}`);
-  }
-};
-var MeshMorpher = class {
-  static createMatchedPair(shapeA, shapeB, resolutionU = 32, resolutionV = 32) {
-    const shapeAObj = typeof shapeA === "function" ? { func: shapeA } : shapeA;
-    const shapeBObj = typeof shapeB === "function" ? { func: shapeB } : shapeB;
-    const meshA2 = this._generateFromFunction(shapeAObj.func, resolutionU, resolutionV);
-    const meshB2 = this._generateFromFunction(shapeBObj.func, resolutionU, resolutionV);
-    if (!shapeAObj.flat)
-      meshA2.normals = this.computeSmoothNormals(meshA2.vertices, meshA2.indices);
-    if (!shapeBObj.flat)
-      meshB2.normals = this.computeSmoothNormals(meshB2.vertices, meshB2.indices);
-    return {
-      meshA: meshA2,
-      meshB: meshB2,
-      vertexCount: (resolutionU + 1) * (resolutionV + 1)
-    };
-  }
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MULTI-PART GEOMETRY
-  // Combines N shape functions into a single UV-partitioned mesh.
-  // Each part gets an equal slice of V-space. Bridge rows between parts
-  // are collapsed to a hidden point so no connecting triangles are visible.
-  //
-  // Usage:
-  //   MeshMorpher.compose(
-  //     { shape: MeshMorpher.cube(1),   offset: [-2, 0, 0] },
-  //     { shape: MeshMorpher.cube(1),   offset: [ 2, 0, 0] },
-  //   )
-  //
-  //   // With rotation too:
-  //   MeshMorpher.compose(
-  //     { shape: MeshMorpher.sphere(1), offset: [0, 0, 0], rotation: [0, 0, 0] },
-  //     { shape: MeshMorpher.torus(),   offset: [3, 0, 0], rotation: [Math.PI/2, 0, 0] },
-  //   )
-  //
-  // Returns a shape descriptor { func, flat } — works everywhere createMatchedPair does.
-  // ─────────────────────────────────────────────────────────────────────────────
-  static compose(...parts) {
-    const n2 = parts.length;
-    const normalised = parts.map((p) => {
-      const raw = p.shape ?? p.func ?? p;
-      const func = typeof raw === "function" ? raw : raw.func;
-      const flat = p.flat ?? (typeof raw === "object" ? raw.flat : false) ?? false;
-      const offset = p.offset ?? [0, 0, 0];
-      const rotation3 = p.rotation ?? [0, 0, 0];
-      const scale4 = p.scale ?? [1, 1, 1];
-      return { func, flat, offset, rotation: rotation3, scale: scale4 };
-    });
-    const applyTransform = (pos2, part) => {
-      let [x2, y2, z] = pos2;
-      x2 *= part.scale[0];
-      y2 *= part.scale[1];
-      z *= part.scale[2];
-      const [rx, ry, rz] = part.rotation;
-      if (rx !== 0) {
-        const cy = Math.cos(rx), sy = Math.sin(rx);
-        const ny = cy * y2 - sy * z, nz = sy * y2 + cy * z;
-        y2 = ny;
-        z = nz;
-      }
-      if (ry !== 0) {
-        const cx = Math.cos(ry), sx = Math.sin(ry);
-        const nx = cx * x2 + sx * z, nz = -sx * x2 + cx * z;
-        x2 = nx;
-        z = nz;
-      }
-      if (rz !== 0) {
-        const cz = Math.cos(rz), sz = Math.sin(rz);
-        const nx = cz * x2 - sz * y2, ny = sz * x2 + cz * y2;
-        x2 = nx;
-        y2 = ny;
-      }
-      x2 += part.offset[0];
-      y2 += part.offset[1];
-      z += part.offset[2];
-      return [x2, y2, z];
-    };
-    const composed = (u, vGlobal) => {
-      const sliceSize = 1 / n2;
-      const partIndex = Math.min(Math.floor(vGlobal / sliceSize), n2 - 1);
-      const part = normalised[partIndex];
-      const vLocal = (vGlobal - partIndex * sliceSize) / sliceSize;
-      const DEAD = 0.1;
-      if (vLocal < DEAD) {
-        return applyTransform(part.func(0, 0), part);
-      }
-      if (vLocal > 1 - DEAD) {
-        return applyTransform(part.func(0, 0), part);
-      }
-      const vMapped = (vLocal - DEAD) / (1 - DEAD * 2);
-      return applyTransform(part.func(u, vMapped), part);
-    };
-    const allFlat = normalised.every((p) => p.flat);
-    return allFlat ? { func: composed, flat: true } : composed;
-  }
-  // ─────────────────────────────────────────────────────────────────────────────
-  // All original methods below — completely unchanged
-  // ─────────────────────────────────────────────────────────────────────────────
-  static computeSmoothNormals(positions, indices) {
-    const normals = new Float32Array(positions.length);
-    const counts = new Uint16Array(positions.length / 3);
-    for (let i = 0; i < indices.length; i += 3) {
-      const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
-      const ax = positions[ia * 3], ay = positions[ia * 3 + 1], az = positions[ia * 3 + 2];
-      const bx = positions[ib * 3], by = positions[ib * 3 + 1], bz = positions[ib * 3 + 2];
-      const cx = positions[ic * 3], cy = positions[ic * 3 + 1], cz = positions[ic * 3 + 2];
-      const ux = bx - ax, uy = by - ay, uz = bz - az;
-      const vx = cx - ax, vy = cy - ay, vz = cz - az;
-      let nx = uy * vz - uz * vy;
-      let ny = uz * vx - ux * vz;
-      let nz = ux * vy - uy * vx;
-      const len2 = Math.hypot(nx, ny, nz) || 1;
-      nx /= len2;
-      ny /= len2;
-      nz /= len2;
-      for (const idx of [ia, ib, ic]) {
-        normals[idx * 3] += nx;
-        normals[idx * 3 + 1] += ny;
-        normals[idx * 3 + 2] += nz;
-        counts[idx]++;
-      }
-    }
-    for (let i = 0; i < counts.length; i++) {
-      const len2 = Math.hypot(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]) || 1;
-      normals[i * 3] /= len2;
-      normals[i * 3 + 1] /= len2;
-      normals[i * 3 + 2] /= len2;
-    }
-    return normals;
-  }
-  static _generateFromFunction(shapeFunc, resU, resV) {
-    const positions = [];
-    const normals = [];
-    const uvs = [];
-    const indices = [];
-    for (let v = 0; v <= resV; v++) {
-      for (let u = 0; u <= resU; u++) {
-        const uNorm = u / resU;
-        const vNorm = v / resV;
-        const pos2 = shapeFunc(uNorm, vNorm);
-        positions.push(pos2[0], pos2[1], pos2[2]);
-        const eps = 0.01;
-        const posU = shapeFunc(Math.min(uNorm + eps, 1), vNorm);
-        const posV = shapeFunc(uNorm, Math.min(vNorm + eps, 1));
-        const tangentU = [posU[0] - pos2[0], posU[1] - pos2[1], posU[2] - pos2[2]];
-        const tangentV = [posV[0] - pos2[0], posV[1] - pos2[1], posV[2] - pos2[2]];
-        const normal = [
-          tangentU[1] * tangentV[2] - tangentU[2] * tangentV[1],
-          tangentU[2] * tangentV[0] - tangentU[0] * tangentV[2],
-          tangentU[0] * tangentV[1] - tangentU[1] * tangentV[0]
-        ];
-        const len2 = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
-        if (len2 > 0) {
-          normal[0] /= len2;
-          normal[1] /= len2;
-          normal[2] /= len2;
-        }
-        if (Math.abs(pos2[1]) < 0.01 && Math.abs(posU[1]) < 0.01 && Math.abs(posV[1]) < 0.01) {
-          normal[0] = 0;
-          normal[1] = 1;
-          normal[2] = 0;
-        }
-        normals.push(normal[0], normal[1], normal[2]);
-        uvs.push(uNorm, vNorm);
-      }
-    }
-    for (let v = 0; v < resV; v++) {
-      for (let u = 0; u < resU; u++) {
-        const i0 = v * (resU + 1) + u;
-        const i1 = i0 + 1;
-        const i2 = i0 + (resU + 1);
-        const i3 = i2 + 1;
-        indices.push(i0, i2, i1);
-        indices.push(i1, i2, i3);
-      }
-    }
-    return {
-      vertices: new Float32Array(positions),
-      normals: new Float32Array(normals),
-      uvs: new Float32Array(uvs),
-      indices: new Uint16Array(indices),
-      vertexCount: positions.length / 3,
-      flat: this.flat === true
-    };
-  }
-  static sphere(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      return [
-        radius * Math.sin(phi) * Math.cos(theta),
-        radius * Math.cos(phi),
-        radius * Math.sin(phi) * Math.sin(theta)
-      ];
-    };
-  }
-  static cube(size2 = 1) {
-    const s = size2 * 0.5;
-    return (u, v) => {
-      let x2, y2, z;
-      const unitU = u * 4 % 1;
-      const side = Math.floor(u * 4) % 4;
-      let sx, sz;
-      if (side === 0) {
-        sx = s;
-        sz = (unitU - 0.5) * size2;
-      } else if (side === 1) {
-        sx = (0.5 - unitU) * size2;
-        sz = s;
-      } else if (side === 2) {
-        sx = -s;
-        sz = (0.5 - unitU) * size2;
-      } else {
-        sx = (unitU - 0.5) * size2;
-        sz = -s;
-      }
-      if (v < 0.2) {
-        const lerp2 = v / 0.2;
-        x2 = sx * lerp2;
-        y2 = -s;
-        z = sz * lerp2;
-      } else if (v > 0.8) {
-        const lerp2 = (1 - v) / 0.2;
-        x2 = sx * lerp2;
-        y2 = s;
-        z = sz * lerp2;
-      } else {
-        const lerpY = (v - 0.2) / 0.6;
-        x2 = sx;
-        y2 = (lerpY - 0.5) * size2;
-        z = sz;
-      }
-      return [x2, y2, z];
-    };
-  }
-  static cylinder(radius = 1, height = 2) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = (v - 0.5) * height;
-      return [radius * Math.cos(theta), h, radius * Math.sin(theta)];
-    };
-  }
-  static torus(majorRadius = 1, minorRadius = 0.3) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI * 2;
-      const r2 = majorRadius + minorRadius * Math.cos(phi);
-      return [r2 * Math.cos(theta), minorRadius * Math.sin(phi), r2 * Math.sin(theta)];
-    };
-  }
-  static cone(baseRadius = 1, height = 1, fromZeroY = true) {
-    if (fromZeroY == true) return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = v * height;
-      const r2 = baseRadius * (1 - v);
-      return [r2 * Math.cos(theta), h, r2 * Math.sin(theta)];
-    };
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = v * height - height / 2;
-      const r2 = baseRadius * (1 - v);
-      return [r2 * Math.cos(theta), h, r2 * Math.sin(theta)];
-    };
-  }
-  static coneX(baseRadius = 1, height = 1, fromZeroX = true) {
-    if (fromZeroX == true) return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = v * height;
-      const r2 = baseRadius * (1 - v);
-      return [h, r2 * Math.cos(theta), r2 * Math.sin(theta)];
-    };
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const h = v * height - height / 2;
-      const r2 = baseRadius * (1 - v);
-      return [h, r2 * Math.cos(theta), r2 * Math.sin(theta)];
-    };
-  }
-  // static capsule(radius = 0.5, height = 1) {
-  //   const halfH = height / 2;
-  //   return (u, v) => {
-  //     if(v < 0.25) {
-  //       const theta = -u * Math.PI * 2;
-  //       const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
-  //       return [
-  //         radius * Math.sin(phi) * Math.cos(theta),
-  //         radius * Math.cos(phi) - halfH,
-  //         radius * Math.sin(phi) * Math.sin(theta)
-  //       ];
-  //     } else if(v > 0.75) {
-  //       const theta = -u * Math.PI * 2;
-  //       const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
-  //       return [
-  //         radius * Math.sin(phi) * Math.cos(theta),
-  //         radius * Math.cos(phi) + halfH,
-  //         radius * Math.sin(phi) * Math.sin(theta)
-  //       ];
-  //     } else {
-  //       const theta = u * Math.PI * 2;
-  //       const y = ((v - 0.25) / 0.5) * height - halfH;
-  //       return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
-  //     }
-  //   };
-  // }
-  static capsule(radius = 1, height = 1, fromZeroY = true) {
-    const halfH = height / 2;
-    const yOffset = fromZeroY ? halfH + radius : 0;
-    return (u, v) => {
-      if (v < 0.25) {
-        const theta = -u * Math.PI * 2;
-        const phi = v / 0.25 * (Math.PI / 2) + Math.PI / 2;
-        return [
-          radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) - halfH + yOffset,
-          radius * Math.sin(phi) * Math.sin(theta)
-        ];
-      } else if (v > 0.75) {
-        const theta = -u * Math.PI * 2;
-        const phi = (v - 0.75) / 0.25 * (Math.PI / 2);
-        return [
-          radius * Math.sin(phi) * Math.cos(theta),
-          radius * Math.cos(phi) + halfH + yOffset,
-          radius * Math.sin(phi) * Math.sin(theta)
-        ];
-      } else {
-        const theta = u * Math.PI * 2;
-        const y2 = (v - 0.25) / 0.5 * height - halfH;
-        return [
-          radius * Math.cos(theta),
-          y2 + yOffset,
-          radius * Math.sin(theta)
-        ];
-      }
-    };
-  }
-  static plane(size2 = 1) {
-    return (u, v) => [(u - 0.5) * size2, 0, (v - 0.5) * size2];
-  }
-  static mobius(radius = 1, width = 0.5) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const t = (v - 0.5) * width;
-      const halfTheta = theta / 2;
-      return [
-        (radius + t * Math.cos(halfTheta)) * Math.cos(theta),
-        t * Math.sin(halfTheta),
-        (radius + t * Math.cos(halfTheta)) * Math.sin(theta)
-      ];
-    };
-  }
-  static pyramid(size2 = 1) {
-    return (u, v) => {
-      const angle = u * Math.PI * 2;
-      const r2 = (1 - v) * size2;
-      return [r2 * Math.cos(angle), v * size2, r2 * Math.sin(angle)];
-    };
-  }
-  static supershape(size2 = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = v * Math.PI;
-      const r2 = size2 * (0.5 + 0.5 * Math.sin(5 * theta) * Math.sin(3 * phi));
-      return [
-        r2 * Math.sin(phi) * Math.cos(theta),
-        r2 * Math.cos(phi),
-        r2 * Math.sin(phi) * Math.sin(theta)
-      ];
-    };
-  }
-  static star(radius = 1, innerRadius = 0.4, depth = 0.3) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const r2 = radius * (0.7 + 0.3 * Math.cos(5 * theta));
-      let x2, y2, z;
-      if (v < 0.5) {
-        const lerp2 = v / 0.5;
-        x2 = r2 * Math.cos(theta) * lerp2;
-        z = r2 * Math.sin(theta) * lerp2;
-        y2 = depth * (1 - lerp2);
-      } else {
-        const lerp2 = (1 - v) / 0.5;
-        x2 = r2 * Math.cos(theta) * lerp2;
-        z = r2 * Math.sin(theta) * lerp2;
-        y2 = -depth * (1 - lerp2);
-      }
-      return [x2, y2, z];
-    };
-  }
-  static wavePlane(size2 = 2) {
-    return (u, v) => {
-      const x2 = (u - 0.5) * size2;
-      const z = (v - 0.5) * size2;
-      const y2 = Math.sin(x2 * 3) * Math.cos(z * 3) * 0.3;
-      return [x2, y2, z];
-    };
-  }
-  static circlePlane(radius = 1) {
-    return (u, v) => {
-      const angle = -u * Math.PI * 2;
-      const r2 = -v * radius;
-      return [r2 * Math.cos(angle), 0, r2 * Math.sin(angle)];
-    };
-  }
-  static icosahedron(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      let x2 = Math.sin(phi) * Math.cos(theta);
-      let y2 = Math.cos(phi);
-      let z = Math.sin(phi) * Math.sin(theta);
-      const f = Math.abs(x2) + Math.abs(y2) + Math.abs(z);
-      x2 /= f;
-      y2 /= f;
-      z /= f;
-      return [x2 * radius, y2 * radius, z * radius];
-    };
-  }
-  static diamond(size2 = 1) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const y2 = (v - 0.5) * 2 * size2;
-      const r2 = size2 * (1 - Math.abs(v - 0.5) * 2);
-      return [r2 * Math.cos(theta), y2, r2 * Math.sin(theta)];
-    };
-  }
-  static rock(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      let x2 = Math.sin(phi) * Math.cos(theta);
-      let y2 = Math.cos(phi);
-      let z = Math.sin(phi) * Math.sin(theta);
-      const noise = 0.2 * Math.sin(theta * 7) * Math.cos(phi * 5);
-      const r2 = radius + noise;
-      return [x2 * r2, y2 * r2, z * r2];
-    };
-  }
-  static star3d(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = v * Math.PI;
-      const spike = 1 + 0.3 * Math.sin(theta * 5);
-      const r2 = radius * spike;
-      return [
-        r2 * Math.sin(phi) * Math.cos(theta),
-        r2 * Math.cos(phi),
-        r2 * Math.sin(phi) * Math.sin(theta)
-      ];
-    };
-  }
-  static galaxySpiral(scale4 = 10, arms = 3, twist = 2) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const radius = v;
-      const armOffset = theta * arms % (Math.PI * 2);
-      const r2 = radius * (1 + 0.2 * Math.sin(armOffset * twist));
-      const x2 = r2 * Math.cos(theta);
-      const y2 = 0.1 * radius * Math.sin(5 * theta);
-      const z = r2 * Math.sin(theta);
-      return [x2 * scale4, y2 * scale4, z * scale4];
-    };
-  }
-  static littleStar(radius = 1, innerRadius = 0.4, depth = 0.2) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const sector = u * 10 % 2;
-      const lerp2 = sector > 1 ? 2 - sector : sector;
-      const r2 = innerRadius + (radius - innerRadius) * lerp2;
-      const posX = r2 * Math.cos(theta);
-      const posZ = r2 * Math.sin(theta);
-      let x2, y2, z;
-      if (v < 0.5) {
-        const f = v / 0.5;
-        x2 = posX * f;
-        z = posZ * f;
-        y2 = depth * (1 - f);
-      } else {
-        const f = (1 - v) / 0.5;
-        x2 = posX * f;
-        z = posZ * f;
-        y2 = -depth * (1 - f);
-      }
-      return [x2, y2, z];
-    };
-  }
-  static flatStar(radius = 1, innerRadius = 0.2, thickness = 0.1) {
-    const func = (u, v) => {
-      const spikes = 5;
-      const theta = -u * Math.PI * 2;
-      const star = Math.cos(spikes * theta);
-      const r2 = innerRadius + (radius - innerRadius) * (star * 0.5 + 0.5);
-      const finalR = r2 * v;
-      return [finalR * Math.cos(theta), 0, finalR * Math.sin(theta)];
-    };
-    return { func, flat: true };
-  }
-  static klein(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = v * Math.PI * 2;
-      let x2, y2, z;
-      if (theta < Math.PI) {
-        x2 = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(theta) * Math.cos(phi);
-        z = -8 * Math.sin(theta) - 2 * (1 - Math.cos(theta) / 2) * Math.sin(theta) * Math.cos(phi);
-      } else {
-        x2 = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(phi + Math.PI);
-        z = -8 * Math.sin(theta);
-      }
-      y2 = 2 * (1 - Math.cos(theta) / 2) * Math.sin(phi);
-      return [x2 * 0.1 * radius, y2 * 0.1 * radius, z * 0.1 * radius];
-    };
-  }
-  static shell(scale4 = 1) {
-    scale4 = scale4 / 4;
-    return (u, v) => {
-      const theta = -u * Math.PI * 4;
-      const phi = -v * Math.PI * 2;
-      const r2 = 0.4 + Math.exp(-theta * 0.12);
-      const x2 = r2 * Math.cos(theta) * (1 + 0.3 * Math.cos(phi));
-      const y2 = r2 * Math.sin(theta) * (1 + 0.3 * Math.cos(phi));
-      const z = 0.3 * r2 * Math.sin(phi);
-      return [x2 * scale4, z * scale4, y2 * scale4];
-    };
-  }
-  static rippleSphere(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      const ripple = 1 + 0.2 * Math.sin(10 * theta) * Math.sin(6 * phi);
-      const r2 = radius * ripple;
-      return [
-        r2 * Math.sin(phi) * Math.cos(theta),
-        r2 * Math.cos(phi),
-        r2 * Math.sin(phi) * Math.sin(theta)
-      ];
-    };
-  }
-  static twistedTorus(R = 1, r2 = 0.3, twists = 3) {
-    return (u, v) => {
-      const theta = u * Math.PI * 2;
-      const phi = v * Math.PI * 2;
-      const twist = phi + theta * twists;
-      return [
-        (R + r2 * Math.cos(twist)) * Math.cos(theta),
-        r2 * Math.sin(twist),
-        (R + r2 * Math.cos(twist)) * Math.sin(theta)
-      ];
-    };
-  }
-  static tornado(height = 2, radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 4;
-      const y2 = (v - 0.5) * height;
-      const r2 = Math.pow(v, 1.5) * radius;
-      return [r2 * Math.cos(theta), y2, r2 * Math.sin(theta)];
-    };
-  }
-  static brain(radius = 1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      let x2 = Math.sin(phi) * Math.cos(theta);
-      let y2 = Math.cos(phi);
-      let z = Math.sin(phi) * Math.sin(theta);
-      const wrinkle = 0.25 * Math.sin(theta * 6) * Math.sin(phi * 4);
-      const r2 = radius + wrinkle;
-      return [x2 * r2, y2 * r2, z * r2];
-    };
-  }
-  static galaxyComposite(numStars = 500, arms = 4, twist = 2, scale4 = 20) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const radial = v;
-      const arm = Math.floor(radial * arms);
-      const armOffset = arm / arms * Math.PI * 2;
-      const r2 = radial * (1 + 0.2 * Math.sin(theta * 5 + armOffset));
-      const y2 = 0.1 * radial * Math.sin(theta * 8);
-      const clusterOffsetX = 0.05 * Math.sin(armOffset + v * 12);
-      const clusterOffsetZ = 0.05 * Math.cos(armOffset + u * 12);
-      const x2 = (r2 * Math.cos(theta) + clusterOffsetX) * scale4;
-      const z = (r2 * Math.sin(theta) + clusterOffsetZ) * scale4;
-      return [x2, y2 * scale4, z];
-    };
-  }
-  /**
-     * Shatter: breaks into radial chunks, splayed outward
-     * Good for: explosions, hard breaks
-     * Returns a parametric function for MeshMorpher compatibility
-     */
-  static shatter(S = 1, pieces = 8) {
-    const offsets = [];
-    for (let p = 0; p < pieces; p++) {
-      const angle = p / pieces * Math.PI * 2;
-      offsets.push({
-        x: Math.cos(angle) * S * 0.6,
-        y: (Math.random() - 0.5) * S * 0.4,
-        z: Math.sin(angle) * S * 0.6
-      });
-    }
-    return (u, v) => {
-      const sliceSize = 1 / pieces;
-      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
-      const offset = offsets[pieceIndex];
-      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
-      const theta = uLocal * Math.PI * 2;
-      const phi = v * Math.PI;
-      const x2 = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
-      const y2 = S * 0.3 * Math.cos(phi) + offset.y;
-      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
-      return [x2, y2, z];
-    };
-  }
-  /**
-   * Crumble: breaks into small chunks, stays roughly in place
-   * Good for: stone/brick crumbling, dust formations
-   */
-  static crumble(S = 1, detail = 4) {
-    const chunks = [];
-    for (let ix = 0; ix < detail; ix++) {
-      for (let iy = 0; iy < detail; iy++) {
-        for (let iz = 0; iz < detail; iz++) {
-          chunks.push({
-            x: ix - detail / 2 + (Math.random() - 0.5) * 0.3,
-            y: iy - detail / 2 + (Math.random() - 0.5) * 0.3,
-            z: iz - detail / 2 + (Math.random() - 0.5) * 0.3
-          });
-        }
-      }
-    }
-    const chunkSize = 2 / detail;
-    return (u, v) => {
-      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
-      const chunk = chunks[chunkIndex];
-      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
-      const s = chunkSize * 0.2;
-      const theta = uLocal * Math.PI * 2;
-      const phi = v * Math.PI;
-      const x2 = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
-      const y2 = chunk.y * chunkSize + s * Math.cos(phi);
-      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
-      return [x2 * S * 0.5, y2 * S * 0.5, z * S * 0.5];
-    };
-  }
-  /**
-   * Splinter: thin shards radiating from center
-   * Good for: ice/glass shattering, crystalline breaks
-   */
-  static splinter(S = 1, count = 12) {
-    const shards = [];
-    for (let i = 0; i < count; i++) {
-      const angle = i / count * Math.PI * 2;
-      const phi = Math.random() * Math.PI;
-      shards.push({
-        dirX: Math.sin(phi) * Math.cos(angle),
-        dirY: Math.sin(phi) * Math.sin(angle),
-        dirZ: Math.cos(phi),
-        length: S * (0.5 + Math.random() * 0.5)
-      });
-    }
-    return (u, v) => {
-      const shardIndex = Math.floor(u * count) % count;
-      const shard = shards[shardIndex];
-      const uLocal = (u * count - Math.floor(u * count)) % 1;
-      const width = S * 0.08;
-      const tipX = shard.dirX * shard.length;
-      const tipY = shard.dirY * shard.length;
-      const tipZ = shard.dirZ * shard.length;
-      const perpX = -shard.dirY;
-      const perpY = shard.dirX;
-      const perpZ = 0;
-      const taper = v;
-      const offsetX = perpX * width * (1 - taper) * 0.5;
-      const offsetY = perpY * width * (1 - taper) * 0.5;
-      const offsetZ = perpZ * width * (1 - taper) * 0.5;
-      const x2 = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
-      const y2 = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
-      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
-      return [x2, y2, z];
-    };
-  }
-  /**
-   * Implode: shrinks to near-zero point (singularity effect)
-   * Good for: magic absorption, black hole, vortex
-   */
-  static implode(S = 1, scale4 = 0.1) {
-    return (u, v) => {
-      const theta = -u * Math.PI * 2;
-      const phi = -v * Math.PI;
-      const x2 = scale4 * S * Math.sin(phi) * Math.cos(theta);
-      const y2 = scale4 * S * Math.cos(phi);
-      const z = scale4 * S * Math.sin(phi) * Math.sin(theta);
-      return [x2, y2, z];
-    };
-  }
-  /**
-   * Scatter: random cloud of small pieces
-   * Good for: dust, particle explosion, disintegration
-   */
-  static scatter(S = 1, spread = 0.3) {
-    const particleCount = 20;
-    const particles = [];
-    for (let p = 0; p < particleCount; p++) {
-      particles.push({
-        x: (Math.random() - 0.5) * spread,
-        y: (Math.random() - 0.5) * spread,
-        z: (Math.random() - 0.5) * spread,
-        size: 0.05 + Math.random() * 0.15
-      });
-    }
-    return (u, v) => {
-      const particleIndex = Math.floor(u * particleCount) % particleCount;
-      const particle = particles[particleIndex];
-      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
-      const theta = uLocal * Math.PI * 2;
-      const phi = v * Math.PI;
-      const r2 = particle.size;
-      const x2 = (particle.x + r2 * Math.sin(phi) * Math.cos(theta)) * S;
-      const y2 = (particle.y + r2 * Math.cos(phi)) * S;
-      const z = (particle.z + r2 * Math.sin(phi) * Math.sin(theta)) * S;
-      return [x2, y2, z];
-    };
-  }
-};
-
-// ../../../engine/generators/generator.js
-var local = [];
-async function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2, name2 = "gen1", geometry = "Cube", raycast2 = false, scale4 = [1, 1, 1], sum2 = 20, delay2 = 500, mesh = null, posOffset = { x: 0, y: 0, z: 0 }) {
-  return new Promise((resolve) => {
-    let engine = this;
-    const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
-    const inputSphere = { mesh: "./res/meshes/blender/sphere.obj" };
-    function handler(m) {
-      let ALL = [];
-      let RAY = { enabled: raycast2 == true ? true : false, radius: 1 };
-      for (let x2 = 0; x2 < sum2; x2++) {
-        const cubeName = name2 + "_" + x2;
-        setTimeout(() => {
-          engine.addMeshObj({
-            material: { type: material },
-            position: {
-              x: pos2.x + (Math.random() - 0.5) * posOffset.x,
-              y: pos2.y + (Math.random() - 0.5) * posOffset.y,
-              z: pos2.z + (Math.random() - 0.5) * posOffset.z
-            },
-            rotation: rot2,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: typeof texturePath2 === "string" ? [texturePath2] : [texturePath2[x2]],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              enabled: true,
-              geometry,
-              group: 2
-            },
-            raycast: RAY
-          });
-          const o2 = app.getSceneObjectByName(cubeName);
-          runtimeCacheObjs.push(o2);
-          local.push(o2.name);
-        }, x2 * delay2);
-      }
-      setTimeout(() => {
-        for (let x2 = 0; x2 < local.length; x2++) {
-          const o1 = app.matrixPhysics.getBodyByName(local[x2]);
-          ALL.push(o1);
-          if (x2 == local.length - 1) {
-            resolve(ALL);
-          }
-        }
-      }, delay2 * sum2 * 1.2);
-    }
-    if (geometry == "Cube") {
-      downloadMeshes(inputCube, handler, { scale: scale4 });
-    } else if (geometry == "Sphere") {
-      downloadMeshes(inputSphere, handler, { scale: scale4 });
-    }
-  });
-}
-function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
-  const engine = this;
-  const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
-  console.log(width);
-  console.log(height);
-  const inputCube = { mesh: useMeshPath };
-  function handler(m) {
-    let index = 0;
-    const RAY = { enabled: raycast2, radius: 1 };
-    for (let y2 = 0; y2 < height; y2++) {
-      for (let x2 = 0; x2 < width; x2++) {
-        const cubeName = `${name2}_${index}`;
-        setTimeout(() => {
-          let __x = 0, __y = 0, __z = 0;
-          if (orientationOfwall === "ByX") {
-            __x = x2 * spacing2;
-            __y = y2 * spacing2 + spacingY;
-            __z = 0;
-          } else if (orientationOfwall === "ByZ") {
-            __x = 0;
-            __y = y2 * spacing2 + spacingY;
-            __z = x2 * spacing2;
-          }
-          engine.addMeshObj({
-            material: { type: material },
-            envMapParams: material == "mirror" ? {
-              baseColorMix: 0.5,
-              // normal mix
-              mirrorTint: [0.9, 0.95, 1],
-              // Slight cool tint
-              reflectivity: 0.95,
-              // 25% reflection blend
-              illuminateColor: [0.3, 0.7, 1],
-              // Soft cyan
-              illuminateStrength: 0.4,
-              // Gentle rim
-              illuminatePulse: 0.01,
-              // No pulse (static)
-              fresnelPower: 2,
-              // Medium-sharp edge
-              envLodBias: 2.5,
-              usePlanarReflection: false
-              // ✅ Env map mode - wip
-            } : void 0,
-            position: {
-              x: pos2.x + __x,
-              y: pos2.y + __y,
-              z: pos2.z + __z
-            },
-            rotation: rot2,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              scale: scale4,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          });
-          const o2 = app.getSceneObjectByName(cubeName);
-          runtimeCacheObjs.push(o2);
-        }, index * delay2);
-        index++;
-      }
-    }
-  }
-  downloadMeshes(inputCube, handler, { scale: scale4 });
-}
-function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 500) {
-  const engine = this;
-  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
-  function handler(m) {
-    let index = 0;
-    const RAY = { enabled: !!raycast2, radius: 1 };
-    for (let y2 = 0; y2 < levels2; y2++) {
-      const rowCount = levels2 - y2;
-      const xOffset = (rowCount - 1) * spacing2 * 0.5;
-      for (let x2 = 0; x2 < rowCount; x2++) {
-        const cubeName = `${name2}_${index}`;
-        setTimeout(() => {
-          engine.addMeshObj({
-            material: { type: material },
-            position: {
-              x: pos2.x + x2 * spacing2 - xOffset,
-              y: pos2.y + y2 * spacing2,
-              z: pos2.z
-            },
-            rotation: rot2,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: [texturePath2],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              scale: scale4,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          });
-          const o2 = app.getSceneObjectByName(cubeName);
-          runtimeCacheObjs.push(o2);
-        }, delay2);
-        index++;
-      }
-    }
-  }
-  downloadMeshes(inputCube, handler, { scale: scale4 });
-}
-function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200) {
-  return new Promise((resolve, reject) => {
-    const engine = this;
-    const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
-    levels2 = parseFloat(levels2);
-    function handler(m) {
-      let index = 0;
-      const totalCubes = levels2 * (levels2 + 1) * (2 * levels2 + 1) / 6;
-      const lastIndex = totalCubes - 1;
-      const RAY = { enabled: !!raycast2, radius: 1 };
-      const objects = [];
-      for (let y2 = 0; y2 < levels2; y2++) {
-        const sizeX = levels2 - y2;
-        const sizeZ = levels2 - y2;
-        const xOffset = (sizeX - 1) * spacing2 * 0.5;
-        const zOffset = (sizeZ - 1) * spacing2 * 0.5;
-        for (let x2 = 0; x2 < sizeX; x2++) {
-          for (let z = 0; z < sizeZ; z++) {
-            const cubeName = `${name2}_${index}`;
-            const currentIndex = index;
-            setTimeout(() => {
-              engine.addMeshObj({
-                material: { type: material },
-                position: {
-                  x: pos2.x + x2 * spacing2 - xOffset,
-                  y: pos2.y + y2 * spacing2,
-                  z: pos2.z + z * spacing2 - zOffset
-                },
-                rotation: rot2,
-                rotationSpeed: { x: 0, y: 0, z: 0 },
-                texturesPaths: [texturePath2],
-                name: cubeName,
-                mesh: m.mesh,
-                physics: {
-                  scale: scale4,
-                  enabled: true,
-                  geometry: "Cube"
-                },
-                raycast: RAY
-              });
-              const o2 = app.getSceneObjectByName(cubeName);
-              runtimeCacheObjs.push(o2);
-              objects.push(o2.name);
-              if (currentIndex === lastIndex) {
-                resolve(objects);
-              }
-            }, delay2 * index);
-            index++;
-          }
-        }
-      }
-    }
-    downloadMeshes(inputCube, handler, { scale: scale4 });
-  });
-}
-function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, texturePath2, name2 = "towerCube", height = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2) {
-  const engine = this;
-  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
-  function handler(m) {
-    const RAY = { enabled: !!raycast2, radius: 1 };
-    for (let y2 = 0; y2 < height; y2++) {
-      const cubeName = `${name2}_${y2}`;
-      setTimeout(() => {
-        engine.addMeshObj({
-          material: { type: material },
-          position: {
-            x: pos2.x,
-            y: pos2.y + y2 * spacing2,
-            z: pos2.z
-          },
-          rotation: rot2,
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturePath2],
-          name: cubeName,
-          mesh: m.mesh,
-          physics: {
-            scale: scale4,
-            enabled: true,
-            geometry: "Cube"
-          },
-          raycast: RAY
-        });
-        const o2 = app.getSceneObjectByName(cubeName);
-        runtimeCacheObjs.push(o2);
-      }, delay);
-    }
-  }
-  downloadMeshes(inputCube, handler, { scale: scale4 });
-}
-function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
-  return new Promise((resolve, reject) => {
-    const engine = this;
-    const inputCube = { mesh: path2 };
-    function handler(m) {
-      const RAY = { enabled: !!raycast2, radius: 1 };
-      engine.addMeshObj({
-        material: { type: material },
-        position: {
-          x: pos2.x,
-          y: pos2.y,
-          z: pos2.z
-        },
-        rotation: rot2,
-        rotationSpeed: rotationSpeed2,
-        texturesPaths: [texturePath2],
-        name: name2,
-        mesh: m.mesh,
-        physics: {
-          scale: scale4,
-          enabled: isPhysicsBody2,
-          geometry: "Cube"
-        },
-        raycast: RAY
-      });
-      const o2 = app.getSceneObjectByName(name2);
-      console.log(o2.name);
-      runtimeCacheObjs.push(o2);
-      resolve(o2);
-    }
-    downloadMeshes(inputCube, handler, { scale: scale4 });
-  });
-}
-function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, meshTypeA = "cube", meshTypeB = "sphere", isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
-  return new Promise((resolve, reject) => {
-    const engine = this;
-    const RAY = { enabled: !!raycast2, radius: 1 };
-    console.info("add cube form graph..");
-    engine.addProceduralMeshObj({
-      material: { type: material },
-      position: {
-        x: pos2.x,
-        y: pos2.y,
-        z: pos2.z
-      },
-      rotation: rot2,
-      rotationSpeed: rotationSpeed2,
-      texturesPaths: [texturePath2],
-      name: name2,
-      meshA: MeshMorpher[meshTypeA](1),
-      meshB: MeshMorpher[meshTypeB](1),
-      scale: scale4,
-      physics: {
-        scale: scale4,
-        enabled: isPhysicsBody2,
-        geometry: "Cube"
-      },
-      raycast: RAY
-    });
-    const o2 = app.getSceneObjectByName(name2);
-    console.log(o2.name);
-    runtimeCacheObjs.push(o2);
-    resolve(o2);
-  });
-}
-function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 }, rot2 = { x: 0, y: 0, z: 0 }, texturePath2 = ["./res/textures/slot/reel1-lod0.webp"], name2 = "chain", size2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 1, mass = 1) {
-  const engine = this;
-  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
-  function handler(m) {
-    const RAY = { enabled: !!raycast2, radius: 1 };
-    for (let y2 = 0; y2 < size2; y2++) {
-      const cubeName = `${name2}_${y2}`;
-      engine.addMeshObj({
-        material: { type: material, share: true },
-        position: {
-          x: pos2.x,
-          y: pos2.y + y2 * spacing2,
-          z: pos2.z
-        },
-        rotation: rot2,
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: [texturePath2],
-        name: cubeName,
-        mesh: m.mesh,
-        physics: {
-          scale: scale4,
-          mass: y2 == 0 ? 0 : mass,
-          enabled: true,
-          geometry: "Cube"
-        },
-        raycast: RAY
-      });
-    }
-    const ids = [];
-    setTimeout(() => {
-      for (let y2 = 0; y2 < size2; y2++) {
-        const cubeName = `${name2}_${y2}`;
-        const id2 = engine.matrixPhysics.getBodyByName(cubeName);
-        const o2 = app.getSceneObjectByName(cubeName);
-        runtimeCacheObjs.push(o2);
-        ids.push(id2);
-      }
-      engine.matrixPhysics.createChain(ids, spacing2, 0.5);
-    }, 500);
-  }
-  downloadMeshes(inputCube, handler, { scale: scale4 });
-}
-function generatorWallNONPHYSICS(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
-  const engine = this;
-  const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
-  console.log("__________________________");
-  const inputCube = { mesh: useMeshPath };
-  function handler(m) {
-    let index = 0;
-    const RAY = { enabled: raycast2, radius: 1 };
-    for (let y2 = 0; y2 < height; y2++) {
-      for (let x2 = 0; x2 < width; x2++) {
-        const cubeName = `${name2}_${index}`;
-        setTimeout(() => {
-          let __x = 0, __y = 0, __z = 0;
-          if (orientationOfwall === "ByX") {
-            __x = x2 * spacing2;
-            __y = y2 * spacing2 + spacingY;
-            __z = 0;
-          } else if (orientationOfwall === "ByZ") {
-            __x = 0;
-            __y = y2 * spacing2 + spacingY;
-            __z = x2 * spacing2;
-          }
-          engine.addMeshObj({
-            material: { type: material },
-            envMapParams: material == "mirror" ? {
-              baseColorMix: 0.5,
-              mirrorTint: [0.9, 0.95, 1],
-              reflectivity: 0.95,
-              illuminateColor: [0.3, 0.7, 1],
-              illuminateStrength: 0.4,
-              illuminatePulse: 0.01,
-              fresnelPower: 2,
-              envLodBias: 2.5,
-              usePlanarReflection: false
-            } : void 0,
-            position: {
-              x: pos2.x + __x,
-              y: pos2.y + __y,
-              z: pos2.z + __z
-            },
-            rotation: rot2,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              enabled: false,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          });
-          const o2 = app.getSceneObjectByName(cubeName);
-          runtimeCacheObjs.push(o2);
-        }, index * delay2);
-        index++;
-      }
-    }
-  }
-  downloadMeshes(inputCube, handler, { scale: scale4 });
-}
-
 // ../curve-editor.js
 var CurveEditor = class {
   constructor({ width = 651, height = 300, samples = 128 } = {}) {
@@ -28232,15 +26321,17 @@ var CurveStore = class {
 
 // ../generateAISchema.js
 var tasks = [
-  "On load create a cube named box1 at position 0 0 0 and make const rotate by y axis.",
+  "On load create a cube named box1 at position (0, 3, 0) and make const rotate by y axis.",
   `
-  Build the House with non physics cubes. All Cubes must have scale [1,1,1]. Build 3 floors, walls and roof.
-  Don't use physics generators, use generatorWallNONPHYSICS.
+  Build the House with non physics cubes. Build 3 floors, walls and roof.
+  Make big house with space inside! 
+  Don't use physics generators, use simple nonphysics cubes.
+  To make it optimised you can use scale.
   `,
-  "Set texture for object with name 'FLOOR' . Use file with name 'cube-g1_low.webp' ",
+  "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ",
   "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.",
-  "Create a cube and enable raycast",
-  "Create 5 cubes in a row with spacing",
+  "Create a nonPhysics Cube and enable raycast, on hit make object translateByZ",
+  "Create start from cubes - use nonphysics cubes.",
   "Create a pyramid of cubes with 4 levels",
   "Play mp3 audio on load",
   "Create audio reactive node from music",
@@ -32344,7 +30435,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          generatorWallNONPHYSICS(
+          app.generatorWallNONPHYSICS(
             mat,
             pos,
             rot,
@@ -33181,7 +31272,7 @@ LIST OF INTEREST OBJECT:
     byId("graph-status").innerHTML = "\u{1F534}";
   }
   compileGraph() {
-    console.log("SAVE:", this.nodes);
+    console.log("SAVE NODES: ", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -33191,8 +31282,16 @@ LIST OF INTEREST OBJECT:
       variables: this.variables
     };
     function saveReplacer(key, value2) {
-      if (key === "fn") return void 0;
-      if (key === "accessObject") return void 0;
+      if (value2 instanceof Element) return void 0;
+      if (value2 instanceof Node) return void 0;
+      if (key === "fn") {
+        console.log("stripping fn from", key);
+        return void 0;
+      }
+      if (key === "accessObject") {
+        console.log("stripping accessObject");
+        return void 0;
+      }
       if (key === "_returnCache") return void 0;
       if (key === "_listenerAttached") return false;
       if (key === "_audio") return void 0;
@@ -33216,8 +31315,8 @@ LIST OF INTEREST OBJECT:
   }
   clearAllNodes() {
     this.board.querySelectorAll(".node").forEach((n2) => n2.remove());
-    this.nodes = [];
-    this.nodes.length = 0;
+    this.nodes = {};
+    this.nodeCounter = 0;
     this.links.length = 0;
     this.state.selectedNode = null;
     this.state.draggingNode = null;
@@ -35665,6 +33764,1918 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
       });
     }
   });
+}
+
+// ../../../engine/procedural-mesh.js
+var ProceduralMeshObj = class extends Materials {
+  constructor(canvas, device2, context, o2, inputHandler, globalAmbient, cameraBuffer) {
+    super(device2, o2.material, null, o2.textureCache);
+    this.name = o2.name || genName(3);
+    this.done = false;
+    this.canvas = canvas;
+    this.device = device2;
+    this.context = context;
+    this.cameraBuffer = cameraBuffer;
+    this.globalAmbient = [...globalAmbient];
+    if (typeof o2.material.useBlend === "undefined" || typeof o2.material.useBlend !== "boolean") {
+      o2.material.useBlend = false;
+    }
+    this.mType = MeshType.PROCEDURAL;
+    this.dontDrag = true;
+    this._translateVec = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
+    this._scaleVec = new Float32Array(3);
+    this._camVP = mat4Impl.create();
+    this.meshA = null;
+    this.meshB = null;
+    this.morphBlend = 0;
+    this.buildPipelineBucketsEvent = new CustomEvent("update-pipeine-buckets", {});
+    this.shadowsCast = true;
+    this.sceneBGL = o2.sceneBGL;
+    this.materialBGL = o2.materialBGL;
+    this.uniformBufferBindGroupLayout = o2.uniformBufferBindGroupLayout;
+    if (o2.meshA && o2.meshB) {
+      const pair = MeshMorpher.createMatchedPair(o2.meshA, o2.meshB, o2.resolutionU || 32, o2.resolutionV || 32);
+      this.meshA = pair.meshA;
+      this.meshB = pair.meshB;
+      this.vertexCount = pair.vertexCount;
+      this._validateMorphCompatibility();
+    } else if (o2.geometryA) {
+      console.warn(`%cPlease use meshA, meshB not geometryA.`, LOG_WARN);
+      this.meshA = this._loadGeometry(o2.geometryA);
+      this.meshB = o2.geometryB ? this._loadGeometry(o2.geometryB) : this._loadGeometry(o2.geometryA);
+      this._validateMorphCompatibility();
+    }
+    this.morphBlend = o2.morphBlend ?? 0;
+    this.morphAnimation = {
+      active: false,
+      startBlend: this.morphBlend,
+      targetBlend: 1,
+      duration: 1e3,
+      elapsed: 0,
+      onComplete: null
+    };
+    this.pointerEffect = o2.pointerEffect;
+    this._modelMatrix = mat4Impl.create();
+    this._posArray = new Float32Array(3);
+    this._scaleArray = new Float32Array(3);
+    this._rotAxisVec = new Float32Array(3);
+    this.inputHandler = inputHandler;
+    this.cameras = o2.cameras;
+    this.mainCameraParams = {
+      type: o2.mainCameraParams.type,
+      responseCoef: o2.mainCameraParams.responseCoef
+    };
+    this.lastFrameMS = 0;
+    this.position = new Position(o2.position.x, o2.position.y, o2.position.z);
+    this.rotation = new Rotation(o2.rotation.x, o2.rotation.y, o2.rotation.z);
+    this.rotation.rotationSpeed.x = o2.rotationSpeed?.x || 0;
+    this.rotation.rotationSpeed.y = o2.rotationSpeed?.y || 0;
+    this.rotation.rotationSpeed.z = o2.rotationSpeed?.z || 0;
+    this.scale = o2.scale || [1, 1, 1];
+    this.useScale = o2.useScale || false;
+    this.time = 0;
+    this.deltaTimeAdapter = 1;
+    this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.raycast = o2.raycast || { enabled: false, radius: 2 };
+    this.pointerEffect = o2.pointerEffect || { enabled: false };
+    if (typeof o2.vertexWGSL !== "undefined") {
+      this.vertexWGSL = o2.vertexWGSL;
+    }
+    if (typeof o2.fragmentWGSL !== "undefined") {
+      this.fragmentWGSL = o2.fragmentWGSL;
+    }
+    this.runProgram = () => {
+      return new Promise(async (resolve) => {
+        this.shadowDepthTextureSize = 512;
+        this.modelViewProjectionMatrix = mat4Impl.create();
+        if (o2.texturesPaths && o2.texturesPaths.length > 0 && o2.textureCache) {
+          this.texturesPaths = [...o2.texturesPaths];
+          try {
+            await this.loadTex0(this.texturesPaths);
+          } catch (err) {
+            console.warn(`Failed to load texture, using default: ${err.message}`);
+            await this._createDefaultTexture();
+          }
+        } else {
+          await this._createDefaultTexture();
+        }
+        resolve();
+      });
+    };
+    this.runProgram().then(() => {
+      this._setupBuffers();
+      this._setupUniforms();
+      this.setupPipeline();
+      this.done = true;
+    });
+  }
+  // GEOMETRY LOADING old
+  _loadGeometry(spec2) {
+    const { type: type2, size: size2, segments, options: options2 } = spec2;
+    const geo2 = GeometryFactory.create(type2, size2, segments, options2);
+    return {
+      vertices: geo2.positions,
+      normals: this._generateNormals(geo2.positions, geo2.indices),
+      uvs: geo2.uvs,
+      indices: geo2.indices,
+      vertexCount: geo2.positions.length / 3
+    };
+  }
+  _generateNormals(positions, indices) {
+    const normals = new Float32Array(positions.length);
+    for (let i = 0; i < indices.length; i += 3) {
+      const i0 = indices[i] * 3;
+      const i1 = indices[i + 1] * 3;
+      const i2 = indices[i + 2] * 3;
+      const v0 = [positions[i0], positions[i0 + 1], positions[i0 + 2]];
+      const v1 = [positions[i1], positions[i1 + 1], positions[i1 + 2]];
+      const v2 = [positions[i2], positions[i2 + 1], positions[i2 + 2]];
+      const edge1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
+      const edge2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
+      let normal = [
+        edge1[1] * edge2[2] - edge1[2] * edge2[1],
+        edge1[2] * edge2[0] - edge1[0] * edge2[2],
+        edge1[0] * edge2[1] - edge1[1] * edge2[0]
+      ];
+      const len2 = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
+      if (len2 > 0) {
+        normal = normal.map((n2) => n2 / len2);
+      }
+      normals[i0] = normal[0];
+      normals[i0 + 1] = normal[1];
+      normals[i0 + 2] = normal[2];
+      normals[i1] = normal[0];
+      normals[i1 + 1] = normal[1];
+      normals[i1 + 2] = normal[2];
+      normals[i2] = normal[0];
+      normals[i2 + 1] = normal[1];
+      normals[i2 + 2] = normal[2];
+    }
+    return normals;
+  }
+  _validateMorphCompatibility() {
+    if (this.meshA.vertexCount !== this.meshB.vertexCount) {
+      console.warn(
+        `\u26A0\uFE0F Morph vertex count mismatch: A=${this.meshA.vertexCount}, B=${this.meshB.vertexCount}. Padding will be applied but results may be incorrect.`
+      );
+      this._padMeshesToMatch();
+    }
+  }
+  _padMeshesToMatch() {
+    const maxCount = Math.max(this.meshA.vertexCount, this.meshB.vertexCount);
+    if (this.meshA.vertexCount < maxCount) {
+      this.meshA = this._padMesh(this.meshA, maxCount);
+    }
+    if (this.meshB.vertexCount < maxCount) {
+      this.meshB = this._padMesh(this.meshB, maxCount);
+    }
+  }
+  _padMesh(mesh, targetCount) {
+    const padCount = targetCount - mesh.vertexCount;
+    const lastVertIdx = (mesh.vertexCount - 1) * 3;
+    const paddedVertices = new Float32Array(targetCount * 3);
+    paddedVertices.set(mesh.vertices);
+    for (let i = 0; i < padCount; i++) {
+      paddedVertices.set(
+        mesh.vertices.slice(lastVertIdx, lastVertIdx + 3),
+        (mesh.vertexCount + i) * 3
+      );
+    }
+    const paddedNormals = new Float32Array(targetCount * 3);
+    paddedNormals.set(mesh.normals);
+    for (let i = 0; i < padCount; i++) {
+      paddedNormals.set(
+        mesh.normals.slice(lastVertIdx, lastVertIdx + 3),
+        (mesh.vertexCount + i) * 3
+      );
+    }
+    const paddedUVs = new Float32Array(targetCount * 2);
+    paddedUVs.set(mesh.uvs);
+    const lastUVIdx = (mesh.vertexCount - 1) * 2;
+    for (let i = 0; i < padCount; i++) {
+      paddedUVs.set(
+        mesh.uvs.slice(lastUVIdx, lastUVIdx + 2),
+        (mesh.vertexCount + i) * 2
+      );
+    }
+    return {
+      vertices: paddedVertices,
+      normals: paddedNormals,
+      uvs: paddedUVs,
+      indices: mesh.indices,
+      vertexCount: targetCount
+    };
+  }
+  async _createDefaultTexture() {
+    const textureData = new Uint8Array([255, 255, 255, 255]);
+    const texture = this.device.createTexture({
+      size: [1, 1, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.device.queue.writeTexture(
+      { texture },
+      textureData,
+      { bytesPerRow: 4 },
+      { width: 1, height: 1 }
+    );
+    this.texture0 = texture;
+    this.meshTexture = texture;
+    this.meshTextureView = texture.createView();
+  }
+  _setupShadowDepthTexture() {
+    this.shadowDepthTexture = this.device.createTexture({
+      size: [this.shadowDepthTextureSize, this.shadowDepthTextureSize, 20],
+      format: "depth32float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _setupBuffers() {
+    this.context.configure({ device: this.device, format: this.presentationFormat, alphaMode: "premultiplied" });
+    const createBuffer = (data, usage = GPUBufferUsage.VERTEX) => {
+      const buf = this.device.createBuffer({ size: data.byteLength, usage, mappedAtCreation: true });
+      new data.constructor(buf.getMappedRange()).set(data);
+      buf.unmap();
+      return buf;
+    };
+    this.vertexBufferA = createBuffer(this.meshA.vertices);
+    this.vertexBufferB = createBuffer(this.meshB.vertices);
+    this.normalBufferA = createBuffer(this.meshA.normals);
+    this.normalBufferB = createBuffer(this.meshB.normals);
+    this.uvBuffer = createBuffer(this.meshA.uvs);
+    this.indexCount = this.meshA.indices.length;
+    this.indexBuffer = createBuffer(this.meshA.indices, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST);
+    const dummyJoints = new Uint32Array(this.vertexCount * 4).fill(0);
+    this.dummyJointsBuffer = createBuffer(dummyJoints);
+    const dummyWeights = new Float32Array(this.vertexCount * 4);
+    for (let i = 0; i < this.vertexCount; i++) dummyWeights.set([1, 0, 0, 0], i * 4);
+    this.dummyWeightsBuffer = createBuffer(dummyWeights);
+    this.vertexBuffers = [
+      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+      // posA
+      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] },
+      // normalA
+      { arrayStride: 2 * 4, attributes: [{ shaderLocation: 2, offset: 0, format: "float32x2" }] },
+      // uv
+      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 6, offset: 0, format: "float32x3" }] },
+      // posB
+      { arrayStride: 3 * 4, attributes: [{ shaderLocation: 7, offset: 0, format: "float32x3" }] }
+      // normalB
+    ];
+    this.primitive = { topology: "triangle-list", cullMode: "none", frontFace: "ccw" };
+  }
+  _setupUniforms() {
+    this.effects = {};
+    if (this.pointerEffect && this.pointerEffect.enabled === true) {
+      let pf = navigator.gpu.getPreferredCanvasFormat();
+      if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
+        this.effects.pointer = new PointerEffect(this.device, "rgba16float", 1, this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
+        this.effects.pointEffect = new PointEffect(this.device, "rgba16float", this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
+        this.effects.gizmoEffect = new GizmoEffect(this.device, "rgba16float", this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
+        this.effects.flameEffect = new FlameEffect(this.device, pf, "rgba16float", "torch", this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.gpuText !== "undefined" && this.pointerEffect.gpuText == true) {
+        this.effects.gpuText = new MSDFTextEffect(this.device, pf, "rgba16float", "torch", this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
+        this.effects.flameEmitter = new FlameEmitter(this.device, "rgba16float", 20, this.cameraBuffer);
+      }
+      if (typeof this.pointerEffect.destructionEffect !== "undefined" && this.pointerEffect.destructionEffect == true) {
+        this.effects.destructionEffect = new DestructionEffect(this.device, "rgba16float", {
+          particleCount: 100,
+          duration: 2.5,
+          color: [0.6, 0.5, 0.4, 1]
+        }, this.cameraBuffer);
+      }
+    }
+    this.modelUniformBuffer = this.device.createBuffer({ size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.bonesBuffer = this.device.createBuffer({ size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.morphBlendBuffer = this.device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
+    this.vertexAnimParams = new Float32Array([
+      0,
+      0,
+      0,
+      0,
+      2,
+      0.1,
+      2,
+      0,
+      1.5,
+      0.3,
+      2,
+      0.5,
+      1,
+      0.1,
+      0,
+      0,
+      1,
+      0.5,
+      0,
+      0,
+      1,
+      0.05,
+      0.5,
+      0,
+      1,
+      0.05,
+      2,
+      0,
+      1,
+      0.1,
+      0,
+      0
+    ]);
+    this.vertexAnimBuffer = this.device.createBuffer({
+      label: "Vertex Animation Params",
+      size: this.vertexAnimParams.byteLength,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // model
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // bones
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // vertexAnim
+        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        // morphBlend
+      ]
+    });
+    this.modelBindGroup = this.device.createBindGroup({
+      layout: this.uniformBufferBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.modelUniformBuffer } },
+        { binding: 1, resource: { buffer: this.bonesBuffer } },
+        { binding: 2, resource: { buffer: this.vertexAnimBuffer } },
+        { binding: 3, resource: { buffer: this.morphBlendBuffer } }
+      ]
+    });
+    this.shadowBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // model
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // bones
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        // vertexAnim
+        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        // morphBlend
+      ]
+    });
+    this.vertexAnim = {
+      active: false,
+      enableWave: () => {
+        this.vertexAnim.active = true;
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
+        this.updateVertexAnimBuffer();
+      },
+      disableWave: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WAVE;
+        this.updateVertexAnimBuffer();
+      },
+      enableWind: () => {
+        this.vertexAnim.active = true;
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WIND;
+        this.updateVertexAnimBuffer();
+      },
+      disableWind: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.WIND;
+        this.updateVertexAnimBuffer();
+      },
+      enablePulse: () => {
+        this.vertexAnim.active = true;
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.PULSE;
+        this.updateVertexAnimBuffer();
+      },
+      disablePulse: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.PULSE;
+        this.updateVertexAnimBuffer();
+      },
+      enableTwist: () => {
+        this.vertexAnim.active = true;
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.TWIST;
+        this.updateVertexAnimBuffer();
+      },
+      disableTwist: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.TWIST;
+        this.updateVertexAnimBuffer();
+      },
+      enableNoise: () => {
+        this.vertexAnim.active = true;
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.NOISE;
+        this.updateVertexAnimBuffer();
+      },
+      disableNoise: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.NOISE;
+        this.updateVertexAnimBuffer();
+      },
+      enableOcean: () => {
+        this.vertexAnim.active = true;
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.OCEAN;
+        this.updateVertexAnimBuffer();
+      },
+      disableOcean: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.OCEAN;
+        this.updateVertexAnimBuffer();
+      },
+      enable: (...effects) => {
+        this.vertexAnim.active = true;
+        effects.forEach((effect) => {
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+        });
+        this.updateVertexAnimBuffer();
+      },
+      disable: (...effects) => {
+        effects.forEach((effect) => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS[effect.toUpperCase()];
+        });
+        this.updateVertexAnimBuffer();
+      },
+      disableAll: () => {
+        this.vertexAnimParams[1] = 0;
+        this.updateVertexAnimBuffer();
+      },
+      isEnabled: (effect) => {
+        return (this.vertexAnimParams[1] & VERTEX_ANIM_FLAGS[effect.toUpperCase()]) !== 0;
+      },
+      setWaveParams: (speed, amplitude, frequency) => {
+        this.vertexAnimParams[4] = speed;
+        this.vertexAnimParams[5] = amplitude;
+        this.vertexAnimParams[6] = frequency;
+        this.updateVertexAnimBuffer();
+      },
+      setWindParams: (speed, strength, heightInfluence, turbulence) => {
+        this.vertexAnimParams[8] = speed;
+        this.vertexAnimParams[9] = strength;
+        this.vertexAnimParams[10] = heightInfluence;
+        this.vertexAnimParams[11] = turbulence;
+        this.updateVertexAnimBuffer();
+      },
+      setPulseParams: (speed, amount, centerX = 0, centerY = 0) => {
+        this.vertexAnimParams[12] = speed;
+        this.vertexAnimParams[13] = amount;
+        this.vertexAnimParams[14] = centerX;
+        this.vertexAnimParams[15] = centerY;
+        this.updateVertexAnimBuffer();
+      },
+      setTwistParams: (speed, amount) => {
+        this.vertexAnimParams[16] = speed;
+        this.vertexAnimParams[17] = amount;
+        this.updateVertexAnimBuffer();
+      },
+      setNoiseParams: (scale4, strength, speed) => {
+        this.vertexAnimParams[20] = scale4;
+        this.vertexAnimParams[21] = strength;
+        this.vertexAnimParams[22] = speed;
+        this.updateVertexAnimBuffer();
+      },
+      setOceanParams: (scale4, height, speed) => {
+        this.vertexAnimParams[24] = scale4;
+        this.vertexAnimParams[25] = height;
+        this.vertexAnimParams[26] = speed;
+        this.updateVertexAnimBuffer();
+      },
+      setIntensity: (value2) => {
+        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
+        this.updateVertexAnimBuffer();
+      },
+      getIntensity: () => {
+        return this.vertexAnimParams[2];
+      }
+    };
+    this.updateVertexAnimBuffer = () => {
+      this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+    };
+    this.vertexAnimParams[2] = 1;
+    this.updateVertexAnimBuffer();
+  }
+  setupPipeline() {
+    const pm = PipelineManager.get();
+    const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL();
+    const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL() : this.getMaterial();
+    const vertexId = this.vertexWGSL ? "custom_proc" : "proc_morph";
+    const fragmentId = this.fragmentWGSL ? "custom_frag" : this.isVideo == true ? "video" : this.material.type;
+    const isMirror = this.material.type === "mirror";
+    const isWater = this.material.type === "water";
+    const isNormalMap = this.material.type === "normalmap";
+    const isVideo = this.isVideo === true;
+    const baseKey = {
+      vertexId,
+      fragmentId,
+      type: "procedural",
+      topology: this.primitive ? this.primitive.topology : "triangle-list",
+      cullMode: this.primitive ? this.primitive.cullMode : "none",
+      frontFace: this.primitive ? this.primitive.frontFace : "ccw",
+      format: "rgba16float",
+      morph: !this.vertexWGSL ? 1 : 0,
+      mirror: isMirror ? 1 : 0,
+      normalMap: isNormalMap ? 1 : 0,
+      isWater: isWater ? 1 : 0
+    };
+    let MKEY = structuredClone(baseKey);
+    MKEY.texturesPaths = this.texturesPaths.join();
+    this.material.pipelineKey = baseKey;
+    this.material.matKey = MKEY;
+    this.createBindGroupForRender(MKEY);
+    const layout = this.device.createPipelineLayout({
+      bindGroupLayouts: [
+        this.sceneBGL,
+        isVideo ? this.materialVideoBGL : this.materialBGL,
+        this.uniformBufferBindGroupLayout,
+        isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null
+      ]
+    });
+    const vertexState = {
+      entryPoint: "main",
+      module: this.device.createShaderModule({ code: vertexCode }),
+      buffers: this.vertexBuffers
+    };
+    const fragmentConstants = { shadowDepthTextureSize: this.shadowDepthTextureSize };
+    this.pipeline = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: false,
+        depthWrite: true
+      }),
+      pipeline: {
+        label: "Procedural Opaque Cached",
+        layout,
+        vertex: vertexState,
+        fragment: {
+          entryPoint: "main",
+          module: this.device.createShaderModule({ code: fragmentCode }),
+          targets: [
+            { format: "rgba16float" },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ],
+          constants: fragmentConstants
+        },
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: "less",
+          format: "depth24plus"
+        },
+        primitive: this.primitive
+      }
+    });
+    this.pipelineTransparent = pm.getPipeline({
+      key: buildPipelineKey({
+        ...baseKey,
+        transparent: true,
+        depthWrite: false
+      }),
+      pipeline: {
+        label: "Procedural Transparent Cached",
+        layout,
+        vertex: vertexState,
+        fragment: {
+          entryPoint: "main",
+          module: this.device.createShaderModule({ code: fragmentCode }),
+          targets: [
+            {
+              format: "rgba16float",
+              blend: {
+                color: {
+                  srcFactor: "src-alpha",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ],
+          constants: fragmentConstants
+        },
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: "less",
+          format: "depth24plus"
+        },
+        primitive: this.primitive
+      }
+    });
+    dispatchEvent(this.buildPipelineBucketsEvent);
+  }
+  setMorphBlend(t) {
+    this.morphBlend = Math.max(0, Math.min(1, t));
+    if (this.morphBlendBuffer) {
+      this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
+    } else {
+      console.error("\u274C NO BUFFER in setMorphBlend.");
+    }
+  }
+  morphTo(targetBlend, duration = 1e3, onComplete) {
+    this.morphAnimation.active = true;
+    this.morphAnimation.startBlend = this.morphBlend;
+    this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
+    this.morphAnimation.duration = Math.max(duration, 100);
+    this.morphAnimation.elapsed = 0;
+    if (onComplete) this.morphAnimation.onComplete = onComplete;
+    this.morphAnimation.active = true;
+    this.morphAnimation.startBlend = this.morphBlend;
+    this.morphAnimation.targetBlend = Math.max(0, Math.min(1, targetBlend));
+    this.morphAnimation.duration = duration;
+    this.morphAnimation.elapsed = 0;
+    if (this.morphAnimation.debug) {
+      console.log(`[Morph] Starting: ${this.morphBlend.toFixed(3)} \u2192 ${targetBlend.toFixed(3)} over ${safeDuration}ms`);
+    }
+  }
+  async destroyGeo(destructionType = "shatter", duration = 0.8, options2 = {}) {
+    const { onComplete = null, physics = null, debris = null, velocity = 1, lifetime = 3 } = options2;
+    const destructionFunc = this._getDestructionFunction(destructionType);
+    const pair = MeshMorpher.createMatchedPair(
+      this.currentShape || MeshMorpher.sphere(this.size),
+      destructionFunc,
+      32,
+      32
+    );
+    await this.morphTo(destructionFunc, duration);
+    if (debris) {
+      this.spawnDebris(null, destructionType, { velocity, lifetime });
+    }
+    if (onComplete) onComplete();
+  }
+  /**
+   * Get destruction preset function from MeshMorpher (now parametric)
+   */
+  _getDestructionFunction(type2) {
+    const presets = {
+      shatter: () => MeshMorpher.shatter(this.size, 8),
+      crumble: () => MeshMorpher.crumble(this.size, 4),
+      splinter: () => MeshMorpher.splinter(this.size, 12),
+      implode: () => MeshMorpher.implode(this.size, 0.1),
+      scatter: () => MeshMorpher.scatter(this.size, 0.3)
+    };
+    if (!presets[type2]) throw new Error(`Unknown destruction type: ${type2}`);
+    return presets[type2]();
+  }
+  /**
+   * Spawn individual physics chunks after morph
+   */
+  spawnDebris(physicsEngine, type2, options2 = {}) {
+  }
+  switchMesh(specA, specB) {
+    this.meshA = this._loadGeometry(specA);
+    this.meshB = this._loadGeometry(specB);
+    this._validateMorphCompatibility();
+    this.vertexBufferA?.destroy();
+    this.vertexBufferB?.destroy();
+    this.normalBufferA?.destroy();
+    this.normalBufferB?.destroy();
+    this.uvBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this._setupBuffers();
+    this.setMorphBlend(0);
+  }
+  updateMorphAnimation(deltaTime) {
+    if (!this.morphAnimation.active) return;
+    this.morphAnimation.elapsed += deltaTime;
+    const t = Math.min(1, this.morphAnimation.elapsed / this.morphAnimation.duration);
+    const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const blend = this.morphAnimation.startBlend + (this.morphAnimation.targetBlend - this.morphAnimation.startBlend) * eased;
+    this.setMorphBlend(blend);
+    if (t >= 1) {
+      this.morphAnimation.active = false;
+      if (this.morphAnimation.onComplete) {
+        this.morphAnimation.onComplete(blend);
+      }
+    }
+  }
+  getModelMatrix(pos2, useScale = false) {
+    if (!this.itIsPhysicsBody) {
+      let modelMatrix = mat4Impl.identity(this._modelMatrix);
+      this._translateVec[0] = pos2.x;
+      this._translateVec[1] = pos2.y;
+      this._translateVec[2] = pos2.z;
+      mat4Impl.translate(modelMatrix, this._translateVec, modelMatrix);
+      mat4Impl.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
+      mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
+      mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
+      if (useScale == true) {
+        this._scaleVec[0] = this.scale[0];
+        this._scaleVec[1] = this.scale[1];
+        this._scaleVec[2] = this.scale[2];
+        mat4Impl.scale(modelMatrix, this._scaleVec, modelMatrix);
+      }
+      this.modelMatrix = modelMatrix;
+      return this.modelMatrix;
+    }
+    if (!this.modelMatrix) {
+      let modelMatrix = mat4Impl.identity(this._modelMatrix);
+      this.modelMatrix = modelMatrix;
+    }
+    return this.modelMatrix;
+  }
+  updateModelUniformBuffer() {
+    const modelMatrix = this.getModelMatrix(this.position, this.useScale);
+    this.device.queue.writeBuffer(this.modelUniformBuffer, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength);
+  }
+  updateTime(time) {
+    this.time += time * this.deltaTimeAdapter;
+    this.vertexAnimParams[0] = this.time;
+    this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
+  }
+  drawElements(pass, lightContainer) {
+    pass.setVertexBuffer(0, this.vertexBufferA);
+    pass.setVertexBuffer(1, this.normalBufferA);
+    pass.setVertexBuffer(2, this.uvBuffer);
+    pass.setVertexBuffer(3, this.vertexBufferB);
+    pass.setVertexBuffer(4, this.normalBufferB);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount);
+  }
+  drawShadows(shadowPass) {
+    shadowPass.setVertexBuffer(0, this.vertexBufferA);
+    shadowPass.setVertexBuffer(1, this.normalBufferA);
+    shadowPass.setVertexBuffer(2, this.uvBuffer);
+    shadowPass.setVertexBuffer(3, this.vertexBufferB);
+    shadowPass.setVertexBuffer(4, this.normalBufferB);
+    shadowPass.setIndexBuffer(this.indexBuffer, "uint16");
+    shadowPass.drawIndexed(this.indexCount);
+  }
+  getMainPipeline() {
+    return this.pipeline;
+  }
+  destroy() {
+    if (this._destroyed) return;
+    this._destroyed = true;
+    this.vertexBufferA?.destroy();
+    this.vertexBufferB?.destroy();
+    this.normalBufferA?.destroy();
+    this.normalBufferB?.destroy();
+    this.uvBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.modelUniformBuffer?.destroy();
+    this.sceneUniformBuffer?.destroy();
+    this.morphBlendBuffer?.destroy();
+    this.vertexAnimBuffer?.destroy();
+    this.shadowDepthTexture?.destroy();
+    this.pipeline = null;
+    this.pipelineTransparent = null;
+    this.modelBindGroup = null;
+    this.sceneBindGroupForRender = null;
+    console.info(`\u{1F9F9} Destroyed ProceduralMesh: ${this.name}`);
+  }
+};
+var MeshMorpher = class {
+  static createMatchedPair(shapeA, shapeB, resolutionU = 32, resolutionV = 32) {
+    const shapeAObj = typeof shapeA === "function" ? { func: shapeA } : shapeA;
+    const shapeBObj = typeof shapeB === "function" ? { func: shapeB } : shapeB;
+    const meshA2 = this._generateFromFunction(shapeAObj.func, resolutionU, resolutionV);
+    const meshB2 = this._generateFromFunction(shapeBObj.func, resolutionU, resolutionV);
+    if (!shapeAObj.flat)
+      meshA2.normals = this.computeSmoothNormals(meshA2.vertices, meshA2.indices);
+    if (!shapeBObj.flat)
+      meshB2.normals = this.computeSmoothNormals(meshB2.vertices, meshB2.indices);
+    return {
+      meshA: meshA2,
+      meshB: meshB2,
+      vertexCount: (resolutionU + 1) * (resolutionV + 1)
+    };
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MULTI-PART GEOMETRY
+  // Combines N shape functions into a single UV-partitioned mesh.
+  // Each part gets an equal slice of V-space. Bridge rows between parts
+  // are collapsed to a hidden point so no connecting triangles are visible.
+  //
+  // Usage:
+  //   MeshMorpher.compose(
+  //     { shape: MeshMorpher.cube(1),   offset: [-2, 0, 0] },
+  //     { shape: MeshMorpher.cube(1),   offset: [ 2, 0, 0] },
+  //   )
+  //
+  //   // With rotation too:
+  //   MeshMorpher.compose(
+  //     { shape: MeshMorpher.sphere(1), offset: [0, 0, 0], rotation: [0, 0, 0] },
+  //     { shape: MeshMorpher.torus(),   offset: [3, 0, 0], rotation: [Math.PI/2, 0, 0] },
+  //   )
+  //
+  // Returns a shape descriptor { func, flat } — works everywhere createMatchedPair does.
+  // ─────────────────────────────────────────────────────────────────────────────
+  static compose(...parts) {
+    const n2 = parts.length;
+    const normalised = parts.map((p) => {
+      const raw = p.shape ?? p.func ?? p;
+      const func = typeof raw === "function" ? raw : raw.func;
+      const flat = p.flat ?? (typeof raw === "object" ? raw.flat : false) ?? false;
+      const offset = p.offset ?? [0, 0, 0];
+      const rotation3 = p.rotation ?? [0, 0, 0];
+      const scale4 = p.scale ?? [1, 1, 1];
+      return { func, flat, offset, rotation: rotation3, scale: scale4 };
+    });
+    const applyTransform = (pos2, part) => {
+      let [x2, y2, z] = pos2;
+      x2 *= part.scale[0];
+      y2 *= part.scale[1];
+      z *= part.scale[2];
+      const [rx, ry, rz] = part.rotation;
+      if (rx !== 0) {
+        const cy = Math.cos(rx), sy = Math.sin(rx);
+        const ny = cy * y2 - sy * z, nz = sy * y2 + cy * z;
+        y2 = ny;
+        z = nz;
+      }
+      if (ry !== 0) {
+        const cx = Math.cos(ry), sx = Math.sin(ry);
+        const nx = cx * x2 + sx * z, nz = -sx * x2 + cx * z;
+        x2 = nx;
+        z = nz;
+      }
+      if (rz !== 0) {
+        const cz = Math.cos(rz), sz = Math.sin(rz);
+        const nx = cz * x2 - sz * y2, ny = sz * x2 + cz * y2;
+        x2 = nx;
+        y2 = ny;
+      }
+      x2 += part.offset[0];
+      y2 += part.offset[1];
+      z += part.offset[2];
+      return [x2, y2, z];
+    };
+    const composed = (u, vGlobal) => {
+      const sliceSize = 1 / n2;
+      const partIndex = Math.min(Math.floor(vGlobal / sliceSize), n2 - 1);
+      const part = normalised[partIndex];
+      const vLocal = (vGlobal - partIndex * sliceSize) / sliceSize;
+      const DEAD = 0.1;
+      if (vLocal < DEAD) {
+        return applyTransform(part.func(0, 0), part);
+      }
+      if (vLocal > 1 - DEAD) {
+        return applyTransform(part.func(0, 0), part);
+      }
+      const vMapped = (vLocal - DEAD) / (1 - DEAD * 2);
+      return applyTransform(part.func(u, vMapped), part);
+    };
+    const allFlat = normalised.every((p) => p.flat);
+    return allFlat ? { func: composed, flat: true } : composed;
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // All original methods below — completely unchanged
+  // ─────────────────────────────────────────────────────────────────────────────
+  static computeSmoothNormals(positions, indices) {
+    const normals = new Float32Array(positions.length);
+    const counts = new Uint16Array(positions.length / 3);
+    for (let i = 0; i < indices.length; i += 3) {
+      const ia = indices[i], ib = indices[i + 1], ic = indices[i + 2];
+      const ax = positions[ia * 3], ay = positions[ia * 3 + 1], az = positions[ia * 3 + 2];
+      const bx = positions[ib * 3], by = positions[ib * 3 + 1], bz = positions[ib * 3 + 2];
+      const cx = positions[ic * 3], cy = positions[ic * 3 + 1], cz = positions[ic * 3 + 2];
+      const ux = bx - ax, uy = by - ay, uz = bz - az;
+      const vx = cx - ax, vy = cy - ay, vz = cz - az;
+      let nx = uy * vz - uz * vy;
+      let ny = uz * vx - ux * vz;
+      let nz = ux * vy - uy * vx;
+      const len2 = Math.hypot(nx, ny, nz) || 1;
+      nx /= len2;
+      ny /= len2;
+      nz /= len2;
+      for (const idx of [ia, ib, ic]) {
+        normals[idx * 3] += nx;
+        normals[idx * 3 + 1] += ny;
+        normals[idx * 3 + 2] += nz;
+        counts[idx]++;
+      }
+    }
+    for (let i = 0; i < counts.length; i++) {
+      const len2 = Math.hypot(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]) || 1;
+      normals[i * 3] /= len2;
+      normals[i * 3 + 1] /= len2;
+      normals[i * 3 + 2] /= len2;
+    }
+    return normals;
+  }
+  static _generateFromFunction(shapeFunc, resU, resV) {
+    const positions = [];
+    const normals = [];
+    const uvs = [];
+    const indices = [];
+    for (let v = 0; v <= resV; v++) {
+      for (let u = 0; u <= resU; u++) {
+        const uNorm = u / resU;
+        const vNorm = v / resV;
+        const pos2 = shapeFunc(uNorm, vNorm);
+        positions.push(pos2[0], pos2[1], pos2[2]);
+        const eps = 0.01;
+        const posU = shapeFunc(Math.min(uNorm + eps, 1), vNorm);
+        const posV = shapeFunc(uNorm, Math.min(vNorm + eps, 1));
+        const tangentU = [posU[0] - pos2[0], posU[1] - pos2[1], posU[2] - pos2[2]];
+        const tangentV = [posV[0] - pos2[0], posV[1] - pos2[1], posV[2] - pos2[2]];
+        const normal = [
+          tangentU[1] * tangentV[2] - tangentU[2] * tangentV[1],
+          tangentU[2] * tangentV[0] - tangentU[0] * tangentV[2],
+          tangentU[0] * tangentV[1] - tangentU[1] * tangentV[0]
+        ];
+        const len2 = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2);
+        if (len2 > 0) {
+          normal[0] /= len2;
+          normal[1] /= len2;
+          normal[2] /= len2;
+        }
+        if (Math.abs(pos2[1]) < 0.01 && Math.abs(posU[1]) < 0.01 && Math.abs(posV[1]) < 0.01) {
+          normal[0] = 0;
+          normal[1] = 1;
+          normal[2] = 0;
+        }
+        normals.push(normal[0], normal[1], normal[2]);
+        uvs.push(uNorm, vNorm);
+      }
+    }
+    for (let v = 0; v < resV; v++) {
+      for (let u = 0; u < resU; u++) {
+        const i0 = v * (resU + 1) + u;
+        const i1 = i0 + 1;
+        const i2 = i0 + (resU + 1);
+        const i3 = i2 + 1;
+        indices.push(i0, i2, i1);
+        indices.push(i1, i2, i3);
+      }
+    }
+    return {
+      vertices: new Float32Array(positions),
+      normals: new Float32Array(normals),
+      uvs: new Float32Array(uvs),
+      indices: new Uint16Array(indices),
+      vertexCount: positions.length / 3,
+      flat: this.flat === true
+    };
+  }
+  static sphere(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      return [
+        radius * Math.sin(phi) * Math.cos(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
+  static cube(size2 = 1) {
+    const s = size2 * 0.5;
+    return (u, v) => {
+      let x2, y2, z;
+      const unitU = u * 4 % 1;
+      const side = Math.floor(u * 4) % 4;
+      let sx, sz;
+      if (side === 0) {
+        sx = s;
+        sz = (unitU - 0.5) * size2;
+      } else if (side === 1) {
+        sx = (0.5 - unitU) * size2;
+        sz = s;
+      } else if (side === 2) {
+        sx = -s;
+        sz = (0.5 - unitU) * size2;
+      } else {
+        sx = (unitU - 0.5) * size2;
+        sz = -s;
+      }
+      if (v < 0.2) {
+        const lerp2 = v / 0.2;
+        x2 = sx * lerp2;
+        y2 = -s;
+        z = sz * lerp2;
+      } else if (v > 0.8) {
+        const lerp2 = (1 - v) / 0.2;
+        x2 = sx * lerp2;
+        y2 = s;
+        z = sz * lerp2;
+      } else {
+        const lerpY = (v - 0.2) / 0.6;
+        x2 = sx;
+        y2 = (lerpY - 0.5) * size2;
+        z = sz;
+      }
+      return [x2, y2, z];
+    };
+  }
+  static cylinder(radius = 1, height = 2) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = (v - 0.5) * height;
+      return [radius * Math.cos(theta), h, radius * Math.sin(theta)];
+    };
+  }
+  static torus(majorRadius = 1, minorRadius = 0.3) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      const r2 = majorRadius + minorRadius * Math.cos(phi);
+      return [r2 * Math.cos(theta), minorRadius * Math.sin(phi), r2 * Math.sin(theta)];
+    };
+  }
+  static cone(baseRadius = 1, height = 1, fromZeroY = true) {
+    if (fromZeroY == true) return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height;
+      const r2 = baseRadius * (1 - v);
+      return [r2 * Math.cos(theta), h, r2 * Math.sin(theta)];
+    };
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2;
+      const r2 = baseRadius * (1 - v);
+      return [r2 * Math.cos(theta), h, r2 * Math.sin(theta)];
+    };
+  }
+  static coneX(baseRadius = 1, height = 1, fromZeroX = true) {
+    if (fromZeroX == true) return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height;
+      const r2 = baseRadius * (1 - v);
+      return [h, r2 * Math.cos(theta), r2 * Math.sin(theta)];
+    };
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const h = v * height - height / 2;
+      const r2 = baseRadius * (1 - v);
+      return [h, r2 * Math.cos(theta), r2 * Math.sin(theta)];
+    };
+  }
+  // static capsule(radius = 0.5, height = 1) {
+  //   const halfH = height / 2;
+  //   return (u, v) => {
+  //     if(v < 0.25) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = (v / 0.25) * (Math.PI / 2) + (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) - halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else if(v > 0.75) {
+  //       const theta = -u * Math.PI * 2;
+  //       const phi = ((v - 0.75) / 0.25) * (Math.PI / 2);
+  //       return [
+  //         radius * Math.sin(phi) * Math.cos(theta),
+  //         radius * Math.cos(phi) + halfH,
+  //         radius * Math.sin(phi) * Math.sin(theta)
+  //       ];
+  //     } else {
+  //       const theta = u * Math.PI * 2;
+  //       const y = ((v - 0.25) / 0.5) * height - halfH;
+  //       return [radius * Math.cos(theta), y, radius * Math.sin(theta)];
+  //     }
+  //   };
+  // }
+  static capsule(radius = 1, height = 1, fromZeroY = true) {
+    const halfH = height / 2;
+    const yOffset = fromZeroY ? halfH + radius : 0;
+    return (u, v) => {
+      if (v < 0.25) {
+        const theta = -u * Math.PI * 2;
+        const phi = v / 0.25 * (Math.PI / 2) + Math.PI / 2;
+        return [
+          radius * Math.sin(phi) * Math.cos(theta),
+          radius * Math.cos(phi) - halfH + yOffset,
+          radius * Math.sin(phi) * Math.sin(theta)
+        ];
+      } else if (v > 0.75) {
+        const theta = -u * Math.PI * 2;
+        const phi = (v - 0.75) / 0.25 * (Math.PI / 2);
+        return [
+          radius * Math.sin(phi) * Math.cos(theta),
+          radius * Math.cos(phi) + halfH + yOffset,
+          radius * Math.sin(phi) * Math.sin(theta)
+        ];
+      } else {
+        const theta = u * Math.PI * 2;
+        const y2 = (v - 0.25) / 0.5 * height - halfH;
+        return [
+          radius * Math.cos(theta),
+          y2 + yOffset,
+          radius * Math.sin(theta)
+        ];
+      }
+    };
+  }
+  static plane(size2 = 1) {
+    return (u, v) => [(u - 0.5) * size2, 0, (v - 0.5) * size2];
+  }
+  static mobius(radius = 1, width = 0.5) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const t = (v - 0.5) * width;
+      const halfTheta = theta / 2;
+      return [
+        (radius + t * Math.cos(halfTheta)) * Math.cos(theta),
+        t * Math.sin(halfTheta),
+        (radius + t * Math.cos(halfTheta)) * Math.sin(theta)
+      ];
+    };
+  }
+  static pyramid(size2 = 1) {
+    return (u, v) => {
+      const angle = u * Math.PI * 2;
+      const r2 = (1 - v) * size2;
+      return [r2 * Math.cos(angle), v * size2, r2 * Math.sin(angle)];
+    };
+  }
+  static supershape(size2 = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r2 = size2 * (0.5 + 0.5 * Math.sin(5 * theta) * Math.sin(3 * phi));
+      return [
+        r2 * Math.sin(phi) * Math.cos(theta),
+        r2 * Math.cos(phi),
+        r2 * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
+  static star(radius = 1, innerRadius = 0.4, depth = 0.3) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const r2 = radius * (0.7 + 0.3 * Math.cos(5 * theta));
+      let x2, y2, z;
+      if (v < 0.5) {
+        const lerp2 = v / 0.5;
+        x2 = r2 * Math.cos(theta) * lerp2;
+        z = r2 * Math.sin(theta) * lerp2;
+        y2 = depth * (1 - lerp2);
+      } else {
+        const lerp2 = (1 - v) / 0.5;
+        x2 = r2 * Math.cos(theta) * lerp2;
+        z = r2 * Math.sin(theta) * lerp2;
+        y2 = -depth * (1 - lerp2);
+      }
+      return [x2, y2, z];
+    };
+  }
+  static wavePlane(size2 = 2) {
+    return (u, v) => {
+      const x2 = (u - 0.5) * size2;
+      const z = (v - 0.5) * size2;
+      const y2 = Math.sin(x2 * 3) * Math.cos(z * 3) * 0.3;
+      return [x2, y2, z];
+    };
+  }
+  static circlePlane(radius = 1) {
+    return (u, v) => {
+      const angle = -u * Math.PI * 2;
+      const r2 = -v * radius;
+      return [r2 * Math.cos(angle), 0, r2 * Math.sin(angle)];
+    };
+  }
+  static icosahedron(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      let x2 = Math.sin(phi) * Math.cos(theta);
+      let y2 = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+      const f = Math.abs(x2) + Math.abs(y2) + Math.abs(z);
+      x2 /= f;
+      y2 /= f;
+      z /= f;
+      return [x2 * radius, y2 * radius, z * radius];
+    };
+  }
+  static diamond(size2 = 1) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const y2 = (v - 0.5) * 2 * size2;
+      const r2 = size2 * (1 - Math.abs(v - 0.5) * 2);
+      return [r2 * Math.cos(theta), y2, r2 * Math.sin(theta)];
+    };
+  }
+  static rock(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      let x2 = Math.sin(phi) * Math.cos(theta);
+      let y2 = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+      const noise = 0.2 * Math.sin(theta * 7) * Math.cos(phi * 5);
+      const r2 = radius + noise;
+      return [x2 * r2, y2 * r2, z * r2];
+    };
+  }
+  static star3d(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = v * Math.PI;
+      const spike = 1 + 0.3 * Math.sin(theta * 5);
+      const r2 = radius * spike;
+      return [
+        r2 * Math.sin(phi) * Math.cos(theta),
+        r2 * Math.cos(phi),
+        r2 * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
+  static galaxySpiral(scale4 = 10, arms = 3, twist = 2) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const radius = v;
+      const armOffset = theta * arms % (Math.PI * 2);
+      const r2 = radius * (1 + 0.2 * Math.sin(armOffset * twist));
+      const x2 = r2 * Math.cos(theta);
+      const y2 = 0.1 * radius * Math.sin(5 * theta);
+      const z = r2 * Math.sin(theta);
+      return [x2 * scale4, y2 * scale4, z * scale4];
+    };
+  }
+  static littleStar(radius = 1, innerRadius = 0.4, depth = 0.2) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const sector = u * 10 % 2;
+      const lerp2 = sector > 1 ? 2 - sector : sector;
+      const r2 = innerRadius + (radius - innerRadius) * lerp2;
+      const posX = r2 * Math.cos(theta);
+      const posZ = r2 * Math.sin(theta);
+      let x2, y2, z;
+      if (v < 0.5) {
+        const f = v / 0.5;
+        x2 = posX * f;
+        z = posZ * f;
+        y2 = depth * (1 - f);
+      } else {
+        const f = (1 - v) / 0.5;
+        x2 = posX * f;
+        z = posZ * f;
+        y2 = -depth * (1 - f);
+      }
+      return [x2, y2, z];
+    };
+  }
+  static flatStar(radius = 1, innerRadius = 0.2, thickness = 0.1) {
+    const func = (u, v) => {
+      const spikes = 5;
+      const theta = -u * Math.PI * 2;
+      const star = Math.cos(spikes * theta);
+      const r2 = innerRadius + (radius - innerRadius) * (star * 0.5 + 0.5);
+      const finalR = r2 * v;
+      return [finalR * Math.cos(theta), 0, finalR * Math.sin(theta)];
+    };
+    return { func, flat: true };
+  }
+  static klein(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      let x2, y2, z;
+      if (theta < Math.PI) {
+        x2 = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(theta) * Math.cos(phi);
+        z = -8 * Math.sin(theta) - 2 * (1 - Math.cos(theta) / 2) * Math.sin(theta) * Math.cos(phi);
+      } else {
+        x2 = 3 * Math.cos(theta) * (1 + Math.sin(theta)) + 2 * (1 - Math.cos(theta) / 2) * Math.cos(phi + Math.PI);
+        z = -8 * Math.sin(theta);
+      }
+      y2 = 2 * (1 - Math.cos(theta) / 2) * Math.sin(phi);
+      return [x2 * 0.1 * radius, y2 * 0.1 * radius, z * 0.1 * radius];
+    };
+  }
+  static shell(scale4 = 1) {
+    scale4 = scale4 / 4;
+    return (u, v) => {
+      const theta = -u * Math.PI * 4;
+      const phi = -v * Math.PI * 2;
+      const r2 = 0.4 + Math.exp(-theta * 0.12);
+      const x2 = r2 * Math.cos(theta) * (1 + 0.3 * Math.cos(phi));
+      const y2 = r2 * Math.sin(theta) * (1 + 0.3 * Math.cos(phi));
+      const z = 0.3 * r2 * Math.sin(phi);
+      return [x2 * scale4, z * scale4, y2 * scale4];
+    };
+  }
+  static rippleSphere(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const ripple = 1 + 0.2 * Math.sin(10 * theta) * Math.sin(6 * phi);
+      const r2 = radius * ripple;
+      return [
+        r2 * Math.sin(phi) * Math.cos(theta),
+        r2 * Math.cos(phi),
+        r2 * Math.sin(phi) * Math.sin(theta)
+      ];
+    };
+  }
+  static twistedTorus(R = 1, r2 = 0.3, twists = 3) {
+    return (u, v) => {
+      const theta = u * Math.PI * 2;
+      const phi = v * Math.PI * 2;
+      const twist = phi + theta * twists;
+      return [
+        (R + r2 * Math.cos(twist)) * Math.cos(theta),
+        r2 * Math.sin(twist),
+        (R + r2 * Math.cos(twist)) * Math.sin(theta)
+      ];
+    };
+  }
+  static tornado(height = 2, radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 4;
+      const y2 = (v - 0.5) * height;
+      const r2 = Math.pow(v, 1.5) * radius;
+      return [r2 * Math.cos(theta), y2, r2 * Math.sin(theta)];
+    };
+  }
+  static brain(radius = 1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      let x2 = Math.sin(phi) * Math.cos(theta);
+      let y2 = Math.cos(phi);
+      let z = Math.sin(phi) * Math.sin(theta);
+      const wrinkle = 0.25 * Math.sin(theta * 6) * Math.sin(phi * 4);
+      const r2 = radius + wrinkle;
+      return [x2 * r2, y2 * r2, z * r2];
+    };
+  }
+  static galaxyComposite(numStars = 500, arms = 4, twist = 2, scale4 = 20) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const radial = v;
+      const arm = Math.floor(radial * arms);
+      const armOffset = arm / arms * Math.PI * 2;
+      const r2 = radial * (1 + 0.2 * Math.sin(theta * 5 + armOffset));
+      const y2 = 0.1 * radial * Math.sin(theta * 8);
+      const clusterOffsetX = 0.05 * Math.sin(armOffset + v * 12);
+      const clusterOffsetZ = 0.05 * Math.cos(armOffset + u * 12);
+      const x2 = (r2 * Math.cos(theta) + clusterOffsetX) * scale4;
+      const z = (r2 * Math.sin(theta) + clusterOffsetZ) * scale4;
+      return [x2, y2 * scale4, z];
+    };
+  }
+  /**
+     * Shatter: breaks into radial chunks, splayed outward
+     * Good for: explosions, hard breaks
+     * Returns a parametric function for MeshMorpher compatibility
+     */
+  static shatter(S = 1, pieces = 8) {
+    const offsets = [];
+    for (let p = 0; p < pieces; p++) {
+      const angle = p / pieces * Math.PI * 2;
+      offsets.push({
+        x: Math.cos(angle) * S * 0.6,
+        y: (Math.random() - 0.5) * S * 0.4,
+        z: Math.sin(angle) * S * 0.6
+      });
+    }
+    return (u, v) => {
+      const sliceSize = 1 / pieces;
+      const pieceIndex = Math.min(Math.floor(u / sliceSize), pieces - 1);
+      const offset = offsets[pieceIndex];
+      const uLocal = (u - pieceIndex * sliceSize) / sliceSize;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x2 = S * 0.3 * Math.sin(phi) * Math.cos(theta) + offset.x;
+      const y2 = S * 0.3 * Math.cos(phi) + offset.y;
+      const z = S * 0.3 * Math.sin(phi) * Math.sin(theta) + offset.z;
+      return [x2, y2, z];
+    };
+  }
+  /**
+   * Crumble: breaks into small chunks, stays roughly in place
+   * Good for: stone/brick crumbling, dust formations
+   */
+  static crumble(S = 1, detail = 4) {
+    const chunks = [];
+    for (let ix = 0; ix < detail; ix++) {
+      for (let iy = 0; iy < detail; iy++) {
+        for (let iz = 0; iz < detail; iz++) {
+          chunks.push({
+            x: ix - detail / 2 + (Math.random() - 0.5) * 0.3,
+            y: iy - detail / 2 + (Math.random() - 0.5) * 0.3,
+            z: iz - detail / 2 + (Math.random() - 0.5) * 0.3
+          });
+        }
+      }
+    }
+    const chunkSize = 2 / detail;
+    return (u, v) => {
+      const chunkIndex = Math.floor(u * chunks.length) % chunks.length;
+      const chunk = chunks[chunkIndex];
+      const uLocal = (u * chunks.length - Math.floor(u * chunks.length)) % 1;
+      const s = chunkSize * 0.2;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const x2 = chunk.x * chunkSize + s * Math.sin(phi) * Math.cos(theta);
+      const y2 = chunk.y * chunkSize + s * Math.cos(phi);
+      const z = chunk.z * chunkSize + s * Math.sin(phi) * Math.sin(theta);
+      return [x2 * S * 0.5, y2 * S * 0.5, z * S * 0.5];
+    };
+  }
+  /**
+   * Splinter: thin shards radiating from center
+   * Good for: ice/glass shattering, crystalline breaks
+   */
+  static splinter(S = 1, count = 12) {
+    const shards = [];
+    for (let i = 0; i < count; i++) {
+      const angle = i / count * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      shards.push({
+        dirX: Math.sin(phi) * Math.cos(angle),
+        dirY: Math.sin(phi) * Math.sin(angle),
+        dirZ: Math.cos(phi),
+        length: S * (0.5 + Math.random() * 0.5)
+      });
+    }
+    return (u, v) => {
+      const shardIndex = Math.floor(u * count) % count;
+      const shard = shards[shardIndex];
+      const uLocal = (u * count - Math.floor(u * count)) % 1;
+      const width = S * 0.08;
+      const tipX = shard.dirX * shard.length;
+      const tipY = shard.dirY * shard.length;
+      const tipZ = shard.dirZ * shard.length;
+      const perpX = -shard.dirY;
+      const perpY = shard.dirX;
+      const perpZ = 0;
+      const taper = v;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
+      const x2 = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
+      const y2 = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
+      const z = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
+      return [x2, y2, z];
+    };
+  }
+  /**
+   * Implode: shrinks to near-zero point (singularity effect)
+   * Good for: magic absorption, black hole, vortex
+   */
+  static implode(S = 1, scale4 = 0.1) {
+    return (u, v) => {
+      const theta = -u * Math.PI * 2;
+      const phi = -v * Math.PI;
+      const x2 = scale4 * S * Math.sin(phi) * Math.cos(theta);
+      const y2 = scale4 * S * Math.cos(phi);
+      const z = scale4 * S * Math.sin(phi) * Math.sin(theta);
+      return [x2, y2, z];
+    };
+  }
+  /**
+   * Scatter: random cloud of small pieces
+   * Good for: dust, particle explosion, disintegration
+   */
+  static scatter(S = 1, spread = 0.3) {
+    const particleCount = 20;
+    const particles = [];
+    for (let p = 0; p < particleCount; p++) {
+      particles.push({
+        x: (Math.random() - 0.5) * spread,
+        y: (Math.random() - 0.5) * spread,
+        z: (Math.random() - 0.5) * spread,
+        size: 0.05 + Math.random() * 0.15
+      });
+    }
+    return (u, v) => {
+      const particleIndex = Math.floor(u * particleCount) % particleCount;
+      const particle = particles[particleIndex];
+      const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
+      const theta = uLocal * Math.PI * 2;
+      const phi = v * Math.PI;
+      const r2 = particle.size;
+      const x2 = (particle.x + r2 * Math.sin(phi) * Math.cos(theta)) * S;
+      const y2 = (particle.y + r2 * Math.cos(phi)) * S;
+      const z = (particle.z + r2 * Math.sin(phi) * Math.sin(theta)) * S;
+      return [x2, y2, z];
+    };
+  }
+};
+
+// ../../../engine/generators/generator.js
+var local = [];
+async function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2, name2 = "gen1", geometry = "Cube", raycast2 = false, scale4 = [1, 1, 1], sum2 = 20, delay2 = 500, mesh = null, posOffset = { x: 0, y: 0, z: 0 }) {
+  return new Promise((resolve) => {
+    let engine = this;
+    const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+    const inputSphere = { mesh: "./res/meshes/blender/sphere.obj" };
+    function handler(m) {
+      let ALL = [];
+      let RAY = { enabled: raycast2 == true ? true : false, radius: 1 };
+      for (let x2 = 0; x2 < sum2; x2++) {
+        const cubeName = name2 + "_" + x2;
+        setTimeout(() => {
+          engine.addMeshObj({
+            material: { type: material },
+            position: {
+              x: pos2.x + (Math.random() - 0.5) * posOffset.x,
+              y: pos2.y + (Math.random() - 0.5) * posOffset.y,
+              z: pos2.z + (Math.random() - 0.5) * posOffset.z
+            },
+            rotation: rot2,
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            texturesPaths: typeof texturePath2 === "string" ? [texturePath2] : [texturePath2[x2]],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: true,
+              geometry,
+              group: 2
+            },
+            raycast: RAY
+          });
+          const o2 = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o2);
+          local.push(o2.name);
+        }, x2 * delay2);
+      }
+      setTimeout(() => {
+        for (let x2 = 0; x2 < local.length; x2++) {
+          const o1 = app.matrixPhysics.getBodyByName(local[x2]);
+          ALL.push(o1);
+          if (x2 == local.length - 1) {
+            resolve(ALL);
+          }
+        }
+      }, delay2 * sum2 * 1.2);
+    }
+    if (geometry == "Cube") {
+      downloadMeshes(inputCube, handler, { scale: scale4 });
+    } else if (geometry == "Sphere") {
+      downloadMeshes(inputSphere, handler, { scale: scale4 });
+    }
+  });
+}
+function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
+  const engine = this;
+  const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
+  console.log(width);
+  console.log(height);
+  const inputCube = { mesh: useMeshPath };
+  function handler(m) {
+    let index = 0;
+    const RAY = { enabled: raycast2, radius: 1 };
+    for (let y2 = 0; y2 < height; y2++) {
+      for (let x2 = 0; x2 < width; x2++) {
+        const cubeName = `${name2}_${index}`;
+        setTimeout(() => {
+          let __x = 0, __y = 0, __z = 0;
+          if (orientationOfwall === "ByX") {
+            __x = x2 * spacing2;
+            __y = y2 * spacing2 + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === "ByZ") {
+            __x = 0;
+            __y = y2 * spacing2 + spacingY;
+            __z = x2 * spacing2;
+          }
+          engine.addMeshObj({
+            material: { type: material },
+            envMapParams: material == "mirror" ? {
+              baseColorMix: 0.5,
+              // normal mix
+              mirrorTint: [0.9, 0.95, 1],
+              // Slight cool tint
+              reflectivity: 0.95,
+              // 25% reflection blend
+              illuminateColor: [0.3, 0.7, 1],
+              // Soft cyan
+              illuminateStrength: 0.4,
+              // Gentle rim
+              illuminatePulse: 0.01,
+              // No pulse (static)
+              fresnelPower: 2,
+              // Medium-sharp edge
+              envLodBias: 2.5,
+              usePlanarReflection: false
+              // ✅ Env map mode - wip
+            } : void 0,
+            position: {
+              x: pos2.x + __x,
+              y: pos2.y + __y,
+              z: pos2.z + __z
+            },
+            rotation: rot2,
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              scale: scale4,
+              enabled: true,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          const o2 = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o2);
+        }, index * delay2);
+        index++;
+      }
+    }
+  }
+  downloadMeshes(inputCube, handler, { scale: scale4 });
+}
+function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 500) {
+  const engine = this;
+  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+  function handler(m) {
+    let index = 0;
+    const RAY = { enabled: !!raycast2, radius: 1 };
+    for (let y2 = 0; y2 < levels2; y2++) {
+      const rowCount = levels2 - y2;
+      const xOffset = (rowCount - 1) * spacing2 * 0.5;
+      for (let x2 = 0; x2 < rowCount; x2++) {
+        const cubeName = `${name2}_${index}`;
+        setTimeout(() => {
+          engine.addMeshObj({
+            material: { type: material },
+            position: {
+              x: pos2.x + x2 * spacing2 - xOffset,
+              y: pos2.y + y2 * spacing2,
+              z: pos2.z
+            },
+            rotation: rot2,
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            texturesPaths: [texturePath2],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              scale: scale4,
+              enabled: true,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          const o2 = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o2);
+        }, delay2);
+        index++;
+      }
+    }
+  }
+  downloadMeshes(inputCube, handler, { scale: scale4 });
+}
+function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+    levels2 = parseFloat(levels2);
+    function handler(m) {
+      let index = 0;
+      const totalCubes = levels2 * (levels2 + 1) * (2 * levels2 + 1) / 6;
+      const lastIndex = totalCubes - 1;
+      const RAY = { enabled: !!raycast2, radius: 1 };
+      const objects = [];
+      for (let y2 = 0; y2 < levels2; y2++) {
+        const sizeX = levels2 - y2;
+        const sizeZ = levels2 - y2;
+        const xOffset = (sizeX - 1) * spacing2 * 0.5;
+        const zOffset = (sizeZ - 1) * spacing2 * 0.5;
+        for (let x2 = 0; x2 < sizeX; x2++) {
+          for (let z = 0; z < sizeZ; z++) {
+            const cubeName = `${name2}_${index}`;
+            const currentIndex = index;
+            setTimeout(() => {
+              engine.addMeshObj({
+                material: { type: material },
+                position: {
+                  x: pos2.x + x2 * spacing2 - xOffset,
+                  y: pos2.y + y2 * spacing2,
+                  z: pos2.z + z * spacing2 - zOffset
+                },
+                rotation: rot2,
+                rotationSpeed: { x: 0, y: 0, z: 0 },
+                texturesPaths: [texturePath2],
+                name: cubeName,
+                mesh: m.mesh,
+                physics: {
+                  scale: scale4,
+                  enabled: true,
+                  geometry: "Cube"
+                },
+                raycast: RAY
+              });
+              const o2 = app.getSceneObjectByName(cubeName);
+              runtimeCacheObjs.push(o2);
+              objects.push(o2.name);
+              if (currentIndex === lastIndex) {
+                resolve(objects);
+              }
+            }, delay2 * index);
+            index++;
+          }
+        }
+      }
+    }
+    downloadMeshes(inputCube, handler, { scale: scale4 });
+  });
+}
+function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, texturePath2, name2 = "towerCube", height = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2) {
+  const engine = this;
+  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+  function handler(m) {
+    const RAY = { enabled: !!raycast2, radius: 1 };
+    for (let y2 = 0; y2 < height; y2++) {
+      const cubeName = `${name2}_${y2}`;
+      setTimeout(() => {
+        engine.addMeshObj({
+          material: { type: material },
+          position: {
+            x: pos2.x,
+            y: pos2.y + y2 * spacing2,
+            z: pos2.z
+          },
+          rotation: rot2,
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: [texturePath2],
+          name: cubeName,
+          mesh: m.mesh,
+          physics: {
+            scale: scale4,
+            enabled: true,
+            geometry: "Cube"
+          },
+          raycast: RAY
+        });
+        const o2 = app.getSceneObjectByName(cubeName);
+        runtimeCacheObjs.push(o2);
+      }, delay);
+    }
+  }
+  downloadMeshes(inputCube, handler, { scale: scale4 });
+}
+function addOBJ(path2, material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const inputCube = { mesh: path2 };
+    function handler(m) {
+      const RAY = { enabled: !!raycast2, radius: 1 };
+      engine.addMeshObj({
+        material: { type: material },
+        position: {
+          x: pos2.x,
+          y: pos2.y,
+          z: pos2.z
+        },
+        rotation: rot2,
+        rotationSpeed: rotationSpeed2,
+        texturesPaths: [texturePath2],
+        name: name2,
+        mesh: m.mesh,
+        physics: {
+          scale: scale4,
+          enabled: isPhysicsBody2,
+          geometry: "Cube"
+        },
+        raycast: RAY
+      });
+      const o2 = app.getSceneObjectByName(name2);
+      console.log(o2.name);
+      runtimeCacheObjs.push(o2);
+      resolve(o2);
+    }
+    downloadMeshes(inputCube, handler, { scale: scale4 });
+  });
+}
+function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed2 = { x: 0, y: 0, z: 0 }, texturePath2, name2, meshTypeA = "cube", meshTypeB = "sphere", isPhysicsBody2 = false, raycast2 = false, scale4 = [1, 1, 1], isInstancedObj2 = false) {
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const RAY = { enabled: !!raycast2, radius: 1 };
+    console.info("add cube form graph..");
+    engine.addProceduralMeshObj({
+      material: { type: material },
+      position: {
+        x: pos2.x,
+        y: pos2.y,
+        z: pos2.z
+      },
+      rotation: rot2,
+      rotationSpeed: rotationSpeed2,
+      texturesPaths: [texturePath2],
+      name: name2,
+      meshA: MeshMorpher[meshTypeA](1),
+      meshB: MeshMorpher[meshTypeB](1),
+      scale: scale4,
+      physics: {
+        scale: scale4,
+        enabled: isPhysicsBody2,
+        geometry: "Cube"
+      },
+      raycast: RAY
+    });
+    const o2 = app.getSceneObjectByName(name2);
+    console.log(o2.name);
+    runtimeCacheObjs.push(o2);
+    resolve(o2);
+  });
+}
+function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 }, rot2 = { x: 0, y: 0, z: 0 }, texturePath2 = ["./res/textures/slot/reel1-lod0.webp"], name2 = "chain", size2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 1, mass = 1) {
+  const engine = this;
+  const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
+  function handler(m) {
+    const RAY = { enabled: !!raycast2, radius: 1 };
+    for (let y2 = 0; y2 < size2; y2++) {
+      const cubeName = `${name2}_${y2}`;
+      engine.addMeshObj({
+        material: { type: material, share: true },
+        position: {
+          x: pos2.x,
+          y: pos2.y + y2 * spacing2,
+          z: pos2.z
+        },
+        rotation: rot2,
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: [texturePath2],
+        name: cubeName,
+        mesh: m.mesh,
+        physics: {
+          scale: scale4,
+          mass: y2 == 0 ? 0 : mass,
+          enabled: true,
+          geometry: "Cube"
+        },
+        raycast: RAY
+      });
+    }
+    const ids = [];
+    setTimeout(() => {
+      for (let y2 = 0; y2 < size2; y2++) {
+        const cubeName = `${name2}_${y2}`;
+        const id2 = engine.matrixPhysics.getBodyByName(cubeName);
+        const o2 = app.getSceneObjectByName(cubeName);
+        runtimeCacheObjs.push(o2);
+        ids.push(id2);
+      }
+      engine.matrixPhysics.createChain(ids, spacing2, 0.5);
+    }, 500);
+  }
+  downloadMeshes(inputCube, handler, { scale: scale4 });
+}
+function generatorWallNONPHYSICS(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
+  const engine = this;
+  console.log("aaaaaa", engine);
+  const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
+  console.log("__________________________");
+  const inputCube = { mesh: useMeshPath };
+  function handler(m) {
+    let index = 0;
+    const RAY = { enabled: raycast2, radius: 1 };
+    for (let y2 = 0; y2 < height; y2++) {
+      for (let x2 = 0; x2 < width; x2++) {
+        const cubeName = `${name2}_${index}`;
+        setTimeout(() => {
+          let __x = 0, __y = 0, __z = 0;
+          if (orientationOfwall === "ByX") {
+            __x = x2 * spacing2;
+            __y = y2 * spacing2 + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === "ByZ") {
+            __x = 0;
+            __y = y2 * spacing2 + spacingY;
+            __z = x2 * spacing2;
+          }
+          engine.addMeshObj({
+            material: { type: material },
+            envMapParams: material == "mirror" ? {
+              baseColorMix: 0.5,
+              mirrorTint: [0.9, 0.95, 1],
+              reflectivity: 0.95,
+              illuminateColor: [0.3, 0.7, 1],
+              illuminateStrength: 0.4,
+              illuminatePulse: 0.01,
+              fresnelPower: 2,
+              envLodBias: 2.5,
+              usePlanarReflection: false
+            } : void 0,
+            position: {
+              x: pos2.x + __x,
+              y: pos2.y + __y,
+              z: pos2.z + __z
+            },
+            rotation: rot2,
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: false,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          const o2 = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o2);
+        }, index * delay2);
+        index++;
+      }
+    }
+  }
+  downloadMeshes(inputCube, handler, { scale: scale4 });
 }
 
 // ../../../engine/core-cache.js
@@ -38186,6 +38197,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
+    this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
@@ -39618,7 +39630,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/tutorial-6/graph.js
-var graph_default = { "nodes": [], "links": [], "nodeCounter": 136, "linkCounter": 111, "pan": [692, 59], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
+var graph_default = { "nodes": { "n136": { "id": "n136", "title": "onLoad", "x": 100, "y": 100, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n137": { "id": "n137", "title": "Add OBJ", "x": 350, "y": 100, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:0}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "myCube" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[1,1,1]" }, { "key": "isPhysicsBody", "type": false, "value": false }, { "key": "isInstancedObj", "type": false, "value": false }, { "key": "created", "value": false }], "noselfExec": true }, "n138": { "id": "n138", "title": "rayHitEvent", "x": 100, "y": 220, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "fields": [], "noselfExec": true }, "n139": { "id": "n139", "title": "getNumberLiteral", "x": 350, "y": 220, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": 5 }], "noselfExec": true }, "n140": { "id": "n140", "title": "translateByZ", "x": 600, "y": 220, "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "type": "undefined" }, { "name": "z", "type": "undefined" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [] } }, "links": [{ "id": "l111", "from": { "node": "n136", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n137", "pin": "exec" }, "type": "action" }, { "id": "l112", "from": { "node": "n136", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n139", "pin": "exec" }, "type": "action" }, { "id": "l113", "from": { "node": "n138", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n140", "pin": "exec" }, "type": "action" }, { "id": "l114", "from": { "node": "n138", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "n140", "pin": "position" }, "type": "string" }, { "id": "l115", "from": { "node": "n139", "pin": "value", "type": "value", "out": true }, "to": { "node": "n140", "pin": "z" }, "type": "value" }], "nodeCounter": 141, "linkCounter": 116, "pan": [8988, 9539], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/tutorial-6/shader-graphs.js
 var shaderGraphsProdc = [
