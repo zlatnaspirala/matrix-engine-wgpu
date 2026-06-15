@@ -65563,6 +65563,12 @@ class FluxCodexVertex {
           name: "hitObject",
           type: "object"
         }, {
+          name: "position",
+          type: "position"
+        }, {
+          name: "rotation",
+          type: "rotation"
+        }, {
           name: "hitNormal",
           type: "object"
         }, {
@@ -67640,8 +67646,8 @@ LIST OF INTEREST OBJECT:
       };
       n._listenerAttached = true;
     } else if (n.title == "On Ray Hit") {
-      // console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
       if (n._listenerAttached) return;
+      console.log('ON RAY HIT INIT ONLE !!!');
       app.reference.addRaycastsListener();
       const handler = e => {
         n._returnCache = e.detail;
@@ -67765,6 +67771,10 @@ LIST OF INTEREST OBJECT:
     if (node.title === "On Ray Hit") {
       if (pinName === "hitObjectName") {
         return node._returnCache['hitObject']['name'];
+      } else if (pinName === "position") {
+        return node._returnCache['hitObject']['position'];
+      } else if (pinName === "rotation") {
+        return node._returnCache['hitObject']['rotation'];
       } else {
         return node._returnCache[pinName];
       }

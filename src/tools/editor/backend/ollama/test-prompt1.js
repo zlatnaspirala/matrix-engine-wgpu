@@ -339,6 +339,8 @@ Outputs:
 - rayOrigin : object
 - rayDirection : object
 - hitObject : object
+- position : object
+- rotation : object
 - hitNormal : object
 - hitDistance : object
 - eventName : object
@@ -9256,6 +9258,8 @@ Outputs:
 - rayOrigin : object
 - rayDirection : object
 - hitObject : object
+- position : object
+- rotation : object
 - hitNormal : object
 - hitDistance : object
 - eventName : object
