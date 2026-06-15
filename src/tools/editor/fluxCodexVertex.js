@@ -37,7 +37,6 @@
  *
  * - MPL applies ONLY to this file
  */
-import {generatorWallNONPHYSICS} from "../../engine/generators/generator.js";
 import {PVector} from "../../engine/matrix-class.js";
 import {byId, LOG_FUNNY_ARCADE, mb, OSCILLATOR} from "../../engine/utils";
 // import {MatrixMusicAsset} from "../../sounds/audioAsset";
@@ -4404,7 +4403,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          generatorWallNONPHYSICS(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay,
+          app.generatorWallNONPHYSICS(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay,
             ori, spacingByY);
           // createdField.value = true;
         }

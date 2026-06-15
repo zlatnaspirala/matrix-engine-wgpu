@@ -32808,7 +32808,7 @@ exports.PointerEffect = PointerEffect;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.SplatColorAnimator = exports.GaussianSplatScene = exports.GaussianSplatLayer = void 0;
+exports.SplatPositionAnimator = exports.SplatColorAnimator = exports.GaussianSplatScene = exports.GaussianSplatLayer = void 0;
 var _utils = require("../utils");
 /**
  * @description
@@ -33304,8 +33304,6 @@ class GaussianSplatScene {
     this.splatLayers = [];
   }
 }
-
-// SplatColorAnimator.js
 exports.GaussianSplatScene = GaussianSplatScene;
 class SplatColorAnimator {
   /**
@@ -33525,9 +33523,347 @@ class SplatColorAnimator {
     this.colorBuffer?.destroy();
   }
 }
-
-// ── helpers ──────────────────────────────────────────────────────────────────
 exports.SplatColorAnimator = SplatColorAnimator;
+class SplatPositionAnimator {
+  /**
+   * @param {GPUDevice} device
+   * @param {Float32Array} basePositions  — flat xyz from parsedPLY (vertexCount * 3)
+   * @param {number} vertexCount
+   */
+  constructor(device, basePositions, vertexCount) {
+    this.device = device;
+    this.vertexCount = vertexCount;
+
+    // Immutable snapshot of original mesh (meshA)
+    this._basePos = new Float32Array(basePositions);
+
+    // CPU scratch written every frame
+    this._posCPU = new Float32Array(vertexCount * 3);
+    this._posCPU.set(basePositions);
+
+    // Morph state
+    this._morphTarget = null; // Float32Array xyz, same length
+    this._morphFrom = null; // snapshot at morph start
+    this._morphT = 1.0; // 0..1, 1 = done
+    this._morphDur = 1.0; // seconds
+
+    // Per-splat random phases/seeds (computed once)
+    this._phase = new Float32Array(vertexCount);
+    this._seedX = new Float32Array(vertexCount);
+    this._seedZ = new Float32Array(vertexCount);
+    this._dustY0 = new Float32Array(vertexCount); // each splat's starting Y for dust fall
+    for (let i = 0; i < vertexCount; i++) {
+      this._phase[i] = Math.random() * Math.PI * 2;
+      this._seedX[i] = (Math.random() - 0.5) * 2;
+      this._seedZ[i] = (Math.random() - 0.5) * 2;
+      this._dustY0[i] = basePositions[i * 3 + 1];
+    }
+
+    // Effect state
+    this.mode = 'none'; // 'none'|'tornado'|'pulse'|'changeShape'|'dust'|'liquid'
+    this.speed = 1.0;
+    this.scale = 1.0; // effect magnitude multiplier
+
+    // Dust state
+    this._dustProgress = 0; // 0..1
+    this._dustActive = false;
+
+    // Frame skip (cheaper CPU budget)
+    this._frameSkip = 1;
+    this._frameCount = 0;
+
+    // GPU buffer: xyz per splat, dynamic
+    this.posBuffer = device.createBuffer({
+      label: 'splat-dynamic-pos',
+      size: vertexCount * 3 * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+
+    // Upload initial positions
+    device.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
+  }
+
+  // ─── Public API ────────────────────────────────────────────────────────────
+
+  setMode(mode) {
+    this.mode = mode;
+    this._dustActive = false;
+  }
+  setSpeed(s) {
+    this.speed = s;
+  }
+  setScale(s) {
+    this.scale = s;
+  }
+  setFrameSkip(n) {
+    this._frameSkip = Math.max(1, n | 0);
+  }
+
+  /**
+   * Smoothly interpolate from current positions to a new Float32Array of xyz.
+   * @param {Float32Array} targetPositions  length = vertexCount * 3
+   * @param {number} duration              seconds
+   */
+  morphTo(targetPositions, duration = 1.5) {
+    if (targetPositions.length !== this.vertexCount * 3) throw new Error('morphTo: target length mismatch');
+    this._morphFrom = new Float32Array(this._posCPU);
+    this._morphTarget = targetPositions;
+    this._morphT = 0;
+    this._morphDur = Math.max(0.001, duration);
+  }
+
+  /** Reset to original meshA positions */
+  resetToBase(duration = 1.5) {
+    this.morphTo(this._basePos, duration);
+  }
+
+  /**
+   * Trigger the "dust" effect: splats fall and scatter horizontally toward Y=0.
+   * @param {number} duration  seconds for full collapse
+   */
+  triggerDust(duration = 2.0) {
+    // Snapshot current positions as the fall origins
+    this._dustY0.set(this._posCPU.filter((_, i) => i % 3 === 1)
+    // faster: direct loop
+    );
+    for (let i = 0; i < this.vertexCount; i++) this._dustY0[i] = this._posCPU[i * 3 + 1];
+    this._dustProgress = 0;
+    this._dustDur = Math.max(0.001, duration);
+    this._dustActive = true;
+    this.mode = 'dust';
+  }
+
+  // ─── Per-frame update ──────────────────────────────────────────────────────
+
+  update(t, dt = 0.016) {
+    this._frameCount++;
+    if (this._frameCount % this._frameSkip !== 0) return;
+    const dt_ = dt * this._frameSkip;
+
+    // Advance morph
+    if (this._morphT < 1.0) {
+      this._morphT = Math.min(1.0, this._morphT + dt_ / this._morphDur);
+      this._applyMorph(this._morphT);
+    } else {
+      // Apply procedural effect on top of current base positions
+      const tt = t * this.speed;
+      switch (this.mode) {
+        case 'tornado':
+          this._modeTornado(tt);
+          break;
+        case 'pulse':
+          this._modePulse(tt);
+          break;
+        case 'changeShape':
+          this._modeChangeShape(tt);
+          break;
+        case 'dust':
+          this._modeDust(dt_);
+          break;
+        case 'liquid':
+          this._modeLiquid(tt);
+          break;
+        case 'none':
+        default:
+          // still honour a completed morph — no extra effect
+          break;
+      }
+    }
+    this.device.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
+  }
+
+  // ─── Morph ─────────────────────────────────────────────────────────────────
+
+  _applyMorph(rawT) {
+    // Smooth-step easing
+    const t = rawT * rawT * (3 - 2 * rawT);
+    const from = this._morphFrom;
+    const target = this._morphTarget;
+    const out = this._posCPU;
+    const n3 = this.vertexCount * 3;
+    for (let i = 0; i < n3; i++) {
+      out[i] = from[i] + (target[i] - from[i]) * t;
+    }
+  }
+
+  // ─── Procedural effects ────────────────────────────────────────────────────
+
+  /**
+   * Tornado: splats orbit the Y-axis with radius and angular speed
+   * proportional to height; tip contracts, base fans out.
+   */
+  _modeTornado(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sc = this.scale;
+    const n = this.vertexCount;
+
+    // Centroid (use precomputed if available, else quick pass)
+    let cy = 0;
+    for (let i = 0; i < n; i++) cy += b[i * 3 + 1];
+    cy /= n;
+    for (let i = 0; i < n; i++) {
+      const bx = b[i * 3],
+        by = b[i * 3 + 1],
+        bz = b[i * 3 + 2];
+      // Normalised height 0..1
+      const hn = Math.max(0, Math.min(1, (by - cy) / (sc * 5 + 0.001)));
+      // Radius widens at base, narrows at tip
+      const radius = (1 - hn) * sc * 0.8 + 0.05;
+      // Angular speed faster at top
+      const omega = t * (1 + hn * 2) + ph[i];
+      p[i * 3] = bx + Math.cos(omega) * radius;
+      p[i * 3 + 1] = by;
+      p[i * 3 + 2] = bz + Math.sin(omega) * radius;
+    }
+  }
+
+  /**
+   * Pulse: radial breathing — splats oscillate outward from centroid.
+   * Different frequencies per concentric shell give a ripple feel.
+   */
+  _modePulse(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sc = this.scale;
+    const n = this.vertexCount;
+
+    // Centroid
+    let cx = 0,
+      cy = 0,
+      cz = 0;
+    for (let i = 0; i < n; i++) {
+      cx += b[i * 3];
+      cy += b[i * 3 + 1];
+      cz += b[i * 3 + 2];
+    }
+    cx /= n;
+    cy /= n;
+    cz /= n;
+    for (let i = 0; i < n; i++) {
+      const bx = b[i * 3],
+        by = b[i * 3 + 1],
+        bz = b[i * 3 + 2];
+      const dx = bx - cx,
+        dy = by - cy,
+        dz = bz - cz;
+      const r = Math.sqrt(dx * dx + dy * dy + dz * dz) + 0.0001;
+      // Phase offset = distance-based shell → ripple effect
+      const wave = Math.sin(t * 2.5 - r * 3.0 + ph[i] * 0.3);
+      const disp = wave * sc * 0.15;
+      const nx = dx / r,
+        ny = dy / r,
+        nz = dz / r;
+      p[i * 3] = bx + nx * disp;
+      p[i * 3 + 1] = by + ny * disp;
+      p[i * 3 + 2] = bz + nz * disp;
+    }
+  }
+
+  /**
+   * changeShape: sinusoidal warp that drifts over time, morphing the mesh
+   * into abstract bulging/twisted configurations.
+   */
+  _modeChangeShape(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sx = this._seedX;
+    const sz = this._seedZ;
+    const sc = this.scale * 0.4;
+    const n = this.vertexCount;
+    for (let i = 0; i < n; i++) {
+      const bx = b[i * 3],
+        by = b[i * 3 + 1],
+        bz = b[i * 3 + 2];
+      // Three overlapping sine fields with different frequencies + drift
+      const f1 = Math.sin(bx * 1.2 + t * 0.7 + ph[i]);
+      const f2 = Math.cos(by * 1.5 - t * 0.5 + sx[i]);
+      const f3 = Math.sin(bz * 0.9 + t * 0.9 + sz[i]);
+      p[i * 3] = bx + f1 * sc;
+      p[i * 3 + 1] = by + f2 * sc;
+      p[i * 3 + 2] = bz + f3 * sc;
+    }
+  }
+
+  /**
+   * Dust: splats collapse toward Y=0 with lateral drift and individual
+   * fall delays (earlier splats start falling sooner based on _phase).
+   */
+  _modeDust(dt) {
+    if (!this._dustActive) return;
+    this._dustProgress = Math.min(1.0, this._dustProgress + dt / this._dustDur);
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sx = this._seedX;
+    const sz = this._seedZ;
+    const n = this.vertexCount;
+    const pr = this._dustProgress;
+    for (let i = 0; i < n; i++) {
+      // Each splat has a staggered start (0..0.4 range of progress)
+      const delay = ph[i] / (Math.PI * 2) * 0.4;
+      // Local progress for this splat: remap [delay..1] → [0..1]
+      const lp = Math.max(0, Math.min(1, (pr - delay) / (1 - delay)));
+      // Ease-in: slow start, fast end
+      const ease = lp * lp;
+      const bx = b[i * 3],
+        by = b[i * 3 + 1],
+        bz = b[i * 3 + 2];
+
+      // Y drops toward 0 (floor)
+      p[i * 3 + 1] = by * (1 - ease);
+
+      // Lateral scatter grows as splat falls
+      const spread = ease * 2.0;
+      p[i * 3] = bx + sx[i] * spread;
+      p[i * 3 + 2] = bz + sz[i] * spread;
+    }
+    if (this._dustProgress >= 1.0) this._dustActive = false;
+  }
+
+  /**
+   * Liquid: per-splat sinusoidal displacement with normal-direction bias
+   * and slow global sloshing, giving a fluid surface feel.
+   */
+  _modeLiquid(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sx = this._seedX;
+    const sz = this._seedZ;
+    const sc = this.scale * 0.12;
+    const n = this.vertexCount;
+
+    // Slow global slosh direction (rotates over time)
+    const sloshX = Math.cos(t * 0.3) * 0.5;
+    const sloshZ = Math.sin(t * 0.2) * 0.5;
+    for (let i = 0; i < n; i++) {
+      const bx = b[i * 3],
+        by = b[i * 3 + 1],
+        bz = b[i * 3 + 2];
+
+      // High-freq surface ripple (local)
+      const ripple = Math.sin(bx * 4.0 + t * 3.0 + ph[i]) * Math.cos(bz * 3.5 - t * 2.5 + sx[i]);
+
+      // Low-freq slosh (global bias)
+      const slosh = Math.sin(t * 1.2 + sz[i] * 0.5) * 0.3;
+
+      // Mostly vertical displacement (Y) with tiny horizontal jitter
+      p[i * 3] = bx + sloshX * sc + (Math.random() - 0.5) * sc * 0.05;
+      p[i * 3 + 1] = by + (ripple + slosh) * sc;
+      p[i * 3 + 2] = bz + sloshZ * sc + (Math.random() - 0.5) * sc * 0.05;
+    }
+  }
+  destroy() {
+    this.posBuffer?.destroy();
+  }
+}
+
+// Helpers
+exports.SplatPositionAnimator = SplatPositionAnimator;
 function _hsl(h, s, l) {
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(h * 6 % 2 - 1));
@@ -62445,7 +62781,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.runtimeCacheObjs = exports.default = void 0;
-var _generator = require("../../engine/generators/generator.js");
 var _matrixClass = require("../../engine/matrix-class.js");
 var _utils = require("../../engine/utils");
 var _curveEditor = require("./curve-editor");
@@ -67950,7 +68285,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          (0, _generator.generatorWallNONPHYSICS)(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay, ori, spacingByY);
+          app.generatorWallNONPHYSICS(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay, ori, spacingByY);
           // createdField.value = true;
         }
         this.enqueueOutputs(n, "execOut");
@@ -69186,7 +69521,7 @@ class RESOURCES_FOR_GRAPH {
   }
 }
 
-},{"../../engine/generators/generator.js":64,"../../engine/matrix-class.js":75,"../../engine/utils":92,"./curve-editor":136,"./generateAISchema.js":142}],142:[function(require,module,exports){
+},{"../../engine/matrix-class.js":75,"../../engine/utils":92,"./curve-editor":136,"./generateAISchema.js":142}],142:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -69311,9 +69646,10 @@ function catalogToText(catalog) {
   return out;
 }
 let tasks = exports.tasks = ["On load create a cube named box1 at position (0, 3, 0) and make const rotate by y axis.", `
-  Build the House with non physics cubes. All Cubes must have scale [1,1,1]. Build 3 floors, walls and roof.
-  MAke big house with space inside ! 
-  Don't use physics generators, use generatorWallNONPHYSICS.
+  Build the House with non physics cubes. Build 3 floors, walls and roof.
+  Make big house with space inside! 
+  Don't use physics generators, use simple nonphysics cubes.
+  To make it optimised you can use scale.
   `, "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ", "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.", "Create a cube and enable raycast, on hit make object translateByZ", "Create start from cubes - use nonphysics cubes.", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
 let providers = exports.providers = ["ollama", "groq", "anthropic", "google"];
 
@@ -71114,6 +71450,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = _generator.physicsBodiesGeneratorDeepPyramid.bind(this);
       this.physicsBodiesChain = _generator.physicsBodiesChain.bind(this);
     }
+    this.generatorWallNONPHYSICS = _generator.generatorWallNONPHYSICS.bind(this);
     this.editorAddOBJ = _generator.addOBJ.bind(this);
     this.editorAddProceduralMesh = _generator.addProceduralOBJ.bind(this);
     this.MEConfig = _meConfig.MEConfig;
