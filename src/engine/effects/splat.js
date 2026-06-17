@@ -416,6 +416,14 @@ fn fs_main(in: VertexOutput) -> FragOut {
 }`;
   }
 
+  attachPositionAnimator(animator) {
+    this.positionAnimator = animator;
+  }
+
+  detachPositionAnimator() {
+    this.positionAnimator = null;
+  }
+
   render(pass, mesh, viewProjMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
@@ -807,7 +815,7 @@ export class SplatPositionAnimator {
         case 'dust': this._modeDust(dt_); break;
         case 'liquid': this._modeLiquid(tt); break;
         case 'none': default:
-          // still honour a completed morph — no extra effect
+          this._posCPU.set(this._basePos);
           break;
       }
     }

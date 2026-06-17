@@ -5061,6 +5061,22 @@ var loadGaussianSplatVertAnim = function () {
         animator.setSpeed(0.8);
         layer.colorBuffer = animator.colorBuffer;
         app.autoUpdate.push(animator);
+        let positionAnimator = new _splat.SplatPositionAnimator(app.device, MYCUBE.effects.splat.splatLayers[0].positions, MYCUBE.effects.splat.splatLayers[0].vertexCount);
+
+        // In your render loop:
+        // positionAnimator.update(time, deltaTime);
+
+        // Effects:
+        // positionAnimator.setMode('tornado');
+        // positionAnimator.setMode('liquid');
+        // positionAnimator.setMode('pulse');
+        positionAnimator.triggerDust(2.5);
+        // positionAnimator.morphTo(meshBPositions, 2.0); // smooth morph to any other PLY
+        // positionAnimator.resetToBase(1.5);             // back to meshA
+
+        MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
+        app.autoUpdate.push(positionAnimator);
+
         // just for dev
         window.animator = animator;
         MYCUBE.effects.flameEmitter.setIntensity(100);
@@ -33447,6 +33463,12 @@ fn fs_main(in: VertexOutput) -> FragOut {
   return out;
 }`;
   }
+  attachPositionAnimator(animator) {
+    this.positionAnimator = animator;
+  }
+  detachPositionAnimator() {
+    this.positionAnimator = null;
+  }
   render(pass, mesh, viewProjMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
@@ -33879,7 +33901,7 @@ class SplatPositionAnimator {
           break;
         case 'none':
         default:
-          // still honour a completed morph — no extra effect
+          this._posCPU.set(this._basePos);
           break;
       }
     }

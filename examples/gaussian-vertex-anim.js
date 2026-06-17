@@ -2,7 +2,7 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomFloatFromTo, randomIntFromTo} from "../src/engine/utils.js";
-import {GaussianSplatScene, SplatColorAnimator} from "../src/engine/effects/splat.js";
+import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "../src/engine/effects/splat.js";
 
 export var loadGaussianSplatVertAnim = function() {
 
@@ -121,6 +121,30 @@ export var loadGaussianSplatVertAnim = function() {
         animator.setSpeed(0.8);
         layer.colorBuffer = animator.colorBuffer;
         app.autoUpdate.push(animator);
+
+
+        let positionAnimator = new SplatPositionAnimator(
+          app.device,
+          MYCUBE.effects.splat.splatLayers[0].positions,
+          MYCUBE.effects.splat.splatLayers[0].vertexCount
+        );
+
+        // In your render loop:
+        // positionAnimator.update(time, deltaTime);
+
+        // Effects:
+        // positionAnimator.setMode('tornado');
+        // positionAnimator.setMode('liquid');
+        // positionAnimator.setMode('pulse');
+        positionAnimator.triggerDust(2.5);
+        // positionAnimator.morphTo(meshBPositions, 2.0); // smooth morph to any other PLY
+        // positionAnimator.resetToBase(1.5);             // back to meshA
+
+         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator)
+        app.autoUpdate.push(positionAnimator);
+        
+
+
         // just for dev
         window.animator = animator;
         MYCUBE.effects.flameEmitter.setIntensity(100);
@@ -139,24 +163,24 @@ export var loadGaussianSplatVertAnim = function() {
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
 
-        
-    setInterval(() => {
-      const memoI = randomIntFromTo(90, 150);
-      MYCUBE.effects.flameEmitter.setIntensity(memoI);
-      const memoCONFIG = randomIntFromTo(5, 15);
-      MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
-      let memoS = [randomIntFromTo(90, 150), randomIntFromTo(90, 150), randomIntFromTo(90, 150)];
-      let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
-      MYCUBE.effects.flameEmitter.instanceTargets.forEach((e) => {
-        e.currentScale = memoS;
-        e.color = memoC;
-      })
-      setRandomMode()
-      // console.log("memo color : " + memoC);
-      // console.log("memo scale : " + memoS);
-      // console.log("memo intes : " + memoI);
-      // console.log("memo memoCONFIG : " + memoCONFIG);
-    }, 2000)
+
+        setInterval(() => {
+          const memoI = randomIntFromTo(90, 150);
+          MYCUBE.effects.flameEmitter.setIntensity(memoI);
+          const memoCONFIG = randomIntFromTo(5, 15);
+          MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
+          let memoS = [randomIntFromTo(90, 150), randomIntFromTo(90, 150), randomIntFromTo(90, 150)];
+          let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
+          MYCUBE.effects.flameEmitter.instanceTargets.forEach((e) => {
+            e.currentScale = memoS;
+            e.color = memoC;
+          })
+          setRandomMode()
+          // console.log("memo color : " + memoC);
+          // console.log("memo scale : " + memoS);
+          // console.log("memo intes : " + memoI);
+          // console.log("memo memoCONFIG : " + memoCONFIG);
+        }, 2000)
 
       }, 1500);
     }
