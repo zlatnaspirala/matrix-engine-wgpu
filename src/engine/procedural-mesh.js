@@ -116,6 +116,20 @@ export default class ProceduralMeshObj extends Materials {
       this.fragmentWGSL = o.fragmentWGSL;
     }
 
+    if(typeof o.primitive === 'undefined') {
+      this.primitive = {
+        topology: 'triangle-list',
+        cullMode: 'back',
+        frontFace: 'ccw'
+      }
+    } else {
+      this.primitive = {
+        topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+        cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+        frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+      }
+    }
+
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 512;
@@ -324,7 +338,7 @@ export default class ProceduralMeshObj extends Materials {
       {arrayStride: 3 * 4, attributes: [{shaderLocation: 7, offset: 0, format: 'float32x3'}]}, // normalB
     ];
 
-    this.primitive = {topology: 'triangle-list', cullMode: 'none', frontFace: 'ccw'}; //ccw
+    // this.primitive = {topology: 'triangle-list', cullMode: 'none', frontFace: 'ccw'}; //ccw
   }
 
   _setupUniforms() {

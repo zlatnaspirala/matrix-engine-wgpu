@@ -77,22 +77,31 @@ export var loadGaussianSplatVertAnim = function() {
         .then(res => res.arrayBuffer())
         .then(buf => uploadGLBModel(buf, gaussianSplat.device));
 
-      gaussianSplat.addGlbObjInctance({
+      let topologyArg = {
+        topology: 'point-list',
+        cullMode: 'back',
+        frontFace: 'ccw'
+      }
+
+      let MYGLB = gaussianSplat.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         useScale: true,
         scale: [6, 6, 6],
         position: {x: 0, y: 4, z: -20},
         name: 'monster',
+        primitive: topologyArg,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       }, null, glbFile);
 
-
+      MYGLB.playAnimationByIndex(3);
 
       setTimeout(async () => {
         window.MYCUBE = MYCUBE;
+        window.MYGLB = MYGLB;
         MYCUBE.setBlend(0.001);
         MYCUBE.effects.splat = new GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
-        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
+        // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
+        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/slayzer.ply', 12, "point-list");
         animator = new SplatColorAnimator(
           app.device,
           layer.positions,
@@ -125,19 +134,16 @@ export var loadGaussianSplatVertAnim = function() {
 
         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator)
         app.autoUpdate.push(positionAnimator);
-
         positionAnimator.setMode('hold');
+        let adapt = MYCUBE.effects.splat.splatLayers[0].sampleMeshVertices(MYGLB.mesh.vertices, app.autoUpdate[1].vertexCount);
+        const adapt1 = MYCUBE.effects.splat.splatLayers[0].remapAxes(adapt, { from: 'Y_UP', to: 'Z_UP' });
+        app.autoUpdate[1].morphTo(adapt1, 2.0)
 
-        let adapt = MYCUBE.effects.splat.splatLayers[0].sampleMeshVertices(app.mainRenderBundle[1].mesh.vertices, app.autoUpdate[1].vertexCount);
-        app.autoUpdate[1].morphTo(adapt, 2.0)
-
-        // just for dev
-        window.animator = animator;
-
-        MYCUBE.effects.flameEmitter.setIntensity(20);
-        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(3);
+        //
+        MYCUBE.effects.flameEmitter.setIntensity(10);
+        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(2);
         MYCUBE.effects.flameEmitter.instanceTargets.forEach((e) => {
-          e.currentScale = [60, 60, 60]
+          e.currentScale = [160, 160, 160]
         })
         MYCUBE.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 11, 0, 0.7];

@@ -337,13 +337,22 @@ export default class MEMeshObj extends Materials {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      // this.weights = {
       this.mesh.weightsBuffer = weightsBuffer;
-      //  {
-      //   data: weightsData,
-      //   buffer: weightsBuffer,
-      //   stride: 16
-      // };
+
+      if(typeof o.primitive === 'undefined') {
+        this.primitive = {
+          topology: 'triangle-list',
+          cullMode: 'back',
+          frontFace: 'ccw'
+        }
+      } else {
+        this.primitive = {
+          topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+          cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+          frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+        }
+      }
+
     }
 
     this.runProgram = () => {
@@ -472,11 +481,11 @@ export default class MEMeshObj extends Materials {
         this.setupPipeline();
       };
 
-      this.primitive = {
-        topology: this.topology,
-        cullMode: 'none',
-        frontFace: 'ccw'
-      }
+      // this.primitive = {
+      //   topology: this.topology,
+      //   cullMode: 'none',
+      //   frontFace: 'ccw'
+      // }
 
       this.mirrorBindGroupLayout = device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',

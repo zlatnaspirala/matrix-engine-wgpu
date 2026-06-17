@@ -5021,7 +5021,12 @@ var loadGaussianSplatVertAnim = function () {
 
       // glb test
       const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, gaussianSplat.device));
-      gaussianSplat.addGlbObjInctance({
+      let topologyArg = {
+        topology: 'point-list',
+        cullMode: 'back',
+        frontFace: 'ccw'
+      };
+      let MYGLB = gaussianSplat.addGlbObjInctance({
         material: {
           type: 'standard',
           useTextureFromGlb: true
@@ -5034,13 +5039,17 @@ var loadGaussianSplatVertAnim = function () {
           z: -20
         },
         name: 'monster',
+        primitive: topologyArg,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
       }, null, glbFile);
+      MYGLB.playAnimationByIndex(3);
       setTimeout(async () => {
         window.MYCUBE = MYCUBE;
+        window.MYGLB = MYGLB;
         MYCUBE.setBlend(0.001);
         MYCUBE.effects.splat = new _splat.GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
-        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
+        // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
+        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/slayzer.ply', 12, "point-list");
         animator = new _splat.SplatColorAnimator(app.device, layer.positions, layer.vertexCount, layer.colorBuffer);
         animator.setMode('pulse');
         animator.setScale(0.8);
@@ -5063,15 +5072,18 @@ var loadGaussianSplatVertAnim = function () {
         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
         app.autoUpdate.push(positionAnimator);
         positionAnimator.setMode('hold');
-        let adapt = MYCUBE.effects.splat.splatLayers[0].sampleMeshVertices(app.mainRenderBundle[1].mesh.vertices, app.autoUpdate[1].vertexCount);
-        app.autoUpdate[1].morphTo(adapt, 2.0);
+        let adapt = MYCUBE.effects.splat.splatLayers[0].sampleMeshVertices(MYGLB.mesh.vertices, app.autoUpdate[1].vertexCount);
+        const adapt1 = MYCUBE.effects.splat.splatLayers[0].remapAxes(adapt, {
+          from: 'Y_UP',
+          to: 'Z_UP'
+        });
+        app.autoUpdate[1].morphTo(adapt1, 2.0);
 
-        // just for dev
-        window.animator = animator;
-        MYCUBE.effects.flameEmitter.setIntensity(20);
-        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(3);
+        //
+        MYCUBE.effects.flameEmitter.setIntensity(10);
+        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(2);
         MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
-          e.currentScale = [60, 60, 60];
+          e.currentScale = [160, 160, 160];
         });
         MYCUBE.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 11, 0, 0.7];
@@ -33476,6 +33488,55 @@ fn fs_main(in: VertexOutput) -> FragOut {
     }
     return out;
   }
+
+  /**
+   * Remaps a flat xyz array between axis conventions.
+   * Default: identity (no change).
+   *
+   * @param {Float32Array} positions  flat xyz triplets
+   * @param {object} [opts]
+   * @param {'Y_UP'|'Z_UP'} [opts.from='Y_UP']  source convention
+   * @param {'Y_UP'|'Z_UP'} [opts.to='Y_UP']    target convention
+   * @param {boolean} [opts.flipZ=false]        negate Z (e.g. glTF +Z forward → engine -Z forward)
+   * @returns {Float32Array}  new remapped array (does not mutate input)
+   */
+  remapAxes(positions, opts = {}) {
+    const {
+      from = 'Y_UP',
+      to = 'Z_UP',
+      flipZ = false
+    } = opts;
+    const n = positions.length / 3;
+    const out = new Float32Array(positions.length);
+
+    // Z_UP -> Y_UP: swap Y and Z, then negate new Z (standard Blender->engine fix)
+    const needsSwap = from === 'Z_UP' && to === 'Y_UP';
+    // Y_UP -> Z_UP: inverse swap
+    const needsSwapInverse = from === 'Y_UP' && to === 'Z_UP';
+    for (let i = 0; i < n; i++) {
+      let x = positions[i * 3];
+      let y = positions[i * 3 + 1];
+      let z = positions[i * 3 + 2];
+      if (needsSwap) {
+        // Blender Z-up (x, y, z) -> Y-up (x, z, -y)
+        const ty = z;
+        const tz = -y;
+        y = ty;
+        z = tz;
+      } else if (needsSwapInverse) {
+        // Y-up -> Z-up (inverse of above)
+        const ty = -z;
+        const tz = y;
+        y = ty;
+        z = tz;
+      }
+      if (flipZ) z = -z;
+      out[i * 3] = x;
+      out[i * 3 + 1] = y;
+      out[i * 3 + 2] = z;
+    }
+    return out;
+  }
   render(pass, mesh, viewProjMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
@@ -33776,6 +33837,7 @@ class SplatPositionAnimator {
   constructor(device, basePositions, vertexCount) {
     this.device = device;
     this.vertexCount = vertexCount;
+    this._upAxis = 1;
 
     // Immutable snapshot of original mesh (meshA)
     this._basePos = new Float32Array(basePositions);
@@ -33944,24 +34006,22 @@ class SplatPositionAnimator {
     const ph = this._phase;
     const sc = this.scale;
     const n = this.vertexCount;
+    const up = this._upAxis;
+    const side = up === 1 ? 2 : 1; // the "other horizontal" axis when up changes
 
-    // Centroid (use precomputed if available, else quick pass)
-    let cy = 0;
-    for (let i = 0; i < n; i++) cy += b[i * 3 + 1];
-    cy /= n;
+    let cUp = 0;
+    for (let i = 0; i < n; i++) cUp += b[i * 3 + up];
+    cUp /= n;
     for (let i = 0; i < n; i++) {
       const bx = b[i * 3],
-        by = b[i * 3 + 1],
-        bz = b[i * 3 + 2];
-      // Normalised height 0..1
-      const hn = Math.max(0, Math.min(1, (by - cy) / (sc * 5 + 0.001)));
-      // Radius widens at base, narrows at tip
+        bu = b[i * 3 + up],
+        bs = b[i * 3 + side];
+      const hn = Math.max(0, Math.min(1, (bu - cUp) / (sc * 5 + 0.001)));
       const radius = (1 - hn) * sc * 0.8 + 0.05;
-      // Angular speed faster at top
       const omega = t * (1 + hn * 2) + ph[i];
       p[i * 3] = bx + Math.cos(omega) * radius;
-      p[i * 3 + 1] = by;
-      p[i * 3 + 2] = bz + Math.sin(omega) * radius;
+      p[i * 3 + up] = bu;
+      p[i * 3 + side] = bs + Math.sin(omega) * radius;
     }
   }
 
@@ -34033,6 +34093,10 @@ class SplatPositionAnimator {
       p[i * 3 + 2] = bz + f3 * sc;
     }
   }
+  setUpAxis(axis) {
+    // accepts 'Y' | 'Z' | 1 | 2
+    if (axis === 'Y' || axis === 1) this._upAxis = 1;else if (axis === 'Z' || axis === 2) this._upAxis = 2;else throw new Error(`setUpAxis: invalid axis "${axis}"`);
+  }
 
   /**
    * Dust: splats collapse toward Y=0 with lateral drift and individual
@@ -34048,24 +34112,22 @@ class SplatPositionAnimator {
     const sz = this._seedZ;
     const n = this.vertexCount;
     const pr = this._dustProgress;
+    const up = this._upAxis;
+    const h1 = up === 1 ? 0 : 0; // horizontal axis 1 (always x)
+    const h2 = up === 1 ? 2 : 1; // horizontal axis 2 (whichever isn't up)
+
     for (let i = 0; i < n; i++) {
-      // Each splat has a staggered start (0..0.4 range of progress)
       const delay = ph[i] / (Math.PI * 2) * 0.4;
-      // Local progress for this splat: remap [delay..1] → [0..1]
       const lp = Math.max(0, Math.min(1, (pr - delay) / (1 - delay)));
-      // Ease-in: slow start, fast end
       const ease = lp * lp;
-      const bx = b[i * 3],
-        by = b[i * 3 + 1],
-        bz = b[i * 3 + 2];
+      const bu = b[i * 3 + up];
+      const bh1 = b[i * 3 + h1];
+      const bh2 = b[i * 3 + h2];
+      p[i * 3 + up] = bu * (1 - ease); // collapse toward 0 on the up axis
 
-      // Y drops toward 0 (floor)
-      p[i * 3 + 1] = by * (1 - ease);
-
-      // Lateral scatter grows as splat falls
       const spread = ease * 2.0;
-      p[i * 3] = bx + sx[i] * spread;
-      p[i * 3 + 2] = bz + sz[i] * spread;
+      p[i * 3 + h1] = bh1 + sx[i] * spread;
+      p[i * 3 + h2] = bh2 + sz[i] * spread;
     }
     if (this._dustProgress >= 1.0) this._dustActive = false;
   }
@@ -38091,14 +38153,20 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         });
       }
 
-      // Note: The frontFace and cullMode values have no effect on the 
       // "point-list", "line-list", or "line-strip" topologies.
-      this.primitive = {
-        topology: 'triangle-list',
-        cullMode: 'back',
-        // typical for shadow passes
-        frontFace: 'ccw'
-      };
+      if (typeof o.primitive === 'undefined') {
+        this.primitive = {
+          topology: 'triangle-list',
+          cullMode: 'back',
+          frontFace: 'ccw'
+        };
+      } else {
+        this.primitive = {
+          topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+          cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+          frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+        };
+      }
       this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',
         entries: [{
@@ -43661,13 +43729,20 @@ class MEMeshObj extends _materials.default {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      // this.weights = {
       this.mesh.weightsBuffer = weightsBuffer;
-      //  {
-      //   data: weightsData,
-      //   buffer: weightsBuffer,
-      //   stride: 16
-      // };
+      if (typeof o.primitive === 'undefined') {
+        this.primitive = {
+          topology: 'triangle-list',
+          cullMode: 'back',
+          frontFace: 'ccw'
+        };
+      } else {
+        this.primitive = {
+          topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+          cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+          frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+        };
+      }
     }
     this.runProgram = () => {
       return new Promise(async resolve => {
@@ -43806,11 +43881,13 @@ class MEMeshObj extends _materials.default {
         }
         this.setupPipeline();
       };
-      this.primitive = {
-        topology: this.topology,
-        cullMode: 'none',
-        frontFace: 'ccw'
-      };
+
+      // this.primitive = {
+      //   topology: this.topology,
+      //   cullMode: 'none',
+      //   frontFace: 'ccw'
+      // }
+
       this.mirrorBindGroupLayout = device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',
         entries: [{
@@ -47271,6 +47348,19 @@ class ProceduralMeshObj extends _materials.default {
     if (typeof o.fragmentWGSL !== 'undefined') {
       this.fragmentWGSL = o.fragmentWGSL;
     }
+    if (typeof o.primitive === 'undefined') {
+      this.primitive = {
+        topology: 'triangle-list',
+        cullMode: 'back',
+        frontFace: 'ccw'
+      };
+    } else {
+      this.primitive = {
+        topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+        cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+        frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+      };
+    }
     this.runProgram = () => {
       return new Promise(async resolve => {
         this.shadowDepthTextureSize = 512;
@@ -47490,11 +47580,8 @@ class ProceduralMeshObj extends _materials.default {
       }]
     } // normalB
     ];
-    this.primitive = {
-      topology: 'triangle-list',
-      cullMode: 'none',
-      frontFace: 'ccw'
-    }; //ccw
+
+    // this.primitive = {topology: 'triangle-list', cullMode: 'none', frontFace: 'ccw'}; //ccw
   }
   _setupUniforms() {
     // console.log('EEEEEEEEEEEEEEEEEEEEEEEEEEEE', this.pointerEffect)

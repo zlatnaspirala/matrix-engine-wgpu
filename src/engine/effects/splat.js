@@ -440,6 +440,57 @@ fn fs_main(in: VertexOutput) -> FragOut {
     }
     return out;
   }
+
+  /**
+   * Remaps a flat xyz array between axis conventions.
+   * Default: identity (no change).
+   *
+   * @param {Float32Array} positions  flat xyz triplets
+   * @param {object} [opts]
+   * @param {'Y_UP'|'Z_UP'} [opts.from='Y_UP']  source convention
+   * @param {'Y_UP'|'Z_UP'} [opts.to='Y_UP']    target convention
+   * @param {boolean} [opts.flipZ=false]        negate Z (e.g. glTF +Z forward → engine -Z forward)
+   * @returns {Float32Array}  new remapped array (does not mutate input)
+   */
+  remapAxes(positions, opts = {}) {
+    const {from = 'Y_UP', to = 'Z_UP', flipZ = false} = opts;
+    const n = positions.length / 3;
+    const out = new Float32Array(positions.length);
+
+    // Z_UP -> Y_UP: swap Y and Z, then negate new Z (standard Blender->engine fix)
+    const needsSwap = from === 'Z_UP' && to === 'Y_UP';
+    // Y_UP -> Z_UP: inverse swap
+    const needsSwapInverse = from === 'Y_UP' && to === 'Z_UP';
+
+    for(let i = 0;i < n;i++) {
+      let x = positions[i * 3];
+      let y = positions[i * 3 + 1];
+      let z = positions[i * 3 + 2];
+
+      if(needsSwap) {
+        // Blender Z-up (x, y, z) -> Y-up (x, z, -y)
+        const ty = z;
+        const tz = -y;
+        y = ty;
+        z = tz;
+      } else if(needsSwapInverse) {
+        // Y-up -> Z-up (inverse of above)
+        const ty = -z;
+        const tz = y;
+        y = ty;
+        z = tz;
+      }
+
+      if(flipZ) z = -z;
+
+      out[i * 3] = x;
+      out[i * 3 + 1] = y;
+      out[i * 3 + 2] = z;
+    }
+
+    return out;
+  }
+
   render(pass, mesh, viewProjMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
@@ -716,6 +767,8 @@ export class SplatPositionAnimator {
     this.device = device;
     this.vertexCount = vertexCount;
 
+    this._upAxis = 1;
+
     // Immutable snapshot of original mesh (meshA)
     this._basePos = new Float32Array(basePositions);
 
@@ -868,23 +921,22 @@ export class SplatPositionAnimator {
     const ph = this._phase;
     const sc = this.scale;
     const n = this.vertexCount;
+    const up = this._upAxis;
+    const side = up === 1 ? 2 : 1; // the "other horizontal" axis when up changes
 
-    // Centroid (use precomputed if available, else quick pass)
-    let cy = 0;
-    for(let i = 0;i < n;i++) cy += b[i * 3 + 1];
-    cy /= n;
+    let cUp = 0;
+    for(let i = 0;i < n;i++) cUp += b[i * 3 + up];
+    cUp /= n;
 
     for(let i = 0;i < n;i++) {
-      const bx = b[i * 3], by = b[i * 3 + 1], bz = b[i * 3 + 2];
-      // Normalised height 0..1
-      const hn = Math.max(0, Math.min(1, (by - cy) / (sc * 5 + 0.001)));
-      // Radius widens at base, narrows at tip
+      const bx = b[i * 3], bu = b[i * 3 + up], bs = b[i * 3 + side];
+      const hn = Math.max(0, Math.min(1, (bu - cUp) / (sc * 5 + 0.001)));
       const radius = (1 - hn) * sc * 0.8 + 0.05;
-      // Angular speed faster at top
       const omega = t * (1 + hn * 2) + ph[i];
+
       p[i * 3] = bx + Math.cos(omega) * radius;
-      p[i * 3 + 1] = by;
-      p[i * 3 + 2] = bz + Math.sin(omega) * radius;
+      p[i * 3 + up] = bu;
+      p[i * 3 + side] = bs + Math.sin(omega) * radius;
     }
   }
 
@@ -945,6 +997,13 @@ export class SplatPositionAnimator {
     }
   }
 
+  setUpAxis(axis) {
+    // accepts 'Y' | 'Z' | 1 | 2
+    if(axis === 'Y' || axis === 1) this._upAxis = 1;
+    else if(axis === 'Z' || axis === 2) this._upAxis = 2;
+    else throw new Error(`setUpAxis: invalid axis "${axis}"`);
+  }
+
   /**
    * Dust: splats collapse toward Y=0 with lateral drift and individual
    * fall delays (earlier splats start falling sooner based on _phase).
@@ -961,24 +1020,24 @@ export class SplatPositionAnimator {
     const sz = this._seedZ;
     const n = this.vertexCount;
     const pr = this._dustProgress;
+    const up = this._upAxis;
+    const h1 = up === 1 ? 0 : 0; // horizontal axis 1 (always x)
+    const h2 = up === 1 ? 2 : 1; // horizontal axis 2 (whichever isn't up)
 
     for(let i = 0;i < n;i++) {
-      // Each splat has a staggered start (0..0.4 range of progress)
       const delay = ph[i] / (Math.PI * 2) * 0.4;
-      // Local progress for this splat: remap [delay..1] → [0..1]
       const lp = Math.max(0, Math.min(1, (pr - delay) / (1 - delay)));
-      // Ease-in: slow start, fast end
       const ease = lp * lp;
 
-      const bx = b[i * 3], by = b[i * 3 + 1], bz = b[i * 3 + 2];
+      const bu = b[i * 3 + up];
+      const bh1 = b[i * 3 + h1];
+      const bh2 = b[i * 3 + h2];
 
-      // Y drops toward 0 (floor)
-      p[i * 3 + 1] = by * (1 - ease);
+      p[i * 3 + up] = bu * (1 - ease);  // collapse toward 0 on the up axis
 
-      // Lateral scatter grows as splat falls
       const spread = ease * 2.0;
-      p[i * 3] = bx + sx[i] * spread;
-      p[i * 3 + 2] = bz + sz[i] * spread;
+      p[i * 3 + h1] = bh1 + sx[i] * spread;
+      p[i * 3 + h2] = bh2 + sz[i] * spread;
     }
 
     if(this._dustProgress >= 1.0) this._dustActive = false;
