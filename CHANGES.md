@@ -1,6 +1,9 @@
 
 ## CHANGES [Started from feb 2026]
 
+[1.16.xx]
+ - Splat class + animator for colors also vertex positions.
+ - Visual scripting improvments in general + ai tool part.
 
 [1.15.xx]
  - Added `npm install @google/generative-ai` like new ai tool provider.
