@@ -424,6 +424,22 @@ fn fs_main(in: VertexOutput) -> FragOut {
     this.positionAnimator = null;
   }
 
+  /**
+ * Builds a target array of exactly `sampleCount` points by directly
+ * sampling the mesh's own vertex positions (no triangle interpolation).
+ * If sampleCount > mesh vertex count, vertices repeat.
+ */
+  sampleMeshVertices(positions, sampleCount) {
+    const meshVertCount = positions.length / 3;
+    const out = new Float32Array(sampleCount * 3);
+    for(let i = 0;i < sampleCount;i++) {
+      const srcIdx = i % meshVertCount; // or Math.floor(Math.random() * meshVertCount) for shuffled
+      out[i * 3] = positions[srcIdx * 3];
+      out[i * 3 + 1] = positions[srcIdx * 3 + 1];
+      out[i * 3 + 2] = positions[srcIdx * 3 + 2];
+    }
+    return out;
+  }
   render(pass, mesh, viewProjMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
@@ -814,6 +830,9 @@ export class SplatPositionAnimator {
         case 'changeShape': this._modeChangeShape(tt); break;
         case 'dust': this._modeDust(dt_); break;
         case 'liquid': this._modeLiquid(tt); break;
+        case 'hold':
+          // nothing
+          break;
         case 'none': default:
           this._posCPU.set(this._basePos);
           break;

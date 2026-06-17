@@ -3,6 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomFloatFromTo, randomIntFromTo} from "../src/engine/utils.js";
 import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "../src/engine/effects/splat.js";
+import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
 export var loadGaussianSplatVertAnim = function() {
 
@@ -22,11 +23,9 @@ export var loadGaussianSplatVertAnim = function() {
     let animator;
 
     gaussianSplat.addLight();
-    // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({
       ball: "./res/meshes/blender/sphere.obj",
-      cube: "./res/meshes/blender/cube.obj",
-      // car: "./res/meshes/ply/d.obj"
+      cube: "./res/meshes/blender/cube.obj"
     },
       onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
@@ -39,47 +38,14 @@ export var loadGaussianSplatVertAnim = function() {
       const randomIndex = Math.floor(Math.random() * modes.length);
       const selectedMode = modes[randomIndex];
       animator.setMode(selectedMode);
-
       animator.setScale(randomFloatFromTo(0.2, 10));
       animator.setSpeed(randomFloatFromTo(0.2, 4));
-
-      console.log(`Mode set to: ${selectedMode}`);
+      // console.log(`Mode set to: ${selectedMode}`);
     }
 
-    function onGround(m) {
-      // gaussianSplat.addMeshObj({
-      //   material: {type: 'standard', share: true},
-      //   position: {x: 0, y: -5, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/floor1.webp'], //, './res/textures/env-maps/sky1_lod_mid.webp'],
-      //   name: 'floor',
-      //   mesh: m.cube,
-      //   physics: {
-      //     enabled: false,
-      //     mass: 0,
-      //     geometry: "Cube"
-      //   }
-      // })
-    }
+    function onGround(m) {}
 
     async function onLoadObj(m) {
-      // gaussianSplat.addMeshObj({
-      //   material: {type: 'standard', share: true},
-      //   position: {x: 0, y: -1, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-      //   name: 'sky',
-      //   mesh: m.car,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   }
-      // });
-
-      // share: true if not defined it is false.
       let MYCUBE = gaussianSplat.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 4, z: -10},
@@ -104,6 +70,23 @@ export var loadGaussianSplatVertAnim = function() {
       })
       gaussianSplat.lightContainer[0].setPosition(0, 45, -10);
       gaussianSplat.lightContainer[0].setTarget(0, 0, -10);
+
+
+      // glb test
+      const glbFile = await fetch("res/meshes/glb/monster.glb")
+        .then(res => res.arrayBuffer())
+        .then(buf => uploadGLBModel(buf, gaussianSplat.device));
+
+      gaussianSplat.addGlbObjInctance({
+        material: {type: 'standard', useTextureFromGlb: true},
+        useScale: true,
+        scale: [6, 6, 6],
+        position: {x: 0, y: 4, z: -20},
+        name: 'monster',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+      }, null, glbFile);
+
+
 
       setTimeout(async () => {
         window.MYCUBE = MYCUBE;
@@ -136,21 +119,25 @@ export var loadGaussianSplatVertAnim = function() {
         // positionAnimator.setMode('tornado');
         // positionAnimator.setMode('liquid');
         // positionAnimator.setMode('pulse');
-        positionAnimator.triggerDust(2.5);
+        // positionAnimator.triggerDust(2.5);
         // positionAnimator.morphTo(meshBPositions, 2.0); // smooth morph to any other PLY
         // positionAnimator.resetToBase(1.5);             // back to meshA
 
-         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator)
+        MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator)
         app.autoUpdate.push(positionAnimator);
-        
 
+        positionAnimator.setMode('hold');
+
+        let adapt = MYCUBE.effects.splat.splatLayers[0].sampleMeshVertices(app.mainRenderBundle[1].mesh.vertices, app.autoUpdate[1].vertexCount);
+        app.autoUpdate[1].morphTo(adapt, 2.0)
 
         // just for dev
         window.animator = animator;
-        MYCUBE.effects.flameEmitter.setIntensity(100);
-        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
+
+        MYCUBE.effects.flameEmitter.setIntensity(20);
+        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(3);
         MYCUBE.effects.flameEmitter.instanceTargets.forEach((e) => {
-          e.currentScale = [110, 110, 110]
+          e.currentScale = [60, 60, 60]
         })
         MYCUBE.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 11, 0, 0.7];
@@ -164,23 +151,23 @@ export var loadGaussianSplatVertAnim = function() {
         cam._dirtyAngle = true;
 
 
-        setInterval(() => {
-          const memoI = randomIntFromTo(90, 150);
-          MYCUBE.effects.flameEmitter.setIntensity(memoI);
-          const memoCONFIG = randomIntFromTo(5, 15);
-          MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
-          let memoS = [randomIntFromTo(90, 150), randomIntFromTo(90, 150), randomIntFromTo(90, 150)];
-          let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
-          MYCUBE.effects.flameEmitter.instanceTargets.forEach((e) => {
-            e.currentScale = memoS;
-            e.color = memoC;
-          })
-          setRandomMode()
-          // console.log("memo color : " + memoC);
-          // console.log("memo scale : " + memoS);
-          // console.log("memo intes : " + memoI);
-          // console.log("memo memoCONFIG : " + memoCONFIG);
-        }, 2000)
+        // setInterval(() => {
+        //   const memoI = randomIntFromTo(90, 120);
+        //   MYCUBE.effects.flameEmitter.setIntensity(memoI);
+        //   const memoCONFIG = randomIntFromTo(5, 15);
+        //   MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
+        //   let memoS = [randomIntFromTo(90, 150), randomIntFromTo(90, 150), randomIntFromTo(90, 150)];
+        //   let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
+        //   MYCUBE.effects.flameEmitter.instanceTargets.forEach((e) => {
+        //     e.currentScale = memoS;
+        //     e.color = memoC;
+        //   })
+        //   setRandomMode()
+        //   // console.log("memo color : " + memoC);
+        //   // console.log("memo scale : " + memoS);
+        //   // console.log("memo intes : " + memoI);
+        //   // console.log("memo memoCONFIG : " + memoCONFIG);
+        // }, 3000)
 
       }, 1500);
     }

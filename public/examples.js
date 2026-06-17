@@ -4927,6 +4927,7 @@ var _loaderObj = require("../src/engine/loader-obj.js");
 var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
 var _splat = require("../src/engine/effects/splat.js");
+var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadGaussianSplatVertAnim = function () {
   let gaussianSplat = new _world.default({
@@ -4948,11 +4949,9 @@ var loadGaussianSplatVertAnim = function () {
   }, () => {
     let animator;
     gaussianSplat.addLight();
-    // if you double call downloadMeshes for same path engine use cached values no double fetch...
     (0, _loaderObj.downloadMeshes)({
       ball: "./res/meshes/blender/sphere.obj",
       cube: "./res/meshes/blender/cube.obj"
-      // car: "./res/meshes/ply/d.obj"
     }, onLoadObj, {
       scale: [1, 1, 1]
     });
@@ -4970,41 +4969,10 @@ var loadGaussianSplatVertAnim = function () {
       animator.setMode(selectedMode);
       animator.setScale((0, _utils.randomFloatFromTo)(0.2, 10));
       animator.setSpeed((0, _utils.randomFloatFromTo)(0.2, 4));
-      console.log(`Mode set to: ${selectedMode}`);
+      // console.log(`Mode set to: ${selectedMode}`);
     }
-    function onGround(m) {
-      // gaussianSplat.addMeshObj({
-      //   material: {type: 'standard', share: true},
-      //   position: {x: 0, y: -5, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/floor1.webp'], //, './res/textures/env-maps/sky1_lod_mid.webp'],
-      //   name: 'floor',
-      //   mesh: m.cube,
-      //   physics: {
-      //     enabled: false,
-      //     mass: 0,
-      //     geometry: "Cube"
-      //   }
-      // })
-    }
+    function onGround(m) {}
     async function onLoadObj(m) {
-      // gaussianSplat.addMeshObj({
-      //   material: {type: 'standard', share: true},
-      //   position: {x: 0, y: -1, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [1, 1, 1],
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-      //   name: 'sky',
-      //   mesh: m.car,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   }
-      // });
-
-      // share: true if not defined it is false.
       let MYCUBE = gaussianSplat.addMeshObj({
         material: {
           type: 'standard'
@@ -5050,6 +5018,24 @@ var loadGaussianSplatVertAnim = function () {
       });
       gaussianSplat.lightContainer[0].setPosition(0, 45, -10);
       gaussianSplat.lightContainer[0].setTarget(0, 0, -10);
+
+      // glb test
+      const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, gaussianSplat.device));
+      gaussianSplat.addGlbObjInctance({
+        material: {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        useScale: true,
+        scale: [6, 6, 6],
+        position: {
+          x: 0,
+          y: 4,
+          z: -20
+        },
+        name: 'monster',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+      }, null, glbFile);
       setTimeout(async () => {
         window.MYCUBE = MYCUBE;
         MYCUBE.setBlend(0.001);
@@ -5070,19 +5056,22 @@ var loadGaussianSplatVertAnim = function () {
         // positionAnimator.setMode('tornado');
         // positionAnimator.setMode('liquid');
         // positionAnimator.setMode('pulse');
-        positionAnimator.triggerDust(2.5);
+        // positionAnimator.triggerDust(2.5);
         // positionAnimator.morphTo(meshBPositions, 2.0); // smooth morph to any other PLY
         // positionAnimator.resetToBase(1.5);             // back to meshA
 
         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
         app.autoUpdate.push(positionAnimator);
+        positionAnimator.setMode('hold');
+        let adapt = MYCUBE.effects.splat.splatLayers[0].sampleMeshVertices(app.mainRenderBundle[1].mesh.vertices, app.autoUpdate[1].vertexCount);
+        app.autoUpdate[1].morphTo(adapt, 2.0);
 
         // just for dev
         window.animator = animator;
-        MYCUBE.effects.flameEmitter.setIntensity(100);
-        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
+        MYCUBE.effects.flameEmitter.setIntensity(20);
+        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(3);
         MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
-          e.currentScale = [110, 110, 110];
+          e.currentScale = [60, 60, 60];
         });
         MYCUBE.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [0, 11, 0, 0.7];
@@ -5094,23 +5083,24 @@ var loadGaussianSplatVertAnim = function () {
         cam.setY(17);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-        setInterval(() => {
-          const memoI = (0, _utils.randomIntFromTo)(90, 150);
-          MYCUBE.effects.flameEmitter.setIntensity(memoI);
-          const memoCONFIG = (0, _utils.randomIntFromTo)(5, 15);
-          MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
-          let memoS = [(0, _utils.randomIntFromTo)(90, 150), (0, _utils.randomIntFromTo)(90, 150), (0, _utils.randomIntFromTo)(90, 150)];
-          let memoC = [(0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100)];
-          MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
-            e.currentScale = memoS;
-            e.color = memoC;
-          });
-          setRandomMode();
-          // console.log("memo color : " + memoC);
-          // console.log("memo scale : " + memoS);
-          // console.log("memo intes : " + memoI);
-          // console.log("memo memoCONFIG : " + memoCONFIG);
-        }, 2000);
+
+        // setInterval(() => {
+        //   const memoI = randomIntFromTo(90, 120);
+        //   MYCUBE.effects.flameEmitter.setIntensity(memoI);
+        //   const memoCONFIG = randomIntFromTo(5, 15);
+        //   MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
+        //   let memoS = [randomIntFromTo(90, 150), randomIntFromTo(90, 150), randomIntFromTo(90, 150)];
+        //   let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
+        //   MYCUBE.effects.flameEmitter.instanceTargets.forEach((e) => {
+        //     e.currentScale = memoS;
+        //     e.color = memoC;
+        //   })
+        //   setRandomMode()
+        //   // console.log("memo color : " + memoC);
+        //   // console.log("memo scale : " + memoS);
+        //   // console.log("memo intes : " + memoI);
+        //   // console.log("memo memoCONFIG : " + memoCONFIG);
+        // }, 3000)
       }, 1500);
     }
   });
@@ -5118,7 +5108,7 @@ var loadGaussianSplatVertAnim = function () {
 };
 exports.loadGaussianSplatVertAnim = loadGaussianSplatVertAnim;
 
-},{"../src/engine/effects/splat.js":62,"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],13:[function(require,module,exports){
+},{"../src/engine/effects/splat.js":62,"../src/engine/loader-obj.js":71,"../src/engine/loaders/webgpu-gltf.js":74,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -33469,6 +33459,23 @@ fn fs_main(in: VertexOutput) -> FragOut {
   detachPositionAnimator() {
     this.positionAnimator = null;
   }
+
+  /**
+  * Builds a target array of exactly `sampleCount` points by directly
+  * sampling the mesh's own vertex positions (no triangle interpolation).
+  * If sampleCount > mesh vertex count, vertices repeat.
+  */
+  sampleMeshVertices(positions, sampleCount) {
+    const meshVertCount = positions.length / 3;
+    const out = new Float32Array(sampleCount * 3);
+    for (let i = 0; i < sampleCount; i++) {
+      const srcIdx = i % meshVertCount; // or Math.floor(Math.random() * meshVertCount) for shuffled
+      out[i * 3] = positions[srcIdx * 3];
+      out[i * 3 + 1] = positions[srcIdx * 3 + 1];
+      out[i * 3 + 2] = positions[srcIdx * 3 + 2];
+    }
+    return out;
+  }
   render(pass, mesh, viewProjMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
@@ -33898,6 +33905,9 @@ class SplatPositionAnimator {
           break;
         case 'liquid':
           this._modeLiquid(tt);
+          break;
+        case 'hold':
+          // nothing
           break;
         case 'none':
         default:
