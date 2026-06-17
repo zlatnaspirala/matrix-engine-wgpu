@@ -460,7 +460,7 @@ var MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
-  LOAD_AFTER_CLICK_MOBILE: true,
+  LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
   logLoopError: true,
@@ -28263,8 +28263,8 @@ var FluxCodexVertex = class {
           { name: "rayOrigin", type: "object" },
           { name: "rayDirection", type: "object" },
           { name: "hitObject", type: "object" },
-          { name: "position", type: "position" },
-          { name: "rotation", type: "rotation" },
+          { name: "position", type: "object" },
+          { name: "rotation", type: "object" },
           { name: "hitNormal", type: "object" },
           { name: "hitDistance", type: "object" },
           { name: "eventName", type: "object" },
@@ -29758,8 +29758,10 @@ LIST OF INTEREST OBJECT:
       if (pinName === "hitObjectName") {
         return node2._returnCache["hitObject"]["name"];
       } else if (pinName === "position") {
+        if (!node2._returnCache) return {};
         return node2._returnCache["hitObject"]["position"];
       } else if (pinName === "rotation") {
+        if (!node2._returnCache) return {};
         return node2._returnCache["hitObject"]["rotation"];
       } else {
         return node2._returnCache[pinName];

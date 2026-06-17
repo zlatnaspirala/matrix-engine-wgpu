@@ -31,7 +31,7 @@ import {loadKinematicCollision} from "./examples/kinematic-collision.js";
 import {loadSprite1} from "./examples/2D-world.js";
 import {loadSprite2} from "./examples/2D-world-matter.js";
 import {loadDrumCannon} from "./examples/drum-cannon.js";
-import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
+// import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {loadGaussianSplat} from "./examples/gaussian-splat.js";
 import {loadGaussianSplatVertAnim} from "./examples/gaussian-vertex-anim.js";
 

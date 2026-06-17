@@ -24,7 +24,7 @@ export const MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
-  LOAD_AFTER_CLICK_MOBILE: true,
+  LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
   logLoopError: true,

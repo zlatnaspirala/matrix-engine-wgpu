@@ -192,6 +192,21 @@ export class GaussianSplatLayer {
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
 
+    // Dummy/fallback position buffer (slot 2) — used when no positionAnimator
+    // is attached, so render() never crashes on missing dynamic position data.
+    const dummyPosData = new Float32Array(this.vertexCount * 3);
+    dummyPosData.set(this.splatData.positions);
+    this.dummyPosBuffer = this.device.createBuffer({
+      label: 'splat-dummy-pos',
+      size: dummyPosData.byteLength,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    new Float32Array(this.dummyPosBuffer.getMappedRange()).set(dummyPosData);
+    this.dummyPosBuffer.unmap();
+
+    this.positionAnimator = null; // explicit until one is attached
+
     const initialColors = new Float32Array(this.vertexCount * 4);
     for(let i = 0;i < this.vertexCount;i++) {
       initialColors[i * 4 + 0] = this.splatData.splatColors[i * 4 + 0];
@@ -409,7 +424,7 @@ fn fs_main(in: VertexOutput) -> FragOut {
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);
-    pass.setVertexBuffer(2, this.positionAnimator.posBuffer);
+    pass.setVertexBuffer(2, this.positionAnimator ? this.positionAnimator.posBuffer : this.dummyPosBuffer);
     pass.draw(this.vertexCount, 1, 0, 0);
   }
 

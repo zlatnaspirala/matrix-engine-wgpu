@@ -57,7 +57,25 @@ app.addLight();
       // ME END FLOOR addCube
 
   
-// [MAIN_REPLACE2]
+                            // ME START FLOOR updatePosx
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetX(0);
+ }, 800);
+ // ME END FLOOR updatePosx
+ 
+   // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(0);
+ }, 800);
+ // ME END FLOOR updatePosy
+ 
+  // ME START FLOOR updatePosz
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetZ(-20);
+ }, 800);
+ // ME END FLOOR updatePosz
+ 
+ // [MAIN_REPLACE2]
  })
 })
 window.app = app;

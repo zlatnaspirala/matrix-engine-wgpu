@@ -2212,8 +2212,8 @@ export default class FluxCodexVertex {
           {name: "rayOrigin", type: "object"},
           {name: "rayDirection", type: "object"},
           {name: "hitObject", type: "object"},
-          {name: "position", type: "position"},
-          {name: "rotation", type: "rotation"},
+          {name: "position", type: "object"},
+          {name: "rotation", type: "object"},
           {name: "hitNormal", type: "object"},
           {name: "hitDistance", type: "object"},
           {name: "eventName", type: "object"},
@@ -3630,8 +3630,10 @@ LIST OF INTEREST OBJECT:
       if(pinName === "hitObjectName") {
         return node._returnCache['hitObject']['name'];
       } else if(pinName === "position") {
+        if(!node._returnCache) return {};
         return node._returnCache['hitObject']['position'];
       } else if(pinName === "rotation") {
+        if(!node._returnCache) return {};
         return node._returnCache['hitObject']['rotation'];
       } else {
         return node._returnCache[pinName];
