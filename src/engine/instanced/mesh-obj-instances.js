@@ -413,6 +413,27 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
       }
 
+      this.setTopology = (t, cullMode = 'none', frontFace = 'ccw') => {
+        const isStrip =
+          t === 'triangle-strip' ||
+          t === 'line-strip';
+        if(isStrip) {
+          this.primitive = {
+            topology: t,
+            stripIndexFormat: 'uint16',
+            cullMode: cullMode,
+            frontFace: frontFace
+          };
+        } else {
+          this.primitive = {
+            topology: t,
+            cullMode: cullMode,
+            frontFace: frontFace
+          };
+        }
+        this.setupPipeline();
+      };
+
       this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',
         entries: [

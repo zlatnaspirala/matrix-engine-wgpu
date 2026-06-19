@@ -4928,6 +4928,8 @@ var _raycast = require("../src/engine/raycast.js");
 var _utils = require("../src/engine/utils.js");
 var _splat = require("../src/engine/effects/splat.js");
 var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
+var _cameras = require("../src/engine/cameras.js");
+var _kaleidoscopeEffectInstance = require("../src/engine/effects/kaleidoscopeEffectInstance.js");
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
 var loadGaussianSplatVertAnim = function () {
   let gaussianSplat = new _world.default({
@@ -4947,11 +4949,12 @@ var loadGaussianSplatVertAnim = function () {
       a: 1
     }
   }, () => {
-    let animator;
+    let animator, positionAnimator;
     gaussianSplat.addLight();
     (0, _loaderObj.downloadMeshes)({
       ball: "./res/meshes/blender/sphere.obj",
-      cube: "./res/meshes/blender/cube.obj"
+      cube: "./res/meshes/blender/cube.obj",
+      me: "./res/meshes/obj/nidza.obj"
     }, onLoadObj, {
       scale: [1, 1, 1]
     });
@@ -4962,17 +4965,13 @@ var loadGaussianSplatVertAnim = function () {
     });
     (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
     const modes = ['rings', 'wave', 'zones', 'pulse'];
-    // Function to set a random mode
-    function setRandomMode() {
-      const randomIndex = Math.floor(Math.random() * modes.length);
-      const selectedMode = modes[randomIndex];
-      animator.setMode(selectedMode);
-      animator.setScale((0, _utils.randomFloatFromTo)(0.2, 10));
-      animator.setSpeed((0, _utils.randomFloatFromTo)(0.2, 4));
-      // console.log(`Mode set to: ${selectedMode}`);
-    }
     function onGround(m) {}
     async function onLoadObj(m) {
+      // let topologyArgNidza = {
+      //   topology: 'point-list',
+      //   cullMode: 'back',
+      //   frontFace: 'ccw'
+      // }
       let MYCUBE = gaussianSplat.addMeshObj({
         material: {
           type: 'standard'
@@ -4980,12 +4979,12 @@ var loadGaussianSplatVertAnim = function () {
         position: {
           x: 0,
           y: 4,
-          z: -10
+          z: -20
         },
         rotation: {
-          x: -90,
-          y: 0,
-          z: 180
+          x: 0,
+          y: 180,
+          z: 0
         },
         rotationSpeed: {
           x: 0,
@@ -4993,9 +4992,10 @@ var loadGaussianSplatVertAnim = function () {
           z: 0
         },
         scale: [1, 1, 1],
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'cube',
-        mesh: m.cube,
+        texturesPaths: ['./res/icons/512.webp'],
+        name: 'me',
+        // primitive: topologyArgNidza,
+        mesh: m.me,
         raycast: {
           enabled: true,
           radius: 1
@@ -5008,18 +5008,14 @@ var loadGaussianSplatVertAnim = function () {
           flameEmitter: true
         }
       });
-      gaussianSplat.lightContainer[0].setIntensity(165);
+      gaussianSplat.lightContainer[0].setIntensity(365);
+      gaussianSplat.lightContainer[0].setRange(240);
       gaussianSplat.activateBloomEffect();
-      gaussianSplat.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-      gaussianSplat.lightContainer[0].behavior.value_ = -1;
-      gaussianSplat.lightContainer[0].updater.push(light => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      });
-      gaussianSplat.lightContainer[0].setPosition(0, 45, -10);
-      gaussianSplat.lightContainer[0].setTarget(0, 0, -10);
+      gaussianSplat.bloomPass.setBlurRadius(0.1);
+      gaussianSplat.lightContainer[0].setPosition(0, 90, -20);
+      gaussianSplat.lightContainer[0].setTarget(0, 0, -20);
 
-      // glb test
+      // Glb
       const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, gaussianSplat.device));
       let topologyArg = {
         topology: 'point-list',
@@ -5032,7 +5028,7 @@ var loadGaussianSplatVertAnim = function () {
           useTextureFromGlb: true
         },
         useScale: true,
-        scale: [6, 6, 6],
+        scale: [16, 16, 16],
         position: {
           x: 0,
           y: 4,
@@ -5042,24 +5038,51 @@ var loadGaussianSplatVertAnim = function () {
         primitive: topologyArg,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
       }, null, glbFile);
-      MYGLB.playAnimationByIndex(3);
+      MYGLB.playAnimationByIndex(0);
       setTimeout(async () => {
         window.MYCUBE = MYCUBE;
         window.MYGLB = MYGLB;
-        MYCUBE.setBlend(0.001);
-        MYCUBE.effects.splat = new _splat.GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
-        // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/test2.ply', 12, "point-list");
-        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/slayzer.ply', 12, "point-list");
-        animator = new _splat.SplatColorAnimator(app.device, layer.positions, layer.vertexCount, layer.colorBuffer);
-        animator.setMode('pulse');
-        animator.setScale(0.8);
-        animator.setSpeed(0.8);
-        layer.colorBuffer = animator.colorBuffer;
-        app.autoUpdate.push(animator);
-        let positionAnimator = new _splat.SplatPositionAnimator(app.device, MYCUBE.effects.splat.splatLayers[0].positions, MYCUBE.effects.splat.splatLayers[0].vertexCount);
-
-        // In your render loop:
-        // positionAnimator.update(time, deltaTime);
+        MYCUBE.setBlend(0.5);
+        MYCUBE.position.setSpeed(0.1);
+        MYCUBE.position.translateByY(40);
+        let guard = false;
+        MYCUBE.position.onTargetPositionReach = async () => {
+          MYCUBE.position.translateByY(-10);
+          MYGLB.playAnimationByIndex(2);
+          if (guard === false) {
+            MYCUBE.effects.splat = new _splat.GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
+            const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "point-list");
+            animator = new _splat.SplatColorAnimator(app.device, layer.positions, layer.vertexCount, layer.colorBuffer);
+            animator.setMode('pulse');
+            animator.setScale(0.8);
+            animator.setSpeed(0.8);
+            layer.colorBuffer = animator.colorBuffer;
+            app.autoUpdate.push(animator);
+            positionAnimator = new _splat.SplatPositionAnimator(app.device, MYCUBE.effects.splat.splatLayers[0].positions, MYCUBE.effects.splat.splatLayers[0].vertexCount);
+            MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
+            app.autoUpdate.push(positionAnimator);
+            positionAnimator.setMode('hold');
+            setTimeout(() => {
+              let adapt = MYCUBE.effects.splat.splatLayers[0].sampleMeshVertices(MYGLB.mesh.vertices, app.autoUpdate[1].vertexCount);
+              const adapt1 = MYCUBE.effects.splat.splatLayers[0].remapAxes(adapt, {
+                from: 'Z_UP',
+                to: 'Y_UP'
+              });
+              app.autoUpdate[1].morphTo(adapt1, 1.0, 15000);
+              MYCUBE.rotation.rotationSpeed.x = 1;
+            }, 4000);
+            let modeIndex = 0;
+            _cameras.MobileDOM.addButton("Mode", function () {
+              const mode = modes[modeIndex];
+              positionAnimator.setMode(mode);
+              console.log('Mode:', mode);
+              modeIndex = (modeIndex + 1) % modes.length;
+            }, () => {}, {
+              left: '61'
+            });
+            guard = true;
+          }
+        };
 
         // Effects:
         // positionAnimator.setMode('tornado');
@@ -5068,20 +5091,16 @@ var loadGaussianSplatVertAnim = function () {
         // positionAnimator.triggerDust(2.5);
         // positionAnimator.morphTo(meshBPositions, 2.0); // smooth morph to any other PLY
         // positionAnimator.resetToBase(1.5);             // back to meshA
+        // positionAnimator.setUpAxis('Z');
 
-        MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
-        app.autoUpdate.push(positionAnimator);
-        positionAnimator.setMode('hold');
-        let adapt = MYCUBE.effects.splat.splatLayers[0].sampleMeshVertices(MYGLB.mesh.vertices, app.autoUpdate[1].vertexCount);
-        const adapt1 = MYCUBE.effects.splat.splatLayers[0].remapAxes(adapt, {
-          from: 'Y_UP',
-          to: 'Z_UP'
-        });
-        app.autoUpdate[1].morphTo(adapt1, 2.0);
+        // app.canvas.addEventListener("ray.hit.event", (e) => {});
 
-        //
-        MYCUBE.effects.flameEmitter.setIntensity(10);
-        MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(2);
+        MYCUBE.effects.keeffect = new _kaleidoscopeEffectInstance.KaleidoscopeEmitter(gaussianSplat.device, 'rgba16float', 40, gaussianSplat.cameraBuffer);
+
+        // MYCUBE.effects.flameEmitter.setIntensity(21);
+        // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(20);
+        // MYCUBE.effects.flameEmitter.recreateVertexDataFromData([-0.9259007514618081, 0.4179421017513555, 0.11768499353838083, 0.10608869389091338, 0.977154565205311, 0.7464570350478348, -0.7737847072761124, -1.3015114156980743])
+
         MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
           e.currentScale = [160, 160, 160];
         });
@@ -5090,37 +5109,107 @@ var loadGaussianSplatVertAnim = function () {
         });
         let cam = app.getCamera();
         cam.setYaw(0);
-        cam.setPitch(-0.15);
-        cam.setZ(7);
-        cam.setY(17);
+        cam.setPitch(0);
+        cam.setZ(30);
+        cam.setY(12);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
 
-        // setInterval(() => {
-        //   const memoI = randomIntFromTo(90, 120);
-        //   MYCUBE.effects.flameEmitter.setIntensity(memoI);
-        //   const memoCONFIG = randomIntFromTo(5, 15);
-        //   MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
-        //   let memoS = [randomIntFromTo(90, 150), randomIntFromTo(90, 150), randomIntFromTo(90, 150)];
-        //   let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
-        //   MYCUBE.effects.flameEmitter.instanceTargets.forEach((e) => {
-        //     e.currentScale = memoS;
-        //     e.color = memoC;
-        //   })
-        //   setRandomMode()
-        //   // console.log("memo color : " + memoC);
-        //   // console.log("memo scale : " + memoS);
-        //   // console.log("memo intes : " + memoI);
-        //   // console.log("memo memoCONFIG : " + memoCONFIG);
-        // }, 3000)
-      }, 1500);
+        // Dom
+        let bloomRadius = 0.1;
+        let bloomIntesity = 0.1;
+        let glbAnimation = 0;
+        _cameras.MobileDOM.addButton("Bloom radius +", function () {
+          app.bloomPass.setBlurRadius(bloomRadius);
+          bloomRadius++;
+        }, () => {}, {
+          left: '5'
+        });
+        _cameras.MobileDOM.addButton("Bloom radius -", function () {
+          app.bloomPass.setBlurRadius(bloomRadius);
+          if (bloomRadius - 1 > 0) bloomRadius--;
+        }, () => {}, {
+          left: '13'
+        });
+        _cameras.MobileDOM.addButton("Bloom intesity +", function () {
+          app.bloomPass.setIntensity(bloomIntesity);
+          bloomIntesity = bloomIntesity + 10;
+        }, () => {}, {
+          left: '21'
+        });
+        _cameras.MobileDOM.addButton("Bloom intesity -", function () {
+          app.bloomPass.setIntensity(bloomIntesity);
+          if (bloomIntesity - 10 > 0) bloomIntesity = bloomIntesity - 10;
+        }, () => {}, {
+          left: '29'
+        });
+        _cameras.MobileDOM.addButton("Flame effect random", function () {
+          // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(10);
+          // MYCUBE.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+          let memoS = [(0, _utils.randomIntFromTo)(10, 150), (0, _utils.randomIntFromTo)(10, 150), (0, _utils.randomIntFromTo)(10, 150)];
+          let memoC = [(0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100)];
+          MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
+            e.currentScale = memoS;
+            e.color = memoC;
+          });
+          MYCUBE.effects.keeffect.recreateVertexDataCrazzy((0, _utils.randomIntFromTo)(6, 36));
+          MYCUBE.effects.keeffect.setIntensity((0, _utils.randomIntFromTo)(3, 23));
+        }, () => {}, {
+          left: '37'
+        });
+        _cameras.MobileDOM.addButton("Animation", function () {
+          if (glbAnimation < 4) {
+            glbAnimation++;
+          } else {
+            glbAnimation = 0;
+          }
+          MYGLB.playAnimationByIndex(glbAnimation);
+        }, () => {}, {
+          left: '45'
+        });
+        const topologies = ['triangle-list', 'triangle-strip', 'line-list', 'line-strip', 'point-list'];
+        let topologyIndex = 0;
+        _cameras.MobileDOM.addButton("Topology", function () {
+          topologyIndex = (topologyIndex + 1) % topologies.length;
+          const topology = topologies[topologyIndex];
+          MYGLB.setTopology(topology);
+        }, () => {}, {
+          left: '53'
+        });
+        let delay = 100;
+        const delayStep = 100;
+        const delayMax = 1000;
+        _cameras.MobileDOM.addButton(`Delay (0-1sec)`, function () {
+          delay += delayStep;
+          if (delay > delayMax) {
+            delay = 0;
+          }
+          MYGLB.trailAnimation.delay = delay;
+          console.log('Trail delay:', delay);
+        }, () => {}, {
+          left: '69'
+        });
+        let currentNumberOfTrails = 2;
+        const minInstances = 1;
+        const maxInstances = 5;
+        _cameras.MobileDOM.addButton(`Trails (1-5)`, function () {
+          currentNumberOfTrails++;
+          if (currentNumberOfTrails > maxInstances) {
+            currentNumberOfTrails = minInstances;
+          }
+          MYGLB.updateInstances(currentNumberOfTrails);
+          console.log('Trails:', currentNumberOfTrails);
+        }, () => {}, {
+          left: '77'
+        });
+      }, 500);
     }
   });
   window.app = gaussianSplat;
 };
 exports.loadGaussianSplatVertAnim = loadGaussianSplatVertAnim;
 
-},{"../src/engine/effects/splat.js":62,"../src/engine/loader-obj.js":71,"../src/engine/loaders/webgpu-gltf.js":74,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],13:[function(require,module,exports){
+},{"../src/engine/cameras.js":45,"../src/engine/effects/kaleidoscopeEffectInstance.js":58,"../src/engine/effects/splat.js":62,"../src/engine/loader-obj.js":71,"../src/engine/loaders/webgpu-gltf.js":74,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26677,7 +26766,6 @@ class WASDCamera {
     down: false
   };
   _mouseDown = false;
-
   // Sensitivity matching standard FPCamera parameters
   MOUSE_SENS = 0.01;
   TOUCH_SENS = 0.03;
@@ -26819,7 +26907,7 @@ class WASDCamera {
           this.yaw %= Math.PI * 2;
           this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
           this._dirtyAngle = true;
-          touchStartX = touch.clientX; // update AFTER clamp
+          touchStartX = touch.clientX;
           touchStartY = touch.clientY;
         }
         e.preventDefault();
@@ -28007,8 +28095,6 @@ class CinematicCamera {
     this._t = t;
     return this;
   };
-
-  // ── shake ────────────────────────────────────────────────────────────────────
   shake = (amplitude, duration, frequency = 15) => {
     this._shake = {
       active: true,
@@ -28018,8 +28104,6 @@ class CinematicCamera {
       elapsed: 0
     };
   };
-
-  // ── _recalculateViewVP — mirrors FirstPersonCamera exactly when not using target
   _recalculateViewVP() {
     if (this._useTarget) {
       this._buildViewFromTarget();
@@ -28093,7 +28177,6 @@ class CinematicCamera {
     const tx = this._target[0],
       ty = this._target[1],
       tz = this._target[2];
-
     // forward
     let fx = tx - ex,
       fy = ty - ey,
@@ -28103,7 +28186,6 @@ class CinematicCamera {
     fx /= fl;
     fy /= fl;
     fz /= fl;
-
     // world up with optional roll
     let wux = 0,
       wuy = 1,
@@ -28135,12 +28217,10 @@ class CinematicCamera {
     rx /= rl;
     ry /= rl;
     rz /= rl;
-
     // reorthogonalised up
     const upx = ry * fz - rz * fy,
       upy = rz * fx - rx * fz,
       upz = rx * fy - ry * fx;
-
     // sync pitch/yaw back so getters are consistent
     this.back[0] = -fx;
     this.back[1] = -fy;
@@ -28172,10 +28252,7 @@ class CinematicCamera {
     vs[15] = 1;
     CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
-
-  // ── update — same signature as FirstPersonCamera ─────────────────────────────
   update(dt = 0.016) {
-    // 1. advance path
     if (this._playing && this._path) {
       const totalT = this._path.totalTime;
       this._t += dt * this._speed / totalT;
@@ -28191,8 +28268,6 @@ class CinematicCamera {
       }
       if (this._playing || this._t === 1) this._applyPathSample();
     }
-
-    // 2. shake
     const sk = this._shake;
     if (sk.active) {
       sk.elapsed += dt;
@@ -28208,8 +28283,6 @@ class CinematicCamera {
       }
       this._dirtyAngle = true;
     }
-
-    // 3. rebuild if dirty
     if (!this._dirtyAngle) return;
     this._recalculateViewVP();
     this._dirtyAngle = false;
@@ -28837,7 +28910,7 @@ const MobileDOM = exports.MobileDOM = {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: `${size * 0.35}px`,
+      fontSize: `${size * 0.25}px`,
       color: options.color ?? '#ffffff',
       background: `rgba(255,255,255,${opacity * 0.4})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
@@ -38167,6 +38240,24 @@ class MEMeshObjInstances extends _materialsInstanced.default {
           frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
         };
       }
+      this.setTopology = (t, cullMode = 'none', frontFace = 'ccw') => {
+        const isStrip = t === 'triangle-strip' || t === 'line-strip';
+        if (isStrip) {
+          this.primitive = {
+            topology: t,
+            stripIndexFormat: 'uint16',
+            cullMode: cullMode,
+            frontFace: frontFace
+          };
+        } else {
+          this.primitive = {
+            topology: t,
+            cullMode: cullMode,
+            frontFace: frontFace
+          };
+        }
+        this.setupPipeline();
+      };
       this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',
         entries: [{
@@ -43863,31 +43954,24 @@ class MEMeshObj extends _materials.default {
       // 'line-strip'     // outlines
       // 'point-list'     // particles
       this.topology = 'triangle-list';
-      this.setTopology = t => {
+      this.setTopology = (t, cullMode = 'none', frontFace = 'ccw') => {
         const isStrip = t === 'triangle-strip' || t === 'line-strip';
         if (isStrip) {
           this.primitive = {
             topology: t,
             stripIndexFormat: 'uint16',
-            cullMode: 'none',
-            frontFace: 'ccw'
+            cullMode: cullMode,
+            frontFace: frontFace
           };
         } else {
           this.primitive = {
             topology: t,
-            cullMode: 'none',
-            frontFace: 'ccw'
+            cullMode: cullMode,
+            frontFace: frontFace
           };
         }
         this.setupPipeline();
       };
-
-      // this.primitive = {
-      //   topology: this.topology,
-      //   cullMode: 'none',
-      //   frontFace: 'ccw'
-      // }
-
       this.mirrorBindGroupLayout = device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',
         entries: [{
@@ -43915,7 +43999,6 @@ class MEMeshObj extends _materials.default {
       });
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
-        // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       function alignTo256(n) {
@@ -43937,7 +44020,6 @@ class MEMeshObj extends _materials.default {
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex Animation Params",
         size: this.vertexAnimParams.byteLength,
-        // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
@@ -44236,7 +44318,7 @@ class MEMeshObj extends _materials.default {
       label: 'PipelineLayout Mesh',
       bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayout, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null].filter(Boolean)
     });
-    // VERTEX STATE (SHARED)
+    // VERTEX (SHARED)
     const vertexState = {
       entryPoint: 'main',
       module: vertexModule,
@@ -44553,12 +44635,10 @@ class MEMeshObj extends _materials.default {
     const local = this.boundingSphere.center;
     const m = this.modelMatrix;
     const center = new Float32Array(3);
-
-    // Transform local sphere center by model matrix
     center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
     center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
     center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
-    this.boundingSphere.center = center; // ← Update world-space center
+    this.boundingSphere.center = center;
   }
 }
 exports.default = MEMeshObj;
@@ -47388,7 +47468,7 @@ class ProceduralMeshObj extends _materials.default {
     });
   }
 
-  // GEOMETRY LOADING old
+  // Old
   _loadGeometry(spec) {
     const {
       type,
@@ -47492,7 +47572,6 @@ class ProceduralMeshObj extends _materials.default {
       width: 1,
       height: 1
     });
-
     // Materials expects texture0
     this.texture0 = texture;
     this.meshTexture = texture;
@@ -47580,11 +47659,8 @@ class ProceduralMeshObj extends _materials.default {
       }]
     } // normalB
     ];
-
-    // this.primitive = {topology: 'triangle-list', cullMode: 'none', frontFace: 'ccw'}; //ccw
   }
   _setupUniforms() {
-    // console.log('EEEEEEEEEEEEEEEEEEEEEEEEEEEE', this.pointerEffect)
     this.effects = {};
     if (this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
@@ -47628,7 +47704,7 @@ class ProceduralMeshObj extends _materials.default {
     });
     this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
 
-    // vertex Anim
+    // VertexAnim
     this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
     this.vertexAnimBuffer = this.device.createBuffer({
       label: "Vertex Animation Params",
@@ -47861,7 +47937,6 @@ class ProceduralMeshObj extends _materials.default {
     this.updateVertexAnimBuffer();
   }
   setupPipeline() {
-    // this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : (0, _vertexProcedural.vertexMorphWGSL)();
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? (0, _fragmentVideo.fragmentVideoWGSL)() : this.getMaterial();
@@ -48294,10 +48369,7 @@ class MeshMorpher {
     } : composed;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // All original methods below — completely unchanged
-  // ─────────────────────────────────────────────────────────────────────────────
-
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     const counts = new Uint16Array(positions.length / 3);
@@ -48910,7 +48982,6 @@ class MeshMorpher {
       const particleIndex = Math.floor(u * particleCount) % particleCount;
       const particle = particles[particleIndex];
       const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
-
       // Small sphere for each particle
       const theta = uLocal * Math.PI * 2;
       const phi = v * Math.PI;

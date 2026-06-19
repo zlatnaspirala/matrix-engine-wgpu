@@ -1,5 +1,5 @@
 import {vertexMorphWGSL} from '../shaders/vertex.procedural.wgsl';
-import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, LOG_WARN, MeshType} from './utils';
+import {genName, LOG_WARN, MeshType} from './utils';
 import Materials from './materials';
 import {GeometryFactory} from './geometry-factory';
 import {mat4} from 'wgpu-matrix';
@@ -158,7 +158,7 @@ export default class ProceduralMeshObj extends Materials {
     });
   }
 
-  // GEOMETRY LOADING old
+  // Old
   _loadGeometry(spec) {
     const {type, size, segments, options} = spec;
     const geo = GeometryFactory.create(type, size, segments, options);
@@ -225,7 +225,6 @@ export default class ProceduralMeshObj extends Materials {
 
   _padMeshesToMatch() {
     const maxCount = Math.max(this.meshA.vertexCount, this.meshB.vertexCount);
-
     if(this.meshA.vertexCount < maxCount) {
       this.meshA = this._padMesh(this.meshA, maxCount);
     }
@@ -237,7 +236,6 @@ export default class ProceduralMeshObj extends Materials {
   _padMesh(mesh, targetCount) {
     const padCount = targetCount - mesh.vertexCount;
     const lastVertIdx = (mesh.vertexCount - 1) * 3;
-
     const paddedVertices = new Float32Array(targetCount * 3);
     paddedVertices.set(mesh.vertices);
     for(let i = 0;i < padCount;i++) {
@@ -277,20 +275,17 @@ export default class ProceduralMeshObj extends Materials {
 
   async _createDefaultTexture() {
     const textureData = new Uint8Array([255, 255, 255, 255]);
-
     const texture = this.device.createTexture({
       size: [1, 1, 1],
       format: 'rgba8unorm',
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     });
-
     this.device.queue.writeTexture(
       {texture},
       textureData,
       {bytesPerRow: 4},
       {width: 1, height: 1}
     );
-
     // Materials expects texture0
     this.texture0 = texture;
     this.meshTexture = texture;
@@ -337,12 +332,9 @@ export default class ProceduralMeshObj extends Materials {
       {arrayStride: 3 * 4, attributes: [{shaderLocation: 6, offset: 0, format: 'float32x3'}]}, // posB
       {arrayStride: 3 * 4, attributes: [{shaderLocation: 7, offset: 0, format: 'float32x3'}]}, // normalB
     ];
-
-    // this.primitive = {topology: 'triangle-list', cullMode: 'none', frontFace: 'ccw'}; //ccw
   }
 
   _setupUniforms() {
-    // console.log('EEEEEEEEEEEEEEEEEEEEEEEEEEEE', this.pointerEffect)
     this.effects = {};
     if(this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
@@ -373,12 +365,11 @@ export default class ProceduralMeshObj extends Materials {
       }
     }
     this.modelUniformBuffer = this.device.createBuffer({size: 16 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-
     this.bonesBuffer = this.device.createBuffer({size: 6400 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.morphBlendBuffer = this.device.createBuffer({size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
 
-    // vertex Anim
+    // VertexAnim
     this.vertexAnimParams = new Float32Array([
       0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0,
     ]);
@@ -548,7 +539,6 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   setupPipeline() {
-    // this.createBindGroupForRender();
     const pm = PipelineManager.get();
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : vertexMorphWGSL();
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? fragmentVideoWGSL() : this.getMaterial();
@@ -974,10 +964,7 @@ export class MeshMorpher {
     return allFlat ? {func: composed, flat: true} : composed;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // All original methods below — completely unchanged
-  // ─────────────────────────────────────────────────────────────────────────────
-
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     const counts = new Uint16Array(positions.length / 3);
@@ -1206,7 +1193,6 @@ export class MeshMorpher {
     const halfH = height / 2;
     // If fromZeroY is true, shift everything up so the bottom hemisphere starts at 0
     const yOffset = fromZeroY ? (halfH + radius) : 0;
-
     return (u, v) => {
       if(v < 0.25) {
         // Lower Hemisphere
@@ -1664,16 +1650,13 @@ export class MeshMorpher {
       const particleIndex = Math.floor(u * particleCount) % particleCount;
       const particle = particles[particleIndex];
       const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
-
       // Small sphere for each particle
       const theta = uLocal * Math.PI * 2;
       const phi = v * Math.PI;
       const r = particle.size;
-
       const x = (particle.x + r * Math.sin(phi) * Math.cos(theta)) * S;
       const y = (particle.y + r * Math.cos(phi)) * S;
       const z = (particle.z + r * Math.sin(phi) * Math.sin(theta)) * S;
-
       return [x, y, z];
     };
   }
