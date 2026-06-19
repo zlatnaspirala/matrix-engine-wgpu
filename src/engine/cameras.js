@@ -20,7 +20,6 @@ export class WASDCamera {
   _viewScratch = mat4.create();
   _digital = {forward: false, backward: false, left: false, right: false, up: false, down: false};
   _mouseDown = false;
-
   // Sensitivity matching standard FPCamera parameters
   MOUSE_SENS = 0.01;
   TOUCH_SENS = 0.03;
@@ -115,14 +114,12 @@ export class WASDCamera {
           const touch = e.touches[0];
           const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
           const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
-
           this.yaw -= dx * this.rotationSpeed;
           this.pitch -= dy * this.rotationSpeed;
           this.yaw %= Math.PI * 2;
           this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
           this._dirtyAngle = true;
-
-          touchStartX = touch.clientX;  // update AFTER clamp
+          touchStartX = touch.clientX;
           touchStartY = touch.clientY;
         }
         e.preventDefault();
@@ -143,7 +140,7 @@ export class WASDCamera {
 
       canvas.addEventListener('pointermove', e => {
         if(e.pointerType === 'mouse' && this._mouseDown) {
-          if(window.__isDragging === true) {return}
+          if(window.__isDragging === true) {return }
           const dx = e.movementX * this.MOUSE_SENS;
           const dy = e.movementY * this.MOUSE_SENS;
           this.yaw -= dx * this.rotationSpeed;
@@ -850,7 +847,7 @@ export class FirstPersonCamera {
 
     if(isMobile() === false) canvas.addEventListener('pointermove', e => {
       if(e.pointerType === 'mouse' && this._mouseDown) {
-        if(window.__isDragging === true) {return}
+        if(window.__isDragging === true) {return }
         const dx = e.movementX * this.MOUSE_SENS;
         const dy = e.movementY * this.MOUSE_SENS;
         this.yaw -= dx * this.rotationSpeed;
@@ -1082,12 +1079,10 @@ export class CinematicCamera {
   resume = () => {this._playing = true; return this;}
   seekT = (t) => {this._t = t; return this;}
 
-  // ── shake ────────────────────────────────────────────────────────────────────
   shake = (amplitude, duration, frequency = 15) => {
     this._shake = {active: true, amplitude, frequency, duration, elapsed: 0};
   }
 
-  // ── _recalculateViewVP — mirrors FirstPersonCamera exactly when not using target
   _recalculateViewVP() {
     if(this._useTarget) {
       this._buildViewFromTarget();
@@ -1132,13 +1127,11 @@ export class CinematicCamera {
     const sk = this._shakeOffset;
     const ex = p[0] + sk[0], ey = p[1] + sk[1], ez = p[2] + sk[2];
     const tx = this._target[0], ty = this._target[1], tz = this._target[2];
-
     // forward
     let fx = tx - ex, fy = ty - ey, fz = tz - ez;
     const fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
     if(fl < 1e-7) return;
     fx /= fl; fy /= fl; fz /= fl;
-
     // world up with optional roll
     let wux = 0, wuy = 1, wuz = 0;
     if(this._roll) {
@@ -1155,17 +1148,14 @@ export class CinematicCamera {
     const rl = Math.sqrt(rx * rx + ry * ry + rz * rz);
     if(rl < 1e-7) return;
     rx /= rl; ry /= rl; rz /= rl;
-
     // reorthogonalised up
     const upx = ry * fz - rz * fy, upy = rz * fx - rx * fz, upz = rx * fy - ry * fx;
-
     // sync pitch/yaw back so getters are consistent
     this.back[0] = -fx; this.back[1] = -fy; this.back[2] = -fz;
     this.right[0] = rx; this.right[1] = ry; this.right[2] = rz;
     this.up[0] = upx; this.up[1] = upy; this.up[2] = upz;
     this.yaw = Math.atan2(-fx, -fz);
     this.pitch = Math.asin(Math.max(-1, Math.min(1, fy)));
-
     const vs = this.view;
     vs[0] = rx; vs[4] = ry; vs[8] = rz; vs[12] = -(rx * ex + ry * ey + rz * ez);
     vs[1] = upx; vs[5] = upy; vs[9] = upz; vs[13] = -(upx * ex + upy * ey + upz * ez);
@@ -1174,13 +1164,10 @@ export class CinematicCamera {
     CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
 
-  // ── update — same signature as FirstPersonCamera ─────────────────────────────
   update(dt = 0.016) {
-    // 1. advance path
     if(this._playing && this._path) {
       const totalT = this._path.totalTime;
       this._t += (dt * this._speed) / totalT;
-
       if(this._t >= 1) {
         if(this._loop) {
           this._t %= 1;
@@ -1194,7 +1181,6 @@ export class CinematicCamera {
       if(this._playing || this._t === 1) this._applyPathSample();
     }
 
-    // 2. shake
     const sk = this._shake;
     if(sk.active) {
       sk.elapsed += dt;
@@ -1211,7 +1197,6 @@ export class CinematicCamera {
       this._dirtyAngle = true;
     }
 
-    // 3. rebuild if dirty
     if(!this._dirtyAngle) return;
     this._recalculateViewVP();
     this._dirtyAngle = false;
@@ -1774,7 +1759,7 @@ export const MobileDOM = {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: `${size * 0.35}px`,
+      fontSize: `${size * 0.25}px`,
       color: options.color ?? '#ffffff',
       background: `rgba(255,255,255,${opacity * 0.4})`,
       border: `2px solid rgba(255,255,255,${opacity})`,

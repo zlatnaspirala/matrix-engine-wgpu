@@ -460,7 +460,7 @@ var MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
-  LOAD_AFTER_CLICK_MOBILE: true,
+  LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
   logLoopError: true,
@@ -2466,40 +2466,40 @@ var WASDCamera = class _WASDCamera {
       }, { passive: true });
     }
     this._keyInterval = null;
-    const setDigital = (e2, value) => {
+    const setDigital = (e2, value2) => {
       switch (e2.code) {
         case "ArrowUp":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "ArrowDown":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "ArrowLeft":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "ArrowRight":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "KeyW":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "KeyS":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "KeyA":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "KeyD":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "KeyV":
-          this._digital.up = value;
+          this._digital.up = value2;
           break;
         case "KeyC":
-          this._digital.down = value;
+          this._digital.down = value2;
           break;
       }
-      if (value == true && this._keyInterval === null) {
+      if (value2 == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -2718,34 +2718,34 @@ var RPGCamera = class _RPGCamera {
     this._dirty = true;
   }
   _setupKeyboard() {
-    const setDigital = (e2, value) => {
+    const setDigital = (e2, value2) => {
       switch (e2.code) {
         case "KeyW":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "KeyS":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "KeyA":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "KeyD":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "ArrowUp":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "ArrowDown":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "ArrowLeft":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "ArrowRight":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
       }
-      if (value && this._keyInterval === null) {
+      if (value2 && this._keyInterval === null) {
         this._detachedFromFollow = true;
         this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
       } else {
@@ -3077,34 +3077,34 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    const setDigital = (e2, value) => {
+    const setDigital = (e2, value2) => {
       switch (e2.code) {
         case "KeyW":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "KeyS":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "KeyA":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "KeyD":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "ArrowUp":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "ArrowDown":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "ArrowLeft":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "ArrowRight":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
       }
-      if (value == true && this._keyInterval === null) {
+      if (value2 == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -8536,7 +8536,6 @@ var Materials = class {
     }
   }
   createMaterialBindGroupVideo() {
-    console.log("SET VIDEO BIND GROUP");
     if (this.video == null) {
       this.materialBindGroup = this.device.createBindGroup({
         label: "materialVideoBGL",
@@ -13207,8 +13206,8 @@ var MEMeshObj = class extends Materials {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+        setIntensity: (value2) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -13338,7 +13337,6 @@ var MEMeshObj = class extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x2, y2]));
   }
   setupPipeline() {
-    console.log("TEST SETUP ");
     const pm = PipelineManager.get();
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
@@ -16416,25 +16414,25 @@ var MEBvhJoint = class {
     let r2 = [0, 0, 0];
     for (let i = 0; i < this.channels.length; i++) {
       const channel = this.channels[i];
-      const value = frameData[this.channelOffset + i];
+      const value2 = frameData[this.channelOffset + i];
       switch (channel) {
         case "Xposition":
-          t[0] = value;
+          t[0] = value2;
           break;
         case "Yposition":
-          t[1] = value;
+          t[1] = value2;
           break;
         case "Zposition":
-          t[2] = value;
+          t[2] = value2;
           break;
         case "Xrotation":
-          r2[0] = degToRad2(value);
+          r2[0] = degToRad2(value2);
           break;
         case "Yrotation":
-          r2[1] = degToRad2(value);
+          r2[1] = degToRad2(value2);
           break;
         case "Zrotation":
-          r2[2] = degToRad2(value);
+          r2[2] = degToRad2(value2);
           break;
       }
     }
@@ -20876,8 +20874,8 @@ var HPBarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value) {
-    const clamped = value < 0 ? 0 : value > 1 ? 1 : value;
+  setProgress(value2) {
+    const clamped = value2 < 0 ? 0 : value2 > 1 ? 1 : value2;
     if (this.progress !== clamped) {
       this.progress = clamped;
       this._progressDirty = true;
@@ -21025,8 +21023,8 @@ var MANABarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value) {
-    this.progress = Math.max(0, Math.min(1, value));
+  setProgress(value2) {
+    this.progress = Math.max(0, Math.min(1, value2));
   }
   setColor(r2, g, b, a = 1) {
     this.color = [r2, g, b, a];
@@ -22225,8 +22223,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+        setIntensity: (value2) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -23490,7 +23488,7 @@ var MEEditorClient = class {
       this.ws.send(o2);
     });
     document.addEventListener("save-graph", (e2) => {
-      console.info("%cSave graph <signal>", LOG_FUNNY_ARCADE);
+      console.info(`%cSave graph <signal> ${e2.detail}`, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-graph",
         graphData: e2.detail.data
@@ -23537,7 +23535,8 @@ var MEEditorClient = class {
     document.addEventListener("get-shader-graphs", () => {
       console.info("%cget-shader-graphs <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
-        action: "get-shader-graphs"
+        action: "get-shader-graphs",
+        projectName: location.href.split("/public/")[1].split(".")[0]
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -23621,6 +23620,12 @@ var MEEditorClient = class {
 var EditorProvider = class {
   constructor(core) {
     this.core = core;
+    this._ev = {
+      updatePos: new CustomEvent("web.editor.update.pos", { detail: {} }),
+      updateRot: new CustomEvent("web.editor.update.rot", { detail: {} }),
+      updateScale: new CustomEvent("web.editor.update.scale", { detail: {} }),
+      updateUseScale: new CustomEvent("web.editor.update.useScale", { detail: {} })
+    };
     this.addEditorEvents();
   }
   getNameFromPath(p) {
@@ -23632,24 +23637,34 @@ var EditorProvider = class {
       switch (e2.detail.propertyId) {
         case "position": {
           console.log("change signal for pos", e2.detail);
-          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
-            detail: e2.detail
-          }));
+          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") {
+            this._ev.updatePos.detail.inputFor = e2.detail.inputFor;
+            this._ev.updatePos.detail.property = e2.detail.property;
+            this._ev.updatePos.detail.propertyId = e2.detail.propertyId;
+            this._ev.updatePos.detail.value = e2.detail.value;
+            document.dispatchEvent(this._ev.updatePos);
+          }
           break;
         }
         case "rotation": {
           console.log("[signal][rot]");
-          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
-            detail: e2.detail
-          }));
+          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") {
+            this._ev.updateRot.detail.inputFor = e2.detail.inputFor;
+            this._ev.updateRot.detail.property = e2.detail.property;
+            this._ev.updateRot.detail.propertyId = e2.detail.propertyId;
+            this._ev.updateRot.detail.value = e2.detail.value;
+            document.dispatchEvent(this._ev.updateRot);
+          }
           break;
         }
         case "scale": {
           console.log("[signal][scale]");
           if (e2.detail.property == "0" || e2.detail.property == "1" || e2.detail.property == "2") {
-            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-              detail: e2.detail
-            }));
+            this._ev.updateScale.detail.inputFor = e2.detail.inputFor;
+            this._ev.updateScale.detail.property = e2.detail.property;
+            this._ev.updateScale.detail.propertyId = e2.detail.propertyId;
+            this._ev.updateScale.detail.value = e2.detail.value;
+            document.dispatchEvent(this._ev.updateScale);
           }
           break;
         }
@@ -23659,7 +23674,13 @@ var EditorProvider = class {
       let sceneObj = this.core.getSceneObjectByName(e2.detail.inputFor);
       if (e2.detail.property == "no info") {
         sceneObj[e2.detail.propertyId] = e2.detail.value;
-        if (e2.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent("web.editor.update.useScale", { detail: e2.detail }));
+        if (e2.detail.propertyId === "useScale") {
+          this._ev.updateUseScale.detail.inputFor = e2.detail.inputFor;
+          this._ev.updateUseScale.detail.property = e2.detail.property;
+          this._ev.updateUseScale.detail.propertyId = e2.detail.propertyId;
+          this._ev.updateUseScale.detail.value = e2.detail.value;
+          document.dispatchEvent(this._ev.updateUseScale);
+        }
         return;
       }
       if (sceneObj) {
@@ -23677,7 +23698,6 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: "" + e2.detail.index,
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
@@ -23696,7 +23716,6 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.mesh,
           raycast: { enabled: true, radius: 2 },
@@ -23730,7 +23749,6 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.objMesh,
           raycast: { enabled: true, radius: 2 },
@@ -24054,7 +24072,9 @@ var FragmentShaderGraph = class {
       const nodeElements = container[0].querySelectorAll(".nodeShader");
       nodeElements.forEach((el2) => el2.remove());
     }
-    this.connectionLayer.redrawAll();
+    if (this.connectionLayer) {
+      this.connectionLayer.redrawAll();
+    }
   }
 };
 var CompileContext = class {
@@ -24091,17 +24111,17 @@ var CompileContext = class {
     }
     this.resolving.add(key);
     const conn = this.shaderGraph.getInput(node2, pin);
-    let value;
+    let value2;
     if (conn) {
-      value = this.resolve(conn.fromNode, conn.fromPin);
+      value2 = this.resolve(conn.fromNode, conn.fromPin);
     } else {
       if (node2.inputs && pin in node2.inputs) {
-        value = node2.inputs[pin].default;
+        value2 = node2.inputs[pin].default;
       } else {
-        value = void 0;
+        value2 = void 0;
       }
     }
-    const result2 = node2.build(pin, value, this);
+    const result2 = node2.build(pin, value2, this);
     if (result2?.out !== void 0) {
       this.cache.set(key, result2.out);
     }
@@ -24140,9 +24160,9 @@ var ShaderNode = class {
   default(pin) {
     return this.inputs[pin]?.default ?? "0.0";
   }
-  build(_, value, ctx) {
+  build(_, value2, ctx) {
     return {
-      out: value,
+      out: value2,
       type: "f32"
     };
   }
@@ -24154,13 +24174,13 @@ var FragmentOutputNode = class extends ShaderNode {
   }
   build(_, __, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "color");
-    let value;
+    let value2;
     if (conn) {
-      value = ctx.resolve(conn.fromNode, conn.fromPin);
+      value2 = ctx.resolve(conn.fromNode, conn.fromPin);
     } else {
-      value = this.inputs.color.default;
+      value2 = this.inputs.color.default;
     }
-    ctx.outputs.outColor = value;
+    ctx.outputs.outColor = value2;
     return { out: ctx.outputs.outColor, type: "vec4f" };
   }
 };
@@ -24220,7 +24240,7 @@ var LightToColorNode = class extends ShaderNode {
       light: { default: "vec3f(1.0)" }
     };
   }
-  build(pin, value, ctx) {
+  build(pin, value2, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "light");
     let l;
     if (conn) {
@@ -24409,9 +24429,9 @@ var ContrastNode = class extends ShaderNode {
   }
 };
 var FloatNode = class extends ShaderNode {
-  constructor(value = 1) {
+  constructor(value2 = 1) {
     super("Float");
-    this.value = value;
+    this.value = value2;
   }
   build(_, __, ctx) {
     return {
@@ -25105,7 +25125,7 @@ svg path {
       const propsContainer = document.createElement("div");
       propsContainer.className = "node-properties";
       propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
-      function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
+      function addPropertyInput(label, propName, value2, type2 = "number", step = "0.01") {
         const row2 = document.createElement("div");
         row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
         const labelEl = document.createElement("label");
@@ -25113,7 +25133,7 @@ svg path {
         labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
         const input = document.createElement("input");
         input.type = type2;
-        input.value = value;
+        input.value = value2;
         input.step = step;
         input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
         input.addEventListener("input", () => {
@@ -25665,10 +25685,10 @@ var CurveEditor = class {
     const n2 = 1 - y2 / this.height;
     return this.valueMin + n2 * (this.valueMax - this.valueMin);
   }
-  _snap(value, steps) {
-    if (!this.snapEnabled) return value;
+  _snap(value2, steps) {
+    if (!this.snapEnabled) return value2;
     const range = this.valueMax - this.valueMin;
-    return Math.round((value - this.valueMin) / range * steps) / steps * range + this.valueMin;
+    return Math.round((value2 - this.valueMin) / range * steps) / steps * range + this.valueMin;
   }
   // VALUE EVALUATION (HERMITE)
   getValue(t) {
@@ -26301,12 +26321,17 @@ var CurveStore = class {
 
 // ../generateAISchema.js
 var tasks = [
-  "On load print hello world",
-  "On load create a cube named box1 at position 0 0 0",
-  "Create a the labyrinth using generatorWall",
-  "Set texture for floor object",
-  "Create a cube and enable raycast",
-  "Create 5 cubes in a row with spacing",
+  "On load create a cube named box1 at position (0, 3, 0) and make const rotate by y axis.",
+  `
+  Build the House with non physics cubes. Build 3 floors, walls and roof.
+  Make big house with space inside! 
+  Don't use physics generators, use simple nonphysics cubes.
+  To make it optimised you can use scale.
+  `,
+  "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ",
+  "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.",
+  "Create a nonPhysics Cube and enable raycast, on hit make object translateByZ",
+  "Create start from cubes - use nonphysics cubes.",
   "Create a pyramid of cubes with 4 levels",
   "Play mp3 audio on load",
   "Create audio reactive node from music",
@@ -26328,12 +26353,15 @@ var tasks = [
 ];
 var providers = [
   "ollama",
-  "groq"
+  "groq",
+  "anthropic",
+  "google"
 ];
 
 // ../fluxCodexVertex.js
 var runtimeCacheObjs = [];
 var FluxCodexVertex = class {
+  __experimental__RESOURCES_FOR_GRAPH = new RESOURCES_FOR_GRAPH();
   constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
     this.toolTip = toolTip;
@@ -26417,6 +26445,7 @@ var FluxCodexVertex = class {
       console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE);
       byId("graphGenJSON").value = e2.detail;
       byId("ai-status").removeAttribute("data-ai-status");
+      byId("ai-status").style.color = "";
     });
     document.addEventListener("keydown", (e2) => {
       const target = e2.composedPath && e2.composedPath()[0] || e2.target || document.activeElement;
@@ -26440,11 +26469,11 @@ var FluxCodexVertex = class {
     this.createContextMenu();
     document.addEventListener("fluxcodex.input.change", (e2) => {
       console.log("fluxcodex.input.change");
-      const { nodeId: nodeId2, field, value } = e2.detail;
+      const { nodeId: nodeId2, field, value: value2 } = e2.detail;
       const node2 = this.nodes.find((n2) => n2.id === nodeId2);
       if (!node2) return;
       if (node2.type !== "getSubObject") return;
-      this.handleGetSubObject(node2, value);
+      this.handleGetSubObject(node2, value2);
       if (field !== "path") return;
     });
     document.addEventListener("web.editor.addMp3", (e2) => {
@@ -26686,7 +26715,7 @@ var FluxCodexVertex = class {
     saveVPopup.style.fontWeight = "bold";
     saveVPopup.style.webkitTextStrokeWidth = "0px";
     saveVPopup.addEventListener("click", () => {
-      this.compileGraph();
+      setTimeout(() => this.compileGraph(), 100);
     });
     popup.appendChild(saveVPopup);
     document.body.appendChild(popup);
@@ -26705,8 +26734,8 @@ var FluxCodexVertex = class {
       position: "absolute",
       top: "10%",
       left: "5%",
-      width: "50%",
-      height: "70%",
+      width: "65%",
+      height: "80%",
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
     repeating-linear-gradient(
@@ -26764,8 +26793,35 @@ var FluxCodexVertex = class {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
+    const textAreaManualInput = document.createElement("textarea");
+    textAreaManualInput.id = "textAreaManualInput";
+    textAreaManualInput.style.width = "450px";
+    textAreaManualInput.style.height = "180px";
+    textAreaManualInput.style.display = "none";
+    textAreaManualInput.style.position = "absolute";
+    textAreaManualInput.style.right = "15px";
+    textAreaManualInput.style.top = "15px";
+    textAreaManualInput.classList.add("btn4");
+    textAreaManualInput.value = "Hello , ";
+    textAreaManualInput.addEventListener("keydown", (e2) => e2.stopPropagation());
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "manualInput";
+    checkbox.value = "not in use";
+    popup.appendChild(textAreaManualInput);
+    checkbox.onchange = function(e2) {
+      console.log(e2.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+      if (!e2.target.checked) {
+        textAreaManualInput.style.display = "none";
+        selectPrompt.disabled = false;
+      } else {
+        textAreaManualInput.style.display = "block";
+        selectPrompt.disabled = true;
+      }
+    };
+    popup.appendChild(checkbox);
     const label2 = document.createElement("span");
-    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    label2.innerText = `Select provider`;
     popup.appendChild(label2);
     const selectPromptProvider = document.createElement("select");
     selectPromptProvider.style.width = "400px";
@@ -26787,9 +26843,11 @@ var FluxCodexVertex = class {
     call.style.webkitTextStrokeWidth = "0px";
     call.addEventListener("click", (e2) => {
       if (selectPrompt.selectedIndex > 0) {
+        console.log(" use select task...");
       }
       if (e2.target.getAttribute("data-ai-status") == null) {
         e2.target.setAttribute("data-ai-status", "wip");
+        e2.target.style.color = "red";
       } else {
         if (e2.target.getAttribute("data-ai-status") == "wip") {
           console.info("gen ai tool call PREVENT ");
@@ -26798,12 +26856,15 @@ var FluxCodexVertex = class {
           console.info("gen ai tool call else ");
         }
       }
+      byId("graphGenJSON").value = "";
+      console.log(`%cAI TASK check input type:${checkbox.checked}`, LOG_FUNNY_ARCADE);
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
+      const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
+      console.log(`%cAI TASK SERVICE:${providers[IDPROVIDER]}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent("aiGenGraphCall", {
         detail: {
-          provider: providers[0],
-          // hardcode
-          task: selectPrompt.selectedOptions[0].innerText
+          provider: providers[IDPROVIDER],
+          task: checkbox.checked === true ? textAreaManualInput.value : selectPrompt.selectedOptions[0].innerText
         }
       }));
     });
@@ -26890,6 +26951,7 @@ var FluxCodexVertex = class {
     insertGraph.style.webkitTextStrokeWidth = "0px";
     insertGraph.addEventListener("click", async () => {
       console.log("TEST OVERRIDE", list.value);
+      list.value = list.value.replace(/```json/g, "").replace(/```/g, "").trim();
       let test = JSON.parse(list.value);
       this.mergeGraphBundle(test);
     });
@@ -26915,6 +26977,11 @@ var FluxCodexVertex = class {
   }
   _refreshVarsList(container) {
     container.innerHTML = "";
+    for (const key in this._varInputs) {
+      this._varInputs[key].onchange = null;
+      this._varInputs[key].oninput = null;
+    }
+    this._varInputs = {};
     const colors = {
       number: "#4fc3f7",
       boolean: "#aed581",
@@ -26954,11 +27021,14 @@ var FluxCodexVertex = class {
           color: "#fff",
           border: "1px solid #333"
         });
-        input.oninput = () => {
+        input.onchange = () => {
           if (type2 === "object") {
             try {
-              this.variables.object[name2] = JSON.parse(input.value);
-            } catch {
+              let parsed;
+              parsed = new Function("return " + input.value)();
+              this.variables.object[name2] = parsed;
+            } catch (err) {
+              console.log("err in vars editox:", err);
               return;
             }
           } else if (type2 === "number") {
@@ -26968,6 +27038,7 @@ var FluxCodexVertex = class {
           } else {
             this.variables.string[name2] = input.value;
           }
+          this.notifyVariableChanged(type2, name2);
         };
         const btnGet = document.createElement("button");
         btnGet.innerText = "Get";
@@ -27381,9 +27452,9 @@ var FluxCodexVertex = class {
     if (!obj2) return;
     node2.outputs = [];
     node2.exposeProps.forEach((p) => {
-      const value = this.getByPath(obj2, p);
-      if (value !== void 0) {
-        const type2 = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
+      const value2 = this.getByPath(obj2, p);
+      if (value2 !== void 0) {
+        const type2 = typeof value2 === "number" ? "number" : typeof value2 === "string" ? "string" : "object";
         node2.outputs.push({ name: p, type: type2 });
       }
     });
@@ -27794,22 +27865,67 @@ var FluxCodexVertex = class {
           { name: "raycast", type: "boolean" },
           { name: "scale", type: "object" },
           { name: "spacing", type: "number" },
-          { name: "delay", type: "number" }
+          { name: "delay", type: "number" },
+          { name: "orientation", type: "string" },
+          { name: "spacingByY", type: "number" }
         ],
         outputs: [
           { name: "execOut", type: "action" }
         ],
         fields: [
           { key: "material", value: "standard" },
-          { key: "pos", value: "{x:0, y:0, z:-20}" },
+          { key: "pos", value: "{x:0, y:3, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
           { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "size", value: "10x3" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
-          { key: "spacing", value: 10 },
+          { key: "spacing", value: 2 },
           { key: "delay", value: 500 },
+          { key: "orientation", value: "ByX" },
+          { key: "spacingByY", value: 3 },
+          { key: "created", value: false }
+        ],
+        noselfExec: "true"
+      }),
+      generatorWallNONPhysics: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Generator Wall NONPhysics",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "material", type: "string" },
+          { name: "pos", type: "object" },
+          { name: "rot", type: "object" },
+          { name: "texturePath", type: "string" },
+          { name: "name", type: "string" },
+          { name: "size", type: "string" },
+          { name: "raycast", type: "boolean" },
+          { name: "scale", type: "object" },
+          { name: "spacing", type: "number" },
+          { name: "delay", type: "number" },
+          { name: "orientation", type: "string" },
+          { name: "spacingByY", type: "number" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        fields: [
+          { key: "material", value: "standard" },
+          { key: "pos", value: "{x:0, y:3, z:-20}" },
+          { key: "rot", value: "{x:0, y:0, z:0}" },
+          { key: "texturePath", value: "res/textures/default.png" },
+          { key: "name", value: "TEST" },
+          { key: "size", value: "10x3" },
+          { key: "raycast", value: true },
+          { key: "scale", value: [1, 1, 1] },
+          { key: "spacing", value: 2 },
+          { key: "delay", value: 500 },
+          { key: "orientation", value: "ByX" },
+          { key: "spacingByY", value: 3 },
           { key: "created", value: false }
         ],
         noselfExec: "true"
@@ -27953,6 +28069,28 @@ var FluxCodexVertex = class {
           { name: "execOut", type: "action" }
         ],
         fields: [],
+        noselfExec: "true"
+      }),
+      setMorphProcMesh: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Morph ProceduralMesh",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "objectName", type: "string" },
+          { name: "index", type: "number" },
+          { name: "interval", type: "number" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        fields: [
+          { key: "objectName", value: "FLOOR" },
+          { key: "index", value: 1 },
+          { key: "interval", value: 2e3 }
+        ],
         noselfExec: "true"
       }),
       setVideoTexture: (id2, x2, y2) => ({
@@ -28125,6 +28263,8 @@ var FluxCodexVertex = class {
           { name: "rayOrigin", type: "object" },
           { name: "rayDirection", type: "object" },
           { name: "hitObject", type: "object" },
+          { name: "position", type: "object" },
+          { name: "rotation", type: "object" },
           { name: "hitNormal", type: "object" },
           { name: "hitDistance", type: "object" },
           { name: "eventName", type: "object" },
@@ -29294,10 +29434,9 @@ LIST OF INTEREST OBJECT:
     }
     return null;
   }
-  setVariable(type2, key, value) {
-    if (!this.variables[type2][key]) return;
-    console.log("Test -setVariable  value", value);
-    this.variables[type2][key].value = value;
+  setVariable(type2, key, value2) {
+    console.log("Test -setVariable  value", value2);
+    this.variables[type2][key].value = value2;
     this.notifyVariableChanged(type2, key);
   }
   updateArrayNode(node2, newValue) {
@@ -29349,6 +29488,7 @@ LIST OF INTEREST OBJECT:
       input.style.cursor = "default";
     }
     const saveInputValue = () => {
+      console.log("sadasd");
       let val;
       if (field.type === "object") {
         try {
@@ -29491,6 +29631,7 @@ LIST OF INTEREST OBJECT:
       n2._listenerAttached = true;
     } else if (n2.title == "On Ray Hit") {
       if (n2._listenerAttached) return;
+      console.log("ON RAY HIT INIT ONLE !!!");
       app.reference.addRaycastsListener();
       const handler = (e2) => {
         n2._returnCache = e2.detail;
@@ -29616,6 +29757,12 @@ LIST OF INTEREST OBJECT:
     if (node2.title === "On Ray Hit") {
       if (pinName === "hitObjectName") {
         return node2._returnCache["hitObject"]["name"];
+      } else if (pinName === "position") {
+        if (!node2._returnCache) return {};
+        return node2._returnCache["hitObject"]["position"];
+      } else if (pinName === "rotation") {
+        if (!node2._returnCache) return {};
+        return node2._returnCache["hitObject"]["rotation"];
       } else {
         return node2._returnCache[pinName];
       }
@@ -29649,18 +29796,18 @@ LIST OF INTEREST OBJECT:
       if (node2._returnCache === void 0) {
         this.triggerNode(node2.id);
       }
-      let value = node2._returnCache;
-      if (typeof value === "string") {
+      let value2 = node2._returnCache;
+      if (typeof value2 === "string") {
         try {
           if (node2.title == "Get String") {
           } else {
-            value = JSON.parse(value);
+            value2 = JSON.parse(value2);
           }
         } catch (e2) {
           console.warn("[getValue][json parse err]:", e2);
         }
       }
-      return value;
+      return value2;
     }
     const link = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === pinName);
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
@@ -30024,15 +30171,15 @@ LIST OF INTEREST OBJECT:
       const varField = n.fields?.find((f) => f.key === "var");
       if (varField && varField.value) {
         const type2 = n.title.replace("Get ", "").toLowerCase();
-        const value = this.getVariable(type2, varField.value);
-        n._returnCache = value;
+        const value2 = this.getVariable(type2, varField.value);
+        n._returnCache = value2;
         if (n.displayEl) {
           if (type2 === "object") {
-            n.displayEl.textContent = value !== void 0 ? JSON.stringify(value) : "{}";
-          } else if (typeof value === "number") {
-            n.displayEl.textContent = value.toFixed(3);
+            n.displayEl.textContent = value2 !== void 0 ? JSON.stringify(value2) : "{}";
+          } else if (typeof value2 === "number") {
+            n.displayEl.textContent = value2.toFixed(3);
           } else {
-            n.displayEl.textContent = String(value);
+            n.displayEl.textContent = String(value2);
           }
         }
       }
@@ -30075,21 +30222,22 @@ LIST OF INTEREST OBJECT:
     if (n.isVariableNode) {
       const type2 = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find((f) => f.key === "var");
+      console.log("isVariableNode set object ", value);
       if (varField && varField.value) {
-        let value = this.getValue(nodeId, "value");
+        let value2 = this.getValue(nodeId, "value");
         if (n.title == "Set Object") {
-          if (value == 0) {
+          if (value2 == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
           }
         } else {
-          if (value == 0) {
+          if (value2 == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
-            value = JSON.parse(varliteral.value);
+            value2 = JSON.parse(varliteral.value);
           } else {
-            console.log("set object ", value);
-            this.variables[type2][varField.value] = { value };
+            console.log("set object ", value2);
+            this.variables[type2][varField.value] = { value: value2 };
           }
         }
         this.notifyVariableChanged(type2, varField.value);
@@ -30099,11 +30247,11 @@ LIST OF INTEREST OBJECT:
             const vf2 = node2.fields?.find((f) => f.key === "var");
             if (vf2 && vf2.value === varField.value && node2.displayEl) {
               if (type2 === "object") {
-                node2.displayEl.textContent = JSON.stringify(value);
+                node2.displayEl.textContent = JSON.stringify(value2);
               } else {
-                node2.displayEl.textContent = typeof value === "number" ? value.toFixed(3) : String(value);
+                node2.displayEl.textContent = typeof value2 === "number" ? value2.toFixed(3) : String(value2);
               }
-              node2._returnCache = value;
+              node2._returnCache = value2;
             }
           }
         }
@@ -30232,6 +30380,8 @@ LIST OF INTEREST OBJECT:
         let raycast = this.getValue(nodeId, "raycast");
         let scale = this.getValue(nodeId, "scale");
         let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
         if (raycast == "true") {
           raycast = true;
         } else {
@@ -30248,8 +30398,81 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          app.physicsBodiesGeneratorWall(
+            mat,
+            pos,
+            rot,
+            texturePath,
+            name,
+            size,
+            raycast,
+            scale,
+            spacing,
+            delay,
+            ori,
+            spacingByY
+          );
         }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Generator Wall NONPhysics") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == "string") delay = parseInt(delay);
+        if (typeof pos == "string") eval("pos = " + pos);
+        if (typeof rot == "string") eval("rot = " + rot);
+        if (typeof scale == "string") eval("scale = " + scale);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find((f) => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          app.generatorWallNONPHYSICS(
+            mat,
+            pos,
+            rot,
+            texturePath,
+            name,
+            size,
+            raycast,
+            scale,
+            spacing,
+            delay,
+            ori,
+            spacingByY
+          );
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Morph ProceduralMesh") {
+        const objectName2 = this.getValue(nodeId, "objectName");
+        const interval = this.getValue(nodeId, "interval");
+        let morphIndex = this.getValue(nodeId, "index");
+        if (!objectName2) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        console.warn("[Set morph to] arg:", morphIndex);
+        let o2 = app.getSceneObjectByName(objectName2);
+        o2.morphTo(morphIndex, interval);
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Add OBJ") {
@@ -30454,7 +30677,6 @@ LIST OF INTEREST OBJECT:
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram,
@@ -31052,13 +31274,14 @@ LIST OF INTEREST OBJECT:
     }
     let getCurrentGIzmoObj = app.mainRenderBundle.filter((o2) => o2.effects.gizmoEffect && o2.effects.gizmoEffect.enabled);
     if (getCurrentGIzmoObj.length > 0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
-    byId("app").style.opacity = 0.5;
+    byId("app").style.display = "none";
     this.initEventNodes();
     Object.values(this.nodes).forEach((n2) => n2._returnCache = void 0);
     Object.values(this.nodes).filter((n2) => n2.category === "event" && n2.title === "onLoad").forEach((n2) => this.triggerNode(n2.id));
     byId("graph-status").innerHTML = "\u{1F534}";
   }
   compileGraph() {
+    console.log("SAVE NODES: ", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -31067,16 +31290,24 @@ LIST OF INTEREST OBJECT:
       pan: this.state.pan,
       variables: this.variables
     };
-    function saveReplacer(key, value) {
-      if (key === "fn") return void 0;
-      if (key === "accessObject") return void 0;
+    function saveReplacer(key, value2) {
+      if (value2 instanceof Element) return void 0;
+      if (value2 instanceof Node) return void 0;
+      if (key === "fn") {
+        console.log("stripping fn from", key);
+        return void 0;
+      }
+      if (key === "accessObject") {
+        console.log("stripping accessObject");
+        return void 0;
+      }
       if (key === "_returnCache") return void 0;
       if (key === "_listenerAttached") return false;
       if (key === "_audio") return void 0;
       if (key === "_loading") return false;
       if (key === "_energyHistory") return void 0;
       if (key === "_beatCooldown") return 0;
-      return value;
+      return value2;
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
@@ -31093,8 +31324,8 @@ LIST OF INTEREST OBJECT:
   }
   clearAllNodes() {
     this.board.querySelectorAll(".node").forEach((n2) => n2.remove());
-    this.nodes = [];
-    this.nodes.length = 0;
+    this.nodes = {};
+    this.nodeCounter = 0;
     this.links.length = 0;
     this.state.selectedNode = null;
     this.state.draggingNode = null;
@@ -31130,12 +31361,12 @@ LIST OF INTEREST OBJECT:
   exportToJSON() {
     const bundle = this._buildSaveBundle();
     console.log(bundle);
-    function saveReplacer(key, value) {
+    function saveReplacer(key, value2) {
       if (key === "fn") return void 0;
       if (key === "accessObject") return void 0;
       if (key === "_returnCache") return void 0;
       if (key === "_listenerAttached") return false;
-      return value;
+      return value2;
     }
     const json = JSON.stringify(bundle, saveReplacer);
     const blob = new Blob([json], { type: "application/json" });
@@ -31386,6 +31617,16 @@ LIST OF INTEREST OBJECT:
       x: (clientX - bRect.left) / this.state.zoom,
       y: (clientY - bRect.top) / this.state.zoom
     };
+  }
+};
+var RESOURCES_FOR_GRAPH = class {
+  obj = [];
+  glb = [];
+  images = [];
+  constructor() {
+    addEventListener("editorx-update-assets-list", (e2) => {
+      console.log("editorx-update-assets-list ", e2.detail);
+    });
   }
 };
 
@@ -31697,15 +31938,15 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("\u269B Enable physics (Ammo, Jolt, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("\u269B  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
+        let pId = prompt("\u269B  Choose physics library [jolt=1 ammo=2 cannones=3 matter=4] (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent("cnp", {
@@ -32055,15 +32296,15 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("\u269B Enable physics (Jolt, Ammo, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 matter=4  \n (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
       document.dispatchEvent(new CustomEvent("cnp", {
         detail: { name: name2, features }
@@ -32988,37 +33229,40 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
-      <span>Scene objects [agnostic]</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexAnim')">Set VertexAnim Intesity</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWave')">Set Vertex Wave</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWind')">Set Vertex Wind</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexPulse')">Set Vertex Pulse</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
+      <span class="themeAgnostic" >Scene objects [agnostic]</span>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setMorphProcMesh')">MorphTo ProcMesh</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexAnim')">Set VertexAnim Intesity</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexWave')">Set Vertex Wave</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexWind')">Set Vertex Wind</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexPulse')">Set Vertex Pulse</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
+      <span>Grids (non physics)</span>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorWallNONPhysics')">Generate Wall NONPhysics</button>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
@@ -33029,30 +33273,30 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumberLiteral')">Get Number Literal</button>
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-      <span>Media</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
-      <span>Physics</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
+      <span class="themeMedia">Media</span>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
+      <span class="themePhysics">Physics</span>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
       <span>String Operations</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
 
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
@@ -34009,8 +34253,8 @@ var ProceduralMeshObj = class extends Materials {
         this.vertexAnimParams[26] = speed;
         this.updateVertexAnimBuffer();
       },
-      setIntensity: (value) => {
-        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+      setIntensity: (value2) => {
+        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
         this.updateVertexAnimBuffer();
       },
       getIntensity: () => {
@@ -35075,7 +35319,7 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
     }
   });
 }
-function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
+function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
   const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
   console.log(width);
@@ -35088,6 +35332,16 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
       for (let x2 = 0; x2 < width; x2++) {
         const cubeName = `${name2}_${index}`;
         setTimeout(() => {
+          let __x = 0, __y = 0, __z = 0;
+          if (orientationOfwall === "ByX") {
+            __x = x2 * spacing2;
+            __y = y2 * spacing2 + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === "ByZ") {
+            __x = 0;
+            __y = y2 * spacing2 + spacingY;
+            __z = x2 * spacing2;
+          }
           engine.addMeshObj({
             material: { type: material },
             envMapParams: material == "mirror" ? {
@@ -35110,9 +35364,9 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
               // ✅ Env map mode - wip
             } : void 0,
             position: {
-              x: pos2.x + x2 * spacing2,
-              y: pos2.y + y2 * spacing2 + 2.8,
-              z: pos2.z
+              x: pos2.x + __x,
+              y: pos2.y + __y,
+              z: pos2.z + __z
             },
             rotation: rot2,
             rotationSpeed: { x: 0, y: 0, z: 0 },
@@ -35176,7 +35430,6 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, textur
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
 function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200) {
-  const root = this;
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
@@ -35369,6 +35622,67 @@ function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 
       }
       engine.matrixPhysics.createChain(ids, spacing2, 0.5);
     }, 500);
+  }
+  downloadMeshes(inputCube, handler, { scale: scale4 });
+}
+function generatorWallNONPHYSICS(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
+  const engine = this;
+  console.log("aaaaaa", engine);
+  const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
+  console.log("__________________________");
+  const inputCube = { mesh: useMeshPath };
+  function handler(m) {
+    let index = 0;
+    const RAY = { enabled: raycast2, radius: 1 };
+    for (let y2 = 0; y2 < height; y2++) {
+      for (let x2 = 0; x2 < width; x2++) {
+        const cubeName = `${name2}_${index}`;
+        setTimeout(() => {
+          let __x = 0, __y = 0, __z = 0;
+          if (orientationOfwall === "ByX") {
+            __x = x2 * spacing2;
+            __y = y2 * spacing2 + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === "ByZ") {
+            __x = 0;
+            __y = y2 * spacing2 + spacingY;
+            __z = x2 * spacing2;
+          }
+          engine.addMeshObj({
+            material: { type: material },
+            envMapParams: material == "mirror" ? {
+              baseColorMix: 0.5,
+              mirrorTint: [0.9, 0.95, 1],
+              reflectivity: 0.95,
+              illuminateColor: [0.3, 0.7, 1],
+              illuminateStrength: 0.4,
+              illuminatePulse: 0.01,
+              fresnelPower: 2,
+              envLodBias: 2.5,
+              usePlanarReflection: false
+            } : void 0,
+            position: {
+              x: pos2.x + __x,
+              y: pos2.y + __y,
+              z: pos2.z + __z
+            },
+            rotation: rot2,
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: false,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          const o2 = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o2);
+        }, index * delay2);
+        index++;
+      }
+    }
   }
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
@@ -36569,8 +36883,8 @@ var PhysicsBridge = class {
   clearBody(idx) {
     this._worker.postMessage({ cmd: "clearBody", idx });
   }
-  speedUpSimulation(value) {
-    this._worker.postMessage({ cmd: "speedUpSimulation", value });
+  speedUpSimulation(value2) {
+    this._worker.postMessage({ cmd: "speedUpSimulation", value: value2 });
   }
   setCollisionFlags(idx, flags) {
     if (idx === void 0 || idx === -1) return;
@@ -37892,6 +38206,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
+    this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
@@ -39324,7 +39639,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/test-vert-anim/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "x": 163.44534170032466, "y": 342.42804670740577, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_2": { "id": "node_2", "title": "onLoad", "x": 184.49629022728956, "y": 166.00662249335176, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_3": { "id": "node_3", "title": "Get String", "x": 258.94880137782127, "y": 724.4892587660414, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "markWave" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_4": { "id": "node_4", "title": "Starts With [string]", "x": 516.0824224816579, "y": 701.0957564919738, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_5": { "id": "node_5", "x": 845.0470522675018, "y": 189.94578928437136, "title": "Set Vertex Twist", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableTwist", "type": "boolean" }, { "name": "Twist speed", "type": "value" }, { "name": "Twist amount", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "" }, { "key": "enableTwist", "value": "true" }, { "key": "Twist speed", "value": "0.02" }, { "key": "Twist amount", "value": "0.5" }] }, "node_6": { "id": "node_6", "title": "if", "x": 530.6972414466322, "y": 261.9937674875258, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_7": { "id": "node_7", "title": "Get String", "x": 874.9299833627642, "y": 934.0919784679901, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "OCEAN" }], "isGetterNode": true, "displayEl": {} }, "node_8": { "id": "node_8", "title": "Get String", "x": 549.5268237156894, "y": 860.0949642254286, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "WAVE" }], "isGetterNode": true, "displayEl": {} }, "node_9": { "id": "node_9", "title": "Starts With [string]", "x": 794.7720213347767, "y": 728.333177256588, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_10": { "id": "node_10", "title": "if", "x": 874.3289151549054, "y": 572.741751820395, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_11": { "id": "node_11", "title": "if", "x": 1318.7095126654115, "y": 741.766898715731, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_12": { "id": "node_12", "title": "Starts With [string]", "x": 1089.8155885469946, "y": 760.949598309362, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_13": { "id": "node_13", "x": 1204.5320936113212, "y": 320.7584384393361, "title": "Set Vertex Wave", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "intensity", "type": "value" }, { "name": "enableWave", "type": "boolean" }, { "name": "Wave Speed", "type": "value" }, { "name": "Wave Amplitude", "type": "value" }, { "name": "Wave Frequency", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableWave", "value": "true" }, { "key": "Wave Speed", "value": 3 }, { "key": "Wave Amplitude", "value": 0.2 }, { "key": "Wave Frequency", "value": 1.5 }] }, "node_14": { "id": "node_14", "x": 1586.204590294737, "y": 438.42171192829653, "title": "Set Vertex Ocean", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableOcean", "type": "boolean" }, { "name": "Ocean Scale", "type": "value" }, { "name": "Ocean Height", "type": "value" }, { "name": "Ocean speed", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "FLOOR" }, { "key": "enableOcean", "value": "true" }, { "key": "Ocean Scale", "value": 2 }, { "key": "Ocean Height", "value": 0.08 }, { "key": "Ocean speed", "value": 1.5 }] } }, "links": [{ "id": "link_1", "from": { "node": "node_3", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "prefix" }, "type": "string" }, { "id": "link_2", "from": { "node": "node_1", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "input" }, "type": "string" }, { "id": "link_3", "from": { "node": "node_4", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_6", "pin": "condition" }, "type": "boolean" }, { "id": "link_4", "from": { "node": "node_6", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }, { "id": "link_5", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_6", "pin": "exec" }, "type": "action" }, { "id": "link_6", "from": { "node": "node_1", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_5", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_7", "from": { "node": "node_8", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_9", "pin": "prefix" }, "type": "string" }, { "id": "link_8", "from": { "node": "node_6", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_9", "from": { "node": "node_9", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_10", "pin": "condition" }, "type": "boolean" }, { "id": "link_10", "from": { "node": "node_7", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_12", "pin": "prefix" }, "type": "string" }, { "id": "link_11", "from": { "node": "node_1", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_9", "pin": "input" }, "type": "string" }, { "id": "link_12", "from": { "node": "node_1", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_12", "pin": "input" }, "type": "string" }, { "id": "link_13", "from": { "node": "node_12", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_11", "pin": "condition" }, "type": "boolean" }, { "id": "link_14", "from": { "node": "node_10", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_11", "pin": "exec" }, "type": "action" }, { "id": "link_15", "from": { "node": "node_10", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_13", "pin": "exec" }, "type": "action" }, { "id": "link_16", "from": { "node": "node_1", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_13", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_17", "from": { "node": "node_11", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_14", "pin": "exec" }, "type": "action" }, { "id": "link_18", "from": { "node": "node_1", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_14", "pin": "sceneObjectName" }, "type": "any" }], "nodeCounter": 15, "linkCounter": 19, "pan": [-775, -304], "variables": { "number": {}, "boolean": {}, "string": { "markWave": "SUB16", "OCEAN": "OCEAN", "WAVE": "WAVE" }, "object": {} } };
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 266.34460239409304, "y": 106.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 593.6141493868672, "y": 118.99371971348523, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:10, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[2,2,2]" }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }], "nodeCounter": 3, "linkCounter": 2, "pan": [-325, 2], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/test-vert-anim/shader-graphs.js
 var shaderGraphsProdc = [

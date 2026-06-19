@@ -47,6 +47,9 @@ import {catalogToText, generateAICatalog, providers, tasks} from "./generateAISc
 export let runtimeCacheObjs = [];
 
 export default class FluxCodexVertex {
+
+  __experimental__RESOURCES_FOR_GRAPH = new RESOURCES_FOR_GRAPH();
+
   constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
     this.toolTip = toolTip;
@@ -140,7 +143,8 @@ export default class FluxCodexVertex {
     document.addEventListener("on-ai-graph-response", e => {
       console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE);
       byId("graphGenJSON").value = e.detail;
-      byId('ai-status').removeAttribute('data-ai-status')
+      byId('ai-status').removeAttribute('data-ai-status');
+      byId('ai-status').style.color = '';
     });
     document.addEventListener("keydown", e => {
       const target = (e.composedPath && e.composedPath()[0]) || e.target || document.activeElement;
@@ -455,7 +459,10 @@ export default class FluxCodexVertex {
     saveVPopup.style.height = "70px";
     saveVPopup.style.fontWeight = "bold";
     saveVPopup.style.webkitTextStrokeWidth = "0px";
-    saveVPopup.addEventListener("click", () => {this.compileGraph()});
+    saveVPopup.addEventListener("click", () => {
+      // becouse blur input!
+      setTimeout(() => this.compileGraph(), 100)
+    });
     popup.appendChild(saveVPopup);
 
     document.body.appendChild(popup);
@@ -475,8 +482,8 @@ export default class FluxCodexVertex {
       position: "absolute",
       top: "10%",
       left: "5%",
-      width: "50%",
-      height: "70%",
+      width: "65%",
+      height: "80%",
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
     repeating-linear-gradient(
@@ -534,8 +541,41 @@ export default class FluxCodexVertex {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt)
+
+    const textAreaManualInput = document.createElement('textarea');
+    textAreaManualInput.id = 'textAreaManualInput';
+    textAreaManualInput.style.width = '450px';
+    textAreaManualInput.style.height = '180px';
+    textAreaManualInput.style.display = 'none';
+    textAreaManualInput.style.position = 'absolute';
+    textAreaManualInput.style.right = '15px';
+    textAreaManualInput.style.top = '15px';
+    textAreaManualInput.classList.add('btn4');
+    textAreaManualInput.value = "Hello , ";
+
+    // just stop propagate becouse scene in bg
+    textAreaManualInput.addEventListener('keydown', (e) => e.stopPropagation())
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = 'manualInput';
+    checkbox.value = 'not in use';
+
+    popup.appendChild(textAreaManualInput)
+    checkbox.onchange = function(e) {
+      console.log(e.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+      if(!e.target.checked) {
+        textAreaManualInput.style.display = 'none';
+        selectPrompt.disabled = false;
+      } else {
+        textAreaManualInput.style.display = 'block';
+        selectPrompt.disabled = true;
+      }
+    }
+    popup.appendChild(checkbox);
+
     const label2 = document.createElement("span");
-    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    label2.innerText = `Select provider`;
     popup.appendChild(label2);
     const selectPromptProvider = document.createElement("select");
     selectPromptProvider.style.width = '400px';
@@ -559,9 +599,11 @@ export default class FluxCodexVertex {
     call.addEventListener("click", (e) => {
       if(selectPrompt.selectedIndex > 0) {
         // use select task...
+        console.log(' use select task...')
       }
       if(e.target.getAttribute("data-ai-status") == null) {
         e.target.setAttribute("data-ai-status", "wip");
+        e.target.style.color = 'red';
       } else {
         if(e.target.getAttribute("data-ai-status") == "wip") {
           console.info('gen ai tool call PREVENT ')
@@ -570,11 +612,17 @@ export default class FluxCodexVertex {
           console.info('gen ai tool call else ')
         }
       }
+
+      byId('graphGenJSON').value = '';
+
+      console.log(`%cAI TASK check input type:${checkbox.checked}`, LOG_FUNNY_ARCADE);
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
+      const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
+      console.log(`%cAI TASK SERVICE:${providers[IDPROVIDER]}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
         detail: {
-          provider: providers[0], // hardcode
-          task: selectPrompt.selectedOptions[0].innerText
+          provider: providers[IDPROVIDER],
+          task: checkbox.checked === true ? textAreaManualInput.value : selectPrompt.selectedOptions[0].innerText
         }
       }));
     });
@@ -665,6 +713,10 @@ export default class FluxCodexVertex {
     insertGraph.style.webkitTextStrokeWidth = "0px";
     insertGraph.addEventListener("click", async () => {
       console.log("TEST OVERRIDE", list.value);
+      list.value = list.value
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
       let test = JSON.parse(list.value)
       this.mergeGraphBundle(test)
     });
@@ -694,6 +746,12 @@ export default class FluxCodexVertex {
 
   _refreshVarsList(container) {
     container.innerHTML = "";
+
+    for(const key in this._varInputs) {
+      this._varInputs[key].onchange = null;
+      this._varInputs[key].oninput = null;
+    }
+    this._varInputs = {};
 
     const colors = {
       number: "#4fc3f7",
@@ -739,11 +797,14 @@ export default class FluxCodexVertex {
           border: "1px solid #333",
         });
 
-        input.oninput = () => {
+        input.onchange = () => {
           if(type === "object") {
             try {
-              this.variables.object[name] = JSON.parse(input.value);
-            } catch {
+              let parsed;
+              parsed = (new Function("return " + input.value))();
+              this.variables.object[name] = parsed;
+            } catch(err) {
+              console.log('err in vars editox:', err);
               return;
             }
           } else if(type === "number") {
@@ -753,6 +814,8 @@ export default class FluxCodexVertex {
           } else {
             this.variables.string[name] = input.value;
           }
+
+          this.notifyVariableChanged(type, name)
         };
 
         const btnGet = document.createElement("button");
@@ -1774,22 +1837,65 @@ export default class FluxCodexVertex {
           {name: "raycast", type: "boolean"},
           {name: "scale", type: "object"},
           {name: "spacing", type: "number"},
-          {name: "delay", type: "number"}
+          {name: "delay", type: "number"},
+          {name: "orientation", type: "string"},
+          {name: "spacingByY", type: "number"},
         ],
         outputs: [
           {name: "execOut", type: "action"}
         ],
         fields: [
           {key: "material", value: "standard"},
-          {key: "pos", value: '{x:0, y:0, z:-20}'},
+          {key: "pos", value: '{x:0, y:3, z:-20}'},
           {key: "rot", value: '{x:0, y:0, z:0}'},
           {key: "texturePath", value: "res/textures/default.png"},
           {key: "name", value: "TEST"},
           {key: "size", value: "10x3"},
           {key: "raycast", value: true},
           {key: "scale", value: [1, 1, 1]},
-          {key: "spacing", value: 10},
+          {key: "spacing", value: 2},
           {key: "delay", value: 500},
+          {key: "orientation", value: "ByX"},
+          {key: "spacingByY", value: 3},
+          {key: "created", value: false},
+        ],
+        noselfExec: "true"
+      }),
+
+      generatorWallNONPhysics: (id, x, y) => ({
+        id, x, y, title: "Generator Wall NONPhysics",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "material", type: "string"},
+          {name: "pos", type: "object"},
+          {name: "rot", type: "object"},
+          {name: "texturePath", type: "string"},
+          {name: "name", type: "string"},
+          {name: "size", type: "string"},
+          {name: "raycast", type: "boolean"},
+          {name: "scale", type: "object"},
+          {name: "spacing", type: "number"},
+          {name: "delay", type: "number"},
+          {name: "orientation", type: "string"},
+          {name: "spacingByY", type: "number"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "material", value: "standard"},
+          {key: "pos", value: '{x:0, y:3, z:-20}'},
+          {key: "rot", value: '{x:0, y:0, z:0}'},
+          {key: "texturePath", value: "res/textures/default.png"},
+          {key: "name", value: "TEST"},
+          {key: "size", value: "10x3"},
+          {key: "raycast", value: true},
+          {key: "scale", value: [1, 1, 1]},
+          {key: "spacing", value: 2},
+          {key: "delay", value: 500},
+          {key: "orientation", value: "ByX"},
+          {key: "spacingByY", value: 3},
           {key: "created", value: false},
         ],
         noselfExec: "true"
@@ -1926,6 +2032,26 @@ export default class FluxCodexVertex {
           {name: "execOut", type: "action"}
         ],
         fields: [],
+        noselfExec: "true"
+      }),
+
+      setMorphProcMesh: (id, x, y) => ({
+        id, x, y, title: "Set Morph ProceduralMesh",
+        category: "action",
+        inputs: [
+          {name: "exec", type: "action"},
+          {name: "objectName", type: "string"},
+          {name: "index", type: "number"},
+          {name: "interval", type: "number"},
+        ],
+        outputs: [
+          {name: "execOut", type: "action"}
+        ],
+        fields: [
+          {key: "objectName", value: "FLOOR"},
+          {key: "index", value: 1},
+          {key: "interval", value: 2000},
+        ],
         noselfExec: "true"
       }),
 
@@ -2086,6 +2212,8 @@ export default class FluxCodexVertex {
           {name: "rayOrigin", type: "object"},
           {name: "rayDirection", type: "object"},
           {name: "hitObject", type: "object"},
+          {name: "position", type: "object"},
+          {name: "rotation", type: "object"},
           {name: "hitNormal", type: "object"},
           {name: "hitDistance", type: "object"},
           {name: "eventName", type: "object"},
@@ -3116,13 +3244,6 @@ LIST OF INTEREST OBJECT:
       }
     }
 
-    // TEST
-    // const catalog = generateAICatalog(nodeFactories);
-    // const systemCatalogText = catalogToText(catalog);
-    // console.log(systemCatalogText);
-    // localStorage.setItem('systemCatalogText', systemCatalogText);
-    // TEST
-
     if(spec) {
       const dom = this.createNodeDOM(spec);
       this.board.appendChild(dom);
@@ -3134,10 +3255,8 @@ LIST OF INTEREST OBJECT:
   }
 
   setVariable(type, key, value) {
-    if(!this.variables[type][key]) return;
-
+    // deplaced
     console.log('Test -setVariable  value', value);
-
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
   }
@@ -3200,6 +3319,7 @@ LIST OF INTEREST OBJECT:
     }
 
     const saveInputValue = () => {
+      console.log('sadasd')
       let val;
       if(field.type === "object") {
         try {
@@ -3214,6 +3334,7 @@ LIST OF INTEREST OBJECT:
       field.value = val;
 
       // existing logic stays
+
       if(node.isGetterNode && field.key === "var") {
         this.notifyVariableChanged("object", val);
       }
@@ -3372,8 +3493,8 @@ LIST OF INTEREST OBJECT:
       };
       n._listenerAttached = true;
     } else if(n.title == "On Ray Hit") {
-      // console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
       if(n._listenerAttached) return;
+      console.log('ON RAY HIT INIT ONLE !!!')
       app.reference.addRaycastsListener();
       const handler = (e) => {
         n._returnCache = e.detail;
@@ -3508,6 +3629,12 @@ LIST OF INTEREST OBJECT:
     if(node.title === "On Ray Hit") {
       if(pinName === "hitObjectName") {
         return node._returnCache['hitObject']['name'];
+      } else if(pinName === "position") {
+        if(!node._returnCache) return {};
+        return node._returnCache['hitObject']['position'];
+      } else if(pinName === "rotation") {
+        if(!node._returnCache) return {};
+        return node._returnCache['hitObject']['rotation'];
       } else {
         return node._returnCache[pinName];
       }
@@ -3546,7 +3673,6 @@ LIST OF INTEREST OBJECT:
         this.triggerNode(node.id);
       }
       let value = node._returnCache;
-      // Optional: parse string to array
       if(typeof value === "string") {
         try {
           if(node.title == "Get String") {
@@ -3985,6 +4111,7 @@ LIST OF INTEREST OBJECT:
         n._returnCache = value;
         // Update visual label if exists
         if(n.displayEl) {
+          // console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', type)
           if(type === "object") {
             n.displayEl.textContent =
               value !== undefined ? JSON.stringify(value) : "{}";
@@ -4046,7 +4173,7 @@ LIST OF INTEREST OBJECT:
     if(n.isVariableNode) {
       const type = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find(f => f.key === "var");
-
+      console.log("isVariableNode set object ", value);
       if(varField && varField.value) {
 
         let value = this.getValue(nodeId, "value");
@@ -4236,6 +4363,8 @@ LIST OF INTEREST OBJECT:
         let raycast = this.getValue(nodeId, "raycast");
         let scale = this.getValue(nodeId, "scale");
         let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
         // spec adaptation
         if(raycast == "true") {raycast = true} else {raycast = false;}
         if(typeof delay == 'string') delay = parseInt(delay);
@@ -4249,10 +4378,58 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
-          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay,
+            ori, spacingByY);
           // createdField.value = true;
         }
 
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Generator Wall NONPhysics") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
+        // spec adaptation
+        if(raycast == "true") {raycast = true} else {raycast = false;}
+        if(typeof delay == 'string') delay = parseInt(delay);
+        if(typeof pos == 'string') eval("pos = " + pos);
+        if(typeof rot == 'string') eval("rot = " + rot);
+        if(typeof scale == 'string') eval("scale = " + scale);
+        if(!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if(createdField.value == "false" || createdField.value == false) {
+          app.generatorWallNONPHYSICS(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay,
+            ori, spacingByY);
+          // createdField.value = true;
+        }
+
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if(n.title === "Set Morph ProceduralMesh") {
+        const objectName = this.getValue(nodeId, "objectName");
+        const interval = this.getValue(nodeId, "interval");
+        let morphIndex = this.getValue(nodeId, "index");
+        if(!objectName) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        console.warn("[Set morph to] arg:", morphIndex);
+        let o = app.getSceneObjectByName(objectName);
+        o.morphTo(morphIndex, interval);
         this.enqueueOutputs(n, "execOut");
         return;
       } else if(n.title === "Add OBJ") {
@@ -4260,7 +4437,7 @@ LIST OF INTEREST OBJECT:
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
-        let rotSpeed = this.getValue(nodeId, "rotSpeed");        
+        let rotSpeed = this.getValue(nodeId, "rotSpeed");
         let isPhysicsBody = this.getValue(nodeId, "isPhysicsBody");
         let rot = this.getValue(nodeId, "rot");
         let isInstancedObj = this.getValue(nodeId, "isInstancedObj");
@@ -4461,7 +4638,7 @@ LIST OF INTEREST OBJECT:
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
+        // console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,
@@ -4793,7 +4970,7 @@ LIST OF INTEREST OBJECT:
     } else if(n.title === "Set RotateX") {
       const rot = this.getValue(nodeId, "rotation");
       if(rot?.setRotateX) {
-        
+
         rot.setRotateX(this.getValue(nodeId, "x"));
       }
       this.enqueueOutputs(n, "execOut");
@@ -5108,7 +5285,8 @@ LIST OF INTEREST OBJECT:
     let getCurrentGIzmoObj = app.mainRenderBundle.filter((o) => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled)
     if(getCurrentGIzmoObj.length > 0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
 
-    byId("app").style.opacity = 0.5;
+    byId("app").style.display = 'none';
+
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => (n._returnCache = undefined));
     Object.values(this.nodes)
@@ -5118,8 +5296,7 @@ LIST OF INTEREST OBJECT:
   }
 
   compileGraph() {
-    // This is save !!!
-    // console.log("SAVE:", this.nodes)
+    console.log("SAVE NODES: ", this.nodes)
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -5130,8 +5307,10 @@ LIST OF INTEREST OBJECT:
     };
 
     function saveReplacer(key, value) {
-      if(key === 'fn') return undefined;
-      if(key === 'accessObject') return undefined;
+      if(value instanceof Element) return undefined;
+      if(value instanceof Node) return undefined;
+      if(key === 'fn') {console.log('stripping fn from', key); return undefined;}
+      if(key === 'accessObject') {console.log('stripping accessObject'); return undefined;}
       if(key === '_returnCache') return undefined;
       if(key === '_listenerAttached') return false;
       if(key === '_audio') return undefined;
@@ -5140,13 +5319,10 @@ LIST OF INTEREST OBJECT:
       if(key === '_beatCooldown') return 0;
       return value;
     }
-
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    // ?
     this.saveGraphEvent.detail.data = d;
     document.dispatchEvent(this.saveGraphEvent);
-    // this.log("Graph saved to LocalStorage and final script");
   }
 
   clearStorage() {
@@ -5154,23 +5330,19 @@ LIST OF INTEREST OBJECT:
     if(ask) {
       this.clearAllNodes();
       localStorage.removeItem(this.SAVE_KEY);
-      this.compileGraph(); // not just save empty
+      this.compileGraph();
       // location.reload(true);
     }
   }
 
   clearAllNodes() {
-    // Remove node DOMs
     this.board.querySelectorAll(".node").forEach(n => n.remove());
-    // Clear data
-    this.nodes = [];
-    this.nodes.length = 0;
+    this.nodes = {};
+    this.nodeCounter = 0;
     this.links.length = 0;
-    // Clear state
     this.state.selectedNode = null;
     this.state.draggingNode = null;
     this.state.connectingPin = null;
-    // Optional: redraw connections
     this.updateLinks();
   }
 
@@ -5518,4 +5690,17 @@ LIST OF INTEREST OBJECT:
     };
   }
 
+}
+
+class RESOURCES_FOR_GRAPH {
+
+  obj = [];
+  glb = [];
+  images = [];
+
+  constructor() {
+    addEventListener('editorx-update-assets-list', (e) => {
+      console.log('editorx-update-assets-list ', e.detail)
+    })
+  }
 }

@@ -398,13 +398,41 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         });
       }
 
-      // Note: The frontFace and cullMode values have no effect on the 
       // "point-list", "line-list", or "line-strip" topologies.
-      this.primitive = {
-        topology: 'triangle-list',
-        cullMode: 'back', // typical for shadow passes
-        frontFace: 'ccw'
+      if(typeof o.primitive === 'undefined') {
+        this.primitive = {
+          topology: 'triangle-list',
+          cullMode: 'back',
+          frontFace: 'ccw'
+        }
+      } else {
+        this.primitive = {
+          topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+          cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+          frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+        }
       }
+
+      this.setTopology = (t, cullMode = 'none', frontFace = 'ccw') => {
+        const isStrip =
+          t === 'triangle-strip' ||
+          t === 'line-strip';
+        if(isStrip) {
+          this.primitive = {
+            topology: t,
+            stripIndexFormat: 'uint16',
+            cullMode: cullMode,
+            frontFace: frontFace
+          };
+        } else {
+          this.primitive = {
+            topology: t,
+            cullMode: cullMode,
+            frontFace: frontFace
+          };
+        }
+        this.setupPipeline();
+      };
 
       this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',

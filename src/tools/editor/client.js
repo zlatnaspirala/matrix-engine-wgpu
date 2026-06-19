@@ -205,7 +205,7 @@ export class MEEditorClient {
     });
 
     document.addEventListener('save-graph', (e) => {
-      console.info('%cSave graph <signal>', LOG_FUNNY_ARCADE);
+      console.info(`%cSave graph <signal> ${ e.detail}`, LOG_FUNNY_ARCADE);
       let o = {
         action: "save-graph",
         graphData: e.detail.data
@@ -257,7 +257,8 @@ export class MEEditorClient {
     document.addEventListener('get-shader-graphs', () => {
       console.info('%cget-shader-graphs <signal>', LOG_FUNNY_ARCADE);
       let o = {
-        action: "get-shader-graphs"
+        action: "get-shader-graphs",
+        projectName: location.href.split('/public/')[1].split(".")[0],
       };
       o = JSON.stringify(o);
       this.ws.send(o);

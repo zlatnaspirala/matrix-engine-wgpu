@@ -1,0 +1,119 @@
+ {
+  "version": 1,
+  "nodes": {
+    "nik1": {
+      "id": "nik1",
+      "title": "onLoad",
+      "x": 0,
+      "y": 0,
+      "category": "event",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        }
+      ],
+      "fields": []
+    },
+    "nik2": {
+      "id": "nik2",
+      "title": "Get Scene Object",
+      "x": 250,
+      "y": 120,
+      "category": "scene",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "type": "object"
+        },
+        {
+          "name": "rotation",
+          "type": "object"
+        },
+        {
+          "name": "scale",
+          "type": "object"
+        }
+      ],
+      "fields": [
+        {
+          "key": "selectedObject",
+          "value": "FLOOR"
+        }
+      ]
+    },
+    "nik3": {
+      "id": "nik3",
+      "title": "Set Texture",
+      "x": 500,
+      "y": 120,
+      "category": "scene",
+      "inputs": [
+        {
+          "name": "exec",
+          "type": "action"
+        },
+        {
+          "name": "texturePath",
+          "type": "any"
+        },
+        {
+          "name": "sceneObjectName",
+          "type": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "execOut",
+          "type": "action"
+        }
+      ],
+      "fields": [
+        {
+          "key": "texturePath",
+          "value": "res/textures/default.png"
+        },
+        {
+          "key": "created",
+          "value": false
+        }
+      ]
+    }
+  },
+  "links": [
+    {
+      "id": "l1",
+      "from": {
+        "node": "nik1",
+        "pin": "exec",
+        "type": "action",
+        "out": true
+      },
+      "to": {
+        "node": "nik3",
+        "pin": "exec"
+      },
+      "type": "action"
+    },
+    {
+      "id": "l2",
+      "from": {
+        "node": "nik2",
+        "pin": "name",
+        "type": "string",
+        "out": true
+      },
+      "to": {
+        "node": "nik3",
+        "pin": "sceneObjectName"
+      },
+      "type": "string"
+    }
+  ]
+}

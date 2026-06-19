@@ -26,8 +26,8 @@ var _kinematicCollision = require("./examples/kinematic-collision.js");
 var _DWorld = require("./examples/2D-world.js");
 var _DWorldMatter = require("./examples/2D-world-matter.js");
 var _drumCannon = require("./examples/drum-cannon.js");
-var _webgpuGltf = require("./src/engine/loaders/webgpu-gltf.js");
 var _gaussianSplat = require("./examples/gaussian-splat.js");
+var _gaussianVertexAnim = require("./examples/gaussian-vertex-anim.js");
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
@@ -36,6 +36,8 @@ var _gaussianSplat = require("./examples/gaussian-splat.js");
  */
 
 // import {fontana} from "./examples/fontana.js";
+
+// import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 
 window.urlQ = _utils.urlQuery;
 if ('serviceWorker' in navigator) {
@@ -80,6 +82,7 @@ if ((0, _utils.isMobile)() === true) {
 (0, _utils.byId)('loadSprite2').addEventListener("click", () => switchDemo('24'));
 (0, _utils.byId)('loadDrumCannon').addEventListener("click", () => switchDemo('25'));
 (0, _utils.byId)('loadGaussianSplat').addEventListener("click", () => switchDemo('26'));
+(0, _utils.byId)('loadGaussianSplatVertAnim').addEventListener("click", () => switchDemo('27'));
 (0, _utils.byId)('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 (0, _utils.byId)('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
@@ -136,6 +139,8 @@ if (urlQ['demo'] === '1') {
   (0, _drumCannon.loadDrumCannon)();
 } else if (urlQ['demo'] === '26') {
   (0, _gaussianSplat.loadGaussianSplat)();
+} else if (urlQ['demo'] === '27') {
+  (0, _gaussianVertexAnim.loadGaussianSplatVertAnim)();
 } else {
   (0, _loadObjFile.loadObjFile)();
 }
@@ -147,7 +152,7 @@ setTimeout(() => {
 fetch("res/meshes/glb/monster.glb");
 fetch("./res/meshes/glb/woman1.glb");
 
-},{"./examples/2D-world-matter.js":2,"./examples/2D-world.js":3,"./examples/camera-texture.js":4,"./examples/canvas-inline.js":5,"./examples/cinematic-camera.js":6,"./examples/destruction-procedural.js":7,"./examples/drum-cannon.js":8,"./examples/flipper-ammo.js":9,"./examples/flipper-jolt.js":10,"./examples/gaussian-splat.js":11,"./examples/glb-loader.js":12,"./examples/hzb-ray.js":13,"./examples/kale.js":14,"./examples/kinematic-collision.js":15,"./examples/load-obj-file.js":16,"./examples/load-objs-sequence.js":17,"./examples/maze.js":18,"./examples/my-lights.js":19,"./examples/physics-playground.js":20,"./examples/physics-test-cannones.js":21,"./examples/physics-test-jolt.js":22,"./examples/procedural-mesh.js":23,"./examples/snake-lights-instanced.js":24,"./examples/snake-lights.js":25,"./examples/video-texture.js":26,"./src/engine/loaders/webgpu-gltf.js":73,"./src/engine/utils.js":92}],2:[function(require,module,exports){
+},{"./examples/2D-world-matter.js":2,"./examples/2D-world.js":3,"./examples/camera-texture.js":4,"./examples/canvas-inline.js":5,"./examples/cinematic-camera.js":6,"./examples/destruction-procedural.js":7,"./examples/drum-cannon.js":8,"./examples/flipper-ammo.js":9,"./examples/flipper-jolt.js":10,"./examples/gaussian-splat.js":11,"./examples/gaussian-vertex-anim.js":12,"./examples/glb-loader.js":13,"./examples/hzb-ray.js":14,"./examples/kale.js":15,"./examples/kinematic-collision.js":16,"./examples/load-obj-file.js":17,"./examples/load-objs-sequence.js":18,"./examples/maze.js":19,"./examples/my-lights.js":20,"./examples/physics-playground.js":21,"./examples/physics-test-cannones.js":22,"./examples/physics-test-jolt.js":23,"./examples/procedural-mesh.js":24,"./examples/snake-lights-instanced.js":25,"./examples/snake-lights.js":26,"./examples/video-texture.js":27,"./src/engine/utils.js":93}],2:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -551,7 +556,7 @@ var loadSprite2 = function () {
 };
 exports.loadSprite2 = loadSprite2;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/matrix-class.js":75,"../src/engine/raycast.js":91,"../src/world.js":145}],3:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/matrix-class.js":76,"../src/engine/raycast.js":92,"../src/world.js":146}],3:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -999,7 +1004,7 @@ var loadSprite1 = function () {
 };
 exports.loadSprite1 = loadSprite1;
 
-},{"../src/engine/effects/gen-tex2.js":54,"../src/engine/effects/kaleidoscopeEffectInstance.js":57,"../src/engine/effects/sprite2d2.js":62,"../src/engine/loader-obj.js":70,"../src/engine/procedures/InstancedKinematicOperations.js":88,"../src/engine/procedures/sceneobjectKinematics.js":90,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],4:[function(require,module,exports){
+},{"../src/engine/effects/gen-tex2.js":55,"../src/engine/effects/kaleidoscopeEffectInstance.js":58,"../src/engine/effects/sprite2d2.js":63,"../src/engine/loader-obj.js":71,"../src/engine/procedures/InstancedKinematicOperations.js":89,"../src/engine/procedures/sceneobjectKinematics.js":91,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],4:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1094,7 +1099,7 @@ var loadCameraTexture = function () {
 };
 exports.loadCameraTexture = loadCameraTexture;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/procedural-mesh.js":87,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],5:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/procedural-mesh.js":88,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1388,7 +1393,7 @@ var canvasInline = function () {
 };
 exports.canvasInline = canvasInline;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/procedural-mesh.js":87,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],6:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/procedural-mesh.js":88,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1616,7 +1621,7 @@ var loadCinematicCamera = function () {
 };
 exports.loadCinematicCamera = loadCinematicCamera;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],7:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1842,7 +1847,7 @@ var loadDestructionProcedural = function () {
 };
 exports.loadDestructionProcedural = loadDestructionProcedural;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/procedural-mesh.js":87,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],8:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/procedural-mesh.js":88,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2661,7 +2666,7 @@ var loadDrumCannon = function () {
 };
 exports.loadDrumCannon = loadDrumCannon;
 
-},{"../src/engine/effects/KaleidoscopeEffect.js":48,"../src/engine/effects/kaleidoscopeEffectInstance.js":57,"../src/engine/generators/generator.js":64,"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/shaders/kale/kale.wgsl.js":116,"../src/world.js":145}],9:[function(require,module,exports){
+},{"../src/engine/effects/KaleidoscopeEffect.js":49,"../src/engine/effects/kaleidoscopeEffectInstance.js":58,"../src/engine/generators/generator.js":65,"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/shaders/kale/kale.wgsl.js":117,"../src/world.js":146}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3546,7 +3551,7 @@ var flipperAmmo = function () {
 };
 exports.flipperAmmo = flipperAmmo;
 
-},{"../src/engine/cameras.js":44,"../src/engine/loader-obj.js":70,"../src/engine/matrix-class.js":75,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],10:[function(require,module,exports){
+},{"../src/engine/cameras.js":45,"../src/engine/loader-obj.js":71,"../src/engine/matrix-class.js":76,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4723,7 +4728,7 @@ var flipperJolt = function () {
 };
 exports.flipperJolt = flipperJolt;
 
-},{"../src/engine/cameras.js":44,"../src/engine/loader-obj.js":70,"../src/engine/matrix-class.js":75,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],11:[function(require,module,exports){
+},{"../src/engine/cameras.js":45,"../src/engine/loader-obj.js":71,"../src/engine/matrix-class.js":76,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -4910,7 +4915,301 @@ var loadGaussianSplat = function () {
 };
 exports.loadGaussianSplat = loadGaussianSplat;
 
-},{"../src/engine/effects/splat.js":61,"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],12:[function(require,module,exports){
+},{"../src/engine/effects/splat.js":62,"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],12:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.loadGaussianSplatVertAnim = void 0;
+var _world = _interopRequireDefault(require("../src/world.js"));
+var _loaderObj = require("../src/engine/loader-obj.js");
+var _raycast = require("../src/engine/raycast.js");
+var _utils = require("../src/engine/utils.js");
+var _splat = require("../src/engine/effects/splat.js");
+var _webgpuGltf = require("../src/engine/loaders/webgpu-gltf.js");
+var _cameras = require("../src/engine/cameras.js");
+var _kaleidoscopeEffectInstance = require("../src/engine/effects/kaleidoscopeEffectInstance.js");
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+var loadGaussianSplatVertAnim = function () {
+  let gaussianSplat = new _world.default({
+    canvasSize: 'fullscreen',
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: 'WASD',
+      responseCoef: 1000
+    },
+    clearColor: {
+      r: 0,
+      b: 0.122,
+      g: 0.122,
+      a: 1
+    }
+  }, () => {
+    let animator, positionAnimator;
+    gaussianSplat.addLight();
+    (0, _loaderObj.downloadMeshes)({
+      ball: "./res/meshes/blender/sphere.obj",
+      cube: "./res/meshes/blender/cube.obj",
+      me: "./res/meshes/obj/nidza.obj"
+    }, onLoadObj, {
+      scale: [1, 1, 1]
+    });
+    (0, _loaderObj.downloadMeshes)({
+      cube: "./res/meshes/blender/cube.obj"
+    }, onGround, {
+      scale: [30, 0.5, 30]
+    });
+    (0, _raycast.addRaycastsAABBListener)('canvas1', 'click');
+    const modes = ['rings', 'wave', 'zones', 'pulse'];
+    function onGround(m) {}
+    async function onLoadObj(m) {
+      // let topologyArgNidza = {
+      //   topology: 'point-list',
+      //   cullMode: 'back',
+      //   frontFace: 'ccw'
+      // }
+      let MYCUBE = gaussianSplat.addMeshObj({
+        material: {
+          type: 'standard'
+        },
+        position: {
+          x: 0,
+          y: 4,
+          z: -20
+        },
+        rotation: {
+          x: 0,
+          y: 180,
+          z: 0
+        },
+        rotationSpeed: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        scale: [1, 1, 1],
+        texturesPaths: ['./res/icons/512.webp'],
+        name: 'me',
+        // primitive: topologyArgNidza,
+        mesh: m.me,
+        raycast: {
+          enabled: true,
+          radius: 1
+        },
+        physics: {
+          enabled: false
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true
+        }
+      });
+      gaussianSplat.lightContainer[0].setIntensity(365);
+      gaussianSplat.lightContainer[0].setRange(240);
+      gaussianSplat.activateBloomEffect();
+      gaussianSplat.bloomPass.setBlurRadius(0.1);
+      gaussianSplat.lightContainer[0].setPosition(0, 90, -20);
+      gaussianSplat.lightContainer[0].setTarget(0, 0, -20);
+
+      // Glb
+      const glbFile = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer()).then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, gaussianSplat.device));
+      let topologyArg = {
+        topology: 'point-list',
+        cullMode: 'back',
+        frontFace: 'ccw'
+      };
+      let MYGLB = gaussianSplat.addGlbObjInctance({
+        material: {
+          type: 'standard',
+          useTextureFromGlb: true
+        },
+        useScale: true,
+        scale: [16, 16, 16],
+        position: {
+          x: 0,
+          y: 4,
+          z: -20
+        },
+        name: 'monster',
+        primitive: topologyArg,
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp']
+      }, null, glbFile);
+      MYGLB.playAnimationByIndex(0);
+      setTimeout(async () => {
+        window.MYCUBE = MYCUBE;
+        window.MYGLB = MYGLB;
+        MYCUBE.setBlend(0.5);
+        MYCUBE.position.setSpeed(0.1);
+        MYCUBE.position.translateByY(40);
+        let guard = false;
+        MYCUBE.position.onTargetPositionReach = async () => {
+          MYCUBE.position.translateByY(-10);
+          MYGLB.playAnimationByIndex(2);
+          if (guard === false) {
+            MYCUBE.effects.splat = new _splat.GaussianSplatScene(gaussianSplat.device, 'rgba16float', gaussianSplat.cameraBuffer);
+            const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "point-list");
+            animator = new _splat.SplatColorAnimator(app.device, layer.positions, layer.vertexCount, layer.colorBuffer);
+            animator.setMode('pulse');
+            animator.setScale(0.8);
+            animator.setSpeed(0.8);
+            layer.colorBuffer = animator.colorBuffer;
+            app.autoUpdate.push(animator);
+            positionAnimator = new _splat.SplatPositionAnimator(app.device, MYCUBE.effects.splat.splatLayers[0].positions, MYCUBE.effects.splat.splatLayers[0].vertexCount);
+            MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
+            app.autoUpdate.push(positionAnimator);
+            positionAnimator.setMode('hold');
+            setTimeout(() => {
+              let adapt = MYCUBE.effects.splat.splatLayers[0].sampleMeshVertices(MYGLB.mesh.vertices, app.autoUpdate[1].vertexCount);
+              const adapt1 = MYCUBE.effects.splat.splatLayers[0].remapAxes(adapt, {
+                from: 'Z_UP',
+                to: 'Y_UP'
+              });
+              app.autoUpdate[1].morphTo(adapt1, 1.0, 15000);
+              MYCUBE.rotation.rotationSpeed.x = 1;
+            }, 4000);
+            let modeIndex = 0;
+            _cameras.MobileDOM.addButton("Mode", function () {
+              const mode = modes[modeIndex];
+              positionAnimator.setMode(mode);
+              console.log('Mode:', mode);
+              modeIndex = (modeIndex + 1) % modes.length;
+            }, () => {}, {
+              left: '61'
+            });
+            guard = true;
+          }
+        };
+
+        // Effects:
+        // positionAnimator.setMode('tornado');
+        // positionAnimator.setMode('liquid');
+        // positionAnimator.setMode('pulse');
+        // positionAnimator.triggerDust(2.5);
+        // positionAnimator.morphTo(meshBPositions, 2.0); // smooth morph to any other PLY
+        // positionAnimator.resetToBase(1.5);             // back to meshA
+        // positionAnimator.setUpAxis('Z');
+
+        // app.canvas.addEventListener("ray.hit.event", (e) => {});
+
+        MYCUBE.effects.keeffect = new _kaleidoscopeEffectInstance.KaleidoscopeEmitter(gaussianSplat.device, 'rgba16float', 40, gaussianSplat.cameraBuffer);
+
+        // MYCUBE.effects.flameEmitter.setIntensity(21);
+        // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(20);
+        // MYCUBE.effects.flameEmitter.recreateVertexDataFromData([-0.9259007514618081, 0.4179421017513555, 0.11768499353838083, 0.10608869389091338, 0.977154565205311, 0.7464570350478348, -0.7737847072761124, -1.3015114156980743])
+
+        MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
+          e.currentScale = [160, 160, 160];
+        });
+        MYCUBE.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+          array[i].color = [0, 11, 0, 0.7];
+        });
+        let cam = app.getCamera();
+        cam.setYaw(0);
+        cam.setPitch(0);
+        cam.setZ(30);
+        cam.setY(12);
+        app.buildRenderBuckets();
+        cam._dirtyAngle = true;
+
+        // Dom
+        let bloomRadius = 0.1;
+        let bloomIntesity = 0.1;
+        let glbAnimation = 0;
+        _cameras.MobileDOM.addButton("Bloom radius +", function () {
+          app.bloomPass.setBlurRadius(bloomRadius);
+          bloomRadius++;
+        }, () => {}, {
+          left: '5'
+        });
+        _cameras.MobileDOM.addButton("Bloom radius -", function () {
+          app.bloomPass.setBlurRadius(bloomRadius);
+          if (bloomRadius - 1 > 0) bloomRadius--;
+        }, () => {}, {
+          left: '13'
+        });
+        _cameras.MobileDOM.addButton("Bloom intesity +", function () {
+          app.bloomPass.setIntensity(bloomIntesity);
+          bloomIntesity = bloomIntesity + 10;
+        }, () => {}, {
+          left: '21'
+        });
+        _cameras.MobileDOM.addButton("Bloom intesity -", function () {
+          app.bloomPass.setIntensity(bloomIntesity);
+          if (bloomIntesity - 10 > 0) bloomIntesity = bloomIntesity - 10;
+        }, () => {}, {
+          left: '29'
+        });
+        _cameras.MobileDOM.addButton("Flame effect random", function () {
+          // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(10);
+          // MYCUBE.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+          let memoS = [(0, _utils.randomIntFromTo)(10, 150), (0, _utils.randomIntFromTo)(10, 150), (0, _utils.randomIntFromTo)(10, 150)];
+          let memoC = [(0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100), (0, _utils.randomIntFromTo)(0, 100)];
+          MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
+            e.currentScale = memoS;
+            e.color = memoC;
+          });
+          MYCUBE.effects.keeffect.recreateVertexDataCrazzy((0, _utils.randomIntFromTo)(6, 36));
+          MYCUBE.effects.keeffect.setIntensity((0, _utils.randomIntFromTo)(3, 23));
+        }, () => {}, {
+          left: '37'
+        });
+        _cameras.MobileDOM.addButton("Animation", function () {
+          if (glbAnimation < 4) {
+            glbAnimation++;
+          } else {
+            glbAnimation = 0;
+          }
+          MYGLB.playAnimationByIndex(glbAnimation);
+        }, () => {}, {
+          left: '45'
+        });
+        const topologies = ['triangle-list', 'triangle-strip', 'line-list', 'line-strip', 'point-list'];
+        let topologyIndex = 0;
+        _cameras.MobileDOM.addButton("Topology", function () {
+          topologyIndex = (topologyIndex + 1) % topologies.length;
+          const topology = topologies[topologyIndex];
+          MYGLB.setTopology(topology);
+        }, () => {}, {
+          left: '53'
+        });
+        let delay = 100;
+        const delayStep = 100;
+        const delayMax = 1000;
+        _cameras.MobileDOM.addButton(`Delay (0-1sec)`, function () {
+          delay += delayStep;
+          if (delay > delayMax) {
+            delay = 0;
+          }
+          MYGLB.trailAnimation.delay = delay;
+          console.log('Trail delay:', delay);
+        }, () => {}, {
+          left: '69'
+        });
+        let currentNumberOfTrails = 2;
+        const minInstances = 1;
+        const maxInstances = 5;
+        _cameras.MobileDOM.addButton(`Trails (1-5)`, function () {
+          currentNumberOfTrails++;
+          if (currentNumberOfTrails > maxInstances) {
+            currentNumberOfTrails = minInstances;
+          }
+          MYGLB.updateInstances(currentNumberOfTrails);
+          console.log('Trails:', currentNumberOfTrails);
+        }, () => {}, {
+          left: '77'
+        });
+      }, 500);
+    }
+  });
+  window.app = gaussianSplat;
+};
+exports.loadGaussianSplatVertAnim = loadGaussianSplatVertAnim;
+
+},{"../src/engine/cameras.js":45,"../src/engine/effects/kaleidoscopeEffectInstance.js":58,"../src/engine/effects/splat.js":62,"../src/engine/loader-obj.js":71,"../src/engine/loaders/webgpu-gltf.js":74,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5171,7 +5470,7 @@ function loadGLBLoader() {
   window.app = TEST_ANIM;
 }
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/loaders/webgpu-gltf.js":73,"../src/engine/utils.js":92,"../src/world.js":145}],13:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/loaders/webgpu-gltf.js":74,"../src/engine/utils.js":93,"../src/world.js":146}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5469,7 +5768,7 @@ var loadHZB = function () {
 };
 exports.loadHZB = loadHZB;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],14:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -5833,7 +6132,7 @@ var loadKale = function () {
 };
 exports.loadKale = loadKale;
 
-},{"../src/engine/effects/KaleidoscopeEffect.js":48,"../src/engine/effects/kaleidoscopeEffectInstance.js":57,"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/shaders/kale/kale.wgsl.js":116,"../src/world.js":145}],15:[function(require,module,exports){
+},{"../src/engine/effects/KaleidoscopeEffect.js":49,"../src/engine/effects/kaleidoscopeEffectInstance.js":58,"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/shaders/kale/kale.wgsl.js":117,"../src/world.js":146}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6136,7 +6435,7 @@ var loadKinematicCollision = function () {
 };
 exports.loadKinematicCollision = loadKinematicCollision;
 
-},{"../src/engine/collision-sub-system.js":45,"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],16:[function(require,module,exports){
+},{"../src/engine/collision-sub-system.js":46,"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6343,7 +6642,7 @@ var loadObjFile = function () {
 };
 exports.loadObjFile = loadObjFile;
 
-},{"../src/engine/effects/gen-tex2.js":54,"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],17:[function(require,module,exports){
+},{"../src/engine/effects/gen-tex2.js":55,"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6490,7 +6789,7 @@ var loadObjsSequence = function () {
 };
 exports.loadObjsSequence = loadObjsSequence;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/utils.js":92,"../src/world.js":145}],18:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/utils.js":93,"../src/world.js":146}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6666,7 +6965,7 @@ var mazeGame = function () {
 };
 exports.mazeGame = mazeGame;
 
-},{"../src/engine/collision-sub-system.js":45,"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],19:[function(require,module,exports){
+},{"../src/engine/collision-sub-system.js":46,"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6836,7 +7135,7 @@ var myLights = function () {
       myLights.getCamera().setPitch(-0.35);
       myLights.getCamera().setPosition(0, 8, 5);
       const frames = [];
-      for (let i = 0; i <= 16; i++) {
+      for (let i = 0; i < 16; i++) {
         const a = i / 16 * Math.PI * 2;
         frames.push({
           position: [Math.sin(a) * 15, 5, -10 + Math.cos(a) * 15],
@@ -6858,7 +7157,7 @@ var myLights = function () {
 };
 exports.myLights = myLights;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/loaders/webgpu-gltf.js":73,"../src/engine/utils.js":92,"../src/world.js":145}],20:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/loaders/webgpu-gltf.js":74,"../src/engine/utils.js":93,"../src/world.js":146}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7291,7 +7590,7 @@ var physicsPlayground = function () {
 };
 exports.physicsPlayground = physicsPlayground;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/matrix-class.js":75,"../src/engine/procedural-mesh.js":87,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],21:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/matrix-class.js":76,"../src/engine/procedural-mesh.js":88,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7351,7 +7650,7 @@ var testCannonES = function () {
         x: 0,
         y: 0,
         z: 0
-      }, ["./res/textures/rust.jpg"], 'my_set_walls', "5x3", true, [1, 1, 1], 2, 350);
+      }, ["./res/textures/rust.jpg"], 'my_set_walls', "5x3", true, [1, 1, 1], 2.05, 1000, "ByZ");
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", e => {
         console.log('ray.hit.event detected');
@@ -7506,7 +7805,7 @@ var testCannonES = function () {
 };
 exports.testCannonES = testCannonES;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/matrix-class.js":75,"../src/engine/procedural-mesh.js":87,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],22:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/matrix-class.js":76,"../src/engine/procedural-mesh.js":88,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],23:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7784,7 +8083,7 @@ var testJolt = function () {
 };
 exports.testJolt = testJolt;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/matrix-class.js":75,"../src/engine/procedural-mesh.js":87,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],23:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/matrix-class.js":76,"../src/engine/procedural-mesh.js":88,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],24:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7989,7 +8288,7 @@ var procMesh = function () {
 };
 exports.procMesh = procMesh;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/procedural-mesh.js":87,"../src/engine/raycast.js":91,"../src/engine/utils.js":92,"../src/world.js":145}],24:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/procedural-mesh.js":88,"../src/engine/raycast.js":92,"../src/engine/utils.js":93,"../src/world.js":146}],25:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8122,7 +8421,7 @@ var snakeLightsInstanced = function () {
 };
 exports.snakeLightsInstanced = snakeLightsInstanced;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/loaders/webgpu-gltf.js":73,"../src/engine/utils.js":92,"../src/world.js":145}],25:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/loaders/webgpu-gltf.js":74,"../src/engine/utils.js":93,"../src/world.js":146}],26:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8386,7 +8685,7 @@ var snakeLights = function () {
 };
 exports.snakeLights = snakeLights;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/loaders/webgpu-gltf.js":73,"../src/engine/utils.js":92,"../src/world.js":145}],26:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/loaders/webgpu-gltf.js":74,"../src/engine/utils.js":93,"../src/world.js":146}],27:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8536,7 +8835,7 @@ var loadVideoTexture = function () {
 };
 exports.loadVideoTexture = loadVideoTexture;
 
-},{"../src/engine/loader-obj.js":70,"../src/engine/raycast.js":91,"../src/world.js":145}],27:[function(require,module,exports){
+},{"../src/engine/loader-obj.js":71,"../src/engine/raycast.js":92,"../src/world.js":146}],28:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8546,7 +8845,7 @@ exports.default = void 0;
 var _bvhLoader = require("./module/bvh-loader");
 var _default = exports.default = _bvhLoader.MEBvh;
 
-},{"./module/bvh-loader":28}],28:[function(require,module,exports){
+},{"./module/bvh-loader":29}],29:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9235,7 +9534,7 @@ class MEBvh {
 }
 exports.MEBvh = MEBvh;
 
-},{"webgpu-matrix":40}],29:[function(require,module,exports){
+},{"webgpu-matrix":41}],30:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9313,7 +9612,7 @@ function equals(a, b) {
   return Math.abs(a - b) <= tolerance * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9342,7 +9641,7 @@ var vec4 = _interopRequireWildcard(require("./vec4.js"));
 exports.vec4 = vec4;
 function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
 
-},{"./common.js":29,"./mat2.js":31,"./mat2d.js":32,"./mat3.js":33,"./mat4.js":34,"./quat.js":35,"./quat2.js":36,"./vec2.js":37,"./vec3.js":38,"./vec4.js":39}],31:[function(require,module,exports){
+},{"./common.js":30,"./mat2.js":32,"./mat2d.js":33,"./mat3.js":34,"./mat4.js":35,"./quat.js":36,"./quat2.js":37,"./vec2.js":38,"./vec3.js":39,"./vec4.js":40}],32:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -9804,7 +10103,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":29}],32:[function(require,module,exports){
+},{"./common.js":30}],33:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -10318,7 +10617,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":29}],33:[function(require,module,exports){
+},{"./common.js":30}],34:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -11130,7 +11429,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":29}],34:[function(require,module,exports){
+},{"./common.js":30}],35:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -13150,7 +13449,7 @@ var mul = exports.mul = multiply;
  */
 var sub = exports.sub = subtract;
 
-},{"./common.js":29}],35:[function(require,module,exports){
+},{"./common.js":30}],36:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -13933,7 +14232,7 @@ var setAxes = exports.setAxes = function () {
   };
 }();
 
-},{"./common.js":29,"./mat3.js":33,"./vec3.js":38,"./vec4.js":39}],36:[function(require,module,exports){
+},{"./common.js":30,"./mat3.js":34,"./vec3.js":39,"./vec4.js":40}],37:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -14806,7 +15105,7 @@ function equals(a, b) {
   return Math.abs(a0 - b0) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3)) && Math.abs(a4 - b4) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a4), Math.abs(b4)) && Math.abs(a5 - b5) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a5), Math.abs(b5)) && Math.abs(a6 - b6) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a6), Math.abs(b6)) && Math.abs(a7 - b7) <= glMatrix.EPSILON * Math.max(1.0, Math.abs(a7), Math.abs(b7));
 }
 
-},{"./common.js":29,"./mat4.js":34,"./quat.js":35}],37:[function(require,module,exports){
+},{"./common.js":30,"./mat4.js":35,"./quat.js":36}],38:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -15484,7 +15783,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":29}],38:[function(require,module,exports){
+},{"./common.js":30}],39:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -16336,7 +16635,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":29}],39:[function(require,module,exports){
+},{"./common.js":30}],40:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -17043,7 +17342,7 @@ var forEach = exports.forEach = function () {
   };
 }();
 
-},{"./common.js":29}],40:[function(require,module,exports){
+},{"./common.js":30}],41:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -20976,7 +21275,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26323,7 +26622,7 @@ function setDefaultType(ctor) {
   setDefaultType$1(ctor);
 }
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26394,7 +26693,7 @@ const en = exports.en = {
   "invertorysecret": "Corona Ignifera magic secret Sol Corona,Flamma Crystal\n  Aqua Sanctum magic secret Mare Pearl,Luna Gemma\n Umbra Silens magic secret Umbra Vellum,Noctis Band\n Terra Fortis magic secret Terra Clavis,Ardent Vine,Silva Heart\n Ventus Aegis magic secret Ventus Pluma,Ignifur Cape\n Ferrum Lux magic secret Ferrum Anulus,Lux Feather\n Sanguis Vita magic secret Sanguis Orb,Vita Flos \n Tenebris Vox magic secret Tenebris Fang,Vox Chime \n Aether Gladius magic secret Gladius Ignis,Aether Scale \n Fulgur Mortis magic secret Fulgur Stone,Mortis Bone \n Corona Umbra magic secret Umbra Silens,Corona Ignifera,Tenebris Vox \n Terra Sanctum magic secret Terra Fortis,Aqua Sanctum \n Aether Fortis magic secret Aether Gladius,Ferrum Lux \n  Vita Mindza magic secret Sanguis Vita,Ventus Aegis \n Mortis Ultima magic secret Fulgur Mortis,Corona Umbra,Aether Fortis"
 };
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26432,7 +26731,7 @@ class Behavior {
 }
 exports.default = Behavior;
 
-},{"./utils":92}],44:[function(require,module,exports){
+},{"./utils":93}],45:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -26467,7 +26766,6 @@ class WASDCamera {
     down: false
   };
   _mouseDown = false;
-
   // Sensitivity matching standard FPCamera parameters
   MOUSE_SENS = 0.01;
   TOUCH_SENS = 0.03;
@@ -26609,7 +26907,7 @@ class WASDCamera {
           this.yaw %= Math.PI * 2;
           this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
           this._dirtyAngle = true;
-          touchStartX = touch.clientX; // update AFTER clamp
+          touchStartX = touch.clientX;
           touchStartY = touch.clientY;
         }
         e.preventDefault();
@@ -27797,8 +28095,6 @@ class CinematicCamera {
     this._t = t;
     return this;
   };
-
-  // ── shake ────────────────────────────────────────────────────────────────────
   shake = (amplitude, duration, frequency = 15) => {
     this._shake = {
       active: true,
@@ -27808,8 +28104,6 @@ class CinematicCamera {
       elapsed: 0
     };
   };
-
-  // ── _recalculateViewVP — mirrors FirstPersonCamera exactly when not using target
   _recalculateViewVP() {
     if (this._useTarget) {
       this._buildViewFromTarget();
@@ -27883,7 +28177,6 @@ class CinematicCamera {
     const tx = this._target[0],
       ty = this._target[1],
       tz = this._target[2];
-
     // forward
     let fx = tx - ex,
       fy = ty - ey,
@@ -27893,7 +28186,6 @@ class CinematicCamera {
     fx /= fl;
     fy /= fl;
     fz /= fl;
-
     // world up with optional roll
     let wux = 0,
       wuy = 1,
@@ -27925,12 +28217,10 @@ class CinematicCamera {
     rx /= rl;
     ry /= rl;
     rz /= rl;
-
     // reorthogonalised up
     const upx = ry * fz - rz * fy,
       upy = rz * fx - rx * fz,
       upz = rx * fy - ry * fx;
-
     // sync pitch/yaw back so getters are consistent
     this.back[0] = -fx;
     this.back[1] = -fy;
@@ -27962,10 +28252,7 @@ class CinematicCamera {
     vs[15] = 1;
     CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
-
-  // ── update — same signature as FirstPersonCamera ─────────────────────────────
   update(dt = 0.016) {
-    // 1. advance path
     if (this._playing && this._path) {
       const totalT = this._path.totalTime;
       this._t += dt * this._speed / totalT;
@@ -27981,8 +28268,6 @@ class CinematicCamera {
       }
       if (this._playing || this._t === 1) this._applyPathSample();
     }
-
-    // 2. shake
     const sk = this._shake;
     if (sk.active) {
       sk.elapsed += dt;
@@ -27998,8 +28283,6 @@ class CinematicCamera {
       }
       this._dirtyAngle = true;
     }
-
-    // 3. rebuild if dirty
     if (!this._dirtyAngle) return;
     this._recalculateViewVP();
     this._dirtyAngle = false;
@@ -28627,7 +28910,7 @@ const MobileDOM = exports.MobileDOM = {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: `${size * 0.35}px`,
+      fontSize: `${size * 0.25}px`,
       color: options.color ?? '#ffffff',
       background: `rgba(255,255,255,${opacity * 0.4})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
@@ -28677,7 +28960,7 @@ const MobileDOM = exports.MobileDOM = {
   }
 };
 
-},{"./utils":92,"wgpu-matrix":41}],45:[function(require,module,exports){
+},{"./utils":93,"wgpu-matrix":42}],46:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28861,7 +29144,7 @@ class CollisionSystem {
 }
 exports.CollisionSystem = CollisionSystem;
 
-},{"./matrix-class":75}],46:[function(require,module,exports){
+},{"./matrix-class":76}],47:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -28967,7 +29250,7 @@ class TextureCache {
 }
 exports.TextureCache = TextureCache;
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29137,7 +29420,7 @@ class CulledRenderPass {
 }
 exports.CulledRenderPass = CulledRenderPass;
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29466,7 +29749,7 @@ class KaleidoscopeEffect {
 }
 exports.KaleidoscopeEffect = KaleidoscopeEffect;
 
-},{"../../shaders/kale/kale.wgsl":116,"../geometry-factory":65,"wgpu-matrix":41}],49:[function(require,module,exports){
+},{"../../shaders/kale/kale.wgsl":117,"../geometry-factory":66,"wgpu-matrix":42}],50:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -29903,7 +30186,7 @@ class DestructionEffect {
 }
 exports.DestructionEffect = DestructionEffect;
 
-},{"../../shaders/desctruction/dust-shader.wgsl.js":95,"wgpu-matrix":41}],50:[function(require,module,exports){
+},{"../../shaders/desctruction/dust-shader.wgsl.js":96,"wgpu-matrix":42}],51:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30111,7 +30394,7 @@ class HPBarEffect {
 }
 exports.HPBarEffect = HPBarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":96,"wgpu-matrix":41}],51:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":97,"wgpu-matrix":42}],52:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30417,7 +30700,7 @@ class FlameEmitter {
 }
 exports.FlameEmitter = FlameEmitter;
 
-},{"../../shaders/flame-effect/flame-instanced":97,"../utils":92,"wgpu-matrix":41}],52:[function(require,module,exports){
+},{"../../shaders/flame-effect/flame-instanced":98,"../utils":93,"wgpu-matrix":42}],53:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30740,7 +31023,7 @@ class FlameEffect {
 }
 exports.FlameEffect = FlameEffect;
 
-},{"../../shaders/flame-effect/flameEffect":98,"../geometry-factory":65,"wgpu-matrix":41}],53:[function(require,module,exports){
+},{"../../shaders/flame-effect/flameEffect":99,"../geometry-factory":66,"wgpu-matrix":42}],54:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -30986,7 +31269,7 @@ class GenGeoTexture {
 }
 exports.GenGeoTexture = GenGeoTexture;
 
-},{"../../shaders/standalone/geo.tex.js":125,"../geometry-factory.js":65,"wgpu-matrix":41}],54:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":126,"../geometry-factory.js":66,"wgpu-matrix":42}],55:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31273,7 +31556,7 @@ class GenGeoTexture2 {
 }
 exports.GenGeoTexture2 = GenGeoTexture2;
 
-},{"../../shaders/standalone/geo.tex.js":125,"../geometry-factory.js":65,"wgpu-matrix":41}],55:[function(require,module,exports){
+},{"../../shaders/standalone/geo.tex.js":126,"../geometry-factory.js":66,"wgpu-matrix":42}],56:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31467,7 +31750,7 @@ class GenGeo {
 }
 exports.GenGeo = GenGeo;
 
-},{"../../shaders/standalone/geo.instanced.js":124,"../geometry-factory.js":65,"wgpu-matrix":41}],56:[function(require,module,exports){
+},{"../../shaders/standalone/geo.instanced.js":125,"../geometry-factory.js":66,"wgpu-matrix":42}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31994,7 +32277,7 @@ class GizmoEffect {
 }
 exports.GizmoEffect = GizmoEffect;
 
-},{"../../shaders/gizmo/gimzoShader":110,"../utils":92}],57:[function(require,module,exports){
+},{"../../shaders/gizmo/gimzoShader":111,"../utils":93}],58:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32343,7 +32626,7 @@ class KaleidoscopeEmitter {
 }
 exports.KaleidoscopeEmitter = KaleidoscopeEmitter;
 
-},{"../../shaders/kale/kale.wgsl":116,"../utils":92,"wgpu-matrix":41}],58:[function(require,module,exports){
+},{"../../shaders/kale/kale.wgsl":117,"../utils":93,"wgpu-matrix":42}],59:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32504,7 +32787,7 @@ class MANABarEffect {
 }
 exports.MANABarEffect = MANABarEffect;
 
-},{"../../shaders/energy-bars/energy-bar-shader.js":96,"wgpu-matrix":41}],59:[function(require,module,exports){
+},{"../../shaders/energy-bars/energy-bar-shader.js":97,"wgpu-matrix":42}],60:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32653,7 +32936,7 @@ class MSDFTextEffect {
 }
 exports.MSDFTextEffect = MSDFTextEffect;
 
-},{"wgpu-matrix":41}],60:[function(require,module,exports){
+},{"wgpu-matrix":42}],61:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32802,13 +33085,13 @@ class PointerEffect {
 }
 exports.PointerEffect = PointerEffect;
 
-},{"../../shaders/standalone/pointer.effect.js":126,"wgpu-matrix":41}],61:[function(require,module,exports){
+},{"../../shaders/standalone/pointer.effect.js":127,"wgpu-matrix":42}],62:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.SplatColorAnimator = exports.GaussianSplatScene = exports.GaussianSplatLayer = void 0;
+exports.SplatPositionAnimator = exports.SplatColorAnimator = exports.GaussianSplatScene = exports.GaussianSplatLayer = void 0;
 var _utils = require("../utils");
 /**
  * @description
@@ -32999,6 +33282,21 @@ class GaussianSplatLayer {
     });
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
+
+    // Dummy/fallback position buffer (slot 2) — used when no positionAnimator
+    // is attached, so render() never crashes on missing dynamic position data.
+    const dummyPosData = new Float32Array(this.vertexCount * 3);
+    dummyPosData.set(this.splatData.positions);
+    this.dummyPosBuffer = this.device.createBuffer({
+      label: 'splat-dummy-pos',
+      size: dummyPosData.byteLength,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    new Float32Array(this.dummyPosBuffer.getMappedRange()).set(dummyPosData);
+    this.dummyPosBuffer.unmap();
+    this.positionAnimator = null; // explicit until one is attached
+
     const initialColors = new Float32Array(this.vertexCount * 4);
     for (let i = 0; i < this.vertexCount; i++) {
       initialColors[i * 4 + 0] = this.splatData.splatColors[i * 4 + 0];
@@ -33014,59 +33312,65 @@ class GaussianSplatLayer {
     });
     new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
     this.colorBuffer.unmap();
-
-    // Expose positions + vertexCount for the animator
     this.positions = this.splatData.positions;
     this.vertexCount = this.splatData.vertexCount;
 
-    // // Index buffer: quads (2 triangles per splat)
-    // const quadIndices = new Uint16Array(this.vertexCount * 6);
-    // let idx = 0;
-    // for(let i = 0;i < this.vertexCount;i++) {
-    //   const base = i * 4;
-    //   quadIndices[idx++] = base;
-    //   quadIndices[idx++] = base + 1;
-    //   quadIndices[idx++] = base + 2;
-    //   quadIndices[idx++] = base + 1;
-    //   quadIndices[idx++] = base + 3;
-    //   quadIndices[idx++] = base + 2;
-    // }
-
-    // this.indexBuffer = this.device.createBuffer({
-    //   label: 'Splat index buffer',
-    //   size: quadIndices.byteLength,
-    //   mappedAtCreation: true,
-    //   usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-    // });
-    // new Uint16Array(this.indexBuffer.getMappedRange()).set(quadIndices);
-    // this.indexBuffer.unmap();
-    // this.indexCount = quadIndices.length;
-
+    // this.vertexBufferLayout = [
+    //   {
+    //     // buffer 0: position + (ignored color slot) + scale + rotation
+    //     arrayStride: 56,
+    //     stepMode: 'vertex',
+    //     attributes: [
+    //       {shaderLocation: 0, offset: 0, format: 'float32x3'},
+    //       {shaderLocation: 2, offset: 28, format: 'float32x3'},
+    //       {shaderLocation: 3, offset: 40, format: 'float32x4'},
+    //     ]
+    //   },
+    //   {
+    //     // buffer 1: animated rgba color
+    //     arrayStride: 16,
+    //     stepMode: 'vertex',
+    //     attributes: [
+    //       {shaderLocation: 1, offset: 0, format: 'float32x4'},
+    //     ]
+    //   }
+    // ];
+    // In vertexBufferLayout, buffer 0 skips position (now dynamic):
     this.vertexBufferLayout = [{
-      // buffer 0: position + (ignored color slot) + scale + rotation
+      // slot 0: static — scale + rotation only (position slot skipped)
       arrayStride: 56,
       stepMode: 'vertex',
-      attributes: [{
-        shaderLocation: 0,
-        offset: 0,
-        format: 'float32x3'
-      }, {
+      attributes: [
+      // shaderLocation 0 = position now comes from slot 2
+      {
         shaderLocation: 2,
         offset: 28,
         format: 'float32x3'
-      }, {
+      },
+      // scale
+      {
         shaderLocation: 3,
         offset: 40,
         format: 'float32x4'
-      }]
+      } // rotation
+      ]
     }, {
-      // buffer 1: animated rgba color
+      // slot 1: animated rgba color (SplatColorAnimator)
       arrayStride: 16,
       stepMode: 'vertex',
       attributes: [{
         shaderLocation: 1,
         offset: 0,
         format: 'float32x4'
+      }]
+    }, {
+      // slot 2: dynamic position (SplatPositionAnimator)
+      arrayStride: 12,
+      stepMode: 'vertex',
+      attributes: [{
+        shaderLocation: 0,
+        offset: 0,
+        format: 'float32x3'
       }]
     }];
     this.scaleBuffer = this.device.createBuffer({
@@ -33234,6 +33538,78 @@ fn fs_main(in: VertexOutput) -> FragOut {
   return out;
 }`;
   }
+  attachPositionAnimator(animator) {
+    this.positionAnimator = animator;
+  }
+  detachPositionAnimator() {
+    this.positionAnimator = null;
+  }
+
+  /**
+  * Builds a target array of exactly `sampleCount` points by directly
+  * sampling the mesh's own vertex positions (no triangle interpolation).
+  * If sampleCount > mesh vertex count, vertices repeat.
+  */
+  sampleMeshVertices(positions, sampleCount) {
+    const meshVertCount = positions.length / 3;
+    const out = new Float32Array(sampleCount * 3);
+    for (let i = 0; i < sampleCount; i++) {
+      const srcIdx = i % meshVertCount; // or Math.floor(Math.random() * meshVertCount) for shuffled
+      out[i * 3] = positions[srcIdx * 3];
+      out[i * 3 + 1] = positions[srcIdx * 3 + 1];
+      out[i * 3 + 2] = positions[srcIdx * 3 + 2];
+    }
+    return out;
+  }
+
+  /**
+   * Remaps a flat xyz array between axis conventions.
+   * Default: identity (no change).
+   *
+   * @param {Float32Array} positions  flat xyz triplets
+   * @param {object} [opts]
+   * @param {'Y_UP'|'Z_UP'} [opts.from='Y_UP']  source convention
+   * @param {'Y_UP'|'Z_UP'} [opts.to='Y_UP']    target convention
+   * @param {boolean} [opts.flipZ=false]        negate Z (e.g. glTF +Z forward → engine -Z forward)
+   * @returns {Float32Array}  new remapped array (does not mutate input)
+   */
+  remapAxes(positions, opts = {}) {
+    const {
+      from = 'Y_UP',
+      to = 'Z_UP',
+      flipZ = false
+    } = opts;
+    const n = positions.length / 3;
+    const out = new Float32Array(positions.length);
+
+    // Z_UP -> Y_UP: swap Y and Z, then negate new Z (standard Blender->engine fix)
+    const needsSwap = from === 'Z_UP' && to === 'Y_UP';
+    // Y_UP -> Z_UP: inverse swap
+    const needsSwapInverse = from === 'Y_UP' && to === 'Z_UP';
+    for (let i = 0; i < n; i++) {
+      let x = positions[i * 3];
+      let y = positions[i * 3 + 1];
+      let z = positions[i * 3 + 2];
+      if (needsSwap) {
+        // Blender Z-up (x, y, z) -> Y-up (x, z, -y)
+        const ty = z;
+        const tz = -y;
+        y = ty;
+        z = tz;
+      } else if (needsSwapInverse) {
+        // Y-up -> Z-up (inverse of above)
+        const ty = -z;
+        const tz = y;
+        y = ty;
+        z = tz;
+      }
+      if (flipZ) z = -z;
+      out[i * 3] = x;
+      out[i * 3 + 1] = y;
+      out[i * 3 + 2] = z;
+    }
+    return out;
+  }
   render(pass, mesh, viewProjMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
@@ -33242,6 +33618,7 @@ fn fs_main(in: VertexOutput) -> FragOut {
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);
+    pass.setVertexBuffer(2, this.positionAnimator ? this.positionAnimator.posBuffer : this.dummyPosBuffer);
     pass.draw(this.vertexCount, 1, 0, 0);
   }
   setScale(scale) {
@@ -33304,8 +33681,6 @@ class GaussianSplatScene {
     this.splatLayers = [];
   }
 }
-
-// SplatColorAnimator.js
 exports.GaussianSplatScene = GaussianSplatScene;
 class SplatColorAnimator {
   /**
@@ -33401,7 +33776,6 @@ class SplatColorAnimator {
       // normalised radius 0..1, shift over time
       const rn = this._radii[i] / this._maxR;
       const hue = (rn * 6.0 + t * 0.4) % 1.0; // 6 rings cycling
-
       const [r, g, b] = _hsl(hue, 0.9, 0.5);
       c[i * 4] = r * sc;
       c[i * 4 + 1] = g * sc;
@@ -33526,9 +33900,351 @@ class SplatColorAnimator {
     this.colorBuffer?.destroy();
   }
 }
-
-// ── helpers ──────────────────────────────────────────────────────────────────
 exports.SplatColorAnimator = SplatColorAnimator;
+class SplatPositionAnimator {
+  /**
+   * @param {GPUDevice} device
+   * @param {Float32Array} basePositions  — flat xyz from parsedPLY (vertexCount * 3)
+   * @param {number} vertexCount
+   */
+  constructor(device, basePositions, vertexCount) {
+    this.device = device;
+    this.vertexCount = vertexCount;
+    this._upAxis = 1;
+
+    // Immutable snapshot of original mesh (meshA)
+    this._basePos = new Float32Array(basePositions);
+
+    // CPU scratch written every frame
+    this._posCPU = new Float32Array(vertexCount * 3);
+    this._posCPU.set(basePositions);
+
+    // Morph state
+    this._morphTarget = null; // Float32Array xyz, same length
+    this._morphFrom = null; // snapshot at morph start
+    this._morphT = 1.0; // 0..1, 1 = done
+    this._morphDur = 1.0; // seconds
+
+    // Per-splat random phases/seeds (computed once)
+    this._phase = new Float32Array(vertexCount);
+    this._seedX = new Float32Array(vertexCount);
+    this._seedZ = new Float32Array(vertexCount);
+    this._dustY0 = new Float32Array(vertexCount); // each splat's starting Y for dust fall
+    for (let i = 0; i < vertexCount; i++) {
+      this._phase[i] = Math.random() * Math.PI * 2;
+      this._seedX[i] = (Math.random() - 0.5) * 2;
+      this._seedZ[i] = (Math.random() - 0.5) * 2;
+      this._dustY0[i] = basePositions[i * 3 + 1];
+    }
+
+    // Effect state
+    this.mode = 'none'; // 'none'|'tornado'|'pulse'|'changeShape'|'dust'|'liquid'
+    this.speed = 1.0;
+    this.scale = 1.0; // effect magnitude multiplier
+
+    // Dust state
+    this._dustProgress = 0; // 0..1
+    this._dustActive = false;
+
+    // Frame skip (cheaper CPU budget)
+    this._frameSkip = 1;
+    this._frameCount = 0;
+
+    // GPU buffer: xyz per splat, dynamic
+    this.posBuffer = device.createBuffer({
+      label: 'splat-dynamic-pos',
+      size: vertexCount * 3 * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+
+    // Upload initial positions
+    device.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
+  }
+
+  // ─── Public API ────────────────────────────────────────────────────────────
+
+  setMode(mode) {
+    this.mode = mode;
+    this._dustActive = false;
+  }
+  setSpeed(s) {
+    this.speed = s;
+  }
+  setScale(s) {
+    this.scale = s;
+  }
+  setFrameSkip(n) {
+    this._frameSkip = Math.max(1, n | 0);
+  }
+
+  /**
+   * Smoothly interpolate from current positions to a new Float32Array of xyz.
+   * @param {Float32Array} targetPositions  length = vertexCount * 3
+   * @param {number} duration              seconds
+   */
+  morphTo(targetPositions, duration = 1.5) {
+    if (targetPositions.length !== this.vertexCount * 3) throw new Error('morphTo: target length mismatch');
+    this._morphFrom = new Float32Array(this._posCPU);
+    this._morphTarget = targetPositions;
+    this._morphT = 0;
+    this._morphDur = Math.max(0.001, duration);
+  }
+
+  /** Reset to original meshA positions */
+  resetToBase(duration = 1.5) {
+    this.morphTo(this._basePos, duration);
+  }
+
+  /**
+   * Trigger the "dust" effect: splats fall and scatter horizontally toward Y=0.
+   * @param {number} duration  seconds for full collapse
+   */
+  triggerDust(duration = 2.0) {
+    // Snapshot current positions as the fall origins
+    this._dustY0.set(this._posCPU.filter((_, i) => i % 3 === 1)
+    // faster: direct loop
+    );
+    for (let i = 0; i < this.vertexCount; i++) this._dustY0[i] = this._posCPU[i * 3 + 1];
+    this._dustProgress = 0;
+    this._dustDur = Math.max(0.001, duration);
+    this._dustActive = true;
+    this.mode = 'dust';
+  }
+
+  // ─── Per-frame update ──────────────────────────────────────────────────────
+
+  update(t, dt = 0.016) {
+    this._frameCount++;
+    if (this._frameCount % this._frameSkip !== 0) return;
+    const dt_ = dt * this._frameSkip;
+
+    // Advance morph
+    if (this._morphT < 1.0) {
+      this._morphT = Math.min(1.0, this._morphT + dt_ / this._morphDur);
+      this._applyMorph(this._morphT);
+    } else {
+      // Apply procedural effect on top of current base positions
+      const tt = t * this.speed;
+      switch (this.mode) {
+        case 'tornado':
+          this._modeTornado(tt);
+          break;
+        case 'pulse':
+          this._modePulse(tt);
+          break;
+        case 'changeShape':
+          this._modeChangeShape(tt);
+          break;
+        case 'dust':
+          this._modeDust(dt_);
+          break;
+        case 'liquid':
+          this._modeLiquid(tt);
+          break;
+        case 'hold':
+          // nothing
+          break;
+        case 'none':
+        default:
+          this._posCPU.set(this._basePos);
+          break;
+      }
+    }
+    this.device.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
+  }
+
+  // ─── Morph ─────────────────────────────────────────────────────────────────
+
+  _applyMorph(rawT) {
+    // Smooth-step easing
+    const t = rawT * rawT * (3 - 2 * rawT);
+    const from = this._morphFrom;
+    const target = this._morphTarget;
+    const out = this._posCPU;
+    const n3 = this.vertexCount * 3;
+    for (let i = 0; i < n3; i++) {
+      out[i] = from[i] + (target[i] - from[i]) * t;
+    }
+  }
+
+  // ─── Procedural effects ────────────────────────────────────────────────────
+
+  /**
+   * Tornado: splats orbit the Y-axis with radius and angular speed
+   * proportional to height; tip contracts, base fans out.
+   */
+  _modeTornado(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sc = this.scale;
+    const n = this.vertexCount;
+    const up = this._upAxis;
+    const side = up === 1 ? 2 : 1; // the "other horizontal" axis when up changes
+
+    let cUp = 0;
+    for (let i = 0; i < n; i++) cUp += b[i * 3 + up];
+    cUp /= n;
+    for (let i = 0; i < n; i++) {
+      const bx = b[i * 3],
+        bu = b[i * 3 + up],
+        bs = b[i * 3 + side];
+      const hn = Math.max(0, Math.min(1, (bu - cUp) / (sc * 5 + 0.001)));
+      const radius = (1 - hn) * sc * 0.8 + 0.05;
+      const omega = t * (1 + hn * 2) + ph[i];
+      p[i * 3] = bx + Math.cos(omega) * radius;
+      p[i * 3 + up] = bu;
+      p[i * 3 + side] = bs + Math.sin(omega) * radius;
+    }
+  }
+
+  /**
+   * Pulse: radial breathing — splats oscillate outward from centroid.
+   * Different frequencies per concentric shell give a ripple feel.
+   */
+  _modePulse(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sc = this.scale;
+    const n = this.vertexCount;
+
+    // Centroid
+    let cx = 0,
+      cy = 0,
+      cz = 0;
+    for (let i = 0; i < n; i++) {
+      cx += b[i * 3];
+      cy += b[i * 3 + 1];
+      cz += b[i * 3 + 2];
+    }
+    cx /= n;
+    cy /= n;
+    cz /= n;
+    for (let i = 0; i < n; i++) {
+      const bx = b[i * 3],
+        by = b[i * 3 + 1],
+        bz = b[i * 3 + 2];
+      const dx = bx - cx,
+        dy = by - cy,
+        dz = bz - cz;
+      const r = Math.sqrt(dx * dx + dy * dy + dz * dz) + 0.0001;
+      // Phase offset = distance-based shell → ripple effect
+      const wave = Math.sin(t * 2.5 - r * 3.0 + ph[i] * 0.3);
+      const disp = wave * sc * 0.15;
+      const nx = dx / r,
+        ny = dy / r,
+        nz = dz / r;
+      p[i * 3] = bx + nx * disp;
+      p[i * 3 + 1] = by + ny * disp;
+      p[i * 3 + 2] = bz + nz * disp;
+    }
+  }
+
+  /**
+   * changeShape: sinusoidal warp that drifts over time, morphing the mesh
+   * into abstract bulging/twisted configurations.
+   */
+  _modeChangeShape(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sx = this._seedX;
+    const sz = this._seedZ;
+    const sc = this.scale * 0.4;
+    const n = this.vertexCount;
+    for (let i = 0; i < n; i++) {
+      const bx = b[i * 3],
+        by = b[i * 3 + 1],
+        bz = b[i * 3 + 2];
+      // Three overlapping sine fields with different frequencies + drift
+      const f1 = Math.sin(bx * 1.2 + t * 0.7 + ph[i]);
+      const f2 = Math.cos(by * 1.5 - t * 0.5 + sx[i]);
+      const f3 = Math.sin(bz * 0.9 + t * 0.9 + sz[i]);
+      p[i * 3] = bx + f1 * sc;
+      p[i * 3 + 1] = by + f2 * sc;
+      p[i * 3 + 2] = bz + f3 * sc;
+    }
+  }
+  setUpAxis(axis) {
+    // accepts 'Y' | 'Z' | 1 | 2
+    if (axis === 'Y' || axis === 1) this._upAxis = 1;else if (axis === 'Z' || axis === 2) this._upAxis = 2;else throw new Error(`setUpAxis: invalid axis "${axis}"`);
+  }
+
+  /**
+   * Dust: splats collapse toward Y=0 with lateral drift and individual
+   * fall delays (earlier splats start falling sooner based on _phase).
+   */
+  _modeDust(dt) {
+    if (!this._dustActive) return;
+    this._dustProgress = Math.min(1.0, this._dustProgress + dt / this._dustDur);
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sx = this._seedX;
+    const sz = this._seedZ;
+    const n = this.vertexCount;
+    const pr = this._dustProgress;
+    const up = this._upAxis;
+    const h1 = up === 1 ? 0 : 0; // horizontal axis 1 (always x)
+    const h2 = up === 1 ? 2 : 1; // horizontal axis 2 (whichever isn't up)
+
+    for (let i = 0; i < n; i++) {
+      const delay = ph[i] / (Math.PI * 2) * 0.4;
+      const lp = Math.max(0, Math.min(1, (pr - delay) / (1 - delay)));
+      const ease = lp * lp;
+      const bu = b[i * 3 + up];
+      const bh1 = b[i * 3 + h1];
+      const bh2 = b[i * 3 + h2];
+      p[i * 3 + up] = bu * (1 - ease); // collapse toward 0 on the up axis
+
+      const spread = ease * 2.0;
+      p[i * 3 + h1] = bh1 + sx[i] * spread;
+      p[i * 3 + h2] = bh2 + sz[i] * spread;
+    }
+    if (this._dustProgress >= 1.0) this._dustActive = false;
+  }
+
+  /**
+   * Liquid: per-splat sinusoidal displacement with normal-direction bias
+   * and slow global sloshing, giving a fluid surface feel.
+   */
+  _modeLiquid(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sx = this._seedX;
+    const sz = this._seedZ;
+    const sc = this.scale * 0.12;
+    const n = this.vertexCount;
+
+    // Slow global slosh direction (rotates over time)
+    const sloshX = Math.cos(t * 0.3) * 0.5;
+    const sloshZ = Math.sin(t * 0.2) * 0.5;
+    for (let i = 0; i < n; i++) {
+      const bx = b[i * 3],
+        by = b[i * 3 + 1],
+        bz = b[i * 3 + 2];
+
+      // High-freq surface ripple (local)
+      const ripple = Math.sin(bx * 4.0 + t * 3.0 + ph[i]) * Math.cos(bz * 3.5 - t * 2.5 + sx[i]);
+
+      // Low-freq slosh (global bias)
+      const slosh = Math.sin(t * 1.2 + sz[i] * 0.5) * 0.3;
+
+      // Mostly vertical displacement (Y) with tiny horizontal jitter
+      p[i * 3] = bx + sloshX * sc + (Math.random() - 0.5) * sc * 0.05;
+      p[i * 3 + 1] = by + (ripple + slosh) * sc;
+      p[i * 3 + 2] = bz + sloshZ * sc + (Math.random() - 0.5) * sc * 0.05;
+    }
+  }
+  destroy() {
+    this.posBuffer?.destroy();
+  }
+}
+
+// Helpers
+exports.SplatPositionAnimator = SplatPositionAnimator;
 function _hsl(h, s, l) {
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(h * 6 % 2 - 1));
@@ -33568,7 +34284,7 @@ function _fract(x) {
   return x - Math.floor(x);
 }
 
-},{"../utils":92}],62:[function(require,module,exports){
+},{"../utils":93}],63:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34442,7 +35158,7 @@ async function initializeSpritesForMesh(mesh, device, format, cameraBuffer, spri
   return batch;
 }
 
-},{"wgpu-matrix":41}],63:[function(require,module,exports){
+},{"wgpu-matrix":42}],64:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34623,7 +35339,7 @@ class PointEffect {
 }
 exports.PointEffect = PointEffect;
 
-},{"../../shaders/topology-point/pointEffect":127}],64:[function(require,module,exports){
+},{"../../shaders/topology-point/pointEffect":128}],65:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -34631,6 +35347,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.addOBJ = addOBJ;
 exports.addProceduralOBJ = addProceduralOBJ;
+exports.generatorWallNONPHYSICS = generatorWallNONPHYSICS;
 exports.physicsBodiesChain = physicsBodiesChain;
 exports.physicsBodiesGenerator = physicsBodiesGenerator;
 exports.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid;
@@ -34744,7 +35461,7 @@ async function physicsBodiesGenerator(material = "standard", pos, rot, texturePa
  * @param {Array} scale
  * @param {number} spacing    distance between cubes
  */
-function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
+function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2.1, delay = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
   const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
   console.log(width);
@@ -34762,6 +35479,18 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
       for (let x = 0; x < width; x++) {
         const cubeName = `${name}_${index}`;
         setTimeout(() => {
+          let __x = 0,
+            __y = 0,
+            __z = 0;
+          if (orientationOfwall === 'ByX') {
+            __x = x * spacing;
+            __y = y * spacing + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === 'ByZ') {
+            __x = 0;
+            __y = y * spacing + spacingY;
+            __z = x * spacing;
+          }
           engine.addMeshObj({
             material: {
               type: material
@@ -34785,9 +35514,9 @@ function physicsBodiesGeneratorWall(material = "standard", pos, rot, texturePath
               usePlanarReflection: false // ✅ Env map mode - wip
             } : undefined,
             position: {
-              x: pos.x + x * spacing,
-              y: pos.y + y * spacing + 2.8,
-              z: pos.z
+              x: pos.x + __x,
+              y: pos.y + __y,
+              z: pos.z + __z
             },
             rotation: rot,
             rotationSpeed: {
@@ -34895,7 +35624,6 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos, rot, textureP
  * @param {number} spacing
  */
 function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, texturePath, name = "pyramidCube", levels = 5, raycast = false, scale = [1, 1, 1], spacing = 2, delay = 200) {
-  const root = this;
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = {
@@ -34946,11 +35674,8 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos, rot, text
                 },
                 raycast: RAY
               });
-
               // const b = app.matrixPhysics.getBodyByName(cubeName);
-              // not resolved for now
               // setTimeout(() => stabilizeTowerBody(b, root) , 1000)
-
               const o = app.getSceneObjectByName(cubeName);
               _fluxCodexVertex.runtimeCacheObjs.push(o);
               objects.push(o.name);
@@ -35176,8 +35901,84 @@ function physicsBodiesChain(material = "standard", pos = {
     scale
   });
 }
+function generatorWallNONPHYSICS(material = "standard", pos, rot, texturePath, name = "wallCube", size = "10x3", raycast = false, scale = [1, 1, 1], spacing = 2.1, delay = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
+  const engine = this;
+  console.log('aaaaaa', engine);
+  const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
+  console.log('__________________________');
+  const inputCube = {
+    mesh: useMeshPath
+  };
+  function handler(m) {
+    let index = 0;
+    const RAY = {
+      enabled: raycast,
+      radius: 1
+    };
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const cubeName = `${name}_${index}`;
+        setTimeout(() => {
+          let __x = 0,
+            __y = 0,
+            __z = 0;
+          if (orientationOfwall === 'ByX') {
+            __x = x * spacing;
+            __y = y * spacing + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === 'ByZ') {
+            __x = 0;
+            __y = y * spacing + spacingY;
+            __z = x * spacing;
+          }
+          engine.addMeshObj({
+            material: {
+              type: material
+            },
+            envMapParams: material == 'mirror' ? {
+              baseColorMix: 0.5,
+              mirrorTint: [0.9, 0.95, 1.0],
+              reflectivity: 0.95,
+              illuminateColor: [0.3, 0.7, 1.0],
+              illuminateStrength: 0.4,
+              illuminatePulse: 0.01,
+              fresnelPower: 2.0,
+              envLodBias: 2.5,
+              usePlanarReflection: false
+            } : undefined,
+            position: {
+              x: pos.x + __x,
+              y: pos.y + __y,
+              z: pos.z + __z
+            },
+            rotation: rot,
+            rotationSpeed: {
+              x: 0,
+              y: 0,
+              z: 0
+            },
+            texturesPaths: typeof texturePath == "object" ? texturePath : [texturePath],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: false,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          const o = app.getSceneObjectByName(cubeName);
+          _fluxCodexVertex.runtimeCacheObjs.push(o);
+        }, index * delay);
+        index++;
+      }
+    }
+  }
+  (0, _loaderObj.downloadMeshes)(inputCube, handler, {
+    scale
+  });
+}
 
-},{"../../tools/editor/fluxCodexVertex":141,"../loader-obj":70,"../procedural-mesh":87}],65:[function(require,module,exports){
+},{"../../tools/editor/fluxCodexVertex":142,"../loader-obj":71,"../procedural-mesh":88}],66:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -36338,7 +37139,7 @@ class GeometryFactory {
 }
 exports.GeometryFactory = GeometryFactory;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37026,7 +37827,7 @@ class MaterialsInstanced {
 }
 exports.default = MaterialsInstanced;
 
-},{"../../shaders/fragment.mirror.wgsl":102,"../../shaders/fragment.wgsl":104,"../../shaders/fragment.wgsl.metal":105,"../../shaders/fragment.wgsl.noCut":106,"../../shaders/fragment.wgsl.normalmap":107,"../../shaders/fragment.wgsl.pong":108,"../../shaders/fragment.wgsl.power":109,"../../shaders/instanced/fragment.instanced.wgsl":112,"../../shaders/instanced/fragment.mirror.instanced.wgsl":113,"../../shaders/minimalist/color-a.wgsl":117,"../../shaders/minimalist/color-b.wgsl":118,"../../shaders/minimalist/hybrid.wgsl":119,"../../shaders/minimalist/mini.wgsl":122,"../../shaders/water/water-c.wgls":132,"../pipelineManager":82}],67:[function(require,module,exports){
+},{"../../shaders/fragment.mirror.wgsl":103,"../../shaders/fragment.wgsl":105,"../../shaders/fragment.wgsl.metal":106,"../../shaders/fragment.wgsl.noCut":107,"../../shaders/fragment.wgsl.normalmap":108,"../../shaders/fragment.wgsl.pong":109,"../../shaders/fragment.wgsl.power":110,"../../shaders/instanced/fragment.instanced.wgsl":113,"../../shaders/instanced/fragment.mirror.instanced.wgsl":114,"../../shaders/minimalist/color-a.wgsl":118,"../../shaders/minimalist/color-b.wgsl":119,"../../shaders/minimalist/hybrid.wgsl":120,"../../shaders/minimalist/mini.wgsl":123,"../../shaders/water/water-c.wgls":133,"../pipelineManager":83}],68:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37425,13 +38226,37 @@ class MEMeshObjInstances extends _materialsInstanced.default {
         });
       }
 
-      // Note: The frontFace and cullMode values have no effect on the 
       // "point-list", "line-list", or "line-strip" topologies.
-      this.primitive = {
-        topology: 'triangle-list',
-        cullMode: 'back',
-        // typical for shadow passes
-        frontFace: 'ccw'
+      if (typeof o.primitive === 'undefined') {
+        this.primitive = {
+          topology: 'triangle-list',
+          cullMode: 'back',
+          frontFace: 'ccw'
+        };
+      } else {
+        this.primitive = {
+          topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+          cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+          frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+        };
+      }
+      this.setTopology = (t, cullMode = 'none', frontFace = 'ccw') => {
+        const isStrip = t === 'triangle-strip' || t === 'line-strip';
+        if (isStrip) {
+          this.primitive = {
+            topology: t,
+            stripIndexFormat: 'uint16',
+            cullMode: cullMode,
+            frontFace: frontFace
+          };
+        } else {
+          this.primitive = {
+            topology: t,
+            cullMode: cullMode,
+            frontFace: frontFace
+          };
+        }
+        this.setupPipeline();
       };
       this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',
@@ -38219,7 +39044,7 @@ class MEMeshObjInstances extends _materialsInstanced.default {
 }
 exports.default = MEMeshObjInstances;
 
-},{"../../me-config":93,"../../shaders/fragment.video.wgsl":103,"../../shaders/instanced/vertex.instanced.wgsl":114,"../effects/energy-bar":50,"../effects/flame":52,"../effects/flame-emmiter":51,"../effects/gen":55,"../effects/gen-tex":53,"../effects/gen-tex2":54,"../effects/mana-bar":58,"../effects/pointerEffect":60,"../effects/topology-point":63,"../literals":69,"../loaders/bvh-instaced":71,"../matrix-class":75,"../pipelineManager":82,"../utils":92,"./materials-instanced":66,"wgpu-matrix":41}],68:[function(require,module,exports){
+},{"../../me-config":94,"../../shaders/fragment.video.wgsl":104,"../../shaders/instanced/vertex.instanced.wgsl":115,"../effects/energy-bar":51,"../effects/flame":53,"../effects/flame-emmiter":52,"../effects/gen":56,"../effects/gen-tex":54,"../effects/gen-tex2":55,"../effects/mana-bar":59,"../effects/pointerEffect":61,"../effects/topology-point":64,"../literals":70,"../loaders/bvh-instaced":72,"../matrix-class":76,"../pipelineManager":83,"../utils":93,"./materials-instanced":67,"wgpu-matrix":42}],69:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38842,7 +39667,7 @@ class SpotLight {
 }
 exports.SpotLight = SpotLight;
 
-},{"../me-config":93,"../shaders/instanced/vertexShadow.instanced.wgsl":115,"../shaders/vertex.procedural.wgsl":128,"../shaders/vertexShadow.wgsl":131,"./behavior":43,"./utils":92,"wgpu-matrix":41}],69:[function(require,module,exports){
+},{"../me-config":94,"../shaders/instanced/vertexShadow.instanced.wgsl":116,"../shaders/vertex.procedural.wgsl":129,"../shaders/vertexShadow.wgsl":132,"./behavior":44,"./utils":93,"wgpu-matrix":42}],70:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -38866,7 +39691,7 @@ const VERTEX_ANIM_FLAGS = exports.VERTEX_ANIM_FLAGS = {
   DISPLACEMENT: 1 << 6 // 64
 };
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -39334,7 +40159,7 @@ function play(nameAni) {
   this.playing = true;
 }
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40044,7 +40869,7 @@ class BVHPlayerInstances extends _meshObjInstances.default {
 }
 exports.BVHPlayerInstances = BVHPlayerInstances;
 
-},{"../../me-config.js":93,"../instanced/mesh-obj-instances.js":67,"./webgpu-gltf.js":73,"wgpu-matrix":41}],72:[function(require,module,exports){
+},{"../../me-config.js":94,"../instanced/mesh-obj-instances.js":68,"./webgpu-gltf.js":74,"wgpu-matrix":42}],73:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -40703,7 +41528,7 @@ class BVHPlayer extends _meshObj.default {
 }
 exports.BVHPlayer = BVHPlayer;
 
-},{"../../me-config.js":93,"../mesh-obj":76,"../utils.js":92,"./webgpu-gltf.js":73,"bvh-loader":27,"wgpu-matrix":41}],73:[function(require,module,exports){
+},{"../../me-config.js":94,"../mesh-obj":77,"../utils.js":93,"./webgpu-gltf.js":74,"bvh-loader":28,"wgpu-matrix":42}],74:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -41284,7 +42109,7 @@ async function uploadGLBModel(buffer, device) {
   return R;
 }
 
-},{"gl-matrix":30}],74:[function(require,module,exports){
+},{"gl-matrix":31}],75:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42126,7 +42951,7 @@ class Materials {
   }
   createMaterialBindGroupVideo() {
     // if(!this.externalTexture) return;
-    console.log('SET VIDEO BIND GROUP');
+    // console.log('SET VIDEO BIND GROUP')
     if (this.video == null) {
       this.materialBindGroup = this.device.createBindGroup({
         label: 'materialVideoBGL',
@@ -42166,7 +42991,7 @@ class Materials {
 }
 exports.default = Materials;
 
-},{"../shaders/fontana/fontana.wgsl":99,"../shaders/fragment.dark.wgsl":100,"../shaders/fragment.gpt.wgsl":101,"../shaders/fragment.mirror.wgsl":102,"../shaders/fragment.wgsl":104,"../shaders/fragment.wgsl.metal":105,"../shaders/fragment.wgsl.noCut":106,"../shaders/fragment.wgsl.normalmap":107,"../shaders/fragment.wgsl.pong":108,"../shaders/fragment.wgsl.power":109,"../shaders/minimalist/color-a.wgsl":117,"../shaders/minimalist/color-b.wgsl":118,"../shaders/minimalist/hybrid.wgsl":119,"../shaders/minimalist/mid-a.wgsl":120,"../shaders/minimalist/mini-a.wgsl":121,"../shaders/minimalist/mini.wgsl":122,"../shaders/mixed/fragmentMix1.wgsl":123,"../shaders/water/water-c.wgls":132,"./pipelineManager":82,"./utils":92}],75:[function(require,module,exports){
+},{"../shaders/fontana/fontana.wgsl":100,"../shaders/fragment.dark.wgsl":101,"../shaders/fragment.gpt.wgsl":102,"../shaders/fragment.mirror.wgsl":103,"../shaders/fragment.wgsl":105,"../shaders/fragment.wgsl.metal":106,"../shaders/fragment.wgsl.noCut":107,"../shaders/fragment.wgsl.normalmap":108,"../shaders/fragment.wgsl.pong":109,"../shaders/fragment.wgsl.power":110,"../shaders/minimalist/color-a.wgsl":118,"../shaders/minimalist/color-b.wgsl":119,"../shaders/minimalist/hybrid.wgsl":120,"../shaders/minimalist/mid-a.wgsl":121,"../shaders/minimalist/mini-a.wgsl":122,"../shaders/minimalist/mini.wgsl":123,"../shaders/mixed/fragmentMix1.wgsl":124,"../shaders/water/water-c.wgls":133,"./pipelineManager":83,"./utils":93}],76:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42659,7 +43484,7 @@ class PVector {
 }
 exports.PVector = PVector;
 
-},{"./utils":92}],76:[function(require,module,exports){
+},{"./utils":93}],77:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -42995,13 +43820,20 @@ class MEMeshObj extends _materials.default {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      // this.weights = {
       this.mesh.weightsBuffer = weightsBuffer;
-      //  {
-      //   data: weightsData,
-      //   buffer: weightsBuffer,
-      //   stride: 16
-      // };
+      if (typeof o.primitive === 'undefined') {
+        this.primitive = {
+          topology: 'triangle-list',
+          cullMode: 'back',
+          frontFace: 'ccw'
+        };
+      } else {
+        this.primitive = {
+          topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+          cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+          frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+        };
+      }
     }
     this.runProgram = () => {
       return new Promise(async resolve => {
@@ -43122,28 +43954,23 @@ class MEMeshObj extends _materials.default {
       // 'line-strip'     // outlines
       // 'point-list'     // particles
       this.topology = 'triangle-list';
-      this.setTopology = t => {
+      this.setTopology = (t, cullMode = 'none', frontFace = 'ccw') => {
         const isStrip = t === 'triangle-strip' || t === 'line-strip';
         if (isStrip) {
           this.primitive = {
             topology: t,
             stripIndexFormat: 'uint16',
-            cullMode: 'none',
-            frontFace: 'ccw'
+            cullMode: cullMode,
+            frontFace: frontFace
           };
         } else {
           this.primitive = {
             topology: t,
-            cullMode: 'none',
-            frontFace: 'ccw'
+            cullMode: cullMode,
+            frontFace: frontFace
           };
         }
         this.setupPipeline();
-      };
-      this.primitive = {
-        topology: this.topology,
-        cullMode: 'none',
-        frontFace: 'ccw'
       };
       this.mirrorBindGroupLayout = device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',
@@ -43172,7 +43999,6 @@ class MEMeshObj extends _materials.default {
       });
       this.modelUniformBuffer = this.device.createBuffer({
         size: 4 * 16,
-        // 4x4 matrix
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       function alignTo256(n) {
@@ -43194,7 +44020,6 @@ class MEMeshObj extends _materials.default {
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex Animation Params",
         size: this.vertexAnimParams.byteLength,
-        // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
@@ -43458,7 +44283,6 @@ class MEMeshObj extends _materials.default {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x, y]));
   }
   setupPipeline() {
-    console.log('TEST SETUP ');
     const pm = _pipelineManager.PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -43494,7 +44318,7 @@ class MEMeshObj extends _materials.default {
       label: 'PipelineLayout Mesh',
       bindGroupLayouts: [this.sceneBGL, isVideo ? this.materialVideoBGL : this.materialBGL, this.uniformBufferBindGroupLayout, isMirror ? this.mirrorBindGroupLayout : isWater ? this.waterBindGroupLayout : null].filter(Boolean)
     });
-    // VERTEX STATE (SHARED)
+    // VERTEX (SHARED)
     const vertexState = {
       entryPoint: 'main',
       module: vertexModule,
@@ -43811,17 +44635,15 @@ class MEMeshObj extends _materials.default {
     const local = this.boundingSphere.center;
     const m = this.modelMatrix;
     const center = new Float32Array(3);
-
-    // Transform local sphere center by model matrix
     center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
     center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
     center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
-    this.boundingSphere.center = center; // ← Update world-space center
+    this.boundingSphere.center = center;
   }
 }
 exports.default = MEMeshObj;
 
-},{"../me-config":93,"../shaders/fragment.video.wgsl":103,"../shaders/vertex.wgsl":129,"../shaders/vertex.wgsl.normalmap":130,"./effects/destruction":49,"./effects/flame":52,"./effects/flame-emmiter":51,"./effects/gizmo":56,"./effects/msdfText":59,"./effects/pointerEffect":60,"./effects/topology-point":63,"./literals":69,"./materials":74,"./matrix-class":75,"./pipelineManager":82,"./procedures/procedural-textures":89,"./utils":92,"wgpu-matrix":41}],77:[function(require,module,exports){
+},{"../me-config":94,"../shaders/fragment.video.wgsl":104,"../shaders/vertex.wgsl":130,"../shaders/vertex.wgsl.normalmap":131,"./effects/destruction":50,"./effects/flame":53,"./effects/flame-emmiter":52,"./effects/gizmo":57,"./effects/msdfText":60,"./effects/pointerEffect":61,"./effects/topology-point":64,"./literals":70,"./materials":75,"./matrix-class":76,"./pipelineManager":83,"./procedures/procedural-textures":90,"./utils":93,"wgpu-matrix":42}],78:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44112,7 +44934,7 @@ let noShadowPass = function () {
 };
 exports.noShadowPass = noShadowPass;
 
-},{"../utils":92}],78:[function(require,module,exports){
+},{"../utils":93}],79:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44225,7 +45047,7 @@ let zeroPass = function () {
 };
 exports.zeroPass = zeroPass;
 
-},{"../utils":92}],79:[function(require,module,exports){
+},{"../utils":93}],80:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44355,7 +45177,7 @@ let mobile1 = function () {
 };
 exports.mobile1 = mobile1;
 
-},{"../utils":92}],80:[function(require,module,exports){
+},{"../utils":93}],81:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44422,7 +45244,7 @@ let nanoPass = function () {
 };
 exports.nanoPass = nanoPass;
 
-},{"../utils":92}],81:[function(require,module,exports){
+},{"../utils":93}],82:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -44984,7 +45806,7 @@ function _snapQuat(snap, b) {
   return [Math.cos(a / 2), ax * s, ay * s, az * s];
 }
 
-},{"wgpu-matrix":41}],82:[function(require,module,exports){
+},{"wgpu-matrix":42}],83:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45080,7 +45902,7 @@ class MaterialBindGroupCache {
 }
 exports.MaterialBindGroupCache = MaterialBindGroupCache;
 
-},{}],83:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45122,7 +45944,7 @@ class METoolTip {
 }
 exports.METoolTip = METoolTip;
 
-},{}],84:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45523,7 +46345,7 @@ function combinePassWGSL() {
 `;
 }
 
-},{}],85:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -45902,7 +46724,7 @@ function patchMainRenderPassDesc(device, width, height, existingDesc) {
   };
 }
 
-},{"../../shaders/hzb/hzb.wgsl":111}],86:[function(require,module,exports){
+},{"../../shaders/hzb/hzb.wgsl":112}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46486,7 +47308,7 @@ function compositeFragWGSL() {
   `;
 }
 
-},{}],87:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -46606,6 +47428,19 @@ class ProceduralMeshObj extends _materials.default {
     if (typeof o.fragmentWGSL !== 'undefined') {
       this.fragmentWGSL = o.fragmentWGSL;
     }
+    if (typeof o.primitive === 'undefined') {
+      this.primitive = {
+        topology: 'triangle-list',
+        cullMode: 'back',
+        frontFace: 'ccw'
+      };
+    } else {
+      this.primitive = {
+        topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+        cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+        frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+      };
+    }
     this.runProgram = () => {
       return new Promise(async resolve => {
         this.shadowDepthTextureSize = 512;
@@ -46633,7 +47468,7 @@ class ProceduralMeshObj extends _materials.default {
     });
   }
 
-  // GEOMETRY LOADING old
+  // Old
   _loadGeometry(spec) {
     const {
       type,
@@ -46737,7 +47572,6 @@ class ProceduralMeshObj extends _materials.default {
       width: 1,
       height: 1
     });
-
     // Materials expects texture0
     this.texture0 = texture;
     this.meshTexture = texture;
@@ -46825,14 +47659,8 @@ class ProceduralMeshObj extends _materials.default {
       }]
     } // normalB
     ];
-    this.primitive = {
-      topology: 'triangle-list',
-      cullMode: 'none',
-      frontFace: 'ccw'
-    }; //ccw
   }
   _setupUniforms() {
-    // console.log('EEEEEEEEEEEEEEEEEEEEEEEEEEEE', this.pointerEffect)
     this.effects = {};
     if (this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
@@ -46876,7 +47704,7 @@ class ProceduralMeshObj extends _materials.default {
     });
     this.device.queue.writeBuffer(this.morphBlendBuffer, 0, new Float32Array([this.morphBlend]));
 
-    // vertex Anim
+    // VertexAnim
     this.vertexAnimParams = new Float32Array([0.0, 0.0, 0.0, 0.0, 2.0, 0.1, 2.0, 0.0, 1.5, 0.3, 2.0, 0.5, 1.0, 0.1, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 1.0, 0.05, 0.5, 0.0, 1.0, 0.05, 2.0, 0.0, 1.0, 0.1, 0.0, 0.0]);
     this.vertexAnimBuffer = this.device.createBuffer({
       label: "Vertex Animation Params",
@@ -47109,7 +47937,6 @@ class ProceduralMeshObj extends _materials.default {
     this.updateVertexAnimBuffer();
   }
   setupPipeline() {
-    // this.createBindGroupForRender();
     const pm = _pipelineManager.PipelineManager.get();
     const vertexCode = this.vertexWGSL ? this.vertexWGSL : (0, _vertexProcedural.vertexMorphWGSL)();
     const fragmentCode = this.fragmentWGSL ? this.fragmentWGSL : this.isVideo == true ? (0, _fragmentVideo.fragmentVideoWGSL)() : this.getMaterial();
@@ -47542,10 +48369,7 @@ class MeshMorpher {
     } : composed;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // All original methods below — completely unchanged
-  // ─────────────────────────────────────────────────────────────────────────────
-
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     const counts = new Uint16Array(positions.length / 3);
@@ -48158,7 +48982,6 @@ class MeshMorpher {
       const particleIndex = Math.floor(u * particleCount) % particleCount;
       const particle = particles[particleIndex];
       const uLocal = (u * particleCount - Math.floor(u * particleCount)) % 1;
-
       // Small sphere for each particle
       const theta = uLocal * Math.PI * 2;
       const phi = v * Math.PI;
@@ -48172,7 +48995,7 @@ class MeshMorpher {
 }
 exports.MeshMorpher = MeshMorpher;
 
-},{"../shaders/fragment.video.wgsl":103,"../shaders/vertex.procedural.wgsl":128,"./effects/flame":52,"./effects/flame-emmiter":51,"./effects/gizmo":56,"./effects/msdfText":59,"./effects/pointerEffect":60,"./effects/topology-point":63,"./geometry-factory":65,"./literals":69,"./materials":74,"./matrix-class":75,"./pipelineManager":82,"./utils":92,"wgpu-matrix":41}],88:[function(require,module,exports){
+},{"../shaders/fragment.video.wgsl":104,"../shaders/vertex.procedural.wgsl":129,"./effects/flame":53,"./effects/flame-emmiter":52,"./effects/gizmo":57,"./effects/msdfText":60,"./effects/pointerEffect":61,"./effects/topology-point":64,"./geometry-factory":66,"./literals":70,"./materials":75,"./matrix-class":76,"./pipelineManager":83,"./utils":93,"wgpu-matrix":42}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48424,7 +49247,7 @@ class InstancedKinematicOperations {
 }
 exports.InstancedKinematicOperations = InstancedKinematicOperations;
 
-},{}],89:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48463,7 +49286,7 @@ function createGroundTexture(device, size = 512) {
   return texture;
 }
 
-},{}],90:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48528,7 +49351,7 @@ function spiralDown(idx, startX, startY, startZ, targetX, targetY, targetZ, dura
   }, 1000 / 60);
 }
 
-},{}],91:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -49127,7 +49950,7 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click') {
 //   });
 // }
 
-},{"wgpu-matrix":41}],92:[function(require,module,exports){
+},{"wgpu-matrix":42}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50473,6 +51296,8 @@ class CameraPath {
     this._arcTable.forEach(e => e.arc /= totalLen);
   }
   _arcToRaw(t) {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
     const tbl = this._arcTable;
     let lo = 0,
       hi = tbl.length - 1;
@@ -50517,7 +51342,7 @@ class CameraPath {
 }
 exports.CameraPath = CameraPath;
 
-},{}],93:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50549,7 +51374,7 @@ const MEConfig = exports.MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
-  LOAD_AFTER_CLICK_MOBILE: true,
+  LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
   logLoopError: true,
@@ -50616,7 +51441,7 @@ const MEConfig = exports.MEConfig = {
   }
 };
 
-},{"./engine/utils.js":92}],94:[function(require,module,exports){
+},{"./engine/utils.js":93}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50658,7 +51483,7 @@ class MultiLang {
 }
 exports.MultiLang = MultiLang;
 
-},{"../../public/res/multilang/en-backup":42,"../engine/utils":92}],95:[function(require,module,exports){
+},{"../../public/res/multilang/en-backup":43,"../engine/utils":93}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50828,7 +51653,7 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 }
 `;
 
-},{}],96:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -50894,7 +51719,7 @@ fn fsMain(in : VertexOutput) -> FragOut {
 }
 `;
 
-},{}],97:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51043,7 +51868,7 @@ fn fsMain(input : VSOut) -> FragOut {
 }
 `;
 
-},{}],98:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51221,7 +52046,7 @@ fn fsMain(input : VSOut) -> FragOut {
 }
 `;
 
-},{}],99:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -51785,7 +52610,7 @@ fn main(input: VertexInput) -> VertexOutput {
 `;
 exports.fountainWaterVertexWGSL = fountainWaterVertexWGSL;
 
-},{"../../me-config":93}],100:[function(require,module,exports){
+},{"../../me-config":94}],101:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52019,7 +52844,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentDarkWGSL = fragmentDarkWGSL;
 
-},{"../me-config":93}],101:[function(require,module,exports){
+},{"../me-config":94}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52240,7 +53065,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.fragmentWGSLGPT = fragmentWGSLGPT;
 
-},{"../me-config":93}],102:[function(require,module,exports){
+},{"../me-config":94}],103:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52562,7 +53387,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.mirrorIlluminateFragmentWGSL = mirrorIlluminateFragmentWGSL;
 
-},{"../me-config":93}],103:[function(require,module,exports){
+},{"../me-config":94}],104:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52635,7 +53460,7 @@ fn main(input : FragmentInput) -> FragOut {
 `;
 exports.fragmentVideoWGSL = fragmentVideoWGSL;
 
-},{}],104:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -52885,7 +53710,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWGSL = fragmentWGSL;
 
-},{"../me-config":93}],105:[function(require,module,exports){
+},{"../me-config":94}],106:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -53079,7 +53904,7 @@ for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
 `;
 exports.fragmentWGSLMetal = fragmentWGSLMetal;
 
-},{"../me-config":93}],106:[function(require,module,exports){
+},{"../me-config":94}],107:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -53314,7 +54139,7 @@ return FragOut(
 }`;
 exports.fragmentWGSLDark = fragmentWGSLDark;
 
-},{"../me-config":93}],107:[function(require,module,exports){
+},{"../me-config":94}],108:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -53563,7 +54388,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWGSLNormalMap = fragmentWGSLNormalMap;
 
-},{"../me-config":93}],108:[function(require,module,exports){
+},{"../me-config":94}],109:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -53773,7 +54598,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWGSLPong = fragmentWGSLPong;
 
-},{"../me-config":93}],109:[function(require,module,exports){
+},{"../me-config":94}],110:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -53967,7 +54792,7 @@ for(var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
 `;
 exports.fragmentWGSLPower = fragmentWGSLPower;
 
-},{"../me-config":93}],110:[function(require,module,exports){
+},{"../me-config":94}],111:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54038,7 +54863,7 @@ fn fsMain(input : VSOut) -> FragOut {
   );
 }`;
 
-},{}],111:[function(require,module,exports){
+},{}],112:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54341,7 +55166,7 @@ fn fs(in: VertOut) -> @location(0) vec4f {
   return vec4f(color, confidence * 0.8);
 }`;
 
-},{}],112:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54570,7 +55395,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWGSLInstanced = fragmentWGSLInstanced;
 
-},{"../../me-config":93}],113:[function(require,module,exports){
+},{"../../me-config":94}],114:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -54874,7 +55699,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.fragmentMirrorWGSLInstanced = fragmentMirrorWGSLInstanced;
 
-},{"../../me-config":93}],114:[function(require,module,exports){
+},{"../../me-config":94}],115:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -55103,7 +55928,7 @@ fn main(
 }`;
 exports.vertexWGSLInstanced = vertexWGSLInstanced;
 
-},{"../../me-config":93}],115:[function(require,module,exports){
+},{"../../me-config":94}],116:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -55342,7 +56167,7 @@ fn main(
 `;
 exports.vertexShadowWGSLInstanced = vertexShadowWGSLInstanced;
 
-},{"../../me-config":93}],116:[function(require,module,exports){
+},{"../../me-config":94}],117:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -55684,7 +56509,7 @@ fn fsMain(input : VSOut) -> FragOut {
 // }
 // `;
 
-},{}],117:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -55788,7 +56613,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.coloraWGSL = coloraWGSL;
 
-},{}],118:[function(require,module,exports){
+},{}],119:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -55965,7 +56790,7 @@ fn main(input: FragmentInput) -> FragOut {
 // `;
 exports.colorbWGSL = colorbWGSL;
 
-},{"../../me-config":93}],119:[function(require,module,exports){
+},{"../../me-config":94}],120:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56087,7 +56912,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.hybridWGSL = hybridWGSL;
 
-},{"../../me-config":93}],120:[function(require,module,exports){
+},{"../../me-config":94}],121:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56213,7 +57038,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.midaWGSL = midaWGSL;
 
-},{"../../me-config":93}],121:[function(require,module,exports){
+},{"../../me-config":94}],122:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56331,7 +57156,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.miniaWGSL = miniaWGSL;
 
-},{"../../me-config":93}],122:[function(require,module,exports){
+},{"../../me-config":94}],123:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56422,7 +57247,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.miniWGSL = miniWGSL;
 
-},{"../../me-config":93}],123:[function(require,module,exports){
+},{"../../me-config":94}],124:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56642,7 +57467,7 @@ fn main(input: FragmentInput) -> FragOut {
 `;
 exports.fragmentWGSLMix1 = fragmentWGSLMix1;
 
-},{"../../me-config":93}],124:[function(require,module,exports){
+},{"../../me-config":94}],125:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56735,7 +57560,7 @@ fn fsMain(input : VertexOutput) -> FragOut {
 `;
 exports.geoInstancedEffect = geoInstancedEffect;
 
-},{}],125:[function(require,module,exports){
+},{}],126:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56829,7 +57654,7 @@ fn fsMain(input : VertexOutput) -> FragOut {
 `;
 exports.geoInstancedTexEffect = geoInstancedTexEffect;
 
-},{}],126:[function(require,module,exports){
+},{}],127:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56898,7 +57723,7 @@ fn fsMain(input: VertexOutput) -> FragOut {
 `;
 exports.pointerEffect = pointerEffect;
 
-},{}],127:[function(require,module,exports){
+},{}],128:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -56989,7 +57814,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
   return vec4<f32>(color * alpha, alpha);
 }`;
 
-},{}],128:[function(require,module,exports){
+},{}],129:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -57341,7 +58166,7 @@ fn main(input: VertexInput) -> @builtin(position) vec4f {
 `;
 exports.vertexMorphShadowWGSL = vertexMorphShadowWGSL;
 
-},{}],129:[function(require,module,exports){
+},{}],130:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -57615,7 +58440,7 @@ fn main(
 }`;
 exports.vertexWGSL = vertexWGSL;
 
-},{"../me-config":93}],130:[function(require,module,exports){
+},{"../me-config":94}],131:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -57729,7 +58554,7 @@ fn main(
 }`;
 exports.vertexWGSL_NM = vertexWGSL_NM;
 
-},{"../me-config":93}],131:[function(require,module,exports){
+},{"../me-config":94}],132:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -57988,7 +58813,7 @@ fn main(
 `;
 exports.vertexShadowWGSL = vertexShadowWGSL;
 
-},{"../me-config":93}],132:[function(require,module,exports){
+},{"../me-config":94}],133:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -58196,7 +59021,7 @@ fn main(input: FragmentInput) -> FragOut {
 }`;
 exports.fragmentWaterWGSL = fragmentWaterWGSL;
 
-},{"../../me-config":93}],133:[function(require,module,exports){
+},{"../../me-config":94}],134:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -58283,7 +59108,7 @@ class MatrixMusicAsset {
 }
 exports.MatrixMusicAsset = MatrixMusicAsset;
 
-},{}],134:[function(require,module,exports){
+},{}],135:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -58353,7 +59178,7 @@ class MatrixSounds {
 }
 exports.MatrixSounds = MatrixSounds;
 
-},{}],135:[function(require,module,exports){
+},{}],136:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -58555,7 +59380,7 @@ class MEEditorClient {
       this.ws.send(o);
     });
     document.addEventListener('save-graph', e => {
-      console.info('%cSave graph <signal>', _utils.LOG_FUNNY_ARCADE);
+      console.info(`%cSave graph <signal> ${e.detail}`, _utils.LOG_FUNNY_ARCADE);
       let o = {
         action: "save-graph",
         graphData: e.detail.data
@@ -58602,7 +59427,8 @@ class MEEditorClient {
     document.addEventListener('get-shader-graphs', () => {
       console.info('%cget-shader-graphs <signal>', _utils.LOG_FUNNY_ARCADE);
       let o = {
-        action: "get-shader-graphs"
+        action: "get-shader-graphs",
+        projectName: location.href.split('/public/')[1].split(".")[0]
       };
       o = JSON.stringify(o);
       this.ws.send(o);
@@ -58694,7 +59520,7 @@ class MEEditorClient {
 }
 exports.MEEditorClient = MEEditorClient;
 
-},{"../../engine/utils":92}],136:[function(require,module,exports){
+},{"../../engine/utils":93}],137:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -59461,7 +60287,7 @@ class CurveStore {
   }
 }
 
-},{"../../engine/utils":92}],137:[function(require,module,exports){
+},{"../../engine/utils":93}],138:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -59535,37 +60361,40 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
-      <span>Scene objects [agnostic]</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexAnim')">Set VertexAnim Intesity</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWave')">Set Vertex Wave</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWind')">Set Vertex Wind</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexPulse')">Set Vertex Pulse</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
+      <span class="themeAgnostic" >Scene objects [agnostic]</span>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setMorphProcMesh')">MorphTo ProcMesh</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexAnim')">Set VertexAnim Intesity</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexWave')">Set Vertex Wave</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexWind')">Set Vertex Wind</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexPulse')">Set Vertex Pulse</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
+      <span>Grids (non physics)</span>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorWallNONPhysics')">Generate Wall NONPhysics</button>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
@@ -59576,30 +60405,30 @@ class Editor {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumberLiteral')">Get Number Literal</button>
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-      <span>Media</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
-      <span>Physics</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
+      <span class="themeMedia">Media</span>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
+      <span class="themePhysics">Physics</span>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
       <span>String Operations</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
 
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
@@ -59638,7 +60467,7 @@ class Editor {
 }
 exports.Editor = Editor;
 
-},{"../../engine/plugin/tooltip/ToolTip":83,"../../engine/utils":92,"./client":135,"./editor.provider":138,"./flexCodexShader":139,"./fluxCodexVertex":141,"./hud":143,"./methodsManager":144}],138:[function(require,module,exports){
+},{"../../engine/plugin/tooltip/ToolTip":84,"../../engine/utils":93,"./client":136,"./editor.provider":139,"./flexCodexShader":140,"./fluxCodexVertex":142,"./hud":144,"./methodsManager":145}],139:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -59656,54 +60485,78 @@ var _webgpuGltf = require("../../engine/loaders/webgpu-gltf");
 class EditorProvider {
   constructor(core) {
     this.core = core;
+    this._ev = {
+      updatePos: new CustomEvent('web.editor.update.pos', {
+        detail: {}
+      }),
+      updateRot: new CustomEvent('web.editor.update.rot', {
+        detail: {}
+      }),
+      updateScale: new CustomEvent('web.editor.update.scale', {
+        detail: {}
+      }),
+      updateUseScale: new CustomEvent('web.editor.update.useScale', {
+        detail: {}
+      })
+    };
     this.addEditorEvents();
   }
   getNameFromPath(p) {
-    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, ""); // + (this.core.mainRenderBundle.length);
+    return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
   addEditorEvents() {
     document.addEventListener('web.editor.input', e => {
       console.log("[EDITOR-input]: ", e.detail);
-      // Saves methods
       switch (e.detail.propertyId) {
         case 'position':
           {
             console.log('change signal for pos', e.detail);
-            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') document.dispatchEvent(new CustomEvent('web.editor.update.pos', {
-              detail: e.detail
-            }));
+            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') {
+              this._ev.updatePos.detail.inputFor = e.detail.inputFor;
+              this._ev.updatePos.detail.property = e.detail.property;
+              this._ev.updatePos.detail.propertyId = e.detail.propertyId;
+              this._ev.updatePos.detail.value = e.detail.value;
+              document.dispatchEvent(this._ev.updatePos);
+            }
             break;
           }
         case 'rotation':
           {
             console.log('[signal][rot]');
-            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') document.dispatchEvent(new CustomEvent('web.editor.update.rot', {
-              detail: e.detail
-            }));
+            if (e.detail.property == 'x' || e.detail.property == 'y' || e.detail.property == 'z') {
+              this._ev.updateRot.detail.inputFor = e.detail.inputFor;
+              this._ev.updateRot.detail.property = e.detail.property;
+              this._ev.updateRot.detail.propertyId = e.detail.propertyId;
+              this._ev.updateRot.detail.value = e.detail.value;
+              document.dispatchEvent(this._ev.updateRot);
+            }
             break;
           }
         case 'scale':
           {
             console.log('[signal][scale]');
             if (e.detail.property == '0' || e.detail.property == '1' || e.detail.property == '2') {
-              document.dispatchEvent(new CustomEvent('web.editor.update.scale', {
-                detail: e.detail
-              }));
+              this._ev.updateScale.detail.inputFor = e.detail.inputFor;
+              this._ev.updateScale.detail.property = e.detail.property;
+              this._ev.updateScale.detail.propertyId = e.detail.propertyId;
+              this._ev.updateScale.detail.value = e.detail.value;
+              document.dispatchEvent(this._ev.updateScale);
             }
             break;
           }
         default:
           console.log('changes not saved.');
       }
-      // inputFor: "Cube_0" property: "x" propertyId: "position" value: "1"
-      // InFly Method
       let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
       if (e.detail.property == "no info") {
-        // console.warn("What is useScale !!! ", e.detail.value);
         sceneObj[e.detail.propertyId] = e.detail.value;
-        if (e.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent('web.editor.update.useScale', {
-          detail: e.detail
-        }));
+        if (e.detail.propertyId === "useScale") {
+          this._ev.updateUseScale.detail.inputFor = e.detail.inputFor;
+          this._ev.updateUseScale.detail.property = e.detail.property;
+          this._ev.updateUseScale.detail.propertyId = e.detail.propertyId;
+          this._ev.updateUseScale.detail.value = e.detail.value;
+          document.dispatchEvent(this._ev.updateUseScale);
+        }
         return;
       }
       if (sceneObj) {
@@ -59714,8 +60567,6 @@ class EditorProvider {
       }
     });
     document.addEventListener('web.editor.addCube', e => {
-      // console.log("[web.editor.addCube]: ", e.detail);
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       (0, _loaderObj.downloadMeshes)({
         cube: "./res/meshes/blender/cube.obj"
       }, m => {
@@ -59737,7 +60588,6 @@ class EditorProvider {
             z: 0
           },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: "" + e.detail.index,
           mesh: m.cube,
           raycast: {
@@ -59754,7 +60604,6 @@ class EditorProvider {
       });
     });
     document.addEventListener('web.editor.addSphere', e => {
-      // console.log("[web.editor.addCube]: ", e.detail);
       (0, _loaderObj.downloadMeshes)({
         mesh: "./res/meshes/shapes/sphere.obj"
       }, m => {
@@ -59776,7 +60625,6 @@ class EditorProvider {
             z: 0
           },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e.detail.index,
           mesh: m.mesh,
           raycast: {
@@ -59795,7 +60643,6 @@ class EditorProvider {
     document.addEventListener('web.editor.addGlb', async e => {
       console.log("[web.editor.addGlb]: ", e.detail.path);
       e.detail.path = e.detail.path.replace('\\res', 'res');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD GLB
       var glbFile01 = await fetch(e.detail.path).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
       this.core.addGlbObj({
         material: {
@@ -59816,7 +60663,6 @@ class EditorProvider {
       console.log("[web.editor.addObj]: ", e.detail);
       e.detail.path = e.detail.path.replace('\\res', 'res');
       e.detail.path = e.detail.path.replace(/\\/g, '/');
-      // THIS MUST BE SAME LIKE SERVER VERSION OF ADD CUBE
       (0, _loaderObj.downloadMeshes)({
         objMesh: `${e.detail.path}`
       }, m => {
@@ -59838,7 +60684,6 @@ class EditorProvider {
             z: 0
           },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e.detail.index,
           mesh: m.objMesh,
           raycast: {
@@ -59854,19 +60699,15 @@ class EditorProvider {
         scale: [1, 1, 1]
       });
     });
-
-    // delete
     document.addEventListener('web.editor.delete', e => {
       console.log("[web.editor.delete]: ", e.detail.fullName);
       this.core.removeSceneObjectByName(e.detail.fullName);
     });
-
-    // update procedure
   }
 }
 exports.default = EditorProvider;
 
-},{"../../engine/loader-obj":70,"../../engine/loaders/webgpu-gltf":73}],139:[function(require,module,exports){
+},{"../../engine/loader-obj":71,"../../engine/loaders/webgpu-gltf":74}],140:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -60004,7 +60845,9 @@ class FragmentShaderGraph {
       const nodeElements = container[0].querySelectorAll('.nodeShader');
       nodeElements.forEach(el => el.remove());
     }
-    this.connectionLayer.redrawAll();
+    if (this.connectionLayer) {
+      this.connectionLayer.redrawAll();
+    }
   }
 }
 exports.FragmentShaderGraph = FragmentShaderGraph;
@@ -62060,7 +62903,7 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
   }));
 }
 
-},{"../../engine/utils.js":92,"./flexCodexShaderAdapter.js":140}],140:[function(require,module,exports){
+},{"../../engine/utils.js":93,"./flexCodexShaderAdapter.js":141}],141:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -62337,7 +63180,7 @@ function validateAttachments(attachmentOutputs) {
   }
 }
 
-},{"../../me-config":93}],141:[function(require,module,exports){
+},{"../../me-config":94}],142:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -62395,6 +63238,7 @@ var _generateAISchema = require("./generateAISchema.js");
 // Engine agnostic
 let runtimeCacheObjs = exports.runtimeCacheObjs = [];
 class FluxCodexVertex {
+  __experimental__RESOURCES_FOR_GRAPH = new RESOURCES_FOR_GRAPH();
   constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
     this.toolTip = toolTip;
@@ -62503,6 +63347,7 @@ class FluxCodexVertex {
       console.info("%c<AI RESPONSE>", _utils.LOG_FUNNY_ARCADE);
       (0, _utils.byId)("graphGenJSON").value = e.detail;
       (0, _utils.byId)('ai-status').removeAttribute('data-ai-status');
+      (0, _utils.byId)('ai-status').style.color = '';
     });
     document.addEventListener("keydown", e => {
       const target = e.composedPath && e.composedPath()[0] || e.target || document.activeElement;
@@ -62798,7 +63643,8 @@ class FluxCodexVertex {
     saveVPopup.style.fontWeight = "bold";
     saveVPopup.style.webkitTextStrokeWidth = "0px";
     saveVPopup.addEventListener("click", () => {
-      this.compileGraph();
+      // becouse blur input!
+      setTimeout(() => this.compileGraph(), 100);
     });
     popup.appendChild(saveVPopup);
     document.body.appendChild(popup);
@@ -62817,8 +63663,8 @@ class FluxCodexVertex {
       position: "absolute",
       top: "10%",
       left: "5%",
-      width: "50%",
-      height: "70%",
+      width: "65%",
+      height: "80%",
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
     repeating-linear-gradient(
@@ -62876,8 +63722,37 @@ class FluxCodexVertex {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
+    const textAreaManualInput = document.createElement('textarea');
+    textAreaManualInput.id = 'textAreaManualInput';
+    textAreaManualInput.style.width = '450px';
+    textAreaManualInput.style.height = '180px';
+    textAreaManualInput.style.display = 'none';
+    textAreaManualInput.style.position = 'absolute';
+    textAreaManualInput.style.right = '15px';
+    textAreaManualInput.style.top = '15px';
+    textAreaManualInput.classList.add('btn4');
+    textAreaManualInput.value = "Hello , ";
+
+    // just stop propagate becouse scene in bg
+    textAreaManualInput.addEventListener('keydown', e => e.stopPropagation());
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = 'manualInput';
+    checkbox.value = 'not in use';
+    popup.appendChild(textAreaManualInput);
+    checkbox.onchange = function (e) {
+      console.log(e.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+      if (!e.target.checked) {
+        textAreaManualInput.style.display = 'none';
+        selectPrompt.disabled = false;
+      } else {
+        textAreaManualInput.style.display = 'block';
+        selectPrompt.disabled = true;
+      }
+    };
+    popup.appendChild(checkbox);
     const label2 = document.createElement("span");
-    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    label2.innerText = `Select provider`;
     popup.appendChild(label2);
     const selectPromptProvider = document.createElement("select");
     selectPromptProvider.style.width = '400px';
@@ -62900,9 +63775,11 @@ class FluxCodexVertex {
     call.addEventListener("click", e => {
       if (selectPrompt.selectedIndex > 0) {
         // use select task...
+        console.log(' use select task...');
       }
       if (e.target.getAttribute("data-ai-status") == null) {
         e.target.setAttribute("data-ai-status", "wip");
+        e.target.style.color = 'red';
       } else {
         if (e.target.getAttribute("data-ai-status") == "wip") {
           console.info('gen ai tool call PREVENT ');
@@ -62911,12 +63788,15 @@ class FluxCodexVertex {
           console.info('gen ai tool call else ');
         }
       }
+      (0, _utils.byId)('graphGenJSON').value = '';
+      console.log(`%cAI TASK check input type:${checkbox.checked}`, _utils.LOG_FUNNY_ARCADE);
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, _utils.LOG_FUNNY_ARCADE);
+      const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
+      console.log(`%cAI TASK SERVICE:${_generateAISchema.providers[IDPROVIDER]}`, _utils.LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
         detail: {
-          provider: _generateAISchema.providers[0],
-          // hardcode
-          task: selectPrompt.selectedOptions[0].innerText
+          provider: _generateAISchema.providers[IDPROVIDER],
+          task: checkbox.checked === true ? textAreaManualInput.value : selectPrompt.selectedOptions[0].innerText
         }
       }));
     });
@@ -63005,6 +63885,7 @@ class FluxCodexVertex {
     insertGraph.style.webkitTextStrokeWidth = "0px";
     insertGraph.addEventListener("click", async () => {
       console.log("TEST OVERRIDE", list.value);
+      list.value = list.value.replace(/```json/g, '').replace(/```/g, '').trim();
       let test = JSON.parse(list.value);
       this.mergeGraphBundle(test);
     });
@@ -63033,6 +63914,11 @@ class FluxCodexVertex {
   }
   _refreshVarsList(container) {
     container.innerHTML = "";
+    for (const key in this._varInputs) {
+      this._varInputs[key].onchange = null;
+      this._varInputs[key].oninput = null;
+    }
+    this._varInputs = {};
     const colors = {
       number: "#4fc3f7",
       boolean: "#aed581",
@@ -63072,11 +63958,14 @@ class FluxCodexVertex {
           color: "#fff",
           border: "1px solid #333"
         });
-        input.oninput = () => {
+        input.onchange = () => {
           if (type === "object") {
             try {
-              this.variables.object[name] = JSON.parse(input.value);
-            } catch {
+              let parsed;
+              parsed = new Function("return " + input.value)();
+              this.variables.object[name] = parsed;
+            } catch (err) {
+              console.log('err in vars editox:', err);
               return;
             }
           } else if (type === "number") {
@@ -63086,6 +63975,7 @@ class FluxCodexVertex {
           } else {
             this.variables.string[name] = input.value;
           }
+          this.notifyVariableChanged(type, name);
         };
         const btnGet = document.createElement("button");
         btnGet.innerText = "Get";
@@ -64118,6 +65008,12 @@ class FluxCodexVertex {
         }, {
           name: "delay",
           type: "number"
+        }, {
+          name: "orientation",
+          type: "string"
+        }, {
+          name: "spacingByY",
+          type: "number"
         }],
         outputs: [{
           name: "execOut",
@@ -64128,7 +65024,7 @@ class FluxCodexVertex {
           value: "standard"
         }, {
           key: "pos",
-          value: '{x:0, y:0, z:-20}'
+          value: '{x:0, y:3, z:-20}'
         }, {
           key: "rot",
           value: '{x:0, y:0, z:0}'
@@ -64149,10 +65045,108 @@ class FluxCodexVertex {
           value: [1, 1, 1]
         }, {
           key: "spacing",
-          value: 10
+          value: 2
         }, {
           key: "delay",
           value: 500
+        }, {
+          key: "orientation",
+          value: "ByX"
+        }, {
+          key: "spacingByY",
+          value: 3
+        }, {
+          key: "created",
+          value: false
+        }],
+        noselfExec: "true"
+      }),
+      generatorWallNONPhysics: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Generator Wall NONPhysics",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "material",
+          type: "string"
+        }, {
+          name: "pos",
+          type: "object"
+        }, {
+          name: "rot",
+          type: "object"
+        }, {
+          name: "texturePath",
+          type: "string"
+        }, {
+          name: "name",
+          type: "string"
+        }, {
+          name: "size",
+          type: "string"
+        }, {
+          name: "raycast",
+          type: "boolean"
+        }, {
+          name: "scale",
+          type: "object"
+        }, {
+          name: "spacing",
+          type: "number"
+        }, {
+          name: "delay",
+          type: "number"
+        }, {
+          name: "orientation",
+          type: "string"
+        }, {
+          name: "spacingByY",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "material",
+          value: "standard"
+        }, {
+          key: "pos",
+          value: '{x:0, y:3, z:-20}'
+        }, {
+          key: "rot",
+          value: '{x:0, y:0, z:0}'
+        }, {
+          key: "texturePath",
+          value: "res/textures/default.png"
+        }, {
+          key: "name",
+          value: "TEST"
+        }, {
+          key: "size",
+          value: "10x3"
+        }, {
+          key: "raycast",
+          value: true
+        }, {
+          key: "scale",
+          value: [1, 1, 1]
+        }, {
+          key: "spacing",
+          value: 2
+        }, {
+          key: "delay",
+          value: 500
+        }, {
+          key: "orientation",
+          value: "ByX"
+        }, {
+          key: "spacingByY",
+          value: 3
         }, {
           key: "created",
           value: false
@@ -64461,6 +65455,41 @@ class FluxCodexVertex {
         fields: [],
         noselfExec: "true"
       }),
+      setMorphProcMesh: (id, x, y) => ({
+        id,
+        x,
+        y,
+        title: "Set Morph ProceduralMesh",
+        category: "action",
+        inputs: [{
+          name: "exec",
+          type: "action"
+        }, {
+          name: "objectName",
+          type: "string"
+        }, {
+          name: "index",
+          type: "number"
+        }, {
+          name: "interval",
+          type: "number"
+        }],
+        outputs: [{
+          name: "execOut",
+          type: "action"
+        }],
+        fields: [{
+          key: "objectName",
+          value: "FLOOR"
+        }, {
+          key: "index",
+          value: 1
+        }, {
+          key: "interval",
+          value: 2000
+        }],
+        noselfExec: "true"
+      }),
       setVideoTexture: (id, x, y) => ({
         id,
         x,
@@ -64740,6 +65769,12 @@ class FluxCodexVertex {
           type: "object"
         }, {
           name: "hitObject",
+          type: "object"
+        }, {
+          name: "position",
+          type: "object"
+        }, {
+          name: "rotation",
           type: "object"
         }, {
           name: "hitNormal",
@@ -66590,14 +67625,6 @@ LIST OF INTEREST OBJECT:
         }
       }
     }
-
-    // TEST
-    // const catalog = generateAICatalog(nodeFactories);
-    // const systemCatalogText = catalogToText(catalog);
-    // console.log(systemCatalogText);
-    // localStorage.setItem('systemCatalogText', systemCatalogText);
-    // TEST
-
     if (spec) {
       const dom = this.createNodeDOM(spec);
       this.board.appendChild(dom);
@@ -66607,7 +67634,7 @@ LIST OF INTEREST OBJECT:
     return null;
   }
   setVariable(type, key, value) {
-    if (!this.variables[type][key]) return;
+    // deplaced
     console.log('Test -setVariable  value', value);
     this.variables[type][key].value = value;
     this.notifyVariableChanged(type, key);
@@ -66663,6 +67690,7 @@ LIST OF INTEREST OBJECT:
       input.style.cursor = "default";
     }
     const saveInputValue = () => {
+      console.log('sadasd');
       let val;
       if (field.type === "object") {
         try {
@@ -66676,6 +67704,7 @@ LIST OF INTEREST OBJECT:
       field.value = val;
 
       // existing logic stays
+
       if (node.isGetterNode && field.key === "var") {
         this.notifyVariableChanged("object", val);
       }
@@ -66825,8 +67854,8 @@ LIST OF INTEREST OBJECT:
       };
       n._listenerAttached = true;
     } else if (n.title == "On Ray Hit") {
-      // console.log('ON RAY HIT INIT ONLE !!!!!!!!!!!!!!!!!')
       if (n._listenerAttached) return;
+      console.log('ON RAY HIT INIT ONLE !!!');
       app.reference.addRaycastsListener();
       const handler = e => {
         n._returnCache = e.detail;
@@ -66950,6 +67979,12 @@ LIST OF INTEREST OBJECT:
     if (node.title === "On Ray Hit") {
       if (pinName === "hitObjectName") {
         return node._returnCache['hitObject']['name'];
+      } else if (pinName === "position") {
+        if (!node._returnCache) return {};
+        return node._returnCache['hitObject']['position'];
+      } else if (pinName === "rotation") {
+        if (!node._returnCache) return {};
+        return node._returnCache['hitObject']['rotation'];
       } else {
         return node._returnCache[pinName];
       }
@@ -66985,7 +68020,6 @@ LIST OF INTEREST OBJECT:
         this.triggerNode(node.id);
       }
       let value = node._returnCache;
-      // Optional: parse string to array
       if (typeof value === "string") {
         try {
           if (node.title == "Get String") {
@@ -67389,6 +68423,7 @@ LIST OF INTEREST OBJECT:
         n._returnCache = value;
         // Update visual label if exists
         if (n.displayEl) {
+          // console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', type)
           if (type === "object") {
             n.displayEl.textContent = value !== undefined ? JSON.stringify(value) : "{}";
           } else if (typeof value === "number") {
@@ -67441,6 +68476,7 @@ LIST OF INTEREST OBJECT:
     if (n.isVariableNode) {
       const type = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find(f => f.key === "var");
+      console.log("isVariableNode set object ", value);
       if (varField && varField.value) {
         let value = this.getValue(nodeId, "value");
         // if 0 probably no pin connection
@@ -67613,6 +68649,8 @@ LIST OF INTEREST OBJECT:
         let raycast = this.getValue(nodeId, "raycast");
         let scale = this.getValue(nodeId, "scale");
         let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
         // spec adaptation
         if (raycast == "true") {
           raycast = true;
@@ -67630,9 +68668,58 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find(f => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay, ori, spacingByY);
           // createdField.value = true;
         }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Generator Wall NONPhysics") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
+        // spec adaptation
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == 'string') delay = parseInt(delay);
+        if (typeof pos == 'string') eval("pos = " + pos);
+        if (typeof rot == 'string') eval("rot = " + rot);
+        if (typeof scale == 'string') eval("scale = " + scale);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find(f => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          app.generatorWallNONPHYSICS(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay, ori, spacingByY);
+          // createdField.value = true;
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Morph ProceduralMesh") {
+        const objectName = this.getValue(nodeId, "objectName");
+        const interval = this.getValue(nodeId, "interval");
+        let morphIndex = this.getValue(nodeId, "index");
+        if (!objectName) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        console.warn("[Set morph to] arg:", morphIndex);
+        let o = app.getSceneObjectByName(objectName);
+        o.morphTo(morphIndex, interval);
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Add OBJ") {
@@ -67857,7 +68944,7 @@ LIST OF INTEREST OBJECT:
           _utils.mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
+        // console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram: canvaInlineProgram,
@@ -68462,15 +69549,14 @@ LIST OF INTEREST OBJECT:
     }
     let getCurrentGIzmoObj = app.mainRenderBundle.filter(o => o.effects.gizmoEffect && o.effects.gizmoEffect.enabled);
     if (getCurrentGIzmoObj.length > 0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
-    (0, _utils.byId)("app").style.opacity = 0.5;
+    (0, _utils.byId)("app").style.display = 'none';
     this.initEventNodes();
     Object.values(this.nodes).forEach(n => n._returnCache = undefined);
     Object.values(this.nodes).filter(n => n.category === "event" && n.title === "onLoad").forEach(n => this.triggerNode(n.id));
     (0, _utils.byId)("graph-status").innerHTML = '🔴';
   }
   compileGraph() {
-    // This is save !!!
-    // console.log("SAVE:", this.nodes)
+    console.log("SAVE NODES: ", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -68480,8 +69566,16 @@ LIST OF INTEREST OBJECT:
       variables: this.variables
     };
     function saveReplacer(key, value) {
-      if (key === 'fn') return undefined;
-      if (key === 'accessObject') return undefined;
+      if (value instanceof Element) return undefined;
+      if (value instanceof Node) return undefined;
+      if (key === 'fn') {
+        console.log('stripping fn from', key);
+        return undefined;
+      }
+      if (key === 'accessObject') {
+        console.log('stripping accessObject');
+        return undefined;
+      }
       if (key === '_returnCache') return undefined;
       if (key === '_listenerAttached') return false;
       if (key === '_audio') return undefined;
@@ -68492,32 +69586,26 @@ LIST OF INTEREST OBJECT:
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
-    // ?
     this.saveGraphEvent.detail.data = d;
     document.dispatchEvent(this.saveGraphEvent);
-    // this.log("Graph saved to LocalStorage and final script");
   }
   clearStorage() {
     let ask = confirm("⚠️ This will delete all nodes. Are you sure?");
     if (ask) {
       this.clearAllNodes();
       localStorage.removeItem(this.SAVE_KEY);
-      this.compileGraph(); // not just save empty
+      this.compileGraph();
       // location.reload(true);
     }
   }
   clearAllNodes() {
-    // Remove node DOMs
     this.board.querySelectorAll(".node").forEach(n => n.remove());
-    // Clear data
-    this.nodes = [];
-    this.nodes.length = 0;
+    this.nodes = {};
+    this.nodeCounter = 0;
     this.links.length = 0;
-    // Clear state
     this.state.selectedNode = null;
     this.state.draggingNode = null;
     this.state.connectingPin = null;
-    // Optional: redraw connections
     this.updateLinks();
   }
   _buildSaveBundle() {
@@ -68838,8 +69926,18 @@ LIST OF INTEREST OBJECT:
   }
 }
 exports.default = FluxCodexVertex;
+class RESOURCES_FOR_GRAPH {
+  obj = [];
+  glb = [];
+  images = [];
+  constructor() {
+    addEventListener('editorx-update-assets-list', e => {
+      console.log('editorx-update-assets-list ', e.detail);
+    });
+  }
+}
 
-},{"../../engine/matrix-class.js":75,"../../engine/utils":92,"./curve-editor":136,"./generateAISchema.js":142}],142:[function(require,module,exports){
+},{"../../engine/matrix-class.js":76,"../../engine/utils":93,"./curve-editor":137,"./generateAISchema.js":143}],143:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -68963,10 +70061,15 @@ function catalogToText(catalog) {
   }
   return out;
 }
-let tasks = exports.tasks = ["On load print hello world", "On load create a cube named box1 at position 0 0 0", "Create a the labyrinth using generatorWall", "Set texture for floor object", "Create a cube and enable raycast", "Create 5 cubes in a row with spacing", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
-let providers = exports.providers = ["ollama", "groq"];
+let tasks = exports.tasks = ["On load create a cube named box1 at position (0, 3, 0) and make const rotate by y axis.", `
+  Build the House with non physics cubes. Build 3 floors, walls and roof.
+  Make big house with space inside! 
+  Don't use physics generators, use simple nonphysics cubes.
+  To make it optimised you can use scale.
+  `, "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ", "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.", "Create a nonPhysics Cube and enable raycast, on hit make object translateByZ", "Create start from cubes - use nonphysics cubes.", "Create a pyramid of cubes with 4 levels", "Play mp3 audio on load", "Create audio reactive node from music", "Print beat value when detected", "Rotate box1 slowly on Y axis every frame", "Move box1 forward on Z axis over time", "Oscillate box1 Y position between 0 and 2", "Change box1 rotation using sine wave", "On ray hit print hit object name", "Apply force to hit object in ray direction", "Change texture of object when clicked new texture rust metal", "Generate random number and print it", "Set variable score to 0", "Increase score by 1 on object hit, Print score value", "Dispatch custom event named GAME_START", "After 2 seconds create a new cube", "Animate cube position using curve timeline", "Enable vertex wave animation on floor"];
+let providers = exports.providers = ["ollama", "groq", "anthropic", "google"];
 
-},{}],143:[function(require,module,exports){
+},{}],144:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -69306,15 +70409,15 @@ class EditorHud {
         physics: false,
         networking: false
       };
-      if (confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("⚛ Enable physics (Ammo, Jolt, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("⚛  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
+        let pId = prompt("⚛  Choose physics library [jolt=1 ammo=2 cannones=3 matter=4] (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent('cnp', {
@@ -69335,10 +70438,8 @@ class EditorHud {
     };
 
     // byId('start-prod-build').onclick = () => {
-    //   //
+    // 
     //   console.log('.......start-prod-build.......');
-    //   console.log('................................')
-
     // };
 
     // OBJECT LEVEL
@@ -69683,15 +70784,15 @@ class EditorHud {
         physics: false,
         networking: false
       };
-      if (confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("⚛ Enable physics (Jolt, Ammo, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 matter=4  \n (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
 
       // console.log(features);
@@ -70313,7 +71414,7 @@ class SceneObjectProperty {
   }
 }
 
-},{"../../engine/utils.js":92,"./flexCodexShader.js":139}],144:[function(require,module,exports){
+},{"../../engine/utils.js":93,"./flexCodexShader.js":140}],145:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -70630,7 +71731,7 @@ class MethodsManager {
 }
 exports.default = MethodsManager;
 
-},{}],145:[function(require,module,exports){
+},{}],146:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -70765,6 +71866,7 @@ class MatrixEngineWGPU {
       this.physicsBodiesGeneratorDeepPyramid = _generator.physicsBodiesGeneratorDeepPyramid.bind(this);
       this.physicsBodiesChain = _generator.physicsBodiesChain.bind(this);
     }
+    this.generatorWallNONPHYSICS = _generator.generatorWallNONPHYSICS.bind(this);
     this.editorAddOBJ = _generator.addOBJ.bind(this);
     this.editorAddProceduralMesh = _generator.addProceduralOBJ.bind(this);
     this.MEConfig = _meConfig.MEConfig;
@@ -72489,4 +73591,4 @@ class MatrixEngineWGPU {
 }
 exports.default = MatrixEngineWGPU;
 
-},{"./engine/cameras.js":44,"./engine/core-cache.js":46,"./engine/culling/culling.js":47,"./engine/effects/KaleidoscopeEffect.js":48,"./engine/effects/energy-bar.js":50,"./engine/effects/flame-emmiter.js":51,"./engine/effects/flame.js":52,"./engine/effects/mana-bar.js":58,"./engine/effects/pointerEffect.js":60,"./engine/generators/generator.js":64,"./engine/instanced/mesh-obj-instances.js":67,"./engine/lights.js":68,"./engine/loader-obj.js":70,"./engine/loaders/bvh-instaced.js":71,"./engine/loaders/bvh.js":72,"./engine/mesh-obj.js":76,"./engine/overrides/culling.js":77,"./engine/overrides/min-render.js":78,"./engine/overrides/mobile-1.js":79,"./engine/overrides/nano-render.js":80,"./engine/physics/bridge.js":81,"./engine/pipelineManager.js":82,"./engine/postprocessing/bloom.js":84,"./engine/postprocessing/hzb.js":85,"./engine/postprocessing/volumetric.js":86,"./engine/procedural-mesh.js":87,"./engine/raycast.js":91,"./engine/utils.js":92,"./me-config.js":93,"./multilang/lang.js":94,"./sounds/audioAsset.js":133,"./sounds/sounds.js":134,"./tools/editor/editor.js":137,"./tools/editor/flexCodexShaderAdapter.js":140,"wgpu-matrix":41}]},{},[1]);
+},{"./engine/cameras.js":45,"./engine/core-cache.js":47,"./engine/culling/culling.js":48,"./engine/effects/KaleidoscopeEffect.js":49,"./engine/effects/energy-bar.js":51,"./engine/effects/flame-emmiter.js":52,"./engine/effects/flame.js":53,"./engine/effects/mana-bar.js":59,"./engine/effects/pointerEffect.js":61,"./engine/generators/generator.js":65,"./engine/instanced/mesh-obj-instances.js":68,"./engine/lights.js":69,"./engine/loader-obj.js":71,"./engine/loaders/bvh-instaced.js":72,"./engine/loaders/bvh.js":73,"./engine/mesh-obj.js":77,"./engine/overrides/culling.js":78,"./engine/overrides/min-render.js":79,"./engine/overrides/mobile-1.js":80,"./engine/overrides/nano-render.js":81,"./engine/physics/bridge.js":82,"./engine/pipelineManager.js":83,"./engine/postprocessing/bloom.js":85,"./engine/postprocessing/hzb.js":86,"./engine/postprocessing/volumetric.js":87,"./engine/procedural-mesh.js":88,"./engine/raycast.js":92,"./engine/utils.js":93,"./me-config.js":94,"./multilang/lang.js":95,"./sounds/audioAsset.js":134,"./sounds/sounds.js":135,"./tools/editor/editor.js":138,"./tools/editor/flexCodexShaderAdapter.js":141,"wgpu-matrix":42}]},{},[1]);

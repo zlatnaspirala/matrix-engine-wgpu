@@ -1,0 +1,10 @@
+{
+  "redirect": true,
+  "id": "tutorial-4",
+  "name": "tutorial-4",
+  "absolutePath": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects\\tutorial-4\\tutorial-4.json",
+  "PROJECTS_DIR": "G:\\web_server\\xampp\\htdocs\\PRIVATE_SERVER\\me\\meGPU\\matrix-engine-wgpu\\projects",
+  "projectData": "tutorial-4\\tutorial-4.json",
+  "physics": true,
+  "networking": false
+}

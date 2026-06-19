@@ -353,16 +353,17 @@ export default class EditorHud {
         networking: false
       };
 
-      if(confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
+      if(confirm("⚛ Enable physics (Ammo, Jolt, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("⚛  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
+        let pId = prompt("⚛  Choose physics library [jolt=1 ammo=2 cannones=3 matter=4] (Enter number): ", "3");
         features.physicsLib = pId;
       }
 
       if(confirm("🔌 Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent('cnp', {
@@ -384,12 +385,9 @@ export default class EditorHud {
       location.href = 'matrix-engine.html';
     };
 
-
     // byId('start-prod-build').onclick = () => {
-    //   //
+    // 
     //   console.log('.......start-prod-build.......');
-    //   console.log('................................')
-
     // };
 
     // OBJECT LEVEL
@@ -759,9 +757,9 @@ export default class EditorHud {
         networking: false
       };
 
-      if(confirm("⚛ Enable physics (Ammo,Jolt or CannonES)?")) {
+      if(confirm("⚛ Enable physics (Jolt, Ammo, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("⚛  Choose physics library jolt=1 ammo=2 cannones=3 matter=4  \n (Enter number): ", "3");
         features.physicsLib = pId;
       }
 
@@ -769,7 +767,7 @@ export default class EditorHud {
         features.networking = true;
       }
 
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
 
       // console.log(features);
@@ -1086,7 +1084,7 @@ class SceneObjectProperty {
       } else if(propName == "itIsPhysicsBody") {
         if(!this.core.matrixPhysics) return;
         let body = this.core.matrixPhysics.getBodyByName(currSceneObj.name);
-        if (body) for(let key in body) {
+        if(body) for(let key in body) {
           if(typeof body[key] === 'string') {
             this.propName.innerHTML += `<div style="display:flex;text-align:left;"> 
               <div style="background:black;color:white;width:35%;">${key}</div>

@@ -101,14 +101,18 @@ The backend is built using **Node.js** 🟢
   - For final builds, becomes a real **JS object** injected into the app flow.[DONE]
 - Export graph to **JSON**
 - Import graph from **JSON**
+- Insert graph from **JSON** from generated data (ai tool)
 - [Experimental] Generate graphs with ai tools services First working graph done with ollama platform.
   You need to open account on ollama platform for free quota service. Get API key and add it
   to the aitool config file (src\tools\editor\backend\config.js) Backend Config.js is in git ignored list.
   If you need to create it use this format:
+  If not exist just create it (it's ignored).
   ```js
   export const aiConfig = {
     ollama: "***********",
     qrok: "************",
+    anthropic: "************",
+    google: "************"
   };
   ```
   For now i create graphs with simple tasks.

@@ -3,6 +3,12 @@ import fs from "fs/promises";
 import {WebSocketServer} from "ws";
 import esbuild from "esbuild";
 
+/**
+ * @description
+ * Main EditorX backend script.
+ * @note 
+ * This is node.js script.
+ */
 const ENGINE_PATH = path.resolve("../../../../");
 const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
 const PUBLIC_RES = path.join(PUBLIC_DIR, "res");
@@ -13,7 +19,8 @@ import {DEFAULT_SHADER_GRAPH_JS} from "./shader-graph.js";
 import {AiGroq} from "./groq/groq.js";
 import {AiOllama} from "./ollama/ollama.js";
 import {AvailableResources} from "./ollama/get-available-resources.js";
-import {SYSTEM_PROMPT} from "./ollama/test-prompt1.js";
+import {SYSTEM_PROMPT, SYSTEM_PROMPT_MINI} from "./ollama/test-prompt1.js";
+import {AiAnthropic} from "./ai-anthropic/ai-anthropic.js";
 
 let PROJECT_NAME = "";
 
@@ -23,11 +30,15 @@ const watchers = new Map();
 const wss = new WebSocketServer({port: 1243});
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
+console.log("\x1b[93m%s\x1b[0m", "- MEWGPU EditorX                         -");
+console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[93m%s\x1b[0m", "- Start you new project                  -");
 console.log("\x1b[93m%s\x1b[0m", "- Load project                           -");
-console.log("\x1b[93m%s\x1b[0m", "- from ./public/matrix-engine.html       -");
+console.log("\x1b[93m%s\x1b[0m", "- StartUp at ./public/matrix-engine.html -");
+console.log("\x1b[93m%s\x1b[0m", "- Wait self redirection to               -");
+console.log("\x1b[93m%s\x1b[0m", "- ./public/<PROJECT_NAME>.html           -");
 console.log("\x1b[93m%s\x1b[0m", "- When you create a project next time    -");
-console.log("\x1b[93m%s\x1b[0m", "- you can go directly to /MyProject.html -");
+console.log("\x1b[93m%s\x1b[0m", "- you go directly to /<PROJECT_NAME>.html-");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Editorx -> Support SceneEditor, FluxCodexVertex Graph and FragmentShader Graph");
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", "-Project can be created from editor and from code, can't be combinated.");
@@ -38,6 +49,8 @@ console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
 let matrixOllama = new AiOllama();
 let matrixGroq = new AiGroq();
+let matrixAiAnthropic = new AiAnthropic();
+let matrixGoogleAI = new AiAnthropic();
 
 async function buildAllProjectsOnStartup() {
   console.log("🔨 Building all projects (startup)…");
@@ -46,7 +59,7 @@ async function buildAllProjectsOnStartup() {
     if(!dir.isDirectory()) continue;
     const projectName = dir.name;
     const entry = path.join(PROJECTS_DIR, projectName, "app-gen.js");
-    // app graph
+    // App graph
     const graphFile = path.join(PROJECTS_DIR, projectName, "graph.js");
     try {
       await fs.access(graphFile);
@@ -206,6 +219,8 @@ wss.on("connection", ws => {
         updateScale(msg, ws);
       } else if(msg.action == "useScale") {
         useScale(msg, ws);
+      } else if(msg.action == "sendClientResourceFullData") {
+        internal_navFolder(msg, ws);
       }
 
     } catch(err) {
@@ -224,17 +239,21 @@ import {addRaycastsListener} from "../../src/engine/raycast.js";
 `;
 }
 
-// ammo is default
 function CBoptions(p, n, pName, physicsLib, camera) {
   return `
   {
-  ${p ? physicsLib == 1 ? 'useJolt: true,' : physicsLib == 3 ? 'useCannon: true,' : '' : 'dontUsePhysics: true,'}
+  ${p ?
+      physicsLib == 1 ? 'useJolt: true,' :
+        physicsLib == 2 ? 'useAmmo: true,' :
+          physicsLib == 3 ? 'useCannon: true,' :
+            physicsLib == 4 ? 'useMatter: true,' :
+              'dontUsePhysics: true,' : 'dontUsePhysics: true,'}
   useEditor: true,
   projectType: "created from editor",
   ${pName ? `projectName: '${pName}',` : ""}
   canvasSize: 'fullscreen',
   mainCameraParams: {
-    type:  ${ camera == 1 ? 'WASD' : camera == 2 ? "firstPersonCamera" : camera == 3 ? "RPG" : camera == 4 ? "cinematicCamera" : "WASD"},
+    type:  ${camera == 1 ? '"WASD"' : camera == 2 ? '"firstPersonCamera"' : camera == 3 ? '"RPG"' : camera == 4 ? '"cinematicCamera"' : '"WASD"'},
     responseCoef: 1000
   },
   clearColor: {r: 0, b: 0, g: 0, a: 1}
@@ -287,7 +306,7 @@ async function cnp(ws, msg) {
 
   content.addLine(`// Avoid position y 0 vs floor zero !`);
   content.addLine(`app.getCamera().setPosition(0,4,0)`);
-  
+
   // graph
   content.addLine(`// [light]`);
   content.addLine(`app.addLight();`);
@@ -354,9 +373,7 @@ async function buildProject(projectName, ws, payload) {
     return;
   }
 
-  // const entry = `${PROJECTS_DIR}\\${projectName}\\app-gen.js`;
   const entry = path.join(PROJECTS_DIR, projectName, "app-gen.js");
-  // const outfile = `${PUBLIC_DIR}\\${projectName}.js`;
   const outfile = path.join(PUBLIC_DIR, `${projectName}.js`);
   const context = await esbuild.context({
     entryPoints: [entry],
@@ -373,13 +390,12 @@ async function buildProject(projectName, ws, payload) {
   });
   await context.watch();
   console.log(`Watching & bundling ${projectName} → ${outfile}`);
-  watchers.set(projectName, context); // <- store watcher
+  watchers.set(projectName, context);
   PROJECT_NAME = projectName;
   console.log(`👀 Started watcher for ${projectName}`);
 
   const htmldoc = new CodeBuilder();
   htmldoc.addLine(createHTMLProjectDocument(projectName));
-  // const outHtmlFile = `${PUBLIC_DIR}\\${projectName}.html`;
   const outHtmlFile = path.join(PUBLIC_DIR, `${projectName}.html`);
   htmldoc.saveTo(outHtmlFile);
 
@@ -404,7 +420,7 @@ async function stopWatch(projectName, ws) {
     return;
   }
 
-  await ctx.dispose();       // <- STOP WATCH
+  await ctx.dispose();
   watchers.delete(projectName);
   console.log("🛑 Watch stopped for", projectName);
   ws.send(JSON.stringify({
@@ -463,9 +479,9 @@ async function fileDetail(msg, ws) {
       path: folder,
       isFile: stat.isFile(),
       isDirectory: stat.isDirectory(),
-      size: stat.size,          // bytes
-      created: stat.birthtime,  // Date
-      modified: stat.mtime,     // Date
+      size: stat.size,
+      created: stat.birthtime,
+      modified: stat.mtime,
     };
     ws.send(JSON.stringify({
       ok: true,
@@ -538,8 +554,9 @@ async function saveMethods(msg, ws) {
   });
 }
 
-// FluxCodexVertex
+// FLUXCODEXSHADER
 async function saveGraph(msg, ws) {
+  console.log('.............savevg PROJECT_NAME', msg.graphData);
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "graph.js");
@@ -566,11 +583,9 @@ async function saveShaderGraph(msg, ws) {
       graphs = JSON.parse(match[1]);
     }
   } catch(err) {
-    console.log("No existing shader-graphs.js, creating new");
+    console.log("[saveShaderGraph]No existing shader-graphs.js, creating new");
   }
-  // const newGraph = JSON.parse(msg.graphData);
   const newGraph = msg.graphData;
-  // console.log("No existing shader-graphs.js, creating new");
   // Find and update, or add new
   const existingIndex = graphs.findIndex(g => g.name === newGraph.name);
   if(existingIndex !== -1) {
@@ -590,18 +605,20 @@ async function saveShaderGraph(msg, ws) {
 }
 
 async function loadShaderGraph(msg, ws) {
+  console.log("[loadShaderGraph] ");
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   await fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "shader-graphs.js");
   let graphs = [];
   try {
     const existingContent = await fs.readFile(file, "utf8");
-    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*?\]);?\s*$/);
     if(match) {
-      graphs = JSON.parse(match[1]);
+      const cleaned = match[1].replace(/,\s*([}\]])/g, '$1');
+      graphs = JSON.parse(cleaned);
     }
   } catch(err) {
-    console.log("No existing shader-graphs.js, creating new");
+    console.log("[getShaderGraphs] error :", err);
   }
   let newGraph;
   // Find and update, or add new
@@ -620,16 +637,20 @@ async function loadShaderGraph(msg, ws) {
 }
 
 async function getShaderGraphs(msg, ws) {
-  const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
+  console.log("[getShaderGraphs] msg.projectName ", msg.projectName);
+  const folderPerProject = path.join(PROJECTS_DIR, msg.projectName);
   await fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "shader-graphs.js");
   let graphs = [];
   try {
     const existingContent = await fs.readFile(file, "utf8");
-    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*\]);?/);
-    if(match) graphs = JSON.parse(match[1])
+    const match = existingContent.match(/export let shaderGraphsProdc = (\[[\s\S]*?\]);?\s*$/);
+    if(match) {
+      const cleaned = match[1].replace(/,\s*([}\]])/g, '$1');
+      graphs = JSON.parse(cleaned);
+    }
   } catch(err) {
-    console.log("No existing shader-graphs.js, creating new");
+    console.log("[getShaderGraphs] error :", err);
   }
   ws.send(JSON.stringify({
     ok: true,
@@ -878,30 +899,92 @@ async function aiGenGraphCall(msg, ws) {
   internal_navFolder({rootFolder: PUBLIC_RES, name: "textures"}, ws).then((res) => {
     let res_list_tex = res[0];
     let res_list_obj = res[1];
+    let res_list_glb = res[2];
+    let res_list_mp3 = res[3];
+    let res_list_mp4 = res[4];
     const listOfTexs = res_list_tex.map(t => t.relativePath).join(", ");
     const listOfObjs = res_list_obj.map(t => t.relativePath).join(", ");
-    msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(SYSTEM_PROMPT, listOfTexs, listOfObjs);
-    matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
-      // console.log('result from ai tool service....>>>>', res_list)
-      ws.send(JSON.stringify({
-        ok: true,
-        aiGenGraph: 'OK',
-        aiGenNodes: r
-      }));
-    })
+    const listOfGlbs = res_list_glb.map(t => t.relativePath).join(", ");
+    const listOfMp3s = res_list_mp3.map(t => t.relativePath).join(", ");
+    const listOfMp4s = res_list_mp4.map(t => t.relativePath).join(", ");
+
+          console.log('msg.prompt.provider....>>>>', msg.prompt.provider)
+
+    if(msg.prompt.provider === 'groq') {
+
+      msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+        SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+
+      matrixGroq.aiGenGraphCall(msg.prompt).then((r) => {
+        console.log('GROQ service....>>>>', res_list)
+        ws.send(JSON.stringify({
+          ok: true,
+          aiGenGraph: 'OK',
+          aiGenNodes: r
+        }));
+      })
+    } else if(msg.prompt.provider === 'google') {
+      // 
+      msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+        SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+      matrixAiAnthropic.aiGenGraphCall(msg.prompt).then((r) => {
+        ws.send(JSON.stringify({
+          ok: true,
+          aiGenGraph: 'OK',
+          aiGenNodes: r
+        }));
+      })
+    } else if(msg.prompt.provider === 'anthropic') {
+      // no free quota
+      msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+        SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+      matrixAiAnthropic.aiGenGraphCall(msg.prompt).then((r) => {
+        ws.send(JSON.stringify({
+          ok: true,
+          aiGenGraph: 'OK',
+          aiGenNodes: r
+        }));
+      })
+    } else {
+
+      msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+        SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+        // no free quota at the moment 
+      matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
+        // console.log('result from ai tool service....>>>>', res_list)
+        ws.send(JSON.stringify({
+          ok: true,
+          aiGenGraph: 'OK',
+          aiGenNodes: r
+        }));
+      })
+    }
   });
 }
 
 async function internal_navFolder(data, ws) {
   return new Promise(async (resolve, reject) => {
     if(!data.rootFolder) {reject('no root folder'); return;}
+    console.log("🔨 Building resources data ..");
     const folderTex = path.join(data.rootFolder, data.name);
+    const folderAudios = path.join(data.rootFolder, "audios");
+    const folderVideos = path.join(data.rootFolder, "videos");
+    const folderObjs = path.join(data.rootFolder, "meshes");
+
+    // bad but still good for lazy
+    let listOfPngs2 = await getAllFilenamesFrom(folderObjs, ".png")
+    let listOfwebp2 = await getAllFilenamesFrom(folderObjs, ".webp")
+    let listOfjpeg2 = await getAllFilenamesFrom(folderObjs, ".jpeg")
+
     let listOfPngs = await getAllFilenamesFrom(folderTex, ".png");
     let listOfJpgs = await getAllFilenamesFrom(folderTex, ".jpg");
-    let listOfTexures = [...listOfJpgs, ...listOfPngs];
-    // console.log('result RES FILENAMES....>>>>', listOfPngs);
-    const folderObjs = path.join(data.rootFolder, "meshes");
+    let listOfwebp = await getAllFilenamesFrom(folderTex, ".webp");
+    let listOfTexures = [...listOfJpgs, ...listOfPngs, ...listOfwebp, ...listOfPngs2, ...listOfjpeg2, listOfwebp2];
+
     let listOfObjs = await getAllFilenamesFrom(folderObjs, ".obj")
+    let listOfGlbs = await getAllFilenamesFrom(folderObjs, ".glb")
+    let listOfMp3 = await getAllFilenamesFrom(folderAudios, ".mp3")
+    let listOfMp4 = await getAllFilenamesFrom(folderVideos, ".mp4")
     ws.send(JSON.stringify({
       // IMPLEMENT LATER ! on front can be used for texture drop down in fcv graph.
       listAssetsForGraph: "list-assets",
@@ -909,10 +992,13 @@ async function internal_navFolder(data, ws) {
       rootFolder: path.join(data.rootFolder, data.name),
       resources: {
         objs: listOfObjs.map(d => ({name: d.name, relativePath: d.relativePath})),
-        textures: listOfPngs.map(d => ({name: d.name, relativePath: d.relativePath}))
+        textures: listOfTexures.map(d => ({name: d.name, relativePath: d.relativePath})),
+        glbs: listOfGlbs.map(d => ({name: d.name, relativePath: d.relativePath})),
+        mp3: listOfMp3.map(d => ({name: d.name, relativePath: d.relativePath})),
+        mp4: listOfMp4.map(d => ({name: d.name, relativePath: d.relativePath})),
       }
     }));
-    resolve([listOfTexures, listOfObjs]);
+    resolve([listOfTexures, listOfObjs, listOfGlbs, listOfMp3, listOfMp4]);
   })
 }
 

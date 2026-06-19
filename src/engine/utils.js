@@ -1416,6 +1416,8 @@ export class CameraPath {
   }
 
   _arcToRaw(t) {
+    if(t <= 0) return 0;
+    if(t >= 1) return 1;
     const tbl = this._arcTable;
     let lo = 0, hi = tbl.length - 1;
     while(lo < hi - 1) {

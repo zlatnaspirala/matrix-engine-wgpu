@@ -460,7 +460,7 @@ var MEConfig = {
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
-  LOAD_AFTER_CLICK_MOBILE: true,
+  LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
   logLoopError: true,
@@ -2466,40 +2466,40 @@ var WASDCamera = class _WASDCamera {
       }, { passive: true });
     }
     this._keyInterval = null;
-    const setDigital = (e2, value) => {
+    const setDigital = (e2, value2) => {
       switch (e2.code) {
         case "ArrowUp":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "ArrowDown":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "ArrowLeft":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "ArrowRight":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "KeyW":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "KeyS":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "KeyA":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "KeyD":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "KeyV":
-          this._digital.up = value;
+          this._digital.up = value2;
           break;
         case "KeyC":
-          this._digital.down = value;
+          this._digital.down = value2;
           break;
       }
-      if (value == true && this._keyInterval === null) {
+      if (value2 == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -2718,34 +2718,34 @@ var RPGCamera = class _RPGCamera {
     this._dirty = true;
   }
   _setupKeyboard() {
-    const setDigital = (e2, value) => {
+    const setDigital = (e2, value2) => {
       switch (e2.code) {
         case "KeyW":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "KeyS":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "KeyA":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "KeyD":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "ArrowUp":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "ArrowDown":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "ArrowLeft":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "ArrowRight":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
       }
-      if (value && this._keyInterval === null) {
+      if (value2 && this._keyInterval === null) {
         this._detachedFromFollow = true;
         this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
       } else {
@@ -3077,34 +3077,34 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    const setDigital = (e2, value) => {
+    const setDigital = (e2, value2) => {
       switch (e2.code) {
         case "KeyW":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "KeyS":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "KeyA":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "KeyD":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
         case "ArrowUp":
-          this._digital.forward = value;
+          this._digital.forward = value2;
           break;
         case "ArrowDown":
-          this._digital.backward = value;
+          this._digital.backward = value2;
           break;
         case "ArrowLeft":
-          this._digital.left = value;
+          this._digital.left = value2;
           break;
         case "ArrowRight":
-          this._digital.right = value;
+          this._digital.right = value2;
           break;
       }
-      if (value == true && this._keyInterval === null) {
+      if (value2 == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -8536,7 +8536,6 @@ var Materials = class {
     }
   }
   createMaterialBindGroupVideo() {
-    console.log("SET VIDEO BIND GROUP");
     if (this.video == null) {
       this.materialBindGroup = this.device.createBindGroup({
         label: "materialVideoBGL",
@@ -13207,8 +13206,8 @@ var MEMeshObj = class extends Materials {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+        setIntensity: (value2) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -13338,7 +13337,6 @@ var MEMeshObj = class extends Materials {
     this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([x2, y2]));
   }
   setupPipeline() {
-    console.log("TEST SETUP ");
     const pm = PipelineManager.get();
     const isMirror = this.material.type === "mirror";
     const isWater = this.material.type === "water";
@@ -16416,25 +16414,25 @@ var MEBvhJoint = class {
     let r2 = [0, 0, 0];
     for (let i = 0; i < this.channels.length; i++) {
       const channel = this.channels[i];
-      const value = frameData[this.channelOffset + i];
+      const value2 = frameData[this.channelOffset + i];
       switch (channel) {
         case "Xposition":
-          t[0] = value;
+          t[0] = value2;
           break;
         case "Yposition":
-          t[1] = value;
+          t[1] = value2;
           break;
         case "Zposition":
-          t[2] = value;
+          t[2] = value2;
           break;
         case "Xrotation":
-          r2[0] = degToRad2(value);
+          r2[0] = degToRad2(value2);
           break;
         case "Yrotation":
-          r2[1] = degToRad2(value);
+          r2[1] = degToRad2(value2);
           break;
         case "Zrotation":
-          r2[2] = degToRad2(value);
+          r2[2] = degToRad2(value2);
           break;
       }
     }
@@ -20876,8 +20874,8 @@ var HPBarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value) {
-    const clamped = value < 0 ? 0 : value > 1 ? 1 : value;
+  setProgress(value2) {
+    const clamped = value2 < 0 ? 0 : value2 > 1 ? 1 : value2;
     if (this.progress !== clamped) {
       this.progress = clamped;
       this._progressDirty = true;
@@ -21025,8 +21023,8 @@ var MANABarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value) {
-    this.progress = Math.max(0, Math.min(1, value));
+  setProgress(value2) {
+    this.progress = Math.max(0, Math.min(1, value2));
   }
   setColor(r2, g, b, a = 1) {
     this.color = [r2, g, b, a];
@@ -22225,8 +22223,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+        setIntensity: (value2) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -23490,7 +23488,7 @@ var MEEditorClient = class {
       this.ws.send(o2);
     });
     document.addEventListener("save-graph", (e2) => {
-      console.info("%cSave graph <signal>", LOG_FUNNY_ARCADE);
+      console.info(`%cSave graph <signal> ${e2.detail}`, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-graph",
         graphData: e2.detail.data
@@ -23537,7 +23535,8 @@ var MEEditorClient = class {
     document.addEventListener("get-shader-graphs", () => {
       console.info("%cget-shader-graphs <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
-        action: "get-shader-graphs"
+        action: "get-shader-graphs",
+        projectName: location.href.split("/public/")[1].split(".")[0]
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -23621,6 +23620,12 @@ var MEEditorClient = class {
 var EditorProvider = class {
   constructor(core) {
     this.core = core;
+    this._ev = {
+      updatePos: new CustomEvent("web.editor.update.pos", { detail: {} }),
+      updateRot: new CustomEvent("web.editor.update.rot", { detail: {} }),
+      updateScale: new CustomEvent("web.editor.update.scale", { detail: {} }),
+      updateUseScale: new CustomEvent("web.editor.update.useScale", { detail: {} })
+    };
     this.addEditorEvents();
   }
   getNameFromPath(p) {
@@ -23632,24 +23637,34 @@ var EditorProvider = class {
       switch (e2.detail.propertyId) {
         case "position": {
           console.log("change signal for pos", e2.detail);
-          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.pos", {
-            detail: e2.detail
-          }));
+          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") {
+            this._ev.updatePos.detail.inputFor = e2.detail.inputFor;
+            this._ev.updatePos.detail.property = e2.detail.property;
+            this._ev.updatePos.detail.propertyId = e2.detail.propertyId;
+            this._ev.updatePos.detail.value = e2.detail.value;
+            document.dispatchEvent(this._ev.updatePos);
+          }
           break;
         }
         case "rotation": {
           console.log("[signal][rot]");
-          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") document.dispatchEvent(new CustomEvent("web.editor.update.rot", {
-            detail: e2.detail
-          }));
+          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") {
+            this._ev.updateRot.detail.inputFor = e2.detail.inputFor;
+            this._ev.updateRot.detail.property = e2.detail.property;
+            this._ev.updateRot.detail.propertyId = e2.detail.propertyId;
+            this._ev.updateRot.detail.value = e2.detail.value;
+            document.dispatchEvent(this._ev.updateRot);
+          }
           break;
         }
         case "scale": {
           console.log("[signal][scale]");
           if (e2.detail.property == "0" || e2.detail.property == "1" || e2.detail.property == "2") {
-            document.dispatchEvent(new CustomEvent("web.editor.update.scale", {
-              detail: e2.detail
-            }));
+            this._ev.updateScale.detail.inputFor = e2.detail.inputFor;
+            this._ev.updateScale.detail.property = e2.detail.property;
+            this._ev.updateScale.detail.propertyId = e2.detail.propertyId;
+            this._ev.updateScale.detail.value = e2.detail.value;
+            document.dispatchEvent(this._ev.updateScale);
           }
           break;
         }
@@ -23659,7 +23674,13 @@ var EditorProvider = class {
       let sceneObj = this.core.getSceneObjectByName(e2.detail.inputFor);
       if (e2.detail.property == "no info") {
         sceneObj[e2.detail.propertyId] = e2.detail.value;
-        if (e2.detail.propertyId === "useScale") document.dispatchEvent(new CustomEvent("web.editor.update.useScale", { detail: e2.detail }));
+        if (e2.detail.propertyId === "useScale") {
+          this._ev.updateUseScale.detail.inputFor = e2.detail.inputFor;
+          this._ev.updateUseScale.detail.property = e2.detail.property;
+          this._ev.updateUseScale.detail.propertyId = e2.detail.propertyId;
+          this._ev.updateUseScale.detail.value = e2.detail.value;
+          document.dispatchEvent(this._ev.updateUseScale);
+        }
         return;
       }
       if (sceneObj) {
@@ -23677,7 +23698,6 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: "" + e2.detail.index,
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
@@ -23696,7 +23716,6 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.mesh,
           raycast: { enabled: true, radius: 2 },
@@ -23730,7 +23749,6 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          // useUVShema4x2: true,
           name: e2.detail.index,
           mesh: m.objMesh,
           raycast: { enabled: true, radius: 2 },
@@ -24054,7 +24072,9 @@ var FragmentShaderGraph = class {
       const nodeElements = container[0].querySelectorAll(".nodeShader");
       nodeElements.forEach((el2) => el2.remove());
     }
-    this.connectionLayer.redrawAll();
+    if (this.connectionLayer) {
+      this.connectionLayer.redrawAll();
+    }
   }
 };
 var CompileContext = class {
@@ -24091,17 +24111,17 @@ var CompileContext = class {
     }
     this.resolving.add(key);
     const conn = this.shaderGraph.getInput(node2, pin);
-    let value;
+    let value2;
     if (conn) {
-      value = this.resolve(conn.fromNode, conn.fromPin);
+      value2 = this.resolve(conn.fromNode, conn.fromPin);
     } else {
       if (node2.inputs && pin in node2.inputs) {
-        value = node2.inputs[pin].default;
+        value2 = node2.inputs[pin].default;
       } else {
-        value = void 0;
+        value2 = void 0;
       }
     }
-    const result2 = node2.build(pin, value, this);
+    const result2 = node2.build(pin, value2, this);
     if (result2?.out !== void 0) {
       this.cache.set(key, result2.out);
     }
@@ -24140,9 +24160,9 @@ var ShaderNode = class {
   default(pin) {
     return this.inputs[pin]?.default ?? "0.0";
   }
-  build(_, value, ctx) {
+  build(_, value2, ctx) {
     return {
-      out: value,
+      out: value2,
       type: "f32"
     };
   }
@@ -24154,13 +24174,13 @@ var FragmentOutputNode = class extends ShaderNode {
   }
   build(_, __, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "color");
-    let value;
+    let value2;
     if (conn) {
-      value = ctx.resolve(conn.fromNode, conn.fromPin);
+      value2 = ctx.resolve(conn.fromNode, conn.fromPin);
     } else {
-      value = this.inputs.color.default;
+      value2 = this.inputs.color.default;
     }
-    ctx.outputs.outColor = value;
+    ctx.outputs.outColor = value2;
     return { out: ctx.outputs.outColor, type: "vec4f" };
   }
 };
@@ -24220,7 +24240,7 @@ var LightToColorNode = class extends ShaderNode {
       light: { default: "vec3f(1.0)" }
     };
   }
-  build(pin, value, ctx) {
+  build(pin, value2, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "light");
     let l;
     if (conn) {
@@ -24409,9 +24429,9 @@ var ContrastNode = class extends ShaderNode {
   }
 };
 var FloatNode = class extends ShaderNode {
-  constructor(value = 1) {
+  constructor(value2 = 1) {
     super("Float");
-    this.value = value;
+    this.value = value2;
   }
   build(_, __, ctx) {
     return {
@@ -25105,7 +25125,7 @@ svg path {
       const propsContainer = document.createElement("div");
       propsContainer.className = "node-properties";
       propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
-      function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
+      function addPropertyInput(label, propName, value2, type2 = "number", step = "0.01") {
         const row2 = document.createElement("div");
         row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
         const labelEl = document.createElement("label");
@@ -25113,7 +25133,7 @@ svg path {
         labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
         const input = document.createElement("input");
         input.type = type2;
-        input.value = value;
+        input.value = value2;
         input.step = step;
         input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
         input.addEventListener("input", () => {
@@ -25665,10 +25685,10 @@ var CurveEditor = class {
     const n2 = 1 - y2 / this.height;
     return this.valueMin + n2 * (this.valueMax - this.valueMin);
   }
-  _snap(value, steps) {
-    if (!this.snapEnabled) return value;
+  _snap(value2, steps) {
+    if (!this.snapEnabled) return value2;
     const range = this.valueMax - this.valueMin;
-    return Math.round((value - this.valueMin) / range * steps) / steps * range + this.valueMin;
+    return Math.round((value2 - this.valueMin) / range * steps) / steps * range + this.valueMin;
   }
   // VALUE EVALUATION (HERMITE)
   getValue(t) {
@@ -26301,12 +26321,17 @@ var CurveStore = class {
 
 // ../generateAISchema.js
 var tasks = [
-  "On load print hello world",
-  "On load create a cube named box1 at position 0 0 0",
-  "Create a the labyrinth using generatorWall",
-  "Set texture for floor object",
-  "Create a cube and enable raycast",
-  "Create 5 cubes in a row with spacing",
+  "On load create a cube named box1 at position (0, 3, 0) and make const rotate by y axis.",
+  `
+  Build the House with non physics cubes. Build 3 floors, walls and roof.
+  Make big house with space inside! 
+  Don't use physics generators, use simple nonphysics cubes.
+  To make it optimised you can use scale.
+  `,
+  "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ",
+  "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.",
+  "Create a nonPhysics Cube and enable raycast, on hit make object translateByZ",
+  "Create start from cubes - use nonphysics cubes.",
   "Create a pyramid of cubes with 4 levels",
   "Play mp3 audio on load",
   "Create audio reactive node from music",
@@ -26328,12 +26353,15 @@ var tasks = [
 ];
 var providers = [
   "ollama",
-  "groq"
+  "groq",
+  "anthropic",
+  "google"
 ];
 
 // ../fluxCodexVertex.js
 var runtimeCacheObjs = [];
 var FluxCodexVertex = class {
+  __experimental__RESOURCES_FOR_GRAPH = new RESOURCES_FOR_GRAPH();
   constructor(boardId, boardWrapId, logId, methodsManager, projName, toolTip) {
     this.debugMode = true;
     this.toolTip = toolTip;
@@ -26417,6 +26445,7 @@ var FluxCodexVertex = class {
       console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE);
       byId("graphGenJSON").value = e2.detail;
       byId("ai-status").removeAttribute("data-ai-status");
+      byId("ai-status").style.color = "";
     });
     document.addEventListener("keydown", (e2) => {
       const target = e2.composedPath && e2.composedPath()[0] || e2.target || document.activeElement;
@@ -26440,11 +26469,11 @@ var FluxCodexVertex = class {
     this.createContextMenu();
     document.addEventListener("fluxcodex.input.change", (e2) => {
       console.log("fluxcodex.input.change");
-      const { nodeId: nodeId2, field, value } = e2.detail;
+      const { nodeId: nodeId2, field, value: value2 } = e2.detail;
       const node2 = this.nodes.find((n2) => n2.id === nodeId2);
       if (!node2) return;
       if (node2.type !== "getSubObject") return;
-      this.handleGetSubObject(node2, value);
+      this.handleGetSubObject(node2, value2);
       if (field !== "path") return;
     });
     document.addEventListener("web.editor.addMp3", (e2) => {
@@ -26686,7 +26715,7 @@ var FluxCodexVertex = class {
     saveVPopup.style.fontWeight = "bold";
     saveVPopup.style.webkitTextStrokeWidth = "0px";
     saveVPopup.addEventListener("click", () => {
-      this.compileGraph();
+      setTimeout(() => this.compileGraph(), 100);
     });
     popup.appendChild(saveVPopup);
     document.body.appendChild(popup);
@@ -26705,8 +26734,8 @@ var FluxCodexVertex = class {
       position: "absolute",
       top: "10%",
       left: "5%",
-      width: "50%",
-      height: "70%",
+      width: "65%",
+      height: "80%",
       background: `
     linear-gradient(145deg, #141414 0%, #1e1e1e 60%, #252525 100%),
     repeating-linear-gradient(
@@ -26764,8 +26793,35 @@ var FluxCodexVertex = class {
       selectPrompt.appendChild(opt);
     });
     popup.appendChild(selectPrompt);
+    const textAreaManualInput = document.createElement("textarea");
+    textAreaManualInput.id = "textAreaManualInput";
+    textAreaManualInput.style.width = "450px";
+    textAreaManualInput.style.height = "180px";
+    textAreaManualInput.style.display = "none";
+    textAreaManualInput.style.position = "absolute";
+    textAreaManualInput.style.right = "15px";
+    textAreaManualInput.style.top = "15px";
+    textAreaManualInput.classList.add("btn4");
+    textAreaManualInput.value = "Hello , ";
+    textAreaManualInput.addEventListener("keydown", (e2) => e2.stopPropagation());
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "manualInput";
+    checkbox.value = "not in use";
+    popup.appendChild(textAreaManualInput);
+    checkbox.onchange = function(e2) {
+      console.log(e2.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+      if (!e2.target.checked) {
+        textAreaManualInput.style.display = "none";
+        selectPrompt.disabled = false;
+      } else {
+        textAreaManualInput.style.display = "block";
+        selectPrompt.disabled = true;
+      }
+    };
+    popup.appendChild(checkbox);
     const label2 = document.createElement("span");
-    label2.innerText = `Select provider [Only OLLAMA for now]`;
+    label2.innerText = `Select provider`;
     popup.appendChild(label2);
     const selectPromptProvider = document.createElement("select");
     selectPromptProvider.style.width = "400px";
@@ -26787,9 +26843,11 @@ var FluxCodexVertex = class {
     call.style.webkitTextStrokeWidth = "0px";
     call.addEventListener("click", (e2) => {
       if (selectPrompt.selectedIndex > 0) {
+        console.log(" use select task...");
       }
       if (e2.target.getAttribute("data-ai-status") == null) {
         e2.target.setAttribute("data-ai-status", "wip");
+        e2.target.style.color = "red";
       } else {
         if (e2.target.getAttribute("data-ai-status") == "wip") {
           console.info("gen ai tool call PREVENT ");
@@ -26798,12 +26856,15 @@ var FluxCodexVertex = class {
           console.info("gen ai tool call else ");
         }
       }
+      byId("graphGenJSON").value = "";
+      console.log(`%cAI TASK check input type:${checkbox.checked}`, LOG_FUNNY_ARCADE);
       console.log(`%cAI TASK:${selectPrompt.selectedOptions[0].innerText}`, LOG_FUNNY_ARCADE);
+      const IDPROVIDER = selectPromptProvider.selectedIndex ? selectPromptProvider.selectedIndex : 0;
+      console.log(`%cAI TASK SERVICE:${providers[IDPROVIDER]}`, LOG_FUNNY_ARCADE);
       document.dispatchEvent(new CustomEvent("aiGenGraphCall", {
         detail: {
-          provider: providers[0],
-          // hardcode
-          task: selectPrompt.selectedOptions[0].innerText
+          provider: providers[IDPROVIDER],
+          task: checkbox.checked === true ? textAreaManualInput.value : selectPrompt.selectedOptions[0].innerText
         }
       }));
     });
@@ -26890,6 +26951,7 @@ var FluxCodexVertex = class {
     insertGraph.style.webkitTextStrokeWidth = "0px";
     insertGraph.addEventListener("click", async () => {
       console.log("TEST OVERRIDE", list.value);
+      list.value = list.value.replace(/```json/g, "").replace(/```/g, "").trim();
       let test = JSON.parse(list.value);
       this.mergeGraphBundle(test);
     });
@@ -26915,6 +26977,11 @@ var FluxCodexVertex = class {
   }
   _refreshVarsList(container) {
     container.innerHTML = "";
+    for (const key in this._varInputs) {
+      this._varInputs[key].onchange = null;
+      this._varInputs[key].oninput = null;
+    }
+    this._varInputs = {};
     const colors = {
       number: "#4fc3f7",
       boolean: "#aed581",
@@ -26954,11 +27021,14 @@ var FluxCodexVertex = class {
           color: "#fff",
           border: "1px solid #333"
         });
-        input.oninput = () => {
+        input.onchange = () => {
           if (type2 === "object") {
             try {
-              this.variables.object[name2] = JSON.parse(input.value);
-            } catch {
+              let parsed;
+              parsed = new Function("return " + input.value)();
+              this.variables.object[name2] = parsed;
+            } catch (err) {
+              console.log("err in vars editox:", err);
               return;
             }
           } else if (type2 === "number") {
@@ -26968,6 +27038,7 @@ var FluxCodexVertex = class {
           } else {
             this.variables.string[name2] = input.value;
           }
+          this.notifyVariableChanged(type2, name2);
         };
         const btnGet = document.createElement("button");
         btnGet.innerText = "Get";
@@ -27381,9 +27452,9 @@ var FluxCodexVertex = class {
     if (!obj2) return;
     node2.outputs = [];
     node2.exposeProps.forEach((p) => {
-      const value = this.getByPath(obj2, p);
-      if (value !== void 0) {
-        const type2 = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
+      const value2 = this.getByPath(obj2, p);
+      if (value2 !== void 0) {
+        const type2 = typeof value2 === "number" ? "number" : typeof value2 === "string" ? "string" : "object";
         node2.outputs.push({ name: p, type: type2 });
       }
     });
@@ -27794,22 +27865,67 @@ var FluxCodexVertex = class {
           { name: "raycast", type: "boolean" },
           { name: "scale", type: "object" },
           { name: "spacing", type: "number" },
-          { name: "delay", type: "number" }
+          { name: "delay", type: "number" },
+          { name: "orientation", type: "string" },
+          { name: "spacingByY", type: "number" }
         ],
         outputs: [
           { name: "execOut", type: "action" }
         ],
         fields: [
           { key: "material", value: "standard" },
-          { key: "pos", value: "{x:0, y:0, z:-20}" },
+          { key: "pos", value: "{x:0, y:3, z:-20}" },
           { key: "rot", value: "{x:0, y:0, z:0}" },
           { key: "texturePath", value: "res/textures/default.png" },
           { key: "name", value: "TEST" },
           { key: "size", value: "10x3" },
           { key: "raycast", value: true },
           { key: "scale", value: [1, 1, 1] },
-          { key: "spacing", value: 10 },
+          { key: "spacing", value: 2 },
           { key: "delay", value: 500 },
+          { key: "orientation", value: "ByX" },
+          { key: "spacingByY", value: 3 },
+          { key: "created", value: false }
+        ],
+        noselfExec: "true"
+      }),
+      generatorWallNONPhysics: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Generator Wall NONPhysics",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "material", type: "string" },
+          { name: "pos", type: "object" },
+          { name: "rot", type: "object" },
+          { name: "texturePath", type: "string" },
+          { name: "name", type: "string" },
+          { name: "size", type: "string" },
+          { name: "raycast", type: "boolean" },
+          { name: "scale", type: "object" },
+          { name: "spacing", type: "number" },
+          { name: "delay", type: "number" },
+          { name: "orientation", type: "string" },
+          { name: "spacingByY", type: "number" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        fields: [
+          { key: "material", value: "standard" },
+          { key: "pos", value: "{x:0, y:3, z:-20}" },
+          { key: "rot", value: "{x:0, y:0, z:0}" },
+          { key: "texturePath", value: "res/textures/default.png" },
+          { key: "name", value: "TEST" },
+          { key: "size", value: "10x3" },
+          { key: "raycast", value: true },
+          { key: "scale", value: [1, 1, 1] },
+          { key: "spacing", value: 2 },
+          { key: "delay", value: 500 },
+          { key: "orientation", value: "ByX" },
+          { key: "spacingByY", value: 3 },
           { key: "created", value: false }
         ],
         noselfExec: "true"
@@ -27953,6 +28069,28 @@ var FluxCodexVertex = class {
           { name: "execOut", type: "action" }
         ],
         fields: [],
+        noselfExec: "true"
+      }),
+      setMorphProcMesh: (id2, x2, y2) => ({
+        id: id2,
+        x: x2,
+        y: y2,
+        title: "Set Morph ProceduralMesh",
+        category: "action",
+        inputs: [
+          { name: "exec", type: "action" },
+          { name: "objectName", type: "string" },
+          { name: "index", type: "number" },
+          { name: "interval", type: "number" }
+        ],
+        outputs: [
+          { name: "execOut", type: "action" }
+        ],
+        fields: [
+          { key: "objectName", value: "FLOOR" },
+          { key: "index", value: 1 },
+          { key: "interval", value: 2e3 }
+        ],
         noselfExec: "true"
       }),
       setVideoTexture: (id2, x2, y2) => ({
@@ -28125,6 +28263,8 @@ var FluxCodexVertex = class {
           { name: "rayOrigin", type: "object" },
           { name: "rayDirection", type: "object" },
           { name: "hitObject", type: "object" },
+          { name: "position", type: "object" },
+          { name: "rotation", type: "object" },
           { name: "hitNormal", type: "object" },
           { name: "hitDistance", type: "object" },
           { name: "eventName", type: "object" },
@@ -29294,10 +29434,9 @@ LIST OF INTEREST OBJECT:
     }
     return null;
   }
-  setVariable(type2, key, value) {
-    if (!this.variables[type2][key]) return;
-    console.log("Test -setVariable  value", value);
-    this.variables[type2][key].value = value;
+  setVariable(type2, key, value2) {
+    console.log("Test -setVariable  value", value2);
+    this.variables[type2][key].value = value2;
     this.notifyVariableChanged(type2, key);
   }
   updateArrayNode(node2, newValue) {
@@ -29349,6 +29488,7 @@ LIST OF INTEREST OBJECT:
       input.style.cursor = "default";
     }
     const saveInputValue = () => {
+      console.log("sadasd");
       let val;
       if (field.type === "object") {
         try {
@@ -29491,6 +29631,7 @@ LIST OF INTEREST OBJECT:
       n2._listenerAttached = true;
     } else if (n2.title == "On Ray Hit") {
       if (n2._listenerAttached) return;
+      console.log("ON RAY HIT INIT ONLE !!!");
       app.reference.addRaycastsListener();
       const handler = (e2) => {
         n2._returnCache = e2.detail;
@@ -29616,6 +29757,12 @@ LIST OF INTEREST OBJECT:
     if (node2.title === "On Ray Hit") {
       if (pinName === "hitObjectName") {
         return node2._returnCache["hitObject"]["name"];
+      } else if (pinName === "position") {
+        if (!node2._returnCache) return {};
+        return node2._returnCache["hitObject"]["position"];
+      } else if (pinName === "rotation") {
+        if (!node2._returnCache) return {};
+        return node2._returnCache["hitObject"]["rotation"];
       } else {
         return node2._returnCache[pinName];
       }
@@ -29649,18 +29796,18 @@ LIST OF INTEREST OBJECT:
       if (node2._returnCache === void 0) {
         this.triggerNode(node2.id);
       }
-      let value = node2._returnCache;
-      if (typeof value === "string") {
+      let value2 = node2._returnCache;
+      if (typeof value2 === "string") {
         try {
           if (node2.title == "Get String") {
           } else {
-            value = JSON.parse(value);
+            value2 = JSON.parse(value2);
           }
         } catch (e2) {
           console.warn("[getValue][json parse err]:", e2);
         }
       }
-      return value;
+      return value2;
     }
     const link = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === pinName);
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
@@ -30024,15 +30171,15 @@ LIST OF INTEREST OBJECT:
       const varField = n.fields?.find((f) => f.key === "var");
       if (varField && varField.value) {
         const type2 = n.title.replace("Get ", "").toLowerCase();
-        const value = this.getVariable(type2, varField.value);
-        n._returnCache = value;
+        const value2 = this.getVariable(type2, varField.value);
+        n._returnCache = value2;
         if (n.displayEl) {
           if (type2 === "object") {
-            n.displayEl.textContent = value !== void 0 ? JSON.stringify(value) : "{}";
-          } else if (typeof value === "number") {
-            n.displayEl.textContent = value.toFixed(3);
+            n.displayEl.textContent = value2 !== void 0 ? JSON.stringify(value2) : "{}";
+          } else if (typeof value2 === "number") {
+            n.displayEl.textContent = value2.toFixed(3);
           } else {
-            n.displayEl.textContent = String(value);
+            n.displayEl.textContent = String(value2);
           }
         }
       }
@@ -30075,21 +30222,22 @@ LIST OF INTEREST OBJECT:
     if (n.isVariableNode) {
       const type2 = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find((f) => f.key === "var");
+      console.log("isVariableNode set object ", value);
       if (varField && varField.value) {
-        let value = this.getValue(nodeId, "value");
+        let value2 = this.getValue(nodeId, "value");
         if (n.title == "Set Object") {
-          if (value == 0) {
+          if (value2 == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
           }
         } else {
-          if (value == 0) {
+          if (value2 == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
-            value = JSON.parse(varliteral.value);
+            value2 = JSON.parse(varliteral.value);
           } else {
-            console.log("set object ", value);
-            this.variables[type2][varField.value] = { value };
+            console.log("set object ", value2);
+            this.variables[type2][varField.value] = { value: value2 };
           }
         }
         this.notifyVariableChanged(type2, varField.value);
@@ -30099,11 +30247,11 @@ LIST OF INTEREST OBJECT:
             const vf2 = node2.fields?.find((f) => f.key === "var");
             if (vf2 && vf2.value === varField.value && node2.displayEl) {
               if (type2 === "object") {
-                node2.displayEl.textContent = JSON.stringify(value);
+                node2.displayEl.textContent = JSON.stringify(value2);
               } else {
-                node2.displayEl.textContent = typeof value === "number" ? value.toFixed(3) : String(value);
+                node2.displayEl.textContent = typeof value2 === "number" ? value2.toFixed(3) : String(value2);
               }
-              node2._returnCache = value;
+              node2._returnCache = value2;
             }
           }
         }
@@ -30232,6 +30380,8 @@ LIST OF INTEREST OBJECT:
         let raycast = this.getValue(nodeId, "raycast");
         let scale = this.getValue(nodeId, "scale");
         let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
         if (raycast == "true") {
           raycast = true;
         } else {
@@ -30248,8 +30398,81 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
-          app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay);
+          app.physicsBodiesGeneratorWall(
+            mat,
+            pos,
+            rot,
+            texturePath,
+            name,
+            size,
+            raycast,
+            scale,
+            spacing,
+            delay,
+            ori,
+            spacingByY
+          );
         }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Generator Wall NONPhysics") {
+        const texturePath = this.getValue(nodeId, "texturePath");
+        const mat = this.getValue(nodeId, "material");
+        let pos = this.getValue(nodeId, "pos");
+        const size = this.getValue(nodeId, "size");
+        let rot = this.getValue(nodeId, "rot");
+        let delay = this.getValue(nodeId, "delay");
+        let spacing = this.getValue(nodeId, "spacing");
+        let raycast = this.getValue(nodeId, "raycast");
+        let scale = this.getValue(nodeId, "scale");
+        let name = this.getValue(nodeId, "name");
+        let ori = this.getValue(nodeId, "orientation");
+        let spacingByY = this.getValue(nodeId, "spacingByY");
+        if (raycast == "true") {
+          raycast = true;
+        } else {
+          raycast = false;
+        }
+        if (typeof delay == "string") delay = parseInt(delay);
+        if (typeof pos == "string") eval("pos = " + pos);
+        if (typeof rot == "string") eval("rot = " + rot);
+        if (typeof scale == "string") eval("scale = " + scale);
+        if (!texturePath || !pos) {
+          console.warn("[Generator] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        const createdField = n.fields.find((f) => f.key === "created");
+        if (createdField.value == "false" || createdField.value == false) {
+          app.generatorWallNONPHYSICS(
+            mat,
+            pos,
+            rot,
+            texturePath,
+            name,
+            size,
+            raycast,
+            scale,
+            spacing,
+            delay,
+            ori,
+            spacingByY
+          );
+        }
+        this.enqueueOutputs(n, "execOut");
+        return;
+      } else if (n.title === "Set Morph ProceduralMesh") {
+        const objectName2 = this.getValue(nodeId, "objectName");
+        const interval = this.getValue(nodeId, "interval");
+        let morphIndex = this.getValue(nodeId, "index");
+        if (!objectName2) {
+          console.warn("[Set Video Texture] Missing input fields...");
+          this.enqueueOutputs(n, "execOut");
+          return;
+        }
+        console.warn("[Set morph to] arg:", morphIndex);
+        let o2 = app.getSceneObjectByName(objectName2);
+        o2.morphTo(morphIndex, interval);
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Add OBJ") {
@@ -30454,7 +30677,6 @@ LIST OF INTEREST OBJECT:
           mb.show("FluxCodexVertex Exec order is breaked on [Set CanvasInline] node id:", n.id);
           return;
         }
-        console.log("FluxCodexVertex WHAT IS on [Set CanvasInline] :", canvaInlineProgram);
         o.loadVideoTexture({
           type: "canvas2d-inline",
           canvaInlineProgram,
@@ -31052,13 +31274,14 @@ LIST OF INTEREST OBJECT:
     }
     let getCurrentGIzmoObj = app.mainRenderBundle.filter((o2) => o2.effects.gizmoEffect && o2.effects.gizmoEffect.enabled);
     if (getCurrentGIzmoObj.length > 0) getCurrentGIzmoObj[0].effects.gizmoEffect.enabled = false;
-    byId("app").style.opacity = 0.5;
+    byId("app").style.display = "none";
     this.initEventNodes();
     Object.values(this.nodes).forEach((n2) => n2._returnCache = void 0);
     Object.values(this.nodes).filter((n2) => n2.category === "event" && n2.title === "onLoad").forEach((n2) => this.triggerNode(n2.id));
     byId("graph-status").innerHTML = "\u{1F534}";
   }
   compileGraph() {
+    console.log("SAVE NODES: ", this.nodes);
     const bundle = {
       nodes: this.nodes,
       links: this.links,
@@ -31067,16 +31290,24 @@ LIST OF INTEREST OBJECT:
       pan: this.state.pan,
       variables: this.variables
     };
-    function saveReplacer(key, value) {
-      if (key === "fn") return void 0;
-      if (key === "accessObject") return void 0;
+    function saveReplacer(key, value2) {
+      if (value2 instanceof Element) return void 0;
+      if (value2 instanceof Node) return void 0;
+      if (key === "fn") {
+        console.log("stripping fn from", key);
+        return void 0;
+      }
+      if (key === "accessObject") {
+        console.log("stripping accessObject");
+        return void 0;
+      }
       if (key === "_returnCache") return void 0;
       if (key === "_listenerAttached") return false;
       if (key === "_audio") return void 0;
       if (key === "_loading") return false;
       if (key === "_energyHistory") return void 0;
       if (key === "_beatCooldown") return 0;
-      return value;
+      return value2;
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
@@ -31093,8 +31324,8 @@ LIST OF INTEREST OBJECT:
   }
   clearAllNodes() {
     this.board.querySelectorAll(".node").forEach((n2) => n2.remove());
-    this.nodes = [];
-    this.nodes.length = 0;
+    this.nodes = {};
+    this.nodeCounter = 0;
     this.links.length = 0;
     this.state.selectedNode = null;
     this.state.draggingNode = null;
@@ -31130,12 +31361,12 @@ LIST OF INTEREST OBJECT:
   exportToJSON() {
     const bundle = this._buildSaveBundle();
     console.log(bundle);
-    function saveReplacer(key, value) {
+    function saveReplacer(key, value2) {
       if (key === "fn") return void 0;
       if (key === "accessObject") return void 0;
       if (key === "_returnCache") return void 0;
       if (key === "_listenerAttached") return false;
-      return value;
+      return value2;
     }
     const json = JSON.stringify(bundle, saveReplacer);
     const blob = new Blob([json], { type: "application/json" });
@@ -31386,6 +31617,16 @@ LIST OF INTEREST OBJECT:
       x: (clientX - bRect.left) / this.state.zoom,
       y: (clientY - bRect.top) / this.state.zoom
     };
+  }
+};
+var RESOURCES_FOR_GRAPH = class {
+  obj = [];
+  glb = [];
+  images = [];
+  constructor() {
+    addEventListener("editorx-update-assets-list", (e2) => {
+      console.log("editorx-update-assets-list ", e2.detail);
+    });
   }
 };
 
@@ -31697,15 +31938,15 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("\u269B Enable physics (Ammo, Jolt, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("\u269B  Choose physics library [jolt=1 ammo=2 cannones=3] (Enter number): ", "MEWGPU");
+        let pId = prompt("\u269B  Choose physics library [jolt=1 ammo=2 cannones=3 matter=4] (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
       console.log(features);
       document.dispatchEvent(new CustomEvent("cnp", {
@@ -32055,15 +32296,15 @@ var EditorHud = class {
         physics: false,
         networking: false
       };
-      if (confirm("\u269B Enable physics (Ammo,Jolt or CannonES)?")) {
+      if (confirm("\u269B Enable physics (Jolt, Ammo, CannonES or Matter)?")) {
         features.physics = true;
-        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 (Enter number): ", "MEWGPU");
+        let pId = prompt("\u269B  Choose physics library jolt=1 ammo=2 cannones=3 matter=4  \n (Enter number): ", "3");
         features.physicsLib = pId;
       }
       if (confirm("\u{1F50C} Enable networking (kurento/ov)?")) {
         features.networking = true;
       }
-      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4] :", "1");
+      let typeOfCamera = prompt("Choose camera [WASD=1 firstPersonCamera=2 RPG=3 cinematic=4 planeCamera=5] :", "1");
       features.camera = typeOfCamera;
       document.dispatchEvent(new CustomEvent("cnp", {
         detail: { name: name2, features }
@@ -32988,37 +33229,40 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('timeout')">SetTimeout</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getArray')">getArray</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('forEach')">forEach</button>
-      <span>Scene objects [agnostic]</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexAnim')">Set VertexAnim Intesity</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWave')">Set Vertex Wave</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexWind')">Set Vertex Wind</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexPulse')">Set Vertex Pulse</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
+      <span class="themeAgnostic" >Scene objects [agnostic]</span>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSceneObject')">Get scene object</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSceneLight')">Get Scene Light</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('addObj')">Add obj</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('addProceduralMesh')">Add Procedural obj</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setMorphProcMesh')">MorphTo ProcMesh</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getObjectAnimation')">Get Object Animation</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setPosition')">Set position</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getShaderGraph')">Set Shader Graph</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setMaterial')">Set Material</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setBlend')">Set Blend</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setSpeed')">Set Speed</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('getSpeed')">Get Speed</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotation')">Set rotation</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotate')">Set Rotate</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateX')">Set RotateX</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateY')">Set RotateY</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setRotateZ')">Set RotateZ</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setTexture')">Set Texture</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByX')">TranslateByX</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByY')">TranslateByY</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('translateByZ')">TranslateByZ</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('onTargetPositionReach')">onTarget PositionReach</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('rayHitEvent')">Ray Hit Event</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setWaterParams')">Set Water Material Params</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexAnim')">Set VertexAnim Intesity</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexWave')">Set Vertex Wave</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexWind')">Set Vertex Wind</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexPulse')">Set Vertex Pulse</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexTwist')">Set Vertex Twist</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexNoise')">Set Vertex Noise</button>
+      <button class="btn4 btnLeftBox themeAgnostic" onclick="app.editor.fluxCodexVertex.addNode('setVertexOcean')">Set Vertex Ocean</button>
+      <span>Grids (non physics)</span>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorWallNONPhysics')">Generate Wall NONPhysics</button>
       <span>Dinamics</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('dynamicFunction')">Function Dinamic</button>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('refFunction')">Function by Ref</button>
@@ -33029,30 +33273,30 @@ var Editor = class {
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('getNumberLiteral')">Get Number Literal</button>
       <span>Networking</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('fetch')">Fetch</button>
-      <span>Media</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
-      <span>Physics</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
+      <span class="themeMedia">Media</span>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('audioMP3')">Add Mp3</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('setVideoTexture')">Set Video Tex[Mp4]</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('setCanvasInlineTexture')">Set Canvas2d Inline Tex</button>
+      <button class="btn4 btnLeftBox themeMedia" onclick="app.editor.fluxCodexVertex.addNode('audioReactiveNode')">Audio Reactive Node</button>
+      <span class="themePhysics">Physics</span>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generator')">Generator in place</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorWall')">Generate Wall</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('generatorPyramid')">Generate Pyramid</button>
+      <button class="btn4 btnLeftBox themePhysics" onclick="app.editor.fluxCodexVertex.addNode('setForceOnHit')">Set Force On Hit</button>
       <span>String Operations</span>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
-      <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Starts With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('endsWith')">Ends With</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('includes')">includes</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('toUpperCase')">toUpperCase</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('toLowerCase')">toLowerCase</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('trim')">Trim</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('length')">Length</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('substring')">Substring</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Replace</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('startsWith')">Split</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('concat')">Concat</button>
+      <button class="btn4 btnLeftBox themeStrings" onclick="app.editor.fluxCodexVertex.addNode('isEmpty')">isEmpty</button>
 
       <span>Math</span>
       <button class="btn4 btnLeftBox" onclick="app.editor.fluxCodexVertex.addNode('add')">Add (+)</button>
@@ -34009,8 +34253,8 @@ var ProceduralMeshObj = class extends Materials {
         this.vertexAnimParams[26] = speed;
         this.updateVertexAnimBuffer();
       },
-      setIntensity: (value) => {
-        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
+      setIntensity: (value2) => {
+        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
         this.updateVertexAnimBuffer();
       },
       getIntensity: () => {
@@ -35075,7 +35319,7 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
     }
   });
 }
-function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200, useMeshPath = "./res/meshes/blender/cube.obj") {
+function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
   const engine = this;
   const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
   console.log(width);
@@ -35088,6 +35332,16 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
       for (let x2 = 0; x2 < width; x2++) {
         const cubeName = `${name2}_${index}`;
         setTimeout(() => {
+          let __x = 0, __y = 0, __z = 0;
+          if (orientationOfwall === "ByX") {
+            __x = x2 * spacing2;
+            __y = y2 * spacing2 + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === "ByZ") {
+            __x = 0;
+            __y = y2 * spacing2 + spacingY;
+            __z = x2 * spacing2;
+          }
           engine.addMeshObj({
             material: { type: material },
             envMapParams: material == "mirror" ? {
@@ -35110,9 +35364,9 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
               // ✅ Env map mode - wip
             } : void 0,
             position: {
-              x: pos2.x + x2 * spacing2,
-              y: pos2.y + y2 * spacing2 + 2.8,
-              z: pos2.z
+              x: pos2.x + __x,
+              y: pos2.y + __y,
+              z: pos2.z + __z
             },
             rotation: rot2,
             rotationSpeed: { x: 0, y: 0, z: 0 },
@@ -35176,7 +35430,6 @@ function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, textur
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
 function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 200) {
-  const root = this;
   return new Promise((resolve, reject) => {
     const engine = this;
     const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
@@ -35369,6 +35622,67 @@ function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 
       }
       engine.matrixPhysics.createChain(ids, spacing2, 0.5);
     }, 500);
+  }
+  downloadMeshes(inputCube, handler, { scale: scale4 });
+}
+function generatorWallNONPHYSICS(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
+  const engine = this;
+  console.log("aaaaaa", engine);
+  const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
+  console.log("__________________________");
+  const inputCube = { mesh: useMeshPath };
+  function handler(m) {
+    let index = 0;
+    const RAY = { enabled: raycast2, radius: 1 };
+    for (let y2 = 0; y2 < height; y2++) {
+      for (let x2 = 0; x2 < width; x2++) {
+        const cubeName = `${name2}_${index}`;
+        setTimeout(() => {
+          let __x = 0, __y = 0, __z = 0;
+          if (orientationOfwall === "ByX") {
+            __x = x2 * spacing2;
+            __y = y2 * spacing2 + spacingY;
+            __z = 0;
+          } else if (orientationOfwall === "ByZ") {
+            __x = 0;
+            __y = y2 * spacing2 + spacingY;
+            __z = x2 * spacing2;
+          }
+          engine.addMeshObj({
+            material: { type: material },
+            envMapParams: material == "mirror" ? {
+              baseColorMix: 0.5,
+              mirrorTint: [0.9, 0.95, 1],
+              reflectivity: 0.95,
+              illuminateColor: [0.3, 0.7, 1],
+              illuminateStrength: 0.4,
+              illuminatePulse: 0.01,
+              fresnelPower: 2,
+              envLodBias: 2.5,
+              usePlanarReflection: false
+            } : void 0,
+            position: {
+              x: pos2.x + __x,
+              y: pos2.y + __y,
+              z: pos2.z + __z
+            },
+            rotation: rot2,
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
+            name: cubeName,
+            mesh: m.mesh,
+            physics: {
+              enabled: false,
+              geometry: "Cube"
+            },
+            raycast: RAY
+          });
+          const o2 = app.getSceneObjectByName(cubeName);
+          runtimeCacheObjs.push(o2);
+        }, index * delay2);
+        index++;
+      }
+    }
   }
   downloadMeshes(inputCube, handler, { scale: scale4 });
 }
@@ -36569,8 +36883,8 @@ var PhysicsBridge = class {
   clearBody(idx) {
     this._worker.postMessage({ cmd: "clearBody", idx });
   }
-  speedUpSimulation(value) {
-    this._worker.postMessage({ cmd: "speedUpSimulation", value });
+  speedUpSimulation(value2) {
+    this._worker.postMessage({ cmd: "speedUpSimulation", value: value2 });
   }
   setCollisionFlags(idx, flags) {
     if (idx === void 0 || idx === -1) return;
@@ -37892,6 +38206,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesGeneratorDeepPyramid = physicsBodiesGeneratorDeepPyramid.bind(this);
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
+    this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
@@ -39324,7 +39639,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/Test1/graph.js
-var graph_default = { "nodes": { "node_2": { "noExec": true, "id": "node_2", "title": "Get Scene Light", "x": 372.15625, "y": 416.046875, "category": "scene", "inputs": [], "outputs": [{ "name": "ambientFactor", "type": "value" }, { "name": "setPosX", "type": "object" }, { "name": "setPosY", "type": "object" }, { "name": "setPosZ", "type": "object" }, { "name": "setIntensity", "type": "object" }, { "name": "setInnerCutoff", "type": "object" }, { "name": "setOuterCutoff", "type": "object" }, { "name": "setColor", "type": "object" }, { "name": "setColorR", "type": "object" }, { "name": "setColorB", "type": "object" }, { "name": "setColorG", "type": "object" }, { "name": "setRange", "type": "object" }, { "name": "setAmbientFactor", "type": "object" }, { "name": "setShadowBias", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "light0" }], "builtIn": true, "accessObjectLiteral": "window.app?.lightContainer", "exposeProps": ["ambientFactor", "setPosX", "setPosY", "setPosZ", "setIntensity", "setInnerCutoff", "setOuterCutoff", "setColor", "setColorR", "setColorB", "setColorG", "setRange", "setAmbientFactor", "setShadowBias"] }, "node_3": { "id": "node_3", "title": "reffunctions", "x": 977.34375, "y": 357.4375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "intensity", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_4": { "id": "node_4", "title": "Get Number", "x": 686.953125, "y": 400.53125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_POWER" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_5": { "id": "node_5", "title": "Get Number", "x": 682.8125, "y": 602.140625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "LIGHT_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_7": { "id": "node_7", "title": "reffunctions", "x": 988.78125, "y": 557.28125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_10": { "id": "node_10", "title": "reffunctions", "x": 989.671875, "y": 731.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorR", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_11": { "id": "node_11", "title": "Get Number", "x": 698.609375, "y": 789.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_RED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_12": { "id": "node_12", "title": "reffunctions", "x": 1005.078125, "y": 947.953125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorB", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_13": { "id": "node_13", "title": "Get Number", "x": 713.515625, "y": 995.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_BLUE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_14": { "id": "node_14", "title": "reffunctions", "x": 989.984375, "y": 1199.3125, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "reference", "type": "any" }, { "name": "colorG", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }] }, "node_15": { "id": "node_15", "title": "Get Number", "x": 740.1006469726562, "y": 1241.9687805175781, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "COLOR_GREEN" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_16": { "noExec": true, "id": "node_16", "title": "Get Scene Object", "x": 1323.5625, "y": 1496.8125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_17": { "id": "node_17", "x": 1603.234375, "y": 1239.390625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_18": { "id": "node_18", "title": "Get String", "x": 1295.5625, "y": 1325.265625, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_20": { "id": "node_20", "title": "functions", "x": -17.28125, "y": 17.765625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "activateBloomEffect" }], "accessObjectLiteral": "app", "fnName": "activateBloomEffect", "descFunc": "activateBloomEffect" }, "node_22": { "id": "node_22", "title": "Get Number", "x": 128.828125, "y": 221.390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "bloomPower" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_24": { "id": "node_24", "x": 2020.515625, "y": 1696.265625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_25": { "id": "node_25", "title": "Get String", "x": 1221.40625, "y": 1987.234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_26": { "noExec": true, "id": "node_26", "title": "Get Scene Object", "x": 1706.9375, "y": 1755.78125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_42": { "noExec": true, "id": "node_42", "title": "Get Scene Object", "x": 3181.890625, "y": 1338.546875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_43": { "id": "node_43", "x": 3566.53125, "y": 1326.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_44": { "id": "node_44", "title": "Get Number", "x": 3215.9375, "y": 1842.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SMALL_INV_ROT_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_45": { "noExec": true, "id": "node_45", "title": "Get Scene Object", "x": 3187.828125, "y": 1599.359375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_46": { "noExec": true, "id": "node_46", "title": "Get Scene Object", "x": 3195.609375, "y": 2016.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_48": { "id": "node_48", "x": 3566.46875, "y": 1701, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_49": { "id": "node_49", "x": 3574.5625, "y": 2060.640625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_50": { "id": "node_50", "title": "SetTimeout", "x": 3579.765625, "y": 1884.234375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_65": { "id": "node_65", "title": "if", "x": 3154.484375, "y": 719.640625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }] }, "node_69": { "noExec": true, "id": "node_69", "title": "Get Scene Object", "x": 1705.015625, "y": 1972.59375, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_70": { "noExec": true, "id": "node_70", "title": "Get Scene Object", "x": 1706.4375, "y": 2193.75, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_71": { "id": "node_71", "x": 2023.84375, "y": 1928.5625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_72": { "id": "node_72", "x": 2021.96875, "y": 2152.53125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_77": { "id": "node_77", "title": "Set Object", "x": -272.625, "y": 9.171875, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_78": { "id": "node_78", "title": "Get Object", "x": -271.75, "y": 168.84375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_84": { "id": "node_84", "title": "Print", "x": 3437.34375, "y": 797.8125, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS IS FREE TO PLAY" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_85": { "id": "node_85", "title": "SetTimeout", "x": 3554.40625, "y": 1527.28125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "300" }], "builtIn": true }, "node_86": { "id": "node_86", "title": "Get Number", "x": 4025.125, "y": 1846.640625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPIN_SPEED" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_87": { "id": "node_87", "x": 4277.9375, "y": 1504.921875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_89": { "id": "node_89", "x": 4306.96875, "y": 2103.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_97": { "id": "node_97", "title": "Function", "x": 5406.890625, "y": 1280.046875, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_98": { "id": "node_98", "title": "GenRandInt", "x": 5180.90625, "y": 1401.8125, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_99": { "id": "node_99", "title": "Get Number", "x": 5091.109375, "y": 2146.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_100": { "id": "node_100", "title": "SetTimeout", "x": 4716.15625, "y": 1556.875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_102": { "id": "node_102", "x": 4921.765625, "y": 1272.671875, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_104": { "noExec": true, "id": "node_104", "title": "Get Scene Object", "x": 5421.203125, "y": 1565.96875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_109": { "id": "node_109", "title": "Get Number", "x": 6485.46875, "y": 3241.625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_113": { "noExec": true, "id": "node_113", "title": "Get Scene Object", "x": 5486.765625, "y": 2273.46875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_2" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_115": { "id": "node_115", "title": "GenRandInt", "x": 5819.71875, "y": 2246.890625, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_116": { "id": "node_116", "title": "Function", "x": 6078.734375, "y": 2163.59375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_118": { "id": "node_118", "title": "GenRandInt", "x": 5855.5, "y": 3006.875, "category": "value", "inputs": [], "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "min", "value": "0" }, { "key": "max", "value": "11" }] }, "node_119": { "id": "node_119", "title": "Function", "x": 6183.046875, "y": 2990.25, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "input", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "attachedMethod": "getResultAngle" }, "node_120": { "noExec": true, "id": "node_120", "title": "Get Scene Object", "x": 5513.84375, "y": 3075.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_3" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_121": { "id": "node_121", "x": 6522.609375, "y": 3010.75, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_126": { "id": "node_126", "title": "functions", "x": -718.80908203125, "y": -307.0694580078125, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "pitch", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_128": { "id": "node_128", "title": "Get Number", "x": -1016.638916015625, "y": -180.72222900390625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_INIT_PITCH" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_130": { "id": "node_130", "title": "Get Number", "x": -1005.2430419921875, "y": 24.24652099609375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Y" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_131": { "id": "node_131", "title": "Get Number", "x": -998.861083984375, "y": 238.2430419921875, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "CAMERA_Z" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_132": { "id": "node_132", "title": "functions", "x": -686.140625, "y": -41.90625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "y2", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setY" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setY", "descFunc": "setY" }, "node_137": { "id": "node_137", "title": "functions", "x": -688.15625, "y": 181.71875, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "z", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setZ" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setZ", "descFunc": "setZ" }, "node_139": { "id": "node_139", "title": "Get Number", "x": 5417.203125, "y": 1811.234375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_142": { "id": "node_142", "x": 6558.296875, "y": 2190.84375, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_144": { "id": "node_144", "title": "Get Number", "x": 6347.265625, "y": 2632.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_146": { "id": "node_146", "title": "onLoad", "x": -1718.1807250976562, "y": -728.7395935058594, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_149": { "id": "node_149", "x": 3850.359375, "y": 1616.234375, "title": "Play MP3", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "key", "type": "string", "default": "audio" }, { "name": "src", "type": "string", "default": "" }, { "name": "clones", "type": "value", "default": 1 }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "created", "value": true }, { "key": "key", "value": "start_spin" }, { "key": "src", "value": "res/audios/spin.mp3" }], "noselfExec": "true" }, "node_150": { "id": "node_150", "title": "SetTimeout", "x": 3818.0625, "y": 1951.421875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_160": { "id": "node_160", "title": "Set Object", "x": 3442.03125, "y": 996.734375, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": "" }], "finished": true }, "node_161": { "id": "node_161", "title": "Get Object", "x": 3155.234375, "y": 1053.75, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "USED_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_162": { "id": "node_162", "title": "Get Object", "x": 2519.8125, "y": 930.875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_164": { "id": "node_164", "title": "Get Object", "x": 2523.875, "y": 781.109375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_165": { "id": "node_165", "title": "A != B", "x": 2857.375, "y": 897.234375, "category": "compare", "inputs": [{ "name": "A", "type": "any" }, { "name": "B", "type": "any" }], "outputs": [{ "name": "result", "type": "boolean" }] }, "node_167": { "id": "node_167", "title": "Set Object", "x": 7844.84375, "y": 2837.28125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "SPIN_STATUS" }, { "key": "literal", "value": {} }], "finished": true }, "node_168": { "id": "node_168", "title": "Get Object", "x": 7966.9375, "y": 3035.078125, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "FREE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_169": { "id": "node_169", "title": "Print", "x": 8093.671875, "y": 2833.359375, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "MASHINE IS FREE " }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_170": { "id": "node_170", "title": "Comment", "x": 2790.890625, "y": 748.046875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "Equal and NoEqual only compare nodes \nwho works with objects !!!" }] }, "node_172": { "id": "node_172", "x": 5761.578125, "y": 2051.0625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_174": { "id": "node_174", "x": 5978.875, "y": 2834.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_176": { "id": "node_176", "title": "Get Number", "x": 5711.625, "y": 1683.859375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_177": { "id": "node_177", "x": 5950.9375, "y": 1361.5, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_179": { "id": "node_179", "title": "Mul", "x": 5988.328125, "y": 1788.34375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_180": { "id": "node_180", "title": "Get Number", "x": 5738.21875, "y": 1860.84375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_181": { "id": "node_181", "title": "SetTimeout", "x": 6245.046875, "y": 1577.140625, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_184": { "id": "node_184", "title": "Get Number", "x": 6065.84375, "y": 2406.09375, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "DELTA_INV_ON_STOP" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_185": { "id": "node_185", "title": "Mul", "x": 6293.59375, "y": 2485.90625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_186": { "id": "node_186", "title": "Get Number", "x": 6055.53125, "y": 2574.125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEGATIVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_188": { "id": "node_188", "title": "SetTimeout", "x": 6662.84375, "y": 2619.09375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_194": { "id": "node_194", "title": "SetTimeout", "x": 7510.78125, "y": 2875.953125, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "5000" }], "builtIn": true }, "node_195": { "id": "node_195", "title": "SetTimeout", "x": 6881.125, "y": 3011.046875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_196": { "id": "node_196", "x": 7210.9375, "y": 3164.703125, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_197": { "id": "node_197", "title": "SetTimeout", "x": 4286.1875, "y": 1649.359375, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_198": { "id": "node_198", "x": 4300.8125, "y": 1804.625, "title": "Set RotateX", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_199": { "id": "node_199", "title": "SetTimeout", "x": 4303.109375, "y": 1959.21875, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "200" }], "builtIn": true }, "node_200": { "id": "node_200", "title": "Print", "x": 3452.515625, "y": 594.296875, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "STATUS USED" }], "builtIn": true, "noselfExec": "true", "displayEl": {} }, "node_205": { "id": "node_205", "title": "Get Number", "x": 409.59375, "y": 217.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLUR_EFFECT" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_206": { "id": "node_206", "title": "Comment", "x": 7031.359375, "y": 2832.375, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "NOW STOP SPINING" }] }, "node_207": { "id": "node_207", "title": "functions", "x": 984.359375, "y": 62.625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setKnee" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setKnee", "descFunc": "setKnee" }, "node_208": { "id": "node_208", "title": "functions", "x": 709.546875, "y": 63.234375, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setBlurRadius" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setBlurRadius", "descFunc": "setBlurRadius" }, "node_209": { "id": "node_209", "title": "Get Number", "x": 743.1875, "y": 238.65625, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "BLOOM_KNEE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_211": { "id": "node_211", "title": "functions", "x": 431.140625, "y": 28.140625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "v", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setIntensity" }], "accessObjectLiteral": "app.bloomPass", "fnName": "setIntensity", "descFunc": "setIntensity" }, "node_215": { "id": "node_215", "title": "Function", "x": 190.72921752929688, "y": 2588.8612670898438, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "ctx", "type": "value" }, { "name": "canvas", "type": "value" }, { "name": "arg", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "reference", "type": "function" }], "attachedMethod": "neonTextEffect" }, "node_231": { "id": "node_231", "x": 992.65625, "y": 3119.546875, "title": "Curve", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "name", "type": "string" }, { "name": "delta", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "name", "value": "Curve1" }], "curve": { "name": "node_231", "keys": [{ "time": 0, "value": 0, "inTangent": 0, "outTangent": 0 }, { "time": 1, "value": 1, "inTangent": 0, "outTangent": 0 }], "length": 1, "loop": true, "samples": 128, "baked": null }, "noselfExec": "true" }, "node_233": { "noExec": true, "id": "node_233", "title": "Get Scene Object", "x": 1247.1875, "y": 2880.078125, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "BANNER1" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_236": { "id": "node_236", "title": "Mul", "x": 1363.453125, "y": 3296.296875, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_237": { "id": "node_237", "title": "Get Number", "x": 1038.3125, "y": 3386.328125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "MULTIPLY_CURVE" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_239": { "id": "node_239", "title": "Get Number", "x": 1357.515625, "y": 3480.3125, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_241": { "id": "node_241", "x": 1727.015625, "y": 3126.765625, "title": "Set Rotation", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "rotation", "semantic": "rotation", "type": "any" }, { "name": "x", "semantic": "number", "type": "any" }, { "name": "y", "semantic": "number", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_243": { "id": "node_243", "title": "getNumberLiteral", "x": 1351.953125, "y": 3126.109375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "90" }], "noselfExec": "true" }, "node_252": { "noExec": true, "id": "node_252", "title": "Get Scene Object", "x": 3139.484375, "y": 3452.890625, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "CAMERA_JUMPER" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_254": { "id": "node_254", "title": "Get Object", "x": 3141, "y": 3715.921875, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_255": { "id": "node_255", "x": 3489.953125, "y": 3351.296875, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_258": { "id": "node_258", "title": "getNumberLiteral", "x": 3089.09375, "y": 3074.984375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "0.03" }], "noselfExec": "true" }, "node_261": { "id": "node_261", "title": "if", "x": 2792.125, "y": 3138.71875, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "true" }], "noselfExec": "true" }, "node_269": { "id": "node_269", "title": "Mul", "x": 3153.6875, "y": 3274.625, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_271": { "id": "node_271", "x": 2370.59375, "y": 3180.625, "title": "Audio Reactive Node", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "audioSrc", "type": "string" }, { "name": "loop", "type": "boolean" }, { "name": "thresholdBeat", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "low", "type": "value" }, { "name": "mid", "type": "value" }, { "name": "high", "type": "value" }, { "name": "energy", "type": "value" }, { "name": "beat", "type": "boolean" }], "fields": [{ "key": "audioSrc", "value": "audionautix-black-fly.mp3" }, { "key": "loop", "value": true }, { "key": "thresholdBeat", "value": 0.7 }, { "key": "created", "value": true, "disabled": true }], "noselfExec": "true", "_loading": false, "_beatCooldown": 0 }, "node_275": { "id": "node_275", "title": "Get Boolean", "x": 3489.921875, "y": 3641.328125, "category": "value", "outputs": [{ "name": "result", "type": "boolean" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_276": { "id": "node_276", "title": "Set Boolean", "x": 2913.078125, "y": 2589.90625, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": "true" }], "finished": true }, "node_280": { "id": "node_280", "x": 2458.84375, "y": 2502.921875, "title": "Generator Pyramid", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "levels", "type": "value" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "objectNames", "type": "object" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/cube-g1.webp" }, { "key": "name", "value": "TEST" }, { "key": "levels", "value": "5" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": 10 }, { "key": "delay", "value": "50" }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_281": { "id": "node_281", "type": "getArray", "title": "Get Array", "x": 4353.375, "y": 3439.109375, "fields": [{ "key": "array", "value": [] }], "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "array", "type": "any" }] }, "node_282": { "id": "node_282", "title": "For Each", "type": "forEach", "x": 4596.390625, "y": 3454.578125, "state": { "item": "TEST_54", "index": 54 }, "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "loop", "type": "action" }, { "name": "completed", "type": "action" }, { "name": "item", "type": "any" }, { "name": "index", "type": "value" }] }, "node_284": { "id": "node_284", "x": 4928.7606201171875, "y": 3606.062744140625, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_286": { "id": "node_286", "title": "Mul", "x": 4376.5625, "y": 3749.234375, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }], "displayEl": {} }, "node_287": { "id": "node_287", "title": "getNumberLiteral", "x": 4052.7466430664062, "y": 3551.3613891601562, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": "0.02" }], "noselfExec": "true" }, "node_288": { "id": "node_288", "title": "if", "x": 3794.234375, "y": 3402.265625, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": "" }], "noselfExec": "true" }, "node_289": { "id": "node_289", "title": "Get Object", "x": 4691.159912109375, "y": 3881.0072021484375, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "RAY_DIR" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_290": { "id": "node_290", "title": "Set Boolean", "x": 2114.84375, "y": 2644.125, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "DINAMIC_OBJS_READY" }, { "key": "literal", "value": false }], "finished": true }, "node_308": { "noExec": true, "id": "node_308", "title": "Get Scene Object", "x": 2356.765625, "y": 1721.796875, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "L_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_309": { "id": "node_309", "x": 2723.4375, "y": 1888.484375, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_310": { "id": "node_310", "title": "Get String", "x": 2483.796875, "y": 2028.75, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "CUBE_TEX" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_311": { "noExec": true, "id": "node_311", "title": "Get Scene Object", "x": 2349.734375, "y": 2185, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "R_BOX" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_312": { "id": "node_312", "x": 2715.484375, "y": 2184.0625, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_313": { "id": "node_313", "title": "Comment", "x": 1832.203125, "y": 2625.671875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON LOAD TEST CASE \n" }] }, "node_314": { "id": "node_314", "title": "Comment", "x": 710.796875, "y": 3127.1875, "category": "meta", "inputs": [], "outputs": [], "comment": true, "noExec": true, "fields": [{ "key": "text", "value": "ON DRAW \n" }] }, "node_349": { "noExec": true, "id": "node_349", "title": "Get Scene Object", "x": -124.2569580078125, "y": 1362.0798950195312, "category": "scene", "inputs": [], "outputs": [{ "name": "name", "type": "string" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "scale", "type": "object" }], "fields": [{ "key": "selectedObject", "value": "REEL_TOP" }], "builtIn": true, "accessObjectLiteral": "window.app?.mainRenderBundle", "exposeProps": ["name", "position", "rotation", "scale"] }, "node_350": { "id": "node_350", "x": 210.10760498046875, "y": 1170.34033203125, "title": "Set Texture", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "texturePath", "semantic": "texturePath", "type": "any" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_352": { "id": "node_352", "title": "Get String", "x": -137.607666015625, "y": 1198.6771240234375, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "TEX_LOGO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_363": { "id": "node_363", "title": "getNumberLiteral", "x": -1410.1007080078125, "y": -269.3333740234375, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "value", "value": 1 }], "noselfExec": "true" }, "node_367": { "id": "node_367", "title": "functions", "x": -1021.892578125, "y": -538.3471984863281, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "yaw", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setYaw" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setYaw", "descFunc": "setYaw" }, "node_370": { "id": "node_370", "title": "Get Number", "x": -1736.3228759765625, "y": -465.6805725097656, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "ZERO" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_371": { "id": "node_371", "title": "functions", "x": -1355.045166015625, "y": -740.0625, "category": "functions", "inputs": [{ "name": "exec", "type": "action" }, { "name": "p", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "return", "type": "value" }], "fields": [{ "key": "selectedObject", "value": "setPitch" }], "accessObjectLiteral": "app.cameras.WASD", "fnName": "setPitch", "descFunc": "setPitch" }, "node_375": { "id": "node_375", "title": "SetTimeout", "x": -103.77256028580496, "y": 946.6400761224659, "category": "timer", "inputs": [{ "name": "exec", "type": "action" }, { "name": "delay", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "delay", "value": "1000" }], "builtIn": true }, "node_377": { "id": "node_377", "title": "onLoad", "x": -364.1959955202632, "y": 855.4715120458612, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_378": { "id": "node_378", "x": 665.8666738935068, "y": 1803.8184464830729, "title": "Set Vertex Wave", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "intensity", "type": "value" }, { "name": "enableWave", "type": "boolean" }, { "name": "Wave Speed", "type": "value" }, { "name": "Wave Amplitude", "type": "value" }, { "name": "Wave Frequency", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "L_BOX" }, { "key": "enableWave", "value": "true" }, { "key": "Wave Speed", "value": "0.01" }, { "key": "Wave Amplitude", "value": "0.01" }, { "key": "Wave Frequency", "value": "1.0" }] }, "node_379": { "id": "node_379", "x": 675.2020112430201, "y": 2156.397546517089, "title": "Set Vertex Wind", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "sceneObjectName", "semantic": "string", "type": "any" }, { "name": "enableWind", "type": "boolean" }, { "name": "Wind Speed", "type": "value" }, { "name": "Wind Strength", "type": "value" }, { "name": "Wind HeightInfluence", "type": "value" }, { "name": "Wind Turbulence", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "sceneObjectName", "value": "R_BOX" }, { "key": "enableWind", "value": "true" }, { "key": "Wind Speed", "value": "0.1" }, { "key": "Wind Strength", "value": "0.1" }, { "key": "Wind HeightInfluence", "value": "0.1" }, { "key": "Wind Turbulence", "value": "0.1" }] }, "node_382": { "id": "node_382", "x": 2677.2700073026435, "y": 231.24250636550374, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_383": { "id": "node_383", "title": "Get String", "x": 2780.999977204145, "y": 553.118674995782, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "REEL1" }], "isGetterNode": true, "displayEl": {}, "finished": true }, "node_384": { "id": "node_384", "title": "Starts With [string]", "x": 3132.9308460640964, "y": 370.21204215496925, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_385": { "id": "node_385", "title": "if", "x": 3158.974776623208, "y": 527.616542933595, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_386": { "noExec": true, "id": "node_386", "title": "Set Shader Graph", "x": 249.9250835221356, "y": 1606.3383689608443, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "objectName": "objectName", "type": "string" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "selectedShader", "value": "ScrollTex" }, { "key": "objectName", "value": "FLOOR" }], "builtIn": true, "accessObjectLiteral": "window.app?.shaderGraph" }, "node_387": { "id": "node_387", "x": 672.0751803786219, "y": 2580.2501351563383, "title": "Set CanvasInline", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "canvaInlineProgram", "type": "function" }, { "name": "specialCanvas2dArg", "type": "object" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "objectName", "value": "BANNER1" }, { "key": "canvaInlineProgram", "value": "function (ctx, canvas) {}" }, { "key": "specialCanvas2dArg", "value": "{ hue: 200, glow: 10, text: 'Hello programmer', fontSize: 60, flicker: 0.05, }" }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_2", "pin": "setIntensity", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "reference" }, "type": "any" }, { "id": "link_3", "from": { "node": "node_4", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "intensity" }, "type": "value" }, { "id": "link_4", "from": { "node": "node_2", "pin": "setPosY", "type": "object", "out": true }, "to": { "node": "node_7", "pin": "reference" }, "type": "any" }, { "id": "link_5", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_6", "from": { "node": "node_5", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_7", "pin": "y2" }, "type": "value" }, { "id": "link_9", "from": { "node": "node_2", "pin": "setColorR", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "reference" }, "type": "any" }, { "id": "link_10", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_11", "from": { "node": "node_11", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_10", "pin": "colorR" }, "type": "value" }, { "id": "link_12", "from": { "node": "node_10", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_13", "from": { "node": "node_2", "pin": "setColorB", "type": "object", "out": true }, "to": { "node": "node_12", "pin": "reference" }, "type": "any" }, { "id": "link_14", "from": { "node": "node_13", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_12", "pin": "colorB" }, "type": "value" }, { "id": "link_15", "from": { "node": "node_2", "pin": "setColorG", "type": "object", "out": true }, "to": { "node": "node_14", "pin": "reference" }, "type": "any" }, { "id": "link_16", "from": { "node": "node_12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_14", "pin": "exec" }, "type": "action" }, { "id": "link_17", "from": { "node": "node_15", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_14", "pin": "colorG" }, "type": "value" }, { "id": "link_18", "from": { "node": "node_16", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_19", "from": { "node": "node_14", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_17", "pin": "exec" }, "type": "action" }, { "id": "link_20", "from": { "node": "node_18", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_17", "pin": "texturePath" }, "type": "any" }, { "id": "link_26", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "texturePath" }, "type": "any" }, { "id": "link_27", "from": { "node": "node_17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_24", "pin": "exec" }, "type": "action" }, { "id": "link_28", "from": { "node": "node_26", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_24", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_52", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_43", "pin": "rotation" }, "type": "any" }, { "id": "link_53", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_43", "pin": "x" }, "type": "any" }, { "id": "link_55", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_48", "pin": "rotation" }, "type": "any" }, { "id": "link_57", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_48", "pin": "x" }, "type": "any" }, { "id": "link_58", "from": { "node": "node_48", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_50", "pin": "exec" }, "type": "action" }, { "id": "link_59", "from": { "node": "node_50", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_49", "pin": "exec" }, "type": "action" }, { "id": "link_60", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_49", "pin": "rotation" }, "type": "any" }, { "id": "link_61", "from": { "node": "node_44", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_49", "pin": "x" }, "type": "any" }, { "id": "link_95", "from": { "node": "node_69", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_96", "from": { "node": "node_24", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_71", "pin": "exec" }, "type": "action" }, { "id": "link_97", "from": { "node": "node_71", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_72", "pin": "exec" }, "type": "action" }, { "id": "link_98", "from": { "node": "node_70", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_99", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_71", "pin": "texturePath" }, "type": "any" }, { "id": "link_100", "from": { "node": "node_25", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_72", "pin": "texturePath" }, "type": "any" }, { "id": "link_104", "from": { "node": "node_77", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_105", "from": { "node": "node_78", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_77", "pin": "value" }, "type": "object" }, { "id": "link_113", "from": { "node": "node_65", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_84", "pin": "exec" }, "type": "action" }, { "id": "link_115", "from": { "node": "node_43", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_85", "pin": "exec" }, "type": "action" }, { "id": "link_116", "from": { "node": "node_85", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_48", "pin": "exec" }, "type": "action" }, { "id": "link_117", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_87", "pin": "rotation" }, "type": "any" }, { "id": "link_119", "from": { "node": "node_46", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_89", "pin": "rotation" }, "type": "any" }, { "id": "link_120", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_87", "pin": "x" }, "type": "any" }, { "id": "link_122", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_89", "pin": "x" }, "type": "any" }, { "id": "link_134", "from": { "node": "node_98", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_97", "pin": "input" }, "type": "value" }, { "id": "link_137", "from": { "node": "node_89", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_100", "pin": "exec" }, "type": "action" }, { "id": "link_138", "from": { "node": "node_42", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_102", "pin": "rotation" }, "type": "any" }, { "id": "link_143", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_102", "pin": "x" }, "type": "any" }, { "id": "link_144", "from": { "node": "node_100", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_102", "pin": "exec" }, "type": "action" }, { "id": "link_166", "from": { "node": "node_115", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_116", "pin": "input" }, "type": "value" }, { "id": "link_172", "from": { "node": "node_118", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_119", "pin": "input" }, "type": "value" }, { "id": "link_174", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_121", "pin": "rotation" }, "type": "any" }, { "id": "link_175", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "y" }, "type": "any" }, { "id": "link_176", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "z" }, "type": "any" }, { "id": "link_178", "from": { "node": "node_119", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_121", "pin": "x" }, "type": "any" }, { "id": "link_179", "from": { "node": "node_119", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_121", "pin": "exec" }, "type": "action" }, { "id": "link_182", "from": { "node": "node_128", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_126", "pin": "pitch" }, "type": "value" }, { "id": "link_186", "from": { "node": "node_126", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_132", "pin": "exec" }, "type": "action" }, { "id": "link_188", "from": { "node": "node_130", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_132", "pin": "y2" }, "type": "value" }, { "id": "link_193", "from": { "node": "node_131", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_137", "pin": "z" }, "type": "value" }, { "id": "link_194", "from": { "node": "node_132", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_137", "pin": "exec" }, "type": "action" }, { "id": "link_195", "from": { "node": "node_137", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_77", "pin": "exec" }, "type": "action" }, { "id": "link_207", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_142", "pin": "rotation" }, "type": "any" }, { "id": "link_208", "from": { "node": "node_116", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_142", "pin": "exec" }, "type": "action" }, { "id": "link_211", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "y" }, "type": "any" }, { "id": "link_212", "from": { "node": "node_116", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "x" }, "type": "any" }, { "id": "link_213", "from": { "node": "node_144", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_142", "pin": "z" }, "type": "any" }, { "id": "link_218", "from": { "node": "node_49", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_150", "pin": "exec" }, "type": "action" }, { "id": "link_219", "from": { "node": "node_150", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_149", "pin": "exec" }, "type": "action" }, { "id": "link_220", "from": { "node": "node_149", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_87", "pin": "exec" }, "type": "action" }, { "id": "link_235", "from": { "node": "node_84", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_160", "pin": "exec" }, "type": "action" }, { "id": "link_236", "from": { "node": "node_160", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_43", "pin": "exec" }, "type": "action" }, { "id": "link_237", "from": { "node": "node_161", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_160", "pin": "value" }, "type": "object" }, { "id": "link_243", "from": { "node": "node_164", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "A" }, "type": "any" }, { "id": "link_244", "from": { "node": "node_162", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_165", "pin": "B" }, "type": "any" }, { "id": "link_245", "from": { "node": "node_165", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_65", "pin": "condition" }, "type": "boolean" }, { "id": "link_248", "from": { "node": "node_168", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_167", "pin": "value" }, "type": "object" }, { "id": "link_249", "from": { "node": "node_167", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_169", "pin": "exec" }, "type": "action" }, { "id": "link_250", "from": { "node": "node_102", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_97", "pin": "exec" }, "type": "action" }, { "id": "link_251", "from": { "node": "node_113", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_172", "pin": "rotation" }, "type": "any" }, { "id": "link_252", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_172", "pin": "x" }, "type": "any" }, { "id": "link_255", "from": { "node": "node_172", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_116", "pin": "exec" }, "type": "action" }, { "id": "link_256", "from": { "node": "node_99", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_174", "pin": "x" }, "type": "any" }, { "id": "link_259", "from": { "node": "node_174", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_119", "pin": "exec" }, "type": "action" }, { "id": "link_260", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_174", "pin": "rotation" }, "type": "any" }, { "id": "link_261", "from": { "node": "node_104", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_177", "pin": "rotation" }, "type": "any" }, { "id": "link_262", "from": { "node": "node_97", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_177", "pin": "exec" }, "type": "action" }, { "id": "link_267", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "y" }, "type": "any" }, { "id": "link_268", "from": { "node": "node_139", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "z" }, "type": "any" }, { "id": "link_269", "from": { "node": "node_176", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "a" }, "type": "value" }, { "id": "link_270", "from": { "node": "node_180", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_179", "pin": "b" }, "type": "value" }, { "id": "link_282", "from": { "node": "node_97", "pin": "return", "type": "value", "out": true }, "to": { "node": "node_177", "pin": "x" }, "type": "any" }, { "id": "link_283", "from": { "node": "node_184", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "a" }, "type": "value" }, { "id": "link_284", "from": { "node": "node_186", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_185", "pin": "b" }, "type": "value" }, { "id": "link_297", "from": { "node": "node_194", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_167", "pin": "exec" }, "type": "action" }, { "id": "link_300", "from": { "node": "node_109", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_196", "pin": "x" }, "type": "any" }, { "id": "link_301", "from": { "node": "node_120", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_196", "pin": "rotation" }, "type": "any" }, { "id": "link_302", "from": { "node": "node_195", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_196", "pin": "exec" }, "type": "action" }, { "id": "link_303", "from": { "node": "node_196", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_194", "pin": "exec" }, "type": "action" }, { "id": "link_304", "from": { "node": "node_87", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_197", "pin": "exec" }, "type": "action" }, { "id": "link_305", "from": { "node": "node_197", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_198", "pin": "exec" }, "type": "action" }, { "id": "link_306", "from": { "node": "node_86", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_198", "pin": "x" }, "type": "any" }, { "id": "link_307", "from": { "node": "node_45", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_198", "pin": "rotation" }, "type": "any" }, { "id": "link_308", "from": { "node": "node_198", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_199", "pin": "exec" }, "type": "action" }, { "id": "link_309", "from": { "node": "node_199", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_89", "pin": "exec" }, "type": "action" }, { "id": "link_310", "from": { "node": "node_65", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_200", "pin": "exec" }, "type": "action" }, { "id": "link_316", "from": { "node": "node_205", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_208", "pin": "v" }, "type": "value" }, { "id": "link_318", "from": { "node": "node_208", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_207", "pin": "exec" }, "type": "action" }, { "id": "link_319", "from": { "node": "node_207", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_320", "from": { "node": "node_209", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_207", "pin": "v" }, "type": "value" }, { "id": "link_321", "from": { "node": "node_20", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_211", "pin": "exec" }, "type": "action" }, { "id": "link_322", "from": { "node": "node_22", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_211", "pin": "v" }, "type": "value" }, { "id": "link_323", "from": { "node": "node_211", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_208", "pin": "exec" }, "type": "action" }, { "id": "link_352", "from": { "node": "node_231", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "a" }, "type": "value" }, { "id": "link_355", "from": { "node": "node_237", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_236", "pin": "b" }, "type": "value" }, { "id": "link_362", "from": { "node": "node_233", "pin": "rotation", "type": "object", "out": true }, "to": { "node": "node_241", "pin": "rotation" }, "type": "any" }, { "id": "link_363", "from": { "node": "node_236", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "y" }, "type": "any" }, { "id": "link_365", "from": { "node": "node_239", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "z" }, "type": "any" }, { "id": "link_366", "from": { "node": "node_231", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_243", "pin": "exec" }, "type": "action" }, { "id": "link_367", "from": { "node": "node_243", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_241", "pin": "x" }, "type": "any" }, { "id": "link_368", "from": { "node": "node_243", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_241", "pin": "exec" }, "type": "action" }, { "id": "link_380", "from": { "node": "node_254", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_255", "pin": "rayDirection" }, "type": "object" }, { "id": "link_382", "from": { "node": "node_252", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_255", "pin": "objectName" }, "type": "string" }, { "id": "link_392", "from": { "node": "node_258", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_255", "pin": "exec" }, "type": "action" }, { "id": "link_402", "from": { "node": "node_261", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_258", "pin": "exec" }, "type": "action" }, { "id": "link_409", "from": { "node": "node_258", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "a" }, "type": "value" }, { "id": "link_411", "from": { "node": "node_269", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_255", "pin": "strength" }, "type": "value" }, { "id": "link_414", "from": { "node": "node_271", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_261", "pin": "exec" }, "type": "action" }, { "id": "link_415", "from": { "node": "node_271", "pin": "mid", "type": "value", "out": true }, "to": { "node": "node_269", "pin": "b" }, "type": "value" }, { "id": "link_416", "from": { "node": "node_271", "pin": "beat", "type": "boolean", "out": true }, "to": { "node": "node_261", "pin": "condition" }, "type": "boolean" }, { "id": "link_426", "from": { "node": "node_280", "pin": "complete", "type": "action", "out": true }, "to": { "node": "node_276", "pin": "exec" }, "type": "action" }, { "id": "link_427", "from": { "node": "node_280", "pin": "objectNames", "type": "object", "out": true }, "to": { "node": "node_281", "pin": "array" }, "type": "any" }, { "id": "link_429", "from": { "node": "node_281", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_282", "pin": "exec" }, "type": "action" }, { "id": "link_430", "from": { "node": "node_281", "pin": "array", "type": "any", "out": true }, "to": { "node": "node_282", "pin": "array" }, "type": "any" }, { "id": "link_431", "from": { "node": "node_282", "pin": "loop", "type": "action", "out": true }, "to": { "node": "node_284", "pin": "exec" }, "type": "action" }, { "id": "link_432", "from": { "node": "node_282", "pin": "item", "type": "any", "out": true }, "to": { "node": "node_284", "pin": "objectName" }, "type": "string" }, { "id": "link_434", "from": { "node": "node_271", "pin": "high", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "a" }, "type": "value" }, { "id": "link_435", "from": { "node": "node_255", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_288", "pin": "exec" }, "type": "action" }, { "id": "link_436", "from": { "node": "node_275", "pin": "result", "type": "boolean", "out": true }, "to": { "node": "node_288", "pin": "condition" }, "type": "boolean" }, { "id": "link_437", "from": { "node": "node_288", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_287", "pin": "exec" }, "type": "action" }, { "id": "link_438", "from": { "node": "node_287", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_281", "pin": "exec" }, "type": "action" }, { "id": "link_439", "from": { "node": "node_287", "pin": "value", "type": "value", "out": true }, "to": { "node": "node_286", "pin": "b" }, "type": "value" }, { "id": "link_440", "from": { "node": "node_286", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_284", "pin": "strength" }, "type": "value" }, { "id": "link_441", "from": { "node": "node_289", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_284", "pin": "rayDirection" }, "type": "object" }, { "id": "link_443", "from": { "node": "node_290", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_280", "pin": "exec" }, "type": "action" }, { "id": "link_450", "from": { "node": "node_241", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_271", "pin": "exec" }, "type": "action" }, { "id": "link_462", "from": { "node": "node_72", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_309", "pin": "exec" }, "type": "action" }, { "id": "link_463", "from": { "node": "node_308", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_464", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_309", "pin": "texturePath" }, "type": "any" }, { "id": "link_465", "from": { "node": "node_311", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_466", "from": { "node": "node_310", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_312", "pin": "texturePath" }, "type": "any" }, { "id": "link_467", "from": { "node": "node_309", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_312", "pin": "exec" }, "type": "action" }, { "id": "link_505", "from": { "node": "node_349", "pin": "name", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "sceneObjectName" }, "type": "any" }, { "id": "link_507", "from": { "node": "node_352", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_350", "pin": "texturePath" }, "type": "any" }, { "id": "link_518", "from": { "node": "node_367", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_126", "pin": "exec" }, "type": "action" }, { "id": "link_521", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_367", "pin": "yaw" }, "type": "any" }, { "id": "link_522", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "x2" }, "type": "any" }, { "id": "link_523", "from": { "node": "node_146", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_371", "pin": "exec" }, "type": "action" }, { "id": "link_524", "from": { "node": "node_371", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_367", "pin": "exec" }, "type": "action" }, { "id": "link_526", "from": { "node": "node_370", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_371", "pin": "p" }, "type": "any" }, { "id": "link_533", "from": { "node": "node_377", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_375", "pin": "exec" }, "type": "action" }, { "id": "link_534", "from": { "node": "node_375", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_350", "pin": "exec" }, "type": "action" }, { "id": "link_537", "from": { "node": "node_378", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_379", "pin": "exec" }, "type": "action" }, { "id": "link_541", "from": { "node": "node_383", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_384", "pin": "prefix" }, "type": "string" }, { "id": "link_542", "from": { "node": "node_382", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_384", "pin": "input" }, "type": "string" }, { "id": "link_543", "from": { "node": "node_384", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_385", "pin": "condition" }, "type": "boolean" }, { "id": "link_544", "from": { "node": "node_382", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_385", "pin": "exec" }, "type": "action" }, { "id": "link_545", "from": { "node": "node_385", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_65", "pin": "exec" }, "type": "action" }, { "id": "link_546", "from": { "node": "node_177", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_181", "pin": "exec" }, "type": "action" }, { "id": "link_547", "from": { "node": "node_181", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_172", "pin": "exec" }, "type": "action" }, { "id": "link_548", "from": { "node": "node_142", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_188", "pin": "exec" }, "type": "action" }, { "id": "link_549", "from": { "node": "node_188", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_174", "pin": "exec" }, "type": "action" }, { "id": "link_550", "from": { "node": "node_121", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_195", "pin": "exec" }, "type": "action" }, { "id": "link_551", "from": { "node": "node_350", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_386", "pin": "exec" }, "type": "action" }, { "id": "link_552", "from": { "node": "node_386", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_378", "pin": "exec" }, "type": "action" }, { "id": "link_553", "from": { "node": "node_215", "pin": "reference", "type": "function", "out": true }, "to": { "node": "node_387", "pin": "canvaInlineProgram" }, "type": "function" }, { "id": "link_554", "from": { "node": "node_379", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_387", "pin": "exec" }, "type": "action" }], "nodeCounter": 388, "linkCounter": 555, "pan": [-409, -2244], "variables": { "number": { "LIGHT_POWER": 8, "LIGHT_Y": 65, "COLOR_RED": 1, "COLOR_BLUE": 1, "COLOR_GREEN": 1, "bloomPower": 1, "SMALL_INV_ROT_SPEED": -100, "SPIN_SPEED": 1e4, "ZERO": 0, "RESULT_ANGLE": null, "CAMERA_INIT_PITCH": -0.1, "CAMERA_Y": 3.5, "CAMERA_Z": -12, "DELTA_INV_ON_STOP": 1e3, "NEGATIVE": -1, "BLUR_EFFECT": 3, "BLOOM_KNEE": 1, "MULTIPLY_CURVE": 20 }, "boolean": { "DINAMIC_OBJS_READY": true, "WAVE_EFFECT": true }, "string": { "TEX_LOGO": "res/icons/editor/chatgpt-gen-bg-inv.webp", "REEL_TEX": "res/textures/slot/reel1-lod0.webp", "START_SPIN": "start-spin", "CUBE_TEX": "res/textures/cube-g1.webp", "REEL1": "REEL_2" }, "object": { "SPIN_STATUS": { "status": "free" }, "FREE": { "status": "free" }, "USED_STATUS": { "status": "used" }, "RAY_DIR": [1, 0, 0] } } };
+var graph_default = { "nodes": { "n136": { "id": "n136", "title": "onLoad", "x": 0, "y": 0, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }], "fields": [] }, "n137": { "id": "n137", "title": "Add OBJ", "x": 93, "y": 179, "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:0}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "myCube" }, { "key": "raycast", "value": true }, { "key": "scale", "value": "[1,1,1]" }, { "key": "isPhysicsBody", "type": false, "value": false }, { "key": "isInstancedObj", "type": false, "value": false }, { "key": "created", "value": false }], "noselfExec": true }, "n139": { "id": "n139", "title": "getNumberLiteral", "x": 468, "y": 655, "category": "action", "inputs": [{ "name": "exec", "type": "action" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "value", "type": "value" }], "fields": [{ "key": "number", "value": "-10" }], "noselfExec": true }, "n140": { "id": "n140", "title": "translateByZ", "x": 764, "y": 95, "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "type": "undefined" }, { "name": "z", "type": "undefined" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [] }, "node_141": { "id": "node_141", "x": 471.6370905299776, "y": 16.080266452235094, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "position", "type": "any" }, { "name": "rotation", "type": "any" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false } }, "links": [{ "id": "l111", "from": { "node": "n136", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n137", "pin": "exec" }, "type": "action" }, { "id": "l112", "from": { "node": "n136", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n139", "pin": "exec" }, "type": "action" }, { "id": "l115", "from": { "node": "n139", "pin": "value", "type": "value", "out": true }, "to": { "node": "n140", "pin": "z" }, "type": "value" }, { "id": "link_116", "from": { "node": "node_141", "pin": "position", "type": "any", "out": true }, "to": { "node": "n140", "pin": "position" }, "type": "undefined" }, { "id": "link_117", "from": { "node": "node_141", "pin": "exec", "type": "action", "out": true }, "to": { "node": "n140", "pin": "exec" }, "type": "action" }], "nodeCounter": 142, "linkCounter": 118, "pan": [-222, -310], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/Test1/shader-graphs.js
 var shaderGraphsProdc = [

@@ -192,6 +192,21 @@ export class GaussianSplatLayer {
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
 
+    // Dummy/fallback position buffer (slot 2) — used when no positionAnimator
+    // is attached, so render() never crashes on missing dynamic position data.
+    const dummyPosData = new Float32Array(this.vertexCount * 3);
+    dummyPosData.set(this.splatData.positions);
+    this.dummyPosBuffer = this.device.createBuffer({
+      label: 'splat-dummy-pos',
+      size: dummyPosData.byteLength,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    new Float32Array(this.dummyPosBuffer.getMappedRange()).set(dummyPosData);
+    this.dummyPosBuffer.unmap();
+
+    this.positionAnimator = null; // explicit until one is attached
+
     const initialColors = new Float32Array(this.vertexCount * 4);
     for(let i = 0;i < this.vertexCount;i++) {
       initialColors[i * 4 + 0] = this.splatData.splatColors[i * 4 + 0];
@@ -209,51 +224,50 @@ export class GaussianSplatLayer {
     new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
     this.colorBuffer.unmap()
 
-    // Expose positions + vertexCount for the animator
     this.positions = this.splatData.positions;
     this.vertexCount = this.splatData.vertexCount;
 
-    // // Index buffer: quads (2 triangles per splat)
-    // const quadIndices = new Uint16Array(this.vertexCount * 6);
-    // let idx = 0;
-    // for(let i = 0;i < this.vertexCount;i++) {
-    //   const base = i * 4;
-    //   quadIndices[idx++] = base;
-    //   quadIndices[idx++] = base + 1;
-    //   quadIndices[idx++] = base + 2;
-    //   quadIndices[idx++] = base + 1;
-    //   quadIndices[idx++] = base + 3;
-    //   quadIndices[idx++] = base + 2;
-    // }
-
-    // this.indexBuffer = this.device.createBuffer({
-    //   label: 'Splat index buffer',
-    //   size: quadIndices.byteLength,
-    //   mappedAtCreation: true,
-    //   usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-    // });
-    // new Uint16Array(this.indexBuffer.getMappedRange()).set(quadIndices);
-    // this.indexBuffer.unmap();
-    // this.indexCount = quadIndices.length;
-
+    // this.vertexBufferLayout = [
+    //   {
+    //     // buffer 0: position + (ignored color slot) + scale + rotation
+    //     arrayStride: 56,
+    //     stepMode: 'vertex',
+    //     attributes: [
+    //       {shaderLocation: 0, offset: 0, format: 'float32x3'},
+    //       {shaderLocation: 2, offset: 28, format: 'float32x3'},
+    //       {shaderLocation: 3, offset: 40, format: 'float32x4'},
+    //     ]
+    //   },
+    //   {
+    //     // buffer 1: animated rgba color
+    //     arrayStride: 16,
+    //     stepMode: 'vertex',
+    //     attributes: [
+    //       {shaderLocation: 1, offset: 0, format: 'float32x4'},
+    //     ]
+    //   }
+    // ];
+    // In vertexBufferLayout, buffer 0 skips position (now dynamic):
     this.vertexBufferLayout = [
       {
-        // buffer 0: position + (ignored color slot) + scale + rotation
+        // slot 0: static — scale + rotation only (position slot skipped)
         arrayStride: 56,
         stepMode: 'vertex',
         attributes: [
-          {shaderLocation: 0, offset: 0, format: 'float32x3'},
-          {shaderLocation: 2, offset: 28, format: 'float32x3'},
-          {shaderLocation: 3, offset: 40, format: 'float32x4'},
+          // shaderLocation 0 = position now comes from slot 2
+          {shaderLocation: 2, offset: 28, format: 'float32x3'}, // scale
+          {shaderLocation: 3, offset: 40, format: 'float32x4'}, // rotation
         ]
       },
       {
-        // buffer 1: animated rgba color
-        arrayStride: 16,
-        stepMode: 'vertex',
-        attributes: [
-          {shaderLocation: 1, offset: 0, format: 'float32x4'},
-        ]
+        // slot 1: animated rgba color (SplatColorAnimator)
+        arrayStride: 16, stepMode: 'vertex',
+        attributes: [{shaderLocation: 1, offset: 0, format: 'float32x4'}]
+      },
+      {
+        // slot 2: dynamic position (SplatPositionAnimator)
+        arrayStride: 12, stepMode: 'vertex',
+        attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]
       }
     ];
 
@@ -402,6 +416,81 @@ fn fs_main(in: VertexOutput) -> FragOut {
 }`;
   }
 
+  attachPositionAnimator(animator) {
+    this.positionAnimator = animator;
+  }
+
+  detachPositionAnimator() {
+    this.positionAnimator = null;
+  }
+
+  /**
+ * Builds a target array of exactly `sampleCount` points by directly
+ * sampling the mesh's own vertex positions (no triangle interpolation).
+ * If sampleCount > mesh vertex count, vertices repeat.
+ */
+  sampleMeshVertices(positions, sampleCount) {
+    const meshVertCount = positions.length / 3;
+    const out = new Float32Array(sampleCount * 3);
+    for(let i = 0;i < sampleCount;i++) {
+      const srcIdx = i % meshVertCount; // or Math.floor(Math.random() * meshVertCount) for shuffled
+      out[i * 3] = positions[srcIdx * 3];
+      out[i * 3 + 1] = positions[srcIdx * 3 + 1];
+      out[i * 3 + 2] = positions[srcIdx * 3 + 2];
+    }
+    return out;
+  }
+
+  /**
+   * Remaps a flat xyz array between axis conventions.
+   * Default: identity (no change).
+   *
+   * @param {Float32Array} positions  flat xyz triplets
+   * @param {object} [opts]
+   * @param {'Y_UP'|'Z_UP'} [opts.from='Y_UP']  source convention
+   * @param {'Y_UP'|'Z_UP'} [opts.to='Y_UP']    target convention
+   * @param {boolean} [opts.flipZ=false]        negate Z (e.g. glTF +Z forward → engine -Z forward)
+   * @returns {Float32Array}  new remapped array (does not mutate input)
+   */
+  remapAxes(positions, opts = {}) {
+    const {from = 'Y_UP', to = 'Z_UP', flipZ = false} = opts;
+    const n = positions.length / 3;
+    const out = new Float32Array(positions.length);
+
+    // Z_UP -> Y_UP: swap Y and Z, then negate new Z (standard Blender->engine fix)
+    const needsSwap = from === 'Z_UP' && to === 'Y_UP';
+    // Y_UP -> Z_UP: inverse swap
+    const needsSwapInverse = from === 'Y_UP' && to === 'Z_UP';
+
+    for(let i = 0;i < n;i++) {
+      let x = positions[i * 3];
+      let y = positions[i * 3 + 1];
+      let z = positions[i * 3 + 2];
+
+      if(needsSwap) {
+        // Blender Z-up (x, y, z) -> Y-up (x, z, -y)
+        const ty = z;
+        const tz = -y;
+        y = ty;
+        z = tz;
+      } else if(needsSwapInverse) {
+        // Y-up -> Z-up (inverse of above)
+        const ty = -z;
+        const tz = y;
+        y = ty;
+        z = tz;
+      }
+
+      if(flipZ) z = -z;
+
+      out[i * 3] = x;
+      out[i * 3 + 1] = y;
+      out[i * 3 + 2] = z;
+    }
+
+    return out;
+  }
+
   render(pass, mesh, viewProjMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
@@ -410,6 +499,7 @@ fn fs_main(in: VertexOutput) -> FragOut {
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);
+    pass.setVertexBuffer(2, this.positionAnimator ? this.positionAnimator.posBuffer : this.dummyPosBuffer);
     pass.draw(this.vertexCount, 1, 0, 0);
   }
 
@@ -474,8 +564,6 @@ export class GaussianSplatScene {
     this.splatLayers = [];
   }
 }
-
-// SplatColorAnimator.js
 
 export class SplatColorAnimator {
   /**
@@ -547,12 +635,10 @@ export class SplatColorAnimator {
     const c = this._colorCPU;
     const sc = this.scale;
     const n = this.vertexCount;
-
     for(let i = 0;i < n;i++) {
       // normalised radius 0..1, shift over time
       const rn = this._radii[i] / this._maxR;
       const hue = (rn * 6.0 + t * 0.4) % 1.0;   // 6 rings cycling
-
       const [r, g, b] = _hsl(hue, 0.9, 0.5);
       c[i * 4] = r * sc;
       c[i * 4 + 1] = g * sc;
@@ -671,8 +757,332 @@ export class SplatColorAnimator {
   }
 }
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+export class SplatPositionAnimator {
+  /**
+   * @param {GPUDevice} device
+   * @param {Float32Array} basePositions  — flat xyz from parsedPLY (vertexCount * 3)
+   * @param {number} vertexCount
+   */
+  constructor(device, basePositions, vertexCount) {
+    this.device = device;
+    this.vertexCount = vertexCount;
 
+    this._upAxis = 1;
+
+    // Immutable snapshot of original mesh (meshA)
+    this._basePos = new Float32Array(basePositions);
+
+    // CPU scratch written every frame
+    this._posCPU = new Float32Array(vertexCount * 3);
+    this._posCPU.set(basePositions);
+
+    // Morph state
+    this._morphTarget = null;   // Float32Array xyz, same length
+    this._morphFrom = null;   // snapshot at morph start
+    this._morphT = 1.0;    // 0..1, 1 = done
+    this._morphDur = 1.0;    // seconds
+
+    // Per-splat random phases/seeds (computed once)
+    this._phase = new Float32Array(vertexCount);
+    this._seedX = new Float32Array(vertexCount);
+    this._seedZ = new Float32Array(vertexCount);
+    this._dustY0 = new Float32Array(vertexCount); // each splat's starting Y for dust fall
+    for(let i = 0;i < vertexCount;i++) {
+      this._phase[i] = Math.random() * Math.PI * 2;
+      this._seedX[i] = (Math.random() - 0.5) * 2;
+      this._seedZ[i] = (Math.random() - 0.5) * 2;
+      this._dustY0[i] = basePositions[i * 3 + 1];
+    }
+
+    // Effect state
+    this.mode = 'none';   // 'none'|'tornado'|'pulse'|'changeShape'|'dust'|'liquid'
+    this.speed = 1.0;
+    this.scale = 1.0;      // effect magnitude multiplier
+
+    // Dust state
+    this._dustProgress = 0;  // 0..1
+    this._dustActive = false;
+
+    // Frame skip (cheaper CPU budget)
+    this._frameSkip = 1;
+    this._frameCount = 0;
+
+    // GPU buffer: xyz per splat, dynamic
+    this.posBuffer = device.createBuffer({
+      label: 'splat-dynamic-pos',
+      size: vertexCount * 3 * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+
+    // Upload initial positions
+    device.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
+  }
+
+  // ─── Public API ────────────────────────────────────────────────────────────
+
+  setMode(mode) {this.mode = mode; this._dustActive = false;}
+  setSpeed(s) {this.speed = s;}
+  setScale(s) {this.scale = s;}
+  setFrameSkip(n) {this._frameSkip = Math.max(1, n | 0);}
+
+  /**
+   * Smoothly interpolate from current positions to a new Float32Array of xyz.
+   * @param {Float32Array} targetPositions  length = vertexCount * 3
+   * @param {number} duration              seconds
+   */
+  morphTo(targetPositions, duration = 1.5) {
+    if(targetPositions.length !== this.vertexCount * 3)
+      throw new Error('morphTo: target length mismatch');
+    this._morphFrom = new Float32Array(this._posCPU);
+    this._morphTarget = targetPositions;
+    this._morphT = 0;
+    this._morphDur = Math.max(0.001, duration);
+  }
+
+  /** Reset to original meshA positions */
+  resetToBase(duration = 1.5) {
+    this.morphTo(this._basePos, duration);
+  }
+
+  /**
+   * Trigger the "dust" effect: splats fall and scatter horizontally toward Y=0.
+   * @param {number} duration  seconds for full collapse
+   */
+  triggerDust(duration = 2.0) {
+    // Snapshot current positions as the fall origins
+    this._dustY0.set(this._posCPU.filter((_, i) => i % 3 === 1)
+      // faster: direct loop
+    );
+    for(let i = 0;i < this.vertexCount;i++)
+      this._dustY0[i] = this._posCPU[i * 3 + 1];
+
+    this._dustProgress = 0;
+    this._dustDur = Math.max(0.001, duration);
+    this._dustActive = true;
+    this.mode = 'dust';
+  }
+
+  // ─── Per-frame update ──────────────────────────────────────────────────────
+
+  update(t, dt = 0.016) {
+    this._frameCount++;
+    if(this._frameCount % this._frameSkip !== 0) return;
+
+    const dt_ = dt * this._frameSkip;
+
+    // Advance morph
+    if(this._morphT < 1.0) {
+      this._morphT = Math.min(1.0, this._morphT + dt_ / this._morphDur);
+      this._applyMorph(this._morphT);
+    } else {
+      // Apply procedural effect on top of current base positions
+      const tt = t * this.speed;
+      switch(this.mode) {
+        case 'tornado': this._modeTornado(tt); break;
+        case 'pulse': this._modePulse(tt); break;
+        case 'changeShape': this._modeChangeShape(tt); break;
+        case 'dust': this._modeDust(dt_); break;
+        case 'liquid': this._modeLiquid(tt); break;
+        case 'hold':
+          // nothing
+          break;
+        case 'none': default:
+          this._posCPU.set(this._basePos);
+          break;
+      }
+    }
+
+    this.device.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
+  }
+
+  // ─── Morph ─────────────────────────────────────────────────────────────────
+
+  _applyMorph(rawT) {
+    // Smooth-step easing
+    const t = rawT * rawT * (3 - 2 * rawT);
+    const from = this._morphFrom;
+    const target = this._morphTarget;
+    const out = this._posCPU;
+    const n3 = this.vertexCount * 3;
+    for(let i = 0;i < n3;i++) {
+      out[i] = from[i] + (target[i] - from[i]) * t;
+    }
+  }
+
+  // ─── Procedural effects ────────────────────────────────────────────────────
+
+  /**
+   * Tornado: splats orbit the Y-axis with radius and angular speed
+   * proportional to height; tip contracts, base fans out.
+   */
+  _modeTornado(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sc = this.scale;
+    const n = this.vertexCount;
+    const up = this._upAxis;
+    const side = up === 1 ? 2 : 1; // the "other horizontal" axis when up changes
+
+    let cUp = 0;
+    for(let i = 0;i < n;i++) cUp += b[i * 3 + up];
+    cUp /= n;
+
+    for(let i = 0;i < n;i++) {
+      const bx = b[i * 3], bu = b[i * 3 + up], bs = b[i * 3 + side];
+      const hn = Math.max(0, Math.min(1, (bu - cUp) / (sc * 5 + 0.001)));
+      const radius = (1 - hn) * sc * 0.8 + 0.05;
+      const omega = t * (1 + hn * 2) + ph[i];
+
+      p[i * 3] = bx + Math.cos(omega) * radius;
+      p[i * 3 + up] = bu;
+      p[i * 3 + side] = bs + Math.sin(omega) * radius;
+    }
+  }
+
+  /**
+   * Pulse: radial breathing — splats oscillate outward from centroid.
+   * Different frequencies per concentric shell give a ripple feel.
+   */
+  _modePulse(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sc = this.scale;
+    const n = this.vertexCount;
+
+    // Centroid
+    let cx = 0, cy = 0, cz = 0;
+    for(let i = 0;i < n;i++) {
+      cx += b[i * 3]; cy += b[i * 3 + 1]; cz += b[i * 3 + 2];
+    }
+    cx /= n; cy /= n; cz /= n;
+
+    for(let i = 0;i < n;i++) {
+      const bx = b[i * 3], by = b[i * 3 + 1], bz = b[i * 3 + 2];
+      const dx = bx - cx, dy = by - cy, dz = bz - cz;
+      const r = Math.sqrt(dx * dx + dy * dy + dz * dz) + 0.0001;
+      // Phase offset = distance-based shell → ripple effect
+      const wave = Math.sin(t * 2.5 - r * 3.0 + ph[i] * 0.3);
+      const disp = wave * sc * 0.15;
+      const nx = dx / r, ny = dy / r, nz = dz / r;
+      p[i * 3] = bx + nx * disp;
+      p[i * 3 + 1] = by + ny * disp;
+      p[i * 3 + 2] = bz + nz * disp;
+    }
+  }
+
+  /**
+   * changeShape: sinusoidal warp that drifts over time, morphing the mesh
+   * into abstract bulging/twisted configurations.
+   */
+  _modeChangeShape(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sx = this._seedX;
+    const sz = this._seedZ;
+    const sc = this.scale * 0.4;
+    const n = this.vertexCount;
+
+    for(let i = 0;i < n;i++) {
+      const bx = b[i * 3], by = b[i * 3 + 1], bz = b[i * 3 + 2];
+      // Three overlapping sine fields with different frequencies + drift
+      const f1 = Math.sin(bx * 1.2 + t * 0.7 + ph[i]);
+      const f2 = Math.cos(by * 1.5 - t * 0.5 + sx[i]);
+      const f3 = Math.sin(bz * 0.9 + t * 0.9 + sz[i]);
+      p[i * 3] = bx + f1 * sc;
+      p[i * 3 + 1] = by + f2 * sc;
+      p[i * 3 + 2] = bz + f3 * sc;
+    }
+  }
+
+  setUpAxis(axis) {
+    // accepts 'Y' | 'Z' | 1 | 2
+    if(axis === 'Y' || axis === 1) this._upAxis = 1;
+    else if(axis === 'Z' || axis === 2) this._upAxis = 2;
+    else throw new Error(`setUpAxis: invalid axis "${axis}"`);
+  }
+
+  /**
+   * Dust: splats collapse toward Y=0 with lateral drift and individual
+   * fall delays (earlier splats start falling sooner based on _phase).
+   */
+  _modeDust(dt) {
+    if(!this._dustActive) return;
+
+    this._dustProgress = Math.min(1.0, this._dustProgress + dt / this._dustDur);
+
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sx = this._seedX;
+    const sz = this._seedZ;
+    const n = this.vertexCount;
+    const pr = this._dustProgress;
+    const up = this._upAxis;
+    const h1 = up === 1 ? 0 : 0; // horizontal axis 1 (always x)
+    const h2 = up === 1 ? 2 : 1; // horizontal axis 2 (whichever isn't up)
+
+    for(let i = 0;i < n;i++) {
+      const delay = ph[i] / (Math.PI * 2) * 0.4;
+      const lp = Math.max(0, Math.min(1, (pr - delay) / (1 - delay)));
+      const ease = lp * lp;
+
+      const bu = b[i * 3 + up];
+      const bh1 = b[i * 3 + h1];
+      const bh2 = b[i * 3 + h2];
+
+      p[i * 3 + up] = bu * (1 - ease);  // collapse toward 0 on the up axis
+
+      const spread = ease * 2.0;
+      p[i * 3 + h1] = bh1 + sx[i] * spread;
+      p[i * 3 + h2] = bh2 + sz[i] * spread;
+    }
+
+    if(this._dustProgress >= 1.0) this._dustActive = false;
+  }
+
+  /**
+   * Liquid: per-splat sinusoidal displacement with normal-direction bias
+   * and slow global sloshing, giving a fluid surface feel.
+   */
+  _modeLiquid(t) {
+    const p = this._posCPU;
+    const b = this._basePos;
+    const ph = this._phase;
+    const sx = this._seedX;
+    const sz = this._seedZ;
+    const sc = this.scale * 0.12;
+    const n = this.vertexCount;
+
+    // Slow global slosh direction (rotates over time)
+    const sloshX = Math.cos(t * 0.3) * 0.5;
+    const sloshZ = Math.sin(t * 0.2) * 0.5;
+
+    for(let i = 0;i < n;i++) {
+      const bx = b[i * 3], by = b[i * 3 + 1], bz = b[i * 3 + 2];
+
+      // High-freq surface ripple (local)
+      const ripple = Math.sin(bx * 4.0 + t * 3.0 + ph[i])
+        * Math.cos(bz * 3.5 - t * 2.5 + sx[i]);
+
+      // Low-freq slosh (global bias)
+      const slosh = Math.sin(t * 1.2 + sz[i] * 0.5) * 0.3;
+
+      // Mostly vertical displacement (Y) with tiny horizontal jitter
+      p[i * 3] = bx + sloshX * sc + (Math.random() - 0.5) * sc * 0.05;
+      p[i * 3 + 1] = by + (ripple + slosh) * sc;
+      p[i * 3 + 2] = bz + sloshZ * sc + (Math.random() - 0.5) * sc * 0.05;
+    }
+  }
+
+  destroy() {
+    this.posBuffer?.destroy();
+  }
+}
+
+// Helpers
 function _hsl(h, s, l) {
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs((h * 6) % 2 - 1));

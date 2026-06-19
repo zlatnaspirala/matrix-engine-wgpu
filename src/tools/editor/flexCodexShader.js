@@ -125,7 +125,7 @@ export class FragmentShaderGraph {
       const nodeElements = container[0].querySelectorAll('.nodeShader');
       nodeElements.forEach(el => el.remove());
     }
-    this.connectionLayer.redrawAll();
+    if(this.connectionLayer) {this.connectionLayer.redrawAll();}
   }
 }
 

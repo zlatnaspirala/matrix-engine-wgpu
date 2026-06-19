@@ -337,13 +337,22 @@ export default class MEMeshObj extends Materials {
       });
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
-      // this.weights = {
       this.mesh.weightsBuffer = weightsBuffer;
-      //  {
-      //   data: weightsData,
-      //   buffer: weightsBuffer,
-      //   stride: 16
-      // };
+
+      if(typeof o.primitive === 'undefined') {
+        this.primitive = {
+          topology: 'triangle-list',
+          cullMode: 'back',
+          frontFace: 'ccw'
+        }
+      } else {
+        this.primitive = {
+          topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
+          cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+          frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
+        }
+      }
+
     }
 
     this.runProgram = () => {
@@ -451,7 +460,7 @@ export default class MEMeshObj extends Materials {
       // 'line-strip'     // outlines
       // 'point-list'     // particles
       this.topology = 'triangle-list';
-      this.setTopology = (t) => {
+      this.setTopology = (t, cullMode = 'none', frontFace = 'ccw') => {
         const isStrip =
           t === 'triangle-strip' ||
           t === 'line-strip';
@@ -459,24 +468,18 @@ export default class MEMeshObj extends Materials {
           this.primitive = {
             topology: t,
             stripIndexFormat: 'uint16',
-            cullMode: 'none',
-            frontFace: 'ccw'
+            cullMode: cullMode,
+            frontFace: frontFace
           };
         } else {
           this.primitive = {
             topology: t,
-            cullMode: 'none',
-            frontFace: 'ccw'
+            cullMode: cullMode,
+            frontFace: frontFace
           };
         }
         this.setupPipeline();
       };
-
-      this.primitive = {
-        topology: this.topology,
-        cullMode: 'none',
-        frontFace: 'ccw'
-      }
 
       this.mirrorBindGroupLayout = device.createBindGroupLayout({
         label: 'mirrorBindGroupLayout',
@@ -487,10 +490,7 @@ export default class MEMeshObj extends Materials {
         ]
       });
 
-      this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16, // 4x4 matrix
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
+      this.modelUniformBuffer = this.device.createBuffer({size: 4 * 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, });
 
       function alignTo256(n) {return Math.ceil(n / 256) * 256;}
       let MAX_BONES = MEConfig.MAX_BONES;
@@ -512,7 +512,7 @@ export default class MEMeshObj extends Materials {
 
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex Animation Params",
-        size: this.vertexAnimParams.byteLength, // 128 bytes
+        size: this.vertexAnimParams.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -757,7 +757,6 @@ export default class MEMeshObj extends Materials {
   }
 
   setupPipeline() {
-    console.log('TEST SETUP ')
     const pm = PipelineManager.get();
     const isMirror = this.material.type === 'mirror';
     const isWater = this.material.type === 'water';
@@ -797,7 +796,7 @@ export default class MEMeshObj extends Materials {
         (isMirror ? this.mirrorBindGroupLayout : (isWater ? this.waterBindGroupLayout : null)),
       ].filter(Boolean)
     });
-    // VERTEX STATE (SHARED)
+    // VERTEX (SHARED)
     const vertexState = {
       entryPoint: 'main',
       module: vertexModule,
@@ -1065,23 +1064,18 @@ export default class MEMeshObj extends Materials {
       }
     }
 
-    if(this.effects?.pointer?.destroy) {
-      this.effects.pointer.destroy();
-    }
+    if(this.effects?.pointer?.destroy) {this.effects.pointer.destroy()}
 
     this.pipeline = null;
     this.modelBindGroup = null;
     this.sceneBindGroupForRender = null;
     this.selectedBindGroup = null;
-
     this.material = null;
     this.mesh = null;
     this.objAnim = null;
-
     this.drawElements = () => {};
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
-
     if(app.matrixPhysics) {
       let testPB = app.matrixPhysics.getBodyByName(this.name);
       if(testPB !== null) {
@@ -1105,7 +1099,6 @@ export default class MEMeshObj extends Materials {
       minZ = Math.min(minZ, pos[i + 2]);
       maxZ = Math.max(maxZ, pos[i + 2]);
     }
-
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
     const cz = (minZ + maxZ) / 2;
@@ -1116,7 +1109,6 @@ export default class MEMeshObj extends Materials {
       const dz = pos[i + 2] - cz;
       r = Math.max(r, Math.sqrt(dx * dx + dy * dy + dz * dz));
     }
-
     this.boundingSphere = {
       center: new Float32Array([cx, cy, cz]),
       radius: r,
@@ -1128,12 +1120,9 @@ export default class MEMeshObj extends Materials {
     const local = this.boundingSphere.center;
     const m = this.modelMatrix;
     const center = new Float32Array(3);
-
-    // Transform local sphere center by model matrix
     center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
     center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
     center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
-
-    this.boundingSphere.center = center;  // ← Update world-space center
+    this.boundingSphere.center = center;
   }
 }

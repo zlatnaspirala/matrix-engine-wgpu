@@ -141,7 +141,7 @@ export var myLights = function() {
       myLights.getCamera().setPosition(0, 8, 5);
 
       const frames = [];
-      for(let i = 0;i <= 16;i++) {
+      for(let i = 0;i < 16;i++) {
         const a = (i / 16) * Math.PI * 2;
         frames.push({
           position: [Math.sin(a) * 15, 5, -10 + Math.cos(a) * 15],

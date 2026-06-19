@@ -107,12 +107,23 @@ export function catalogToText(catalog) {
 }
 
 export let tasks = [
-  "On load print hello world",
-  "On load create a cube named box1 at position 0 0 0",
-  "Create a the labyrinth using generatorWall",
-  "Set texture for floor object",
-  "Create a cube and enable raycast",
-  "Create 5 cubes in a row with spacing",
+  "On load create a cube named box1 at position (0, 3, 0) and make const rotate by y axis.",
+
+  `
+  Build the House with non physics cubes. Build 3 floors, walls and roof.
+  Make big house with space inside! 
+  Don't use physics generators, use simple nonphysics cubes.
+  To make it optimised you can use scale.
+  `,
+
+  "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ",
+
+  "Create 1 string , 1 boolean , 1 object and one number variable, on load change there default values with new one.",
+
+  "Create a nonPhysics Cube and enable raycast, on hit make object translateByZ",
+
+  "Create start from cubes - use nonphysics cubes.",
+
   "Create a pyramid of cubes with 4 levels",
   "Play mp3 audio on load",
   "Create audio reactive node from music",
@@ -134,5 +145,7 @@ export let tasks = [
 
 export let providers = [
   "ollama",
-  "groq"
+  "groq",
+  "anthropic",
+  "google"
 ];
