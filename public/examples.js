@@ -5072,14 +5072,18 @@ var loadGaussianSplatVertAnim = function () {
               MYCUBE.rotation.rotationSpeed.x = 1;
             }, 4000);
             let modeIndex = 0;
+            let arg10 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+              left: '84',
+              bottom: 19
+            } : {
+              left: '61'
+            };
             _cameras.MobileDOM.addButton("Mode", function () {
               const mode = modes[modeIndex];
               positionAnimator.setMode(mode);
               console.log('Mode:', mode);
               modeIndex = (modeIndex + 1) % modes.length;
-            }, () => {}, {
-              left: '61'
-            });
+            }, () => {}, arg10);
             guard = true;
           }
         };
@@ -5119,30 +5123,52 @@ var loadGaussianSplatVertAnim = function () {
         let bloomRadius = 0.1;
         let bloomIntesity = 0.1;
         let glbAnimation = 0;
+        let arg1 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+          left: '84',
+          bottom: 82
+        } : {
+          left: '5'
+        };
         _cameras.MobileDOM.addButton("Bloom radius +", function () {
           app.bloomPass.setBlurRadius(bloomRadius);
           bloomRadius++;
-        }, () => {}, {
-          left: '5'
-        });
+        }, () => {}, arg1);
+        let arg2 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+          left: '84',
+          bottom: 73
+        } : {
+          left: '13'
+        };
         _cameras.MobileDOM.addButton("Bloom radius -", function () {
           app.bloomPass.setBlurRadius(bloomRadius);
           if (bloomRadius - 1 > 0) bloomRadius--;
-        }, () => {}, {
-          left: '13'
-        });
+        }, () => {}, arg2);
+        let arg3 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+          left: '84',
+          bottom: 64
+        } : {
+          left: '21'
+        };
         _cameras.MobileDOM.addButton("Bloom intesity +", function () {
           app.bloomPass.setIntensity(bloomIntesity);
           bloomIntesity = bloomIntesity + 10;
-        }, () => {}, {
-          left: '21'
-        });
+        }, () => {}, arg3);
+        let arg4 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+          left: '84',
+          bottom: 55
+        } : {
+          left: '29'
+        };
         _cameras.MobileDOM.addButton("Bloom intesity -", function () {
           app.bloomPass.setIntensity(bloomIntesity);
           if (bloomIntesity - 10 > 0) bloomIntesity = bloomIntesity - 10;
-        }, () => {}, {
-          left: '29'
-        });
+        }, () => {}, arg4);
+        let arg5 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+          left: '84',
+          bottom: 46
+        } : {
+          left: '37'
+        };
         _cameras.MobileDOM.addButton("Flame effect random", function () {
           // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(10);
           // MYCUBE.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
@@ -5151,12 +5177,18 @@ var loadGaussianSplatVertAnim = function () {
           MYCUBE.effects.flameEmitter.instanceTargets.forEach(e => {
             e.currentScale = memoS;
             e.color = memoC;
+          }, undefined, {
+            size: (0, _utils.isMobile)() === true ? 30 : undefined
           });
           MYCUBE.effects.keeffect.recreateVertexDataCrazzy((0, _utils.randomIntFromTo)(6, 36));
           MYCUBE.effects.keeffect.setIntensity((0, _utils.randomIntFromTo)(3, 23));
-        }, () => {}, {
-          left: '37'
-        });
+        }, () => {}, arg5);
+        let arg6 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+          left: '84',
+          bottom: 37
+        } : {
+          left: '45'
+        };
         _cameras.MobileDOM.addButton("Animation", function () {
           if (glbAnimation < 4) {
             glbAnimation++;
@@ -5164,21 +5196,27 @@ var loadGaussianSplatVertAnim = function () {
             glbAnimation = 0;
           }
           MYGLB.playAnimationByIndex(glbAnimation);
-        }, () => {}, {
-          left: '45'
-        });
+        }, () => {}, arg6);
         const topologies = ['triangle-list', 'triangle-strip', 'line-list', 'line-strip', 'point-list'];
         let topologyIndex = 0;
+        let arg7 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+          left: '5'
+        } : {
+          left: '45'
+        };
         _cameras.MobileDOM.addButton("Topology", function () {
           topologyIndex = (topologyIndex + 1) % topologies.length;
           const topology = topologies[topologyIndex];
           MYGLB.setTopology(topology);
-        }, () => {}, {
-          left: '53'
-        });
+        }, () => {}, arg7);
         let delay = 100;
         const delayStep = 100;
         const delayMax = 1000;
+        let arg8 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+          left: '22'
+        } : {
+          left: '69'
+        };
         _cameras.MobileDOM.addButton(`Delay (0-1sec)`, function () {
           delay += delayStep;
           if (delay > delayMax) {
@@ -5186,12 +5224,16 @@ var loadGaussianSplatVertAnim = function () {
           }
           MYGLB.trailAnimation.delay = delay;
           console.log('Trail delay:', delay);
-        }, () => {}, {
-          left: '69'
-        });
+        }, () => {}, arg8);
         let currentNumberOfTrails = 2;
         const minInstances = 1;
         const maxInstances = 5;
+        let arg9 = (0, _utils.isMobile)() && (0, _utils.getOrientation)() === 'portrait' ? {
+          left: '84',
+          bottom: '28'
+        } : {
+          left: '77'
+        };
         _cameras.MobileDOM.addButton(`Trails (1-5)`, function () {
           currentNumberOfTrails++;
           if (currentNumberOfTrails > maxInstances) {
@@ -5199,9 +5241,7 @@ var loadGaussianSplatVertAnim = function () {
           }
           MYGLB.updateInstances(currentNumberOfTrails);
           console.log('Trails:', currentNumberOfTrails);
-        }, () => {}, {
-          left: '77'
-        });
+        }, () => {}, arg9);
       }, 500);
     }
   });
@@ -28894,7 +28934,7 @@ const MobileDOM = exports.MobileDOM = {
     (0, _utils.byId)('▶').remove();
     (0, _utils.byId)('mobileControls').remove();
   },
-  addButton(label, onClick, onRelease, options = {}) {
+  addButton(label, onClick, onRelease = () => {}, options = {}) {
     document.body.style.touchAction = 'none';
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
@@ -49972,6 +50012,8 @@ exports.geometryTypes = exports.geoTypesForMorph = void 0;
 exports.getAxisRot = getAxisRot;
 exports.getAxisRot2 = getAxisRot2;
 exports.getAxisRot3 = getAxisRot3;
+exports.getOrientation = getOrientation;
+exports.getScreenOrientationSupport = getScreenOrientationSupport;
 exports.htmlHeader = void 0;
 exports.isEven = isEven;
 exports.isMobile = isMobile;
@@ -50023,6 +50065,14 @@ function preventZoom() {
 
 // ✅ OPTIMIZATION: Cache screen.orientation check
 let screenOrientationSupported = null;
+function getOrientation() {
+  // 2011 from stackoverflow
+  if (window.innerWidth > window.innerHeight) {
+    return 'landscape';
+  } else {
+    return 'portrait';
+  }
+}
 function getScreenOrientationSupport() {
   if (screenOrientationSupported === null) {
     screenOrientationSupported = !!(screen.orientation && screen.orientation.lock);

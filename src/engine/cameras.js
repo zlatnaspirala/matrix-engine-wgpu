@@ -1741,7 +1741,7 @@ export const MobileDOM = {
     byId('mobileControls').remove();
   },
 
-  addButton(label, onClick, onRelease, options = {}) {
+  addButton(label, onClick, onRelease = () => {}, options = {}) {
     document.body.style.touchAction = 'none';
 
     const size = options.size ?? 56;

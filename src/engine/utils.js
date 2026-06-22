@@ -20,7 +20,15 @@ export function preventZoom() {
 // ✅ OPTIMIZATION: Cache screen.orientation check
 let screenOrientationSupported = null;
 
-function getScreenOrientationSupport() {
+export function getOrientation() {
+  // 2011 from stackoverflow
+  if (window.innerWidth > window.innerHeight) {
+    return 'landscape';
+  } else {
+    return 'portrait';
+  }
+}
+export function getScreenOrientationSupport() {
   if(screenOrientationSupported === null) {
     screenOrientationSupported = !!(screen.orientation && screen.orientation.lock);
   }

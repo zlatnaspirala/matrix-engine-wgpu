@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {randomIntFromTo} from "../src/engine/utils.js";
+import {getOrientation, isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "../src/engine/effects/splat.js";
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 import {MobileDOM} from "../src/engine/cameras.js";
@@ -134,6 +134,7 @@ export var loadGaussianSplatVertAnim = function() {
             }, 4000)
 
             let modeIndex = 0;
+            let arg10 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 19} : {left: '61'};
             MobileDOM.addButton("Mode",
               function() {
                 const mode = modes[modeIndex];
@@ -141,7 +142,7 @@ export var loadGaussianSplatVertAnim = function() {
                 console.log('Mode:', mode);
                 modeIndex = (modeIndex + 1) % modes.length;
               },
-              () => {}, {left: '61'}
+              () => {}, arg10
             );
 
             guard = true;
@@ -183,26 +184,32 @@ export var loadGaussianSplatVertAnim = function() {
         let bloomRadius = 0.1;
         let bloomIntesity = 0.1;
         let glbAnimation = 0;
+
+        let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 82} : {left: '5'};
         MobileDOM.addButton("Bloom radius +", function() {
           app.bloomPass.setBlurRadius(bloomRadius);
           bloomRadius++;
-        }, () => {}, {left: '5'});
+        }, () => {}, arg1);
 
+        let arg2 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 73} : {left: '13'};
         MobileDOM.addButton("Bloom radius -", function() {
           app.bloomPass.setBlurRadius(bloomRadius);
           if((bloomRadius - 1 > 0)) bloomRadius--;
-        }, () => {}, {left: '13'});
+        }, () => {}, arg2);
 
+        let arg3 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 64} : {left: '21'};
         MobileDOM.addButton("Bloom intesity +", function() {
           app.bloomPass.setIntensity(bloomIntesity);
           bloomIntesity = bloomIntesity + 10;
-        }, () => {}, {left: '21'});
+        }, () => {}, arg3);
 
+        let arg4 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 55} : {left: '29'};
         MobileDOM.addButton("Bloom intesity -", function() {
           app.bloomPass.setIntensity(bloomIntesity);
           if((bloomIntesity - 10 > 0)) bloomIntesity = bloomIntesity - 10;
-        }, () => {}, {left: '29'});
+        }, () => {}, arg4);
 
+        let arg5 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom:46} : {left: '37'};
         MobileDOM.addButton("Flame effect random", function() {
           // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(10);
           // MYCUBE.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
@@ -211,11 +218,12 @@ export var loadGaussianSplatVertAnim = function() {
           MYCUBE.effects.flameEmitter.instanceTargets.forEach((e) => {
             e.currentScale = memoS;
             e.color = memoC;
-          })
+          }, undefined, {size: isMobile() === true ? 30 : undefined})
           MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
           MYCUBE.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
-        }, () => {}, {left: '37'});
+        }, () => {}, arg5);
 
+        let arg6 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 37} : {left: '45'};
         MobileDOM.addButton("Animation", function() {
           if(glbAnimation < 4) {
             glbAnimation++;
@@ -223,7 +231,7 @@ export var loadGaussianSplatVertAnim = function() {
             glbAnimation = 0;
           }
           MYGLB.playAnimationByIndex(glbAnimation);
-        }, () => {}, {left: '45'});
+        }, () => {}, arg6);
 
         const topologies = [
           'triangle-list',
@@ -233,17 +241,20 @@ export var loadGaussianSplatVertAnim = function() {
           'point-list'
         ];
         let topologyIndex = 0;
+        let arg7 = isMobile() && getOrientation() === 'portrait' ? {left: '5'} : {left: '45'};
         MobileDOM.addButton("Topology",
           function() {
             topologyIndex = (topologyIndex + 1) % topologies.length;
             const topology = topologies[topologyIndex];
             MYGLB.setTopology(topology);
           },
-          () => {}, {left: '53'});
+          () => {}, arg7);
 
         let delay = 100;
         const delayStep = 100;
         const delayMax = 1000;
+
+        let arg8 = isMobile() && getOrientation() === 'portrait' ? {left: '22'} : {left: '69'};
         MobileDOM.addButton(
           `Delay (0-1sec)`,
           function() {
@@ -255,14 +266,14 @@ export var loadGaussianSplatVertAnim = function() {
             console.log('Trail delay:', delay);
           },
           () => {},
-          {left: '69'}
+          arg8
         );
 
         let currentNumberOfTrails = 2;
         const minInstances = 1;
         const maxInstances = 5;
-        MobileDOM.addButton(
-          `Trails (1-5)`,
+        let arg9 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: '28'} : {left: '77'};
+        MobileDOM.addButton(          `Trails (1-5)`,
           function() {
             currentNumberOfTrails++;
             if(currentNumberOfTrails > maxInstances) {
@@ -272,7 +283,7 @@ export var loadGaussianSplatVertAnim = function() {
             console.log('Trails:', currentNumberOfTrails);
           },
           () => {},
-          {left: '77'}
+          arg9
         );
 
       }, 500);
