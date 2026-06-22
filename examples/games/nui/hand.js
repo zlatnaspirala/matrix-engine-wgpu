@@ -22,40 +22,28 @@ export var loadHand = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
-    // const nui = new PipeCommander("webcam", "output_canvas");
-     const nui = new PipeCommander();
-
- 
-
-    // hook into engine update loop
+    const nui = new PipeCommander();
     nui.onResults = (results) => {
       if(!results?.landmarks || results?.landmarks.length === 0) return;
-
       const wrist = results.landmarks[0][0]; // x, y, z normalized
       // drive your mesh/bone here
       console.log('wrist', wrist)
     };
 
     loadHand.addLight();
-    // if you double call downloadMeshes for same path engine use cached values no double fetch...
-    downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
-      onLoadObj, {scale: [1, 1, 1]})
+
+    downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
 
     addRaycastsAABBListener('canvas1', 'click');
 
     function onGround(m) {
-
       let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '5'} : {left: '53'};
       MobileDOM.addButton("Enable camera",
         function() {
-          // topologyIndex = (topologyIndex + 1) % topologies.length;
-          // const topology = topologies[topologyIndex];
-          // MYGLB.setTopology(topology);
           nui.enableWebcam()
         },
         () => {}, arg1);
-
 
       loadHand.addMeshObj({
         material: {type: 'standard', share: true},
@@ -136,9 +124,7 @@ export var loadHand = function() {
 
       setTimeout(() => {
         MYCUBE.effects.circle = new GenGeoTexture2(loadHand.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
-
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);

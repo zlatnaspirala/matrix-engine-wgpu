@@ -13,10 +13,8 @@
  * @description
  * You can do whatever you want just leave header licence.
  */
-// import {HandLandmarker, FilesetResolver, DrawingUtils} from "@mediapipe/tasks-vision";
-
 export class PipeCommander {
-  // const module = await import after all
+
   constructor(videoElementId, canvasElementId) {
     this.handLandmarker = undefined;
     this.runningMode = "IMAGE";
@@ -24,57 +22,42 @@ export class PipeCommander {
     this.lastVideoTime = -1;
     this.results = undefined;
 
-    // VIDEO
-    if(videoElementId) {
-      this.video = document.getElementById(videoElementId);
-    }
+    if(videoElementId) {this.video = document.getElementById(videoElementId);}
 
     if(!this.video) {
       this.video = document.createElement("video");
-
       this.video.id = "auto-video";
-
       Object.assign(this.video.style, {
         position: "absolute",
-        bottom: "33vh",   // bottom 1/3 of screen
+        bottom: "3vh",
         left: "50%",
         transform: "translateX(-50%)",
-        width: "320px",
-        maxWidth: "90vw",
-        zIndex: "9999",
+        width: "480px",
+        zIndex: "-1",
         pointerEvents: "none",
       });
-
       this.video.autoplay = true;
       this.video.playsInline = true;
       this.video.muted = true;
-
       document.body.appendChild(this.video);
     }
 
-    // CANVAS
-    if(canvasElementId) {
-      this.canvasElement = document.getElementById(canvasElementId);
-    }
+    if(canvasElementId) {this.canvasElement = document.getElementById(canvasElementId);}
 
     if(!this.canvasElement) {
       this.canvasElement = document.createElement("canvas");
-
       this.canvasElement.id = "auto-canvas";
-
       Object.assign(this.canvasElement.style, {
         position: "absolute",
-        bottom: "33vh",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "320px",
-        maxWidth: "90vw",
+        bottom: "2.5%",
+        left: "2.5%",
+        width: "95%",
+        height: "95%",
         zIndex: "10000",
         pointerEvents: "none",
       });
       document.body.appendChild(this.canvasElement);
     }
-
     this.canvasCtx = this.canvasElement.getContext("2d");
     this.drawingUtils = null;
     this.ready = this.init();
@@ -87,11 +70,8 @@ export class PipeCommander {
       FilesetResolver,
       DrawingUtils
     } = visionModule;
-
     this.HandLandmarker = HandLandmarker;
-
     const vision = await FilesetResolver.forVisionTasks("./mediapipe/wasm");
-
     this.handLandmarker = await HandLandmarker.createFromOptions(
       vision,
       {
@@ -104,7 +84,6 @@ export class PipeCommander {
         numHands: 2
       }
     );
-
     this.drawingUtils = new DrawingUtils(this.canvasCtx);
   }
 
@@ -113,19 +92,14 @@ export class PipeCommander {
     const stream = await navigator.mediaDevices.getUserMedia({video: true});
     this.video.srcObject = stream;
     await this.video.play();
-
-        const w = this.video.videoWidth;
+    const w = this.video.videoWidth;
     const h = this.video.videoHeight;
-
     this.canvasElement.width = w;
     this.canvasElement.height = h;
-
     this.video.width = w;
     this.video.height = h;
-
     this.video.style.aspectRatio = `${w}/${h}`;
     this.canvasElement.style.aspectRatio = `${w}/${h}`;
-    
     this.webcamRunning = true;
     this.predictWebcam();
   }
@@ -184,5 +158,4 @@ export class PipeCommander {
       this.video.srcObject = null;
     }
   }
-
 }

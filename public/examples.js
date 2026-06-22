@@ -52341,7 +52341,6 @@ var loadGaussianSplatVertAnim = function() {
 
 // src/engine/buildin/nui-pipe.js
 var PipeCommander = class {
-  // const module = await import after all
   constructor(videoElementId, canvasElementId) {
     this.handLandmarker = void 0;
     this.runningMode = "IMAGE";
@@ -52356,13 +52355,11 @@ var PipeCommander = class {
       this.video.id = "auto-video";
       Object.assign(this.video.style, {
         position: "absolute",
-        bottom: "33vh",
-        // bottom 1/3 of screen
+        bottom: "3vh",
         left: "50%",
         transform: "translateX(-50%)",
-        width: "320px",
-        maxWidth: "90vw",
-        zIndex: "9999",
+        width: "480px",
+        zIndex: "-1",
         pointerEvents: "none"
       });
       this.video.autoplay = true;
@@ -52378,11 +52375,10 @@ var PipeCommander = class {
       this.canvasElement.id = "auto-canvas";
       Object.assign(this.canvasElement.style, {
         position: "absolute",
-        bottom: "33vh",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "320px",
-        maxWidth: "90vw",
+        bottom: "2.5%",
+        left: "2.5%",
+        width: "95%",
+        height: "95%",
         zIndex: "10000",
         pointerEvents: "none"
       });
@@ -52498,11 +52494,7 @@ var loadHand = function() {
       console.log("wrist", wrist);
     };
     loadHand2.addLight();
-    downloadMeshes(
-      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
-      onLoadObj,
-      { scale: [1, 1, 1] }
-    );
+    downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     function onGround(m2) {
