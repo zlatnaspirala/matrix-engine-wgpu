@@ -241,7 +241,7 @@ export var loadGaussianSplatVertAnim = function() {
           'point-list'
         ];
         let topologyIndex = 0;
-        let arg7 = isMobile() && getOrientation() === 'portrait' ? {left: '5'} : {left: '45'};
+        let arg7 = isMobile() && getOrientation() === 'portrait' ? {left: '5'} : {left: '53'};
         MobileDOM.addButton("Topology",
           function() {
             topologyIndex = (topologyIndex + 1) % topologies.length;

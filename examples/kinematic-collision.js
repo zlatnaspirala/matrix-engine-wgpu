@@ -12,7 +12,6 @@ export var loadKinematicCollision = function() {
     dontUsePhysics: true,
     MAX_BONES: 0,
     MAX_SPOTLIGHTS: 1,
-    dontUsePhysics: true,
     mainCameraParams: {
       type: 'firstPersonCamera',
       responseCoef: 1000
