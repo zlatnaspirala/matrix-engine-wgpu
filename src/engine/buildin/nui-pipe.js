@@ -39,6 +39,7 @@ export class PipeCommander {
       this.video.autoplay = true;
       this.video.playsInline = true;
       this.video.muted = true;
+      this.video.style.transform = "scaleX(-1)";
       document.body.appendChild(this.video);
     }
 
@@ -85,6 +86,8 @@ export class PipeCommander {
       }
     );
     this.drawingUtils = new DrawingUtils(this.canvasCtx);
+    // console.log('its ready');
+    this.enableWebcam();
   }
 
   async enableWebcam() {
@@ -101,12 +104,12 @@ export class PipeCommander {
     this.video.style.aspectRatio = `${w}/${h}`;
     this.canvasElement.style.aspectRatio = `${w}/${h}`;
     this.webcamRunning = true;
+    // this.canvasElement.width = this.video.videoWidth;
+    // this.canvasElement.height = this.video.videoHeight;
     this.predictWebcam();
   }
 
   async predictWebcam() {
-    this.canvasElement.width = this.video.videoWidth;
-    this.canvasElement.height = this.video.videoHeight;
 
     if(this.runningMode === "IMAGE") {
       this.runningMode = "VIDEO";

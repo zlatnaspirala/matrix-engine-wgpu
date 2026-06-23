@@ -52365,6 +52365,7 @@ var PipeCommander = class {
       this.video.autoplay = true;
       this.video.playsInline = true;
       this.video.muted = true;
+      this.video.style.transform = "scaleX(-1)";
       document.body.appendChild(this.video);
     }
     if (canvasElementId) {
@@ -52409,6 +52410,7 @@ var PipeCommander = class {
       }
     );
     this.drawingUtils = new DrawingUtils(this.canvasCtx);
+    this.enableWebcam();
   }
   async enableWebcam() {
     await this.ready;
@@ -52427,8 +52429,6 @@ var PipeCommander = class {
     this.predictWebcam();
   }
   async predictWebcam() {
-    this.canvasElement.width = this.video.videoWidth;
-    this.canvasElement.height = this.video.videoHeight;
     if (this.runningMode === "IMAGE") {
       this.runningMode = "VIDEO";
       await this.handLandmarker.setOptions({ runningMode: "VIDEO" });
