@@ -52654,10 +52654,10 @@ var loadHand = function() {
           clearInterval(cam2._keyIntervalF);
           clearInterval(cam2._keyIntervalB);
           console.log("dir", hand.indexDirection);
-          if (dir.x < -0.1) cam2.yaw -= 0.1;
+          if (dir.x < -0.2) cam2.yaw -= 0.1;
           if (dir.x > 0.4) cam2.yaw += 0.1;
           if (dir.y > 0.4) cam2.pitch += 0.1;
-          if (dir.y < -0.1) cam2.pitch -= 0.1;
+          if (dir.y < -0.2) cam2.pitch -= 0.1;
           console.log("WHAT IS dir ", dir);
           cam2._dirtyAngle = true;
         } else if (hand.isPeace) {

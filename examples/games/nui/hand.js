@@ -51,11 +51,11 @@ export var loadHand = function() {
           clearInterval(cam._keyIntervalB)
           console.log("dir", hand.indexDirection);
           // left / right → rotate camera Y
-          if(dir.x < -0.1) cam.yaw -= 0.1;
+          if(dir.x < -0.2) cam.yaw -= 0.1;
           if(dir.x > 0.4) cam.yaw += 0.1;
           // up / down → rotate camera X (pitch)
           if(dir.y > 0.4) cam.pitch += 0.1;
-          if(dir.y < -0.1) cam.pitch -= 0.1;
+          if(dir.y < -0.2) cam.pitch -= 0.1;
           console.log('WHAT IS dir ', dir)
           cam._dirtyAngle = true;
           // app.matrixPhysics.explode(1, worldPos.x, worldPos.y, worldPos.z, 15, -30.0);
