@@ -4046,7 +4046,7 @@ function preventZoom() {
   document.addEventListener("gesturestart", gestureStartHandler);
 }
 var screenOrientationSupported = null;
-function getOrientation2() {
+function getOrientation() {
   if (window.innerWidth > window.innerHeight) {
     return "landscape";
   } else {
@@ -7070,11 +7070,9 @@ var FirstPersonCamera = class _FirstPersonCamera {
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
-    console.log("___________________________" + this.canvas);
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
-      console.log("FPCAMERA");
       MobileDOM.createWASD(this, { margin: 50 });
     }
   }
@@ -42834,7 +42832,7 @@ var MatrixEngineWGPU = class {
       }
       meLoader.create();
       this.MEConfig.fsManager.onChange((isFS, target2) => {
-        console.log("GOT BACK FROM FS", isFS);
+        console.log("BACK FROM FS", isFS);
         setTimeout(() => this.applyCanvasSizeMobile(this.options.fastRender), 100);
       });
       addEventListener("run_mobile_fs", () => {
@@ -42956,10 +42954,10 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.15.7 [The beast] ", LOG_FUNNY);
+    console.log("%c Version 1.16.00 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open...\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
+      "%cMatrix Engine WGPU - Gate is open...\nOptimised MediaPipe buildin library implemented.\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
     );
     console.log(
@@ -43551,7 +43549,7 @@ var MatrixEngineWGPU = class {
       callback(this);
     }, 1);
   }
-  // still not perfect but works
+  // Still not perfect
   destroyProgram = () => {
     console.warn("%c[MatrixEngineWGPU] Destroy program", "color: orange");
     this.frame = () => {
@@ -43592,14 +43590,13 @@ var MatrixEngineWGPU = class {
     console.warn("%c[MatrixEngineWGPU] Destroy complete \u2714", "color: lightgreen");
   };
   updateLights() {
-    const floatsPerLight = 36;
     for (let i2 = 0; i2 < this.MAX_SPOTLIGHTS; i2++) {
       const light = this.lightContainer[i2];
       if (light?.update) {
         const vpDirty = light.update();
         if (vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
       }
-      this._lightsData.set(i2 < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i2 * floatsPerLight);
+      this._lightsData.set(i2 < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i2 * 36);
     }
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   }
@@ -43793,7 +43790,6 @@ var MatrixEngineWGPU = class {
         scale: [1, 1, 1],
         enabled: true,
         geometry: "Sphere",
-        //                   must be fixed<<
         radius: typeof o3.scale == Number ? o3.scale : o3.scale[0],
         name: o3.name,
         rotation: o3.rotation
@@ -43914,7 +43910,6 @@ var MatrixEngineWGPU = class {
         scale: o3.scale,
         enabled: true,
         geometry: "Sphere",
-        //                   must be fixed<<
         radius: typeof o3.scale == Number ? o3.scale : o3.scale[0],
         name: o3.name,
         rotation: o3.rotation
@@ -52198,7 +52193,7 @@ var loadGaussianSplatVertAnim = function() {
               MYCUBE.rotation.rotationSpeed.x = 1;
             }, 4e3);
             let modeIndex = 0;
-            let arg10 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 19 } : { left: "61" };
+            let arg10 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 19 } : { left: "61" };
             MobileDOM.addButton(
               "Mode",
               function() {
@@ -52231,31 +52226,31 @@ var loadGaussianSplatVertAnim = function() {
         let bloomRadius = 0.1;
         let bloomIntesity = 0.1;
         let glbAnimation = 0;
-        let arg1 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 82 } : { left: "5" };
+        let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 82 } : { left: "5" };
         MobileDOM.addButton("Bloom radius +", function() {
           app.bloomPass.setBlurRadius(bloomRadius);
           bloomRadius++;
         }, () => {
         }, arg1);
-        let arg2 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 73 } : { left: "13" };
+        let arg2 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 73 } : { left: "13" };
         MobileDOM.addButton("Bloom radius -", function() {
           app.bloomPass.setBlurRadius(bloomRadius);
           if (bloomRadius - 1 > 0) bloomRadius--;
         }, () => {
         }, arg2);
-        let arg3 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 64 } : { left: "21" };
+        let arg3 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 64 } : { left: "21" };
         MobileDOM.addButton("Bloom intesity +", function() {
           app.bloomPass.setIntensity(bloomIntesity);
           bloomIntesity = bloomIntesity + 10;
         }, () => {
         }, arg3);
-        let arg4 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 55 } : { left: "29" };
+        let arg4 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 55 } : { left: "29" };
         MobileDOM.addButton("Bloom intesity -", function() {
           app.bloomPass.setIntensity(bloomIntesity);
           if (bloomIntesity - 10 > 0) bloomIntesity = bloomIntesity - 10;
         }, () => {
         }, arg4);
-        let arg5 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 46 } : { left: "37" };
+        let arg5 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 46 } : { left: "37" };
         MobileDOM.addButton("Flame effect random", function() {
           let memoS = [randomIntFromTo(10, 150), randomIntFromTo(10, 150), randomIntFromTo(10, 150)];
           let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
@@ -52267,7 +52262,7 @@ var loadGaussianSplatVertAnim = function() {
           MYCUBE.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
         }, () => {
         }, arg5);
-        let arg6 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 37 } : { left: "45" };
+        let arg6 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 37 } : { left: "45" };
         MobileDOM.addButton("Animation", function() {
           if (glbAnimation < 4) {
             glbAnimation++;
@@ -52285,7 +52280,7 @@ var loadGaussianSplatVertAnim = function() {
           "point-list"
         ];
         let topologyIndex = 0;
-        let arg7 = isMobile() && getOrientation2() === "portrait" ? { left: "5" } : { left: "53" };
+        let arg7 = isMobile() && getOrientation() === "portrait" ? { left: "5" } : { left: "53" };
         MobileDOM.addButton(
           "Topology",
           function() {
@@ -52300,7 +52295,7 @@ var loadGaussianSplatVertAnim = function() {
         let delay2 = 100;
         const delayStep = 100;
         const delayMax = 1e3;
-        let arg8 = isMobile() && getOrientation2() === "portrait" ? { left: "22" } : { left: "69" };
+        let arg8 = isMobile() && getOrientation() === "portrait" ? { left: "22" } : { left: "69" };
         MobileDOM.addButton(
           `Delay (0-1sec)`,
           function() {
@@ -52318,7 +52313,7 @@ var loadGaussianSplatVertAnim = function() {
         let currentNumberOfTrails = 2;
         const minInstances = 1;
         const maxInstances = 5;
-        let arg9 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: "28" } : { left: "77" };
+        let arg9 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: "28" } : { left: "77" };
         MobileDOM.addButton(
           `Trails (1-5)`,
           function() {
@@ -52341,7 +52336,8 @@ var loadGaussianSplatVertAnim = function() {
 
 // src/engine/buildin/nui-pipe.js
 var PipeCommander = class {
-  constructor(videoElementId, canvasElementId) {
+  constructor(autostart = true, videoElementId, canvasElementId) {
+    this.autostart = autostart;
     this.handLandmarker = void 0;
     this.runningMode = "IMAGE";
     this.webcamRunning = false;
@@ -52365,7 +52361,6 @@ var PipeCommander = class {
       this.video.autoplay = true;
       this.video.playsInline = true;
       this.video.muted = true;
-      this.video.style.transform = "scaleX(-1)";
       document.body.appendChild(this.video);
     }
     if (canvasElementId) {
@@ -52402,15 +52397,18 @@ var PipeCommander = class {
       vision,
       {
         baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+          modelAssetPath: (
+            // "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
+            "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+          ),
           delegate: "GPU"
         },
         runningMode: this.runningMode,
-        numHands: 2
+        numHands: 1
       }
     );
     this.drawingUtils = new DrawingUtils(this.canvasCtx);
-    this.enableWebcam();
+    if (this.autostart === true) this.enableWebcam();
   }
   async enableWebcam() {
     await this.ready;
@@ -52455,7 +52453,7 @@ var PipeCommander = class {
       window.requestAnimationFrame(() => this.predictWebcam());
     }
   }
-  // Override this in your engine to consume landmark data
+  // Override
   onResults(results) {
     if (!results?.landmarks) return;
     for (let i2 = 0; i2 < results.landmarks.length; i2++) {
@@ -52472,6 +52470,152 @@ var PipeCommander = class {
     }
   }
 };
+var PipeGestureResolver = class {
+  constructor() {
+    this.prevPalmCenter = [null, null];
+    this.prevTime = performance.now();
+  }
+  _fingerDirection(lm, tipIdx, baseIdx) {
+    const tip = lm[tipIdx];
+    const base = lm[baseIdx];
+    const dx = -(tip.x - base.x);
+    const dy = -(tip.y - base.y);
+    const dz = tip.z - base.z;
+    const len2 = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+    return { x: dx / len2, y: dy / len2, z: dz / len2 };
+  }
+  resolve(results) {
+    if (!results?.landmarks) return [];
+    const now = performance.now();
+    const dt2 = (now - this.prevTime) / 1e3;
+    this.prevTime = now;
+    const hands = [];
+    for (let i2 = 0; i2 < results.landmarks.length; i2++) {
+      const lm = results.landmarks[i2];
+      const wlm = results.worldLandmarks[i2].map((p2) => ({
+        x: -p2.x,
+        y: p2.y,
+        z: p2.z
+      }));
+      const handedness = results.handednesses[i2]?.[0]?.categoryName ?? "Unknown";
+      const palmCenter = this._palmCenter(lm);
+      const palmCenterWorld = this._palmCenter(wlm);
+      const palmNormal = this._palmNormal(wlm);
+      const velocity = this._velocity(palmCenter, this.prevPalmCenter[i2], dt2);
+      this.prevPalmCenter[i2] = palmCenter;
+      const fingerStates = this._fingerStates(lm);
+      const openCount = fingerStates.filter(Boolean).length;
+      const isOpenHand = openCount > 4;
+      const isClosedFist = openCount === 0;
+      const indexDirection = this._fingerDirection(lm, 8, 5);
+      const [thumb, index, middle, ring, pinky] = fingerStates;
+      const isPointing = index && !middle && !ring && !pinky;
+      const isPeace = index && middle && !ring && !pinky;
+      const isPinch = this._isPinch(lm);
+      const isPush = this._isPush(palmNormal, velocity);
+      const isCatch = isClosedFist;
+      console.log(fingerStates, openCount);
+      hands.push({
+        index: i2,
+        handedness,
+        // "Left" | "Right"
+        landmarks: lm,
+        // normalized image coords (x,y,z)
+        worldLandmarks: wlm,
+        // real-world meters, origin = palm center
+        palmCenter,
+        // normalized {x,y,z}
+        palmCenterWorld,
+        // world-space {x,y,z} in meters
+        palmNormal,
+        // vec3 facing direction
+        velocity,
+        // normalized units/sec {x,y,z}
+        fingerStates,
+        // [thumb, index, middle, ring, pinky] true=extended
+        openCount,
+        isOpenHand,
+        isClosedFist,
+        isPinch,
+        isPush,
+        isCatch,
+        isPointing,
+        isPeace,
+        indexDirection,
+        // fingertip
+        thumbTip: lm[4],
+        indexTip: lm[8],
+        middleTip: lm[12],
+        ringTip: lm[16],
+        pinkyTip: lm[20],
+        wrist: lm[0]
+      });
+    }
+    return hands;
+  }
+  _fingerStates(lm) {
+    const thumbExtended = Math.abs(lm[4].x - lm[2].x) > 0.05;
+    const indexExtended = lm[8].y < lm[6].y;
+    const middleExtended = lm[12].y < lm[10].y;
+    const ringExtended = lm[16].y < lm[14].y;
+    const pinkyExtended = lm[20].y < lm[18].y;
+    return [thumbExtended, indexExtended, middleExtended, ringExtended, pinkyExtended];
+  }
+  _isPinch(lm) {
+    const dx = lm[4].x - lm[8].x;
+    const dy = lm[4].y - lm[8].y;
+    const dz = lm[4].z - lm[8].z;
+    const dist2 = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    return dist2 < 0.06;
+  }
+  _isPush(palmNormal, velocity) {
+    return palmNormal.z < -0.5 && velocity.z < -0.2;
+  }
+  _palmCenter(lm) {
+    const indices = [0, 5, 9, 13, 17];
+    let x3 = 0, y3 = 0, z2 = 0;
+    for (const i2 of indices) {
+      x3 += lm[i2].x;
+      y3 += lm[i2].y;
+      z2 += lm[i2].z;
+    }
+    const n3 = indices.length;
+    return { x: x3 / n3, y: y3 / n3, z: z2 / n3 };
+  }
+  _palmNormal(wlm) {
+    const w2 = wlm[0];
+    const im = wlm[5];
+    const pm = wlm[17];
+    const ax = im.x - w2.x, ay = im.y - w2.y, az = im.z - w2.z;
+    const bx = pm.x - w2.x, by = pm.y - w2.y, bz = pm.z - w2.z;
+    const nx = ay * bz - az * by;
+    const ny = az * bx - ax * bz;
+    const nz = ax * by - ay * bx;
+    const len2 = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+    return { x: nx / len2, y: ny / len2, z: nz / len2 };
+  }
+  _velocity(current, prev, dt2) {
+    if (!prev || dt2 <= 0) return { x: 0, y: 0, z: 0 };
+    return {
+      x: (current.x - prev.x) / dt2,
+      y: (current.y - prev.y) / dt2,
+      z: (current.z - prev.z) / dt2
+    };
+  }
+  // Call this with your camera VP matrix to get real 3D position
+  // depth: how far into the scene to place the hand (units)
+  unprojected(palmCenter, inversVP, depth = 5) {
+    const nx = palmCenter.x * 2 - 1;
+    const ny = -(palmCenter.y * 2) + 1;
+    const clip = [nx, ny, depth, 1];
+    const m2 = inversVP;
+    const x3 = m2[0] * clip[0] + m2[4] * clip[1] + m2[8] * clip[2] + m2[12] * clip[3];
+    const y3 = m2[1] * clip[0] + m2[5] * clip[1] + m2[9] * clip[2] + m2[13] * clip[3];
+    const z2 = m2[2] * clip[0] + m2[6] * clip[1] + m2[10] * clip[2] + m2[14] * clip[3];
+    const w2 = m2[3] * clip[0] + m2[7] * clip[1] + m2[11] * clip[2] + m2[15] * clip[3];
+    return { x: x3 / w2, y: y3 / w2, z: z2 / w2 };
+  }
+};
 
 // examples/games/nui/hand.js
 var loadHand = function() {
@@ -52479,42 +52623,73 @@ var loadHand = function() {
     canvasSize: "fullscreen",
     fastRender: 0.9,
     dontUsePhysics: true,
+    // useCannon: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: "firstPersonCamera",
+      type: "WASD",
       responseCoef: 1e3
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
+    const pipe = new PipeGestureResolver();
     const nui = new PipeCommander();
+    const cam2 = app.getCamera();
     nui.onResults = (results) => {
-      if (!results?.landmarks || results?.landmarks.length === 0) return;
-      const wrist = results.landmarks[0][0];
-      console.log("wrist", wrist);
+      const hands = pipe.resolve(results);
+      for (const hand of hands) {
+        if (hand.isOpenHand) {
+          console.log("open !!!!!!");
+          cam2._digital.backward = false;
+          clearInterval(cam2._keyIntervalF);
+          clearInterval(cam2._keyIntervalB);
+          cam2._keyIntervalF = setInterval(() => {
+            cam2._digital.forward = true;
+            cam2._dirty = true;
+            cam2._dirtyAngle = true;
+            cam2._applyDigitalMovement();
+          }, 26);
+        } else if (hand.isPointing) {
+          const dir = hand.indexDirection;
+          clearInterval(cam2._keyIntervalF);
+          clearInterval(cam2._keyIntervalB);
+          console.log("dir", hand.indexDirection);
+          if (dir.x < -0.1) cam2.yaw -= 0.1;
+          if (dir.x > 0.4) cam2.yaw += 0.1;
+          if (dir.y > 0.4) cam2.pitch += 0.1;
+          if (dir.y < -0.1) cam2.pitch -= 0.1;
+          console.log("WHAT IS dir ", dir);
+          cam2._dirtyAngle = true;
+        } else if (hand.isPeace) {
+          console.log("PEACE !!");
+          cam2._digital.forward = false;
+          clearInterval(cam2._keyIntervalF);
+          clearInterval(cam2._keyIntervalB);
+          cam2._keyIntervalB = setInterval(() => {
+            cam2._digital.backward = true;
+            cam2._dirty = true;
+            cam2._dirtyAngle = true;
+            cam2._applyDigitalMovement();
+          }, 26);
+        } else {
+          cam2._digital.forward = false;
+          cam2._digital.backward = false;
+          clearInterval(cam2._keyIntervalB);
+          clearInterval(cam2._keyIntervalF);
+        }
+      }
     };
     loadHand2.addLight();
     downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     function onGround(m2) {
-      let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "5" } : { left: "53" };
-      MobileDOM.addButton(
-        "Enable camera",
-        function() {
-          nui.enableWebcam();
-        },
-        () => {
-        },
-        arg1
-      );
       loadHand2.addMeshObj({
         material: { type: "standard", share: true },
-        position: { x: 0, y: -5, z: -10 },
+        position: { x: 0, y: 0, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: ["./res/textures/floor1.webp"],
-        //, './res/textures/env-maps/sky1_lod_mid.webp'],
         name: "floor",
         mesh: m2.cube,
         physics: {
@@ -52525,26 +52700,12 @@ var loadHand = function() {
       });
     }
     async function onLoadObj(m2) {
-      loadHand2.addMeshObj({
-        material: { type: "standard", share: true },
-        position: { x: 0, y: -1, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: [100, 100, 100],
-        rotationSpeed: { x: 0, y: 0.1, z: 0 },
-        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
-        name: "sky",
-        mesh: m2.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
       let MYCUBE = loadHand2.addMeshObj({
-        material: { type: "mirror" },
+        material: { type: "standard" },
         position: { x: 0, y: 4, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [3, 5, 1],
+        scale: [5, 5, 5],
         texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
         name: "cube",
         mesh: m2.cube,
@@ -52570,42 +52731,24 @@ var loadHand = function() {
         raycast: { enabled: true, radius: 1 },
         physics: {
           enabled: false,
-          mass: 0,
+          mass: 1,
           geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
-          // flameEffect: true
         }
       });
       loadHand2.lightContainer[0].setIntensity(15);
-      loadHand2.activateBloomEffect();
-      loadHand2.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-      loadHand2.lightContainer[0].behavior.value_ = -1;
-      loadHand2.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      });
       loadHand2.lightContainer[0].setPosition(0, 15, -10);
       loadHand2.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(loadHand2.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
-        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
-        let cam2 = app.getCamera();
-        cam2.setYaw(-0.03);
-        cam2.setPitch(-0.49);
-        cam2.setZ(0);
-        cam2.setY(10);
+        loadHand2.activateHZB();
+        let cam3 = app.getCamera();
+        cam3.setYaw(-0.03);
+        cam3.setPitch(-0.49);
+        cam3.setZ(0);
+        cam3.setY(10);
         app.buildRenderBuckets();
-        cam2._dirtyAngle = true;
+        cam3._dirtyAngle = true;
       }, 700);
     }
-    loadHand2.canvas.addEventListener("ray.hit.event", (e3) => {
-      console.log("ray.hit.event detected");
-      if (e3.detail.hitObject.name.startsWith("cube")) {
-      }
-    });
   });
   window.app = loadHand2;
 };

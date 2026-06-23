@@ -712,12 +712,9 @@ export class FirstPersonCamera {
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 200);
-    console.log('___________________________' + this.canvas)
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
-
     if(isMobile() == true && options.isActive == 'init active cam') {
-      console.log('FPCAMERA')
       MobileDOM.createWASD(this, {margin: 50});
     }
   }

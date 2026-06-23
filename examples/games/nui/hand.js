@@ -2,9 +2,8 @@
 import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
-import {isMobile, randomIntFromTo} from "../../../src/engine/utils.js";
-import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
-import {PipeCommander} from "../../../src/engine/buildin/nui-pipe.js";
+import {isMobile} from "../../../src/engine/utils.js";
+import {PipeCommander, PipeGestureResolver} from "../../../src/engine/buildin/nui-pipe.js";
 import {MobileDOM} from "../../../src/engine/cameras.js";
 
 export var loadHand = function() {
@@ -13,44 +12,96 @@ export var loadHand = function() {
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     dontUsePhysics: true,
+    // useCannon: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: 'firstPersonCamera',
+      type: 'WASD',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
-
+    const pipe = new PipeGestureResolver();
     const nui = new PipeCommander();
+    // for now on top level
+    // note : this must go in build in pack.
+    // any way - override is always legal for any cather.
+    const cam = app.getCamera();
     nui.onResults = (results) => {
-      if(!results?.landmarks || results?.landmarks.length === 0) return;
-      const wrist = results.landmarks[0][0]; // x, y, z normalized
-      // drive your mesh/bone here
-      console.log('wrist', wrist)
+      const hands = pipe.resolve(results);
+      for(const hand of hands) {
+        if(hand.isOpenHand) {
+          // const worldPos = pipe.unprojected(hand.palmCenter, app._invViewProj, 10);
+          // console.log(worldPos)
+          console.log("open !!!!!!",);
+          cam._digital.backward = false;
+          clearInterval(cam._keyIntervalF)
+          clearInterval(cam._keyIntervalB)
+          cam._keyIntervalF = setInterval(() => {
+            cam._digital.forward = true;
+            cam._dirty = true;
+            cam._dirtyAngle = true;
+            cam._applyDigitalMovement();
+          }, 26);
+          // app.matrixPhysics.explode(1, worldPos.x, worldPos.y, worldPos.z, 15.0, 50.0);
+        } else if(hand.isPointing) {
+          // const worldPos = pipe.unprojected(hand.palmCenter, app._invViewProj, 10);
+          const dir = hand.indexDirection;
+          clearInterval(cam._keyIntervalF)
+          clearInterval(cam._keyIntervalB)
+          console.log("dir", hand.indexDirection);
+          // left / right → rotate camera Y
+          if(dir.x < -0.1) cam.yaw -= 0.1;
+          if(dir.x > 0.4) cam.yaw += 0.1;
+          // up / down → rotate camera X (pitch)
+          if(dir.y > 0.4) cam.pitch += 0.1;
+          if(dir.y < -0.1) cam.pitch -= 0.1;
+          console.log('WHAT IS dir ', dir)
+          cam._dirtyAngle = true;
+          // app.matrixPhysics.explode(1, worldPos.x, worldPos.y, worldPos.z, 15, -30.0);
+        } else if(hand.isPeace) {
+          // grab nearest body
+          // const worldPos = pipe.unprojected(hand.indexTip, app._invViewProj);
+          // app.matrixPhysics.createPointConstraint("nearestBody", worldPos);
+          console.log("PEACE !!",);
+          cam._digital.forward = false;
+          clearInterval(cam._keyIntervalF)
+          clearInterval(cam._keyIntervalB)
+          cam._keyIntervalB = setInterval(() => {
+            cam._digital.backward = true;
+            cam._dirty = true;
+            cam._dirtyAngle = true;
+            cam._applyDigitalMovement();
+          }, 26);
+          // console.log('PINCH');
+        } else {
+          cam._digital.forward = false;
+          cam._digital.backward = false;
+          clearInterval(cam._keyIntervalB)
+          clearInterval(cam._keyIntervalF)
+        }
+      }
     };
 
     loadHand.addLight();
-
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
-
     addRaycastsAABBListener('canvas1', 'click');
 
     function onGround(m) {
-      let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '5'} : {left: '53'};
-      MobileDOM.addButton("Enable camera",
-        function() {
-          nui.enableWebcam()
-        },
-        () => {}, arg1);
+      // let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '5'} : {left: '53'};
+      // MobileDOM.addButton("Enable camera",
+      //   function() {
+      //     // nui.enableWebcam()
+      //   },
+      //   () => {}, arg1);
 
       loadHand.addMeshObj({
         material: {type: 'standard', share: true},
-        position: {x: 0, y: -5, z: -10},
+        position: {x: 0, y: 0, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp'], //, './res/textures/env-maps/sky1_lod_mid.webp'],
+        texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -62,28 +113,12 @@ export var loadHand = function() {
     }
 
     async function onLoadObj(m) {
-      loadHand.addMeshObj({
-        material: {type: 'standard', share: true},
-        position: {x: 0, y: -1, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 0.1, z: 0},
-        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'sky',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
-
-      // share: true if not defined it is false.
       let MYCUBE = loadHand.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'standard'},
         position: {x: 0, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [3, 5, 1],
+        scale: [5, 5, 5],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
@@ -101,30 +136,20 @@ export var loadHand = function() {
         raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,
-          mass: 0,
+          mass: 1,
           geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true,
-          // flameEffect: true
         }
       })
 
       loadHand.lightContainer[0].setIntensity(15);
-      loadHand.activateBloomEffect();
-      loadHand.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
-      loadHand.lightContainer[0].behavior.value_ = -1;
-      loadHand.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      })
+      // loadHand.activateBloomEffect();
       loadHand.lightContainer[0].setPosition(0, 15, -10);
       loadHand.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(loadHand.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
-        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+        loadHand.activateHZB();
+        // MYCUBE.effects.circle = new GenGeoTexture2(loadHand.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
+        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
@@ -135,12 +160,12 @@ export var loadHand = function() {
       }, 700);
     }
 
-    loadHand.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected');
-      if(e.detail.hitObject.name.startsWith('cube')) {
-        // e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-      }
-    });
+    // loadHand.canvas.addEventListener("ray.hit.event", (e) => {
+    //   console.log('ray.hit.event detected');
+    //   if(e.detail.hitObject.name.startsWith('cube')) {
+    //     // e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+    //   }
+    // });
 
   })
   window.app = loadHand;

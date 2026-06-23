@@ -1,10 +1,7 @@
 /**
  * @description
-* MatrixEngine Raycaster
-* Author: Nikola Lukić
-* Version: 2.0
-*/
-
+ * MatrixEngine Raycaster
+ **/
 import {mat4, vec3, vec4} from "wgpu-matrix";
 
 export let touchCoordinate = {

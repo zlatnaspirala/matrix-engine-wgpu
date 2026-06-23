@@ -1,29 +1,34 @@
-// Copyright 2023 The MediaPipe Authors.
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//      http://www.apache.org/licenses/LICENSE-2.0
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/**
+  *  Copyright 2023 The MediaPipe Authors.
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
+  *      http://www.apache.org/licenses/LICENSE-2.0
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+ **/
 
 /**
  * @description
+ * @name PipeCommander
  * You can do whatever you want just leave header licence.
+ * For The beast by default used most optimised variant of hand model also 
+ * default number of hand is 1.
+ * Still this feature is marked like "high price" for CPU usage.
  */
 export class PipeCommander {
 
-  constructor(videoElementId, canvasElementId) {
+  constructor(autostart = true, videoElementId, canvasElementId) {
+    this.autostart = autostart;
     this.handLandmarker = undefined;
     this.runningMode = "IMAGE";
     this.webcamRunning = false;
     this.lastVideoTime = -1;
     this.results = undefined;
-
     if(videoElementId) {this.video = document.getElementById(videoElementId);}
-
     if(!this.video) {
       this.video = document.createElement("video");
       this.video.id = "auto-video";
@@ -39,12 +44,11 @@ export class PipeCommander {
       this.video.autoplay = true;
       this.video.playsInline = true;
       this.video.muted = true;
-      this.video.style.transform = "scaleX(-1)";
+      // this.video.style.transform = "scaleX(-1)";
       document.body.appendChild(this.video);
     }
 
     if(canvasElementId) {this.canvasElement = document.getElementById(canvasElementId);}
-
     if(!this.canvasElement) {
       this.canvasElement = document.createElement("canvas");
       this.canvasElement.id = "auto-canvas";
@@ -78,16 +82,16 @@ export class PipeCommander {
       {
         baseOptions: {
           modelAssetPath:
-            "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            // "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
+          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
           delegate: "GPU"
         },
         runningMode: this.runningMode,
-        numHands: 2
+        numHands: 1
       }
     );
     this.drawingUtils = new DrawingUtils(this.canvasCtx);
-    // console.log('its ready');
-    this.enableWebcam();
+    if(this.autostart === true) this.enableWebcam();
   }
 
   async enableWebcam() {
@@ -104,25 +108,20 @@ export class PipeCommander {
     this.video.style.aspectRatio = `${w}/${h}`;
     this.canvasElement.style.aspectRatio = `${w}/${h}`;
     this.webcamRunning = true;
-    // this.canvasElement.width = this.video.videoWidth;
-    // this.canvasElement.height = this.video.videoHeight;
     this.predictWebcam();
   }
 
   async predictWebcam() {
-
     if(this.runningMode === "IMAGE") {
       this.runningMode = "VIDEO";
       await this.handLandmarker.setOptions({runningMode: "VIDEO"});
     }
-
     const startTimeMs = performance.now();
     if(this.lastVideoTime !== this.video.currentTime) {
       this.lastVideoTime = this.video.currentTime;
       this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs);
       this.onResults(this.results);
     }
-
     this.canvasCtx.save();
     this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
     if(this.results?.landmarks) {
@@ -135,13 +134,10 @@ export class PipeCommander {
       }
     }
     this.canvasCtx.restore();
-
-    if(this.webcamRunning) {
-      window.requestAnimationFrame(() => this.predictWebcam());
-    }
+    if(this.webcamRunning) {window.requestAnimationFrame(() => this.predictWebcam())}
   }
 
-  // Override this in your engine to consume landmark data
+  // Override
   onResults(results) {
     if(!results?.landmarks) return;
     for(let i = 0;i < results.landmarks.length;i++) {
@@ -160,5 +156,168 @@ export class PipeCommander {
       this.video.srcObject.getTracks().forEach(t => t.stop());
       this.video.srcObject = null;
     }
+  }
+}
+
+/**
+ * NUIGestureResolver
+ * Consumes raw MediaPipe HandLandmarker results and outputs named gestures + world data.
+ * Feed results from PipeCommander.onResults() into resolve().
+ */
+export class PipeGestureResolver {
+  constructor() {
+    this.prevPalmCenter = [null, null];
+    this.prevTime = performance.now();
+  }
+
+  _fingerDirection(lm, tipIdx, baseIdx) {
+    const tip = lm[tipIdx];
+    const base = lm[baseIdx];
+
+    const dx = -(tip.x - base.x); // flip X - mirror correction
+    const dy = -(tip.y - base.y); // flip Y - image coords correction
+    const dz = tip.z - base.z;
+
+    const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+    return {x: dx / len, y: dy / len, z: dz / len};
+  }
+
+  resolve(results) {
+    if(!results?.landmarks) return [];
+    const now = performance.now();
+    const dt = (now - this.prevTime) / 1000.0;
+    this.prevTime = now;
+    const hands = [];
+    for(let i = 0;i < results.landmarks.length;i++) {
+      const lm = results.landmarks[i];
+      // const wlm = results.worldLandmarks[i];
+      const wlm = results.worldLandmarks[i].map(p => ({
+        x: -p.x,
+        y: p.y,
+        z: p.z
+      }));
+      const handedness = results.handednesses[i]?.[0]?.categoryName ?? "Unknown";
+      const palmCenter = this._palmCenter(lm);
+      const palmCenterWorld = this._palmCenter(wlm);
+      const palmNormal = this._palmNormal(wlm);
+      const velocity = this._velocity(palmCenter, this.prevPalmCenter[i], dt);
+      this.prevPalmCenter[i] = palmCenter;
+      const fingerStates = this._fingerStates(lm);
+      const openCount = fingerStates.filter(Boolean).length;
+      const isOpenHand = openCount > 4;
+      const isClosedFist = openCount === 0;
+      const indexDirection = this._fingerDirection(lm, 8, 5);
+      const [thumb, index, middle, ring, pinky] = fingerStates;
+      const isPointing = index && !middle && !ring && !pinky;
+      const isPeace = index && middle && !ring && !pinky;
+      const isPinch = this._isPinch(lm);
+      const isPush = this._isPush(palmNormal, velocity);
+      const isCatch = isClosedFist;
+
+      console.log(fingerStates, openCount);
+      
+      hands.push({
+        index: i,
+        handedness,           // "Left" | "Right"
+        landmarks: lm,        // normalized image coords (x,y,z)
+        worldLandmarks: wlm,  // real-world meters, origin = palm center
+        palmCenter,           // normalized {x,y,z}
+        palmCenterWorld,      // world-space {x,y,z} in meters
+        palmNormal,           // vec3 facing direction
+        velocity,             // normalized units/sec {x,y,z}
+        fingerStates,         // [thumb, index, middle, ring, pinky] true=extended
+        openCount,
+        isOpenHand,
+        isClosedFist,
+        isPinch,
+        isPush,
+        isCatch,
+        isPointing,
+        isPeace,
+        indexDirection,
+        // fingertip
+        thumbTip: lm[4],
+        indexTip: lm[8],
+        middleTip: lm[12],
+        ringTip: lm[16],
+        pinkyTip: lm[20],
+        wrist: lm[0],
+      });
+    }
+    return hands;
+  }
+
+  _fingerStates(lm) {
+    const thumbExtended = Math.abs(lm[4].x - lm[2].x) > 0.05;
+    const indexExtended = lm[8].y < lm[6].y;
+    const middleExtended = lm[12].y < lm[10].y;
+    const ringExtended = lm[16].y < lm[14].y;
+    const pinkyExtended = lm[20].y < lm[18].y;
+    return [thumbExtended, indexExtended, middleExtended, ringExtended, pinkyExtended];
+  }
+
+  _isPinch(lm) {
+    const dx = lm[4].x - lm[8].x;
+    const dy = lm[4].y - lm[8].y;
+    const dz = lm[4].z - lm[8].z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    return dist < 0.06; // threshold in normalized units
+  }
+
+  _isPush(palmNormal, velocity) {
+    // Palm facing camera (normal.z negative) + moving toward camera (velocity.z negative)
+    return palmNormal.z < -0.5 && velocity.z < -0.2;
+  }
+
+  _palmCenter(lm) {
+    // Average of wrist + 4 knuckles (0, 5, 9, 13, 17)
+    const indices = [0, 5, 9, 13, 17];
+    let x = 0, y = 0, z = 0;
+    for(const i of indices) {
+      x += lm[i].x;
+      y += lm[i].y;
+      z += lm[i].z;
+    }
+    const n = indices.length;
+    return {x: x / n, y: y / n, z: z / n};
+  }
+
+  _palmNormal(wlm) {
+    // Vectors along palm plane: wrist→index_mcp and wrist→pinky_mcp
+    const w = wlm[0];
+    const im = wlm[5];
+    const pm = wlm[17];
+    const ax = im.x - w.x, ay = im.y - w.y, az = im.z - w.z;
+    const bx = pm.x - w.x, by = pm.y - w.y, bz = pm.z - w.z;
+    // Cross product a × b
+    const nx = ay * bz - az * by;
+    const ny = az * bx - ax * bz;
+    const nz = ax * by - ay * bx;
+    const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+    return {x: nx / len, y: ny / len, z: nz / len};
+  }
+
+  _velocity(current, prev, dt) {
+    if(!prev || dt <= 0) return {x: 0, y: 0, z: 0};
+    return {
+      x: (current.x - prev.x) / dt,
+      y: (current.y - prev.y) / dt,
+      z: (current.z - prev.z) / dt,
+    };
+  }
+
+  // Call this with your camera VP matrix to get real 3D position
+  // depth: how far into the scene to place the hand (units)
+  unprojected(palmCenter, inversVP, depth = 5.0) {
+    const nx = (palmCenter.x * 2.0) - 1.0;
+    const ny = -(palmCenter.y * 2.0) + 1.0;
+    const clip = [nx, ny, depth, 1.0];
+    // multiply by inverse VP (mat4 × vec4)
+    const m = inversVP;
+    const x = m[0] * clip[0] + m[4] * clip[1] + m[8] * clip[2] + m[12] * clip[3];
+    const y = m[1] * clip[0] + m[5] * clip[1] + m[9] * clip[2] + m[13] * clip[3];
+    const z = m[2] * clip[0] + m[6] * clip[1] + m[10] * clip[2] + m[14] * clip[3];
+    const w = m[3] * clip[0] + m[7] * clip[1] + m[11] * clip[2] + m[15] * clip[3];
+    return {x: x / w, y: y / w, z: z / w};
   }
 }
