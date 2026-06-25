@@ -2,7 +2,8 @@
 export const netConfig = {
   NETWORKING_DOMAIN: '',
   NETWORKING_PORT: '2020',
-  isDataOnly: false
+  isDataOnly: false,
+  streamRender: false
 };
 
 export function byId(d) {
@@ -118,13 +119,37 @@ export function joinSession(options) {
 
     dispatchEvent(new CustomEvent(`setupSessionObject`, {detail: session}))
 
-    if(!netConfig.isDataOnly === true) {
+    if(netConfig.streamRender === true) {
+      session.connect(token, netConfig.customData)
+        .then(() => {
+          byId('session-title').innerText = sessionName;
+          byId('join').style.display = 'none';
+          byId('session').style.display = 'block';
+          const stream = app.canvas.captureStream(30);
+          const videoTrack = stream.getVideoTracks()[0];
+          var publisher = OV.initPublisher('video-container', {
+            audioSource: false,
+            videoSource: videoTrack,
+            publishAudio: false,
+            publishVideo: true,
+            resolution: options.resolution,
+            frameRate: 30,
+            insertMode: 'APPEND',
+            mirror: false
+          });
+          session.publish(publisher);
+          console.log('[STREAM RENDER]', session);
+        }).catch(error => {
+          console.warn('Error connecting to the session [stream render]:', error.code, error.message);
+          enableBtn();
+        });
+
+    } else if(!netConfig.isDataOnly) {
       session.connect(token)
         .then(() => {
           byId('session-title').innerText = sessionName;
           byId('join').style.display = 'none';
           byId('session').style.display = 'block';
-
 
           var publisher = OV.initPublisher('video-container', {
             audioSource: (netConfig.isDataOnly ? false : undefined), // The source of audio. If undefined default microphone
@@ -167,8 +192,6 @@ export function joinSession(options) {
             // }
             pushEvent(event);
           });
-
-
 
           // When our HTML video has been added to DOM...
           publisher.on('videoElementCreated', event => {
@@ -352,7 +375,7 @@ export function httpRequest(method, url, body, errorMsg, callback) {
         if(url.indexOf('fetch-info') != -1) {
           if(http.status == 0 && errorMsg == "Session couldn't be fetched") {
             const errorText = errorMsg + ": HTTP " + http.status + " (" + http.responseText + ")";
-            dispatchEvent(new CustomEvent('check-gameplay-channel', {detail: {status: 'false' , errorText: errorText}}));
+            dispatchEvent(new CustomEvent('check-gameplay-channel', {detail: {status: 'false', errorText: errorText}}));
           } else {
             dispatchEvent(new CustomEvent('check-gameplay-channel', {detail: {status: 'free', url: url}}));
           }

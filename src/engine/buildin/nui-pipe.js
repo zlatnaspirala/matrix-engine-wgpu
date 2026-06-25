@@ -20,7 +20,6 @@
  * Still this feature is marked like "high price" for CPU usage.
  */
 export class PipeCommander {
-
   constructor(autostart = true, videoElementId, canvasElementId) {
     this.autostart = autostart;
     this.handLandmarker = undefined;
@@ -70,26 +69,19 @@ export class PipeCommander {
 
   async init() {
     const visionModule = await import("@mediapipe/tasks-vision");
-    const {
-      HandLandmarker,
-      FilesetResolver,
-      DrawingUtils
-    } = visionModule;
+    const {HandLandmarker, FilesetResolver, DrawingUtils} = visionModule;
     this.HandLandmarker = HandLandmarker;
     const vision = await FilesetResolver.forVisionTasks("./mediapipe/wasm");
-    this.handLandmarker = await HandLandmarker.createFromOptions(
-      vision,
-      {
-        baseOptions: {
-          modelAssetPath:
-            // "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
+    this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath:
+          // "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
           "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-          delegate: "GPU"
-        },
-        runningMode: this.runningMode,
-        numHands: 1
-      }
-    );
+        delegate: "GPU"
+      },
+      runningMode: this.runningMode,
+      numHands: 1
+    });
     this.drawingUtils = new DrawingUtils(this.canvasCtx);
     if(this.autostart === true) this.enableWebcam();
   }
@@ -127,10 +119,10 @@ export class PipeCommander {
     if(this.results?.landmarks) {
       for(const landmarks of this.results.landmarks) {
         this.drawingUtils.drawConnectors(landmarks, this.HandLandmarker.HAND_CONNECTIONS, {
-          color: "#00FF00",
+          color: "#00202e",
           lineWidth: 5
         });
-        this.drawingUtils.drawLandmarks(landmarks, {color: "#FF0000", lineWidth: 2});
+        this.drawingUtils.drawLandmarks(landmarks, {color: "#3d002f", lineWidth: 2});
       }
     }
     this.canvasCtx.restore();
@@ -170,16 +162,33 @@ export class PipeGestureResolver {
     this.prevTime = performance.now();
   }
 
-  _fingerDirection(lm, tipIdx, baseIdx) {
-    const tip = lm[tipIdx];
-    const base = lm[baseIdx];
+  _handLocalFrame(lm) {
+    // palm X axis: wrist → index MCP
+    const w = lm[0];
+    const im = lm[5];
+    const pm = lm[17];
+    const mm = lm[9]; // middle MCP for up axis
 
-    const dx = -(tip.x - base.x); // flip X - mirror correction
-    const dy = -(tip.y - base.y); // flip Y - image coords correction
-    const dz = tip.z - base.z;
+    // right axis (across knuckles)
+    let rx = im.x - pm.x, ry = im.y - pm.y, rz = im.z - pm.z;
+    let rlen = Math.sqrt(rx * rx + ry * ry + rz * rz) || 1;
+    rx /= rlen; ry /= rlen; rz /= rlen;
 
-    const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-    return {x: dx / len, y: dy / len, z: dz / len};
+    // up axis (wrist → middle MCP)
+    let ux = mm.x - w.x, uy = mm.y - w.y, uz = mm.z - w.z;
+    let ulen = Math.sqrt(ux * ux + uy * uy + uz * uz) || 1;
+    ux /= ulen; uy /= ulen; uz /= ulen;
+
+    // forward = cross(right, up)
+    const fx = ry * uz - rz * uy;
+    const fy = rz * ux - rx * uz;
+    const fz = rx * uy - ry * ux;
+
+    return {
+      right: {x: rx, y: ry, z: rz},
+      up: {x: ux, y: uy, z: uz},
+      forward: {x: fx, y: fy, z: fz}
+    };
   }
 
   resolve(results) {
@@ -204,18 +213,17 @@ export class PipeGestureResolver {
       this.prevPalmCenter[i] = palmCenter;
       const fingerStates = this._fingerStates(lm);
       const openCount = fingerStates.filter(Boolean).length;
+      const isOK = this._isOK(lm);
+      const rotation = this.getRotation(fingerStates[5]);
+      const isThumbUp = this._isThumbUp(lm, fingerStates[5]);
       const isOpenHand = openCount > 4;
       const isClosedFist = openCount === 0;
-      const indexDirection = this._fingerDirection(lm, 8, 5);
       const [thumb, index, middle, ring, pinky] = fingerStates;
       const isPointing = index && !middle && !ring && !pinky;
       const isPeace = index && middle && !ring && !pinky;
       const isPinch = this._isPinch(lm);
       const isPush = this._isPush(palmNormal, velocity);
       const isCatch = isClosedFist;
-
-      console.log(fingerStates, openCount);
-      
       hands.push({
         index: i,
         handedness,           // "Left" | "Right"
@@ -231,10 +239,11 @@ export class PipeGestureResolver {
         isClosedFist,
         isPinch,
         isPush,
+        isOK,
         isCatch,
         isPointing,
         isPeace,
-        indexDirection,
+        isThumbUp,
         // fingertip
         thumbTip: lm[4],
         indexTip: lm[8],
@@ -247,13 +256,42 @@ export class PipeGestureResolver {
     return hands;
   }
 
-  _fingerStates(lm) {
+  _fingerStatesClassic(lm) {
     const thumbExtended = Math.abs(lm[4].x - lm[2].x) > 0.05;
     const indexExtended = lm[8].y < lm[6].y;
     const middleExtended = lm[12].y < lm[10].y;
     const ringExtended = lm[16].y < lm[14].y;
     const pinkyExtended = lm[20].y < lm[18].y;
     return [thumbExtended, indexExtended, middleExtended, ringExtended, pinkyExtended];
+  }
+
+  _fingerStates(lm) {
+    const frame = this._handLocalFrame(lm);
+    const up = frame.up;
+
+    const _isExtended = (tipIdx, baseIdx) => {
+      const dx = lm[tipIdx].x - lm[baseIdx].x;
+      const dy = lm[tipIdx].y - lm[baseIdx].y;
+      const dz = lm[tipIdx].z - lm[baseIdx].z;
+      // dot with palm UP axis — positive means tip is "above" base in hand space
+      return (dx * up.x + dy * up.y + dz * up.z) > 0.04;
+    };
+
+    // thumb uses RIGHT axis instead
+    const right = frame.right;
+    const tdx = lm[4].x - lm[2].x;
+    const tdy = lm[4].y - lm[2].y;
+    const tdz = lm[4].z - lm[2].z;
+    const thumbExtended = (tdx * right.x + tdy * right.y + tdz * right.z) > 0.04;
+
+    return [
+      thumbExtended,
+      _isExtended(8, 6),   // index:  tip vs PIP
+      _isExtended(12, 10),  // middle: tip vs PIP
+      _isExtended(16, 14),  // ring
+      _isExtended(20, 18),  // pinky
+      frame
+    ];
   }
 
   _isPinch(lm) {
@@ -304,6 +342,36 @@ export class PipeGestureResolver {
       y: (current.y - prev.y) / dt,
       z: (current.z - prev.z) / dt,
     };
+  }
+
+  /**
+ * Calculates rotation angles (Euler-like) for the hand.
+ * @returns {Object} { roll, pitch, yaw } in radians
+ */
+  getRotation(frame) {
+    // Using the local frame vectors we already calculated
+    // Roll: Hand twisting around the Forward axis (Wrist-to-Middle finger)
+    const roll = Math.atan2(frame.up.x, frame.up.y);
+
+    // Pitch: Hand tilting forward/backward
+    const pitch = Math.atan2(frame.forward.y, frame.forward.z);
+
+    // Yaw: Hand turning left/right
+    const yaw = Math.atan2(frame.forward.x, frame.forward.z);
+
+    return {roll, pitch, yaw};
+  }
+
+  _isThumbUp(lm, frame) {
+    // Check if thumb tip is "above" the index MCP (in world or frame space)
+    return lm[4].y < lm[5].y && lm[4].y < lm[17].y;
+  }
+
+  _isOK(lm) {
+    const dist = this._isPinch(lm); // Thumb-Index proximity
+    // Check if others are extended
+    const states = this._fingerStates(lm);
+    return dist && states[2] && states[3] && states[4];
   }
 
   // Call this with your camera VP matrix to get real 3D position

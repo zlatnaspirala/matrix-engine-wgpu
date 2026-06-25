@@ -30,10 +30,11 @@ export var loadHand = function() {
     nui.onResults = (results) => {
       const hands = pipe.resolve(results);
       for(const hand of hands) {
+        const thumb = hand.fingerStates[0];
         if(hand.isOpenHand) {
           // const worldPos = pipe.unprojected(hand.palmCenter, app._invViewProj, 10);
           // console.log(worldPos)
-          console.log("open !!!!!!",);
+          console.log("isOpenHand !!!!!!");
           cam._digital.backward = false;
           clearInterval(cam._keyIntervalF)
           clearInterval(cam._keyIntervalB)
@@ -45,25 +46,24 @@ export var loadHand = function() {
           }, 26);
           // app.matrixPhysics.explode(1, worldPos.x, worldPos.y, worldPos.z, 15.0, 50.0);
         } else if(hand.isPointing) {
+          // console.log("isPointing !!!!!!");
           // const worldPos = pipe.unprojected(hand.palmCenter, app._invViewProj, 10);
-          const dir = hand.indexDirection;
+          const frame = hand.fingerStates[5];
+          if(frame.forward.y < -0.3 && frame.forward.z < -0.3) cam.yaw += 0.1;
+          if(frame.forward.y > 0.3 && frame.forward.z > 0.3) cam.yaw -= 0.1;
+          if(frame.up.y < -0.8 && frame.up.z < 0.3) cam.pitch += 0.1;
           clearInterval(cam._keyIntervalF)
           clearInterval(cam._keyIntervalB)
-          console.log("dir", hand.indexDirection);
-          // left / right → rotate camera Y
-          if(dir.x < -0.2) cam.yaw -= 0.1;
-          if(dir.x > 0.4) cam.yaw += 0.1;
-          // up / down → rotate camera X (pitch)
-          if(dir.y > 0.4) cam.pitch += 0.1;
-          if(dir.y < -0.2) cam.pitch -= 0.1;
-          console.log('WHAT IS dir ', dir)
+          cam._digital.forward = false;
+          cam._digital.backward = false;
           cam._dirtyAngle = true;
           // app.matrixPhysics.explode(1, worldPos.x, worldPos.y, worldPos.z, 15, -30.0);
         } else if(hand.isPeace) {
+          // console.log("isPeace !!!!!!");
           // grab nearest body
           // const worldPos = pipe.unprojected(hand.indexTip, app._invViewProj);
           // app.matrixPhysics.createPointConstraint("nearestBody", worldPos);
-          console.log("PEACE !!",);
+          // console.log("PEACE !!",);
           cam._digital.forward = false;
           clearInterval(cam._keyIntervalF)
           clearInterval(cam._keyIntervalB)
@@ -72,8 +72,23 @@ export var loadHand = function() {
             cam._dirty = true;
             cam._dirtyAngle = true;
             cam._applyDigitalMovement();
-          }, 26);
+          }, 16);
           // console.log('PINCH');
+        } else if(hand.fingerStates[0] === true) {
+          console.log("palac !!!!!!");
+          // const worldPos = pipe.unprojected(hand.palmCenter, app._invViewProj, 10);
+          const frame = hand.fingerStates[5];
+          if(thumb === true && frame.right.y > 0.7) { 
+            cam.pitch -= 0.1; 
+          } else if (thumb === true && frame.right.y < -0.7) {
+            cam.pitch += 0.1;
+          }
+          // clearInterval(cam._keyIntervalF)
+          // clearInterval(cam._keyIntervalB)
+          // cam._digital.forward = false;
+          // cam._digital.backward = false;
+          cam._dirtyAngle = true;
+          // app.matrixPhysics.explode(1, worldPos.x, worldPos.y, worldPos.z, 15, -30.0);
         } else {
           cam._digital.forward = false;
           cam._digital.backward = false;
@@ -97,11 +112,11 @@ export var loadHand = function() {
       //   () => {}, arg1);
 
       loadHand.addMeshObj({
-        material: {type: 'standard', share: true},
-        position: {x: 0, y: 0, z: -10},
+        material: {type: 'dark', share: true},
+        position: {x: 0, y: -1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp'],
+        texturesPaths: ['./res/textures/white-metal.png'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -114,12 +129,12 @@ export var loadHand = function() {
 
     async function onLoadObj(m) {
       let MYCUBE = loadHand.addMeshObj({
-        material: {type: 'standard'},
+        material: {type: 'dark', share: true},
         position: {x: 0, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [5, 5, 5],
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        texturesPaths: ['./res/textures/matrix1.webp', './res/textures/white-metal2.webp'],
         name: 'cube',
         mesh: m.cube,
         envMapParams: {
@@ -141,10 +156,23 @@ export var loadHand = function() {
         }
       })
 
-      loadHand.lightContainer[0].setIntensity(15);
-      // loadHand.activateBloomEffect();
-      loadHand.lightContainer[0].setPosition(0, 15, -10);
-      loadHand.lightContainer[0].setTarget(0, 0, -10);
+      loadHand.lightContainer[0].setIntensity(0.7);
+      app.lightContainer[0].setColorB(100)
+
+
+      loadHand.activateBloomEffect();
+
+      
+       app.activateVolumetricEffect({
+        density: 0.5,
+        steps: 30,
+        scatterStrength: 2,
+        heightFalloff: 0.2,
+        lightColor: [0, 1.8, 10]
+      })
+
+      loadHand.lightContainer[0].setPosition(0, 35, 0);
+      loadHand.lightContainer[0].setTarget(0, 0, -20);
 
       setTimeout(() => {
         loadHand.activateHZB();

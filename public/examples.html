@@ -18,7 +18,7 @@
 
 <body allow="autoplay">
   <div class="header" style="display: contents;text-align: center;font-size: large;">
-    MATRIX-ENGINE-WGPU<span>+Android Chrome</span> <a style="font-size: x-small;" href="https://github.com/zlatnaspirala/matrix-engine-wgpu">Source and Credits github project</a>
+    MATRIX-ENGINE-WGPU<span>+Android Chrome</span> <a style="color:black;font-size: small;" href="https://github.com/zlatnaspirala/matrix-engine-wgpu">Source and Credits github project</a>
   </div>
   <button class="btn" style="top: 42px;left: 0;position:absolute;font-size: 13px;width: 150px;" id="sliderMenu1">Menu 👉🏼</button>
   <div id="examples" style="top: 100px;left: 0;display: flex; flex-direction: column;width: 180px;position: absolute;height: 80%;overflow-y: scroll;overflow-x: hidden;">
@@ -50,9 +50,12 @@
     <button class="btn" id="loadGaussianSplat">Gaussian splat color animator</button>
     <button class="btn" id="loadGaussianSplatVertAnim">Gaussian splat vertex animation</button>
     <button class="btn" id="hand">Hand commander</button>
+    <button class="btn" id="loadStreamRenderHost">Port render to android TV</button>
     <button class="btn" id="jamb">Jamb game</button>
     <button class="btn" id="moba">MOBA game</button>
   </div>
+  <div id="matrix-net"></div>
+  <div id="log" class="msg-box animate1">mewgpu</div>
   <div id="msgBox" class="msg-box animate1" onclick="mb.copy()"></div>
   <script src="examples.js"></script>
   <script>

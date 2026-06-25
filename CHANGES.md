@@ -5,6 +5,7 @@
  - Splat class + animator for colors also vertex positions.
  - Visual scripting improvments in general + ai tool part.
  - MediaPipe implemented (hand model)
+ - Test webRTC canvas capture to android TV  main instance for recceiver android-tv-cast.js/html
 
 [1.15.xx]
  - Added `npm install @google/generative-ai` like new ai tool provider.

@@ -1084,9 +1084,35 @@ It is the plain text JavaScript ready for exec.
 
 ---
 
+
+## Android TV render stream receiver
+
+  Tech:L webRTC (used standard kurento/openvidu matrixStream)
+  Look in ./public/tv-10.html
+  To make or build you own see android native part at:
+  https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv
+  At thie repo (cef) you can find way to port also on windows, macos or linux OS but
+  this not priory for project.
+
+  We need somewhere to run standard render and use networking just with new flag (streamRender): 
+  ```js
+    streamRender.net = new MatrixStream({
+      active: true,
+      domain: 'maximumroulette.com',
+      port: 2020,
+      sessionName: 'tv-beast',
+      resolution: '1920x1080',
+      isDataOnly: false,
+      streamRender: true
+    });
+  ```
+
+
 ## NPM Scripts
 
-Uses `watchify` to bundle JavaScript.
+Editor use esbuild.
+Uses `watchify` to bundle JavaScript. (still good)
+Slow migration to the ESBUILD (note: it strange becouse it is exe file).
 
 ```json
 "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
@@ -1101,13 +1127,16 @@ Uses `watchify` to bundle JavaScript.
 ## Resources
 
 All resources and output go into the `./public` folder — everything you need in one place.
-This is static file storage.
+This is static file storage also all builds make outputs here.
+ - For adding new endpoint app/demo you only need to create standard html file with js script name.
+  
 
 ---
 
 ## Proof of Concept
 
 🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
+   Also MOBA 'Forest of hollow blood'
 
 ## MOBA game Beta version done
 
@@ -1220,6 +1249,8 @@ You may use, modify, and sell projects based on this code — just keep this not
   [https://wavbvkery.com/dice-rolling-sound/](https://wavbvkery.com/dice-rolling-sound/)
 - Raycasting logic and glb loader assisted by ChatGPT.
 - GLTF Loader: https://github.com/Twinklebear/webgpu-gltf, improved with chatgpt.
+- Origin jpg (free format) source:  http://spiralgraphics.biz/
+  More: Https://blenderartists.org/t/is-spiral-graphics-genetica-dead/1446058
 - Music by <a href="https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Mykola Sosin</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Pixabay</a>
 - Characters used from great mixamo.com
   -✅What you can do

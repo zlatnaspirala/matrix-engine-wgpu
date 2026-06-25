@@ -35,6 +35,7 @@ import {loadDrumCannon} from "./examples/drum-cannon.js";
 import {loadGaussianSplat} from "./examples/gaussian-splat.js";
 import {loadGaussianSplatVertAnim} from "./examples/gaussian-vertex-anim.js";
 import {loadHand} from "./examples/games/nui/hand.js";
+import {loadStreamRenderHost} from "./examples/stream-render.js";
 
 window.urlQ = urlQuery;
 
@@ -86,6 +87,7 @@ byId('loadSprite2').addEventListener("click", () => switchDemo('24'));
 byId('loadDrumCannon').addEventListener("click", () => switchDemo('25'));
 byId('loadGaussianSplat').addEventListener("click", () => switchDemo('26'));
 byId('loadGaussianSplatVertAnim').addEventListener("click", () => switchDemo('27'));
+byId('loadStreamRenderHost').addEventListener("click", () => switchDemo('29'));
 byId('hand').addEventListener("click", () => switchDemo('28'));
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
@@ -149,6 +151,8 @@ if(urlQ['demo'] === '1') {
   loadGaussianSplatVertAnim();
 } else if(urlQ['demo'] === '28') {
   loadHand();
+} else if(urlQ['demo'] === '29') {
+  loadStreamRenderHost();
 }
 
 else {

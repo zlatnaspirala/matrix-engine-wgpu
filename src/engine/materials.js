@@ -553,13 +553,11 @@ export default class Materials {
     } else if(arg.type === 'camera') {
       if(!byId(`core-${this.name}`)) {
         this.video = document.createElement('video');
-
         this.video.style.position = 'absolute';
         this.video.style.width = '640px';
         this.video.style.height = '480px';
         this.video.style.top = '-465px';
         this.video.style.left = '50%';
-
         this.video.id = `core-${this.name}`;
         this.video.autoplay = true;
         this.video.muted = true;
