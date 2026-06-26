@@ -38,6 +38,11 @@ export class WASDCamera {
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
+    if(options.noEvents) {
+      this.noEvent = true;
+    } else {
+      this.noEvent = false;
+    }
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if(isMobile() == true && options.isActive == 'init active cam') {
@@ -188,8 +193,11 @@ export class WASDCamera {
         }
       }
     };
-    window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
-    window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
+
+    if(this.noEvent !== true) {
+      window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
+      window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
+    }
   }
 
   _applyDigitalMovement() {
@@ -712,12 +720,9 @@ export class FirstPersonCamera {
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 200);
-    console.log('___________________________' + this.canvas)
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
-
     if(isMobile() == true && options.isActive == 'init active cam') {
-      console.log('FPCAMERA')
       MobileDOM.createWASD(this, {margin: 50});
     }
   }
@@ -1741,7 +1746,7 @@ export const MobileDOM = {
     byId('mobileControls').remove();
   },
 
-  addButton(label, onClick, onRelease, options = {}) {
+  addButton(label, onClick, onRelease = () => {}, options = {}) {
     document.body.style.touchAction = 'none';
 
     const size = options.size ?? 56;

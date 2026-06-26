@@ -1,4 +1,7 @@
 
+// ! This is NOT TESTED part
+// Alternativi is hackertimer -> redraw on self calling from setTimeout 
+// This mehanics exist look at core.
 var canvas = document.createElement('canvas')
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;

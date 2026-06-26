@@ -34,6 +34,8 @@ import {loadDrumCannon} from "./examples/drum-cannon.js";
 // import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {loadGaussianSplat} from "./examples/gaussian-splat.js";
 import {loadGaussianSplatVertAnim} from "./examples/gaussian-vertex-anim.js";
+import {loadHand} from "./examples/games/nui/hand.js";
+import {loadStreamRenderHost} from "./examples/stream-render.js";
 
 window.urlQ = urlQuery;
 
@@ -66,7 +68,7 @@ byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 byId('maze').addEventListener("click", () => switchDemo('12'));
 byId('flipper-jolt').addEventListener("click", () => switchDemo('13'));
 
-if (isMobile() === true) {
+if(isMobile() === true) {
   byId('flipper-ammo').remove();
 } else {
   byId('flipper-ammo').addEventListener("click", () => switchDemo('14'));
@@ -85,6 +87,8 @@ byId('loadSprite2').addEventListener("click", () => switchDemo('24'));
 byId('loadDrumCannon').addEventListener("click", () => switchDemo('25'));
 byId('loadGaussianSplat').addEventListener("click", () => switchDemo('26'));
 byId('loadGaussianSplatVertAnim').addEventListener("click", () => switchDemo('27'));
+byId('loadStreamRenderHost').addEventListener("click", () => switchDemo('29'));
+byId('hand').addEventListener("click", () => switchDemo('28'));
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
@@ -141,11 +145,17 @@ if(urlQ['demo'] === '1') {
   loadSprite2();
 } else if(urlQ['demo'] === '25') {
   loadDrumCannon();
-}  else if(urlQ['demo'] === '26') {
+} else if(urlQ['demo'] === '26') {
   loadGaussianSplat();
 } else if(urlQ['demo'] === '27') {
   loadGaussianSplatVertAnim();
-} else {
+} else if(urlQ['demo'] === '28') {
+  loadHand();
+} else if(urlQ['demo'] === '29') {
+  loadStreamRenderHost();
+}
+
+else {
   loadObjFile();
 }
 

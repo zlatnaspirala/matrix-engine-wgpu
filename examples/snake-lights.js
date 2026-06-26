@@ -79,11 +79,10 @@ export var snakeLights = function() {
         };
       },
 
-
-      heart: (t) => ({
-        x: CENTER.x + 8 * Math.pow(Math.sin(t), 3),
-        z: CENTER.z - 6 * (Math.cos(t) - 0.5 * Math.cos(2 * t) - 0.25 * Math.cos(3 * t) - 0.1 * Math.cos(4 * t)),
-      }),
+      // heart: (t) => ({
+      //   x: CENTER.x + 8 * Math.pow(Math.sin(t), 3),
+      //   z: CENTER.z - 6 * (Math.cos(t) - 0.5 * Math.cos(2 * t) - 0.25 * Math.cos(3 * t) - 0.1 * Math.cos(4 * t)),
+      // }),
 
       // Letters — sampled as closed loops
       letterS: (t) => {

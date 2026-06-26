@@ -23,6 +23,7 @@ export class MatrixStream {
     netConfig.sessionName = arg.sessionName;
     netConfig.resolution = arg.resolution;
     netConfig.isDataOnly = arg.isDataOnly;
+    netConfig.streamRender = arg.streamRender;
     if(arg.customData) netConfig.customData = arg.customData;
     scriptManager.LOAD('./networking/openvidu-browser-2.20.0.js', undefined, undefined, undefined, () => {
       setTimeout(() => {this.loadNetHTML()}, 2500)

@@ -171,6 +171,11 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'explode', idx, x, y, z, radius, strength});
   }
 
+  explodeAll(idxs, x, y, z, radius, strength) {
+    if(idxs === undefined) return;
+    this._worker.postMessage({cmd: 'explodeAll', idxs, x, y, z, radius, strength});
+  }
+
   deactivatePhysics(idx) {
     if(idx === undefined) return;
     this._worker.postMessage({cmd: 'deactivate', idx});

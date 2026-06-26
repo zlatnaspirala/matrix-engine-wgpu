@@ -513,6 +513,12 @@ class MatrixJolt {
     }
   }
 
+  explodeAll(idxs, x, y, z, radius, strength) {
+    for(const idx of idxs) {
+      this.explode(idx, x, y, z, radius, strength);
+    }
+  }
+
   addHingeConstraint(idxA, idxB, pOptions, msgID) {
     const Jolt = this.Jolt;
     if(!this.constraints) this.constraints = [];
@@ -719,6 +725,7 @@ self.onmessage = async ({data}) => {
     case 'setBodyTransform': jolt.setBodyTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravityScale': jolt.setGravityScale(data.idx, data.scale); break;
     case 'explode': jolt.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
+    case 'explodeAll': jolt.explodeAll(data.idxs, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'getPosition': jolt.getPosition(data.idx, data.id); break;
     case 'speedUpSimulation': jolt.speedUpSimulation(data.value); break;
     case 'removeRigidBody': jolt.removeRigidBody(data.idx, data.flags); break;

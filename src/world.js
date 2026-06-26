@@ -268,7 +268,13 @@ export default class MatrixEngineWGPU {
         };
       } else if('WASD' == this.options.mainCameraParams.type) {
         this.cameras = {
-          WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+          WASD: new WASDCamera(
+            {
+              position: initialCameraPosition,
+              canvas: canvas, pitch: 0.18, yaw: -0.1,
+              isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null,
+              noEvents: this.options.mainCameraParams.noEvents ? "noEvents" : undefined
+            }),
         };
       } else if('RPG' == this.options.mainCameraParams.type) {
         this.cameras = {
@@ -332,7 +338,7 @@ export default class MatrixEngineWGPU {
       meLoader.create();
 
       this.MEConfig.fsManager.onChange((isFS, target) => {
-        console.log('GOT BACK FROM FS', isFS)
+        console.log('BACK FROM FS', isFS)
         setTimeout(() => this.applyCanvasSizeMobile(this.options.fastRender), 100);
       })
 
@@ -341,7 +347,6 @@ export default class MatrixEngineWGPU {
           console.log('FastRender : ', this.options.fastRender)
           this.applyCanvasSize(this.options.fastRender)
         }
-        // console.log('what iscallback ', callback)
         this.init({canvas, callback});
         meLoader.destroy();
         setTimeout(() => {
@@ -470,10 +475,11 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.15.7 [The beast] ", LOG_FUNNY);
+    console.log("%c Version 1.16.00 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
+      "Optimised MediaPipe buildin library implemented.\n" +
       "Creative power with intuitive visual scripting work flow.\n" +
       "New Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
       "2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
@@ -1059,7 +1065,7 @@ export default class MatrixEngineWGPU {
     setTimeout(() => {callback(this)}, 1);
   }
 
-  // still not perfect but works
+  // Still not perfect
   destroyProgram = () => {
     console.warn('%c[MatrixEngineWGPU] Destroy program', 'color: orange');
     this.frame = () => {};
@@ -1075,53 +1081,38 @@ export default class MatrixEngineWGPU {
       }
     }
     this.mainRenderBundle.length = 0;
-
-    // 3️⃣ Physics
     this.matrixPhysics?.destroy?.();
     this.matrixPhysics = null;
-
-    // 4️⃣ Editor
     this.editor?.destroy?.();
     this.editor = null;
-
-    // 5️⃣ Input
     this.inputHandler?.destroy?.();
     this.inputHandler = null;
-
-    // 6️⃣ GLOBAL GPU RESOURCES
     this.mainDepthTexture?.destroy();
     this.shadowTextureArray?.destroy();
     this.shadowVideoTexture?.destroy();
-
     this.mainDepthTexture = null;
     this.shadowTextureArray = null;
     this.shadowVideoTexture = null;
-
-    // 7️⃣ Lose WebGPU context
     try {
       this.context?.unconfigure?.();
     } catch {}
-
-    // 8️⃣ Canvas
     this.canvas?.remove();
-
     this.canvas = null;
     this.device = null;
     this.context = null;
     this.adapter = null;
-
     console.warn('%c[MatrixEngineWGPU] Destroy complete ✔', 'color: lightgreen');
   };
 
   updateLights() {
-    const floatsPerLight = 36;
+    // const floatsPerLight = 36;
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
       const light = this.lightContainer[i];
       if(light?.update) {
         const vpDirty = light.update();
         if(vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
       }
-      this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i * floatsPerLight);
+      this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i * 36);
     }
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   }
@@ -1311,7 +1302,7 @@ export default class MatrixEngineWGPU {
       o.physics = {
         scale: [1, 1, 1],
         enabled: true,
-        geometry: "Sphere",//                   must be fixed<<
+        geometry: "Sphere",
         radius: (typeof o.scale == Number ? o.scale : o.scale[0]),
         name: o.name,
         rotation: o.rotation
@@ -1332,7 +1323,6 @@ export default class MatrixEngineWGPU {
     }
 
     o.sceneBGL = this.sceneBGL;
-
     let r = [];
     o.textureCache = this.textureCache;
     let skinnedNodeIndex = 0;
@@ -1346,11 +1336,7 @@ export default class MatrixEngineWGPU {
         o.materialBGL = this.materialBGL;
         o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
         const bvhPlayer = new BVHPlayer(
-          o,
-          BVHANIM,
-          glbFile,
-          c,
-          skinnedNodeIndex,
+          o, BVHANIM, glbFile, c, skinnedNodeIndex,
           this.canvas,
           this.device,
           this.context,
@@ -1359,7 +1345,7 @@ export default class MatrixEngineWGPU {
 
         bvhPlayer.clearColor = clearColor;
         bvhPlayer.itIsPhysicsBody = false;
-        // make it soft
+        // Soft
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
         this.sortRenderBundle();
@@ -1400,7 +1386,7 @@ export default class MatrixEngineWGPU {
       o.physics = {
         scale: o.scale,
         enabled: true,
-        geometry: "Sphere",//                   must be fixed<<
+        geometry: "Sphere",
         radius: (typeof o.scale == Number ? o.scale : o.scale[0]),
         name: o.name,
         rotation: o.rotation
@@ -1421,9 +1407,7 @@ export default class MatrixEngineWGPU {
     }
 
     o.sceneBGL = this.sceneBGL;
-
     let results = [];
-
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -1457,7 +1441,7 @@ export default class MatrixEngineWGPU {
         // if(o.physics.enabled == true) {
         //   this.matrixPhysics.addPhysics(myMesh1, o.physics)
         // }
-        // make it soft
+        // Soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();

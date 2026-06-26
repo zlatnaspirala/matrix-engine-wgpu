@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.11.3 2026 `The beast`
+📅 Version: 1.16.0 2026 `The beast`
 
 ---
 
@@ -18,13 +18,11 @@
 This project is a `stable` but also `work-in-progress` WebGPU engine inspired by the original **matrix-engine** for WebGL.
 It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
-Published on npm as: **`matrix-engine-wgpu`**
+Published on npm as: **`matrix-engine-wgpu`** (not always updated on last - recommended is to use github clone)
 
 Backend editor (works in local env - desktop browsers) support list:
 
-- Chrome, Edge, Opera
-
-HOT: For 1.1x.0 Firefox render not FIXED yet.
+- Chrome, Edge, Opera, Firefox desktop
 
 ---
 
@@ -37,7 +35,7 @@ HOT: For 1.1x.0 Firefox render not FIXED yet.
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
 - ✔️ Bloom post processing.
 - ✔️ HZB post processing.
-- ✔️ Scene Culling feature.
+- ✔️ Scene Culling feature (see maze example).
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
 - ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).
 - ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader).
@@ -45,6 +43,7 @@ HOT: For 1.1x.0 Firefox render not FIXED yet.
 - ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect.
 - ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/).
 - ✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend.
+- ✔️ MediaPipe implemented - dinamic loading (if not in use no loading script or any related to mediapipe)
 
 ## Roadmap
 
@@ -53,7 +52,7 @@ HOT: For 1.1x.0 Firefox render not FIXED yet.
 - 🎯 Improve gizmo feature.
 - 🎯 Sync npm version and make editor posible from `npm i matrix-engine-wgpu`.
 - 🎯 Sync npm version for matrix-engine-wgpu wrapper (me-webgpu-react)[https://github.com/zlatnaspirala/me-webgpu-react]
-- Add fully physics options. soft bodies etc...
+- Add fully physics options. Soft bodies etc...
 
 ## FluxCodexVertex Web Graph Editor 🚀 (since version 1.8.0)
 
@@ -356,10 +355,10 @@ SpotLight – Emits light in a cone shape with configurable cutoff angles.
 
 (Planned: PointLight)
 
-Features
+Features:
 
-✅ Supports multiple lights (4 max), ~20 for next update.
-✅ Shadow-ready (spotlight0 shadows implemented, extendable to others)
+✅ Supports multiple lights
+✅ Shadow-ready
 
 ```json
 ## Important Required to be added manual:
@@ -425,6 +424,7 @@ material: {
 - Pong
 - Power - no shadows cast
 - Mirror is env map. If you use mirror you must pass arg
+- Dark
 
 ```js
 // Also for addMeshObj
@@ -498,11 +498,11 @@ app.mainRenderBundle[0].updateWaterParams(
 app.mainRenderBundle[0].updateWaterParams(
   [0.0, 0.3, 0.5], // Deep: medium blue
   [0.3, 0.8, 1.0], // Shallow: bright cyan
-  1.2, // Wave speed: gentle continuous (changed from 0.6)
-  2.5, // Wave scale: smooth ripples (changed from 5.0)
-  0.3, // Wave height: visible movement
-  2.5, // Fresnel: moderate reflection
-  100.0, // Specular: sharp sparkles
+  1.2,             // Wave speed: gentle continuous (changed from 0.6)
+  2.5,             // Wave scale: smooth ripples (changed from 5.0)
+  0.3,             // Wave height: visible movement
+  2.5,             // Fresnel: moderate reflection
+  100.0,           // Specular: sharp sparkles
 );
 ```
 
@@ -1084,9 +1084,35 @@ It is the plain text JavaScript ready for exec.
 
 ---
 
+
+## Android TV render stream receiver
+
+  Tech:L webRTC (used standard kurento/openvidu matrixStream)
+  Look in ./public/tv-10.html
+  To make or build you own see android native part at:
+  https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv
+  At thie repo (cef) you can find way to port also on windows, macos or linux OS but
+  this not priory for project.
+
+  We need somewhere to run standard render and use networking just with new flag (streamRender): 
+  ```js
+    streamRender.net = new MatrixStream({
+      active: true,
+      domain: 'maximumroulette.com',
+      port: 2020,
+      sessionName: 'tv-beast',
+      resolution: '1920x1080',
+      isDataOnly: false,
+      streamRender: true
+    });
+  ```
+
+
 ## NPM Scripts
 
-Uses `watchify` to bundle JavaScript.
+Editor use esbuild.
+Uses `watchify` to bundle JavaScript. (still good)
+Slow migration to the ESBUILD (note: it strange becouse it is exe file).
 
 ```json
 "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
@@ -1101,13 +1127,16 @@ Uses `watchify` to bundle JavaScript.
 ## Resources
 
 All resources and output go into the `./public` folder — everything you need in one place.
-This is static file storage.
+This is static file storage also all builds make outputs here.
+ - For adding new endpoint app/demo you only need to create standard html file with js script name.
+  
 
 ---
 
 ## Proof of Concept
 
 🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
+   Also MOBA 'Forest of hollow blood'
 
 ## MOBA game Beta version done
 
@@ -1220,6 +1249,8 @@ You may use, modify, and sell projects based on this code — just keep this not
   [https://wavbvkery.com/dice-rolling-sound/](https://wavbvkery.com/dice-rolling-sound/)
 - Raycasting logic and glb loader assisted by ChatGPT.
 - GLTF Loader: https://github.com/Twinklebear/webgpu-gltf, improved with chatgpt.
+- Origin jpg (free format) source:  http://spiralgraphics.biz/
+  More: Https://blenderartists.org/t/is-spiral-graphics-genetica-dead/1446058
 - Music by <a href="https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Mykola Sosin</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Pixabay</a>
 - Characters used from great mixamo.com
   -✅What you can do
@@ -1242,7 +1273,6 @@ You may use, modify, and sell projects based on this code — just keep this not
 
   'Ruined rock fence' (https://skfb.ly/6RLwN) by VladNeko is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
-  // test
   "fantasy rock" (https://skfb.ly/oHXAz) by duckcracker02 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
   "Fantasy Rock" (https://skfb.ly/oHZSq) by lalune is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
@@ -1267,4 +1297,4 @@ Top level main.js instance (Jamb 3d deluxe)
 ## 📘 Learning Resource:
 
 [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
-ChatGPT , claude ai
+- ChatGPT, claude and Gemini.

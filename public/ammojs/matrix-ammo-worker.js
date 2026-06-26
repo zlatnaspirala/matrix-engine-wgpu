@@ -411,16 +411,23 @@ class MatrixAmmoWorker {
   explode(idx, x, y, z, radius, strength) {
     const body = this.rigidBodies[idx];
     if(!body) return;
-    this.rigidBodies.forEach(body => {
-      const p = body.getWorldTransform().getOrigin();
-      const dx = p.x() - x;
-      const dy = p.y() - y;
-      const dz = p.z() - z;
-      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if(dist > radius || dist === 0) return;
-      const force = strength / (dist + 0.1);
-      body.applyImpulse(new this.Ammo.btVector3(dx * force, dy * force, dz * force));
-    });
+
+    const p = body.getWorldTransform().getOrigin();
+    const dx = p.x() - x;
+    const dy = p.y() - y;
+    const dz = p.z() - z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    if(dist >= radius || dist === 0) return;
+
+    const force = strength / (dist + 0.1);
+    body.applyImpulse(new this.Ammo.btVector3(dx * force, dy * force, dz * force));
+  }
+
+  explodeAll(idxs, x, y, z, radius, strength) {
+    for(const idx of idxs) {
+      this.explode(idx, x, y, z, radius, strength);
+    }
   }
 
   shootBody = (idx, lx, ly, lz, ax, ay, az) => {
@@ -703,6 +710,7 @@ self.onmessage = async ({data}) => {
     case 'setFriction': ammo.setFriction(data.idx, data.s); break;
     case 'setHingeLimit': ammo.setHingeLimit(data.idx, data.v0, data.v1, data.v2, data.v3, data.v4); break;
     case 'explode': ammo.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
+    case 'explodeAll': ammo.explodeAll(data.idxs, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'applyTorque': ammo.applyTorque(data.idx, data.x, data.y, data.z); break;
     case 'setLinearVelocity': ammo.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
     case 'setBodyAngularVelocity': ammo.setBodyAngularVelocity(data.idx, data.x, data.y, data.z); break;
