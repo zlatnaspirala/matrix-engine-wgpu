@@ -44,6 +44,8 @@ Backend editor (works in local env - desktop browsers) support list:
 - ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/).
 - ✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend.
 - ✔️ MediaPipe implemented - dinamic loading (if not in use no loading script or any related to mediapipe)
+- ✔️ Remote render stream emit example (standard engine networking) and special endpoint for "wachers" `tv-10.html`
+    Replace webcam stream with canvas capture - on endpoint use webRTC and video tag to preview remote render.
 
 ## Roadmap
 
@@ -1085,14 +1087,17 @@ It is the plain text JavaScript ready for exec.
 ---
 
 
-## Android TV render stream receiver
+## Android TV or any other supported device render stream receiver
 
   Tech:L webRTC (used standard kurento/openvidu matrixStream)
-  Look in ./public/tv-10.html
+  Look for ./public/tv-10.html 
+
   To make or build you own see android native part at:
   https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv
   At thie repo (cef) you can find way to port also on windows, macos or linux OS but
   this not priory for project.
+  Dev help for android studio:
+  "adb connect 192.168.0.XX:5555"
 
   We need somewhere to run standard render and use networking just with new flag (streamRender): 
   ```js
@@ -1157,7 +1162,7 @@ Features done:
 Install it on your desktop with one click.
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game5.png?raw=true" />
 
-[Invest in Forest Of Hollow Blood 9,660$](https://goldenspiral.itch.io/forest-of-hollow-blood)
+[Invest in Forest Of Hollow Blood 1,000$](https://goldenspiral.itch.io/forest-of-hollow-blood)
 See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Support-the-Future-of-Forest-of-Hollow-Blood)
 
 ---

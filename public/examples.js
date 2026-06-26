@@ -53353,7 +53353,6 @@ var MatrixStream = class {
       }
     });
     addEventListener("connectionDestroyed", (e3) => {
-      console.log("connectionDestroyed from engine ", e3.detail);
       const rc2 = byId4("video-container");
       if (!rc2) return;
       rc2.querySelectorAll("div:not(:has(*))").forEach((div2) => div2.remove());
@@ -53621,11 +53620,9 @@ var loadStreamRenderHost = function() {
       byId("sessionName").disabled = true;
       streamRender.setWaitingList();
       setTimeout(() => {
-        app.net.fetchInfo("tv-cast");
       }, 1500);
     });
     addEventListener("connectionDestroyed", (e3) => {
-      console.log("DISCONNECT");
     });
     addEventListener("onConnectionCreated", (e3) => {
       console.log("newconn : created", e3.detail);

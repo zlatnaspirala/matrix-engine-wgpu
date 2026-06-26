@@ -165,7 +165,7 @@ export var loadStreamRenderHost = function() {
       streamRender.setWaitingList();
       // check game-play channel
       setTimeout(() => {
-        app.net.fetchInfo('tv-cast');
+        // app.net.fetchInfo('tv-cast');
         // app.sendmsg = (m) => {
         //   if(typeof m != 'string') return;
         //   if(m.length > 120) return;
@@ -176,8 +176,7 @@ export var loadStreamRenderHost = function() {
     });
 
     addEventListener('connectionDestroyed', (e) => {
-      //
-      console.log('DISCONNECT')
+      // console.log('DISCONNECT')
     });
 
     addEventListener("onConnectionCreated", (e) => {

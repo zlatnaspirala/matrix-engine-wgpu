@@ -553,7 +553,6 @@ var MatrixStream = class {
       }
     });
     addEventListener("connectionDestroyed", (e2) => {
-      console.log("connectionDestroyed from engine ", e2.detail);
       const rc = byId2("video-container");
       if (!rc) return;
       rc.querySelectorAll("div:not(:has(*))").forEach((div) => div.remove());
