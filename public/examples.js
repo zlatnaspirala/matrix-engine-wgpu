@@ -52964,7 +52964,6 @@ function joinSession(options2) {
       pushEvent(event);
     });
     session.on("connectionDestroyed", (e3) => {
-      console.log(`Connection destroyed ${e3.connection.connectionId}`);
       dispatchEvent(new CustomEvent("connectionDestroyed", { detail: { connectionId: e3.connection.connectionId, event: e3 } }));
       pushEvent(e3);
     });
@@ -53096,7 +53095,8 @@ function joinSession(options2) {
           updateNumVideos(-1);
         });
         publisher.on("streamPlaying", (event) => {
-          console.log("publisher.on streamPlaying");
+          console.log("streamPlaying");
+          dispatchEvent(new CustomEvent(`streamPlaying`, { detail: event }));
         });
         session.publish(publisher);
       }).catch((error) => {
@@ -53341,6 +53341,23 @@ var MatrixStream = class {
         }
       });
     });
+    addEventListener("streamPlaying", (e3) => {
+      console.log("streamPlaying from engine ", e3.detail);
+      const isRemote = e3.detail.target.id.indexOf("remote-video") !== -1;
+      const vr2 = e3.detail.target.videos[0].video;
+      const streamId = e3.detail.target.id;
+      if (isRemote) {
+        StreamSlotManager.addRemote(vr2, streamId);
+      } else {
+        StreamSlotManager.addLocal(vr2);
+      }
+    });
+    addEventListener("connectionDestroyed", (e3) => {
+      console.log("connectionDestroyed from engine ", e3.detail);
+      const rc2 = byId4("video-container");
+      if (!rc2) return;
+      rc2.querySelectorAll("div:not(:has(*))").forEach((div2) => div2.remove());
+    });
     this.joinSessionUI.addEventListener("click", () => {
       console.log(`%c JOIN SESSION [${netConfig.resolution}] `, REDLOG);
       joinSession({
@@ -53348,12 +53365,15 @@ var MatrixStream = class {
         isDataOnly: netConfig.isDataOnly
       });
     });
+    this.joinSessionUI.style.zIndex = "10";
     this.buttonCloseSession.addEventListener("click", closeSession);
     this.buttonLeaveSession.addEventListener("click", () => {
       console.log(`%cLEAVE SESSION`, REDLOG);
       removeUser();
       leaveSession();
     });
+    byId4("netHeaderTitle").style.position = "relative";
+    byId4("netHeaderTitle").style.zIndex = "10";
     byId4("netHeaderTitle").addEventListener("click", this.domManipulation.hideNetPanel);
     setTimeout(() => dispatchEvent(new CustomEvent("net-ready", {})), 2500);
   }
@@ -53400,6 +53420,45 @@ var MatrixStream = class {
     }
   };
 };
+var StreamSlotManager = {
+  slots: [],
+  _updateLayout() {
+    const container = document.getElementById("video-container");
+    const count = this.slots.length;
+    if (!container || count === 0) return;
+    const cols = count === 1 ? 1 : count <= 4 ? 2 : 3;
+    const pct = (100 / cols).toFixed(2) + "%";
+    this.slots.forEach((slot) => {
+      slot.wrapper.style.width = `calc(${pct} - 4px)`;
+    });
+  },
+  addRemote(videoEl, streamId) {
+    const container = document.getElementById("video-container");
+    const wrapper = document.createElement("div");
+    wrapper.dataset.streamId = streamId;
+    Object.assign(wrapper.style, {
+      overflow: "hidden",
+      background: "#000",
+      aspectRatio: "16/9",
+      transition: "width 0.3s ease"
+    });
+    videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+    wrapper.appendChild(videoEl);
+    container.appendChild(wrapper);
+    this.slots.push({ wrapper, streamId });
+    this._updateLayout();
+  },
+  addLocal(videoEl) {
+    videoEl.style.cssText = "position:fixed;bottom:16px;right:16px;width:180px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;border:2px solid rgba(255,255,255,0.3);z-index:999;";
+  },
+  removeRemote(streamId) {
+    const idx = this.slots.findIndex((s2) => s2.streamId === streamId);
+    if (idx === -1) return;
+    this.slots[idx].wrapper.remove();
+    this.slots.splice(idx, 1);
+    this._updateLayout();
+  }
+};
 
 // examples/stream-render.js
 var loadStreamRenderHost = function() {
@@ -53423,6 +53482,15 @@ var loadStreamRenderHost = function() {
     );
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
+    alert(`
+      Android part is not yet published on googlePlay, you can use 
+
+      android studio via LAN or USB to push receiver part of app on TV device. 
+
+      You can find code at : https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv 
+
+      Endpoint for receiver is tv-10.html and main instance is android-tv-cast.js in root of project.
+        `);
     function onGround(m2) {
       streamRender.addMeshObj({
         material: { type: "standard", share: true },
@@ -53557,6 +53625,7 @@ var loadStreamRenderHost = function() {
       }, 1500);
     });
     addEventListener("connectionDestroyed", (e3) => {
+      console.log("DISCONNECT");
     });
     addEventListener("onConnectionCreated", (e3) => {
       console.log("newconn : created", e3.detail);

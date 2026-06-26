@@ -105,6 +105,8 @@
     "splat-point-color-animator",
     "splat-point-vertex-animator",
     "android-tv",
-    "cast-tv"
+    "cast-tv",
+    "mediapipe",
+    "mediapipe-hand"
   ]
 }

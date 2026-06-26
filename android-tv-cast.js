@@ -17,27 +17,26 @@ const BeastCast = new MatrixStream({
   domain: 'maximumroulette.com',
   port: 2020,
   sessionName: 'tv-beast',
-  resolution: '320x480',
+  resolution: '1920x1080',
   isDataOnly: false
 });
 
 addEventListener('net-ready', () => {
-
   byId('caller-title').innerHTML = 'Welcome to matrix-engine-wgpu remote render app';
   byId('matrix-net').style.width = '100%';
-
   console.info('TEST TV READY');
   byId('matrix-net').style.opacity = '0.75';
   byId("sessionName").disabled = true;
-  setTimeout(() => {
-    BeastCast.fetchInfo('tv-beast');
-    BeastCast.sendmsg = (m) => {
-      if(typeof m != 'string') return;
-      if(m.length > 120) return;
-      let username = checkUsername();
-      if(username != 'nosession') app.net.sendOnlyData({type: "chat", msg: m, username: username});
-    };
-  }, 1500);
+  byId("buttonCloseSession").remove();
+  // setTimeout(() => {
+  //   BeastCast.fetchInfo('tv-beast');
+  //   BeastCast.sendmsg = (m) => {
+  //     if(typeof m != 'string') return;
+  //     if(m.length > 120) return;
+  //     let username = checkUsername();
+  //     if(username != 'nosession') app.net.sendOnlyData({type: "chat", msg: m, username: username});
+  //   };
+  // }, 1500);
 });
 
 addEventListener('connectionDestroyed', (e) => {
@@ -45,7 +44,7 @@ addEventListener('connectionDestroyed', (e) => {
 });
 
 addEventListener("onConnectionCreated", (e) => {
-  console.log('newconn : created', e.detail);
+  console.log('newconn : created ', e.detail);
   if(BeastCast.session.connection.connectionId == e.detail.connection.connectionId) {
     console.log('newconn : created [LOCAL] determinate team');
     document.title = BeastCast.session.connection.connectionId;
@@ -53,8 +52,33 @@ addEventListener("onConnectionCreated", (e) => {
       BeastCast.sendOnlyData({type: "chat"});
     }
   }
-  console.info('Test number of players ');
+  console.info('onConnectionCreated - Test number of players ');
 })
+
+addEventListener("streamPlaying", (e) => {
+  console.log('streamPlaying >>>>> ', e.detail);
+  setTimeout(() => {
+    if(e.detail.target.id.indexOf('remote-video') !== -1) {
+      let vr = e.detail.target.videos[0].video;
+      vr.style.position = 'absolute';
+      vr.style.left = 0;
+      vr.style.top = 0;
+      vr.style.width = "100%";
+      vr.style.height = '100vh';
+    } else {
+      let vr = e.detail.target.videos[0].video;
+      vr.style.position = 'absolute';
+      vr.style.left = '5%';
+      vr.style.bottom = '5%';
+      // vr.style.width = "10%";
+      vr.style.height = window.innerHeight * 0.2 + 'px';
+    }
+  }, 1000)
+});
+
+addEventListener("videoElementCreated", (e) => {
+  console.log('videoElementCreated >>>>> ', e.detail);
+});
 
 addEventListener('only-data-receive', (e) => {
   let t = JSON.parse(e.detail.data);
@@ -71,5 +95,3 @@ addEventListener('only-data-receive', (e) => {
     }
   }
 })
-
-

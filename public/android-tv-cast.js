@@ -164,7 +164,6 @@ function joinSession(options) {
       pushEvent(event);
     });
     session.on("connectionDestroyed", (e2) => {
-      console.log(`Connection destroyed ${e2.connection.connectionId}`);
       dispatchEvent(new CustomEvent("connectionDestroyed", { detail: { connectionId: e2.connection.connectionId, event: e2 } }));
       pushEvent(e2);
     });
@@ -296,7 +295,8 @@ function joinSession(options) {
           updateNumVideos(-1);
         });
         publisher.on("streamPlaying", (event) => {
-          console.log("publisher.on streamPlaying");
+          console.log("streamPlaying");
+          dispatchEvent(new CustomEvent(`streamPlaying`, { detail: event }));
         });
         session.publish(publisher);
       }).catch((error) => {
@@ -541,6 +541,23 @@ var MatrixStream = class {
         }
       });
     });
+    addEventListener("streamPlaying", (e2) => {
+      console.log("streamPlaying from engine ", e2.detail);
+      const isRemote = e2.detail.target.id.indexOf("remote-video") !== -1;
+      const vr = e2.detail.target.videos[0].video;
+      const streamId = e2.detail.target.id;
+      if (isRemote) {
+        StreamSlotManager.addRemote(vr, streamId);
+      } else {
+        StreamSlotManager.addLocal(vr);
+      }
+    });
+    addEventListener("connectionDestroyed", (e2) => {
+      console.log("connectionDestroyed from engine ", e2.detail);
+      const rc = byId2("video-container");
+      if (!rc) return;
+      rc.querySelectorAll("div:not(:has(*))").forEach((div) => div.remove());
+    });
     this.joinSessionUI.addEventListener("click", () => {
       console.log(`%c JOIN SESSION [${netConfig.resolution}] `, REDLOG);
       joinSession({
@@ -548,12 +565,15 @@ var MatrixStream = class {
         isDataOnly: netConfig.isDataOnly
       });
     });
+    this.joinSessionUI.style.zIndex = "10";
     this.buttonCloseSession.addEventListener("click", closeSession);
     this.buttonLeaveSession.addEventListener("click", () => {
       console.log(`%cLEAVE SESSION`, REDLOG);
       removeUser();
       leaveSession();
     });
+    byId2("netHeaderTitle").style.position = "relative";
+    byId2("netHeaderTitle").style.zIndex = "10";
     byId2("netHeaderTitle").addEventListener("click", this.domManipulation.hideNetPanel);
     setTimeout(() => dispatchEvent(new CustomEvent("net-ready", {})), 2500);
   }
@@ -600,6 +620,45 @@ var MatrixStream = class {
     }
   };
 };
+var StreamSlotManager = {
+  slots: [],
+  _updateLayout() {
+    const container = document.getElementById("video-container");
+    const count = this.slots.length;
+    if (!container || count === 0) return;
+    const cols = count === 1 ? 1 : count <= 4 ? 2 : 3;
+    const pct = (100 / cols).toFixed(2) + "%";
+    this.slots.forEach((slot) => {
+      slot.wrapper.style.width = `calc(${pct} - 4px)`;
+    });
+  },
+  addRemote(videoEl, streamId) {
+    const container = document.getElementById("video-container");
+    const wrapper = document.createElement("div");
+    wrapper.dataset.streamId = streamId;
+    Object.assign(wrapper.style, {
+      overflow: "hidden",
+      background: "#000",
+      aspectRatio: "16/9",
+      transition: "width 0.3s ease"
+    });
+    videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+    wrapper.appendChild(videoEl);
+    container.appendChild(wrapper);
+    this.slots.push({ wrapper, streamId });
+    this._updateLayout();
+  },
+  addLocal(videoEl) {
+    videoEl.style.cssText = "position:fixed;bottom:16px;right:16px;width:180px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;border:2px solid rgba(255,255,255,0.3);z-index:999;";
+  },
+  removeRemote(streamId) {
+    const idx = this.slots.findIndex((s) => s.streamId === streamId);
+    if (idx === -1) return;
+    this.slots[idx].wrapper.remove();
+    this.slots.splice(idx, 1);
+    this._updateLayout();
+  }
+};
 
 // android-tv-cast.js
 var BeastCast = new MatrixStream({
@@ -607,7 +666,7 @@ var BeastCast = new MatrixStream({
   domain: "maximumroulette.com",
   port: 2020,
   sessionName: "tv-beast",
-  resolution: "320x480",
+  resolution: "1920x1080",
   isDataOnly: false
 });
 addEventListener("net-ready", () => {
@@ -616,20 +675,12 @@ addEventListener("net-ready", () => {
   console.info("TEST TV READY");
   byId2("matrix-net").style.opacity = "0.75";
   byId2("sessionName").disabled = true;
-  setTimeout(() => {
-    BeastCast.fetchInfo("tv-beast");
-    BeastCast.sendmsg = (m) => {
-      if (typeof m != "string") return;
-      if (m.length > 120) return;
-      let username = checkUsername();
-      if (username != "nosession") app.net.sendOnlyData({ type: "chat", msg: m, username });
-    };
-  }, 1500);
+  byId2("buttonCloseSession").remove();
 });
 addEventListener("connectionDestroyed", (e2) => {
 });
 addEventListener("onConnectionCreated", (e2) => {
-  console.log("newconn : created", e2.detail);
+  console.log("newconn : created ", e2.detail);
   if (BeastCast.session.connection.connectionId == e2.detail.connection.connectionId) {
     console.log("newconn : created [LOCAL] determinate team");
     document.title = BeastCast.session.connection.connectionId;
@@ -637,7 +688,29 @@ addEventListener("onConnectionCreated", (e2) => {
       BeastCast.sendOnlyData({ type: "chat" });
     }
   }
-  console.info("Test number of players ");
+  console.info("onConnectionCreated - Test number of players ");
+});
+addEventListener("streamPlaying", (e2) => {
+  console.log("streamPlaying >>>>> ", e2.detail);
+  setTimeout(() => {
+    if (e2.detail.target.id.indexOf("remote-video") !== -1) {
+      let vr = e2.detail.target.videos[0].video;
+      vr.style.position = "absolute";
+      vr.style.left = 0;
+      vr.style.top = 0;
+      vr.style.width = "100%";
+      vr.style.height = "100vh";
+    } else {
+      let vr = e2.detail.target.videos[0].video;
+      vr.style.position = "absolute";
+      vr.style.left = "5%";
+      vr.style.bottom = "5%";
+      vr.style.height = window.innerHeight * 0.2 + "px";
+    }
+  }, 1e3);
+});
+addEventListener("videoElementCreated", (e2) => {
+  console.log("videoElementCreated >>>>> ", e2.detail);
 });
 addEventListener("only-data-receive", (e2) => {
   let t2 = JSON.parse(e2.detail.data);

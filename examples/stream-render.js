@@ -28,6 +28,13 @@ export var loadStreamRenderHost = function() {
 
     addRaycastsAABBListener('canvas1', 'click');
 
+    alert(`
+      Android part is not yet published on googlePlay, you can use \n
+      android studio via LAN or USB to push receiver part of app on TV device. \n
+      You can find code at : https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv \n
+      Endpoint for receiver is tv-10.html and main instance is android-tv-cast.js in root of project.
+        `);
+
     function onGround(m) {
       streamRender.addMeshObj({
         material: {type: 'standard', share: true},
@@ -170,6 +177,7 @@ export var loadStreamRenderHost = function() {
 
     addEventListener('connectionDestroyed', (e) => {
       //
+      console.log('DISCONNECT')
     });
 
     addEventListener("onConnectionCreated", (e) => {
