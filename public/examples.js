@@ -4046,7 +4046,7 @@ function preventZoom() {
   document.addEventListener("gesturestart", gestureStartHandler);
 }
 var screenOrientationSupported = null;
-function getOrientation() {
+function getOrientation2() {
   if (window.innerWidth > window.innerHeight) {
     return "landscape";
   } else {
@@ -6539,6 +6539,11 @@ var WASDCamera = class _WASDCamera {
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1e3);
+    if (options2.noEvents) {
+      this.noEvent = true;
+    } else {
+      this.noEvent = false;
+    }
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
@@ -6714,8 +6719,10 @@ var WASDCamera = class _WASDCamera {
         }
       }
     };
-    window.addEventListener("keydown", (e3) => setDigital(e3, true), { passive: true });
-    window.addEventListener("keyup", (e3) => setDigital(e3, false), { passive: true });
+    if (this.noEvent !== true) {
+      window.addEventListener("keydown", (e3) => setDigital(e3, true), { passive: true });
+      window.addEventListener("keyup", (e3) => setDigital(e3, false), { passive: true });
+    }
   }
   _applyDigitalMovement() {
     const d2 = this._digital;
@@ -41169,6 +41176,10 @@ var PhysicsBridge = class {
     if (idx === void 0) return;
     this._worker.postMessage({ cmd: "explode", idx, x: x3, y: y3, z: z2, radius, strength });
   }
+  explodeAll(idxs, x3, y3, z2, radius, strength) {
+    if (idxs === void 0) return;
+    this._worker.postMessage({ cmd: "explodeAll", idxs, x: x3, y: y3, z: z2, radius, strength });
+  }
   deactivatePhysics(idx) {
     if (idx === void 0) return;
     this._worker.postMessage({ cmd: "deactivate", idx });
@@ -42827,7 +42838,16 @@ var MatrixEngineWGPU = class {
         };
       } else if ("WASD" == this.options.mainCameraParams.type) {
         this.cameras = {
-          WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "WASD" == this.options.mainCameraParams.type ? "init active cam" : null })
+          WASD: new WASDCamera(
+            {
+              position: initialCameraPosition,
+              canvas,
+              pitch: 0.18,
+              yaw: -0.1,
+              isActive: "WASD" == this.options.mainCameraParams.type ? "init active cam" : null,
+              noEvents: this.options.mainCameraParams.noEvents ? "noEvents" : void 0
+            }
+          )
         };
       } else if ("RPG" == this.options.mainCameraParams.type) {
         this.cameras = {
@@ -52246,7 +52266,7 @@ var loadGaussianSplatVertAnim = function() {
               MYCUBE.rotation.rotationSpeed.x = 1;
             }, 4e3);
             let modeIndex = 0;
-            let arg10 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 19 } : { left: "61" };
+            let arg10 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 19 } : { left: "61" };
             MobileDOM.addButton(
               "Mode",
               function() {
@@ -52279,31 +52299,31 @@ var loadGaussianSplatVertAnim = function() {
         let bloomRadius = 0.1;
         let bloomIntesity = 0.1;
         let glbAnimation = 0;
-        let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 82 } : { left: "5" };
+        let arg1 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 82 } : { left: "5" };
         MobileDOM.addButton("Bloom radius +", function() {
           app.bloomPass.setBlurRadius(bloomRadius);
           bloomRadius++;
         }, () => {
         }, arg1);
-        let arg2 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 73 } : { left: "13" };
+        let arg2 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 73 } : { left: "13" };
         MobileDOM.addButton("Bloom radius -", function() {
           app.bloomPass.setBlurRadius(bloomRadius);
           if (bloomRadius - 1 > 0) bloomRadius--;
         }, () => {
         }, arg2);
-        let arg3 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 64 } : { left: "21" };
+        let arg3 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 64 } : { left: "21" };
         MobileDOM.addButton("Bloom intesity +", function() {
           app.bloomPass.setIntensity(bloomIntesity);
           bloomIntesity = bloomIntesity + 10;
         }, () => {
         }, arg3);
-        let arg4 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 55 } : { left: "29" };
+        let arg4 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 55 } : { left: "29" };
         MobileDOM.addButton("Bloom intesity -", function() {
           app.bloomPass.setIntensity(bloomIntesity);
           if (bloomIntesity - 10 > 0) bloomIntesity = bloomIntesity - 10;
         }, () => {
         }, arg4);
-        let arg5 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 46 } : { left: "37" };
+        let arg5 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 46 } : { left: "37" };
         MobileDOM.addButton("Flame effect random", function() {
           let memoS = [randomIntFromTo(10, 150), randomIntFromTo(10, 150), randomIntFromTo(10, 150)];
           let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
@@ -52315,7 +52335,7 @@ var loadGaussianSplatVertAnim = function() {
           MYCUBE.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
         }, () => {
         }, arg5);
-        let arg6 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 37 } : { left: "45" };
+        let arg6 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 37 } : { left: "45" };
         MobileDOM.addButton("Animation", function() {
           if (glbAnimation < 4) {
             glbAnimation++;
@@ -52333,7 +52353,7 @@ var loadGaussianSplatVertAnim = function() {
           "point-list"
         ];
         let topologyIndex = 0;
-        let arg7 = isMobile() && getOrientation() === "portrait" ? { left: "5" } : { left: "53" };
+        let arg7 = isMobile() && getOrientation2() === "portrait" ? { left: "5" } : { left: "53" };
         MobileDOM.addButton(
           "Topology",
           function() {
@@ -52348,7 +52368,7 @@ var loadGaussianSplatVertAnim = function() {
         let delay2 = 100;
         const delayStep = 100;
         const delayMax = 1e3;
-        let arg8 = isMobile() && getOrientation() === "portrait" ? { left: "22" } : { left: "69" };
+        let arg8 = isMobile() && getOrientation2() === "portrait" ? { left: "22" } : { left: "69" };
         MobileDOM.addButton(
           `Delay (0-1sec)`,
           function() {
@@ -52366,7 +52386,7 @@ var loadGaussianSplatVertAnim = function() {
         let currentNumberOfTrails = 2;
         const minInstances = 1;
         const maxInstances = 5;
-        let arg9 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: "28" } : { left: "77" };
+        let arg9 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: "28" } : { left: "77" };
         MobileDOM.addButton(
           `Trails (1-5)`,
           function() {
@@ -52730,29 +52750,30 @@ var loadHand = function() {
   let loadHand2 = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
-    dontUsePhysics: true,
-    // useCannon: true,
+    // dontUsePhysics: true,
+    useCannon: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
       type: "WASD",
+      noEvents: true,
       responseCoef: 1e3
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
     const pipe = new PipeGestureResolver();
     const nui = new PipeCommander();
+    loadHand2.matrixPhysics.speedUpSimulation(2);
     const cam2 = app.getCamera();
     nui.onResults = (results) => {
       const hands = pipe.resolve(results);
       for (const hand of hands) {
         const thumb = hand.fingerStates[0];
         if (hand.isOpenHand) {
-          console.log("isOpenHand !!!!!!");
           cam2._digital.backward = false;
-          clearInterval(cam2._keyIntervalF);
           clearInterval(cam2._keyIntervalB);
-          cam2._keyIntervalF = setInterval(() => {
+          cam2._keyIntervalB = null;
+          if (!cam2._keyIntervalF) cam2._keyIntervalF = setInterval(() => {
             cam2._digital.forward = true;
             cam2._dirty = true;
             cam2._dirtyAngle = true;
@@ -52760,33 +52781,46 @@ var loadHand = function() {
           }, 26);
         } else if (hand.isPointing) {
           const frame = hand.fingerStates[5];
-          if (frame.forward.y < -0.3 && frame.forward.z < -0.3) cam2.yaw += 0.1;
-          if (frame.forward.y > 0.3 && frame.forward.z > 0.3) cam2.yaw -= 0.1;
-          if (frame.up.y < -0.8 && frame.up.z < 0.3) cam2.pitch += 0.1;
+          if (frame.forward.y < -0.3 && frame.forward.z < -0.3) {
+            cam2.yaw += 0.05;
+          } else if (frame.forward.y > 0.3 && frame.forward.z > 0.3) {
+            cam2.yaw -= 0.05;
+          } else if (frame.up.y < -0.8 && frame.up.z < 0.3) {
+            cam2.pitch += 0.05;
+          }
           clearInterval(cam2._keyIntervalF);
           clearInterval(cam2._keyIntervalB);
+          cam2._keyIntervalF = null;
+          cam2._keyIntervalB = null;
           cam2._digital.forward = false;
           cam2._digital.backward = false;
           cam2._dirtyAngle = true;
         } else if (hand.isPeace) {
           cam2._digital.forward = false;
           clearInterval(cam2._keyIntervalF);
-          clearInterval(cam2._keyIntervalB);
-          cam2._keyIntervalB = setInterval(() => {
+          cam2._keyIntervalF = null;
+          if (!cam2._keyIntervalB) cam2._keyIntervalB = setInterval(() => {
             cam2._digital.backward = true;
             cam2._dirty = true;
             cam2._dirtyAngle = true;
             cam2._applyDigitalMovement();
           }, 16);
         } else if (hand.fingerStates[0] === true) {
-          console.log("palac !!!!!!");
           const frame = hand.fingerStates[5];
           if (thumb === true && frame.right.y > 0.7) {
-            cam2.pitch -= 0.1;
+            cam2.pitch -= 0.05;
+            cam2._dirtyAngle = true;
           } else if (thumb === true && frame.right.y < -0.7) {
-            cam2.pitch += 0.1;
+            const worldPos = pipe.unprojected(hand.palmCenter, app._invViewProj, 10);
+            app.matrixPhysics.explodeAll(
+              [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+              worldPos.x,
+              worldPos.y,
+              worldPos.z,
+              15,
+              20
+            );
           }
-          cam2._dirtyAngle = true;
         } else {
           cam2._digital.forward = false;
           cam2._digital.backward = false;
@@ -52800,6 +52834,22 @@ var loadHand = function() {
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     function onGround(m2) {
+      let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "5" } : { left: "53" };
+      MobileDOM.addButton(
+        "Enable camera",
+        function() {
+          if (byId2("auto-video").style.zIndex === "-1") {
+            byId2("auto-video").style.zIndex = 1;
+            byId2("auto-video").style.opacity = 0.4;
+          } else {
+            byId2("auto-video").style.zIndex = -1;
+            byId2("auto-video").style.opacity = 0.4;
+          }
+        },
+        () => {
+        },
+        arg1
+      );
       loadHand2.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: 0, y: -1, z: -10 },
@@ -52815,52 +52865,54 @@ var loadHand = function() {
         }
       });
     }
-    async function onLoadObj(m2) {
-      let MYCUBE = loadHand2.addMeshObj({
+    function createPillar(loadHand3, m2, x3, y3, z2, name2) {
+      const base = loadHand3.addMeshObj({
         material: { type: "dark", share: true },
-        position: { x: 0, y: 4, z: -10 },
+        position: { x: x3, y: y3, z: z2 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [5, 5, 5],
-        texturesPaths: ["./res/textures/matrix1.webp", "./res/textures/white-metal2.webp"],
-        name: "cube",
+        scale: [1, 10, 1],
+        texturesPaths: ["./res/textures/white-metal2.webp"],
+        name: "cube" + name2,
         mesh: m2.cube,
-        envMapParams: {
-          baseColorMix: 0.1,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1],
-          // Slight cool tint
-          reflectivity: 0.75,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1],
-          // Soft cyan
-          illuminateStrength: 1.5,
-          // Gentle rim
-          illuminatePulse: 0.1,
-          // No pulse (static)
-          fresnelPower: 5,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false
-          // ✅ Env map mode
-        },
         raycast: { enabled: true, radius: 1 },
-        physics: {
-          enabled: false,
-          mass: 1,
-          geometry: "Cube"
-        }
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
       });
+      const top = loadHand3.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3 + 6, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1.8, 3, 1.8],
+        texturesPaths: ["./res/textures/matrix1.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      return { base, top };
+    }
+    async function onLoadObj(m2) {
+      app.physicsBodiesGeneratorWall(
+        "standard",
+        { x: -4.5, y: 1, z: -10 },
+        { x: 0, y: 0, z: 0 },
+        ["./res/textures/rust.jpg"],
+        "my_set_walls",
+        "5x3",
+        true,
+        [1, 1, 1],
+        2.05,
+        1e3,
+        "ByX"
+      );
+      const pillar1 = createPillar(loadHand2, m2, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(loadHand2, m2, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(loadHand2, m2, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(loadHand2, m2, 20, 6, 20, "pil4");
       loadHand2.lightContainer[0].setIntensity(0.7);
       app.lightContainer[0].setColorB(100);
       loadHand2.activateBloomEffect();
-      app.activateVolumetricEffect({
-        density: 0.5,
-        steps: 30,
-        scatterStrength: 2,
-        heightFalloff: 0.2,
-        lightColor: [0, 1.8, 10]
-      });
       loadHand2.lightContainer[0].setPosition(0, 35, 0);
       loadHand2.lightContainer[0].setTarget(0, 0, -20);
       setTimeout(() => {
@@ -52869,7 +52921,7 @@ var loadHand = function() {
         cam3.setYaw(-0.03);
         cam3.setPitch(-0.49);
         cam3.setZ(0);
-        cam3.setY(10);
+        cam3.setY(7);
         app.buildRenderBuckets();
         cam3._dirtyAngle = true;
       }, 700);

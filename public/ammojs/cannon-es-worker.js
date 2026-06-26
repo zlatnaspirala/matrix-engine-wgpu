@@ -458,6 +458,23 @@ class MatrixCannon {
     }
   }
 
+  explodeAll(idxs, x, y, z, radius, strength) {
+    for(const idx of idxs) {
+      const b = this.rigidBodies[idx];
+      if(!b) continue;
+
+      const dx = b.position.x - x;
+      const dy = b.position.y - y;
+      const dz = b.position.z - z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+      if(dist < radius && dist > 0) {
+        const force = (1 - dist / radius) * strength;
+        this.applyImpulse(idx, (dx / dist) * force, (dy / dist) * force, (dz / dist) * force);
+      }
+    }
+  }
+
   addHingeConstraint(idxA, idxB, opts, msgID) {
     const CANNON = this.CANNON;
     const bodyA = this.rigidBodies[idxA]; // anchor
@@ -863,6 +880,7 @@ self.onmessage = async ({data}) => {
     case 'setBodyTransform': cannon.setBodyTransform(data.idx, data.x, data.y, data.z); break;
     case 'setGravityScale': cannon.setGravityScale(data.idx, data.scale); break;
     case 'explode': cannon.explode(data.idx, data.x, data.y, data.z, data.radius, data.strength); break;
+    case 'explodeAll': cannon.explodeAll(data.idxs, data.x, data.y, data.z, data.radius, data.strength); break;
     case 'getPosition': cannon.getPosition(data.idx, data.id); break;
     case 'getQuaternion': cannon.getQuaternion(data.idx, data.id); break;
     case 'getDiceFace': cannon.getDiceFace(data.idx, data.id); break;

@@ -268,7 +268,13 @@ export default class MatrixEngineWGPU {
         };
       } else if('WASD' == this.options.mainCameraParams.type) {
         this.cameras = {
-          WASD: new WASDCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+          WASD: new WASDCamera(
+            {
+              position: initialCameraPosition,
+              canvas: canvas, pitch: 0.18, yaw: -0.1,
+              isActive: 'WASD' == this.options.mainCameraParams.type ? 'init active cam' : null,
+              noEvents: this.options.mainCameraParams.noEvents ? "noEvents" : undefined
+            }),
         };
       } else if('RPG' == this.options.mainCameraParams.type) {
         this.cameras = {
