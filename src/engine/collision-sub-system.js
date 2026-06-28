@@ -35,6 +35,31 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
   return false;
 }
 
+export function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
+  const dx = Bpos.x - Apos.x;
+  const dy = Bpos.y - Apos.y;
+  const dz = Bpos.z - Apos.z;
+  const distSq = dx * dx + dy * dy + dz * dz;
+  const minDistSq = minDistance * minDistance;
+  if(distSq < minDistSq && distSq > 1e-8) {
+    const dist = Math.sqrt(distSq);
+    const overlap = minDistance - dist;
+    const push = overlap * pushStrength * 0.5;
+    const inv = push / dist;
+    Apos.x -= dx * inv; Apos.y -= dy * inv; Apos.z -= dz * inv;
+    Bpos.x += dx * inv; Bpos.y += dy * inv; Bpos.z += dz * inv;
+    return true;
+  }
+  if(distSq <= 1e-8) {
+    const j = 0.01;
+    Apos.x += (Math.random() - .5) * j;
+    Apos.y += (Math.random() - .5) * j;
+    Apos.z += (Math.random() - .5) * j;
+    return true;
+  }
+  return false;
+}
+
 export class CollisionSystem {
   constructor() {
     this.entries = [];
@@ -75,10 +100,11 @@ export class CollisionSystem {
     this.cameraEntry = {id: "camera", pos: cameraInstance, radius, group: "camera"};
   }
 
-  _cellKey(x, z) {
+  _cellKey(x, y, z) {
     const cx = Math.floor(x / this.cellSize);
+    const cy = Math.floor(y / this.cellSize);
     const cz = Math.floor(z / this.cellSize);
-    return (cx << 16) ^ cz;
+    return `${cx},${cy},${cz}`; // string key avoids bit-shift overflow in 3D
   }
 
   _buildGrid() {
@@ -86,27 +112,66 @@ export class CollisionSystem {
     grid.clear();
     for(let i = 0;i < this.entries.length;i++) {
       const e = this.entries[i];
-      const key = this._cellKey(e.pos.x, e.pos.z);
+      const key = this._cellKey(e.pos.x, e.pos.y, e.pos.z);
       let cell = grid.get(key);
       if(!cell) {cell = []; grid.set(key, cell);}
       cell.push(e);
     }
   }
 
-  _getNeighborCells(x, z, grid, out) {
+  _getNeighborCells(x, y, z, grid, out) {
     out.length = 0;
     const cx = Math.floor(x / this.cellSize);
+    const cy = Math.floor(y / this.cellSize);
     const cz = Math.floor(z / this.cellSize);
-    for(let dx = -1;dx <= 1;dx++) {
-      for(let dz = -1;dz <= 1;dz++) {
-        const key = ((cx + dx) << 16) ^ (cz + dz);
-        const cell = grid.get(key);
-        if(cell) {
-          for(let i = 0;i < cell.length;i++) out.push(cell[i]);
+    for(let dx = -1;dx <= 1;dx++)
+      for(let dy = -1;dy <= 1;dy++)
+        for(let dz = -1;dz <= 1;dz++) {
+          const key = `${cx + dx},${cy + dy},${cz + dz}`;
+          const cell = grid.get(key);
+          if(cell) for(let i = 0;i < cell.length;i++) out.push(cell[i]);
         }
-      }
+  }
+
+  // Add to CollisionSystem
+  resolveVsStaticCube(entityPos, entityHalfH, cube) {
+    // cube assumed 2x2x2, so half = 1 unit
+    const cubeHalf = 1.0;
+    const stepHeight = 0.6; // how high entity can auto-step up
+
+    const dx = entityPos.x - cube.pos.x;
+    const dy = entityPos.y - cube.pos.y;
+    const dz = entityPos.z - cube.pos.z;
+
+    const overlapX = (entityHalfH + cubeHalf) - Math.abs(dx);
+    const overlapY = (entityHalfH + cubeHalf) - Math.abs(dy);
+    const overlapZ = (entityHalfH + cubeHalf) - Math.abs(dz);
+
+    // no overlap at all
+    if(overlapX <= 0 || overlapY <= 0 || overlapZ <= 0) return false;
+
+    const cubeTop = cube.pos.y + cubeHalf;
+    const entityFeet = entityPos.y - entityHalfH;
+
+    // feet are close enough to top → step up (stairs logic)
+    if(entityFeet >= cubeTop - stepHeight && entityFeet < cubeTop) {
+      entityPos.y = cubeTop + entityHalfH;
+      return true;
     }
-    return out;
+
+    // standing on top already → keep grounded
+    if(entityFeet >= cubeTop - 0.01 && entityFeet <= cubeTop + 0.05) {
+      entityPos.y = cubeTop + entityHalfH;
+      return true;
+    }
+
+    // otherwise push on smallest XZ axis only
+    if(overlapX < overlapZ) {
+      entityPos.x += dx < 0 ? -overlapX : overlapX;
+    } else {
+      entityPos.z += dz < 0 ? -overlapZ : overlapZ;
+    }
+    return true;
   }
 
   update() {
@@ -121,14 +186,16 @@ export class CollisionSystem {
         if(A === B) continue;
         const minDist = (A.radius + B.radius) * 0.5;
         if(A.group === B.group) {
-          resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
+          // resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
+          resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
           continue;
         }
         if(A.id >= B.id) continue;
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;
         if(dx * dx + dz * dz > minDist * minDist) continue;
-        const testCollide = resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
+        // const testCollide = resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
+        const testCollide = resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
         if(testCollide) {
           this._eventDetail.A = A;
           this._eventDetail.B = B;

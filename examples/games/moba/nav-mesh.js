@@ -70,7 +70,25 @@ export default class NavMesh {
   }
 
   findPolygonContainingPoint(point) {
-    // first try naive linear scan (ok for medium meshes). point = [x,y,z]
+    // // first try naive linear scan (ok for medium meshes). point = [x,y,z]
+    // for(let i = 0;i < this.polygons.length;i++) {
+    //   const poly = this.polygons[i];
+    //   const v0 = this.vertices[poly.indices[0]];
+    //   const v1 = this.vertices[poly.indices[1]];
+    //   const v2 = this.vertices[poly.indices[2]];
+    //   if(this._pointInTriXZ(point, v0, v1, v2)) return i;
+    // }
+    // // fallback: return nearest polygon center
+    // let best = 0;
+    // let bestD = Infinity;
+    // for(let i = 0;i < this.centers.length;i++) {
+    //   const c = this.centers[i];
+    //   const dx = c[0] - point[0];
+    //   const dz = c[2] - point[2];
+    //   const d = dx * dx + dz * dz;
+    //   if(d < bestD) {bestD = d; best = i;}
+    // }
+    // return best;
     for(let i = 0;i < this.polygons.length;i++) {
       const poly = this.polygons[i];
       const v0 = this.vertices[poly.indices[0]];
@@ -78,17 +96,7 @@ export default class NavMesh {
       const v2 = this.vertices[poly.indices[2]];
       if(this._pointInTriXZ(point, v0, v1, v2)) return i;
     }
-    // fallback: return nearest polygon center
-    let best = 0;
-    let bestD = Infinity;
-    for(let i = 0;i < this.centers.length;i++) {
-      const c = this.centers[i];
-      const dx = c[0] - point[0];
-      const dz = c[2] - point[2];
-      const d = dx * dx + dz * dz;
-      if(d < bestD) {bestD = d; best = i;}
-    }
-    return best;
+    return null; // ← no fallback, let caller handle it
   }
 
   // A* over polygon graph. returns list of polygon indices (inclusive)
@@ -144,13 +152,24 @@ export default class NavMesh {
     return Math.sqrt(dx * dx + dz * dz);
   }
 
+  // _edgeCost(aIdx, bIdx) {
+  //   // Euclidean distance between polygon centers
+  //   const a = this.centers[aIdx];
+  //   const b = this.centers[bIdx];
+  //   const dx = a[0] - b[0];
+  //   const dz = a[2] - b[2];
+  //   return Math.sqrt(dx * dx + dz * dz);
+  // }
   _edgeCost(aIdx, bIdx) {
-    // Euclidean distance between polygon centers
     const a = this.centers[aIdx];
     const b = this.centers[bIdx];
     const dx = a[0] - b[0];
     const dz = a[2] - b[2];
-    return Math.sqrt(dx * dx + dz * dz);
+    const dy = Math.abs(a[1] - b[1]);
+    const MAX_STEP_Y = 1.5; // tune to your cube height
+    // make steep Y transitions very expensive → A* routes around
+    const yPenalty = dy > MAX_STEP_Y ? 99999 : dy * 3.0;
+    return Math.sqrt(dx * dx + dz * dz) + yPenalty;
   }
 
   // build portal list (pair of points) between the sequence of polygons
@@ -279,15 +298,46 @@ export default class NavMesh {
     return bestY;
   }
 
+  _clampToMeshBoundary(point) {
+    let bestDist = Infinity;
+    let bestPoint = null;
+
+    for(const poly of this.polygons) {
+      const indices = poly.indices;
+      for(let i = 0;i < indices.length;i++) {
+        const a = this.vertices[indices[i]];
+        const b = this.vertices[indices[(i + 1) % indices.length]];
+        // closest point on segment AB to point (XZ only)
+        const abx = b[0] - a[0], abz = b[2] - a[2];
+        const apx = point[0] - a[0], apz = point[2] - a[2];
+        const t = Math.max(0, Math.min(1,
+          (apx * abx + apz * abz) / (abx * abx + abz * abz + 1e-10)
+        ));
+        const cx = a[0] + t * abx;
+        const cz = a[2] + t * abz;
+        const dx = point[0] - cx, dz = point[2] - cz;
+        const d = dx * dx + dz * dz;
+        if(d < bestDist) {
+          bestDist = d;
+          bestPoint = [cx, this._sampleY(cx, cz), cz];
+        }
+      }
+    }
+    return bestPoint;
+  }
+
   // Public API: returns an array of [x,y,z] waypoints or [] if unreachable
   findPath(startPoint, endPoint) {
-    // startPoint and endPoint are [x,y,z]
     const startPoly = this.findPolygonContainingPoint(startPoint);
     const endPoly = this.findPolygonContainingPoint(endPoint);
-    if(startPoly === null || endPoly === null) return [];
 
-    const polyPath = this._findPolyPath(startPoly, endPoly);
-    if(!polyPath || polyPath.length === 0) return [];
+    // endPoint outside mesh → clamp to nearest valid point on mesh edge
+    if(endPoly === null) {
+      const clamped = this._clampToMeshBoundary(endPoint);
+      if(!clamped) return [];
+      return this.findPath(startPoint, clamped);
+    }
+    if(startPoly === null) return [];
 
     // If polyPath is single poly, simply return [start,end]
     if(polyPath.length === 1) {
@@ -362,6 +412,12 @@ export class MinHeap {
 }
 
 const MIN_DIST = 0.1;
+const ontargetReachEvent = new CustomEvent('onTargetPositionReach', {
+  detail: {
+    name: 'name',
+    body: null
+  }
+});
 
 export function followPath(character, path, core) {
   if(!path || path.length === 0) return;
@@ -380,15 +436,12 @@ export function followPath(character, path, core) {
     return current + diff * Math.min(1, deltaTime * ROTATION_SPEED);
   }
 
-  // --- Recursive movement ---
+  // Recursive movement
   function moveToNext() {
     if(idx >= path.length) {
-      dispatchEvent(new CustomEvent('onTargetPositionReach', {
-        detail: {
-          name: character.name,
-          body: character
-        }
-      }));
+      ontargetReachEvent.detail.name = character.name;
+      ontargetReachEvent.detail.body = character;
+      dispatchEvent(ontargetReachEvent);
       character.position.onTargetPositionReach = () => {};
       return;
     }
@@ -402,19 +455,20 @@ export function followPath(character, path, core) {
       moveToNext();
       return;
     }
-    // --- Compute target facing direction (Y rotation) ---
-    let targetAngleY = Math.atan2(dx, dz);
-    targetAngleY = (radToDeg(targetAngleY) + 360) % 360;
-    // --- Smooth rotation (optional deltaTime if you have it) ---
-    const deltaTime = core?.deltaTime || 0.016; // fallback ~60fps
-    rot.y = smoothRotate(rot.y, targetAngleY, deltaTime);
-    // --- Move toward next target ---
+    // Use actual delta not atan2 of waypoint — avoids flip when overshooting
+    const nx = dx / dist;
+    const nz = dz / dist;
+    let targetAngleY = (radToDeg(Math.atan2(nx, nz)) + 360) % 360;
+
+    // Only rotate if movement is significant
+    if(dist > MIN_DIST * 3) {
+      const deltaTime = core?.deltaTime || 0.016;
+      rot.y = smoothRotate(rot.y, targetAngleY, deltaTime);
+    }
+
     pos.translateByXZ(target[0], target[2]);
-    // When position reaches target:
-    character.position.onTargetPositionReach = () => {
-      idx++;
-      moveToNext();
-    };
+    character.position.onTargetPositionReach = () => {idx++; moveToNext();};
+
   }
   // --- Initialize rotation toward the first valid point ---
   const firstTarget = path.find((p) => {
@@ -465,7 +519,7 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
     // Apos.targetZ = Apos.z;
     // Bpos.targetX = Bpos.x;
     // Bpos.targetZ = Bpos.z;
- 
+
     return true;
   }
   // exact overlap (practically same point) -> small jitter to separate
@@ -474,6 +528,31 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
     Apos.x += (Math.random() - 0.5) * jitter;
     Apos.z += (Math.random() - 0.5) * jitter;
     Apos.targetX = Apos.x; Apos.targetZ = Apos.z;
+    return true;
+  }
+  return false;
+}
+
+export function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
+  const dx = Bpos.x - Apos.x;
+  const dy = Bpos.y - Apos.y;
+  const dz = Bpos.z - Apos.z;
+  const distSq = dx * dx + dy * dy + dz * dz;
+  const minDistSq = minDistance * minDistance;
+  if(distSq < minDistSq && distSq > 1e-8) {
+    const dist = Math.sqrt(distSq);
+    const overlap = minDistance - dist;
+    const push = overlap * pushStrength * 0.5;
+    const inv = push / dist;
+    Apos.x -= dx * inv; Apos.y -= dy * inv; Apos.z -= dz * inv;
+    Bpos.x += dx * inv; Bpos.y += dy * inv; Bpos.z += dz * inv;
+    return true;
+  }
+  if(distSq <= 1e-8) {
+    const j = 0.01;
+    Apos.x += (Math.random() - .5) * j;
+    Apos.y += (Math.random() - .5) * j;
+    Apos.z += (Math.random() - .5) * j;
     return true;
   }
   return false;

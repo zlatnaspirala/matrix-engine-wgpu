@@ -695,10 +695,10 @@ addEventListener("streamPlaying", (e2) => {
     if (e2.detail.target.id.indexOf("remote-video") !== -1) {
       let vr = e2.detail.target.videos[0].video;
       vr.style.position = "absolute";
-      vr.style.left = 0;
-      vr.style.top = 0;
-      vr.style.width = "100%";
-      vr.style.height = "100vh";
+      vr.style.left = "10%";
+      vr.style.top = "5vh";
+      vr.style.width = "80%";
+      vr.style.height = "90vh";
     } else {
       let vr = e2.detail.target.videos[0].video;
       vr.style.position = "absolute";

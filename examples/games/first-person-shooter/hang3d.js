@@ -1,26 +1,26 @@
-import MatrixEngineWGPU from "../src/world.js";
-import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {isMobile, mb, randomIntFromTo} from "../src/engine/utils.js";
-import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
-import {MatrixStream} from "../src/engine/networking/net.js";
+// import MatrixEngineWGPU from "../src/world.js";
+import {downloadMeshes} from '../../../src/engine/loader-obj.js';
+import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
+import {isMobile, randomIntFromTo} from "../../../src/engine/utils.js";
+import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
+import MatrixEngineWGPU from '../../../src/world.js';
 
-export var loadStreamRenderHost = function() {
+export var loadHang3d = function() {
 
-  let streamRender = new MatrixEngineWGPU({
+  let hang3d = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'firstPersonCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
-    streamRender.addLight();
+    hang3d.addLight();
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
@@ -28,17 +28,8 @@ export var loadStreamRenderHost = function() {
 
     addRaycastsAABBListener('canvas1', 'click');
 
-    // alert(`
-    //   Endpoint is tv-10.html you can use it on mobile browser or desktop browser not 
-    //   limited on tv android browsers or native wrapper builded on android sdk. \n
-    //   Android part is not yet published on googlePlay, you can use
-    //   android studio via LAN or USB to push receiver part of app on TV device. \n
-    //   You can find code at : https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv \n
-    //   Endpoint for receiver is tv-10.html and main instance is android-tv-cast.js in root of project.
-    //     `);
-
     function onGround(m) {
-      streamRender.addMeshObj({
+      hang3d.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -55,7 +46,7 @@ export var loadStreamRenderHost = function() {
     }
 
     async function onLoadObj(m) {
-      streamRender.addMeshObj({
+      hang3d.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
@@ -71,7 +62,7 @@ export var loadStreamRenderHost = function() {
       });
 
       // share: true if not defined it is false.
-      let MYCUBE = streamRender.addMeshObj({
+      let MYCUBE = hang3d.addMeshObj({
         material: {type: 'mirror'},
         position: {x: 0, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -104,19 +95,19 @@ export var loadStreamRenderHost = function() {
         }
       })
 
-      streamRender.lightContainer[0].setIntensity(15);
-      streamRender.activateBloomEffect();
-      streamRender.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
-      streamRender.lightContainer[0].behavior.value_ = -1;
-      streamRender.lightContainer[0].updater.push((light) => {
+      hang3d.lightContainer[0].setIntensity(15);
+      hang3d.activateBloomEffect();
+      hang3d.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
+      hang3d.lightContainer[0].behavior.value_ = -1;
+      hang3d.lightContainer[0].updater.push((light) => {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       })
-      streamRender.lightContainer[0].setPosition(0, 15, -10);
-      streamRender.lightContainer[0].setTarget(0, 0, -10);
+      hang3d.lightContainer[0].setPosition(0, 15, -10);
+      hang3d.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(streamRender.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
+        MYCUBE.effects.circle = new GenGeoTexture2(hang3d.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
 
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
 
@@ -140,7 +131,7 @@ export var loadStreamRenderHost = function() {
       }, 700);
     }
 
-    streamRender.canvas.addEventListener("ray.hit.event", (e) => {
+    hang3d.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
@@ -150,47 +141,6 @@ export var loadStreamRenderHost = function() {
       }
     });
 
-    streamRender.net = new MatrixStream({
-      active: true,
-      domain: 'maximumroulette.com',
-      port: 2020,
-      sessionName: 'tv-beast',
-      resolution: '1920x1080',
-      isDataOnly: false,
-      streamRender: true
-    });
-
-    addEventListener('net-ready', () => {
-      byId('matrix-net').style.opacity = '0.75';
-      document.querySelector('.form-group').style.display = 'none';
-      byId("sessionName").disabled = true;
-      streamRender.setWaitingList();
-      // check game-play channel
-      setTimeout(() => {
-        // app.net.fetchInfo('tv-cast');
-        // app.sendmsg = (m) => {
-        //   if(typeof m != 'string') return;
-        //   if(m.length > 120) return;
-        //   let username = checkUsername();
-        //   if(username != 'nosession') app.net.sendOnlyData({type: "chat", msg: m, username: username});
-        // };
-      }, 1500);
-    });
-
-    addEventListener('connectionDestroyed', (e) => {
-      // console.log('DISCONNECT')
-    });
-
-    addEventListener("onConnectionCreated", (e) => {
-      console.log('newconn : created', e.detail);
-      let newPlayer = document.createElement('div');
-      if(app.net.session.connection.connectionId == e.detail.connection.connectionId) {
-        console.log('newconn : created [LOCAL] determinate team');
-        document.title = app.net.session.connection.connectionId;
-        mb.success(`Max players is reached.Please wait for next party...`);
-      }
-    })
-
   })
-  window.app = streamRender;
+  window.app = hang3d;
 }

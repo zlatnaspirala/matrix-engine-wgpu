@@ -45399,31 +45399,30 @@ var loadVideoTexture = function() {
 };
 
 // src/engine/collision-sub-system.js
-function resolvePairRepulsion(Apos, Bpos, minDistance = 30, pushStrength = 0.5) {
+function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30, pushStrength = 0.5) {
   const dx = Bpos.x - Apos.x;
+  const dy = Bpos.y - Apos.y;
   const dz = Bpos.z - Apos.z;
-  const distSq2 = dx * dx + dz * dz;
+  const distSq2 = dx * dx + dy * dy + dz * dz;
   const minDistSq = minDistance * minDistance;
   if (distSq2 < minDistSq && distSq2 > 1e-8) {
     const dist2 = Math.sqrt(distSq2);
     const overlap = minDistance - dist2;
-    const nx = dx / dist2;
-    const nz = dz / dist2;
-    const totalPush = overlap * pushStrength;
-    const pushA = totalPush * 0.5;
-    const pushB = totalPush * 0.5;
-    Apos.x -= nx * pushA;
-    Apos.z -= nz * pushA;
-    Bpos.x += nx * pushB;
-    Bpos.z += nz * pushB;
+    const push = overlap * pushStrength * 0.5;
+    const inv = push / dist2;
+    Apos.x -= dx * inv;
+    Apos.y -= dy * inv;
+    Apos.z -= dz * inv;
+    Bpos.x += dx * inv;
+    Bpos.y += dy * inv;
+    Bpos.z += dz * inv;
     return true;
   }
   if (distSq2 <= 1e-8) {
-    const jitter = 0.01;
-    Apos.x += (Math.random() - 0.5) * jitter;
-    Apos.z += (Math.random() - 0.5) * jitter;
-    Apos.targetX = Apos.x;
-    Apos.targetZ = Apos.z;
+    const j2 = 0.01;
+    Apos.x += (Math.random() - 0.5) * j2;
+    Apos.y += (Math.random() - 0.5) * j2;
+    Apos.z += (Math.random() - 0.5) * j2;
     return true;
   }
   return false;
@@ -45465,17 +45464,18 @@ var CollisionSystem = class {
   registerCamera(cameraInstance, radius = 1) {
     this.cameraEntry = { id: "camera", pos: cameraInstance, radius, group: "camera" };
   }
-  _cellKey(x3, z2) {
+  _cellKey(x3, y3, z2) {
     const cx = Math.floor(x3 / this.cellSize);
+    const cy = Math.floor(y3 / this.cellSize);
     const cz = Math.floor(z2 / this.cellSize);
-    return cx << 16 ^ cz;
+    return `${cx},${cy},${cz}`;
   }
   _buildGrid() {
     const grid = this._grid;
     grid.clear();
     for (let i2 = 0; i2 < this.entries.length; i2++) {
       const e3 = this.entries[i2];
-      const key = this._cellKey(e3.pos.x, e3.pos.z);
+      const key = this._cellKey(e3.pos.x, e3.pos.y, e3.pos.z);
       let cell = grid.get(key);
       if (!cell) {
         cell = [];
@@ -45484,20 +45484,46 @@ var CollisionSystem = class {
       cell.push(e3);
     }
   }
-  _getNeighborCells(x3, z2, grid, out) {
+  _getNeighborCells(x3, y3, z2, grid, out) {
     out.length = 0;
     const cx = Math.floor(x3 / this.cellSize);
+    const cy = Math.floor(y3 / this.cellSize);
     const cz = Math.floor(z2 / this.cellSize);
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dz = -1; dz <= 1; dz++) {
-        const key = cx + dx << 16 ^ cz + dz;
-        const cell = grid.get(key);
-        if (cell) {
-          for (let i2 = 0; i2 < cell.length; i2++) out.push(cell[i2]);
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dz = -1; dz <= 1; dz++) {
+          const key = `${cx + dx},${cy + dy},${cz + dz}`;
+          const cell = grid.get(key);
+          if (cell) for (let i2 = 0; i2 < cell.length; i2++) out.push(cell[i2]);
         }
-      }
+  }
+  // Add to CollisionSystem
+  resolveVsStaticCube(entityPos, entityHalfH, cube) {
+    const cubeHalf = 1;
+    const stepHeight = 0.6;
+    const dx = entityPos.x - cube.pos.x;
+    const dy = entityPos.y - cube.pos.y;
+    const dz = entityPos.z - cube.pos.z;
+    const overlapX = entityHalfH + cubeHalf - Math.abs(dx);
+    const overlapY = entityHalfH + cubeHalf - Math.abs(dy);
+    const overlapZ = entityHalfH + cubeHalf - Math.abs(dz);
+    if (overlapX <= 0 || overlapY <= 0 || overlapZ <= 0) return false;
+    const cubeTop = cube.pos.y + cubeHalf;
+    const entityFeet = entityPos.y - entityHalfH;
+    if (entityFeet >= cubeTop - stepHeight && entityFeet < cubeTop) {
+      entityPos.y = cubeTop + entityHalfH;
+      return true;
     }
-    return out;
+    if (entityFeet >= cubeTop - 0.01 && entityFeet <= cubeTop + 0.05) {
+      entityPos.y = cubeTop + entityHalfH;
+      return true;
+    }
+    if (overlapX < overlapZ) {
+      entityPos.x += dx < 0 ? -overlapX : overlapX;
+    } else {
+      entityPos.z += dz < 0 ? -overlapZ : overlapZ;
+    }
+    return true;
   }
   update() {
     this._buildGrid();
@@ -45510,14 +45536,14 @@ var CollisionSystem = class {
         if (A2 === B2) continue;
         const minDist = (A2.radius + B2.radius) * 0.5;
         if (A2.group === B2.group) {
-          resolvePairRepulsion(A2.pos, B2.pos, minDist, 1);
+          resolvePairRepulsion3D(A2.pos, B2.pos, minDist, 1);
           continue;
         }
         if (A2.id >= B2.id) continue;
         const dx = A2.pos.x - B2.pos.x;
         const dz = A2.pos.z - B2.pos.z;
         if (dx * dx + dz * dz > minDist * minDist) continue;
-        const testCollide = resolvePairRepulsion(A2.pos, B2.pos, minDist, 1);
+        const testCollide = resolvePairRepulsion3D(A2.pos, B2.pos, minDist, 1);
         if (testCollide) {
           this._eventDetail.A = A2;
           this._eventDetail.B = B2;
@@ -53481,15 +53507,6 @@ var loadStreamRenderHost = function() {
     );
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
-    alert(`
-      Android part is not yet published on googlePlay, you can use 
-
-      android studio via LAN or USB to push receiver part of app on TV device. 
-
-      You can find code at : https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv 
-
-      Endpoint for receiver is tv-10.html and main instance is android-tv-cast.js in root of project.
-        `);
     function onGround(m2) {
       streamRender.addMeshObj({
         material: { type: "standard", share: true },
@@ -53637,6 +53654,147 @@ var loadStreamRenderHost = function() {
   window.app = streamRender;
 };
 
+// examples/games/first-person-shooter/hang3d.js
+var loadHang3d = function() {
+  let hang3d = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "firstPersonCamera",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    hang3d.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      hang3d.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/floor1.webp"],
+        //, './res/textures/env-maps/sky1_lod_mid.webp'],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    async function onLoadObj(m2) {
+      hang3d.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -1, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [100, 100, 100],
+        rotationSpeed: { x: 0, y: 0.1, z: 0 },
+        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "sky",
+        mesh: m2.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
+      let MYCUBE = hang3d.addMeshObj({
+        material: { type: "mirror" },
+        position: { x: 0, y: 4, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3, 5, 1],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // ✅ Env map mode
+        },
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true
+          // flameEffect: true
+        }
+      });
+      hang3d.lightContainer[0].setIntensity(15);
+      hang3d.activateBloomEffect();
+      hang3d.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      hang3d.lightContainer[0].behavior.value_ = -1;
+      hang3d.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      hang3d.lightContainer[0].setPosition(0, 15, -10);
+      hang3d.lightContainer[0].setTarget(0, 0, -10);
+      setTimeout(() => {
+        MYCUBE.effects.circle = new GenGeoTexture2(hang3d.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
+        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
+        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+          -2.582509022040566,
+          0.21125441598805741,
+          0.4249951687253338,
+          0.4724163587305734,
+          2.381811753816671,
+          3.074841196886901,
+          -2.3797025623904164,
+          -3.4608908819087145
+        ]);
+        MYCUBE.setAmbient(2, 3, 0.5);
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(10);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 700);
+    }
+    hang3d.canvas.addEventListener("ray.hit.event", (e3) => {
+      console.log("ray.hit.event detected");
+      if (e3.detail.hitObject.name.startsWith("cube")) {
+        e3.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+        e3.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e3.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+      }
+    });
+  });
+  window.app = hang3d;
+};
+
 // examples.js
 window.urlQ = urlQuery;
 if ("serviceWorker" in navigator) {
@@ -53684,6 +53842,7 @@ byId2("loadGaussianSplat").addEventListener("click", () => switchDemo("26"));
 byId2("loadGaussianSplatVertAnim").addEventListener("click", () => switchDemo("27"));
 byId2("loadStreamRenderHost").addEventListener("click", () => switchDemo("29"));
 byId2("hand").addEventListener("click", () => switchDemo("28"));
+byId2("hang3d").addEventListener("click", () => switchDemo("30"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -53745,6 +53904,8 @@ if (urlQ["demo"] === "1") {
   loadHand();
 } else if (urlQ["demo"] === "29") {
   loadStreamRenderHost();
+} else if (urlQ["demo"] === "30") {
+  loadHang3d();
 } else {
   loadObjFile();
 }
