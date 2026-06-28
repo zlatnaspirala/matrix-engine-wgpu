@@ -1,5 +1,3 @@
-import {pairRepulsion} from "./matrix-class";
-
 export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
   // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
   const dx = Bpos.x - Apos.x;
@@ -73,19 +71,65 @@ export class CollisionSystem {
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
+    this._gravityAcc = 0;
+    this._gravityForce = -0.015;
+    this._terminalVelocity = -0.5;
+    this._onGround = false;
   }
 
-  // existing register — dynamic entities (enemies, players)
+  applyGravity(camPos, camRadius) {
+    this._gravityAcc += this._gravityForce;
+    if(this._gravityAcc < this._terminalVelocity) {
+      this._gravityAcc = this._terminalVelocity;
+    }
+    camPos[1] += this._gravityAcc;
+    this._onGround = false;
+    const camX = camPos[0];
+    const camY = camPos[1];
+    const camZ = camPos[2];
+    this._getNeighborCells(camX, camY, camZ, this._staticGrid, this._staticNeighbors);
+
+    for(let i = 0;i < this._staticNeighbors.length;i++) {
+      const entry = this._staticNeighbors[i];
+      const fakePos = {x: camPos[0], y: camPos[1], z: camPos[2]};
+      const prevY = fakePos.y;
+      const hit = this.resolveVsStaticCube(fakePos, camRadius, entry);
+      if(hit) {
+        camPos[0] = fakePos.x;
+        camPos[1] = fakePos.y;
+        camPos[2] = fakePos.z;
+        if(fakePos.y > prevY) { // entry.group === 'floor'
+          this._gravityAcc = 0;
+          this._onGround = true;
+        }
+      }
+    }
+
+    app.getCamera()?.forceViewUpdate();
+  }
+
   register(id, positionInstance, radius = 1, group = "default") {
     this.entries.push({id, pos: positionInstance, radius, group});
   }
 
-  // new: walls, maze geometry — built into _staticGrid once
-  registerStatic(id, positionInstance, radius = 1, group = "default") {
-    const entry = {id, pos: positionInstance, radius, group};
+  registerStatic(id, positionInstance, radius = 1, group = "default", halfExtents = null) {
+    const entry = {
+      id,
+      pos: positionInstance,
+      radius,
+      group,
+      // store actual box dimensions if provided, else assume unit cube
+      half: halfExtents ?? {x: radius, y: radius, z: radius}
+    };
+
+    const h = entry.half;
+    if(!h) {
+      console.warn('entry missing half:', entry.id);
+      return false;
+    }
+
     this.staticEntries.push(entry);
-    // insert directly into static grid
-    const key = this._cellKey(positionInstance.x, positionInstance.z);
+    const key = this._cellKey(positionInstance.x, positionInstance.y ?? 0, positionInstance.z);
     let cell = this._staticGrid.get(key);
     if(!cell) {cell = []; this._staticGrid.set(key, cell);}
     cell.push(entry);
@@ -133,39 +177,47 @@ export class CollisionSystem {
         }
   }
 
-  // Add to CollisionSystem
-  resolveVsStaticCube(entityPos, entityHalfH, cube) {
-    // cube assumed 2x2x2, so half = 1 unit
-    const cubeHalf = 1.0;
-    const stepHeight = 0.6; // how high entity can auto-step up
+  resolveVsStaticCube(entityPos, entityRadius, entry) {
+    const h = entry.half ?? {x: 1, y: 1, z: 1};
 
-    const dx = entityPos.x - cube.pos.x;
-    const dy = entityPos.y - cube.pos.y;
-    const dz = entityPos.z - cube.pos.z;
+    const dx = entityPos.x - entry.pos.x;
+    const dy = entityPos.y - entry.pos.y;
+    const dz = entityPos.z - entry.pos.z;
 
-    const overlapX = (entityHalfH + cubeHalf) - Math.abs(dx);
-    const overlapY = (entityHalfH + cubeHalf) - Math.abs(dy);
-    const overlapZ = (entityHalfH + cubeHalf) - Math.abs(dz);
+    const overlapX = (entityRadius + h.x) - Math.abs(dx);
+    const overlapZ = (entityRadius + h.z) - Math.abs(dz);
 
-    // no overlap at all
-    if(overlapX <= 0 || overlapY <= 0 || overlapZ <= 0) return false;
+    if(overlapX <= 0 || overlapZ <= 0) return false;
 
-    const cubeTop = cube.pos.y + cubeHalf;
-    const entityFeet = entityPos.y - entityHalfH;
-
-    // feet are close enough to top → step up (stairs logic)
-    if(entityFeet >= cubeTop - stepHeight && entityFeet < cubeTop) {
-      entityPos.y = cubeTop + entityHalfH;
-      return true;
+    if(entry.group === 'floor') {
+      const overlapY = (entityRadius + h.y) - Math.abs(dy);
+      if(overlapY <= 0) return false;
+      const cubeTop = entry.pos.y + h.y;
+      const entityFeet = entityPos.y - entityRadius;
+      if(entityFeet <= cubeTop) {
+        entityPos.y = cubeTop + entityRadius;
+        return true;
+      }
+      return false;
     }
 
-    // standing on top already → keep grounded
-    if(entityFeet >= cubeTop - 0.01 && entityFeet <= cubeTop + 0.05) {
-      entityPos.y = cubeTop + entityHalfH;
+    // for walls/pillars — check camera body overlaps the object's Y range
+    // camera occupies [entityPos.y - entityRadius, entityPos.y + entityRadius]
+    // object occupies [entry.pos.y - h.y, entry.pos.y + h.y]
+    const camBottom = entityPos.y - entityRadius;
+    const camTop = entityPos.y + entityRadius;
+    const objBottom = entry.pos.y - h.y;
+    const objTop = entry.pos.y + h.y;
+
+    // no vertical body overlap — camera is above or below the object, ignore
+    if(camBottom >= objTop || camTop <= objBottom) return false;
+
+    // step-up: feet just below the top surface
+    const stepHeight = 0.6;
+    if(camBottom >= objTop - stepHeight && camBottom < objTop) {
+      entityPos.y = objTop + entityRadius;
       return true;
     }
-
-    // otherwise push on smallest XZ axis only
     if(overlapX < overlapZ) {
       entityPos.x += dx < 0 ? -overlapX : overlapX;
     } else {
@@ -175,18 +227,33 @@ export class CollisionSystem {
   }
 
   update() {
-    // dynamic vs dynamic (enemies vs enemies) — your existing MOBA logic untouched
+    if(!this.cameraEntry) return;
+    this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
+    // XZ wall resolve — same neighbors, walls only, pass real entry
+    const cam = this.cameraEntry;
+    this._getNeighborCells(cam.pos[0], cam.pos[1], cam.pos[2], this._staticGrid, this._staticNeighbors);
+    for(let i = 0;i < this._staticNeighbors.length;i++) {
+      const entry = this._staticNeighbors[i];
+      if(entry.group === 'floor') continue;
+      const fakePos = {x: cam.pos[0], y: cam.pos[1], z: cam.pos[2]};
+      const hit = this.resolveVsStaticCube(fakePos, cam.radius, entry);
+      if(hit) {
+        cam.pos[0] = fakePos.x;
+        cam.pos[1] = fakePos.y;
+        cam.pos[2] = fakePos.z;
+      }
+    }
+    // dynamic vs dynamic
     this._buildGrid();
     const n = this.entries.length;
     for(let i = 0;i < n;i++) {
       const A = this.entries[i];
-      const neighbors = this._getNeighborCells(A.pos.x, A.pos.z, this._grid, this._neighbors);
-      for(let j = 0;j < neighbors.length;j++) {
-        const B = neighbors[j];
+      this._getNeighborCells(A.pos.x, A.pos.y, A.pos.z, this._grid, this._neighbors);
+      for(let j = 0;j < this._neighbors.length;j++) {
+        const B = this._neighbors[j];
         if(A === B) continue;
         const minDist = (A.radius + B.radius) * 0.5;
         if(A.group === B.group) {
-          // resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
           resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
           continue;
         }
@@ -194,7 +261,6 @@ export class CollisionSystem {
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;
         if(dx * dx + dz * dz > minDist * minDist) continue;
-        // const testCollide = resolvePairRepulsion(A.pos, B.pos, minDist, 1.0);
         const testCollide = resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
         if(testCollide) {
           this._eventDetail.A = A;
@@ -202,20 +268,6 @@ export class CollisionSystem {
           this._event1.detail.data = this._eventDetail;
           dispatchEvent(this._event1);
           return;
-        }
-      }
-    }
-    // camera vs static walls — query _staticGrid only
-    if(this.cameraEntry) {
-      const cam = this.cameraEntry;
-      const camX = cam.pos[0];
-      const camZ = cam.pos[2];
-      if(camX !== this._lastCamX || camZ !== this._lastCamZ) {
-        this._lastCamX = camX;
-        this._lastCamZ = camZ;
-        const neighbors = this._getNeighborCells(camX, camZ, this._staticGrid, this._staticNeighbors);
-        for(let i = 0;i < neighbors.length;i++) {
-          pairRepulsion(cam.pos, neighbors[i].pos, neighbors[i].radius, this.cameraVsStaticDist);
         }
       }
     }

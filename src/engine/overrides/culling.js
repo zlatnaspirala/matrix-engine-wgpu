@@ -48,7 +48,6 @@ export let cullingPass = function() {
       p.end();
     }
 
-
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];

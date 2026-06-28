@@ -720,6 +720,11 @@ export class FirstPersonCamera {
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 200);
+
+    this._jumpVelocity = 0;
+    this._jumpForce = 0.18;
+    this._isGrounded = false;
+
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if(isMobile() == true && options.isActive == 'init active cam') {
@@ -823,21 +828,17 @@ export class FirstPersonCamera {
         const touch = e.touches[0];
         const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
         const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
-
-        console.log('touchmove dx=', dx, 'dy=', dy);
-
+        // console.log('touchmove dx=', dx, 'dy=', dy);
         this.yaw -= dx * this.rotationSpeed;
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
         this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
         this._dirtyAngle = true;
-
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
       }
       e.preventDefault();
     }, {passive: false});
-
     // MOUSE
     if(isMobile() === false) canvas.addEventListener('pointerdown', e => {
       if(e.pointerType === 'mouse') {
@@ -851,7 +852,7 @@ export class FirstPersonCamera {
     }, {passive: false});
 
     if(isMobile() === false) canvas.addEventListener('pointermove', e => {
-      if(e.pointerType === 'mouse' && this._mouseDown) {
+      if(e.pointerType === 'mouse') { // this._mouseDown
         if(window.__isDragging === true) {return }
         const dx = e.movementX * this.MOUSE_SENS;
         const dy = e.movementY * this.MOUSE_SENS;
@@ -880,6 +881,15 @@ export class FirstPersonCamera {
         case 'ArrowDown': this._digital.backward = value; break;
         case 'ArrowLeft': this._digital.left = value; break;
         case 'ArrowRight': this._digital.right = value; break;
+        case 'Space':
+          if(value === true && window.app?.collisionSystem?._onGround) {
+            // this._jumpVelocity = this._jumpForce;
+            window.app.collisionSystem._gravityAcc = 0.22;  // upward, gravity will decelerate it
+            window.app.collisionSystem._onGround = false;
+            this._dirty = true;
+            this._dirtyAngle = true;
+          }
+          break;
       }
       if(value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
@@ -899,6 +909,12 @@ export class FirstPersonCamera {
     };
     window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
     window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
+  }
+
+  forceViewUpdate() {
+    this._dirtyAngle = true;
+    this._dirty = true;
+    this._recalculateViewVP();
   }
 
   _applyDigitalMovement() {
@@ -922,14 +938,19 @@ export class FirstPersonCamera {
 
     const s = this.movementSpeed / len;
     this.position[0] += vx * s;
-    // position[1] never touched — stays at whatever was set in constructor
     this.position[2] += vz * s;
+    if(this._jumpVelocity !== 0) {
+      this.position[1] += this._jumpVelocity;
+      this._jumpVelocity = 0;
+    }
 
     const rx = this.right, uy = this.up, bz = this.back, p = this.position;
     this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
     this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
     this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
     FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+
+
   }
 
   update() {

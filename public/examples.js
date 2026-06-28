@@ -7130,6 +7130,9 @@ var FirstPersonCamera = class _FirstPersonCamera {
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
+    this._jumpVelocity = 0;
+    this._jumpForce = 0.18;
+    this._isGrounded = false;
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
@@ -7240,7 +7243,6 @@ var FirstPersonCamera = class _FirstPersonCamera {
         const touch = e3.touches[0];
         const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
         const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
-        console.log("touchmove dx=", dx, "dy=", dy);
         this.yaw -= dx * this.rotationSpeed;
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
@@ -7262,7 +7264,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: false });
     if (isMobile() === false) canvas.addEventListener("pointermove", (e3) => {
-      if (e3.pointerType === "mouse" && this._mouseDown) {
+      if (e3.pointerType === "mouse") {
         if (window.__isDragging === true) {
           return;
         }
@@ -7307,6 +7309,14 @@ var FirstPersonCamera = class _FirstPersonCamera {
         case "ArrowRight":
           this._digital.right = value2;
           break;
+        case "Space":
+          if (value2 === true && window.app?.collisionSystem?._onGround) {
+            window.app.collisionSystem._gravityAcc = 0.22;
+            window.app.collisionSystem._onGround = false;
+            this._dirty = true;
+            this._dirtyAngle = true;
+          }
+          break;
       }
       if (value2 == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
@@ -7326,6 +7336,11 @@ var FirstPersonCamera = class _FirstPersonCamera {
     };
     window.addEventListener("keydown", (e3) => setDigital(e3, true), { passive: true });
     window.addEventListener("keyup", (e3) => setDigital(e3, false), { passive: true });
+  }
+  forceViewUpdate() {
+    this._dirtyAngle = true;
+    this._dirty = true;
+    this._recalculateViewVP();
   }
   _applyDigitalMovement() {
     const d2 = this._digital;
@@ -7356,6 +7371,10 @@ var FirstPersonCamera = class _FirstPersonCamera {
     const s2 = this.movementSpeed / len2;
     this.position[0] += vx * s2;
     this.position[2] += vz * s2;
+    if (this._jumpVelocity !== 0) {
+      this.position[1] += this._jumpVelocity;
+      this._jumpVelocity = 0;
+    }
     const rx = this.right, uy = this.up, bz = this.back, p2 = this.position;
     this.view[12] = -(rx[0] * p2[0] + rx[1] * p2[1] + rx[2] * p2[2]);
     this.view[13] = -(uy[0] * p2[0] + uy[1] * p2[1] + uy[2] * p2[2]);
@@ -8397,29 +8416,6 @@ var Rotation = class {
     }
   };
 };
-function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1) {
-  const dx = Apos[0] - Bpos.x;
-  const dz = Apos[2] - Bpos.z;
-  const distSq2 = dx * dx + dz * dz;
-  const minDistSq = minDistance * minDistance;
-  if (distSq2 < minDistSq && distSq2 > 1e-8) {
-    const dist2 = Math.sqrt(distSq2);
-    const overlap = minDistance - dist2;
-    const nx = dx / dist2;
-    const nz = dz / dist2;
-    Apos[0] += nx * overlap * pushStrength;
-    Apos[2] += nz * overlap * pushStrength;
-    return true;
-  }
-  if (distSq2 <= 1e-8) {
-    Apos[0] += (Math.random() - 0.5) * 0.1;
-    Apos[2] += (Math.random() - 0.5) * 0.1;
-    Apos.targetX = Apos[0];
-    Apos.targetZ = Apos[2];
-    return true;
-  }
-  return false;
-}
 var PVector = class {
   constructor(x3 = 0, y3 = 0, z2 = 0) {
     this.x = x3;
@@ -45440,16 +45436,58 @@ var CollisionSystem = class {
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
+    this._gravityAcc = 0;
+    this._gravityForce = -0.015;
+    this._terminalVelocity = -0.5;
+    this._onGround = false;
   }
-  // existing register — dynamic entities (enemies, players)
+  applyGravity(camPos, camRadius) {
+    this._gravityAcc += this._gravityForce;
+    if (this._gravityAcc < this._terminalVelocity) {
+      this._gravityAcc = this._terminalVelocity;
+    }
+    camPos[1] += this._gravityAcc;
+    this._onGround = false;
+    const camX = camPos[0];
+    const camY = camPos[1];
+    const camZ = camPos[2];
+    this._getNeighborCells(camX, camY, camZ, this._staticGrid, this._staticNeighbors);
+    for (let i2 = 0; i2 < this._staticNeighbors.length; i2++) {
+      const entry = this._staticNeighbors[i2];
+      const fakePos = { x: camPos[0], y: camPos[1], z: camPos[2] };
+      const prevY = fakePos.y;
+      const hit = this.resolveVsStaticCube(fakePos, camRadius, entry);
+      if (hit) {
+        camPos[0] = fakePos.x;
+        camPos[1] = fakePos.y;
+        camPos[2] = fakePos.z;
+        if (fakePos.y > prevY) {
+          this._gravityAcc = 0;
+          this._onGround = true;
+        }
+      }
+    }
+    app.getCamera()?.forceViewUpdate();
+  }
   register(id2, positionInstance, radius = 1, group = "default") {
     this.entries.push({ id: id2, pos: positionInstance, radius, group });
   }
-  // new: walls, maze geometry — built into _staticGrid once
-  registerStatic(id2, positionInstance, radius = 1, group = "default") {
-    const entry = { id: id2, pos: positionInstance, radius, group };
+  registerStatic(id2, positionInstance, radius = 1, group = "default", halfExtents = null) {
+    const entry = {
+      id: id2,
+      pos: positionInstance,
+      radius,
+      group,
+      // store actual box dimensions if provided, else assume unit cube
+      half: halfExtents ?? { x: radius, y: radius, z: radius }
+    };
+    const h2 = entry.half;
+    if (!h2) {
+      console.warn("entry missing half:", entry.id);
+      return false;
+    }
     this.staticEntries.push(entry);
-    const key = this._cellKey(positionInstance.x, positionInstance.z);
+    const key = this._cellKey(positionInstance.x, positionInstance.y ?? 0, positionInstance.z);
     let cell = this._staticGrid.get(key);
     if (!cell) {
       cell = [];
@@ -45497,25 +45535,33 @@ var CollisionSystem = class {
           if (cell) for (let i2 = 0; i2 < cell.length; i2++) out.push(cell[i2]);
         }
   }
-  // Add to CollisionSystem
-  resolveVsStaticCube(entityPos, entityHalfH, cube) {
-    const cubeHalf = 1;
-    const stepHeight = 0.6;
-    const dx = entityPos.x - cube.pos.x;
-    const dy = entityPos.y - cube.pos.y;
-    const dz = entityPos.z - cube.pos.z;
-    const overlapX = entityHalfH + cubeHalf - Math.abs(dx);
-    const overlapY = entityHalfH + cubeHalf - Math.abs(dy);
-    const overlapZ = entityHalfH + cubeHalf - Math.abs(dz);
-    if (overlapX <= 0 || overlapY <= 0 || overlapZ <= 0) return false;
-    const cubeTop = cube.pos.y + cubeHalf;
-    const entityFeet = entityPos.y - entityHalfH;
-    if (entityFeet >= cubeTop - stepHeight && entityFeet < cubeTop) {
-      entityPos.y = cubeTop + entityHalfH;
-      return true;
+  resolveVsStaticCube(entityPos, entityRadius, entry) {
+    const h2 = entry.half ?? { x: 1, y: 1, z: 1 };
+    const dx = entityPos.x - entry.pos.x;
+    const dy = entityPos.y - entry.pos.y;
+    const dz = entityPos.z - entry.pos.z;
+    const overlapX = entityRadius + h2.x - Math.abs(dx);
+    const overlapZ = entityRadius + h2.z - Math.abs(dz);
+    if (overlapX <= 0 || overlapZ <= 0) return false;
+    if (entry.group === "floor") {
+      const overlapY = entityRadius + h2.y - Math.abs(dy);
+      if (overlapY <= 0) return false;
+      const cubeTop = entry.pos.y + h2.y;
+      const entityFeet = entityPos.y - entityRadius;
+      if (entityFeet <= cubeTop) {
+        entityPos.y = cubeTop + entityRadius;
+        return true;
+      }
+      return false;
     }
-    if (entityFeet >= cubeTop - 0.01 && entityFeet <= cubeTop + 0.05) {
-      entityPos.y = cubeTop + entityHalfH;
+    const camBottom = entityPos.y - entityRadius;
+    const camTop = entityPos.y + entityRadius;
+    const objBottom = entry.pos.y - h2.y;
+    const objTop = entry.pos.y + h2.y;
+    if (camBottom >= objTop || camTop <= objBottom) return false;
+    const stepHeight = 0.6;
+    if (camBottom >= objTop - stepHeight && camBottom < objTop) {
+      entityPos.y = objTop + entityRadius;
       return true;
     }
     if (overlapX < overlapZ) {
@@ -45526,13 +45572,28 @@ var CollisionSystem = class {
     return true;
   }
   update() {
+    if (!this.cameraEntry) return;
+    this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
+    const cam2 = this.cameraEntry;
+    this._getNeighborCells(cam2.pos[0], cam2.pos[1], cam2.pos[2], this._staticGrid, this._staticNeighbors);
+    for (let i2 = 0; i2 < this._staticNeighbors.length; i2++) {
+      const entry = this._staticNeighbors[i2];
+      if (entry.group === "floor") continue;
+      const fakePos = { x: cam2.pos[0], y: cam2.pos[1], z: cam2.pos[2] };
+      const hit = this.resolveVsStaticCube(fakePos, cam2.radius, entry);
+      if (hit) {
+        cam2.pos[0] = fakePos.x;
+        cam2.pos[1] = fakePos.y;
+        cam2.pos[2] = fakePos.z;
+      }
+    }
     this._buildGrid();
     const n3 = this.entries.length;
     for (let i2 = 0; i2 < n3; i2++) {
       const A2 = this.entries[i2];
-      const neighbors = this._getNeighborCells(A2.pos.x, A2.pos.z, this._grid, this._neighbors);
-      for (let j2 = 0; j2 < neighbors.length; j2++) {
-        const B2 = neighbors[j2];
+      this._getNeighborCells(A2.pos.x, A2.pos.y, A2.pos.z, this._grid, this._neighbors);
+      for (let j2 = 0; j2 < this._neighbors.length; j2++) {
+        const B2 = this._neighbors[j2];
         if (A2 === B2) continue;
         const minDist = (A2.radius + B2.radius) * 0.5;
         if (A2.group === B2.group) {
@@ -45550,19 +45611,6 @@ var CollisionSystem = class {
           this._event1.detail.data = this._eventDetail;
           dispatchEvent(this._event1);
           return;
-        }
-      }
-    }
-    if (this.cameraEntry) {
-      const cam2 = this.cameraEntry;
-      const camX = cam2.pos[0];
-      const camZ = cam2.pos[2];
-      if (camX !== this._lastCamX || camZ !== this._lastCamZ) {
-        this._lastCamX = camX;
-        this._lastCamZ = camZ;
-        const neighbors = this._getNeighborCells(camX, camZ, this._staticGrid, this._staticNeighbors);
-        for (let i2 = 0; i2 < neighbors.length; i2++) {
-          pairRepulsion(cam2.pos, neighbors[i2].pos, neighbors[i2].radius, this.cameraVsStaticDist);
         }
       }
     }
@@ -53654,11 +53702,629 @@ var loadStreamRenderHost = function() {
   window.app = streamRender;
 };
 
+// src/engine/buildin/map-creator/map-creator.js
+var MapCreator = class {
+  /**
+   * @param {object} engine   — MatrixEngineWGPU instance
+   * @param {object} mesh     — pre-loaded cube OBJ mesh (m.cube)
+   * @param {object} collision — CollisionSystem instance
+   * @param {object} [opts]
+   * @param {string} [opts.wallTexture]   — path to wall texture
+   * @param {string} [opts.floorTexture]  — path to floor texture
+   * @param {string} [opts.ceilTexture]   — path to ceiling texture
+   */
+  constructor(engine, mesh, collision, opts = {}) {
+    this.engine = engine;
+    this.mesh = mesh;
+    this.collision = collision;
+    this._wallTex = opts.wallTexture || "./res/textures/blankgray2.webp";
+    this._floorTex = opts.floorTexture || "./res/textures/blankgray2.webp";
+    this._ceilTex = opts.ceilTexture || "./res/textures/blankgray2.webp";
+    this.shadowsCast = opts.shadowsCast || true;
+    this._uid = 0;
+  }
+  _id(prefix) {
+    return `${prefix}_${this._uid++}`;
+  }
+  _floor(name2, pos2, width, depth) {
+    return this._block(name2, pos2, [width, 0.2, depth], this._floorTex, "standard", true, 0.1, "floor");
+  }
+  _ceil(name2, pos2, width, depth) {
+    return this._block(name2, pos2, [width, 0.2, depth], this._ceilTex, "standard", false, 0, "floor");
+  }
+  _block(name2, pos2, scale4, tex, mat2 = "standard", registerCollision = true, collisionRadius = 1, group = "walls") {
+    const meshScale = 2;
+    const obj2 = this.engine.addMeshObj({
+      shadowsCast: this.shadowsCast,
+      material: { type: mat2, shared: false },
+      position: pos2,
+      scale: [scale4[0] / meshScale, scale4[1] / meshScale, scale4[2] / meshScale],
+      texturesPaths: [tex],
+      name: name2,
+      mesh: this.mesh,
+      physics: { enabled: false, mass: 0, geometry: "Cube" },
+      raycast: { enabled: true, radius: 1 }
+    });
+    if (registerCollision) {
+      this.collision.registerStatic(name2, pos2, collisionRadius, group, {
+        x: scale4[0] / 2,
+        y: scale4[1] / 2,
+        z: scale4[2] / 2
+      });
+    }
+    return obj2;
+  }
+  // PUBLIC PRIMITIVES
+  /**
+   * Create a box room.
+   *
+   * @param {object} opts
+   * @param {{x,y,z}} opts.origin   — bottom-center of the room
+   * @param {number}  opts.width    — X extent
+   * @param {number}  opts.depth    — Z extent
+   * @param {number}  opts.height   — wall height
+   * @param {number}  [opts.wallThickness=0.4]
+   * @param {boolean} [opts.roof=true]
+   * @param {boolean} [opts.floor=true]
+   * @param {string[]} [opts.doors=[]]  — sides with door openings: '+x'|'-x'|'+z'|'-z'
+   * @param {number}  [opts.doorWidth=2]
+   * @param {string}  [opts.tag='room']
+   * @returns {{ walls: object[], floor: object|null, ceil: object|null }}
+   */
+  createRoom(opts) {
+    const {
+      origin,
+      width,
+      depth,
+      height,
+      wallThickness = 0.4,
+      roof = true,
+      floor: floor2 = true,
+      doors = [],
+      doorWidth = 2,
+      tag = "room"
+    } = opts;
+    const { x: x3, y: y3, z: z2 } = origin;
+    const hw = width / 2;
+    const hd = depth / 2;
+    const wy = y3 + height / 2;
+    const t3 = wallThickness;
+    const results = { walls: [], doors: [], floor: null, ceil: null };
+    const hasDoor = (side) => doors.includes(side);
+    const xWallDepth = depth - t3 * 2;
+    const zWallWidth = width - t3 * 2;
+    const corners = [
+      { x: x3 + hw - t3 / 2, z: z2 + hd - t3 / 2 },
+      { x: x3 + hw - t3 / 2, z: z2 - hd + t3 / 2 },
+      { x: x3 - hw + t3 / 2, z: z2 + hd - t3 / 2 },
+      { x: x3 - hw + t3 / 2, z: z2 - hd + t3 / 2 }
+    ];
+    for (const c2 of corners) {
+      results.walls.push(this._block(
+        this._id(`${tag}_corner`),
+        { x: c2.x, y: wy, z: c2.z },
+        [t3, height, t3],
+        this._wallTex,
+        "standard",
+        true,
+        t3
+      ));
+    }
+    {
+      const wx = x3 + hw - t3 / 2;
+      if (hasDoor("+x")) {
+        this._dooredWall(tag, wx, wy, z2, "x", xWallDepth, height, doorWidth, t3, results.walls);
+      } else {
+        results.walls.push(this._block(this._id(`${tag}_wall+x`), { x: wx, y: wy, z: z2 }, [t3, height, xWallDepth], this._wallTex, "standard", true, t3));
+      }
+    }
+    {
+      const wx = x3 - hw + t3 / 2;
+      if (hasDoor("-x")) {
+        this._dooredWall(tag, wx, wy, z2, "x", xWallDepth, height, doorWidth, t3, results.walls);
+      } else {
+        results.walls.push(this._block(this._id(`${tag}_wall-x`), { x: wx, y: wy, z: z2 }, [t3, height, xWallDepth], this._wallTex, "standard", true, t3));
+      }
+    }
+    {
+      const wz = z2 + hd - t3 / 2;
+      if (hasDoor("+z")) {
+        this._dooredWall(tag, x3, wy, wz, "z", zWallWidth, height, doorWidth, t3, results.walls);
+      } else {
+        results.walls.push(this._block(this._id(`${tag}_wall+z`), { x: x3, y: wy, z: wz }, [zWallWidth, height, t3], this._wallTex, "standard", true, t3));
+      }
+    }
+    {
+      const wz = z2 - hd + t3 / 2;
+      if (hasDoor("-z")) {
+        this._dooredWall(tag, x3, wy, wz, "z", zWallWidth, height, doorWidth, t3, results.walls);
+      } else {
+        results.walls.push(this._block(this._id(`${tag}_wall-z`), { x: x3, y: wy, z: wz }, [zWallWidth, height, t3], this._wallTex, "standard", true, t3));
+      }
+    }
+    if (floor2) {
+      results.floor = this._floor(this._id(`${tag}_floor`), { x: x3, y: y3, z: z2 }, width, depth);
+    }
+    if (roof) {
+      results.ceil = this._ceil(this._id(`${tag}_ceil`), { x: x3, y: y3 + height, z: z2 }, width, depth);
+    }
+    return results;
+  }
+  /**
+   * Internal: build a wall face with a centred door opening.
+   *
+   * Produces:
+   *   - left wall segment   (static collision)
+   *   - right wall segment  (static collision)
+   *   - lintel above gap    (static collision)
+   *   - door panel          (static collision, named `<tag>_door_<uid>`)
+   *                          Translate/remove it from code to open/close.
+   *
+   * @returns {{ door: object, lintel: object }}  named refs for runtime control
+   */
+  _dooredWall(tag, cx, cy, cz, axis, wallLen, wallH, doorW, wallT, outArr) {
+    const doorH = Math.min(wallH * 0.75, wallH - 0.4);
+    const lintelH = wallH - doorH;
+    const halfLen = wallLen / 2;
+    const leftLen = halfLen - doorW / 2;
+    const rightLen = halfLen - doorW / 2;
+    const makePos = (along, perp) => axis === "x" ? { x: cx, y: perp, z: along } : { x: along, y: perp, z: cz };
+    const makeScale = (len2, h2) => axis === "x" ? [wallT, h2, len2] : [len2, h2, wallT];
+    const doorMidH = cy - wallH / 2 + doorH / 2;
+    const lintelY = cy + wallH / 2 - lintelH / 2;
+    const leftCenter = (axis === "x" ? cz : cx) - halfLen + leftLen / 2;
+    const rightCenter = (axis === "x" ? cz : cx) + halfLen - rightLen / 2;
+    const doorCenter = axis === "x" ? cz : cx;
+    if (leftLen > 0.01) {
+      outArr.push(this._block(
+        this._id(`${tag}_wl`),
+        makePos(leftCenter, doorMidH),
+        makeScale(leftLen, doorH),
+        this._wallTex,
+        "standard",
+        true,
+        wallT
+      ));
+    }
+    if (rightLen > 0.01) {
+      outArr.push(this._block(
+        this._id(`${tag}_wr`),
+        makePos(rightCenter, doorMidH),
+        makeScale(rightLen, doorH),
+        this._wallTex,
+        "standard",
+        true,
+        wallT
+      ));
+    }
+    outArr.push(this._block(
+      this._id(`${tag}_lintel`),
+      makePos(doorCenter, lintelY),
+      makeScale(wallLen, lintelH),
+      this._wallTex,
+      "standard",
+      false,
+      wallT
+    ));
+    return {};
+  }
+  /**
+   * Create a straight tunnel between two points (axis-aligned only).
+   * For diagonal tunnels, chain two calls with a corner room.
+   *
+   * @param {object} opts
+   * @param {{x,y,z}} opts.from
+   * @param {{x,y,z}} opts.to
+   * @param {number}  opts.width   — tunnel inner width (the non-travel axis)
+   * @param {number}  opts.height  — tunnel inner height
+   * @param {boolean} [opts.roof=true]
+   * @param {string}  [opts.tag='tunnel']
+   * @returns {{ walls: object[] }}
+   */
+  createTunnel(opts) {
+    const { from, to: to2, width, height, roof = true, tag = "tunnel" } = opts;
+    const dx = to2.x - from.x;
+    const dz = to2.z - from.z;
+    const dy = to2.y - from.y;
+    const alongX = Math.abs(dx) >= Math.abs(dz);
+    const len2 = alongX ? Math.abs(dx) : Math.abs(dz);
+    const cx = (from.x + to2.x) / 2;
+    const cy = (from.y + to2.y) / 2;
+    const cz = (from.z + to2.z) / 2;
+    const mh = height / 2;
+    const hw = width / 2;
+    const results = { walls: [] };
+    if (alongX) {
+      const wallY = cy + mh;
+      results.walls.push(this._block(this._id(`${tag}_s1`), { x: cx, y: wallY, z: cz - hw }, [len2, height, 0.3], this._wallTex));
+      results.walls.push(this._block(this._id(`${tag}_s2`), { x: cx, y: wallY, z: cz + hw }, [len2, height, 0.3], this._wallTex));
+      if (roof) {
+        results.walls.push(this._ceil(
+          this._id(`${tag}_roof`),
+          { x: cx, y: from.y + height, z: cz },
+          // ← from.y + height, not cy + height
+          len2,
+          width
+        ));
+      }
+      results.walls.push(this._floor(this._id(`${tag}_floor`), { x: cx, y: cy, z: cz }, len2, width));
+    } else {
+      const wallY = cy + mh;
+      results.walls.push(this._block(this._id(`${tag}_s1`), { x: cx - hw, y: wallY, z: cz }, [0.3, height, len2], this._wallTex));
+      results.walls.push(this._block(this._id(`${tag}_s2`), { x: cx + hw, y: wallY, z: cz }, [0.3, height, len2], this._wallTex));
+      if (roof) {
+        results.walls.push(this._ceil(
+          this._id(`${tag}_roof`),
+          { x: cx, y: from.y + height, z: cz },
+          // ← from.y + height, not cy + height
+          len2,
+          width
+        ));
+      }
+      results.walls.push(this._floor(this._id(`${tag}_floor`), { x: cx, y: cy, z: cz }, width, len2));
+    }
+    return results;
+  }
+  /**
+   * Create a stair run connecting two Y levels.
+   * Stairs travel along X or Z. Each step is one cube-block.
+   *
+   * @param {object} opts
+   * @param {{x,y,z}} opts.origin    — bottom-start corner
+   * @param {'x'|'z'} [opts.axis='x'] — travel direction
+   * @param {number}  opts.steps     — number of steps
+   * @param {number}  [opts.stepW=1.5] — step width (perpendicular)
+   * @param {number}  [opts.stepH=0.4] — riser height
+   * @param {number}  [opts.stepD=0.8] — tread depth
+   * @param {boolean} [opts.walls=true] — side walls
+   * @param {boolean} [opts.roof=false]
+   * @param {string}  [opts.tag='stair']
+   * @returns {{ steps: object[], walls: object[] }}
+   */
+  createStairs(opts) {
+    const {
+      origin,
+      steps,
+      axis = "x",
+      stepW = 1.5,
+      stepH = 0.4,
+      stepD = 0.8,
+      walls = true,
+      roof = false,
+      tag = "stair"
+    } = opts;
+    const results = { steps: [], walls: [] };
+    let { x: x3, y: y3, z: z2 } = origin;
+    for (let i2 = 0; i2 < steps; i2++) {
+      const stepY = y3 + i2 * stepH + stepH / 2;
+      const stepCx = axis === "x" ? x3 + i2 * stepD + stepD / 2 : x3;
+      const stepCz = axis === "z" ? z2 + i2 * stepD + stepD / 2 : z2;
+      const scaleX = axis === "x" ? stepD : stepW;
+      const scaleZ = axis === "z" ? stepD : stepW;
+      const s2 = this._block(
+        this._id(`${tag}_step`),
+        { x: stepCx, y: stepY, z: stepCz },
+        [scaleX, stepH, scaleZ],
+        this._wallTex,
+        "standard",
+        true,
+        0.5
+      );
+      results.steps.push(s2);
+    }
+    if (walls) {
+      const totalLen = steps * stepD;
+      const totalH = steps * stepH;
+      const wallY = y3 + totalH / 2;
+      const midAlong = (axis === "x" ? x3 : z2) + totalLen / 2;
+      const hw = stepW / 2;
+      if (axis === "x") {
+        results.walls.push(this._block(this._id(`${tag}_sw1`), { x: midAlong, y: wallY, z: z2 - hw - 0.2 }, [totalLen, totalH + stepH, 0.3], this._wallTex));
+        results.walls.push(this._block(this._id(`${tag}_sw2`), { x: midAlong, y: wallY, z: z2 + hw + 0.2 }, [totalLen, totalH + stepH, 0.3], this._wallTex));
+      } else {
+        results.walls.push(this._block(this._id(`${tag}_sw1`), { x: x3 - hw - 0.2, y: wallY, z: midAlong }, [0.3, totalH + stepH, totalLen], this._wallTex));
+        results.walls.push(this._block(this._id(`${tag}_sw2`), { x: x3 + hw + 0.2, y: wallY, z: midAlong }, [0.3, totalH + stepH, totalLen], this._wallTex));
+      }
+    }
+    return results;
+  }
+  /**
+   * random pillar cover, and optional crates/blocks.
+   *
+   * @param {object} opts
+   * @param {{x,y,z}} opts.origin
+   * @param {number}  opts.width
+   * @param {number}  opts.depth
+   * @param {number}  [opts.wallHeight=2]
+   * @param {number}  [opts.pillars=6]     — number of interior pillars
+   * @param {number}  [opts.pillarH=3]     — pillar height
+   * @param {number}  [opts.covers=4]      — low cover blocks
+   * @param {boolean} [opts.roof=false]
+   * @param {string[]} [opts.doors=['+x','-x','+z','-z']]
+   * @param {string}  [opts.tag='arena']
+   */
+  createFightArena(opts) {
+    const {
+      origin,
+      width,
+      depth,
+      wallHeight = 2,
+      pillars = 6,
+      pillarH = 3,
+      pillarMargin = 4,
+      covers = 4,
+      roof = false,
+      doors = ["+x", "-z"],
+      tag = "arena"
+    } = opts;
+    const roomResult = this.createRoom({
+      origin,
+      width,
+      depth,
+      height: wallHeight,
+      roof,
+      doors,
+      doorWidth: 3.5,
+      tag
+    });
+    const { x: x3, y: y3, z: z2 } = origin;
+    const results = { ...roomResult, pillars: [], covers: [] };
+    const pillarsPerSide = Math.round(Math.sqrt(pillars));
+    const marginX = (width - 2 * pillarMargin) / (pillarsPerSide - 1);
+    const marginZ = (depth - 2 * pillarMargin) / (pillarsPerSide - 1);
+    for (let row2 = 0; row2 < pillarsPerSide; row2++) {
+      for (let col = 0; col < pillarsPerSide; col++) {
+        const px = x3 - width / 2 + pillarMargin + col * marginX;
+        const pz = z2 - depth / 2 + pillarMargin + row2 * marginZ;
+        results.pillars.push(this._block(
+          this._id(`${tag}_pillar`),
+          { x: px, y: y3 + pillarH / 2, z: pz },
+          [0.6, pillarH, 0.6],
+          this._wallTex,
+          "standard",
+          true
+        ));
+      }
+    }
+    for (let i2 = 0; i2 < covers; i2++) {
+      const t3 = (i2 * 0.31 + 0.15) % 1;
+      const t22 = (i2 * 0.67 + 0.4) % 1;
+      const cx = x3 + (t3 - 0.5) * (width - 4);
+      const cz = z2 + (t22 - 0.5) * (depth - 4);
+      results.covers.push(this._block(
+        this._id(`${tag}_cover`),
+        { x: cx, y: y3 + 0.6, z: cz },
+        [1.5, 1.2, 1.5],
+        this._floorTex,
+        "standard",
+        true
+      ));
+    }
+    return results;
+  }
+  /**
+   * Create a 2-D maze on a horizontal plane at a given Y level.
+   * Uses recursive DFS — same algorithm as the original example.
+   *
+   * @param {object} opts
+   * @param {{x,y,z}} opts.origin    — bottom-left world position
+   * @param {number}  opts.mazeSize  — grid cells (forced odd)
+   * @param {number}  [opts.spacing=2]
+   * @param {number}  [opts.wallHeight=3]
+   * @param {boolean} [opts.roof=false]
+   * @param {string}  [opts.tag='maze']
+   * @returns {{ walls: object[], entrance: {x,z}, exit: {x,z} }}
+   */
+  createMazeLayer(opts) {
+    let {
+      origin,
+      mazeSize,
+      spacing: spacing2 = 2,
+      wallHeight = 3,
+      roof = false,
+      tag = "maze"
+    } = opts;
+    if (mazeSize % 2 === 0) mazeSize += 1;
+    const { x: ox, y: oy, z: oz } = origin;
+    const grid = Array(mazeSize).fill(null).map(() => Array(mazeSize).fill(0));
+    const walk = (x3, y3) => {
+      grid[y3][x3] = 1;
+      const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]].sort(() => Math.random() - 0.5);
+      for (const [dx, dy] of dirs) {
+        const nx = x3 + dx * 2, ny = y3 + dy * 2;
+        if (nx >= 0 && nx < mazeSize && ny >= 0 && ny < mazeSize && grid[ny][nx] === 0) {
+          grid[y3 + dy][x3 + dx] = 1;
+          walk(nx, ny);
+        }
+      }
+    };
+    walk(1, 1);
+    for (let i2 = 0; i2 < mazeSize; i2++) {
+      grid[0][i2] = grid[mazeSize - 1][i2] = grid[i2][0] = grid[i2][mazeSize - 1] = 0;
+    }
+    grid[1][0] = 1;
+    grid[mazeSize - 2][mazeSize - 1] = 1;
+    const results = { walls: [] };
+    const wallY = oy + wallHeight / 2;
+    for (let gy = 0; gy < mazeSize; gy++) {
+      for (let gx = 0; gx < mazeSize; gx++) {
+        if (grid[gy][gx] === 0) {
+          const wx = ox + gx * spacing2;
+          const wz = oz + gy * spacing2;
+          const w2 = this._block(
+            this._id(`${tag}_w`),
+            { x: wx, y: wallY, z: wz },
+            [1, wallHeight, 1],
+            this._wallTex,
+            "standard",
+            true,
+            1.1
+          );
+          results.walls.push(w2);
+        }
+      }
+    }
+    const totalW = mazeSize * spacing2;
+    this._floor(
+      this._id(`${tag}_floor`),
+      { x: ox + totalW / 2 - spacing2 / 2, y: oy, z: oz + totalW / 2 - spacing2 / 2 },
+      totalW,
+      totalW
+    );
+    if (roof) {
+      this._ceil(
+        this._id(`${tag}_ceil`),
+        { x: ox + totalW / 2 - spacing2 / 2, y: oy + wallHeight, z: oz + totalW / 2 - spacing2 / 2 },
+        totalW,
+        totalW
+      );
+    }
+    results.entrance = {
+      x: ox,
+      z: oz + 1 * spacing2
+    };
+    results.exit = {
+      x: ox + (mazeSize - 1) * spacing2,
+      z: oz + (mazeSize - 2) * spacing2
+    };
+    return results;
+  }
+  /**
+   * Create multiple stacked maze levels connected by stair runs.
+   * Each level is a full DFS maze. Stairs are placed at the exit
+   * of each layer connecting it to the entrance of the next.
+   *
+   * @param {object} opts
+   * @param {{x,y,z}} opts.origin
+   * @param {number}  opts.levels         — number of floors
+   * @param {number}  opts.mazeSize       — grid cells per layer
+   * @param {number}  [opts.spacing=2]    — cell world-space spacing
+   * @param {number}  [opts.wallHeight=3] — height of each layer's walls
+   * @param {number}  [opts.levelGap=1]   — extra gap between floor ceiling and next floor
+   * @param {number}  [opts.stairSteps=6] — steps per stairwell
+   * @param {boolean} [opts.roofLevels=false] — put a ceiling on each level except top
+   * @returns {{ layers: object[], stairs: object[] }}
+   */
+  createMultiLevelMaze(opts) {
+    const {
+      origin,
+      levels: levels2 = 3,
+      mazeSize = 15,
+      spacing: spacing2 = 2,
+      wallHeight = 3,
+      levelGap = 1,
+      stairSteps = 6,
+      roofLevels = false
+    } = opts;
+    const results = { layers: [], stairs: [] };
+    const stepH = 0.4;
+    const layerH = wallHeight + levelGap;
+    for (let lvl = 0; lvl < levels2; lvl++) {
+      const y3 = origin.y + lvl * layerH;
+      const layer = this.createMazeLayer({
+        origin: { x: origin.x, y: y3, z: origin.z },
+        mazeSize,
+        spacing: spacing2,
+        wallHeight,
+        roof: roofLevels && lvl < levels2 - 1,
+        tag: `lvl${lvl}_maze`
+      });
+      results.layers.push(layer);
+      if (lvl < levels2 - 1) {
+        const stairOrigin = {
+          x: layer.exit.x + spacing2,
+          y: y3,
+          z: layer.exit.z
+        };
+        const stair = this.createStairs({
+          origin: stairOrigin,
+          axis: "x",
+          steps: stairSteps,
+          stepW: 2.5,
+          stepH,
+          stepD: 0.8,
+          walls: true,
+          roof: false,
+          tag: `stair_lvl${lvl}`
+        });
+        results.stairs.push(stair);
+      }
+    }
+    return results;
+  }
+  /**
+   * Layout:
+   *   entrance tunnel → fight arena → maze layer → (optional) multi-level maze
+   *
+   * @param {object} opts
+   * @param {{x,y,z}} [opts.origin={x:0,y:0,z:0}]
+   * @param {boolean} [opts.multiLevel=true]
+   * @param {number}  [opts.mazeLevels=2]
+   * @param {number}  [opts.mazeSize=19]
+   * @returns {object}  all created geometry groups
+   */
+  createFPSMapCompound(opts = {}) {
+    const {
+      origin = { x: 0, y: 0, z: 0 },
+      multiLevel = true,
+      mazeLevels = 2,
+      mazeSize = 19
+    } = opts;
+    const all = {};
+    all.entranceTunnel = this.createTunnel({
+      from: { x: origin.x - 10, y: origin.y, z: origin.z },
+      to: { x: origin.x, y: origin.y, z: origin.z },
+      width: 2.5,
+      height: 3.5,
+      tag: "entry_tunnel"
+    });
+    all.arena = this.createFightArena({
+      origin: { x: origin.x + 15, y: origin.y, z: origin.z },
+      width: 20,
+      depth: 20,
+      wallHeight: 2.5,
+      pillars: 8,
+      pillarH: 4,
+      covers: 5,
+      doors: ["-x", "+z"],
+      tag: "main_arena"
+    });
+    all.linkTunnel = this.createTunnel({
+      from: { x: origin.x + 25, y: origin.y, z: origin.z + 10 },
+      to: { x: origin.x + 25, y: origin.y, z: origin.z + 20 },
+      width: 2,
+      height: 3,
+      tag: "link_tunnel"
+    });
+    if (multiLevel) {
+      all.mazeSection = this.createMultiLevelMaze({
+        origin: { x: origin.x + 10, y: origin.y, z: origin.z + 22 },
+        levels: mazeLevels,
+        mazeSize,
+        spacing: 2,
+        wallHeight: 3,
+        levelGap: 1,
+        stairSteps: 8,
+        roofLevels: true
+      });
+    } else {
+      all.mazeSection = this.createMazeLayer({
+        origin: { x: origin.x + 10, y: origin.y, z: origin.z + 22 },
+        mazeSize,
+        spacing: 2,
+        wallHeight: 3
+      });
+    }
+    return all;
+  }
+};
+
 // examples/games/first-person-shooter/hang3d.js
 var loadHang3d = function() {
-  let hang3d = new MatrixEngineWGPU({
+  let app2 = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
+    // render:        'culling',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -53666,133 +54332,84 @@ var loadHang3d = function() {
       type: "firstPersonCamera",
       responseCoef: 1e3
     },
-    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+    clearColor: { r: 0.02, b: 0.05, g: 0.02, a: 1 }
   }, () => {
-    hang3d.addLight();
-    downloadMeshes(
-      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
-      onLoadObj,
-      { scale: [1, 1, 1] }
-    );
-    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
-    addRaycastsAABBListener("canvas1", "click");
-    function onGround(m2) {
-      hang3d.addMeshObj({
-        material: { type: "standard", share: true },
-        position: { x: 0, y: -5, z: -10 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: ["./res/textures/floor1.webp"],
-        //, './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: "floor",
-        mesh: m2.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
+    app2.collisionSystem = new CollisionSystem(app2);
+    app2.addLight();
+    addRaycastsAABBListener();
+    app2.activateHZB();
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m2) => {
+      const mc2 = new MapCreator(app2, m2.cube, app2.collisionSystem, {
+        wallTexture: "./res/textures/blankgray2.webp",
+        floorTexture: "./res/textures/white-metal2.webp",
+        ceilTexture: "./res/textures/blankgray2.webp",
+        shadowsCast: true
+      });
+      mc2.createRoom({
+        origin: { x: -0, y: 0, z: 20 },
+        width: 10,
+        depth: 10,
+        height: 4,
+        doors: ["+x", "-z"],
+        doorWidth: 2.5,
+        roof: true,
+        tag: "start_room"
+      });
+      mc2.createTunnel({
+        from: { x: -35, y: 0.1, z: 0 },
+        to: { x: -15, y: 0, z: 0 },
+        width: 3.5,
+        height: 3,
+        roof: true,
+        tag: "entry_tunnel"
+      });
+      mc2.createFightArena({
+        origin: { x: 0, y: 0, z: 0 },
+        width: 32,
+        depth: 32,
+        wallHeight: 2.5,
+        pillars: 16,
+        pillarH: 4,
+        covers: 0,
+        roof: false,
+        doors: ["-x", "+z"],
+        tag: "main_arena"
+      });
+      mc2.createStairs({
+        origin: { x: -5, y: 0, z: 0 },
+        axis: "z",
+        steps: 8,
+        stepW: 2,
+        stepH: 0.4,
+        stepD: 0.8,
+        walls: true,
+        tag: "stairs_up"
+      });
+      mc2.createMultiLevelMaze({
+        origin: { x: -65, y: -7, z: -22 },
+        levels: 3,
+        mazeSize: 13,
+        spacing: 2,
+        wallHeight: 3,
+        levelGap: 1,
+        stairSteps: 8,
+        roofLevels: true
+      });
+      const light = app2.lightContainer[0];
+      light.setPosition(0, 50, -20);
+      light.setIntensity(200);
+      app2.cameras.firstPersonCamera.movementSpeed = 0.12;
+      app2.cameras.firstPersonCamera.setPosition(0, 5, 0);
+      app2.collisionSystem.registerCamera(app2.cameras.firstPersonCamera.position, 1);
+      app2.canvas.addEventListener("ray.hit.event", (e3) => {
+        console.log("ray.hit.event detected");
+        if (e3.detail.hitObject.name.indexOf("_pillar") !== -1) {
+          e3.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
         }
       });
-    }
-    async function onLoadObj(m2) {
-      hang3d.addMeshObj({
-        material: { type: "standard", share: true },
-        position: { x: 0, y: -1, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: [100, 100, 100],
-        rotationSpeed: { x: 0, y: 0.1, z: 0 },
-        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
-        name: "sky",
-        mesh: m2.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
-      let MYCUBE = hang3d.addMeshObj({
-        material: { type: "mirror" },
-        position: { x: 0, y: 4, z: -10 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [3, 5, 1],
-        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
-        name: "cube",
-        mesh: m2.cube,
-        envMapParams: {
-          baseColorMix: 0.1,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1],
-          // Slight cool tint
-          reflectivity: 0.75,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1],
-          // Soft cyan
-          illuminateStrength: 1.5,
-          // Gentle rim
-          illuminatePulse: 0.1,
-          // No pulse (static)
-          fresnelPower: 5,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false
-          // ✅ Env map mode
-        },
-        raycast: { enabled: true, radius: 1 },
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
-          // flameEffect: true
-        }
-      });
-      hang3d.lightContainer[0].setIntensity(15);
-      hang3d.activateBloomEffect();
-      hang3d.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-      hang3d.lightContainer[0].behavior.value_ = -1;
-      hang3d.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      });
-      hang3d.lightContainer[0].setPosition(0, 15, -10);
-      hang3d.lightContainer[0].setTarget(0, 0, -10);
-      setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(hang3d.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
-        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
-        MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566,
-          0.21125441598805741,
-          0.4249951687253338,
-          0.4724163587305734,
-          2.381811753816671,
-          3.074841196886901,
-          -2.3797025623904164,
-          -3.4608908819087145
-        ]);
-        MYCUBE.setAmbient(2, 3, 0.5);
-        let cam2 = app.getCamera();
-        cam2.setYaw(-0.03);
-        cam2.setPitch(-0.49);
-        cam2.setZ(0);
-        cam2.setY(10);
-        app.buildRenderBuckets();
-        cam2._dirtyAngle = true;
-      }, 700);
-    }
-    hang3d.canvas.addEventListener("ray.hit.event", (e3) => {
-      console.log("ray.hit.event detected");
-      if (e3.detail.hitObject.name.startsWith("cube")) {
-        e3.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e3.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        e3.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
-      }
-    });
+    }, { scale: [1, 1, 1] });
   });
-  window.app = hang3d;
+  window.app = app2;
 };
 
 // examples.js
