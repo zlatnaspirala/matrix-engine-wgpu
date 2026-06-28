@@ -722,7 +722,6 @@ export class FirstPersonCamera {
     this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 200);
 
     this._jumpVelocity = 0;
-    this._jumpForce = 0.18;
     this._isGrounded = false;
 
     if(this.canvas) this._setupInput(this.canvas);
@@ -883,8 +882,7 @@ export class FirstPersonCamera {
         case 'ArrowRight': this._digital.right = value; break;
         case 'Space':
           if(value === true && window.app?.collisionSystem?._onGround) {
-            // this._jumpVelocity = this._jumpForce;
-            window.app.collisionSystem._gravityAcc = 0.22;  // upward, gravity will decelerate it
+            window.app.collisionSystem._gravityAcc = 0.22;
             window.app.collisionSystem._onGround = false;
             this._dirty = true;
             this._dirtyAngle = true;

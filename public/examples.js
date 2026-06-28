@@ -7131,7 +7131,6 @@ var FirstPersonCamera = class _FirstPersonCamera {
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
     this._jumpVelocity = 0;
-    this._jumpForce = 0.18;
     this._isGrounded = false;
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
@@ -54341,7 +54340,7 @@ var loadHang3d = function() {
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m2) => {
       const mc2 = new MapCreator(app2, m2.cube, app2.collisionSystem, {
         wallTexture: "./res/textures/blankgray2.webp",
-        floorTexture: "./res/textures/white-metal2.webp",
+        floorTexture: "./res/textures/rpg/magics/42.png",
         ceilTexture: "./res/textures/blankgray2.webp",
         shadowsCast: true
       });

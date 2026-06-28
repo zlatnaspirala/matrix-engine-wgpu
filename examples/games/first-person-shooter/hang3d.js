@@ -42,7 +42,7 @@ export var loadHang3d = function() {
       // ── 1. Instantiate MapCreator
       const mc = new MapCreator(app, m.cube, app.collisionSystem, {
         wallTexture: './res/textures/blankgray2.webp',
-        floorTexture: './res/textures/white-metal2.webp',
+        floorTexture: './res/textures/rpg/magics/42.png',
         ceilTexture: './res/textures/blankgray2.webp',
         shadowsCast: true
       });
