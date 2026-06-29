@@ -8132,6 +8132,12 @@ var Position = class {
     this.targetX = parseFloat(x3);
     this.targetY = parseFloat(y3);
   }
+  translateByXYZ(x3, y3, z2) {
+    this.inMove = true;
+    this.targetX = parseFloat(x3);
+    this.targetY = parseFloat(y3);
+    this.targetZ = parseFloat(z2);
+  }
   translateByXZ(x3, z2) {
     if (parseFloat(z2) == this.targetZ && parseFloat(x3) == this.targetX) return;
     this.inMove = true;
@@ -17805,6 +17811,19 @@ var MEMeshObj = class extends Materials {
     shadowPass.drawIndexed(mesh.indexCount);
   };
   destroy = () => {
+    if (app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(this.name);
+      if (testPB !== null) {
+        try {
+          app.matrixPhysics.removeRigidBody(testPB);
+        } catch (e3) {
+          console.warn("Physics cleanup err:", e3);
+        }
+      }
+    } else {
+      app.removeSceneObjectByName(this.name);
+      return;
+    }
     if (this._destroyed) return;
     this._destroyed = true;
     this.vertexBuffer?.destroy();
@@ -17845,16 +17864,7 @@ var MEMeshObj = class extends Materials {
     };
     this.drawShadows = () => {
     };
-    if (app.matrixPhysics) {
-      let testPB = app.matrixPhysics.getBodyByName(this.name);
-      if (testPB !== null) {
-        try {
-          app.matrixPhysics.removeRigidBody(testPB);
-        } catch (e3) {
-          console.warn("Physics cleanup err:", e3);
-        }
-      }
-    }
+    console.info(`\u{1F9F9}Destroyed: ${this.name}`);
   };
   initBoundingSphere() {
     if (!this.mesh || !this.mesh.vertices) return;
@@ -40745,9 +40755,7 @@ var cullingPass = function() {
       if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       mesh.updateBoundingSphere?.();
     }
-    const cullStartMs = performance.now();
     this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
-    const cullTimeMs = performance.now() - cullStartMs;
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -40788,7 +40796,7 @@ var cullingPass = function() {
     }
     pass.end();
     if (this.ssrPass.enabled === true) {
-      mat4.invert(camera.VP, this._invViewProj);
+      mat4Impl.invert(camera.VP, this._invViewProj);
       this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
       this.ssrPass.render(commandEncoder, {
         sceneTextureView: this.sceneTextureView,
@@ -40799,7 +40807,7 @@ var cullingPass = function() {
       });
     }
     if (this.volumetricPass.enabled === true) {
-      if (this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
+      if (this.ssrPass.enabled === false) mat4Impl.invert(camera.VP, this._invViewProj);
       this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
       for (let i2 = 0; i2 < this.lightContainer.length; i2++) {
         const light = this.lightContainer[i2];
@@ -40910,7 +40918,7 @@ var noShadowPass = function() {
     }
     pass.end();
     if (this.ssrPass.enabled === true) {
-      mat4.invert(camera.VP, this._invViewProj);
+      mat4Impl.invert(camera.VP, this._invViewProj);
       this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
       this.ssrPass.render(commandEncoder, {
         sceneTextureView: this.sceneTextureView,
@@ -40921,7 +40929,7 @@ var noShadowPass = function() {
       });
     }
     if (this.volumetricPass.enabled === true) {
-      if (this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
+      if (this.ssrPass.enabled === false) mat4Impl.invert(camera.VP, this._invViewProj);
       this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
       for (let i2 = 0; i2 < this.lightContainer.length; i2++) {
         const light = this.lightContainer[i2];
@@ -42473,11 +42481,11 @@ var KaleidoscopeEffect = class {
 
 // src/engine/culling/culling.js
 var CulledRenderPass = class {
-  constructor() {
+  constructor(range = 500) {
     this.visibleOpaqueMeshes = /* @__PURE__ */ new Map();
     this.visibleTransparentMeshes = /* @__PURE__ */ new Map();
     this.cullStats = { total: 0, visible: 0, culled: 0 };
-    this.range = 500;
+    this.range = range;
     this._camPos = new Float32Array(3);
     this._camForward = new Float32Array(3);
     this._opaqueArrayCache = /* @__PURE__ */ new Map();
@@ -42742,7 +42750,6 @@ var MatrixEngineWGPU = class {
     this._volumetricUniforms = { invViewProjectionMatrix: null };
     this._volumetricLightUniforms = { viewProjectionMatrix: null, direction: null };
     this.usEvent = new CustomEvent("updateSceneContainer", { detail: {} });
-    this.culledRenderPass = new CulledRenderPass();
     this.editor = void 0;
     if (typeof options2.useEditor !== "undefined") {
       if (typeof options2.projectType !== "undefined" && options2.projectType == "created from editor") {
@@ -42764,6 +42771,8 @@ var MatrixEngineWGPU = class {
       } else if (options2.render == "mobile1") {
         this.overrideRender = mobile1.bind(this);
       } else if (options2.render == "culling") {
+        const arg = { range: options2.cullingRange ? options2.cullingRange : 500 };
+        this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
       }
     }
@@ -43353,10 +43362,12 @@ var MatrixEngineWGPU = class {
           console.warn("%cPhysics cleanup error:" + e3, LOG_FUNNY_ARCADE);
         }
       }
+    } else {
+      this.mainRenderBundle.splice(index, 1);
+      this.buildRenderBuckets(this.mainRenderBundle);
     }
     obj2.destroy();
-    this.mainRenderBundle.splice(index, 1);
-    this.buildRenderBuckets(this.mainRenderBundle);
+    this.buildLightShadowBuckets();
     return true;
   };
   buildRenderBuckets = () => {
@@ -54318,12 +54329,241 @@ var MapCreator = class {
   }
 };
 
+// src/engine/procedures/fps-projectile.js
+var ProjectileSystem = class {
+  /**
+   * @param {object} engine       — MatrixEngineWGPU instance
+   * @param {object} mesh         — cube mesh for projectile/decal visuals
+   * @param {object} collision    — CollisionSystem instance
+   * @param {object} [opts]
+   * @param {number} [opts.projectileSpeed=0.8]
+   * @param {number} [opts.projectileLifetime=3000]  — ms before auto-despawn
+   * @param {number} [opts.projectileScale=0.15]
+   * @param {string} [opts.projectileTex]
+   * @param {string} [opts.decalTex]
+   * @param {number} [opts.decalSize=0.4]
+   * @param {number} [opts.decalLifetime=2000]
+   * @param {Function} [opts.onHitscanHit]    — callback(hitPoint, normal, reflect, entry)
+   * @param {Function} [opts.onProjectileHit] — callback(hitPoint, normal, entry)
+   */
+  constructor(engine, mesh, collision, opts = {}) {
+    this.engine = engine;
+    this.mesh = mesh;
+    this.collision = collision;
+    this.cam = this.engine.getCamera();
+    this._speed = opts.projectileSpeed ?? 8e-3;
+    this._lifetime = opts.projectileLifetime ?? 3e3;
+    this._scale = opts.projectileScale ?? 0.15;
+    this._tex = opts.projectileTex ?? "./res/textures/blankgray2.webp";
+    this._decalTex = opts.decalTex ?? "./res/textures/blankgray2.webp";
+    this._decalSize = opts.decalSize ?? 0.4;
+    this._decalLifetime = opts.decalLifetime ?? 2e3;
+    this.onHitscanHit = opts.onHitscanHit ?? null;
+    this.onProjectileHit = opts.onProjectileHit ?? null;
+    this._projectiles = [];
+    this._uid = 0;
+    this._maxDecals = opts.maxDecals ?? 20;
+    this._decals = [];
+    this.pArg = { name: null, obj: null, dir: null };
+  }
+  _getCameraState() {
+    const ox = this.cam.position[0];
+    const oy = this.cam.position[1];
+    const oz = this.cam.position[2];
+    const dx = -this.cam.back[0];
+    const dy = -this.cam.back[1];
+    const dz = -this.cam.back[2];
+    const len2 = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    return {
+      origin: { x: ox, y: oy, z: oz },
+      dir: { x: dx / len2, y: dy / len2, z: dz / len2 },
+      cam: this.cam
+    };
+  }
+  _rayVsAABB(ro2, rd, entry) {
+    const h2 = entry.half ?? { x: 1, y: 1, z: 1 };
+    const mn2 = { x: entry.pos.x - h2.x, y: entry.pos.y - h2.y, z: entry.pos.z - h2.z };
+    const mx = { x: entry.pos.x + h2.x, y: entry.pos.y + h2.y, z: entry.pos.z + h2.z };
+    let tmin = -Infinity, tmax = Infinity;
+    let hitAxis = "x", hitSign = 1;
+    for (const axis of ["x", "y", "z"]) {
+      if (Math.abs(rd[axis]) < 1e-8) {
+        if (ro2[axis] < mn2[axis] || ro2[axis] > mx[axis]) return null;
+      } else {
+        const t1 = (mn2[axis] - ro2[axis]) / rd[axis];
+        const t22 = (mx[axis] - ro2[axis]) / rd[axis];
+        const tN = Math.min(t1, t22);
+        const tF = Math.max(t1, t22);
+        if (tN > tmin) {
+          tmin = tN;
+          hitAxis = axis;
+          hitSign = t1 < t22 ? -1 : 1;
+        }
+        tmax = Math.min(tmax, tF);
+      }
+    }
+    if (tmax < 0 || tmin > tmax) return null;
+    const t3 = tmin < 0 ? tmax : tmin;
+    const normal = { x: 0, y: 0, z: 0 };
+    normal[hitAxis] = hitSign;
+    return { t: t3, normal };
+  }
+  _reflect(dir, normal) {
+    const dot2 = dir.x * normal.x + dir.y * normal.y + dir.z * normal.z;
+    return {
+      x: dir.x - 2 * dot2 * normal.x,
+      y: dir.y - 2 * dot2 * normal.y,
+      z: dir.z - 2 * dot2 * normal.z
+    };
+  }
+  _despawn(name2) {
+    const idx = this._projectiles.findIndex((p2) => p2.name === name2);
+    if (idx !== -1) this._projectiles.splice(idx, 1);
+    let getObj = this.engine.getSceneObjectByName(name2);
+    if (getObj) {
+      this.engine.removeSceneObjectByName(name2);
+    } else {
+      const obj2 = this.engine.mainRenderBundle?.find((o3) => o3.name === name2);
+      if (obj2) {
+        obj2.position.x = 99999;
+        obj2.position.y = 99999;
+        obj2.position.z = 99999;
+      }
+    }
+  }
+  spawnDecal(hitPoint, normal) {
+    const name2 = `decal_${this._uid++}`;
+    const offset = 0.02;
+    const s2 = this._decalSize;
+    const pos2 = {
+      x: hitPoint.x + normal.x * offset,
+      y: hitPoint.y + normal.y * offset,
+      z: hitPoint.z + normal.z * offset
+    };
+    const scale4 = [
+      normal.x !== 0 ? 0.02 : s2,
+      normal.y !== 0 ? 0.02 : s2,
+      normal.z !== 0 ? 0.02 : s2
+    ];
+    const obj2 = this.engine.addMeshObj({
+      shadowsCast: false,
+      material: { type: "standard", shared: false },
+      position: pos2,
+      scale: scale4,
+      texturesPaths: [this._decalTex],
+      name: name2,
+      mesh: this.mesh,
+      physics: { enabled: false, mass: 0, geometry: "Cube" }
+    });
+    setTimeout(() => this._despawn(name2), this._decalLifetime);
+    return obj2;
+  }
+  // HITSCAN
+  /**
+   * Instant raycast from camera forward.
+   * Tests all static collision entries, spawns decal on hit.
+   * @param {number} [maxDist=200]
+   */
+  fireHitscan(maxDist = 200) {
+    const { origin, dir } = this._getCameraState();
+    let closest = null;
+    let closestT = maxDist;
+    let closestN = null;
+    for (const entry of this.collision.staticEntries) {
+      const result2 = this._rayVsAABB(origin, dir, entry);
+      if (result2 && result2.t > 0.5 && result2.t < closestT) {
+        closestT = result2.t;
+        closest = entry;
+        closestN = result2.normal;
+      }
+    }
+    if (!closest) return null;
+    const hitPoint = {
+      x: origin.x + dir.x * closestT,
+      y: origin.y + dir.y * closestT,
+      z: origin.z + dir.z * closestT
+    };
+    const reflect = this._reflect(dir, closestN);
+    this.spawnDecal(hitPoint, closestN);
+    if (this.onHitscanHit) {
+      this.onHitscanHit(hitPoint, closestN, reflect, closest);
+    }
+    return { hitPoint, normal: closestN, reflect, entry: closest, distance: closestT };
+  }
+  // ── MOVING PROJECTILE ────────────────────────────────────────────────────
+  /**
+   * Spawn a moving projectile from camera position.
+   * Position.translateByXYZ drives movement — no manual update needed.
+   *
+   * Collision check per frame:
+   *   // in your game loop / after collisionSystem.update():
+   *   ps.checkProjectiles();
+   */
+  fireProjectile() {
+    const { origin, dir } = this._getCameraState();
+    const name2 = `proj_${this._uid++}`;
+    const dist2 = 200;
+    const obj2 = this.engine.addMeshObj({
+      shadowsCast: false,
+      material: { type: "standard", shared: true },
+      position: { x: origin.x, y: origin.y, z: origin.z },
+      scale: [this._scale, this._scale, this._scale],
+      texturesPaths: [this._tex],
+      name: name2,
+      mesh: this.mesh,
+      physics: { enabled: false, mass: 0, geometry: "Cube" }
+    });
+    obj2.position.setSpeed(this._speed);
+    obj2.position.translateByXYZ(
+      origin.x + dir.x * dist2,
+      origin.y + dir.y * dist2,
+      origin.z + dir.z * dist2
+    );
+    obj2.position.onTargetPositionReach = () => this._despawn(name2);
+    this.pArg.name = name2;
+    this.pArg.obj = obj2;
+    this.pArg.dir = dir;
+    this._projectiles.push(this.pArg);
+    setTimeout(() => this._despawn(name2), this._lifetime);
+    return { name: name2, obj: obj2, dir };
+  }
+  /**
+   * Call this every frame after collisionSystem.update()
+   * to detect moving projectile hits.
+   *
+   * Example in your game loop:
+   *   collisionSystem.update();
+   *   projectileSystem.checkProjectiles();
+   */
+  checkProjectiles() {
+    for (let i2 = this._projectiles.length - 1; i2 >= 0; i2--) {
+      const p2 = this._projectiles[i2];
+      const pos2 = p2.obj?.position;
+      if (!pos2) continue;
+      for (const entry of this.collision.staticEntries) {
+        const result2 = this._rayVsAABB(
+          { x: pos2.x, y: pos2.y, z: pos2.z },
+          p2.dir,
+          entry
+        );
+        if (result2 && result2.t >= 0 && result2.t <= this._speed * 2) {
+          const hitPoint = { x: pos2.x, y: pos2.y, z: pos2.z };
+          this.spawnDecal(hitPoint, result2.normal);
+          if (this.onProjectileHit) this.onProjectileHit(hitPoint, result2.normal, entry);
+          this._despawn(p2.name);
+          break;
+        }
+      }
+    }
+  }
+};
+
 // examples/games/first-person-shooter/hang3d.js
 var loadHang3d = function() {
   let app2 = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
-    // render:        'culling',
+    render: "culling",
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -54400,11 +54640,24 @@ var loadHang3d = function() {
       app2.cameras.firstPersonCamera.movementSpeed = 0.12;
       app2.cameras.firstPersonCamera.setPosition(0, 5, 0);
       app2.collisionSystem.registerCamera(app2.cameras.firstPersonCamera.position, 1);
+      app2.projectileSystem = new ProjectileSystem(
+        app2,
+        m2.cube,
+        app2.collisionSystem,
+        {
+          projectileSpeed: 0.8,
+          onHitscanHit: (hitPoint, normal, reflect, entry) => {
+            console.log("hit", entry.id);
+          },
+          onProjectileHit: (hitPoint, normal, entry) => {
+            console.log("rocket hit", entry.id);
+          }
+        }
+      );
       app2.canvas.addEventListener("ray.hit.event", (e3) => {
         console.log("ray.hit.event detected");
-        if (e3.detail.hitObject.name.indexOf("_pillar") !== -1) {
-          e3.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        }
+        app2.projectileSystem.fireHitscan();
+        app2.projectileSystem.fireProjectile();
       });
     }, { scale: [1, 1, 1] });
   });

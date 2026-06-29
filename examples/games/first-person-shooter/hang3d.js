@@ -5,6 +5,7 @@ import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import MatrixEngineWGPU from '../../../src/world.js';
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {MapCreator} from "../../../src/engine/buildin/map-creator/map-creator.js";
+import {ProjectileSystem} from '../../../src/engine/procedures/fps-projectile.js';
 
 /**
  * map-creator-example.js
@@ -21,7 +22,7 @@ export var loadHang3d = function() {
   let app = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
-    // render:        'culling',
+    render:        'culling',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -124,13 +125,24 @@ export var loadHang3d = function() {
       app.cameras.firstPersonCamera.setPosition(0, 5, 0);
       app.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
 
+      app.projectileSystem = new ProjectileSystem(app, m.cube, app.collisionSystem,
+        {
+          projectileSpeed: 0.8,
+          onHitscanHit: (hitPoint, normal, reflect, entry) => {console.log('hit', entry.id);},
+          onProjectileHit: (hitPoint, normal, entry) => {console.log('rocket hit', entry.id);}
+        }
+      );
+
 
       app.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
-        if(e.detail.hitObject.name.indexOf('_pillar') !== -1) {
-          e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-          // app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
-        }
+
+        app.projectileSystem.fireHitscan(); // nice
+        app.projectileSystem.fireProjectile();
+      //   if(e.detail.hitObject.name.indexOf('_pillar') !== -1) {
+      //     e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+      //     // app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
+      //   }
       });
 
 

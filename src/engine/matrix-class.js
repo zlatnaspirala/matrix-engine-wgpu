@@ -67,6 +67,13 @@ export class Position {
     this.targetY = parseFloat(y);
   }
 
+  translateByXYZ(x, y, z) {
+    this.inMove = true;
+    this.targetX = parseFloat(x);
+    this.targetY = parseFloat(y);
+    this.targetZ = parseFloat(z);
+  }
+
   translateByXZ(x, z) {
     if(parseFloat(z) == this.targetZ && parseFloat(x) == this.targetX) return;
     this.inMove = true;
