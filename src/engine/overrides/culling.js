@@ -171,7 +171,6 @@ export let noShadowPass = function() {
       this.getTransformationMatrix(camera, now2);
       camera.update();
     }
-
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];
@@ -183,22 +182,14 @@ export let noShadowPass = function() {
       if(mesh.update) mesh.update(now2);
       if(mesh.isVideo) mesh.updateVideoTexture();
       if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
-
-      // : Update world-space bounding sphere if mesh moved
       mesh.updateBoundingSphere?.();
     }
 
-    // : Frustum cull all meshes before rendering (1-2ms overhead)
-    const cullStartMs = performance.now();
     this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
-    const cullTimeMs = performance.now() - cullStartMs;
-    // console.log(`Cull: ${cullTimeMs.toFixed(2)}ms`); // Uncomment to measure
-
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
 
-    // ← CHANGE: Use visibleOpaqueMeshes instead of opaqueBuckets
     for(const [pipeline, meshes] of this.culledRenderPass.visibleOpaqueMeshes) {
       pass.setPipeline(pipeline);
       let l = null;
@@ -213,8 +204,6 @@ export let noShadowPass = function() {
         mesh.drawElements(pass, this.lightContainer);
       }
     }
-
-    // ← CHANGE: Use visibleTransparentMeshes instead of transparentBuckets
     for(const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
       pass.setPipeline(pipeline);
       for(const mesh of meshes) {
@@ -225,7 +214,6 @@ export let noShadowPass = function() {
         mesh.drawElements(pass, this.lightContainer);
       }
     }
-
     for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
       const mesh = this.mainRenderBundle[meshIndex];
       if(mesh.effects) {

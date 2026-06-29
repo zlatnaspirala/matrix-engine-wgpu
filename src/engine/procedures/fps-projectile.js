@@ -1,3 +1,6 @@
+import {KaleidoscopeEmitter} from "../effects/kaleidoscopeEffectInstance";
+import {randomIntFromTo} from "../utils";
+
 /**
  * @description
  * ProjectileSystem — FPS projectile manager for the beast
@@ -31,9 +34,9 @@ export class ProjectileSystem {
     this.collision = collision;
     this.cam = this.engine.getCamera();
 
-    this._speed = opts.projectileSpeed ?? 0.008;
-    this._lifetime = opts.projectileLifetime ?? 3000;
-    this._scale = opts.projectileScale ?? 0.15;
+    this._speed = opts.projectileSpeed ?? 1;
+    this._lifetime = opts.projectileLifetime ?? 4000;
+    this._scale = opts.projectileScale ?? 0.25;
     this._tex = opts.projectileTex ?? './res/textures/blankgray2.webp';
     this._decalTex = opts.decalTex ?? './res/textures/blankgray2.webp';
     this._decalSize = opts.decalSize ?? 0.4;
@@ -42,12 +45,10 @@ export class ProjectileSystem {
     this.onHitscanHit = opts.onHitscanHit ?? null;
     this.onProjectileHit = opts.onProjectileHit ?? null;
 
-    // active moving projectiles — { name, obj, dir }
     this._projectiles = [];
     this._uid = 0;
     this._maxDecals = opts.maxDecals ?? 20;
-    this._decals = [];  // { name, timer }
-
+    this._decals = [];
     this.pArg = {name: null, obj: null, dir: null};
   }
 
@@ -214,11 +215,24 @@ export class ProjectileSystem {
       material: {type: 'standard', shared: true},
       position: {x: origin.x, y: origin.y, z: origin.z},
       scale: [this._scale, this._scale, this._scale],
+      rotation: {x: 0 , y: 0 , z: 0},
       texturesPaths: [this._tex],
       name,
       mesh: this.mesh,
-      physics: {enabled: false, mass: 0, geometry: 'Cube'}
+      physics: {enabled: false, mass: 0, geometry: 'Cube'},
+      pointerEffect: {
+        enabled: true
+      }
     });
+
+    obj.effects = {};
+    setTimeout(() => {
+      obj.effects.kaleBullet = new KaleidoscopeEmitter(this.engine.device, 'rgba16float', 30, this.engine.cameraBuffer)
+      obj.effects.kaleBullet.recreateVertexDataCrazzy(randomIntFromTo(4, 16));
+      obj.effects.kaleBullet.setIntensity(randomIntFromTo(10, 15));
+
+      obj.effects.kaleBullet.setDirection("forward")
+    }, 20)
 
     obj.position.setSpeed(this._speed);
     obj.position.translateByXYZ(

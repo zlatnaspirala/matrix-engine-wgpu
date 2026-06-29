@@ -8029,6 +8029,7 @@ var MobileDOM = {
     const bottom = options2.bottom ?? 0;
     const left2 = options2.left ?? 0;
     const opacity = options2.opacity ?? 0.35;
+    const image = options2.image ?? null;
     const btn = document.createElement("div");
     Object.assign(btn.style, {
       position: "fixed",
@@ -8041,7 +8042,7 @@ var MobileDOM = {
       justifyContent: "center",
       fontSize: `${size2 * 0.25}px`,
       color: options2.color ?? "#ffffff",
-      background: `rgba(255,255,255,${opacity * 0.4})`,
+      background: image ? `url('${image}') no-repeat center/contain` : `rgba(255,255,255,${opacity * 0.4})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
       borderRadius: "50%",
       zIndex: "9999",
@@ -17890,6 +17891,7 @@ var MEMeshObj = class extends Materials {
       const dz = pos2[i2 + 2] - cz;
       r3 = Math.max(r3, Math.sqrt(dx * dx + dy * dy + dz * dz));
     }
+    r3 = r3 * Math.max(this.scale[0], this.scale[1], this.scale[2]);
     this.boundingSphere = {
       center: new Float32Array([cx, cy, cz]),
       radius: r3
@@ -17898,12 +17900,10 @@ var MEMeshObj = class extends Materials {
   updateBoundingSphere() {
     if (!this.boundingSphere) return;
     const local2 = this.boundingSphere.center;
-    const m2 = this.modelMatrix;
-    const center = new Float32Array(3);
-    center[0] = m2[12] + local2[0] * m2[0] + local2[1] * m2[4] + local2[2] * m2[8];
-    center[1] = m2[13] + local2[0] * m2[1] + local2[1] * m2[5] + local2[2] * m2[9];
-    center[2] = m2[14] + local2[0] * m2[2] + local2[1] * m2[6] + local2[2] * m2[10];
-    this.boundingSphere.center = center;
+    const m2 = this._modelMatrix;
+    this.boundingSphere.center[0] = m2[12] + local2[0] * m2[0] + local2[1] * m2[4] + local2[2] * m2[8];
+    this.boundingSphere.center[1] = m2[13] + local2[0] * m2[1] + local2[1] * m2[5] + local2[2] * m2[9];
+    this.boundingSphere.center[2] = m2[14] + local2[0] * m2[2] + local2[1] * m2[6] + local2[2] * m2[10];
   }
 };
 
@@ -40875,9 +40875,7 @@ var noShadowPass = function() {
       if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       mesh.updateBoundingSphere?.();
     }
-    const cullStartMs = performance.now();
     this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
-    const cullTimeMs = performance.now() - cullStartMs;
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -42528,7 +42526,7 @@ var CulledRenderPass = class {
           const toObjY = m2[13] - this._camPos[1];
           const toObjZ = m2[14] - this._camPos[2];
           const distanceSq2 = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
-          if (distanceSq2 < 4) {
+          if (distanceSq2 < mesh.boundingSphere.radius) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
             continue;
@@ -42544,10 +42542,15 @@ var CulledRenderPass = class {
             continue;
           }
           const dot2 = toObjX / distance2 * this._camForward[0] + toObjY / distance2 * this._camForward[1] + toObjZ / distance2 * this._camForward[2];
-          if (dot2 > 0.2) {
+          const radius = mesh.boundingSphere.radius;
+          const threshold = 0.2 - radius / distance2;
+          if (dot2 > threshold) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
           } else {
+            if (mesh.name === "main_arena_floor_30") {
+              console.log("mesh.", this._camPos);
+            }
             this.cullStats.culled++;
           }
         }
@@ -42583,7 +42586,7 @@ var CulledRenderPass = class {
             this.cullStats.visible++;
             continue;
           }
-          if (distanceSq2 > this.range) {
+          if (distanceSq2 > this.range * this.range) {
             this.cullStats.culled++;
             continue;
           }
@@ -42594,7 +42597,13 @@ var CulledRenderPass = class {
             continue;
           }
           const dot2 = toObjX / distance2 * this._camForward[0] + toObjY / distance2 * this._camForward[1] + toObjZ / distance2 * this._camForward[2];
-          if (dot2 > 0.2) {
+          const radius = Math.max(
+            mesh.scale[0],
+            mesh.scale[1],
+            mesh.scale[2]
+          );
+          const threshold = 0.2 - radius / distance2;
+          if (dot2 > threshold) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
           } else {
@@ -54351,9 +54360,9 @@ var ProjectileSystem = class {
     this.mesh = mesh;
     this.collision = collision;
     this.cam = this.engine.getCamera();
-    this._speed = opts.projectileSpeed ?? 8e-3;
-    this._lifetime = opts.projectileLifetime ?? 3e3;
-    this._scale = opts.projectileScale ?? 0.15;
+    this._speed = opts.projectileSpeed ?? 1;
+    this._lifetime = opts.projectileLifetime ?? 4e3;
+    this._scale = opts.projectileScale ?? 0.25;
     this._tex = opts.projectileTex ?? "./res/textures/blankgray2.webp";
     this._decalTex = opts.decalTex ?? "./res/textures/blankgray2.webp";
     this._decalSize = opts.decalSize ?? 0.4;
@@ -54508,11 +54517,22 @@ var ProjectileSystem = class {
       material: { type: "standard", shared: true },
       position: { x: origin.x, y: origin.y, z: origin.z },
       scale: [this._scale, this._scale, this._scale],
+      rotation: { x: 0, y: 0, z: 0 },
       texturesPaths: [this._tex],
       name: name2,
       mesh: this.mesh,
-      physics: { enabled: false, mass: 0, geometry: "Cube" }
+      physics: { enabled: false, mass: 0, geometry: "Cube" },
+      pointerEffect: {
+        enabled: true
+      }
     });
+    obj2.effects = {};
+    setTimeout(() => {
+      obj2.effects.kaleBullet = new KaleidoscopeEmitter(this.engine.device, "rgba16float", 30, this.engine.cameraBuffer);
+      obj2.effects.kaleBullet.recreateVertexDataCrazzy(randomIntFromTo(4, 16));
+      obj2.effects.kaleBullet.setIntensity(randomIntFromTo(10, 15));
+      obj2.effects.kaleBullet.setDirection("forward");
+    }, 20);
     obj2.position.setSpeed(this._speed);
     obj2.position.translateByXYZ(
       origin.x + dir.x * dist2,
@@ -54564,6 +54584,7 @@ var loadHang3d = function() {
     canvasSize: "fullscreen",
     fastRender: 0.9,
     render: "culling",
+    cullingRange: 1200,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -54577,6 +54598,14 @@ var loadHang3d = function() {
     app2.addLight();
     addRaycastsAABBListener();
     app2.activateHZB();
+    app2.activateBloomEffect();
+    MobileDOM.addButton("T", () => {
+    }, void 0, {
+      image: "./res/textures/shooter/s.webp",
+      left: 45,
+      bottom: 45,
+      size: innerHeight / 10
+    });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m2) => {
       const mc2 = new MapCreator(app2, m2.cube, app2.collisionSystem, {
         wallTexture: "./res/textures/blankgray2.webp",
@@ -54615,7 +54644,7 @@ var loadHang3d = function() {
         tag: "main_arena"
       });
       mc2.createStairs({
-        origin: { x: -5, y: 0, z: 0 },
+        origin: { x: -6, y: 0, z: 0 },
         axis: "z",
         steps: 8,
         stepW: 2,
@@ -54655,7 +54684,7 @@ var loadHang3d = function() {
         }
       );
       app2.canvas.addEventListener("ray.hit.event", (e3) => {
-        console.log("ray.hit.event detected");
+        console.log("ray.hit.event detected", e3.detail.hitObject.name);
         app2.projectileSystem.fireHitscan();
         app2.projectileSystem.fireProjectile();
       });

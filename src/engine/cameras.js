@@ -1767,11 +1767,11 @@ export const MobileDOM = {
 
   addButton(label, onClick, onRelease = () => {}, options = {}) {
     document.body.style.touchAction = 'none';
-
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
     const left = options.left ?? 0;
     const opacity = options.opacity ?? 0.35;
+    const image = options.image ?? null;
 
     const btn = document.createElement('div');
     Object.assign(btn.style, {
@@ -1785,7 +1785,7 @@ export const MobileDOM = {
       justifyContent: 'center',
       fontSize: `${size * 0.25}px`,
       color: options.color ?? '#ffffff',
-      background: `rgba(255,255,255,${opacity * 0.4})`,
+      background: image ? `url('${image}') no-repeat center/contain` : `rgba(255,255,255,${opacity * 0.4})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
       borderRadius: '50%',
       zIndex: '9999',

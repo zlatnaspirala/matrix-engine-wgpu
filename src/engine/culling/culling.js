@@ -39,7 +39,7 @@ export class CulledRenderPass {
         }
         visibleMeshes.length = 0;
         const len = meshes.length;
-        for(let i = 0; i < len; i++) {
+        for(let i = 0;i < len;i++) {
           const mesh = meshes[i];
           this.cullStats.total++;
           if(!mesh || !mesh._modelMatrix || mesh.ignoreCulling === true) {
@@ -52,7 +52,7 @@ export class CulledRenderPass {
           const toObjY = m[13] - this._camPos[1];
           const toObjZ = m[14] - this._camPos[2];
           const distanceSq = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
-          if(distanceSq < 4.0) {
+          if(distanceSq < mesh.boundingSphere.radius) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
             continue;
@@ -70,10 +70,16 @@ export class CulledRenderPass {
           const dot = (toObjX / distance) * this._camForward[0] +
             (toObjY / distance) * this._camForward[1] +
             (toObjZ / distance) * this._camForward[2];
-          if(dot > 0.2) {
+          const radius = mesh.boundingSphere.radius;
+          const threshold = 0.2 - radius / distance;
+          if(dot > threshold) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
           } else {
+
+            if (mesh.name === 'main_arena_floor_30') {
+              console.log('mesh.', this._camPos )
+            }
             this.cullStats.culled++;
           }
         }
@@ -91,9 +97,10 @@ export class CulledRenderPass {
         }
         visibleMeshes.length = 0;
         const len = meshes.length;
-        for(let i = 0; i < len; i++) {
+        for(let i = 0;i < len;i++) {
           const mesh = meshes[i];
           this.cullStats.total++;
+
           if(!mesh || !mesh._modelMatrix) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
@@ -109,7 +116,7 @@ export class CulledRenderPass {
             this.cullStats.visible++;
             continue;
           }
-          if(distanceSq > this.range) {
+          if(distanceSq > this.range * this.range) {
             this.cullStats.culled++;
             continue;
           }
@@ -119,10 +126,17 @@ export class CulledRenderPass {
             this.cullStats.visible++;
             continue;
           }
+
           const dot = (toObjX / distance) * this._camForward[0] +
             (toObjY / distance) * this._camForward[1] +
             (toObjZ / distance) * this._camForward[2];
-          if(dot > 0.2) {
+          const radius = Math.max(
+            mesh.scale[0],
+            mesh.scale[1],
+            mesh.scale[2]
+          );
+          const threshold = 0.2 - radius / distance;
+          if(dot > threshold) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
           } else {

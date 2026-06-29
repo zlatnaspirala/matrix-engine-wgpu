@@ -877,9 +877,7 @@ export default class MEMeshObj extends Materials {
       },
     });
 
-    // test 
     this.initBoundingSphere();
-
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
 
@@ -1111,20 +1109,19 @@ export default class MEMeshObj extends Materials {
       const dz = pos[i + 2] - cz;
       r = Math.max(r, Math.sqrt(dx * dx + dy * dy + dz * dz));
     }
+    r = r * Math.max(this.scale[0], this.scale[1], this.scale[2])
     this.boundingSphere = {
       center: new Float32Array([cx, cy, cz]),
       radius: r,
-    };
+    }
   }
 
   updateBoundingSphere() {
     if(!this.boundingSphere) return;
     const local = this.boundingSphere.center;
-    const m = this.modelMatrix;
-    const center = new Float32Array(3);
-    center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
-    center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
-    center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
-    this.boundingSphere.center = center;
+    const m = this._modelMatrix;
+    this.boundingSphere.center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
+    this.boundingSphere.center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
+    this.boundingSphere.center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
   }
 }
