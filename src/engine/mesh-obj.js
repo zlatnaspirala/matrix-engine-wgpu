@@ -1034,6 +1034,15 @@ export default class MEMeshObj extends Materials {
   }
 
   destroy = () => {
+    if(app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(this.name);
+      if(testPB !== null) {
+        try {app.matrixPhysics.removeRigidBody(testPB)} catch(e) {console.warn("Physics cleanup err:", e)}
+      }
+    } else {
+      app.removeSceneObjectByName(this.name);
+      return;
+    }
     if(this._destroyed) return;
     this._destroyed = true;
     // GPU Buffers
@@ -1065,7 +1074,6 @@ export default class MEMeshObj extends Materials {
     }
 
     if(this.effects?.pointer?.destroy) {this.effects.pointer.destroy()}
-
     this.pipeline = null;
     this.modelBindGroup = null;
     this.sceneBindGroupForRender = null;
@@ -1076,13 +1084,7 @@ export default class MEMeshObj extends Materials {
     this.drawElements = () => {};
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
-    if(app.matrixPhysics) {
-      let testPB = app.matrixPhysics.getBodyByName(this.name);
-      if(testPB !== null) {
-        try {app.matrixPhysics.removeRigidBody(testPB)} catch(e) {console.warn("Physics cleanup err:", e)}
-      }
-    }
-    // console.info(`🧹Destroyed: ${this.name}`);
+    console.info(`🧹Destroyed: ${this.name}`);
   }
 
   initBoundingSphere() {

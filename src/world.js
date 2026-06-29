@@ -170,7 +170,6 @@ export default class MatrixEngineWGPU {
     this._volumetricUniforms = {invViewProjectionMatrix: null};
     this._volumetricLightUniforms = {viewProjectionMatrix: null, direction: null};
     this.usEvent = new CustomEvent('updateSceneContainer', {detail: {}});
-    this.culledRenderPass = new CulledRenderPass();
 
     this.editor = undefined;
     if(typeof options.useEditor !== "undefined") {
@@ -193,6 +192,8 @@ export default class MatrixEngineWGPU {
       } else if(options.render == 'mobile1') {
         this.overrideRender = mobile1.bind(this);
       } else if(options.render == 'culling') {
+        const arg = { range : options.cullingRange ? options.cullingRange : 500};
+        this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
       }
     }
@@ -837,10 +838,12 @@ export default class MatrixEngineWGPU {
           console.warn("%cPhysics cleanup error:" + e, LOG_FUNNY_ARCADE);
         }
       }
+    } else {
+      this.mainRenderBundle.splice(index, 1);
+      this.buildRenderBuckets(this.mainRenderBundle);
     }
     obj.destroy();
-    this.mainRenderBundle.splice(index, 1);
-    this.buildRenderBuckets(this.mainRenderBundle);
+    this.buildLightShadowBuckets()
     return true;
   }
 
