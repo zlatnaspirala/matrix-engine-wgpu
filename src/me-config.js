@@ -26,6 +26,7 @@ export const MEConfig = {
   GRAVITY_Y_AXIS: -10,
   MOUSE_SENS: 0.01,
   TOUCH_SENS: 0.03,
+  CAM_SPEED: isMobile() == true ? 0.1 : 0.2,
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
@@ -79,6 +80,14 @@ export const MEConfig = {
     }
     console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
 
+        if(urlQ['CAM_SPEED']) {
+      this.CAM_SPEED = parseInt(urlQ['CAM_SPEED']);
+    }
+    if(options.CAM_SPEED) {
+      this.CAM_SPEED = options.CAM_SPEED;
+    }
+    console.log(`%cCAM_SPEED : ${this.CAM_SPEED}`, LOG_FUNNY_ARCADE);
+
     if(urlQ['LOAD_AFTER_CLICK_MOBILE']) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ['LOAD_AFTER_CLICK_MOBILE'];
     }
@@ -92,7 +101,7 @@ export const MEConfig = {
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
-        setTimeout(() => {dispatchEvent(new CustomEvent('run_mobile_fs', {}))}, 300)
+        setTimeout(() => {dispatchEvent(new CustomEvent('run_mobile_fs', {}))}, 1)
         window.removeEventListener('click', this._fs);
       }
       window.addEventListener('click', this._fs);

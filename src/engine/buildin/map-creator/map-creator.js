@@ -386,14 +386,15 @@ export class MapCreator {
       doors = ['+x', '-z'],
       tag = 'arena'
     } = opts;
+    let {uvShema = false} = opts;
 
-    // perimeter — ONE call, no duplicate wall code after this
     const roomResult = this.createRoom({
       origin, width, depth,
       height: wallHeight,
       roof,
       doors,
       doorWidth: 3.5,
+      uvShema: uvShema,
       tag
     });
 

@@ -23,7 +23,7 @@ export class WASDCamera {
   _mouseDown = false;
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
-  movementSpeed = 0.2;
+  movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
   _dirtyAngle = false;
 
@@ -702,7 +702,7 @@ export class FirstPersonCamera {
   _pointerLastScratch = {x: 0, y: 0};
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
-  movementSpeed = 0.2;
+  movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
   _dirtyAngle = false;
 
@@ -724,7 +724,7 @@ export class FirstPersonCamera {
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if(isMobile() == true && options.isActive == 'init active cam') {
-      MobileDOM.createWASD(this, {margin: 50, forMobileJoystick: true});
+      MobileDOM.createWASD(this, {margin: 50, forMobileJoystick: true, color: 'red'});
     }
   }
 
@@ -810,30 +810,55 @@ export class FirstPersonCamera {
 
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
+    let lookTouchId = null;
     let touchStartX = 0, touchStartY = 0;
+
     if(isMobile() === true) canvas.addEventListener('touchstart', e => {
-      if(e.touches.length > 0) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
+      // only adopt a touch if we don't already have one, and it started on the canvas
+      if(lookTouchId !== null) return;
+      for(const t of e.changedTouches) {
+        if(t.target === canvas) {
+          lookTouchId = t.identifier;
+          touchStartX = t.clientX;
+          touchStartY = t.clientY;
+          break;
+        }
       }
     }, {passive: false});
 
     if(isMobile() === true) canvas.addEventListener('touchmove', e => {
-      if(e.touches.length > 0) {
-        const touch = e.touches[0];
-        const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
-        const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
-        // console.log('touchmove dx=', dx, 'dy=', dy);
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
-        this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-        this._dirtyAngle = true;
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
+      if(lookTouchId === null) return;
+
+      let touch = null;
+      for(const t of e.touches) {
+        if(t.identifier === lookTouchId) {touch = t; break;}
       }
+      if(!touch) return;
+
+      const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+      const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+      this.yaw -= dx * this.rotationSpeed;
+      this.pitch -= dy * this.rotationSpeed;
+      this.yaw %= Math.PI * 2;
+      this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+      this._dirtyAngle = true;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+
       e.preventDefault();
     }, {passive: false});
+
+    const clearLookTouch = e => {
+      for(const t of e.changedTouches) {
+        if(t.identifier === lookTouchId) {
+          lookTouchId = null;
+          break;
+        }
+      }
+    };
+    if(isMobile() === true) canvas.addEventListener('touchend', clearLookTouch, {passive: true});
+    if(isMobile() === true) canvas.addEventListener('touchcancel', clearLookTouch, {passive: true});
+
     // MOUSE
     if(isMobile() === false) canvas.addEventListener('pointerdown', e => {
       if(e.pointerType === 'mouse') {
@@ -847,7 +872,7 @@ export class FirstPersonCamera {
     }, {passive: false});
 
     if(isMobile() === false) canvas.addEventListener('pointermove', e => {
-      if(e.pointerType === 'mouse') { // this._mouseDown
+      if(e.pointerType === 'mouse') {
         if(window.__isDragging === true) {return }
         const dx = e.movementX * this.MOUSE_SENS;
         const dy = e.movementY * this.MOUSE_SENS;
@@ -937,14 +962,11 @@ export class FirstPersonCamera {
       this.position[1] += this._jumpVelocity;
       this._jumpVelocity = 0;
     }
-
     const rx = this.right, uy = this.up, bz = this.back, p = this.position;
     this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
     this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
     this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
     FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
-
-
   }
 
   update() {

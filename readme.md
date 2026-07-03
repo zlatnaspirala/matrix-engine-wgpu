@@ -1043,6 +1043,7 @@ Also render config can be controlled:
 ?GRAVITY_Y_AXIS=10            // optimisation [use this for mobile devices]
 ?MOUSE_SENS: 0.01             // Works for WASD and firstPersonCamera
 ?TOUCH_SENS: 0.03             // Works for WASD and firstPersonCamera
+?CAM_SPEED: mobile 0.1 : 0.2  // Works for WASD and firstPersonCamera
 ?LOAD_AFTER_CLICK_MOBILE: false
 </pre>
 
@@ -1260,6 +1261,7 @@ You may use, modify, and sell projects based on this code — just keep this not
 - GLTF Loader: https://github.com/Twinklebear/webgpu-gltf, improved with chatgpt.
 - Origin jpg (free format) source:  http://spiralgraphics.biz/
   More: Https://blenderartists.org/t/is-spiral-graphics-genetica-dead/1446058
+- https://polyhaven.com/a/checkered_pavement_tiles
 - Music by <a href="https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Mykola Sosin</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Pixabay</a>
 - Characters used from great mixamo.com
   -✅What you can do

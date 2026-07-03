@@ -4661,6 +4661,7 @@ var MEConfig = {
   GRAVITY_Y_AXIS: -10,
   MOUSE_SENS: 0.01,
   TOUCH_SENS: 0.03,
+  CAM_SPEED: isMobile() == true ? 0.1 : 0.2,
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
@@ -4710,6 +4711,13 @@ var MEConfig = {
       this.MOUSE_SENS = options2.MOUSE_SENS;
     }
     console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
+    if (urlQ["CAM_SPEED"]) {
+      this.CAM_SPEED = parseInt(urlQ["CAM_SPEED"]);
+    }
+    if (options2.CAM_SPEED) {
+      this.CAM_SPEED = options2.CAM_SPEED;
+    }
+    console.log(`%cCAM_SPEED : ${this.CAM_SPEED}`, LOG_FUNNY_ARCADE);
     if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
     }
@@ -4724,7 +4732,7 @@ var MEConfig = {
         this.fsManager.request();
         setTimeout(() => {
           dispatchEvent(new CustomEvent("run_mobile_fs", {}));
-        }, 300);
+        }, 1);
         window.removeEventListener("click", this._fs);
       };
       window.addEventListener("click", this._fs);
@@ -6543,7 +6551,7 @@ var WASDCamera = class _WASDCamera {
   _mouseDown = false;
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
-  movementSpeed = 0.2;
+  movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
   _dirtyAngle = false;
   constructor(options2 = {}) {
@@ -7134,7 +7142,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
   _pointerLastScratch = { x: 0, y: 0 };
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
-  movementSpeed = 0.2;
+  movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
   _dirtyAngle = false;
   constructor(options2 = {}) {
@@ -7153,7 +7161,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
-      MobileDOM.createWASD(this, { margin: 50, forMobileJoystick: true });
+      MobileDOM.createWASD(this, { margin: 50, forMobileJoystick: true, color: "red" });
     }
   }
   setPitch = (p2) => {
@@ -7247,28 +7255,50 @@ var FirstPersonCamera = class _FirstPersonCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
+    let lookTouchId = null;
     let touchStartX = 0, touchStartY = 0;
     if (isMobile() === true) canvas.addEventListener("touchstart", (e3) => {
-      if (e3.touches.length > 0) {
-        touchStartX = e3.touches[0].clientX;
-        touchStartY = e3.touches[0].clientY;
+      if (lookTouchId !== null) return;
+      for (const t3 of e3.changedTouches) {
+        if (t3.target === canvas) {
+          lookTouchId = t3.identifier;
+          touchStartX = t3.clientX;
+          touchStartY = t3.clientY;
+          break;
+        }
       }
     }, { passive: false });
     if (isMobile() === true) canvas.addEventListener("touchmove", (e3) => {
-      if (e3.touches.length > 0) {
-        const touch = e3.touches[0];
-        const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
-        const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
-        this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-        this._dirtyAngle = true;
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
+      if (lookTouchId === null) return;
+      let touch = null;
+      for (const t3 of e3.touches) {
+        if (t3.identifier === lookTouchId) {
+          touch = t3;
+          break;
+        }
       }
+      if (!touch) return;
+      const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+      const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+      this.yaw -= dx * this.rotationSpeed;
+      this.pitch -= dy * this.rotationSpeed;
+      this.yaw %= Math.PI * 2;
+      this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+      this._dirtyAngle = true;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
       e3.preventDefault();
     }, { passive: false });
+    const clearLookTouch = (e3) => {
+      for (const t3 of e3.changedTouches) {
+        if (t3.identifier === lookTouchId) {
+          lookTouchId = null;
+          break;
+        }
+      }
+    };
+    if (isMobile() === true) canvas.addEventListener("touchend", clearLookTouch, { passive: true });
+    if (isMobile() === true) canvas.addEventListener("touchcancel", clearLookTouch, { passive: true });
     if (isMobile() === false) canvas.addEventListener("pointerdown", (e3) => {
       if (e3.pointerType === "mouse") {
         this._mouseDown = true;
@@ -43049,17 +43079,39 @@ var MatrixEngineWGPU = class {
       });
       addEventListener("run_mobile_fs", () => {
         if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-          console.log("2 FastRender : ", this.options.fastRender);
-          console.log("window style width : ", innerWidth);
         }
         meLoader.destroy();
-        setTimeout(() => {
-          this.applyCanvasSizeMobile(this.options.fastRender);
-          console.log("canvas width: ", canvas.width);
-          console.log("canvas style width : ", canvas.style.width);
-          this.init({ canvas, callback });
-          if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
-        }, 2e3);
+        if (typeof this.options.lock !== "undefined") {
+          if (this.options.lock != "landscape" && this.options.lock != "portrait") {
+            this.options.lock = "portrait";
+          }
+          if (checkLock() && isMobile() == true) {
+            screen.orientation.lock(this.options.lock).then(() => {
+              console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
+              setTimeout(() => {
+                this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+                console.log("canvas width: ", canvas.width);
+                console.log("canvas style width : ", canvas.style.width);
+                this.init({ canvas, callback });
+              }, 1e3);
+            }).catch(function(error) {
+              console.error("Orientation lock failed: ", error);
+            });
+          }
+        } else {
+          screen.orientation.lock(getOrientation2()).then((e3) => {
+            console.log(`%cOrientation locked to ${e3}`, LOG_FUNNY_ARCADE);
+            setTimeout(() => {
+              this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+              console.log("canvas width: ", canvas.width);
+              console.log("canvas style width : ", canvas.style.width);
+              this.init({ canvas, callback });
+            }, 1e3);
+          }).catch(function(error) {
+            console.error("Orientation lock failed: ", error);
+          });
+        }
+        if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
       });
     } else {
       this.init({ canvas, callback });
@@ -43113,9 +43165,11 @@ var MatrixEngineWGPU = class {
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
-  applyCanvasSizeMobile(scale4) {
+  applyCanvasSizeMobile(scaleX = 1, scaleY = 1) {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
+    this.canvas.width = screenWidth * scaleX;
+    this.canvas.height = screenHeight * scaleY;
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
@@ -43140,19 +43194,6 @@ var MatrixEngineWGPU = class {
       format: presentationFormat,
       alphaMode: "premultiplied"
     });
-    if (typeof this.options.lock !== "undefined") {
-      if (this.options.lock != "landscape" && this.options.lock != "portrait") {
-        this.options.lock = "portrait";
-      }
-      if (checkLock() && isMobile() == true) {
-        screen.orientation.lock(this.options.lock).then(() => {
-          console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
-          this.applyCanvasSize(this.options.fastRender);
-        }).catch(function(error) {
-          console.error("Orientation lock failed: ", error);
-        });
-      }
-    }
     this.globalAmbient = vec3Impl.create(1, 1, 1);
     if (this.options.MAX_SPOTLIGHTS) {
       this.MAX_SPOTLIGHTS = this.options.MAX_SPOTLIGHTS;
@@ -54206,6 +54247,7 @@ var MapCreator = class {
       doors = ["+x", "-z"],
       tag = "arena"
     } = opts;
+    let { uvShema = false } = opts;
     const roomResult = this.createRoom({
       origin,
       width,
@@ -54214,6 +54256,7 @@ var MapCreator = class {
       roof,
       doors,
       doorWidth: 3.5,
+      uvShema,
       tag
     });
     const { x: x3, y: y3, z: z2 } = origin;
@@ -54720,8 +54763,10 @@ var loadHang3d = function() {
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
-    lock: "landscape",
+    // lock: 'landscape',
     LOAD_AFTER_CLICK_MOBILE: true,
+    MOUSE_SENS: 5e-3,
+    TOUCH_SENS: 0.01,
     mainCameraParams: {
       type: "firstPersonCamera",
       responseCoef: 1e3
@@ -54736,32 +54781,62 @@ var loadHang3d = function() {
     MobileDOM.addButton("T", () => {
     }, void 0, {
       image: "./res/textures/shooter/s.webp",
-      left: 44.5,
-      bottom: 42.8,
+      left: 41,
+      bottom: 40,
       color: "black",
       size: innerHeight / 10
     });
     const cam2 = app2.getCamera();
     if (isMobile() === true) {
-      MobileDOM.addButton("JUMP", () => {
-        window.app.collisionSystem._gravityAcc = 0.22;
-        window.app.collisionSystem._onGround = false;
-        cam2._dirty = true;
-        cam2._dirtyAngle = true;
+      MobileDOM.addButton("FIRE", () => {
+        app2.projectileSystem.fireProjectile();
       }, void 0, {
-        width: "50px",
-        height: "50px",
+        width: "30px",
+        height: "30px",
+        image: "./res/textures/shooter/s.webp",
+        color: "red",
+        left: 60,
+        bottom: 20,
+        size: innerHeight / 10
+      });
+      MobileDOM.addButton("JUMP", () => {
+        if (app2.collisionSystem?._onGround) {
+          app2.collisionSystem._gravityAcc = 0.22;
+          app2.collisionSystem._onGround = false;
+          this._dirty = true;
+          this._dirtyAngle = true;
+        }
+      }, void 0, {
+        width: "30px",
+        height: "30px",
         image: "./res/textures/shooter/s.webp",
         color: "red",
         left: 80,
-        bottom: 30,
+        bottom: 20,
+        size: innerHeight / 10
+      });
+      MobileDOM.addButton("UP", () => {
+        if (app2.collisionSystem?._onGround) {
+          app2.collisionSystem._gravityAcc = 0.22;
+          app2.collisionSystem._onGround = false;
+          this._dirty = true;
+          this._dirtyAngle = true;
+        }
+      }, void 0, {
+        width: "30px",
+        height: "30px",
+        image: "./res/textures/shooter/s.webp",
+        color: "red",
+        left: 10,
+        bottom: 20,
         size: innerHeight / 10
       });
     }
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/blender/sphepe-mob.obj" }, (m2) => {
       const mc2 = new MapCreator(app2, m2.cube, app2.collisionSystem, {
         wallTexture: "./res/textures/white-metal2.webp",
-        floorTexture: "./res/textures/floor.webp",
+        // floorTexture: './res/textures/dark-rock.webp',
+        floorTexture: "./res/textures/shooter/metal-block.webp",
         ceilTexture: "./res/textures/blankgray2.webp",
         shadowsCast: true
       });
@@ -54794,6 +54869,7 @@ var loadHang3d = function() {
         covers: 4,
         roof: false,
         doors: ["-x", "+z"],
+        uvShema: [10, 10],
         tag: "main_arena"
       });
       mc2.createStairs({
@@ -54817,9 +54893,9 @@ var loadHang3d = function() {
         roofLevels: true
       });
       const light = app2.lightContainer[0];
-      light.setPosition(0, 50, -20);
-      light.setIntensity(200);
-      app2.cameras.firstPersonCamera.movementSpeed = 0.12;
+      light.setPosition(0, 60, 0);
+      light.setIntensity(100);
+      app2.cameras.firstPersonCamera.movementSpeed = 0.1;
       app2.cameras.firstPersonCamera.setPosition(0, 5, 0);
       app2.collisionSystem.registerCamera(app2.cameras.firstPersonCamera.position, 1);
       app2.projectileSystem = new ProjectileSystem(

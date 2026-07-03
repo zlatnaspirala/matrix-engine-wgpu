@@ -16,8 +16,10 @@ export var loadHang3d = function() {
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
-    lock: 'landscape',
+    // lock: 'landscape',
     LOAD_AFTER_CLICK_MOBILE: true,
+    MOUSE_SENS: 0.005,
+    TOUCH_SENS: 0.01,
     mainCameraParams: {
       type: 'firstPersonCamera',
       responseCoef: 1000
@@ -32,8 +34,8 @@ export var loadHang3d = function() {
 
     MobileDOM.addButton("T", () => {}, undefined, {
       image: "./res/textures/shooter/s.webp",
-      left: 44.5,
-      bottom: 42.8,
+      left: 41,
+      bottom: 40,
       color: 'black',
       size: innerHeight / 10
     })
@@ -41,18 +43,50 @@ export var loadHang3d = function() {
     const cam = app.getCamera();
 
     if(isMobile() === true) {
-      MobileDOM.addButton("JUMP", () => {
-        window.app.collisionSystem._gravityAcc = 0.22;
-        window.app.collisionSystem._onGround = false;
-        cam._dirty = true;
-        cam._dirtyAngle = true;
+
+      MobileDOM.addButton("FIRE", () => {
+        app.projectileSystem.fireProjectile();
       }, undefined, {
-        width: '50px',
-        height: '50px',
+        width: '30px',
+        height: '30px',
+        image: "./res/textures/shooter/s.webp",
+        color: 'red',
+        left: 60,
+        bottom: 20,
+        size: innerHeight / 10
+      })
+
+      MobileDOM.addButton("JUMP", () => {
+        if(app.collisionSystem?._onGround) {
+          app.collisionSystem._gravityAcc = 0.22;
+          app.collisionSystem._onGround = false;
+          this._dirty = true;
+          this._dirtyAngle = true;
+        }
+      }, undefined, {
+        width: '30px',
+        height: '30px',
         image: "./res/textures/shooter/s.webp",
         color: 'red',
         left: 80,
-        bottom: 30,
+        bottom: 20,
+        size: innerHeight / 10
+      })
+
+      MobileDOM.addButton("UP", () => {
+        if(app.collisionSystem?._onGround) {
+          app.collisionSystem._gravityAcc = 0.22;
+          app.collisionSystem._onGround = false;
+          this._dirty = true;
+          this._dirtyAngle = true;
+        }
+      }, undefined, {
+        width: '30px',
+        height: '30px',
+        image: "./res/textures/shooter/s.webp",
+        color: 'red',
+        left: 10,
+        bottom: 20,
         size: innerHeight / 10
       })
     }
@@ -61,7 +95,8 @@ export var loadHang3d = function() {
 
       const mc = new MapCreator(app, m.cube, app.collisionSystem, {
         wallTexture: './res/textures/white-metal2.webp',
-        floorTexture: './res/textures/floor.webp',
+        // floorTexture: './res/textures/dark-rock.webp',
+        floorTexture: './res/textures/shooter/metal-block.webp',
         ceilTexture: './res/textures/blankgray2.webp',
         shadowsCast: true
       });
@@ -92,6 +127,7 @@ export var loadHang3d = function() {
         covers: 4,
         roof: false,
         doors: ['-x', '+z'],
+        uvShema: [10,10],
         tag: 'main_arena'
       });
 
@@ -135,9 +171,9 @@ export var loadHang3d = function() {
       // });
 
       const light = app.lightContainer[0];
-      light.setPosition(0, 50, -20);
-      light.setIntensity(200);
-      app.cameras.firstPersonCamera.movementSpeed = 0.12;
+      light.setPosition(0, 60, 0);
+      light.setIntensity(100);
+      app.cameras.firstPersonCamera.movementSpeed = 0.1;
       app.cameras.firstPersonCamera.setPosition(0, 5, 0);
       app.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
 

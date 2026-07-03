@@ -2,7 +2,7 @@ import {MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {ArcballCamera, CinematicCamera, FirstPersonCamera, PlaneCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader, checkLock, mobileLock, preventZoom} from "./engine/utils.js";
+import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader, checkLock, mobileLock, preventZoom, getOrientation} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -192,7 +192,7 @@ export default class MatrixEngineWGPU {
       } else if(options.render == 'mobile1') {
         this.overrideRender = mobile1.bind(this);
       } else if(options.render == 'culling') {
-        const arg = { range : options.cullingRange ? options.cullingRange : 500};
+        const arg = {range: options.cullingRange ? options.cullingRange : 500};
         this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
       }
@@ -346,20 +346,47 @@ export default class MatrixEngineWGPU {
 
       addEventListener("run_mobile_fs", () => {
         if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-          console.log('2 FastRender : ', this.options.fastRender)
-          console.log('window style width : ', innerWidth)
+          // console.log('2 FastRender : ', this.options.fastRender)
+          // console.log('window style width : ', innerWidth)
           // this.applyCanvasSizeMobile(this.options.fastRender)
         }
         meLoader.destroy();
-        setTimeout(() => {
-          this.applyCanvasSizeMobile(this.options.fastRender)
+        // Only for mobile - BUG 
+        if(typeof this.options.lock !== 'undefined') {
+          if(this.options.lock != 'landscape' && this.options.lock != 'portrait') {
+            this.options.lock = 'portrait';
+          }
+          if(checkLock() && isMobile() == true) {
 
-          console.log('canvas width: ', canvas.width)
-          console.log('canvas style width : ', canvas.style.width)
+            screen.orientation.lock(this.options.lock).then(() => {
+              console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
+              setTimeout(() => {
+                this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+                console.log('canvas width: ', canvas.width)
+                console.log('canvas style width : ', canvas.style.width)
+                this.init({canvas, callback});
+              }, 1000)
+            }).catch(function(error) {
+              console.error("Orientation lock failed: ", error);
+            });
+          }
+        } else {
 
-          this.init({canvas, callback});
-          if(this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent('PhysicsReady', {}));
-        }, 2000)
+          screen.orientation.lock(getOrientation()).then((e) => {
+            console.log(`%cOrientation locked to ${e}`, LOG_FUNNY_ARCADE);
+            setTimeout(() => {
+              this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+              console.log('canvas width: ', canvas.width)
+              console.log('canvas style width : ', canvas.style.width)
+              this.init({canvas, callback});
+            }, 1000)
+          }).catch(function(error) {
+            console.error("Orientation lock failed: ", error);
+          });
+
+        }
+        if(this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent('PhysicsReady', {}));
+
       })
     } else {
       this.init({canvas, callback});
@@ -418,11 +445,11 @@ export default class MatrixEngineWGPU {
     this.canvas.style.height = screenHeight + "px";
   }
 
-  applyCanvasSizeMobile(scale) {
+  applyCanvasSizeMobile(scaleX = 1, scaleY = 1) {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    // this.canvas.width = screenWidth * scale;
-    // this.canvas.height = screenHeight * scale;
+    this.canvas.width = screenWidth * scaleX;
+    this.canvas.height = screenHeight * scaleY;
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
@@ -449,21 +476,6 @@ export default class MatrixEngineWGPU {
       format: presentationFormat,
       alphaMode: 'premultiplied',
     });
-
-    // Only for mobile
-    if(typeof this.options.lock !== 'undefined') {
-      if(this.options.lock != 'landscape' && this.options.lock != 'portrait') {
-        this.options.lock = 'portrait';
-      }
-      if(checkLock() && isMobile() == true) {
-        screen.orientation.lock(this.options.lock).then(() => {
-          console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
-          this.applyCanvasSize(this.options.fastRender)
-        }).catch(function(error) {
-          console.error("Orientation lock failed: ", error);
-        });
-      }
-    }
 
     this.globalAmbient = vec3.create(1.0, 1.0, 1.0);
     if(this.options.MAX_SPOTLIGHTS) {
