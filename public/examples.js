@@ -42703,9 +42703,6 @@ var CulledRenderPass = class {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
           } else {
-            if (mesh.name === "main_arena_floor_30") {
-              console.log("mesh.", this._camPos);
-            }
             this.cullStats.culled++;
           }
         }
@@ -54603,10 +54600,8 @@ var ProjectileSystem = class {
     if (idx !== -1) this._projectiles.splice(idx, 1);
     let getObj = this.engine.getSceneObjectByName(name2);
     if (getObj) {
-      console.log("REMOVE ", name2);
       this.engine.removeSceneObjectByName(name2);
     } else {
-      console.log("RE POS  ", name2);
       const obj2 = this.engine.mainRenderBundle?.find((o3) => o3.name === name2);
       if (obj2) {
         obj2.position.x = 99999;
@@ -54748,7 +54743,6 @@ var ProjectileSystem = class {
     const dlen = Math.hypot(dir.x, dir.y, dir.z) || 1;
     const fx = dir.x / dlen, fz = dir.z / dlen;
     let yawDeg = Math.atan2(-fx, fz) * 180 / Math.PI;
-    console.log("dir:", dir, "yawDeg:", yawDeg);
     return { x: 0, y: yawDeg, z: 0 };
   }
 };

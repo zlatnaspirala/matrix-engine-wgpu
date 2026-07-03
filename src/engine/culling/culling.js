@@ -76,10 +76,6 @@ export class CulledRenderPass {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
           } else {
-
-            if (mesh.name === 'main_arena_floor_30') {
-              console.log('mesh.', this._camPos )
-            }
             this.cullStats.culled++;
           }
         }

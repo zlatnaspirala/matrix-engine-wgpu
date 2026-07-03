@@ -119,10 +119,10 @@ export class ProjectileSystem {
     if(idx !== -1) this._projectiles.splice(idx, 1);
     let getObj = this.engine.getSceneObjectByName(name);
     if(getObj) {
-      console.log("REMOVE ", name);
+      // console.log("REMOVE ", name);
       this.engine.removeSceneObjectByName(name);
     } else {
-      console.log("RE POS  ", name);
+      // console.log("RE POS  ", name);
       const obj = this.engine.mainRenderBundle?.find(o => o.name === name);
       if(obj) {obj.position.x = 99999; obj.position.y = 99999; obj.position.z = 99999;}      
     }
@@ -293,7 +293,7 @@ export class ProjectileSystem {
     const dlen = Math.hypot(dir.x, dir.y, dir.z) || 1;
     const fx = dir.x / dlen, fz = dir.z / dlen;
     let yawDeg = Math.atan2(-fx, fz) * 180 / Math.PI;
-    console.log('dir:', dir, 'yawDeg:', yawDeg);
+    // console.log('dir:', dir, 'yawDeg:', yawDeg);
     return {x: 0, y: yawDeg, z: 0};
   }
 
