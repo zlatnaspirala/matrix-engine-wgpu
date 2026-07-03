@@ -339,20 +339,27 @@ export default class MatrixEngineWGPU {
       meLoader.create();
 
       this.MEConfig.fsManager.onChange((isFS, target) => {
-        console.log('BACK FROM FS', isFS)
-        setTimeout(() => this.applyCanvasSizeMobile(this.options.fastRender), 100);
+        console.log('1 BACK FROM FS', isFS)
+        console.log('window style width : ', innerWidth)
+        setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
       })
 
       addEventListener("run_mobile_fs", () => {
         if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-          console.log('FastRender : ', this.options.fastRender)
-          this.applyCanvasSize(this.options.fastRender)
+          console.log('2 FastRender : ', this.options.fastRender)
+          console.log('window style width : ', innerWidth)
+          // this.applyCanvasSizeMobile(this.options.fastRender)
         }
-        this.init({canvas, callback});
         meLoader.destroy();
         setTimeout(() => {
+          this.applyCanvasSizeMobile(this.options.fastRender)
+
+          console.log('canvas width: ', canvas.width)
+          console.log('canvas style width : ', canvas.style.width)
+
+          this.init({canvas, callback});
           if(this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent('PhysicsReady', {}));
-        }, 500)
+        }, 2000)
       })
     } else {
       this.init({canvas, callback});

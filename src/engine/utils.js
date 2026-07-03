@@ -43,7 +43,7 @@ export function mobileLock(o) {
   if(getScreenOrientationSupport()) {
     // Lock to landscape
     screen.orientation.lock(o).then(function() {
-      console.log(`%cOrientation locked to ${o}`, LOG_FUNNY_ARCADE);
+      console.log(`%c[utils]Orientation locked to ${o}`, LOG_FUNNY_ARCADE);
     }).catch(function(error) {
       console.error("Orientation lock failed: ", error);
     });

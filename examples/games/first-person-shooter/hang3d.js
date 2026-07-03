@@ -17,6 +17,7 @@ export var loadHang3d = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     lock: 'landscape',
+    LOAD_AFTER_CLICK_MOBILE: true,
     mainCameraParams: {
       type: 'firstPersonCamera',
       responseCoef: 1000

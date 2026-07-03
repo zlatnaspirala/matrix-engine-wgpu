@@ -4713,6 +4713,9 @@ var MEConfig = {
     if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
     }
+    if (options2.LOAD_AFTER_CLICK_MOBILE) {
+      this.LOAD_AFTER_CLICK_MOBILE = options2.LOAD_AFTER_CLICK_MOBILE;
+    }
     if (urlQ["fs"] || isMobile()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
@@ -43040,19 +43043,23 @@ var MatrixEngineWGPU = class {
       }
       meLoader.create();
       this.MEConfig.fsManager.onChange((isFS, target2) => {
-        console.log("BACK FROM FS", isFS);
-        setTimeout(() => this.applyCanvasSizeMobile(this.options.fastRender), 100);
+        console.log("1 BACK FROM FS", isFS);
+        console.log("window style width : ", innerWidth);
+        setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
       });
       addEventListener("run_mobile_fs", () => {
         if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-          console.log("FastRender : ", this.options.fastRender);
-          this.applyCanvasSize(this.options.fastRender);
+          console.log("2 FastRender : ", this.options.fastRender);
+          console.log("window style width : ", innerWidth);
         }
-        this.init({ canvas, callback });
         meLoader.destroy();
         setTimeout(() => {
+          this.applyCanvasSizeMobile(this.options.fastRender);
+          console.log("canvas width: ", canvas.width);
+          console.log("canvas style width : ", canvas.style.width);
+          this.init({ canvas, callback });
           if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
-        }, 500);
+        }, 2e3);
       });
     } else {
       this.init({ canvas, callback });
@@ -54714,6 +54721,7 @@ var loadHang3d = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     lock: "landscape",
+    LOAD_AFTER_CLICK_MOBILE: true,
     mainCameraParams: {
       type: "firstPersonCamera",
       responseCoef: 1e3
