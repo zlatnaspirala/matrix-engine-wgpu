@@ -1034,21 +1034,25 @@ urlQuery.lang;
 ```
 
 Also render config can be controlled:
-
+<pre>
 ?PHYSICS_GROUND_Y=1
-?fs=true               // Force-Fullscreen
-?MAX_BONES=0           // optimisation [use this for mobile devices]
-?MAX_SPOTLIGHTS=1      // optimisation [use this for mobile devices]
-?SHADOW_RES=250        // optimisation [use this for mobile devices]
-?GRAVITY_Y_AXIS=10     // optimisation [use this for mobile devices]
+?fs=true                      // Force-Fullscreen
+?MAX_BONES=0                  // optimisation [use this for mobile devices]
+?MAX_SPOTLIGHTS=1             // optimisation [use this for mobile devices]
+?SHADOW_RES=250               // optimisation [use this for mobile devices]
+?GRAVITY_Y_AXIS=10            // optimisation [use this for mobile devices]
+?MOUSE_SENS: 0.01             // Works for WASD and firstPersonCamera
+?TOUCH_SENS: 0.03             // Works for WASD and firstPersonCamera
+?LOAD_AFTER_CLICK_MOBILE: false
+</pre>
 
 Use it :
 `matrix-engine-wgpu/public/examples?demo=1&SHADOW_RES=250`
 
 If you wanna full performance on mobile devices than use in constructor:
-
+This is width of canvas inself. Value 1 is the best quality case also default if not exist.
 ```js
-fastRender = anynumber;
+fastRender = from 0.1 to 1 - Best for mobile 0.85
 ```
 
 In this case FORCE_FULL_SCREEN is true by default.

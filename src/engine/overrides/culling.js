@@ -50,6 +50,7 @@ export let cullingPass = function() {
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];
+      if (!mesh) continue;
       mesh.updateInstanceData?.(mesh.modelMatrix);
       if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
       mesh.position.update();

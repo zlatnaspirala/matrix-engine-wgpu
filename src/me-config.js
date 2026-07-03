@@ -17,13 +17,15 @@ window.urlQ = urlQuery;
 export const MEConfig = {
 
   fsManager: new FullScreenManagerElement(),
-  SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
+  SHADOW_RES: isMobile() == true ? 256.0 : 512.0,
   MAX_BONES: isMobile() == true ? 70 : 100,
   MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
+  MOUSE_SENS: 0.01,
+  TOUCH_SENS: 0.03,
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
@@ -60,6 +62,23 @@ export const MEConfig = {
       this.MAX_BONES = options.MAX_BONES;
     }
     console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+
+    if(urlQ['TOUCH_SENS']) {
+      this.TOUCH_SENS = parseInt(urlQ['TOUCH_SENS']);
+    }
+    if(options.TOUCH_SENS) {
+      this.TOUCH_SENS = options.TOUCH_SENS;
+    }
+    console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
+
+    if(urlQ['MOUSE_SENS']) {
+      this.MOUSE_SENS = parseInt(urlQ['MOUSE_SENS']);
+    }
+    if(options.MOUSE_SENS) {
+      this.MOUSE_SENS = options.MOUSE_SENS;
+    }
+    console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
+
     if(urlQ['LOAD_AFTER_CLICK_MOBILE']) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ['LOAD_AFTER_CLICK_MOBILE'];
     }

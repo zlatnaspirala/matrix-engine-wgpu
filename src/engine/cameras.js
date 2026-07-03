@@ -1,5 +1,6 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {byId, isMobile} from './utils';
+import {MEConfig} from '../me-config';
 
 export class WASDCamera {
   pitch = 0;
@@ -20,9 +21,8 @@ export class WASDCamera {
   _viewScratch = mat4.create();
   _digital = {forward: false, backward: false, left: false, right: false, up: false, down: false};
   _mouseDown = false;
-  // Sensitivity matching standard FPCamera parameters
-  MOUSE_SENS = 0.01;
-  TOUCH_SENS = 0.03;
+  MOUSE_SENS = MEConfig.MOUSE_SENS;
+  TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = 0.2;
   rotationSpeed = 1;
   _dirtyAngle = false;
@@ -254,18 +254,15 @@ export class ArcballCamera {
   right = new Float32Array(3);
   up = new Float32Array(3);
   back = new Float32Array(3);
-
   view = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   VP = new Float32Array(16);
-
   distance = 0;
   angularVelocity = 0;
   axis = new Float32Array(3);
   rotationSpeed = 1;
   zoomSpeed = 0.1;
   frictionCoefficient = 0.999;
-
   _movement = new Float32Array(3);
   _cross = new Float32Array(3);
 
@@ -703,8 +700,8 @@ export class FirstPersonCamera {
   _lastY = 0;
   _mouseDown = false;
   _pointerLastScratch = {x: 0, y: 0};
-  MOUSE_SENS = 0.01;
-  TOUCH_SENS = 0.03;
+  MOUSE_SENS = MEConfig.MOUSE_SENS;
+  TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = 0.2;
   rotationSpeed = 1;
   _dirtyAngle = false;
@@ -727,7 +724,7 @@ export class FirstPersonCamera {
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if(isMobile() == true && options.isActive == 'init active cam') {
-      MobileDOM.createWASD(this, {margin: 50});
+      MobileDOM.createWASD(this, {margin: 50, forMobileJoystick: true});
     }
   }
 
@@ -818,7 +815,6 @@ export class FirstPersonCamera {
       if(e.touches.length > 0) {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        console.log('touchstart:', touchStartX, touchStartY);
       }
     }, {passive: false});
 
@@ -1067,7 +1063,7 @@ export class CinematicCamera {
     this._recalculateViewVP();
   }
 
-  // ── cinematic-only setters ───────────────────────────────────────────────────
+  // Cinematic-only setters
   setTarget = (x, y, z) => {
     this._target[0] = x;
     this._target[1] = y;
@@ -1657,6 +1653,7 @@ export const MobileDOM = {
     const marginB = options.marginB ?? 0;
     const opacity = options.opacity ?? 0.35;
     const color = options.color ?? '#ffffff';
+    const forMobileJoystick = options.forMobileJoystick ?? false; // NEW: drag-over-pad instead of press/release
 
     const wrap = document.createElement('div');
     wrap.id = "mobileControls";
@@ -1682,9 +1679,12 @@ export const MobileDOM = {
       ['D', '▶', 3, 2, 'right'],
     ];
 
+    const buttons = {}; // action -> btn (needed for joystick highlight lookup)
+
     for(const [, label, col, row, action] of defs) {
       const btn = document.createElement('div');
       btn.id = label;
+      btn.dataset.action = action; // used by elementFromPoint lookup in joystick mode
       Object.assign(btn.style, {
         width: `${size}px`,
         height: `${size}px`,
@@ -1702,46 +1702,112 @@ export const MobileDOM = {
         WebkitTapHighlightColor: 'transparent',
       });
       btn.textContent = label;
+      buttons[action] = btn;
 
-      const press = () => {
-        camera._digital[action] = true;
-        btn.style.background = `rgba(255,255,255,${opacity})`;
-        if(camera._keyInterval === null) {
+      if(!forMobileJoystick) {
+        // ---- original press/release behavior, unchanged ----
+        const press = () => {
+          camera._digital[action] = true;
+          btn.style.background = `rgba(255,255,255,${opacity})`;
+          if(camera._keyInterval === null) {
+            camera._keyInterval = setInterval(() => {
+              camera._dirty = true;
+              camera._dirtyAngle = true;
+              camera._applyDigitalMovement();
+            }, 16);
+          }
+        };
+
+        const release = () => {
+          camera._digital[action] = false;
+          btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+          const d = camera._digital;
+          if(!d.forward && !d.backward && !d.left && !d.right) {
+            clearInterval(camera._keyInterval);
+            camera._keyInterval = null;
+            camera._dirty = false;
+          }
+        };
+
+        MobileDOM.eventDown = e => {
+          e.stopPropagation(); press();
+          btn.setPointerCapture(e.pointerId);
+        };
+        MobileDOM.eventUp = e => {release()};
+        MobileDOM.eventCancel = e => {release()};
+
+        btn.addEventListener('pointerdown', MobileDOM.eventDown, {passive: true});
+        btn.addEventListener('pointerup', MobileDOM.eventUp, {passive: true});
+        btn.addEventListener('pointercancel', MobileDOM.eventCancel, {passive: true});
+      }
+
+      wrap.appendChild(btn);
+    }
+
+    if(forMobileJoystick) {
+      // ---- joystick-style: direction follows the finger across the pad ----
+      let activePointerId = null;
+      let activeAction = null;
+
+      const setActive = (action) => {
+        if(activeAction === action) return;
+
+        if(activeAction) {
+          camera._digital[activeAction] = false;
+          buttons[activeAction].style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        }
+        activeAction = action;
+        if(activeAction) {
+          camera._digital[activeAction] = true;
+          buttons[activeAction].style.background = `rgba(255,255,255,${opacity})`;
+        }
+
+        if(activeAction && camera._keyInterval === null) {
           camera._keyInterval = setInterval(() => {
             camera._dirty = true;
             camera._dirtyAngle = true;
             camera._applyDigitalMovement();
           }, 16);
-        }
-      };
-
-      const release = () => {
-        camera._digital[action] = false;
-        btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-        const d = camera._digital;
-        if(!d.forward && !d.backward && !d.left && !d.right) {
+        } else if(!activeAction && camera._keyInterval !== null) {
           clearInterval(camera._keyInterval);
           camera._keyInterval = null;
           camera._dirty = false;
         }
       };
 
-      MobileDOM.eventDown = e => {
-        e.stopPropagation(); press();
-        btn.setPointerCapture(e.pointerId);
+      const actionAt = (x, y) => {
+        const el = document.elementFromPoint(x, y);
+        return el?.dataset?.action ?? null;
       };
-      MobileDOM.eventUp = e => {release()};
-      MobileDOM.eventCancel = e => {release()};
 
-      btn.addEventListener('pointerdown', MobileDOM.eventDown, {passive: true});
-      btn.addEventListener('pointerup', MobileDOM.eventUp, {passive: true});
-      btn.addEventListener('pointercancel', MobileDOM.eventCancel, {passive: true});
+      const onDown = e => {
+        e.stopPropagation();
+        activePointerId = e.pointerId;
+        wrap.setPointerCapture(e.pointerId);
+        setActive(actionAt(e.clientX, e.clientY));
+      };
+      const onMove = e => {
+        if(e.pointerId !== activePointerId) return;
+        setActive(actionAt(e.clientX, e.clientY));
+      };
+      const onUp = e => {
+        if(e.pointerId !== activePointerId) return;
+        activePointerId = null;
+        setActive(null);
+      };
 
-      wrap.appendChild(btn);
+      MobileDOM.eventDown = onDown;
+      MobileDOM.eventUp = onUp;
+      MobileDOM.eventCancel = onUp;
+
+      wrap.addEventListener('pointerdown', onDown, {passive: true});
+      wrap.addEventListener('pointermove', onMove, {passive: true});
+      wrap.addEventListener('pointerup', onUp, {passive: true});
+      wrap.addEventListener('pointercancel', onUp, {passive: true});
     }
 
     document.body.appendChild(wrap);
-    return wrap; // caller can hide/remove later
+    return wrap;
   },
 
   destroyWASD() {

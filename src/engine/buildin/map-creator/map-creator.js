@@ -43,15 +43,15 @@ export class MapCreator {
 
   _id(prefix) {return `${prefix}_${this._uid++}`;}
 
-  _floor(name, pos, width, depth) {
-    return this._block(name, pos, [width, 0.2, depth], this._floorTex, 'standard', true, 0.1, 'floor');
+  _floor(name, pos, width, depth, uvShema = false) {
+    return this._block(name, pos, [width, 0.2, depth], this._floorTex, 'standard', true, 0.1, 'floor', uvShema);
   }
 
   _ceil(name, pos, width, depth) {
     return this._block(name, pos, [width, 0.2, depth], this._ceilTex, 'standard', false, 0, 'floor');
   }
 
-  _block(name, pos, scale, tex, mat = 'standard', registerCollision = true, collisionRadius = 1.0, group = 'walls') {
+  _block(name, pos, scale, tex, mat = 'standard', registerCollision = true, collisionRadius = 1.0, group = 'walls', uvShema = false) {
     const meshScale = 2; // nativly from core blender cube is 2 unit bound.
     const obj = this.engine.addMeshObj({
       shadowsCast: this.shadowsCast,
@@ -62,8 +62,11 @@ export class MapCreator {
       name,
       mesh: this.mesh,
       physics: {enabled: false, mass: 0, geometry: 'Cube'},
-      raycast: { enabled: true , radius: 1}
+      raycast: {enabled: true, radius: 1}
     });
+    if(uvShema !== false) {
+      obj.setUVScale(uvShema[0], uvShema[1])
+    }
     if(registerCollision) {
       // always derive half-extents from actual scale — never from collisionRadius
       this.collision.registerStatic(name, pos, collisionRadius, group, {
@@ -102,6 +105,8 @@ export class MapCreator {
       doorWidth = 2,
       tag = 'room'
     } = opts;
+
+    let {uvShema = false} = opts;
 
     const {x, y, z} = origin;
     const hw = width / 2;
@@ -170,10 +175,10 @@ export class MapCreator {
       }
     }
     if(floor) {
-      results.floor = this._floor(this._id(`${tag}_floor`), {x, y, z}, width, depth);
+      results.floor = this._floor(this._id(`${tag}_floor`), {x, y, z}, width, depth, uvShema);
     }
     if(roof) {
-      results.ceil = this._ceil(this._id(`${tag}_ceil`), {x, y: y + height, z}, width, depth);
+      results.ceil = this._ceil(this._id(`${tag}_ceil`), {x, y: y + height, z}, width, depth, uvShema = false);
     }
 
     return results;

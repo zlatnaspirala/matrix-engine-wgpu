@@ -21,9 +21,12 @@ export class FlameEmitter {
     this.smoothFlickeringScale = 0.1;
     this.minBound = 0;
     this.maxBound = 1.9;
-    this.swap0 = 0;
+    // this.swap0 = 0;
+    // this.swap1 = 1;
+    // this.swap2 = 2;
+    this.swap0 = 2;
     this.swap1 = 1;
-    this.swap2 = 2;
+    this.swap2 = 0;
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;

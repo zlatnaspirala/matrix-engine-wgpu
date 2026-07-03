@@ -10,51 +10,67 @@ import {MobileDOM} from '../../../src/engine/cameras.js';
 export var loadHang3d = function() {
   let app = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 0.9,
-    render:        'culling',
+    fastRender: 0.95,
+    render: 'culling',
     cullingRange: 1200,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
+    lock: 'landscape',
     mainCameraParams: {
       type: 'firstPersonCamera',
       responseCoef: 1000
     },
-    clearColor: {r: 0.02, b: 0.05, g: 0.02, a: 1}
+    clearColor: {r: 0, b: 0, g: 0, a: 1}
   }, () => {
     app.collisionSystem = new CollisionSystem(app);
     app.addLight();
     addRaycastsAABBListener();
-
-
     app.activateHZB();
     app.activateBloomEffect();
 
- 
-    MobileDOM.addButton("T", ()=> {}, undefined , {
+    MobileDOM.addButton("T", () => {}, undefined, {
       image: "./res/textures/shooter/s.webp",
-      left: 45,
-      bottom: 45,
-      size: innerHeight/10
-
+      left: 44.5,
+      bottom: 42.8,
+      color: 'black',
+      size: innerHeight / 10
     })
 
-    downloadMeshes({cube: './res/meshes/blender/cube.obj'}, (m) => {
+    const cam = app.getCamera();
 
-      // ── 1. Instantiate MapCreator
+    if(isMobile() === true) {
+      MobileDOM.addButton("JUMP", () => {
+        window.app.collisionSystem._gravityAcc = 0.22;
+        window.app.collisionSystem._onGround = false;
+        cam._dirty = true;
+        cam._dirtyAngle = true;
+      }, undefined, {
+        width: '50px',
+        height: '50px',
+        image: "./res/textures/shooter/s.webp",
+        color: 'red',
+        left: 80,
+        bottom: 30,
+        size: innerHeight / 10
+      })
+    }
+
+    downloadMeshes({cube: './res/meshes/blender/cube.obj', ball: './res/meshes/blender/sphepe-mob.obj'}, (m) => {
+
       const mc = new MapCreator(app, m.cube, app.collisionSystem, {
-        wallTexture: './res/textures/blankgray2.webp',
-        floorTexture: './res/textures/rpg/magics/42.png',
+        wallTexture: './res/textures/white-metal2.webp',
+        floorTexture: './res/textures/floor.webp',
         ceilTexture: './res/textures/blankgray2.webp',
         shadowsCast: true
       });
-
       mc.createRoom({
-        origin: {x: -0, y: 0, z: 20},
+        origin: {x: -0, y: 0.1, z: 20},
         width: 10, depth: 10, height: 4,
         doors: ['+x', '-z'],
         doorWidth: 2.5,
         roof: true,
+        uvShema: [10, 10],
         tag: 'start_room'
       });
 
@@ -72,7 +88,7 @@ export var loadHang3d = function() {
         width: 32, depth: 32,
         wallHeight: 2.5,
         pillars: 16, pillarH: 4,
-        covers: 0,
+        covers: 4,
         roof: false,
         doors: ['-x', '+z'],
         tag: 'main_arena'
@@ -98,10 +114,9 @@ export var loadHang3d = function() {
       //   tag:       'ground_maze'
       // });
 
-      // ── 7. Example F: multi-level maze (3 floors, stairs between) ─────
       mc.createMultiLevelMaze({
-        origin: {x: -65, y: -7, z: -22},
-        levels: 3,
+        origin: {x: -65, y: -3, z: -22},
+        levels: 2,
         mazeSize: 13,
         spacing: 2,
         wallHeight: 3,
@@ -121,32 +136,31 @@ export var loadHang3d = function() {
       const light = app.lightContainer[0];
       light.setPosition(0, 50, -20);
       light.setIntensity(200);
-
       app.cameras.firstPersonCamera.movementSpeed = 0.12;
       app.cameras.firstPersonCamera.setPosition(0, 5, 0);
       app.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
 
-      app.projectileSystem = new ProjectileSystem(app, m.cube, app.collisionSystem,
+      app.projectileSystem = new ProjectileSystem(app, m.ball, app.collisionSystem,
         {
-          projectileSpeed: 0.8,
-          onHitscanHit: (hitPoint, normal, reflect, entry) => {console.log('hit', entry.id);},
-          onProjectileHit: (hitPoint, normal, entry) => {console.log('rocket hit', entry.id);}
+          projectileSpeed: 0.5,
+          projectileScale: 0.075,
+          onHitscanHit: (hitPoint, normal, reflect, entry) => {
+            console.log('ray hit', entry.id);
+
+          },
+          onProjectileHit: (hitPoint, normal, entry) => {
+            console.log('rocket hit', entry.id);
+          }
         }
       );
 
+      // checkProjectiles
 
       app.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected', e.detail.hitObject.name);
-
-        app.projectileSystem.fireHitscan(); // nice
+        // app.projectileSystem.fireHitscan();
         app.projectileSystem.fireProjectile();
-      //   if(e.detail.hitObject.name.indexOf('_pillar') !== -1) {
-      //     e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-      //     // app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
-      //   }
       });
-
-
     }, {scale: [1, 1, 1]});
   });
 

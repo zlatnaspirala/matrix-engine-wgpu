@@ -1,3 +1,7 @@
+import {flameEffect} from "../../shaders/flame-effect/flameEffect";
+import {pointerEffect} from "../../shaders/standalone/pointer.effect";
+import {FlameEffect} from "../effects/flame";
+import {FlameEmitter} from "../effects/flame-emmiter";
 import {KaleidoscopeEmitter} from "../effects/kaleidoscopeEffectInstance";
 import {randomIntFromTo} from "../utils";
 
@@ -37,9 +41,9 @@ export class ProjectileSystem {
     this._speed = opts.projectileSpeed ?? 1;
     this._lifetime = opts.projectileLifetime ?? 4000;
     this._scale = opts.projectileScale ?? 0.25;
-    this._tex = opts.projectileTex ?? './res/textures/blankgray2.webp';
-    this._decalTex = opts.decalTex ?? './res/textures/blankgray2.webp';
-    this._decalSize = opts.decalSize ?? 0.4;
+    this._tex = opts.projectileTex ?? './res/textures/shooter/decal.webp';
+    this._decalTex = opts.decalTex ?? './res/textures/shooter/decal.webp';
+    this._decalSize = opts.decalSize ?? 0.2;
     this._decalLifetime = opts.decalLifetime ?? 2000;
 
     this.onHitscanHit = opts.onHitscanHit ?? null;
@@ -47,7 +51,7 @@ export class ProjectileSystem {
 
     this._projectiles = [];
     this._uid = 0;
-    this._maxDecals = opts.maxDecals ?? 20;
+    this._maxDecals = opts.maxDecals ?? 40;
     this._decals = [];
     this.pArg = {name: null, obj: null, dir: null};
   }
@@ -115,10 +119,12 @@ export class ProjectileSystem {
     if(idx !== -1) this._projectiles.splice(idx, 1);
     let getObj = this.engine.getSceneObjectByName(name);
     if(getObj) {
+      console.log("REMOVE ", name);
       this.engine.removeSceneObjectByName(name);
     } else {
+      console.log("RE POS  ", name);
       const obj = this.engine.mainRenderBundle?.find(o => o.name === name);
-      if(obj) {obj.position.x = 99999; obj.position.y = 99999; obj.position.z = 99999;}
+      if(obj) {obj.position.x = 99999; obj.position.y = 99999; obj.position.z = 99999;}      
     }
   }
 
@@ -126,36 +132,45 @@ export class ProjectileSystem {
     const name = `decal_${this._uid++}`;
     const offset = 0.02;
     const s = this._decalSize;
-
     const pos = {
       x: hitPoint.x + normal.x * offset,
       y: hitPoint.y + normal.y * offset,
       z: hitPoint.z + normal.z * offset,
     };
-
     // flatten on normal axis — makes a quad oriented to the hit surface
     const scale = [
       normal.x !== 0 ? 0.02 : s,
       normal.y !== 0 ? 0.02 : s,
       normal.z !== 0 ? 0.02 : s,
     ];
-
     const obj = this.engine.addMeshObj({
       shadowsCast: false,
-      material: {type: 'standard', shared: false},
+      material: {type: 'standard', shared: false, useBlend: true},
       position: pos,
       scale,
       texturesPaths: [this._decalTex],
       name,
       mesh: this.mesh,
-      physics: {enabled: false, mass: 0, geometry: 'Cube'}
+      physics: {enabled: false, mass: 0, geometry: 'Cube'},
+      pointerEffect: {
+        enabled: true,
+      }
     });
+
+    // obj.setBlend(0.1)
+    setTimeout(() => {
+      // obj.effects.kaleBullet = new FlameEffect(this.engine.device, "rgba16float", "rgba16float", undefined, this.engine.cameraBuffer);
+      obj.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
+      // obj.effects.kaleBullet.recreateVertexData(5);
+      // obj.effects.kaleBullet.setIntensity(100);
+      // obj.effects.kaleBullet.setDirection("forward")
+    }, 20)
+
 
     setTimeout(() => this._despawn(name), this._decalLifetime);
     return obj;
   }
 
-  // HITSCAN
   /**
    * Instant raycast from camera forward.
    * Tests all static collision entries, spawns decal on hit.
@@ -195,8 +210,6 @@ export class ProjectileSystem {
     return {hitPoint, normal: closestN, reflect, entry: closest, distance: closestT};
   }
 
-  // ── MOVING PROJECTILE ────────────────────────────────────────────────────
-
   /**
    * Spawn a moving projectile from camera position.
    * Position.translateByXYZ drives movement — no manual update needed.
@@ -208,82 +221,80 @@ export class ProjectileSystem {
   fireProjectile() {
     const {origin, dir} = this._getCameraState();
     const name = `proj_${this._uid++}`;
-    const dist = 200;
+    const maxDist = 200;
+    const rotation = this._dirToEuler(dir);
+
+    // sweep the full path NOW, same test fireHitscan uses
+    let closest = null;
+    let closestT = maxDist;
+    let closestN = null;
+
+    for(const entry of this.collision.staticEntries) {
+      const result = this._rayVsAABB(origin, dir, entry);
+      if(result && result.t > 0.001 && result.t < closestT) {
+        closestT = result.t;
+        closest = entry;
+        closestN = result.normal;
+      }
+    }
+
+    // travel distance is capped at the wall, not the arbitrary 200
+    const travelDist = closest ? closestT : maxDist;
+    const targetX = origin.x + dir.x * travelDist;
+    const targetY = origin.y + dir.y * travelDist;
+    const targetZ = origin.z + dir.z * travelDist;
 
     const obj = this.engine.addMeshObj({
       shadowsCast: false,
-      material: {type: 'standard', shared: true},
+      material: {type: 'standard', shared: false, useBlend: true},
       position: {x: origin.x, y: origin.y, z: origin.z},
       scale: [this._scale, this._scale, this._scale],
-      rotation: {x: 0 , y: 0 , z: 0},
+      rotation: {x: 90, y: rotation.y, z: 0},
       texturesPaths: [this._tex],
       name,
       mesh: this.mesh,
       physics: {enabled: false, mass: 0, geometry: 'Cube'},
-      pointerEffect: {
-        enabled: true
-      }
+      pointerEffect: {enabled: true}
     });
 
     obj.effects = {};
+    obj.setBlend(0.1);
     setTimeout(() => {
-      obj.effects.kaleBullet = new KaleidoscopeEmitter(this.engine.device, 'rgba16float', 30, this.engine.cameraBuffer)
-      obj.effects.kaleBullet.recreateVertexDataCrazzy(randomIntFromTo(4, 16));
-      obj.effects.kaleBullet.setIntensity(randomIntFromTo(10, 15));
-
-      obj.effects.kaleBullet.setDirection("forward")
-    }, 20)
+      obj.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
+      obj.effects.kaleBullet.recreateVertexData(2);
+      // obj.effects.kaleBullet.setIntensity(100);
+    }, 10);
 
     obj.position.setSpeed(this._speed);
-    obj.position.translateByXYZ(
-      origin.x + dir.x * dist,
-      origin.y + dir.y * dist,
-      origin.z + dir.z * dist
-    );
+    obj.position.translateByXYZ(targetX, targetY, targetZ);
 
-    // despawn when Position reaches target (missed everything)
-    obj.position.onTargetPositionReach = () => this._despawn(name);
+    // reached target: either it's a wall hit, or a clean miss at maxDist
+    obj.position.onTargetPositionReach = () => {
+      if(closest) {
+        const hitPoint = {x: targetX, y: targetY, z: targetZ};
+        const reflect = this._reflect(dir, closestN);
+        setTimeout(() =>  this.spawnDecal(hitPoint, closestN) , 100)
+        if(this.onHitscanHit) {
+          this.onHitscanHit(hitPoint, closestN, reflect, closest);
+        }
+      }
+      setTimeout( () => this._despawn(name) , 100)
+    };
 
     this.pArg.name = name;
     this.pArg.obj = obj;
     this.pArg.dir = dir;
-    // this._projectiles.push({ name, obj, dir });
     this._projectiles.push(this.pArg);
-
-    // auto despawn after lifetime regardless
-    setTimeout(() => this._despawn(name), this._lifetime);
-
+    // setTimeout(() => this._despawn(name), this._lifetime);
     return {name, obj, dir};
   }
 
-  /**
-   * Call this every frame after collisionSystem.update()
-   * to detect moving projectile hits.
-   *
-   * Example in your game loop:
-   *   collisionSystem.update();
-   *   projectileSystem.checkProjectiles();
-   */
-  checkProjectiles() {
-    for(let i = this._projectiles.length - 1;i >= 0;i--) {
-      const p = this._projectiles[i];
-      const pos = p.obj?.position;
-      if(!pos) continue;
-
-      for(const entry of this.collision.staticEntries) {
-        const result = this._rayVsAABB(
-          {x: pos.x, y: pos.y, z: pos.z},
-          p.dir,
-          entry
-        );
-        if(result && result.t >= 0 && result.t <= this._speed * 2) {
-          const hitPoint = {x: pos.x, y: pos.y, z: pos.z};
-          this.spawnDecal(hitPoint, result.normal);
-          if(this.onProjectileHit) this.onProjectileHit(hitPoint, result.normal, entry);
-          this._despawn(p.name);
-          break;
-        }
-      }
-    }
+  _dirToEuler(dir, worldUp = {x: 0, y: 1, z: 0}) {
+    const dlen = Math.hypot(dir.x, dir.y, dir.z) || 1;
+    const fx = dir.x / dlen, fz = dir.z / dlen;
+    let yawDeg = Math.atan2(-fx, fz) * 180 / Math.PI;
+    console.log('dir:', dir, 'yawDeg:', yawDeg);
+    return {x: 0, y: yawDeg, z: 0};
   }
+
 }

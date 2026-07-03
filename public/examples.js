@@ -4652,13 +4652,15 @@ var CameraPath = class _CameraPath {
 window.urlQ = urlQuery;
 var MEConfig = {
   fsManager: new FullScreenManagerElement(),
-  SHADOW_RES: isMobile() == true ? 128 : 512,
+  SHADOW_RES: isMobile() == true ? 256 : 512,
   MAX_BONES: isMobile() == true ? 70 : 100,
   MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
+  MOUSE_SENS: 0.01,
+  TOUCH_SENS: 0.03,
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
@@ -4694,6 +4696,20 @@ var MEConfig = {
       this.MAX_BONES = options2.MAX_BONES;
     }
     console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+    if (urlQ["TOUCH_SENS"]) {
+      this.TOUCH_SENS = parseInt(urlQ["TOUCH_SENS"]);
+    }
+    if (options2.TOUCH_SENS) {
+      this.TOUCH_SENS = options2.TOUCH_SENS;
+    }
+    console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
+    if (urlQ["MOUSE_SENS"]) {
+      this.MOUSE_SENS = parseInt(urlQ["MOUSE_SENS"]);
+    }
+    if (options2.MOUSE_SENS) {
+      this.MOUSE_SENS = options2.MOUSE_SENS;
+    }
+    console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
     if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
     }
@@ -6522,9 +6538,8 @@ var WASDCamera = class _WASDCamera {
   _viewScratch = mat4Impl.create();
   _digital = { forward: false, backward: false, left: false, right: false, up: false, down: false };
   _mouseDown = false;
-  // Sensitivity matching standard FPCamera parameters
-  MOUSE_SENS = 0.01;
-  TOUCH_SENS = 0.03;
+  MOUSE_SENS = MEConfig.MOUSE_SENS;
+  TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = 0.2;
   rotationSpeed = 1;
   _dirtyAngle = false;
@@ -7114,8 +7129,8 @@ var FirstPersonCamera = class _FirstPersonCamera {
   _lastY = 0;
   _mouseDown = false;
   _pointerLastScratch = { x: 0, y: 0 };
-  MOUSE_SENS = 0.01;
-  TOUCH_SENS = 0.03;
+  MOUSE_SENS = MEConfig.MOUSE_SENS;
+  TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = 0.2;
   rotationSpeed = 1;
   _dirtyAngle = false;
@@ -7135,7 +7150,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
-      MobileDOM.createWASD(this, { margin: 50 });
+      MobileDOM.createWASD(this, { margin: 50, forMobileJoystick: true });
     }
   }
   setPitch = (p2) => {
@@ -7234,7 +7249,6 @@ var FirstPersonCamera = class _FirstPersonCamera {
       if (e3.touches.length > 0) {
         touchStartX = e3.touches[0].clientX;
         touchStartY = e3.touches[0].clientY;
-        console.log("touchstart:", touchStartX, touchStartY);
       }
     }, { passive: false });
     if (isMobile() === true) canvas.addEventListener("touchmove", (e3) => {
@@ -7488,7 +7502,7 @@ var CinematicCamera = class _CinematicCamera {
     mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
   };
-  // ── cinematic-only setters ───────────────────────────────────────────────────
+  // Cinematic-only setters
   setTarget = (x3, y3, z2) => {
     this._target[0] = x3;
     this._target[1] = y3;
@@ -7921,6 +7935,7 @@ var MobileDOM = {
     const marginB = options2.marginB ?? 0;
     const opacity = options2.opacity ?? 0.35;
     const color = options2.color ?? "#ffffff";
+    const forMobileJoystick = options2.forMobileJoystick ?? false;
     const wrap = document.createElement("div");
     wrap.id = "mobileControls";
     Object.assign(wrap.style, {
@@ -7942,9 +7957,11 @@ var MobileDOM = {
       ["S", "\u25BC", 2, 2, "backward"],
       ["D", "\u25B6", 3, 2, "right"]
     ];
+    const buttons = {};
     for (const [, label, col, row2, action] of defs) {
       const btn = document.createElement("div");
       btn.id = label;
+      btn.dataset.action = action;
       Object.assign(btn.style, {
         width: `${size2}px`,
         height: `${size2}px`,
@@ -7962,42 +7979,98 @@ var MobileDOM = {
         WebkitTapHighlightColor: "transparent"
       });
       btn.textContent = label;
-      const press = () => {
-        camera._digital[action] = true;
-        btn.style.background = `rgba(255,255,255,${opacity})`;
-        if (camera._keyInterval === null) {
+      buttons[action] = btn;
+      if (!forMobileJoystick) {
+        const press = () => {
+          camera._digital[action] = true;
+          btn.style.background = `rgba(255,255,255,${opacity})`;
+          if (camera._keyInterval === null) {
+            camera._keyInterval = setInterval(() => {
+              camera._dirty = true;
+              camera._dirtyAngle = true;
+              camera._applyDigitalMovement();
+            }, 16);
+          }
+        };
+        const release = () => {
+          camera._digital[action] = false;
+          btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+          const d2 = camera._digital;
+          if (!d2.forward && !d2.backward && !d2.left && !d2.right) {
+            clearInterval(camera._keyInterval);
+            camera._keyInterval = null;
+            camera._dirty = false;
+          }
+        };
+        MobileDOM.eventDown = (e3) => {
+          e3.stopPropagation();
+          press();
+          btn.setPointerCapture(e3.pointerId);
+        };
+        MobileDOM.eventUp = (e3) => {
+          release();
+        };
+        MobileDOM.eventCancel = (e3) => {
+          release();
+        };
+        btn.addEventListener("pointerdown", MobileDOM.eventDown, { passive: true });
+        btn.addEventListener("pointerup", MobileDOM.eventUp, { passive: true });
+        btn.addEventListener("pointercancel", MobileDOM.eventCancel, { passive: true });
+      }
+      wrap.appendChild(btn);
+    }
+    if (forMobileJoystick) {
+      let activePointerId = null;
+      let activeAction = null;
+      const setActive = (action) => {
+        if (activeAction === action) return;
+        if (activeAction) {
+          camera._digital[activeAction] = false;
+          buttons[activeAction].style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        }
+        activeAction = action;
+        if (activeAction) {
+          camera._digital[activeAction] = true;
+          buttons[activeAction].style.background = `rgba(255,255,255,${opacity})`;
+        }
+        if (activeAction && camera._keyInterval === null) {
           camera._keyInterval = setInterval(() => {
             camera._dirty = true;
             camera._dirtyAngle = true;
             camera._applyDigitalMovement();
           }, 16);
-        }
-      };
-      const release = () => {
-        camera._digital[action] = false;
-        btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-        const d2 = camera._digital;
-        if (!d2.forward && !d2.backward && !d2.left && !d2.right) {
+        } else if (!activeAction && camera._keyInterval !== null) {
           clearInterval(camera._keyInterval);
           camera._keyInterval = null;
           camera._dirty = false;
         }
       };
-      MobileDOM.eventDown = (e3) => {
+      const actionAt = (x3, y3) => {
+        const el2 = document.elementFromPoint(x3, y3);
+        return el2?.dataset?.action ?? null;
+      };
+      const onDown = (e3) => {
         e3.stopPropagation();
-        press();
-        btn.setPointerCapture(e3.pointerId);
+        activePointerId = e3.pointerId;
+        wrap.setPointerCapture(e3.pointerId);
+        setActive(actionAt(e3.clientX, e3.clientY));
       };
-      MobileDOM.eventUp = (e3) => {
-        release();
+      const onMove = (e3) => {
+        if (e3.pointerId !== activePointerId) return;
+        setActive(actionAt(e3.clientX, e3.clientY));
       };
-      MobileDOM.eventCancel = (e3) => {
-        release();
+      const onUp = (e3) => {
+        if (e3.pointerId !== activePointerId) return;
+        activePointerId = null;
+        setActive(null);
       };
-      btn.addEventListener("pointerdown", MobileDOM.eventDown, { passive: true });
-      btn.addEventListener("pointerup", MobileDOM.eventUp, { passive: true });
-      btn.addEventListener("pointercancel", MobileDOM.eventCancel, { passive: true });
-      wrap.appendChild(btn);
+      MobileDOM.eventDown = onDown;
+      MobileDOM.eventUp = onUp;
+      MobileDOM.eventCancel = onUp;
+      wrap.addEventListener("pointerdown", onDown, { passive: true });
+      wrap.addEventListener("pointermove", onMove, { passive: true });
+      wrap.addEventListener("pointerup", onUp, { passive: true });
+      wrap.addEventListener("pointercancel", onUp, { passive: true });
     }
     document.body.appendChild(wrap);
     return wrap;
@@ -16251,9 +16324,9 @@ var FlameEmitter = class {
     this.smoothFlickeringScale = 0.1;
     this.minBound = 0;
     this.maxBound = 1.9;
-    this.swap0 = 0;
+    this.swap0 = 2;
     this.swap1 = 1;
-    this.swap2 = 2;
+    this.swap2 = 0;
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
@@ -37940,6 +38013,48 @@ var _invProj = mat4Impl.create();
 var _invView = mat4Impl.create();
 var _clip = new Float32Array([0, 0, 1, 1]);
 var _rayOrigin = new Float32Array(3);
+var rayHitClick = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null
+};
+var rayHitMouseDown = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null
+};
+var rayHitMouseMove = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null
+};
+var rayHitEventClick = new CustomEvent("ray.hit.event", { detail: rayHitClick });
+var rayHitEventMouseDown = new CustomEvent("ray.hit.mousedown", { detail: rayHitMouseDown });
+var rayHitEventMouseMove = new CustomEvent("ray.hit.event.mm", { detail: rayHitMouseMove });
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
   let x3, y3;
@@ -38026,13 +38141,19 @@ function computeWorldVertsAndAABB(object) {
   return object._aabbCache;
 }
 function dispatchRayHitEvent(canvas, data) {
-  if (data.eventName == "click") {
-    canvas.dispatchEvent(new CustomEvent("ray.hit.event", { detail: data }));
-  } else if (data.eventName == "mousedown") {
-    canvas.dispatchEvent(new CustomEvent("ray.hit.mousedown", { detail: data }));
-  } else {
-    canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", { detail: data }));
-  }
+  const e3 = data.eventName === "click" ? rayHitEventClick : data.eventName === "mousedown" ? rayHitEventMouseDown : rayHitEventMouseMove;
+  e3.detail.hitObject = data.hitObject;
+  e3.detail.hitPoint = data.hitPoint;
+  e3.detail.hitNormal = data.hitNormal;
+  e3.detail.hitDistance = data.hitDistance;
+  e3.detail.rayOrigin = data.rayOrigin;
+  e3.detail.rayDirection = data.rayDirection;
+  e3.detail.screenCoords = data.screenCoords;
+  e3.detail.camera = data.camera;
+  e3.detail.timestamp = data.timestamp;
+  e3.detail.button = data.button;
+  e3.detail.eventName = data.eventName;
+  canvas.dispatchEvent(e3);
 }
 function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
   const canvas = document.getElementById(canvasId);
@@ -40745,6 +40866,7 @@ var cullingPass = function() {
     const len2 = this.mainRenderBundle.length;
     for (let i2 = 0; i2 < len2; i2++) {
       const mesh = this.mainRenderBundle[i2];
+      if (!mesh) continue;
       mesh.updateInstanceData?.(mesh.modelMatrix);
       if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
       mesh.position.update();
@@ -43375,7 +43497,6 @@ var MatrixEngineWGPU = class {
       this.mainRenderBundle.splice(index, 1);
       this.buildRenderBuckets(this.mainRenderBundle);
     }
-    obj2.destroy();
     this.buildLightShadowBuckets();
     return true;
   };
@@ -48046,7 +48167,7 @@ var loadDestructionProcedural = function() {
 
 // src/engine/effects/kaleidoscopeEffectInstance.js
 var KaleidoscopeEmitter = class {
-  constructor(device2, format, maxParticles = 20, cameraBuffer) {
+  constructor(device2, format, maxParticles = 20, cameraBuffer, initSwap = [0, 1, 2], baseRotation = [0, 0, 0]) {
     this.device = device2;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
@@ -48060,11 +48181,11 @@ var KaleidoscopeEmitter = class {
     this.smoothFlickeringScale = 0.1;
     this.minBound = 0;
     this.maxBound = 1.9;
-    this.swap0 = 0;
-    this.swap1 = 1;
-    this.swap2 = 2;
+    this.swap0 = initSwap[0];
+    this.swap1 = initSwap[1];
+    this.swap2 = initSwap[2];
     this.riseDirection = 1;
-    this.baseRotation = [0, 0, 0];
+    this.baseRotation = baseRotation;
     this.scaleCoeficient = 0.12;
     this.rotSpeed = 0.1;
     this.globalSegments = 6;
@@ -48073,6 +48194,20 @@ var KaleidoscopeEmitter = class {
     this._localMatrix = mat4Impl.create();
     this._finalMatrix = mat4Impl.create();
     this._scratch4 = new Float32Array(4);
+    this.VERTEX_TEMPLATE = new Float32Array([
+      -0.4,
+      0.5,
+      0,
+      0.4,
+      0.5,
+      0,
+      -0.2,
+      -0.5,
+      0,
+      0.2,
+      -0.5,
+      0
+    ]);
     for (let i2 = 0; i2 < maxParticles; i2++) {
       this.instanceTargets.push({
         position: [0, 0, 0],
@@ -48092,39 +48227,35 @@ var KaleidoscopeEmitter = class {
     this._initPipeline();
   }
   recreateVertexData(S2) {
-    const vertexData = new Float32Array([
-      -0.4 * S2,
-      0.5 * S2,
-      0 * S2,
-      0.4 * S2,
-      0.5 * S2,
-      0 * S2,
-      -0.2 * S2,
-      -0.5 * S2,
-      0 * S2,
-      0.2 * S2,
-      -0.5 * S2,
-      0 * S2
-    ]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.VERTEX_TEMPLATE[0] = this.VERTEX_TEMPLATE[0] * S2;
+    this.VERTEX_TEMPLATE[1] = this.VERTEX_TEMPLATE[1] * S2;
+    this.VERTEX_TEMPLATE[2] = this.VERTEX_TEMPLATE[2] * S2;
+    this.VERTEX_TEMPLATE[3] = this.VERTEX_TEMPLATE[3] * S2;
+    this.VERTEX_TEMPLATE[4] = this.VERTEX_TEMPLATE[4] * S2;
+    this.VERTEX_TEMPLATE[5] = this.VERTEX_TEMPLATE[5] * S2;
+    this.VERTEX_TEMPLATE[6] = this.VERTEX_TEMPLATE[6] * S2;
+    this.VERTEX_TEMPLATE[7] = this.VERTEX_TEMPLATE[7] * S2;
+    this.VERTEX_TEMPLATE[8] = this.VERTEX_TEMPLATE[8] * S2;
+    this.VERTEX_TEMPLATE[9] = this.VERTEX_TEMPLATE[9] * S2;
+    this.VERTEX_TEMPLATE[10] = this.VERTEX_TEMPLATE[10] * S2;
+    this.VERTEX_TEMPLATE[11] = this.VERTEX_TEMPLATE[11] * S2;
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
   }
   recreateVertexDataRND(S2) {
-    const vertexData = new Float32Array([
-      -randomFloatFromTo(0.1, 0.8) * S2,
-      randomFloatFromTo(0.4, 0.6) * S2,
-      0 * S2,
-      randomFloatFromTo(0.1, 0.8) * S2,
-      randomFloatFromTo(0.4, 0.6) * S2,
-      0 * S2,
-      -randomFloatFromTo(0.1, 0.4) * S2,
-      -randomFloatFromTo(0.4, 0.6) * S2,
-      0 * S2,
-      randomFloatFromTo(0.1, 0.4) * S2,
-      -randomFloatFromTo(0.4, 0.6) * S2,
-      0 * S2
-    ]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
+    this.VERTEX_TEMPLATE[0] = -randomFloatFromTo(0.1, 0.8) * S2;
+    this.VERTEX_TEMPLATE[1] = randomFloatFromTo(0.4, 0.6) * S2;
+    this.VERTEX_TEMPLATE[2] = 0 * S2;
+    this.VERTEX_TEMPLATE[3] = randomFloatFromTo(0.1, 0.8) * S2;
+    this.VERTEX_TEMPLATE[4] = randomFloatFromTo(0.4, 0.6) * S2;
+    this.VERTEX_TEMPLATE[5] = 0 * S2;
+    this.VERTEX_TEMPLATE[6] = -randomFloatFromTo(0.1, 0.4) * S2;
+    this.VERTEX_TEMPLATE[7] = -randomFloatFromTo(0.4, 0.6) * S2;
+    this.VERTEX_TEMPLATE[8] = 0 * S2;
+    this.VERTEX_TEMPLATE[9] = randomFloatFromTo(0.1, 0.4) * S2;
+    this.VERTEX_TEMPLATE[10] = -randomFloatFromTo(0.4, 0.6) * S2;
+    this.VERTEX_TEMPLATE[11] = 0 * S2;
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
+    return this.VERTEX_TEMPLATE;
   }
   recreateVertexDataCrazzy(S2) {
     const memory1 = -randomFloatFromTo(0.1, 0.1 + S2);
@@ -48135,24 +48266,20 @@ var KaleidoscopeEmitter = class {
     const memory21 = randomFloatFromTo(0.4, 0.4 + S2);
     const memory22 = -randomFloatFromTo(0.4, 0.4 + S2);
     const memory23 = -randomFloatFromTo(0.4, 0.4 + S2);
-    this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info(`%cCrazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
-    const vertexData = new Float32Array([
-      memory1,
-      memory2,
-      0,
-      memory11,
-      memory21,
-      0,
-      memory12,
-      memory22,
-      0,
-      memory13,
-      memory23,
-      0
-    ]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
+    this.VERTEX_TEMPLATE[0] = memory1;
+    this.VERTEX_TEMPLATE[1] = memory2;
+    this.VERTEX_TEMPLATE[2] = 0;
+    this.VERTEX_TEMPLATE[3] = memory11;
+    this.VERTEX_TEMPLATE[4] = memory21;
+    this.VERTEX_TEMPLATE[5] = 0;
+    this.VERTEX_TEMPLATE[6] = memory12;
+    this.VERTEX_TEMPLATE[7] = memory22;
+    this.VERTEX_TEMPLATE[8] = 0;
+    this.VERTEX_TEMPLATE[9] = memory13;
+    this.VERTEX_TEMPLATE[10] = memory23;
+    this.VERTEX_TEMPLATE[11] = 0;
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
+    return this.VERTEX_TEMPLATE;
   }
   recreateVertexDataCrazzy(S2) {
     const memory1 = -randomFloatFromTo(0.1, 0.1 + S2);
@@ -48163,44 +48290,36 @@ var KaleidoscopeEmitter = class {
     const memory21 = randomFloatFromTo(0.4, 0.4 + S2);
     const memory22 = -randomFloatFromTo(0.4, 0.4 + S2);
     const memory23 = -randomFloatFromTo(0.4, 0.4 + S2);
-    this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info(`%cCrazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
-    const vertexData = new Float32Array([
-      memory1,
-      memory2,
-      0,
-      memory11,
-      memory21,
-      0,
-      memory12,
-      memory22,
-      0,
-      memory13,
-      memory23,
-      0
-    ]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
+    this.VERTEX_TEMPLATE[0] = memory1;
+    this.VERTEX_TEMPLATE[1] = memory2;
+    this.VERTEX_TEMPLATE[2] = 0;
+    this.VERTEX_TEMPLATE[3] = memory11;
+    this.VERTEX_TEMPLATE[4] = memory21;
+    this.VERTEX_TEMPLATE[5] = 0;
+    this.VERTEX_TEMPLATE[6] = memory12;
+    this.VERTEX_TEMPLATE[7] = memory22;
+    this.VERTEX_TEMPLATE[8] = 0;
+    this.VERTEX_TEMPLATE[9] = memory13;
+    this.VERTEX_TEMPLATE[10] = memory23;
+    this.VERTEX_TEMPLATE[11] = 0;
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
+    return this.VERTEX_TEMPLATE;
   }
   recreateVertexDataFromData(data) {
-    console.info(`%c Crazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} 
-  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
-    const vertexData = new Float32Array([
-      data[0],
-      data[4],
-      0,
-      data[1],
-      data[5],
-      0,
-      data[2],
-      data[6],
-      0,
-      data[3],
-      data[7],
-      0
-    ]);
-    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
+    this.VERTEX_TEMPLATE[0] = data[0];
+    this.VERTEX_TEMPLATE[1] = data[4];
+    this.VERTEX_TEMPLATE[2] = 0;
+    this.VERTEX_TEMPLATE[3] = data[1];
+    this.VERTEX_TEMPLATE[4] = data[5];
+    this.VERTEX_TEMPLATE[5] = 0;
+    this.VERTEX_TEMPLATE[6] = data[2];
+    this.VERTEX_TEMPLATE[7] = data[6];
+    this.VERTEX_TEMPLATE[8] = 0;
+    this.VERTEX_TEMPLATE[9] = data[3];
+    this.VERTEX_TEMPLATE[10] = data[7];
+    this.VERTEX_TEMPLATE[11] = 0;
+    if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
+    return this.VERTEX_TEMPLATE;
   }
   _initPipeline() {
     const vertexData = this.recreateVertexDataRND(1);
@@ -53745,13 +53864,13 @@ var MapCreator = class {
   _id(prefix) {
     return `${prefix}_${this._uid++}`;
   }
-  _floor(name2, pos2, width, depth) {
-    return this._block(name2, pos2, [width, 0.2, depth], this._floorTex, "standard", true, 0.1, "floor");
+  _floor(name2, pos2, width, depth, uvShema = false) {
+    return this._block(name2, pos2, [width, 0.2, depth], this._floorTex, "standard", true, 0.1, "floor", uvShema);
   }
   _ceil(name2, pos2, width, depth) {
     return this._block(name2, pos2, [width, 0.2, depth], this._ceilTex, "standard", false, 0, "floor");
   }
-  _block(name2, pos2, scale4, tex, mat2 = "standard", registerCollision = true, collisionRadius = 1, group = "walls") {
+  _block(name2, pos2, scale4, tex, mat2 = "standard", registerCollision = true, collisionRadius = 1, group = "walls", uvShema = false) {
     const meshScale = 2;
     const obj2 = this.engine.addMeshObj({
       shadowsCast: this.shadowsCast,
@@ -53764,6 +53883,9 @@ var MapCreator = class {
       physics: { enabled: false, mass: 0, geometry: "Cube" },
       raycast: { enabled: true, radius: 1 }
     });
+    if (uvShema !== false) {
+      obj2.setUVScale(uvShema[0], uvShema[1]);
+    }
     if (registerCollision) {
       this.collision.registerStatic(name2, pos2, collisionRadius, group, {
         x: scale4[0] / 2,
@@ -53803,6 +53925,7 @@ var MapCreator = class {
       doorWidth = 2,
       tag = "room"
     } = opts;
+    let { uvShema = false } = opts;
     const { x: x3, y: y3, z: z2 } = origin;
     const hw = width / 2;
     const hd = depth / 2;
@@ -53862,10 +53985,10 @@ var MapCreator = class {
       }
     }
     if (floor2) {
-      results.floor = this._floor(this._id(`${tag}_floor`), { x: x3, y: y3, z: z2 }, width, depth);
+      results.floor = this._floor(this._id(`${tag}_floor`), { x: x3, y: y3, z: z2 }, width, depth, uvShema);
     }
     if (roof) {
-      results.ceil = this._ceil(this._id(`${tag}_ceil`), { x: x3, y: y3 + height, z: z2 }, width, depth);
+      results.ceil = this._ceil(this._id(`${tag}_ceil`), { x: x3, y: y3 + height, z: z2 }, width, depth, uvShema = false);
     }
     return results;
   }
@@ -54363,15 +54486,15 @@ var ProjectileSystem = class {
     this._speed = opts.projectileSpeed ?? 1;
     this._lifetime = opts.projectileLifetime ?? 4e3;
     this._scale = opts.projectileScale ?? 0.25;
-    this._tex = opts.projectileTex ?? "./res/textures/blankgray2.webp";
-    this._decalTex = opts.decalTex ?? "./res/textures/blankgray2.webp";
-    this._decalSize = opts.decalSize ?? 0.4;
+    this._tex = opts.projectileTex ?? "./res/textures/shooter/decal.webp";
+    this._decalTex = opts.decalTex ?? "./res/textures/shooter/decal.webp";
+    this._decalSize = opts.decalSize ?? 0.2;
     this._decalLifetime = opts.decalLifetime ?? 2e3;
     this.onHitscanHit = opts.onHitscanHit ?? null;
     this.onProjectileHit = opts.onProjectileHit ?? null;
     this._projectiles = [];
     this._uid = 0;
-    this._maxDecals = opts.maxDecals ?? 20;
+    this._maxDecals = opts.maxDecals ?? 40;
     this._decals = [];
     this.pArg = { name: null, obj: null, dir: null };
   }
@@ -54430,8 +54553,10 @@ var ProjectileSystem = class {
     if (idx !== -1) this._projectiles.splice(idx, 1);
     let getObj = this.engine.getSceneObjectByName(name2);
     if (getObj) {
+      console.log("REMOVE ", name2);
       this.engine.removeSceneObjectByName(name2);
     } else {
+      console.log("RE POS  ", name2);
       const obj2 = this.engine.mainRenderBundle?.find((o3) => o3.name === name2);
       if (obj2) {
         obj2.position.x = 99999;
@@ -54456,18 +54581,23 @@ var ProjectileSystem = class {
     ];
     const obj2 = this.engine.addMeshObj({
       shadowsCast: false,
-      material: { type: "standard", shared: false },
+      material: { type: "standard", shared: false, useBlend: true },
       position: pos2,
       scale: scale4,
       texturesPaths: [this._decalTex],
       name: name2,
       mesh: this.mesh,
-      physics: { enabled: false, mass: 0, geometry: "Cube" }
+      physics: { enabled: false, mass: 0, geometry: "Cube" },
+      pointerEffect: {
+        enabled: true
+      }
     });
+    setTimeout(() => {
+      obj2.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
+    }, 20);
     setTimeout(() => this._despawn(name2), this._decalLifetime);
     return obj2;
   }
-  // HITSCAN
   /**
    * Instant raycast from camera forward.
    * Tests all static collision entries, spawns decal on hit.
@@ -54499,7 +54629,6 @@ var ProjectileSystem = class {
     }
     return { hitPoint, normal: closestN, reflect, entry: closest, distance: closestT };
   }
-  // ── MOVING PROJECTILE ────────────────────────────────────────────────────
   /**
    * Spawn a moving projectile from camera position.
    * Position.translateByXYZ drives movement — no manual update needed.
@@ -54511,70 +54640,66 @@ var ProjectileSystem = class {
   fireProjectile() {
     const { origin, dir } = this._getCameraState();
     const name2 = `proj_${this._uid++}`;
-    const dist2 = 200;
+    const maxDist = 200;
+    const rotation3 = this._dirToEuler(dir);
+    let closest = null;
+    let closestT = maxDist;
+    let closestN = null;
+    for (const entry of this.collision.staticEntries) {
+      const result2 = this._rayVsAABB(origin, dir, entry);
+      if (result2 && result2.t > 1e-3 && result2.t < closestT) {
+        closestT = result2.t;
+        closest = entry;
+        closestN = result2.normal;
+      }
+    }
+    const travelDist = closest ? closestT : maxDist;
+    const targetX = origin.x + dir.x * travelDist;
+    const targetY = origin.y + dir.y * travelDist;
+    const targetZ = origin.z + dir.z * travelDist;
     const obj2 = this.engine.addMeshObj({
       shadowsCast: false,
-      material: { type: "standard", shared: true },
+      material: { type: "standard", shared: false, useBlend: true },
       position: { x: origin.x, y: origin.y, z: origin.z },
       scale: [this._scale, this._scale, this._scale],
-      rotation: { x: 0, y: 0, z: 0 },
+      rotation: { x: 90, y: rotation3.y, z: 0 },
       texturesPaths: [this._tex],
       name: name2,
       mesh: this.mesh,
       physics: { enabled: false, mass: 0, geometry: "Cube" },
-      pointerEffect: {
-        enabled: true
-      }
+      pointerEffect: { enabled: true }
     });
     obj2.effects = {};
+    obj2.setBlend(0.1);
     setTimeout(() => {
-      obj2.effects.kaleBullet = new KaleidoscopeEmitter(this.engine.device, "rgba16float", 30, this.engine.cameraBuffer);
-      obj2.effects.kaleBullet.recreateVertexDataCrazzy(randomIntFromTo(4, 16));
-      obj2.effects.kaleBullet.setIntensity(randomIntFromTo(10, 15));
-      obj2.effects.kaleBullet.setDirection("forward");
-    }, 20);
+      obj2.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
+      obj2.effects.kaleBullet.recreateVertexData(2);
+    }, 10);
     obj2.position.setSpeed(this._speed);
-    obj2.position.translateByXYZ(
-      origin.x + dir.x * dist2,
-      origin.y + dir.y * dist2,
-      origin.z + dir.z * dist2
-    );
-    obj2.position.onTargetPositionReach = () => this._despawn(name2);
+    obj2.position.translateByXYZ(targetX, targetY, targetZ);
+    obj2.position.onTargetPositionReach = () => {
+      if (closest) {
+        const hitPoint = { x: targetX, y: targetY, z: targetZ };
+        const reflect = this._reflect(dir, closestN);
+        setTimeout(() => this.spawnDecal(hitPoint, closestN), 100);
+        if (this.onHitscanHit) {
+          this.onHitscanHit(hitPoint, closestN, reflect, closest);
+        }
+      }
+      setTimeout(() => this._despawn(name2), 100);
+    };
     this.pArg.name = name2;
     this.pArg.obj = obj2;
     this.pArg.dir = dir;
     this._projectiles.push(this.pArg);
-    setTimeout(() => this._despawn(name2), this._lifetime);
     return { name: name2, obj: obj2, dir };
   }
-  /**
-   * Call this every frame after collisionSystem.update()
-   * to detect moving projectile hits.
-   *
-   * Example in your game loop:
-   *   collisionSystem.update();
-   *   projectileSystem.checkProjectiles();
-   */
-  checkProjectiles() {
-    for (let i2 = this._projectiles.length - 1; i2 >= 0; i2--) {
-      const p2 = this._projectiles[i2];
-      const pos2 = p2.obj?.position;
-      if (!pos2) continue;
-      for (const entry of this.collision.staticEntries) {
-        const result2 = this._rayVsAABB(
-          { x: pos2.x, y: pos2.y, z: pos2.z },
-          p2.dir,
-          entry
-        );
-        if (result2 && result2.t >= 0 && result2.t <= this._speed * 2) {
-          const hitPoint = { x: pos2.x, y: pos2.y, z: pos2.z };
-          this.spawnDecal(hitPoint, result2.normal);
-          if (this.onProjectileHit) this.onProjectileHit(hitPoint, result2.normal, entry);
-          this._despawn(p2.name);
-          break;
-        }
-      }
-    }
+  _dirToEuler(dir, worldUp = { x: 0, y: 1, z: 0 }) {
+    const dlen = Math.hypot(dir.x, dir.y, dir.z) || 1;
+    const fx = dir.x / dlen, fz = dir.z / dlen;
+    let yawDeg = Math.atan2(-fx, fz) * 180 / Math.PI;
+    console.log("dir:", dir, "yawDeg:", yawDeg);
+    return { x: 0, y: yawDeg, z: 0 };
   }
 };
 
@@ -54582,17 +54707,18 @@ var ProjectileSystem = class {
 var loadHang3d = function() {
   let app2 = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
-    fastRender: 0.9,
+    fastRender: 0.95,
     render: "culling",
     cullingRange: 1200,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
+    lock: "landscape",
     mainCameraParams: {
       type: "firstPersonCamera",
       responseCoef: 1e3
     },
-    clearColor: { r: 0.02, b: 0.05, g: 0.02, a: 1 }
+    clearColor: { r: 0, b: 0, g: 0, a: 1 }
   }, () => {
     app2.collisionSystem = new CollisionSystem(app2);
     app2.addLight();
@@ -54602,25 +54728,44 @@ var loadHang3d = function() {
     MobileDOM.addButton("T", () => {
     }, void 0, {
       image: "./res/textures/shooter/s.webp",
-      left: 45,
-      bottom: 45,
+      left: 44.5,
+      bottom: 42.8,
+      color: "black",
       size: innerHeight / 10
     });
-    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m2) => {
+    const cam2 = app2.getCamera();
+    if (isMobile() === true) {
+      MobileDOM.addButton("JUMP", () => {
+        window.app.collisionSystem._gravityAcc = 0.22;
+        window.app.collisionSystem._onGround = false;
+        cam2._dirty = true;
+        cam2._dirtyAngle = true;
+      }, void 0, {
+        width: "50px",
+        height: "50px",
+        image: "./res/textures/shooter/s.webp",
+        color: "red",
+        left: 80,
+        bottom: 30,
+        size: innerHeight / 10
+      });
+    }
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/blender/sphepe-mob.obj" }, (m2) => {
       const mc2 = new MapCreator(app2, m2.cube, app2.collisionSystem, {
-        wallTexture: "./res/textures/blankgray2.webp",
-        floorTexture: "./res/textures/rpg/magics/42.png",
+        wallTexture: "./res/textures/white-metal2.webp",
+        floorTexture: "./res/textures/floor.webp",
         ceilTexture: "./res/textures/blankgray2.webp",
         shadowsCast: true
       });
       mc2.createRoom({
-        origin: { x: -0, y: 0, z: 20 },
+        origin: { x: -0, y: 0.1, z: 20 },
         width: 10,
         depth: 10,
         height: 4,
         doors: ["+x", "-z"],
         doorWidth: 2.5,
         roof: true,
+        uvShema: [10, 10],
         tag: "start_room"
       });
       mc2.createTunnel({
@@ -54638,7 +54783,7 @@ var loadHang3d = function() {
         wallHeight: 2.5,
         pillars: 16,
         pillarH: 4,
-        covers: 0,
+        covers: 4,
         roof: false,
         doors: ["-x", "+z"],
         tag: "main_arena"
@@ -54654,8 +54799,8 @@ var loadHang3d = function() {
         tag: "stairs_up"
       });
       mc2.createMultiLevelMaze({
-        origin: { x: -65, y: -7, z: -22 },
-        levels: 3,
+        origin: { x: -65, y: -3, z: -22 },
+        levels: 2,
         mazeSize: 13,
         spacing: 2,
         wallHeight: 3,
@@ -54671,12 +54816,13 @@ var loadHang3d = function() {
       app2.collisionSystem.registerCamera(app2.cameras.firstPersonCamera.position, 1);
       app2.projectileSystem = new ProjectileSystem(
         app2,
-        m2.cube,
+        m2.ball,
         app2.collisionSystem,
         {
-          projectileSpeed: 0.8,
+          projectileSpeed: 0.5,
+          projectileScale: 0.075,
           onHitscanHit: (hitPoint, normal, reflect, entry) => {
-            console.log("hit", entry.id);
+            console.log("ray hit", entry.id);
           },
           onProjectileHit: (hitPoint, normal, entry) => {
             console.log("rocket hit", entry.id);
@@ -54685,7 +54831,6 @@ var loadHang3d = function() {
       );
       app2.canvas.addEventListener("ray.hit.event", (e3) => {
         console.log("ray.hit.event detected", e3.detail.hitObject.name);
-        app2.projectileSystem.fireHitscan();
         app2.projectileSystem.fireProjectile();
       });
     }, { scale: [1, 1, 1] });

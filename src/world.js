@@ -842,7 +842,7 @@ export default class MatrixEngineWGPU {
       this.mainRenderBundle.splice(index, 1);
       this.buildRenderBuckets(this.mainRenderBundle);
     }
-    obj.destroy();
+    // obj.destroy();
     this.buildLightShadowBuckets()
     return true;
   }
