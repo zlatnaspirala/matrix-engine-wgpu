@@ -4283,7 +4283,7 @@ var urlQuery = (function() {
 })();
 var LOG_WARN = "background: gray; color: yellow; font-size:10px";
 var LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
-var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:18px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
+var LOG_FUNNY2 = "font-family: stormfaze;color: #f1f033; font-size:18px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
 var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
 var LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
 var LOG_FUNNY_BIG_ARCADE = "font-family: system-ui; font-size:24px; font-weight:600;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
@@ -26941,6 +26941,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         primitive: this.primitive
       }
     });
+    this.initBoundingSphere();
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
   updateModelUniformBuffer = () => {
@@ -43281,10 +43282,10 @@ var MatrixEngineWGPU = class {
     this.shadersPack = {};
     this.lastFrameMS = 0;
     this._camVP = mat4Impl.create();
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
+    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY2);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.16.00 [The Beast] ", LOG_FUNNY);
+    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY2);
+    console.log("%c Version 1.16.00 [The Beast] ", LOG_FUNNY2);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\nOptimised MediaPipe buildin library implemented.\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
@@ -55051,6 +55052,190 @@ var hang3dUI = class {
   }
 };
 
+// examples/games/first-person-shooter/table-params.js
+var mapParams = {
+  zombie: {
+    startUpPositions: {
+      south: [-20, 1, 20],
+      north: [20, 1, -20]
+    }
+  }
+};
+
+// examples/games/first-person-shooter/zombie.js
+var Zombi = class {
+  zombieAnims = {
+    dead: null,
+    walk: null,
+    nono: null,
+    attack: null,
+    idle: null
+  };
+  creepHPReset = 300;
+  creepFocusAttackOn = null;
+  constructor(o3, archetypes = ["zombie"], group = "enemy", team) {
+    this.name = o3.name;
+    this.core = o3.core;
+    this.group = group;
+    this.team = team;
+    this.loadCreep(o3);
+    return this;
+  }
+  loadCreep = async (o3) => {
+    this.o = o3;
+    try {
+      this.core.addGlbObjInctance({
+        material: { type: "standard", useTextureFromGlb: true },
+        shadowsCast: false,
+        scale: [2, 2, 2],
+        position: o3.position,
+        name: o3.name,
+        texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"],
+        raycast: { enabled: true, radius: 1.1 },
+        pointerEffect: {
+          enabled: true,
+          energyBar: true
+        }
+      }, null, o3.data);
+      this.asyncHelper(this.o).then(() => {
+      }).catch(() => {
+        console.log("catch");
+        setTimeout(() => {
+          this.asyncHelper(this.o);
+        }, 3e3);
+      });
+    } catch (err) {
+      throw err;
+    }
+  };
+  asyncHelper = async (o3) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        this.zombie_bodies = app.mainRenderBundle.filter((obj2) => obj2.name && obj2.name.includes(o3.name));
+        if (this.zombie_bodies.length == 0) {
+          reject();
+          return;
+        }
+        this.zombie_bodies.forEach((subMesh, idx) => {
+          subMesh.position.thrust = this.moveSpeed;
+          subMesh.animationIndex = 0;
+          subMesh.glb.glbJsonData.animations.forEach((a2, index) => {
+            console.info(`%c Animation loading for creeps: ${a2.name} index ${index}`, LOG_MATRIX);
+            if (a2.name == "dead") this.zombieAnims.dead = index;
+            if (a2.name == "walk") this.zombieAnims.walk = index;
+            if (a2.name == "salute") this.zombieAnims.salute = index;
+            if (a2.name == "attack") this.zombieAnims.attack = index;
+            if (a2.name == "idle") this.zombieAnims.idle = index;
+          });
+          subMesh.setAmbient(1, 1, 1, 1);
+          if (idx == 0) this.core.collisionSystem.register(o3.name, subMesh.position, 1, this.group);
+        });
+        this.setStartUpPosition();
+        this.attachEvents();
+        resolve();
+      }, 3e3);
+    });
+  };
+  setWalk() {
+    this.zombie_bodies.forEach((subMesh) => {
+      subMesh.playAnimationByIndex(this.zombieAnims.walk);
+      console.info(`%chero walk`, LOG_MATRIX);
+    });
+  }
+  setSalute() {
+    this.zombie_bodies.forEach((subMesh) => {
+      subMesh.playAnimationByIndex(this.zombieAnims.salute);
+      console.info(`%chero salute`, LOG_MATRIX);
+    });
+  }
+  setDead() {
+    this.zombie_bodies.forEach((subMesh) => {
+      subMesh.playAnimationByIndex(this.zombieAnims.dead);
+      console.info(`%chero dead`, LOG_MATRIX);
+    });
+  }
+  setIdle() {
+    this.zombie_bodies.forEach((subMesh) => {
+      subMesh.playAnimationByIndex(this.zombieAnims.idle);
+      console.info(`%chero idle`, LOG_MATRIX);
+    });
+  }
+  setAttack() {
+    this.zombie_bodies.forEach((subMesh) => {
+      subMesh.playAnimationByIndex(this.zombieAnims.attack);
+      console.info(`%chero attack`, LOG_MATRIX);
+    });
+  }
+  setStartUpPosCreep() {
+    this.zombie_bodies.forEach((subMesh, idx) => {
+      subMesh.position.setPosition(
+        mapParams.zombie.startUpPositions["north"][0],
+        mapParams.zombie.startUpPositions["north"][1],
+        mapParams.zombie.startUpPositions["north"][2]
+      );
+    });
+  }
+  attachEvents() {
+    addEventListener(`onDamage-${this.name}`, (e2) => {
+      if (this.group == "enemy") {
+        console.info(`%c onDamage-${this.name} group: ${this.group}  creep damage!`, LOG_FUNNY);
+      } else {
+        console.log("friendly creep damage must come from net. [never]");
+        return;
+      }
+      this.zombie_bodies[0].effects.energyBar.setProgress(e2.detail.progress);
+      if (e2.detail.progress == 0) {
+        this.setDead();
+        console.info(`ZOmbi dead [${this.name}], attacker[${e2.detail.attacker}]`);
+        setTimeout(() => {
+          this.setStartUpPosCreep();
+          this.setWalk();
+          this.creepFocusAttackOn = null;
+          this.gotoFinal = false;
+          this.hp = 300;
+          this.zombie_bodies[0].effects.energyBar.setProgress(1);
+        }, 700);
+      }
+    });
+    addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e2) => {
+      if (e2.detail.animationName != "attack" && this.creepFocusAttackOn == null) {
+        console.log("animationEnd BLOCK1");
+        return;
+      }
+      console.info("animationEnd :", e2.detail);
+      if (this.group == "friendly") {
+        if (this.creepFocusAttackOn == null) {
+          let isEnemiesClose = false;
+          this.core.enemies.enemies.forEach((enemy) => {
+            if (typeof enemy.zombie_bodies === "undefined") return;
+            let tt2 = this.core.RPG.distance3D(
+              this.zombie_bodies[0].position,
+              enemy.zombie_bodies[0].position
+            );
+            if (tt2 < this.core.RPG.distanceForAction) {
+              isEnemiesClose = true;
+              this.calcDamage(this, enemy);
+              return;
+            }
+          });
+          this.core.enemies.creeps.forEach((creep) => {
+            if (typeof creep.zombie_bodies === "undefined") return;
+            let tt2 = this.core.RPG.distance3D(
+              this.zombie_bodies[0].position,
+              creep.zombie_bodies[0].position
+            );
+            if (tt2 < this.core.RPG.distanceForAction) {
+              isEnemiesClose = true;
+              this.calcDamage(this, creep);
+              return;
+            }
+          });
+        }
+      }
+    });
+  }
+};
+
 // examples/games/first-person-shooter/hang3d.js
 var loadHang3d = function() {
   let app2 = new MatrixEngineWGPU({
@@ -55142,7 +55327,7 @@ var loadHang3d = function() {
         size: innerHeight / 10
       });
     }
-    downloadMeshes({ cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/blender/sphepe-mob.obj" }, (m2) => {
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/blender/sphepe-mob.obj" }, async (m2) => {
       const mc2 = new MapCreator(app2, m2.cube, app2.collisionSystem, {
         wallTexture: "./res/textures/shooter/metal-block.webp",
         // floorTexture: './res/textures/dark-rock.webp',
@@ -55203,6 +55388,15 @@ var loadHang3d = function() {
         stairSteps: 8,
         roofLevels: true
       });
+      var glbFile01 = await fetch("./res/meshes/glb/zombie-cap.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
+      let options2 = {
+        core: app2,
+        name: "zombi-cap",
+        archetypes: ["zombie"],
+        position: { x: 0, y: 0, z: -10 },
+        data: glbFile01
+      };
+      app2.zombies = [new Zombi(options2)];
       const light = app2.lightContainer[0];
       light.setPosition(0, 60, 0);
       light.setIntensity(70);

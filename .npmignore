@@ -19,3 +19,5 @@ public/res/meshes/blender/*.blend1
 public/res/meshes/glb/*.blend11
 public/res/meshes/glb/maria_arhive/*.blend
 public/res/meshes/env/*.blend
+test-npm/**/*
+test-npm/

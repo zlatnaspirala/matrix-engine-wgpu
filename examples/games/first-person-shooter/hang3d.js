@@ -7,6 +7,8 @@ import {MapCreator} from "../../../src/engine/buildin/map-creator/map-creator.js
 import {ProjectileSystem} from '../../../src/engine/procedures/fps-projectile.js';
 import {MobileDOM} from '../../../src/engine/cameras.js';
 import {hang3dUI} from './options.js';
+import {Zombi} from './zombie.js';
+import {uploadGLBModel} from '../../../src/engine/loaders/webgpu-gltf.js';
 
 export var loadHang3d = function() {
   let app = new MatrixEngineWGPU({
@@ -43,7 +45,7 @@ export var loadHang3d = function() {
       size: innerHeight / 10
     })
 
-    app.energy = MobileDOM.addProgressBar({size: innerWidth/3, bottom: 95, left: 33, color: '#00bcd4'});
+    app.energy = MobileDOM.addProgressBar({size: innerWidth / 3, bottom: 95, left: 33, color: '#00bcd4'});
     app.energy.setValue(80);
 
     const cam = app.getCamera();
@@ -104,7 +106,7 @@ export var loadHang3d = function() {
       })
     }
 
-    downloadMeshes({cube: './res/meshes/blender/cube.obj', ball: './res/meshes/blender/sphepe-mob.obj'}, (m) => {
+    downloadMeshes({cube: './res/meshes/blender/cube.obj', ball: './res/meshes/blender/sphepe-mob.obj'}, async (m) => {
 
       const mc = new MapCreator(app, m.cube, app.collisionSystem, {
         wallTexture: './res/textures/shooter/metal-block.webp',
@@ -176,13 +178,23 @@ export var loadHang3d = function() {
         roofLevels: true
       });
 
-      // ── 8. Example G: full compound preset (one call)
       // mc.createFPSMapCompound({
       //   origin:     { x: 0, y: 0, z: 100 },
       //   multiLevel: true,
       //   mazeLevels: 2,
       //   mazeSize:   19
       // });
+
+      var glbFile01 = await fetch('./res/meshes/glb/zombie-cap.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
+
+      let options = {
+        core: app,
+        name: 'zombi-cap',
+        archetypes: ["zombie"],
+        position: {x: 0, y: 0, z: -10},
+        data: glbFile01
+      }
+      app.zombies = [new Zombi(options)];
 
       const light = app.lightContainer[0];
       light.setPosition(0, 60, 0);

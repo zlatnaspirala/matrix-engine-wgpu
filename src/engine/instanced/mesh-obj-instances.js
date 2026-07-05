@@ -982,6 +982,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         primitive: this.primitive,
       }
     });
+    this.initBoundingSphere();
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
 
