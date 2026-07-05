@@ -6,6 +6,7 @@ import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {MapCreator} from "../../../src/engine/buildin/map-creator/map-creator.js";
 import {ProjectileSystem} from '../../../src/engine/procedures/fps-projectile.js';
 import {MobileDOM} from '../../../src/engine/cameras.js';
+import {hang3dUI} from './options.js';
 
 export var loadHang3d = function() {
   let app = new MatrixEngineWGPU({
@@ -32,15 +33,21 @@ export var loadHang3d = function() {
     app.activateHZB();
     app.activateBloomEffect();
 
+    app.UI = new hang3dUI();
+
     MobileDOM.addButton("T", () => {}, undefined, {
       image: "./res/textures/shooter/s.webp",
-      left: 41,
-      bottom: 40,
+      left: isMobile() === true ? 41 : 46.5,
+      bottom: isMobile() === true ? 40 : 42.5,
       color: 'black',
       size: innerHeight / 10
     })
 
+    app.energy = MobileDOM.addProgressBar({size: innerWidth/3, bottom: 95, left: 33, color: '#00bcd4'});
+    app.energy.setValue(80);
+
     const cam = app.getCamera();
+    let preventFire = false;
 
     if(isMobile() === true) {
 
@@ -54,6 +61,12 @@ export var loadHang3d = function() {
         left: 60,
         bottom: 20,
         size: innerHeight / 10
+      }, () => {
+        if(preventFire === false) {
+          preventFire = true;
+          app.projectileSystem.fireProjectile();
+          setTimeout(() => {preventFire = false;}, 350)
+        }
       })
 
       MobileDOM.addButton("JUMP", () => {
@@ -94,7 +107,7 @@ export var loadHang3d = function() {
     downloadMeshes({cube: './res/meshes/blender/cube.obj', ball: './res/meshes/blender/sphepe-mob.obj'}, (m) => {
 
       const mc = new MapCreator(app, m.cube, app.collisionSystem, {
-        wallTexture: './res/textures/white-metal2.webp',
+        wallTexture: './res/textures/shooter/metal-block.webp',
         // floorTexture: './res/textures/dark-rock.webp',
         floorTexture: './res/textures/shooter/metal-block.webp',
         ceilTexture: './res/textures/blankgray2.webp',
@@ -127,7 +140,7 @@ export var loadHang3d = function() {
         covers: 4,
         roof: false,
         doors: ['-x', '+z'],
-        uvShema: [10,10],
+        uvShema: [10, 10],
         tag: 'main_arena'
       });
 
@@ -139,6 +152,7 @@ export var loadHang3d = function() {
         stepH: 0.4,
         stepD: 0.8,
         walls: true,
+        uvShema: [3, 6],
         tag: 'stairs_up'
       });
 
@@ -172,7 +186,7 @@ export var loadHang3d = function() {
 
       const light = app.lightContainer[0];
       light.setPosition(0, 60, 0);
-      light.setIntensity(100);
+      light.setIntensity(70);
       app.cameras.firstPersonCamera.movementSpeed = 0.1;
       app.cameras.firstPersonCamera.setPosition(0, 5, 0);
       app.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
@@ -190,8 +204,6 @@ export var loadHang3d = function() {
           }
         }
       );
-
-      // checkProjectiles
 
       app.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected', e.detail.hitObject.name);

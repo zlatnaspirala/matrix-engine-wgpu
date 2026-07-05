@@ -1,0 +1,23 @@
+{
+  "name": "test-npm",
+  "version": "1.0.0",
+  "description": "JUst test engine from npm service",
+  "main": "index.js",
+  "scripts": {
+    "dev": "esbuild index.js --bundle --outfile=public/test.js --format=esm --watch"
+  },
+  "keywords": [
+    "test",
+    "the-beast",
+    "from",
+    "npm"
+  ],
+  "author": "Nikola Lukic",
+  "license": "MIT",
+  "dependencies": {
+    "matrix-engine-wgpu": "^1.16.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}

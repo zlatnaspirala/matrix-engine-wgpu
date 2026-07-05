@@ -60,12 +60,12 @@ export var loadObjFile = function() {
         }
       });
 
-      // share: true if not defined it is false.
+      // material: {type: 'mirror', share: true }, share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
         material: {type: 'mirror'},
         position: {x: 0, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 1, z: 0},
         scale: [3, 5, 1],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
@@ -79,7 +79,7 @@ export var loadObjFile = function() {
           illuminatePulse: 0.1,             // No pulse (static)
           fresnelPower: 5,                  // Medium-sharp edge
           envLodBias: 1.5,
-          usePlanarReflection: false,       // ✅ Env map mode
+          usePlanarReflection: false,       // Must be false - WIP
         },
         raycast: {enabled: true, radius: 1},
         physics: {
@@ -89,8 +89,7 @@ export var loadObjFile = function() {
         },
         pointerEffect: {
           enabled: true,
-          flameEmitter: true,
-          // flameEffect: true
+          flameEmitter: true
         }
       })
 
@@ -107,13 +106,10 @@ export var loadObjFile = function() {
 
       setTimeout(() => {
         MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
-
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-
-        // MYCUBE.effects.flameEmitter.setIntensity(100);
-        // MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4); 
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
 
+        // Nice fire tourch effect.
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
           0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);

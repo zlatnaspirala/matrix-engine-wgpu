@@ -1701,12 +1701,11 @@ export const MobileDOM = {
       ['D', '▶', 3, 2, 'right'],
     ];
 
-    const buttons = {}; // action -> btn (needed for joystick highlight lookup)
-
+    const buttons = {};
     for(const [, label, col, row, action] of defs) {
       const btn = document.createElement('div');
       btn.id = label;
-      btn.dataset.action = action; // used by elementFromPoint lookup in joystick mode
+      btn.dataset.action = action;
       Object.assign(btn.style, {
         width: `${size}px`,
         height: `${size}px`,
@@ -1727,7 +1726,7 @@ export const MobileDOM = {
       buttons[action] = btn;
 
       if(!forMobileJoystick) {
-        // ---- original press/release behavior, unchanged ----
+        // first touch press/release behavior
         const press = () => {
           camera._digital[action] = true;
           btn.style.background = `rgba(255,255,255,${opacity})`;
@@ -1853,7 +1852,7 @@ export const MobileDOM = {
     byId('mobileControls').remove();
   },
 
-  addButton(label, onClick, onRelease = () => {}, options = {}) {
+  addButton(label, onClick, onRelease = () => {}, options = {}, onMove = () => {}) {
     document.body.style.touchAction = 'none';
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
@@ -1885,31 +1884,105 @@ export const MobileDOM = {
     btn.textContent = label;
 
     if(isMobile() === true) {
-      btn.addEventListener('touchstart', e => {
+      btn.addEventListener('touchstart', (e) => {
         e.stopPropagation();
-        // btn.style.background = `rgba(255,255,255,${opacity})`;
         onClick(e);
       }, {passive: true});
       btn.addEventListener('touchend', (e) => {
-        // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
         onRelease(e);
       }, {passive: true});
-      btn.addEventListener('touchcancel', () => {
-        // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      btn.addEventListener('touchcancel', (e) => {
         onRelease(e);
       }, {passive: true});
-
+      btn.addEventListener('touchmove', (e) => {
+        onMove(e);
+      }, {passive: true});
     } else {
-      btn.addEventListener('click', e => {
+      btn.addEventListener('click', (e) => {
         e.stopPropagation();
         onClick(e);
       }, {passive: true});
       btn.addEventListener('mouseup', (e) => {
         onRelease(e);
       }, {passive: true});
+      btn.addEventListener('mousemove', (e) => {
+        onMove(e);
+      }, {passive: true});
     }
 
     document.body.appendChild(btn);
     return btn;
+  },
+
+  addProgressBar(options = {}) {
+    const size = options.size ?? 200;
+    const bottom = options.bottom ?? 10;
+    const left = options.left ?? 10;
+    const opacity = options.opacity ?? 0.35;
+    const color = options.color ?? '#4caf50';
+
+    const barWrapper = document.createElement('div');
+    Object.assign(barWrapper.style, {
+      position: 'fixed',
+      bottom: `${bottom}%`,
+      left: `${left}%`,
+      width: `${size}px`,
+      height: `${size * 0.01}px`,
+      background: `rgba(0,0,0,${opacity})`,
+      border: `2px solid rgba(255,255,255,${opacity})`,
+      borderRadius: `${size * 0.05}px`,
+      zIndex: '9999',
+      overflow: 'hidden'
+    });
+    const fill = document.createElement('div');
+    Object.assign(fill.style, {
+      width: '100%',
+      height: '100%',
+      background: color,
+      transition: 'width 0.2s ease, background 0.3s ease'
+    });
+    barWrapper.appendChild(fill);
+    document.body.appendChild(barWrapper);
+    return Object.assign(barWrapper, {
+      setValue: (percent) => {
+        const p = Math.max(0, Math.min(100, percent));
+        fill.style.width = `${p}%`;
+        fill.style.background = p > 60 ? '#4caf50' : p > 30 ? '#ffc107' : '#f44336';
+      }
+    });
+  },
+
+  addSlider(onChange = (v) => {}, options = {}) {
+    const width = options.width ?? 200;
+    const bottom = options.bottom ?? 5;
+    const left = options.left ?? 10;
+    const opacity = options.opacity ?? 0.35;
+    const slider = document.createElement('input');
+    Object.assign(slider, {
+      type: 'range',
+      min: options.min ?? 0,
+      max: options.max ?? 100,
+      value: options.value ?? 50
+    });
+    Object.assign(slider.style, {
+      position: 'fixed',
+      bottom: `${bottom}%`,
+      left: `${left}%`,
+      width: `${width}px`,
+      zIndex: '9999',
+      accentColor: options.color ?? '#ffffff',
+      cursor: 'pointer',
+      touchAction: 'none'
+    });
+    const handleInput = (e) => onChange(parseFloat(slider.value));
+    if(isMobile()) {
+      slider.addEventListener('touchmove', handleInput, {passive: true});
+      slider.addEventListener('touchstart', handleInput, {passive: true});
+    } else {
+      slider.addEventListener('mousemove', handleInput, {passive: true});
+      slider.addEventListener('mousedown', handleInput, {passive: true});
+    }
+    document.body.appendChild(slider);
+    return slider;
   }
 };

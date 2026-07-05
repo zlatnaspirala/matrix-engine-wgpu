@@ -324,6 +324,7 @@ export class MapCreator {
       stepW = 1.5, stepH = 0.4, stepD = 0.8,
       walls = true, roof = false, tag = 'stair'
     } = opts;
+    let {uvShema = false} = opts;
 
     const results = {steps: [], walls: []};
     let {x, y, z} = origin;
@@ -339,7 +340,7 @@ export class MapCreator {
         this._id(`${tag}_step`),
         {x: stepCx, y: stepY, z: stepCz},
         [scaleX, stepH, scaleZ],
-        this._wallTex, 'standard', true, 0.5
+        this._wallTex, 'standard', true, 0.5, undefined, uvShema
       );
       results.steps.push(s);
     }
@@ -351,11 +352,12 @@ export class MapCreator {
       const midAlong = (axis === 'x' ? x : z) + totalLen / 2;
       const hw = stepW / 2;
       if(axis === 'x') {
-        results.walls.push(this._block(this._id(`${tag}_sw1`), {x: midAlong, y: wallY, z: z - hw - 0.2}, [totalLen, totalH + stepH, 0.3], this._wallTex));
-        results.walls.push(this._block(this._id(`${tag}_sw2`), {x: midAlong, y: wallY, z: z + hw + 0.2}, [totalLen, totalH + stepH, 0.3], this._wallTex));
+        results.walls.push(this._block(
+          this._id(`${tag}_sw1`), {x: midAlong, y: wallY, z: z - hw - 0.2}, [totalLen, totalH + stepH, 0.3], this._wallTex, undefined, undefined, undefined, undefined, uvShema));
+        results.walls.push(this._block(this._id(`${tag}_sw2`), {x: midAlong, y: wallY, z: z + hw + 0.2}, [totalLen, totalH + stepH, 0.3], this._wallTex, undefined, undefined, undefined, undefined, uvShema));
       } else {
-        results.walls.push(this._block(this._id(`${tag}_sw1`), {x: x - hw - 0.2, y: wallY, z: midAlong}, [0.3, totalH + stepH, totalLen], this._wallTex));
-        results.walls.push(this._block(this._id(`${tag}_sw2`), {x: x + hw + 0.2, y: wallY, z: midAlong}, [0.3, totalH + stepH, totalLen], this._wallTex));
+        results.walls.push(this._block(this._id(`${tag}_sw1`), {x: x - hw - 0.2, y: wallY, z: midAlong}, [0.3, totalH + stepH, totalLen], this._wallTex, undefined, undefined, undefined, undefined, uvShema));
+        results.walls.push(this._block(this._id(`${tag}_sw2`), {x: x + hw + 0.2, y: wallY, z: midAlong}, [0.3, totalH + stepH, totalLen], this._wallTex, undefined, undefined, undefined, undefined, uvShema));
       }
     }
     return results;
@@ -587,6 +589,7 @@ export class MapCreator {
           stepD: 0.8,
           walls: true,
           roof: false,
+          uvShema: [6, 3],
           tag: `stair_lvl${lvl}`
         });
         results.stairs.push(stair);
