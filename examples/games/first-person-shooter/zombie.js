@@ -1,4 +1,4 @@
-import {LOG_MATRIX} from "../../../src/engine/utils";
+import {distance3D, LOG_MATRIX} from "../../../src/engine/utils";
 import {mapParams} from "./table-params";
 
 export class Zombi {
@@ -29,7 +29,7 @@ export class Zombi {
       this.core.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         shadowsCast: false,
-        scale: [2, 2, 2],
+        scale: [0.9, 0.9, 0.9],
         position: o.position,
         name: o.name,
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
@@ -42,7 +42,7 @@ export class Zombi {
       this.asyncHelper(this.o).then(() => {
         // console.log('creeps loaded in scene...')
       }).catch(() => {
-        console.log('catch')
+        // console.log('catch')
         setTimeout(() => {this.asyncHelper(this.o);}, 3000);
       });
 
@@ -57,23 +57,33 @@ export class Zombi {
           reject();
           return;
         }
+        let bPos;
         this.zombie_bodies.forEach((subMesh, idx) => {
-          subMesh.position.thrust = this.moveSpeed;
+          subMesh.position.thrust = 0.01;
           subMesh.animationIndex = 0;
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
             console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'dead') this.zombieAnims.dead = index;
-            if(a.name == 'walk') this.zombieAnims.walk = index;
-            if(a.name == 'salute') this.zombieAnims.salute = index;
+            if(a.name == 'zombi-walking') this.zombieAnims.walk = index;
+            if(a.name == 'no_no') this.zombieAnims.nono = index;
             if(a.name == 'attack') this.zombieAnims.attack = index;
             if(a.name == 'idle') this.zombieAnims.idle = index;
           });
-          // adapt
           subMesh.setAmbient(1, 1, 1, 1);
-          if(idx == 0) this.core.collisionSystem.register((o.name), subMesh.position, 1.0, this.group);
+          if(idx == 0) {
+            subMesh.sharedState.emitAnimationEvent = true;
+            bPos = subMesh.position;
+            this.core.collisionSystem.registerStatic((o.name), subMesh.position, 0.7, this.group,
+              {
+                x: subMesh.scale[0] / 3.5,
+                y: subMesh.scale[1] * 2,
+                z: subMesh.scale[2] / 3.5
+              });
+          } else {
+            this.core.collisionSystem.registerStatic((o.name), subMesh.position, 0.7, 'zombi_head');
+            subMesh.position = bPos;
+          }
         });
-
-        this.setStartUpPosition();
         this.attachEvents();
         resolve();
       }, 3000);
@@ -125,75 +135,19 @@ export class Zombi {
   }
 
   attachEvents() {
-    addEventListener(`onDamage-${this.name}`, (e) => {
-      if(this.group == 'enemy') {
-        console.info(`%c onDamage-${this.name} group: ${this.group}  creep damage!`, LOG_FUNNY);
-      } else {
-        console.log('friendly creep damage must come from net. [never]');
-        return;
-      }
-
-      this.zombie_bodies[0].effects.energyBar.setProgress(e.detail.progress);
-      // this.core.net.sendOnlyData({
-      //   type: "damage-creep",
-      //   defenderName: e.detail.defender,
-      //   defenderTeam: this.team,
-      //   hp: e.detail.hp,
-      //   progress: e.detail.progress
-      // });
-      if(e.detail.progress == 0) {
-        this.setDead();
-        console.info(`ZOmbi dead [${this.name}], attacker[${e.detail.attacker}]`);
-        setTimeout(() => {
-          this.setStartUpPosCreep();
-          this.setWalk();
-          this.creepFocusAttackOn = null;
-          this.gotoFinal = false;
-          this.hp = 300;
-          this.zombie_bodies[0].effects.energyBar.setProgress(1);
-          //
-        }, 700);
-      }
-    });
-
-
+       console.log('animationEnd init')
     addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e) => {
-      if(e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
+      if(e.detail.animationName === 'attack') {
         console.log('animationEnd BLOCK1')
         return;
       }
       console.info('animationEnd :', e.detail)
       if(this.group == "friendly") {
         if(this.creepFocusAttackOn == null) {
-          let isEnemiesClose = false;
-          this.core.enemies.enemies.forEach((enemy) => {
-            if(typeof enemy.zombie_bodies === 'undefined') return;
-            let tt = this.core.RPG.distance3D(
-              this.zombie_bodies[0].position,
-              enemy.zombie_bodies[0].position);
-            if(tt < this.core.RPG.distanceForAction) {
-              // console.log(`%c ATTACK DAMAGE ${enemy.zombie_bodies[0].name}`, LOG_MATRIX)
-              isEnemiesClose = true;
-              this.calcDamage(this, enemy);
-              return;
-            }
-          });
-
-          this.core.enemies.creeps.forEach((creep) => {
-            if(typeof creep.zombie_bodies === 'undefined') return;
-            let tt = this.core.RPG.distance3D(
-              this.zombie_bodies[0].position,
-              creep.zombie_bodies[0].position);
-            if(tt < this.core.RPG.distanceForAction) {
-              // console.log(`%c ATTACK DAMAGE ${creep.zombie_bodies[0].name}`, LOG_MATRIX)
-              isEnemiesClose = true;
-              this.calcDamage(this, creep);
-              return;
-            }
-          });
-
+          // let tt = this.core.RPG.distance3D()
         }
       }
+
     })
 
   }

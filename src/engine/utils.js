@@ -22,7 +22,7 @@ let screenOrientationSupported = null;
 
 export function getOrientation() {
   // 2011 from stackoverflow
-  if (window.innerWidth > window.innerHeight) {
+  if(window.innerWidth > window.innerHeight) {
     return 'landscape';
   } else {
     return 'portrait';
@@ -1469,4 +1469,12 @@ export class CameraPath {
     }
     return 1;
   }
+}
+
+export function distance3D(a, b) {
+  if(!b) return 1000;
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  const dz = a.z - b.z;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
