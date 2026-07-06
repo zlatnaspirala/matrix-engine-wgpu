@@ -1,6 +1,15 @@
 import {distance3D, LOG_MATRIX} from "../../../src/engine/utils";
 import {mapParams} from "./table-params";
 
+const DEG2RAD = Math.PI / 180;
+const RAD2DEG = 180 / Math.PI;
+
+function vecOf(p) {
+  if(p == null) return null;
+  if(p.x !== undefined) return p;
+  return {x: p[0], y: p[1], z: p[2]};
+}
+
 export class Zombi {
 
   zombieAnims = {
@@ -11,8 +20,26 @@ export class Zombi {
     idle: null
   }
 
-  creepHPReset = 300;
+  creepHPReset = 10;
   creepFocusAttackOn = null;
+  zombieSpeedWalk = 0.001;
+
+  // --- combat / hp state ---
+  hp = this.creepHPReset;
+  isDead = false;
+  attackDamage = 8;
+  attackCooldownTicks = 0;
+  _attackCooldownLeft = 0;
+
+  aiConfig = {
+    detectRangeFront: 25,
+    detectRangeBack: 10,
+    attackRange: 2.6,
+    rotationStepDeg: 35,
+    stepDistance: 0.2
+  }
+
+  aiState = 'attack'; // idle | chase | attack | dead
 
   constructor(o, archetypes = ["zombie"], group = "enemy", team) {
     this.name = o.name;
@@ -42,7 +69,6 @@ export class Zombi {
       this.asyncHelper(this.o).then(() => {
         // console.log('creeps loaded in scene...')
       }).catch(() => {
-        // console.log('catch')
         setTimeout(() => {this.asyncHelper(this.o);}, 3000);
       });
 
@@ -59,7 +85,7 @@ export class Zombi {
         }
         let bPos;
         this.zombie_bodies.forEach((subMesh, idx) => {
-          subMesh.position.thrust = 0.01;
+          subMesh.position.thrust = this.zombieSpeedWalk;
           subMesh.animationIndex = 0;
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
             console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
@@ -76,7 +102,7 @@ export class Zombi {
             this.core.collisionSystem.registerStatic((o.name), subMesh.position, 0.7, this.group,
               {
                 x: subMesh.scale[0] / 3.5,
-                y: subMesh.scale[1] * 2,
+                y: subMesh.scale[1] * 3,
                 z: subMesh.scale[2] / 3.5
               });
           } else {
@@ -93,35 +119,30 @@ export class Zombi {
   setWalk() {
     this.zombie_bodies.forEach(subMesh => {
       subMesh.playAnimationByIndex(this.zombieAnims.walk)
-      console.info(`%chero walk`, LOG_MATRIX)
     });
   }
 
   setSalute() {
     this.zombie_bodies.forEach(subMesh => {
       subMesh.playAnimationByIndex(this.zombieAnims.salute)
-      console.info(`%chero salute`, LOG_MATRIX)
     });
   }
 
   setDead() {
     this.zombie_bodies.forEach(subMesh => {
       subMesh.playAnimationByIndex(this.zombieAnims.dead)
-      console.info(`%chero dead`, LOG_MATRIX)
     });
   }
 
   setIdle() {
     this.zombie_bodies.forEach(subMesh => {
       subMesh.playAnimationByIndex(this.zombieAnims.idle)
-      console.info(`%chero idle`, LOG_MATRIX)
     });
   }
 
   setAttack() {
     this.zombie_bodies.forEach(subMesh => {
       subMesh.playAnimationByIndex(this.zombieAnims.attack)
-      console.info(`%chero attack`, LOG_MATRIX)
     });
   }
 
@@ -134,21 +155,143 @@ export class Zombi {
     });
   }
 
+  updateEnergyBar() {
+    const head = this.zombie_bodies[0];
+    if(head?.effects?.energyBar) {
+      head.effects.energyBar.setProgress(this.hp / this.creepHPReset); // 0-1 scale
+    }
+  }
+
+  takeDamage(amount) {
+    if(this.isDead) return;
+    this.hp = Math.max(0, this.hp - amount);
+    this.updateEnergyBar();
+    if(this.hp <= 0) this.die();
+  }
+
+  die() {
+    this.isDead = true;
+    this.aiState = 'dead';
+    this.setDead();
+    this.core.collisionSystem.unregister?.(this.name); // if your collision system supports it
+  }
+
+
+  getPlayerPosition() {
+    const cam = app.getCamera();
+    return cam ? vecOf(cam.position) : null;
+  }
+
+  isPlayerInFront(zombiePos, rotYDeg, playerPos) {
+    const zp = vecOf(zombiePos);
+    const rad = (rotYDeg || 0) * DEG2RAD;
+    const fx = Math.sin(rad);
+    const fz = Math.cos(rad);
+    const dx = playerPos.x - zp.x;
+    const dz = playerPos.z - zp.z;
+    const len = Math.sqrt(dx * dx + dz * dz) || 1;
+    return ((dx / len) * fx + (dz / len) * fz) > 0;
+  }
+
+  rotateStep(current, target, maxStepDeg) {
+    let diff = ((target - current + 540) % 360) - 180;
+    const clamped = Math.max(-maxStepDeg, Math.min(maxStepDeg, diff));
+    return (current + clamped + 360) % 360;
+  }
+
+  moveTowardPlayer(zombiePos, rotYDeg, playerPos) {
+    const zp = vecOf(zombiePos);
+    const dx = playerPos.x - zp.x;
+    const dz = playerPos.z - zp.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if(dist < 0.0001) return rotYDeg;
+    const nx = dx / dist;
+    const nz = dz / dist;
+    const targetAngleY = (Math.atan2(nx, nz) * RAD2DEG + 360) % 360;
+    const newRotY = this.rotateStep(rotYDeg || 0, targetAngleY, this.aiConfig.rotationStepDeg);
+    // this.aiConfig.stepDistance
+    if(dist >  this.aiConfig.attackRange ) {
+      zombiePos.translateByXYZ(zp.x + nx , zp.y, zp.z + nz );
+    }
+    return newRotY;
+  }
+
+  // called once per animationEnd tick while in attack range
+  resolveAttack() {
+    if(this._attackCooldownLeft > 0) {
+      this._attackCooldownLeft--;
+      return;
+    }
+    this._attackCooldownLeft = this.attackCooldownTicks;
+
+    // deal damage to player — app.player is the generic Player instance (see bonus below)
+    app.player.takeDamage(this.attackDamage);
+    app.energy.setValue(app.player.energy); // HUD is 0-100, matches player.energy scale
+  }
+
+  navigateStep() {
+    if(this.isDead) return;
+
+    const head = this.zombie_bodies[0];
+    const playerPos = this.getPlayerPosition();
+    if(!playerPos) return;
+
+    const zp = vecOf(head.position);
+    const dist = distance3D(zp, playerPos);
+    const inFront = this.isPlayerInFront(head.position, head.rotation.y, playerPos);
+    const detectRange = inFront ? this.aiConfig.detectRangeFront : this.aiConfig.detectRangeBack;
+
+    if(dist > detectRange) {
+      if(this.aiState !== 'idle') {this.aiState = 'idle'; this.setIdle();}
+      return;
+    }
+
+    if(dist <= this.aiConfig.attackRange) {
+      if(this.aiState !== 'attack') {this.aiState = 'attack'; this.setAttack();}
+      this.resolveAttack();
+      return;
+    }
+
+    this.aiState = 'chase';
+    const newRotY = this.moveTowardPlayer(head.position, head.rotation.y, playerPos);
+    // console.log("rot : ", newRotY)
+    this.zombie_bodies.forEach(subMesh => { subMesh.rotation.y = newRotY; });
+    // this.zombie_bodies.forEach(subMesh => { this.smoothRotateTo(subMesh, newRotY); });
+    this.setWalk();
+  }
+
+  _rotAnimHandle = null;
+
+  smoothRotateTo(subMesh, targetY, durationMs = 900) {
+    if(this._rotAnimHandle) cancelAnimationFrame(this._rotAnimHandle);
+    const startY = subMesh.rotation.y;
+    let diff = ((targetY - startY + 540) % 360) - 180;
+    const startTime = performance.now();
+
+    const step = (now) => {
+      const t = Math.min(1, (now - startTime) / durationMs);
+      subMesh.rotation.y = (startY + diff * t + 360) % 360;
+       console.log("subMesh.rotation.y : ", subMesh.rotation.y)
+      if(t < 1) {
+        this._rotAnimHandle = requestAnimationFrame(step);
+      } else {
+        this._rotAnimHandle = null;
+      }
+    };
+    this._rotAnimHandle = requestAnimationFrame(step);
+  }
+
   attachEvents() {
-       console.log('animationEnd init')
-    addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e) => {
-      if(e.detail.animationName === 'attack') {
-        console.log('animationEnd BLOCK1')
-        return;
-      }
-      console.info('animationEnd :', e.detail)
-      if(this.group == "friendly") {
-        if(this.creepFocusAttackOn == null) {
-          // let tt = this.core.RPG.distance3D()
-        }
-      }
 
+    app.autoUpdate.push({
+      update: () => {
+        this.navigateStep();
+      }
     })
-
+    console.log('animationEnd init')
+    addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e) => {
+      console.info('animationEnd :', e.detail)
+      // this.navigateStep();
+    })
   }
 }

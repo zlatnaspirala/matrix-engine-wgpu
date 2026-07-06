@@ -2,7 +2,7 @@ import {mat4} from "wgpu-matrix";
 import {hpBarEffectShaders} from "../../shaders/energy-bars/energy-bar-shader.js";
 
 export class HPBarEffect {
-  constructor(device, format, cameraBuffer) {
+  constructor(device, format, cameraBuffer, barWidth = 20, barHeight = 1.5) {
     this.device = device;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
@@ -16,27 +16,23 @@ export class HPBarEffect {
     this._colorScratch = new Float32Array(4);
     this._progressScratch = new Float32Array(1);
     this._translateVec = new Float32Array(3);
-    this._initPipeline();
+    this._initPipeline(barWidth, barHeight);
   }
 
-  _initPipeline() {
-    const W = 20; // 0.5 * 40
-    const H = 1.5; // 0.5 * 3
-    // Use typed array directly instead of creating intermediate arrays
+  _initPipeline(barWidth, barHeight) {
+    const W = barWidth;
+    const H = barHeight;
     const vertexData = new Float32Array([
       -W, H, 0.0,
       W, H, 0.0,
       -W, -H, 0.0,
       W, -H, 0.0,
     ]);
-
     // Static UV data - could be shared across instances
     const uvData = new Float32Array([
       0, 1, 1, 1, 0, 0, 1, 0
     ]);
-
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-
     // Buffers with optimized sizing
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
@@ -45,7 +41,6 @@ export class HPBarEffect {
     });
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
-
     this.uvBuffer = this.device.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -53,7 +48,6 @@ export class HPBarEffect {
     });
     new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
     this.uvBuffer.unmap();
-
     // Index buffer with exact size (already multiple of 4)
     this.indexBuffer = this.device.createBuffer({
       size: 12, // 6 indices * 2 bytes (Uint16)
@@ -63,13 +57,11 @@ export class HPBarEffect {
     new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
     this.indexBuffer.unmap();
     this.indexCount = 6;
-
     // model (64) + color (16) + progress (4) = 84, padded to 96
     this.modelBuffer = this.device.createBuffer({
       size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
     const bindGroupLayout = this.device.createBindGroupLayout({
       label: 'energy-bar bindGroupLayout',
       entries: [
@@ -105,11 +97,7 @@ export class HPBarEffect {
       fragment: {
         module: shaderModule,
         entryPoint: 'fsMain',
-        targets: [
-          {format: 'rgba16float'},
-          {format: 'rgba16float'},
-          {format: 'rgba16float'}
-        ]
+        targets: [{format: 'rgba16float'}, {format: 'rgba16float'}, {format: 'rgba16float'}]
       },
       primitive: {topology: 'triangle-list'},
       depthStencil: {depthWriteEnabled: false, depthCompare: 'always', format: 'depth24plus'}
@@ -126,7 +114,6 @@ export class HPBarEffect {
   }
 
   setColor(r, g, b, a = 1.0) {
-    // Check if color actually changed before marking dirty
     if(this.color[0] !== r || this.color[1] !== g || this.color[2] !== b || this.color[3] !== a) {
       this.color[0] = r;
       this.color[1] = g;
@@ -137,11 +124,8 @@ export class HPBarEffect {
   }
 
   draw(pass, cameraMatrix, modelMatrix) {
-    // Only update camera if needed (caller should track this)
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-
-    // Only write color if it changed
     if(this._colorDirty) {
       this._colorScratch[0] = this.color[0];
       this._colorScratch[1] = this.color[1];
@@ -150,14 +134,11 @@ export class HPBarEffect {
       this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
       this._colorDirty = false;
     }
-
-    // Only write progress if it changed
     if(this._progressDirty) {
       this._progressScratch[0] = this.progress;
       this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
       this._progressDirty = false;
     }
-
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);

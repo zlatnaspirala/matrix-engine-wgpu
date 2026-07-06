@@ -1,6 +1,7 @@
 
-# Next project
+From Hang3d series, game done in The-Beast.
 
-Hang3d on MEWGPU
+Nikola Lukic 2026
+zlatnaspirala@gmail.com
 
-
+MIT Licence

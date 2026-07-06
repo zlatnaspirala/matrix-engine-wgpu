@@ -4647,6 +4647,13 @@ var CameraPath = class _CameraPath {
     return 1;
   }
 };
+function distance3D(a2, b2) {
+  if (!b2) return 1e3;
+  const dx = a2.x - b2.x;
+  const dy = a2.y - b2.y;
+  const dz = a2.z - b2.z;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
 
 // src/me-config.js
 window.urlQ = urlQuery;
@@ -25219,7 +25226,7 @@ fn fsMain(in : VertexOutput) -> FragOut {
 
 // src/engine/effects/energy-bar.js
 var HPBarEffect = class {
-  constructor(device2, format, cameraBuffer) {
+  constructor(device2, format, cameraBuffer, barWidth = 20, barHeight = 1.5) {
     this.device = device2;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
@@ -25233,11 +25240,11 @@ var HPBarEffect = class {
     this._colorScratch = new Float32Array(4);
     this._progressScratch = new Float32Array(1);
     this._translateVec = new Float32Array(3);
-    this._initPipeline();
+    this._initPipeline(barWidth, barHeight);
   }
-  _initPipeline() {
-    const W2 = 20;
-    const H2 = 1.5;
+  _initPipeline(barWidth, barHeight) {
+    const W2 = barWidth;
+    const H2 = barHeight;
     const vertexData = new Float32Array([
       -W2,
       H2,
@@ -25321,11 +25328,7 @@ var HPBarEffect = class {
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [
-          { format: "rgba16float" },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
+        targets: [{ format: "rgba16float" }, { format: "rgba16float" }, { format: "rgba16float" }]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
@@ -27397,10 +27400,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         if (this.animationIndex == null) {
           this.animationIndex = 0;
         }
-        window.dispatchEvent(
-          this.glbAnimEvents["animEndEvent" + capturedIndex]
-        );
-      }, inTime * 1200);
+        window.dispatchEvent(this.glbAnimEvents["animEndEvent" + capturedIndex]);
+      }, inTime * 1e3);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if (this.sharedBones === true) {
@@ -55063,6 +55064,13 @@ var mapParams = {
 };
 
 // examples/games/first-person-shooter/zombie.js
+var DEG2RAD = Math.PI / 180;
+var RAD2DEG = 180 / Math.PI;
+function vecOf(p2) {
+  if (p2 == null) return null;
+  if (p2.x !== void 0) return p2;
+  return { x: p2[0], y: p2[1], z: p2[2] };
+}
 var Zombi = class {
   zombieAnims = {
     dead: null,
@@ -55071,8 +55079,24 @@ var Zombi = class {
     attack: null,
     idle: null
   };
-  creepHPReset = 300;
+  creepHPReset = 10;
   creepFocusAttackOn = null;
+  zombieSpeedWalk = 1e-3;
+  // --- combat / hp state ---
+  hp = this.creepHPReset;
+  isDead = false;
+  attackDamage = 8;
+  attackCooldownTicks = 0;
+  _attackCooldownLeft = 0;
+  aiConfig = {
+    detectRangeFront: 25,
+    detectRangeBack: 10,
+    attackRange: 2.6,
+    rotationStepDeg: 35,
+    stepDistance: 0.2
+  };
+  aiState = "attack";
+  // idle | chase | attack | dead
   constructor(o3, archetypes = ["zombie"], group = "enemy", team) {
     this.name = o3.name;
     this.core = o3.core;
@@ -55117,7 +55141,7 @@ var Zombi = class {
         }
         let bPos;
         this.zombie_bodies.forEach((subMesh, idx) => {
-          subMesh.position.thrust = 0.01;
+          subMesh.position.thrust = this.zombieSpeedWalk;
           subMesh.animationIndex = 0;
           subMesh.glb.glbJsonData.animations.forEach((a2, index) => {
             console.info(`%c Animation loading for creeps: ${a2.name} index ${index}`, LOG_MATRIX);
@@ -55138,7 +55162,7 @@ var Zombi = class {
               this.group,
               {
                 x: subMesh.scale[0] / 3.5,
-                y: subMesh.scale[1] * 2,
+                y: subMesh.scale[1] * 3,
                 z: subMesh.scale[2] / 3.5
               }
             );
@@ -55155,31 +55179,26 @@ var Zombi = class {
   setWalk() {
     this.zombie_bodies.forEach((subMesh) => {
       subMesh.playAnimationByIndex(this.zombieAnims.walk);
-      console.info(`%chero walk`, LOG_MATRIX);
     });
   }
   setSalute() {
     this.zombie_bodies.forEach((subMesh) => {
       subMesh.playAnimationByIndex(this.zombieAnims.salute);
-      console.info(`%chero salute`, LOG_MATRIX);
     });
   }
   setDead() {
     this.zombie_bodies.forEach((subMesh) => {
       subMesh.playAnimationByIndex(this.zombieAnims.dead);
-      console.info(`%chero dead`, LOG_MATRIX);
     });
   }
   setIdle() {
     this.zombie_bodies.forEach((subMesh) => {
       subMesh.playAnimationByIndex(this.zombieAnims.idle);
-      console.info(`%chero idle`, LOG_MATRIX);
     });
   }
   setAttack() {
     this.zombie_bodies.forEach((subMesh) => {
       subMesh.playAnimationByIndex(this.zombieAnims.attack);
-      console.info(`%chero attack`, LOG_MATRIX);
     });
   }
   setStartUpPosCreep() {
@@ -55191,19 +55210,177 @@ var Zombi = class {
       );
     });
   }
-  attachEvents() {
-    console.log("animationEnd init");
-    addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e2) => {
-      if (e2.detail.animationName === "attack") {
-        console.log("animationEnd BLOCK1");
-        return;
+  updateEnergyBar() {
+    const head = this.zombie_bodies[0];
+    if (head?.effects?.energyBar) {
+      head.effects.energyBar.setProgress(this.hp / this.creepHPReset);
+    }
+  }
+  takeDamage(amount) {
+    if (this.isDead) return;
+    this.hp = Math.max(0, this.hp - amount);
+    this.updateEnergyBar();
+    if (this.hp <= 0) this.die();
+  }
+  die() {
+    this.isDead = true;
+    this.aiState = "dead";
+    this.setDead();
+    this.core.collisionSystem.unregister?.(this.name);
+  }
+  getPlayerPosition() {
+    const cam2 = app.getCamera();
+    return cam2 ? vecOf(cam2.position) : null;
+  }
+  isPlayerInFront(zombiePos, rotYDeg, playerPos) {
+    const zp = vecOf(zombiePos);
+    const rad = (rotYDeg || 0) * DEG2RAD;
+    const fx = Math.sin(rad);
+    const fz = Math.cos(rad);
+    const dx = playerPos.x - zp.x;
+    const dz = playerPos.z - zp.z;
+    const len2 = Math.sqrt(dx * dx + dz * dz) || 1;
+    return dx / len2 * fx + dz / len2 * fz > 0;
+  }
+  rotateStep(current, target, maxStepDeg) {
+    let diff = (target - current + 540) % 360 - 180;
+    const clamped = Math.max(-maxStepDeg, Math.min(maxStepDeg, diff));
+    return (current + clamped + 360) % 360;
+  }
+  moveTowardPlayer(zombiePos, rotYDeg, playerPos) {
+    const zp = vecOf(zombiePos);
+    const dx = playerPos.x - zp.x;
+    const dz = playerPos.z - zp.z;
+    const dist2 = Math.sqrt(dx * dx + dz * dz);
+    if (dist2 < 1e-4) return rotYDeg;
+    const nx = dx / dist2;
+    const nz = dz / dist2;
+    const targetAngleY = (Math.atan2(nx, nz) * RAD2DEG + 360) % 360;
+    const newRotY = this.rotateStep(rotYDeg || 0, targetAngleY, this.aiConfig.rotationStepDeg);
+    if (dist2 > this.aiConfig.attackRange) {
+      zombiePos.translateByXYZ(zp.x + nx, zp.y, zp.z + nz);
+    }
+    return newRotY;
+  }
+  // called once per animationEnd tick while in attack range
+  resolveAttack() {
+    if (this._attackCooldownLeft > 0) {
+      this._attackCooldownLeft--;
+      return;
+    }
+    this._attackCooldownLeft = this.attackCooldownTicks;
+    app.player.takeDamage(this.attackDamage);
+    app.energy.setValue(app.player.energy);
+  }
+  navigateStep() {
+    if (this.isDead) return;
+    const head = this.zombie_bodies[0];
+    const playerPos = this.getPlayerPosition();
+    if (!playerPos) return;
+    const zp = vecOf(head.position);
+    const dist2 = distance3D(zp, playerPos);
+    const inFront = this.isPlayerInFront(head.position, head.rotation.y, playerPos);
+    const detectRange = inFront ? this.aiConfig.detectRangeFront : this.aiConfig.detectRangeBack;
+    if (dist2 > detectRange) {
+      if (this.aiState !== "idle") {
+        this.aiState = "idle";
+        this.setIdle();
       }
-      console.info("animationEnd :", e2.detail);
-      if (this.group == "friendly") {
-        if (this.creepFocusAttackOn == null) {
-        }
+      return;
+    }
+    if (dist2 <= this.aiConfig.attackRange) {
+      if (this.aiState !== "attack") {
+        this.aiState = "attack";
+        this.setAttack();
+      }
+      this.resolveAttack();
+      return;
+    }
+    this.aiState = "chase";
+    const newRotY = this.moveTowardPlayer(head.position, head.rotation.y, playerPos);
+    this.zombie_bodies.forEach((subMesh) => {
+      subMesh.rotation.y = newRotY;
+    });
+    this.setWalk();
+  }
+  _rotAnimHandle = null;
+  smoothRotateTo(subMesh, targetY, durationMs = 900) {
+    if (this._rotAnimHandle) cancelAnimationFrame(this._rotAnimHandle);
+    const startY = subMesh.rotation.y;
+    let diff = (targetY - startY + 540) % 360 - 180;
+    const startTime = performance.now();
+    const step = (now) => {
+      const t3 = Math.min(1, (now - startTime) / durationMs);
+      subMesh.rotation.y = (startY + diff * t3 + 360) % 360;
+      console.log("subMesh.rotation.y : ", subMesh.rotation.y);
+      if (t3 < 1) {
+        this._rotAnimHandle = requestAnimationFrame(step);
+      } else {
+        this._rotAnimHandle = null;
+      }
+    };
+    this._rotAnimHandle = requestAnimationFrame(step);
+  }
+  attachEvents() {
+    app.autoUpdate.push({
+      update: () => {
+        this.navigateStep();
       }
     });
+    console.log("animationEnd init");
+    addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e2) => {
+      console.info("animationEnd :", e2.detail);
+    });
+  }
+};
+
+// src/engine/plugin/player-object/player.js
+var Player = class {
+  constructor(o3 = {}) {
+    this.name = o3.name || "local_player";
+    this.typeOfController = o3.typeOfController || "fps";
+    this.maxEnergy = o3.maxEnergy ?? 100;
+    this.energy = o3.energy ?? this.maxEnergy;
+    this.lives = o3.lives ?? 1;
+    this.ammo = o3.ammo ?? 0;
+    this.kills = o3.kills ?? 0;
+    this.isDead = false;
+    this.onEnergyChange = o3.onEnergyChange || null;
+  }
+  setEnergy(value2) {
+    this.energy = Math.max(0, Math.min(this.maxEnergy, value2));
+    this.onEnergyChange?.(this.energy);
+    if (this.energy <= 0) this.die();
+  }
+  takeDamage(amount) {
+    if (this.isDead) return;
+    this.setEnergy(this.energy - amount);
+  }
+  heal(amount) {
+    if (this.isDead) return;
+    this.setEnergy(this.energy + amount);
+  }
+  die() {
+    if (this.isDead) return;
+    this.isDead = true;
+    this.lives = Math.max(0, this.lives - 1);
+  }
+  respawn(fullEnergy = true) {
+    if (this.lives <= 0) return false;
+    this.isDead = false;
+    if (fullEnergy) this.setEnergy(this.maxEnergy);
+    return true;
+  }
+  addKill(n3 = 1) {
+    this.kills += n3;
+  }
+  useAmmo(n3 = 1) {
+    if (this.ammo < n3) return false;
+    this.ammo -= n3;
+    return true;
+  }
+  addAmmo(n3) {
+    this.ammo += n3;
   }
 };
 
@@ -55231,6 +55408,7 @@ var loadHang3d = function() {
     addRaycastsAABBListener();
     app2.activateHZB();
     app2.activateBloomEffect();
+    app2.matrixSounds.createAudio("music", "res/audios/audionautix-black-fly.mp3", 1);
     app2.UI = new hang3dUI();
     MobileDOM.addButton("T", () => {
     }, void 0, {
@@ -55242,6 +55420,11 @@ var loadHang3d = function() {
     });
     app2.energy = MobileDOM.addProgressBar({ size: innerWidth / 3, bottom: 95, left: 33, color: "#00bcd4" });
     app2.energy.setValue(100);
+    app2.player = new Player({
+      name: "Samanta",
+      typeOfController: "fps",
+      onEnergyChange: (val) => app2.energy.setValue(val)
+    });
     const cam2 = app2.getCamera();
     let preventFire = false;
     if (isMobile() === true) {
@@ -55280,13 +55463,8 @@ var loadHang3d = function() {
         bottom: 20,
         size: innerHeight / 10
       });
-      MobileDOM.addButton("UP", () => {
-        if (app2.collisionSystem?._onGround) {
-          app2.collisionSystem._gravityAcc = 0.22;
-          app2.collisionSystem._onGround = false;
-          this._dirty = true;
-          this._dirtyAngle = true;
-        }
+      MobileDOM.addButton("FIRE", () => {
+        app2.projectileSystem.fireProjectile();
       }, void 0, {
         width: "30px",
         height: "30px",
@@ -55295,6 +55473,14 @@ var loadHang3d = function() {
         left: 10,
         bottom: 20,
         size: innerHeight / 10
+      }, () => {
+        if (preventFire === false) {
+          preventFire = true;
+          app2.projectileSystem.fireProjectile();
+          setTimeout(() => {
+            preventFire = false;
+          }, 210);
+        }
       });
     }
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/blender/sphepe-mob.obj" }, async (m2) => {
@@ -55362,10 +55548,11 @@ var loadHang3d = function() {
         core: app2,
         name: "zombi-cap",
         archetypes: ["zombie"],
-        position: { x: 0, y: 0, z: -10 },
+        position: { x: 0, y: 0.2, z: -10 },
         data: glbFile01
       };
       app2.zombies = [new Zombi(options2)];
+      app2.matrixSounds.play("music");
       const light = app2.lightContainer[0];
       light.setPosition(0, 60, 0);
       light.setIntensity(20);

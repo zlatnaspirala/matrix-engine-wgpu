@@ -9,6 +9,8 @@
  - Added First person shooter example (hang3d series - the-beast-hang3d)
  - Base Position class changes, added `translateByXYZ`
  - Micro optimisation : define CulledRenderPass only if culling activated from begin.
+ - Adding MatrixTTS to export/import npm services
+ - Make npm services sync with 1.16.2
 
 [1.15.xx]
  - Added `npm install @google/generative-ai` like new ai tool provider.

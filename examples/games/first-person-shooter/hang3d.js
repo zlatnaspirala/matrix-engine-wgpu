@@ -9,6 +9,7 @@ import {MobileDOM} from '../../../src/engine/cameras.js';
 import {hang3dUI} from './options.js';
 import {Zombi} from './zombie.js';
 import {uploadGLBModel} from '../../../src/engine/loaders/webgpu-gltf.js';
+import {Player} from '../../../src/engine/plugin/player-object/player.js';
 
 export var loadHang3d = function() {
   let app = new MatrixEngineWGPU({
@@ -34,6 +35,8 @@ export var loadHang3d = function() {
     app.activateHZB();
     app.activateBloomEffect();
 
+    app.matrixSounds.createAudio('music', 'res/audios/audionautix-black-fly.mp3', 1);
+
     app.UI = new hang3dUI();
 
     MobileDOM.addButton("T", () => {}, undefined, {
@@ -46,6 +49,12 @@ export var loadHang3d = function() {
 
     app.energy = MobileDOM.addProgressBar({size: innerWidth / 3, bottom: 95, left: 33, color: '#00bcd4'});
     app.energy.setValue(100);
+
+    app.player = new Player({
+      name: 'Samanta',
+      typeOfController: 'fps',
+      onEnergyChange: (val) => app.energy.setValue(val)
+    });
 
     const cam = app.getCamera();
     let preventFire = false;
@@ -87,13 +96,8 @@ export var loadHang3d = function() {
         size: innerHeight / 10
       })
 
-      MobileDOM.addButton("UP", () => {
-        if(app.collisionSystem?._onGround) {
-          app.collisionSystem._gravityAcc = 0.22;
-          app.collisionSystem._onGround = false;
-          this._dirty = true;
-          this._dirtyAngle = true;
-        }
+      MobileDOM.addButton("FIRE", () => {
+        app.projectileSystem.fireProjectile();
       }, undefined, {
         width: '30px',
         height: '30px',
@@ -102,6 +106,12 @@ export var loadHang3d = function() {
         left: 10,
         bottom: 20,
         size: innerHeight / 10
+      }, () => {
+        if(preventFire === false) {
+          preventFire = true;
+          app.projectileSystem.fireProjectile();
+          setTimeout(() => {preventFire = false;}, 210)
+        }
       })
     }
 
@@ -189,10 +199,12 @@ export var loadHang3d = function() {
         core: app,
         name: 'zombi-cap',
         archetypes: ["zombie"],
-        position: {x: 0, y: 0, z: -10},
+        position: {x: 0, y: 0.2, z: -10},
         data: glbFile01
       }
       app.zombies = [new Zombi(options)];
+
+      app.matrixSounds.play('music');
 
       const light = app.lightContainer[0];
       light.setPosition(0, 60, 0);

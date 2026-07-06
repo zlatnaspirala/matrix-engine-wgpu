@@ -33,6 +33,7 @@ import {MatrixStream} from "./src/engine/networking/net.js";
 import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "./src/engine/effects/splat.js";
 import {initializeSpritesForMesh, SpritesPack2D} from "./src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "./src/engine/procedures/InstancedKinematicOperations.js";
+import {MatrixTTS} from "./examples/games/moba/tts.js";
 
 const about = () => {
   console.info("npm i matrix-engine-wgpu ver 1.16.2 is ready.")
@@ -55,6 +56,7 @@ const about = () => {
   console.info(" - KaleidoscopeEffect, GenGeoTexture2 are effect class see examples with instancing in direct way (not all effects supported in arg pointerEffect {}).")
   console.info(" - GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator (see examples).")
   console.info(" - InstancedKinematicOperations, initializeSpritesForMesh, SpritesPack2D (see examples).")
+  console.info(" - MatrixTTS for speach real time no sources files(see moba game example).")
   console.info(" - NEXT FEATURES : Run Editor & Visual Scripting Editor from npm package.")
   console.info("--------------------------------------------")
 }
@@ -98,6 +100,7 @@ export {
   MeshMorpher,
   GenGeoTexture2,
   MatrixStream,
+  MatrixTTS,
   MobileDOM,
   geoTypesForMorph,
   about
