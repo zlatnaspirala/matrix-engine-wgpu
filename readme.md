@@ -1295,6 +1295,9 @@ You may use, modify, and sell projects based on this code — just keep this not
 
   Skeletal system by: Aidan Sanderson - from blender addson blenderKit.
 
+  Title: Zombies Sound Pack - Author: artisticdude Source URL: https://opengameart.org/content/zombies-sound-pack
+  License: CC0 1.0 Universal (Public Domain Dedication)
+
 ---
 
 ### BSD 3-Clause License (from WebGPU Samples)

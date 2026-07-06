@@ -1859,8 +1859,11 @@ export const MobileDOM = {
     const left = options.left ?? 0;
     const opacity = options.opacity ?? 0.35;
     const image = options.image ?? null;
-
+    const setID = options.id ?? null;
     const btn = document.createElement('div');
+    if(setID !== null) {
+      btn.id = setID;
+    }
     Object.assign(btn.style, {
       position: 'fixed',
       bottom: `${bottom}%`,

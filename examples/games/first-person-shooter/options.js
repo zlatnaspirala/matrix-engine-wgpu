@@ -228,17 +228,21 @@ export class hang3dUI {
       }
     });
     byId('settingsLight').addEventListener('change', (e) => {
-      // if(e.target.checked == true) {
-      //   app.makeMyLightMoveByY();
-      // } else {
-      //   app.disableMyLightMoveByY();
-      // }
+      if(e.target.checked == true) {
+        const light = app.lightContainer[0];
+        light.setPosition(0, 60, 0);
+        light.setIntensity(2);
+      } else {
+        const light = app.lightContainer[0];
+        light.setPosition(0, 60, 0);
+        light.setIntensity(20);
+      }
     });
     setupCanvasFilters();
 
     settings.addEventListener('click', () => {
-      if (messageBox.style.display === 'none') {
-      messageBox.style.display = 'block';
+      if(messageBox.style.display === 'none') {
+        messageBox.style.display = 'block';
       } else {
         messageBox.style.display = 'none';
       }

@@ -36,6 +36,7 @@ export var loadHang3d = function() {
     app.activateBloomEffect();
 
     app.matrixSounds.createAudio('music', 'res/audios/audionautix-black-fly.mp3', 1);
+    app.matrixSounds.audios.music.loop = true;
 
     app.UI = new hang3dUI();
 
@@ -49,6 +50,15 @@ export var loadHang3d = function() {
 
     app.energy = MobileDOM.addProgressBar({size: innerWidth / 3, bottom: 95, left: 33, color: '#00bcd4'});
     app.energy.setValue(100);
+
+    MobileDOM.addButton("status", () => {}, undefined, {
+      id: 'player-status',
+      image: "./res/textures/shooter/s.webp",
+      left: isMobile() === true ? 10 : 15,
+      bottom: isMobile() === true ? 90 : 85,
+      color: 'black',
+      size: innerHeight / 10
+    })
 
     app.player = new Player({
       name: 'Samanta',
@@ -195,14 +205,24 @@ export var loadHang3d = function() {
 
       var glbFile01 = await fetch('./res/meshes/glb/zombie-cap.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
 
-      let options = {
+      const options = {
         core: app,
         name: 'zombi-cap',
         archetypes: ["zombie"],
         position: {x: 0, y: 0.2, z: -10},
         data: glbFile01
       }
-      app.zombies = [new Zombi(options)];
+
+      const options1 = {
+        core: app,
+        name: 'zombi-cap-red',
+        archetypes: ["zombie"],
+        // -8.35 ,1.1, 0.2
+        position: {x: -8.35, y: 0.2, z: -10},
+        data: glbFile01
+      }
+
+      app.zombies = [new Zombi(options),  new Zombi(options1)];
 
       app.matrixSounds.play('music');
 
@@ -218,8 +238,11 @@ export var loadHang3d = function() {
           projectileSpeed: 0.5,
           projectileScale: 0.075,
           onHitscanHit: (hitPoint, normal, reflect, entry) => {
-            console.log('ray hit', entry.id);
-
+            console.log('app.getCamera().position[0] ', app.getCamera().position[0]);
+            console.log('app.getCamera().position[0] ', app.getCamera().position[1]);
+            let t = app.zombies.filter((z) => z.name === entry.id)[0]
+            if (t) t.takeDamage();
+            console.log('ray hit', t);
           },
           onProjectileHit: (hitPoint, normal, entry) => {
             console.log('rocket hit', entry.id);

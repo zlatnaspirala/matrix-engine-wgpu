@@ -45,7 +45,7 @@ export class Player {
   }
 
   respawn(fullEnergy = true) {
-    if(this.lives <= 0) return false; // no lives left, caller decides game-over
+    if(this.lives <= 0) return false;
     this.isDead = false;
     if(fullEnergy) this.setEnergy(this.maxEnergy);
     return true;

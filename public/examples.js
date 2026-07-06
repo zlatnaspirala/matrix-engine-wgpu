@@ -8144,7 +8144,11 @@ var MobileDOM = {
     const left2 = options2.left ?? 0;
     const opacity = options2.opacity ?? 0.35;
     const image = options2.image ?? null;
+    const setID = options2.id ?? null;
     const btn = document.createElement("div");
+    if (setID !== null) {
+      btn.id = setID;
+    }
     Object.assign(btn.style, {
       position: "fixed",
       bottom: `${bottom}%`,
@@ -18208,6 +18212,10 @@ var MatrixSounds = class {
   }
   unmuteAll() {
     this.enabled = true;
+    Object.values(this.audios).forEach((audio) => {
+      audio.pause();
+      if (audio.loop) audio.play();
+    });
   }
   createClones(c2, name2, path2) {
     for (let x3 = 1; x3 < c2; x3++) {
@@ -55039,6 +55047,15 @@ var hang3dUI = class {
       }
     });
     byId2("settingsLight").addEventListener("change", (e2) => {
+      if (e2.target.checked == true) {
+        const light = app.lightContainer[0];
+        light.setPosition(0, 60, 0);
+        light.setIntensity(2);
+      } else {
+        const light = app.lightContainer[0];
+        light.setPosition(0, 60, 0);
+        light.setIntensity(20);
+      }
     });
     setupCanvasFilters();
     settings.addEventListener("click", () => {
@@ -55057,8 +55074,10 @@ var hang3dUI = class {
 var mapParams = {
   zombie: {
     startUpPositions: {
-      south: [-20, 1, 20],
-      north: [20, 1, -20]
+      south: [-20, 0.2, 20],
+      p1: [-8.35, 0.2, 4.56],
+      p2: [-8.35, 0.2, 4.56],
+      north: [20, 0.2, -20]
     }
   }
 };
@@ -55085,8 +55104,9 @@ var Zombi = class {
   // --- combat / hp state ---
   hp = this.creepHPReset;
   isDead = false;
-  attackDamage = 8;
-  attackCooldownTicks = 0;
+  attackDamage = 5;
+  exposeDamage = false;
+  attackCooldownTicks = 100;
   _attackCooldownLeft = 0;
   aiConfig = {
     detectRangeFront: 25,
@@ -55162,7 +55182,7 @@ var Zombi = class {
               this.group,
               {
                 x: subMesh.scale[0] / 3.5,
-                y: subMesh.scale[1] * 3,
+                y: subMesh.scale[1] * 2.3,
                 z: subMesh.scale[2] / 3.5
               }
             );
@@ -55210,13 +55230,23 @@ var Zombi = class {
       );
     });
   }
+  spawnPosZombie(id2 = 1) {
+    this.zombie_bodies.forEach((subMesh, idx) => {
+      subMesh.position.setPosition(
+        mapParams.zombie.startUpPositions["p" + id2][0],
+        mapParams.zombie.startUpPositions["p" + id2][1],
+        mapParams.zombie.startUpPositions["p" + id2][2]
+      );
+    });
+    setTimeout(() => this.isDead = false, 2e3);
+  }
   updateEnergyBar() {
     const head = this.zombie_bodies[0];
     if (head?.effects?.energyBar) {
       head.effects.energyBar.setProgress(this.hp / this.creepHPReset);
     }
   }
-  takeDamage(amount) {
+  takeDamage(amount = 0.2) {
     if (this.isDead) return;
     this.hp = Math.max(0, this.hp - amount);
     this.updateEnergyBar();
@@ -55269,8 +55299,7 @@ var Zombi = class {
       return;
     }
     this._attackCooldownLeft = this.attackCooldownTicks;
-    app.player.takeDamage(this.attackDamage);
-    app.energy.setValue(app.player.energy);
+    this.exposeDamage = true;
   }
   navigateStep() {
     if (this.isDead) return;
@@ -55329,7 +55358,15 @@ var Zombi = class {
     });
     console.log("animationEnd init");
     addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e2) => {
-      console.info("animationEnd :", e2.detail);
+      if (e2.detail.animationName === "dead") {
+        this.spawnPosZombie(1);
+        this.setIdle();
+        return;
+      }
+      if (this.exposeDamage === true) {
+        app.player.takeDamage(this.attackDamage);
+        app.energy.setValue(app.player.energy);
+      }
     });
   }
 };
@@ -55409,6 +55446,7 @@ var loadHang3d = function() {
     app2.activateHZB();
     app2.activateBloomEffect();
     app2.matrixSounds.createAudio("music", "res/audios/audionautix-black-fly.mp3", 1);
+    app2.matrixSounds.audios.music.loop = true;
     app2.UI = new hang3dUI();
     MobileDOM.addButton("T", () => {
     }, void 0, {
@@ -55420,6 +55458,15 @@ var loadHang3d = function() {
     });
     app2.energy = MobileDOM.addProgressBar({ size: innerWidth / 3, bottom: 95, left: 33, color: "#00bcd4" });
     app2.energy.setValue(100);
+    MobileDOM.addButton("status", () => {
+    }, void 0, {
+      id: "player-status",
+      image: "./res/textures/shooter/s.webp",
+      left: isMobile() === true ? 10 : 15,
+      bottom: isMobile() === true ? 90 : 85,
+      color: "black",
+      size: innerHeight / 10
+    });
     app2.player = new Player({
       name: "Samanta",
       typeOfController: "fps",
@@ -55544,14 +55591,22 @@ var loadHang3d = function() {
         roofLevels: true
       });
       var glbFile01 = await fetch("./res/meshes/glb/zombie-cap.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
-      let options2 = {
+      const options2 = {
         core: app2,
         name: "zombi-cap",
         archetypes: ["zombie"],
         position: { x: 0, y: 0.2, z: -10 },
         data: glbFile01
       };
-      app2.zombies = [new Zombi(options2)];
+      const options1 = {
+        core: app2,
+        name: "zombi-cap-red",
+        archetypes: ["zombie"],
+        // -8.35 ,1.1, 0.2
+        position: { x: -8.35, y: 0.2, z: -10 },
+        data: glbFile01
+      };
+      app2.zombies = [new Zombi(options2), new Zombi(options1)];
       app2.matrixSounds.play("music");
       const light = app2.lightContainer[0];
       light.setPosition(0, 60, 0);
@@ -55567,7 +55622,11 @@ var loadHang3d = function() {
           projectileSpeed: 0.5,
           projectileScale: 0.075,
           onHitscanHit: (hitPoint, normal, reflect, entry) => {
-            console.log("ray hit", entry.id);
+            console.log("app.getCamera().position[0] ", app2.getCamera().position[0]);
+            console.log("app.getCamera().position[0] ", app2.getCamera().position[1]);
+            let t3 = app2.zombies.filter((z2) => z2.name === entry.id)[0];
+            if (t3) t3.takeDamage();
+            console.log("ray hit", t3);
           },
           onProjectileHit: (hitPoint, normal, entry) => {
             console.log("rocket hit", entry.id);
