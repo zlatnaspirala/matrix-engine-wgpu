@@ -100,15 +100,15 @@ export class Zombi {
           if(idx == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             bPos = subMesh.position;
-            this.core.collisionSystem.registerStatic((o.name), subMesh.position, 0.7, this.group,
+            this.core.collisionSystem.registerStatic(o.name, subMesh.position, 0.7, this.group,
               {
                 x: subMesh.scale[0] / 3.5,
                 y: subMesh.scale[1] * 2.3,
                 z: subMesh.scale[2] / 3.5
               });
           } else {
-            this.core.collisionSystem.registerStatic((o.name), subMesh.position, 0.7, 'zombi_head');
             subMesh.position = bPos;
+            this.core.collisionSystem.registerStatic(o.name, subMesh.position, 0.7, 'zombi_head');
           }
         });
         this.attachEvents();
@@ -163,7 +163,7 @@ export class Zombi {
         mapParams.zombie.startUpPositions['p' + id][1],
         mapParams.zombie.startUpPositions['p' + id][2]);
     });
-    setTimeout(() => this.isDead = false , 2000);
+    setTimeout(() => this.isDead = false, 2000);
   }
 
   updateEnergyBar() {
@@ -209,19 +209,38 @@ export class Zombi {
     return (current + clamped + 360) % 360;
   }
 
+  resolveStaticCollisionXZ(candidateX, candidateY, candidateZ, radius = 0.5) {
+    const cs = this.core.collisionSystem;
+    cs._getNeighborCells(candidateX, candidateY, candidateZ, cs._staticGrid, cs._staticNeighbors);
+    const fakePos = {x: candidateX, y: candidateY, z: candidateZ};
+    const neighbors = cs._staticNeighbors;
+    for(let i = 0;i < neighbors.length;i++) {
+      const entry = neighbors[i];
+      if(entry.group === 'floor') continue;
+      if(entry.id === this.name) continue;
+      cs.resolveVsStaticCube(fakePos, radius, entry);
+    }
+    return fakePos;
+  }
+
   moveTowardPlayer(zombiePos, rotYDeg, playerPos) {
     const zp = vecOf(zombiePos);
     const dx = playerPos.x - zp.x;
     const dz = playerPos.z - zp.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
     if(dist < 0.0001) return rotYDeg;
+
     const nx = dx / dist;
     const nz = dz / dist;
     const targetAngleY = (Math.atan2(nx, nz) * RAD2DEG + 360) % 360;
     const newRotY = this.rotateStep(rotYDeg || 0, targetAngleY, this.aiConfig.rotationStepDeg);
-    // this.aiConfig.stepDistance
-    if(dist > this.aiConfig.attackRange) {
-      zombiePos.translateByXYZ(zp.x + nx, zp.y, zp.z + nz);
+
+    const step = Math.min(this.aiConfig.stepDistance, Math.max(0, dist - this.aiConfig.attackRange));
+    if(step > 0) {
+      const rawX = zp.x + nx * step;
+      const rawZ = zp.z + nz * step;
+      const resolved = this.resolveStaticCollisionXZ(rawX, zp.y, rawZ, 0.5);
+      zombiePos.translateByXYZ(resolved.x, zp.y, resolved.z);
     }
     return newRotY;
   }

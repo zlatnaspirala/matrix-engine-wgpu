@@ -20,6 +20,16 @@ export class Player {
     // optional hook: called whenever energy changes, so HUD stays in sync
     // without Player needing to know about app.energy directly
     this.onEnergyChange = o.onEnergyChange || null;
+    this.attachEvents();
+  }
+
+  attachEvents() {
+    addEventListener('pickup-collected', (e) => {
+      console.log('pickup-collected', e.detail.entry)
+      const {type, amount} = e.detail.entry;
+      if(type === 'energy') app.player.heal(amount);
+      if(type === 'ammo') app.player.addAmmo(amount);
+    });
   }
 
   setEnergy(value) {
@@ -35,6 +45,8 @@ export class Player {
 
   heal(amount) {
     if(this.isDead) return;
+    console.log('heal ', amount)
+    console.log('heal ', this.energy)
     this.setEnergy(this.energy + amount);
   }
 
@@ -63,5 +75,15 @@ export class Player {
 
   addAmmo(n) {
     this.ammo += n;
+  }
+}
+
+export class CollectItem {
+  constructor({id, type = 'energy', amount = 10, position, radius = 0.6, core}) {
+    this.id = id;
+    this.type = type;   // 'energy' | 'ammo' | 'health' | extend freely
+    this.amount = amount;
+    this.core = core;
+    this.entry = core.collisionSystem.registerPickup(id, position, radius, type, amount);
   }
 }

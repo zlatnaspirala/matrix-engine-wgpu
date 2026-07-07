@@ -71,6 +71,9 @@ export class CollisionSystem {
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
+    this.pickupEntries = [];
+    this._pickupGrid = new Map();
+    this._pickupNeighbors = [];
     this._gravityAcc = 0;
     this._gravityForce = -0.015;
     this._terminalVelocity = -0.5;
@@ -226,11 +229,53 @@ export class CollisionSystem {
     return true;
   }
 
+  registerPickup(id, positionInstance, radius = 0.6, type = 'energy', amount = 10) {
+    const entry = {id, pos: positionInstance, radius, type, amount, collected: false};
+    this.pickupEntries.push(entry);
+    const key = this._cellKey(positionInstance.x, positionInstance.y ?? 0, positionInstance.z);
+    let cell = this._pickupGrid.get(key);
+    if(!cell) {cell = []; this._pickupGrid.set(key, cell);}
+    cell.push(entry);
+    return entry;
+  }
+
+  removePickup(entry) {
+    entry.collected = true; // mark first, cheap flag check before any array splice
+    const idx = this.pickupEntries.indexOf(entry);
+    if(idx !== -1) this.pickupEntries.splice(idx, 1);
+    const key = this._cellKey(entry.pos.x, entry.pos.y ?? 0, entry.pos.z);
+    const cell = this._pickupGrid.get(key);
+    if(cell) {
+      const ci = cell.indexOf(entry);
+      if(ci !== -1) cell.splice(ci, 1);
+    }
+    // delete visual
+    app.removeSceneObjectByName(entry.id);
+  }
+
+  // called from update(), right after applyGravity — cheap, grid-bounded, not O(n)
+  checkPickups(camPos, camRadius) {
+    this._getNeighborCells(camPos[0], camPos[1], camPos[2], this._pickupGrid, this._pickupNeighbors);
+    for(let i = 0;i < this._pickupNeighbors.length;i++) {
+      const entry = this._pickupNeighbors[i];
+      if(entry.collected) continue;
+      const dx = camPos[0] - entry.pos.x;
+      const dy = camPos[1] - entry.pos.y;
+      const dz = camPos[2] - entry.pos.z;
+      const rSum = camRadius + entry.radius;
+      if(dx * dx + dy * dy + dz * dz <= rSum * rSum) {
+        this.removePickup(entry);
+        dispatchEvent(new CustomEvent('pickup-collected', {detail: {entry: entry}}));
+      }
+    }
+  }
+
   update() {
     if(!this.cameraEntry) return;
     this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
     // XZ wall resolve — same neighbors, walls only, pass real entry
     const cam = this.cameraEntry;
+    this.checkPickups(cam.pos, cam.radius);
     this._getNeighborCells(cam.pos[0], cam.pos[1], cam.pos[2], this._staticGrid, this._staticNeighbors);
     for(let i = 0;i < this._staticNeighbors.length;i++) {
       const entry = this._staticNeighbors[i];
@@ -251,7 +296,7 @@ export class CollisionSystem {
       this._getNeighborCells(A.pos.x, A.pos.y, A.pos.z, this._grid, this._neighbors);
       for(let j = 0;j < this._neighbors.length;j++) {
         const B = this._neighbors[j];
-        if(A === B) continue;
+        // if(A === B) continue;
         const minDist = (A.radius + B.radius) * 0.5;
         if(A.group === B.group) {
           resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);

@@ -218,13 +218,31 @@ export class hang3dUI {
     settings.classList.add('btn');
     settings.innerHTML = `<span data-label="settings"></span>`;
     document.body.appendChild(settings);
-
-    byId('settingsAudios').click();
+    
+    if (localStorage.getItem('settingsAudios') === 'on') {
+      byId('settingsAudios').click();
+      byId('settingsAudios').value = 'on';
+      byId('settingsAudios').checked = true;
+      app.matrixSounds.play('music');
+    } else if (localStorage.getItem('settingsAudios') === 'off') { 
+      byId('settingsAudios').value = 'off';
+      byId('settingsAudios').checked = false;
+    } else {
+      byId('settingsAudios').click();
+      byId('settingsAudios').value = 'on';
+      byId('settingsAudios').checked = true;
+      app.matrixSounds.play('music');
+      localStorage.setItem('settingsAudios', 'on');
+    }
     byId('settingsAudios').addEventListener('change', (e) => {
+      console.log("byId('settingsAudios')", byId('settingsAudios'))
       if(e.target.checked == true) {
         app.matrixSounds.unmuteAll();
+        app.matrixSounds.play('music');
+        localStorage.setItem('settingsAudios', 'on');
       } else {
         app.matrixSounds.muteAll();
+        localStorage.setItem('settingsAudios', 'off');
       }
     });
     byId('settingsLight').addEventListener('change', (e) => {

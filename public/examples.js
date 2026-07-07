@@ -45707,6 +45707,9 @@ var CollisionSystem = class {
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
+    this.pickupEntries = [];
+    this._pickupGrid = /* @__PURE__ */ new Map();
+    this._pickupNeighbors = [];
     this._gravityAcc = 0;
     this._gravityForce = -0.015;
     this._terminalVelocity = -0.5;
@@ -45842,10 +45845,51 @@ var CollisionSystem = class {
     }
     return true;
   }
+  registerPickup(id2, positionInstance, radius = 0.6, type2 = "energy", amount = 10) {
+    const entry = { id: id2, pos: positionInstance, radius, type: type2, amount, collected: false };
+    this.pickupEntries.push(entry);
+    const key = this._cellKey(positionInstance.x, positionInstance.y ?? 0, positionInstance.z);
+    let cell = this._pickupGrid.get(key);
+    if (!cell) {
+      cell = [];
+      this._pickupGrid.set(key, cell);
+    }
+    cell.push(entry);
+    return entry;
+  }
+  removePickup(entry) {
+    entry.collected = true;
+    const idx = this.pickupEntries.indexOf(entry);
+    if (idx !== -1) this.pickupEntries.splice(idx, 1);
+    const key = this._cellKey(entry.pos.x, entry.pos.y ?? 0, entry.pos.z);
+    const cell = this._pickupGrid.get(key);
+    if (cell) {
+      const ci2 = cell.indexOf(entry);
+      if (ci2 !== -1) cell.splice(ci2, 1);
+    }
+    app.removeSceneObjectByName(entry.id);
+  }
+  // called from update(), right after applyGravity — cheap, grid-bounded, not O(n)
+  checkPickups(camPos, camRadius) {
+    this._getNeighborCells(camPos[0], camPos[1], camPos[2], this._pickupGrid, this._pickupNeighbors);
+    for (let i2 = 0; i2 < this._pickupNeighbors.length; i2++) {
+      const entry = this._pickupNeighbors[i2];
+      if (entry.collected) continue;
+      const dx = camPos[0] - entry.pos.x;
+      const dy = camPos[1] - entry.pos.y;
+      const dz = camPos[2] - entry.pos.z;
+      const rSum = camRadius + entry.radius;
+      if (dx * dx + dy * dy + dz * dz <= rSum * rSum) {
+        this.removePickup(entry);
+        dispatchEvent(new CustomEvent("pickup-collected", { detail: { entry } }));
+      }
+    }
+  }
   update() {
     if (!this.cameraEntry) return;
     this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
     const cam2 = this.cameraEntry;
+    this.checkPickups(cam2.pos, cam2.radius);
     this._getNeighborCells(cam2.pos[0], cam2.pos[1], cam2.pos[2], this._staticGrid, this._staticNeighbors);
     for (let i2 = 0; i2 < this._staticNeighbors.length; i2++) {
       const entry = this._staticNeighbors[i2];
@@ -45865,7 +45909,6 @@ var CollisionSystem = class {
       this._getNeighborCells(A2.pos.x, A2.pos.y, A2.pos.z, this._grid, this._neighbors);
       for (let j2 = 0; j2 < this._neighbors.length; j2++) {
         const B2 = this._neighbors[j2];
-        if (A2 === B2) continue;
         const minDist = (A2.radius + B2.radius) * 0.5;
         if (A2.group === B2.group) {
           resolvePairRepulsion3D(A2.pos, B2.pos, minDist, 1);
@@ -55038,12 +55081,30 @@ var hang3dUI = class {
     settings.classList.add("btn");
     settings.innerHTML = `<span data-label="settings"></span>`;
     document.body.appendChild(settings);
-    byId2("settingsAudios").click();
+    if (localStorage.getItem("settingsAudios") === "on") {
+      byId2("settingsAudios").click();
+      byId2("settingsAudios").value = "on";
+      byId2("settingsAudios").checked = true;
+      app.matrixSounds.play("music");
+    } else if (localStorage.getItem("settingsAudios") === "off") {
+      byId2("settingsAudios").value = "off";
+      byId2("settingsAudios").checked = false;
+    } else {
+      byId2("settingsAudios").click();
+      byId2("settingsAudios").value = "on";
+      byId2("settingsAudios").checked = true;
+      app.matrixSounds.play("music");
+      localStorage.setItem("settingsAudios", "on");
+    }
     byId2("settingsAudios").addEventListener("change", (e2) => {
+      console.log("byId('settingsAudios')", byId2("settingsAudios"));
       if (e2.target.checked == true) {
         app.matrixSounds.unmuteAll();
+        app.matrixSounds.play("music");
+        localStorage.setItem("settingsAudios", "on");
       } else {
         app.matrixSounds.muteAll();
+        localStorage.setItem("settingsAudios", "off");
       }
     });
     byId2("settingsLight").addEventListener("change", (e2) => {
@@ -55079,7 +55140,11 @@ var mapParams = {
       p2: [-8.35, 0.2, 4.56],
       north: [20, 0.2, -20]
     }
-  }
+  },
+  collectItems: [
+    { id: "1", position: { x: 0, y: 0.2, z: 0 }, radius: 1, type: "energy", amount: "50", scale: [1, 1, 1], tex: "./res/textures/blankgray2.webp" },
+    { id: "1", position: { x: 10, y: 2.2, z: 0 }, radius: 1, type: "cube", amount: "-10", scale: [1, 1, 1], tex: "./res/textures/shooter/hang3d.png" }
+  ]
 };
 
 // examples/games/first-person-shooter/zombie.js
@@ -55187,8 +55252,8 @@ var Zombi = class {
               }
             );
           } else {
-            this.core.collisionSystem.registerStatic(o3.name, subMesh.position, 0.7, "zombi_head");
             subMesh.position = bPos;
+            this.core.collisionSystem.registerStatic(o3.name, subMesh.position, 0.7, "zombi_head");
           }
         });
         this.attachEvents();
@@ -55277,6 +55342,19 @@ var Zombi = class {
     const clamped = Math.max(-maxStepDeg, Math.min(maxStepDeg, diff));
     return (current + clamped + 360) % 360;
   }
+  resolveStaticCollisionXZ(candidateX, candidateY, candidateZ, radius = 0.5) {
+    const cs2 = this.core.collisionSystem;
+    cs2._getNeighborCells(candidateX, candidateY, candidateZ, cs2._staticGrid, cs2._staticNeighbors);
+    const fakePos = { x: candidateX, y: candidateY, z: candidateZ };
+    const neighbors = cs2._staticNeighbors;
+    for (let i2 = 0; i2 < neighbors.length; i2++) {
+      const entry = neighbors[i2];
+      if (entry.group === "floor") continue;
+      if (entry.id === this.name) continue;
+      cs2.resolveVsStaticCube(fakePos, radius, entry);
+    }
+    return fakePos;
+  }
   moveTowardPlayer(zombiePos, rotYDeg, playerPos) {
     const zp = vecOf(zombiePos);
     const dx = playerPos.x - zp.x;
@@ -55287,8 +55365,12 @@ var Zombi = class {
     const nz = dz / dist2;
     const targetAngleY = (Math.atan2(nx, nz) * RAD2DEG + 360) % 360;
     const newRotY = this.rotateStep(rotYDeg || 0, targetAngleY, this.aiConfig.rotationStepDeg);
-    if (dist2 > this.aiConfig.attackRange) {
-      zombiePos.translateByXYZ(zp.x + nx, zp.y, zp.z + nz);
+    const step = Math.min(this.aiConfig.stepDistance, Math.max(0, dist2 - this.aiConfig.attackRange));
+    if (step > 0) {
+      const rawX = zp.x + nx * step;
+      const rawZ = zp.z + nz * step;
+      const resolved = this.resolveStaticCollisionXZ(rawX, zp.y, rawZ, 0.5);
+      zombiePos.translateByXYZ(resolved.x, zp.y, resolved.z);
     }
     return newRotY;
   }
@@ -55383,6 +55465,15 @@ var Player = class {
     this.kills = o3.kills ?? 0;
     this.isDead = false;
     this.onEnergyChange = o3.onEnergyChange || null;
+    this.attachEvents();
+  }
+  attachEvents() {
+    addEventListener("pickup-collected", (e2) => {
+      console.log("pickup-collected", e2.detail.entry);
+      const { type: type2, amount } = e2.detail.entry;
+      if (type2 === "energy") app.player.heal(amount);
+      if (type2 === "ammo") app.player.addAmmo(amount);
+    });
   }
   setEnergy(value2) {
     this.energy = Math.max(0, Math.min(this.maxEnergy, value2));
@@ -55395,6 +55486,8 @@ var Player = class {
   }
   heal(amount) {
     if (this.isDead) return;
+    console.log("heal ", amount);
+    console.log("heal ", this.energy);
     this.setEnergy(this.energy + amount);
   }
   die() {
@@ -55530,7 +55623,11 @@ var loadHang3d = function() {
         }
       });
     }
-    downloadMeshes({ cube: "./res/meshes/blender/cube.obj", ball: "./res/meshes/blender/sphepe-mob.obj" }, async (m2) => {
+    downloadMeshes({
+      cube: "./res/meshes/blender/cube.obj",
+      ball: "./res/meshes/blender/sphepe-mob.obj",
+      energyItem: "./res/meshes/obj/energy-cube.obj"
+    }, async (m2) => {
       const mc2 = new MapCreator(app2, m2.cube, app2.collisionSystem, {
         wallTexture: "./res/textures/shooter/metal-block.webp",
         floorTexture: "./res/textures/shooter/metal-block.webp",
@@ -55590,6 +55687,41 @@ var loadHang3d = function() {
         stairSteps: 8,
         roofLevels: true
       });
+      mapParams.collectItems.forEach((item) => {
+        if (item.type === "energy") {
+          const meshScale = 2;
+          const nName = item.type + item.id;
+          const obj2 = app2.addMeshObj({
+            shadowsCast: true,
+            material: { type: "standard", shared: false },
+            position: item.position,
+            rotationSpeed: { x: 0, y: 1, z: 0 },
+            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+            texturesPaths: [item.tex],
+            name: nName,
+            mesh: m2.energyItem,
+            physics: { enabled: false, mass: 0, geometry: "Cube" },
+            raycast: { enabled: true, radius: 1 }
+          });
+          app2.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        } else if (item.type === "cube") {
+          const meshScale = 2;
+          const nName = item.type + item.id;
+          const obj2 = app2.addMeshObj({
+            shadowsCast: true,
+            material: { type: "standard", shared: false },
+            position: item.position,
+            rotationSpeed: { x: 0, y: 1, z: 0 },
+            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+            texturesPaths: [item.tex],
+            name: nName,
+            mesh: m2.cube,
+            physics: { enabled: false, mass: 0, geometry: "Cube" },
+            raycast: { enabled: true, radius: 1 }
+          });
+          app2.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        }
+      });
       var glbFile01 = await fetch("./res/meshes/glb/zombie-cap.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
       const options2 = {
         core: app2,
@@ -55600,14 +55732,13 @@ var loadHang3d = function() {
       };
       const options1 = {
         core: app2,
-        name: "zombi-cap-red",
+        name: "zombi-red",
         archetypes: ["zombie"],
         // -8.35 ,1.1, 0.2
-        position: { x: -8.35, y: 0.2, z: -10 },
+        position: { x: -4.35, y: 0.2, z: -10 },
         data: glbFile01
       };
       app2.zombies = [new Zombi(options2), new Zombi(options1)];
-      app2.matrixSounds.play("music");
       const light = app2.lightContainer[0];
       light.setPosition(0, 60, 0);
       light.setIntensity(20);
@@ -55626,7 +55757,6 @@ var loadHang3d = function() {
             console.log("app.getCamera().position[0] ", app2.getCamera().position[1]);
             let t3 = app2.zombies.filter((z2) => z2.name === entry.id)[0];
             if (t3) t3.takeDamage();
-            console.log("ray hit", t3);
           },
           onProjectileHit: (hitPoint, normal, entry) => {
             console.log("rocket hit", entry.id);

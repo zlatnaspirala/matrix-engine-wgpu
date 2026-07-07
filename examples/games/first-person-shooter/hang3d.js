@@ -10,6 +10,7 @@ import {hang3dUI} from './options.js';
 import {Zombi} from './zombie.js';
 import {uploadGLBModel} from '../../../src/engine/loaders/webgpu-gltf.js';
 import {Player} from '../../../src/engine/plugin/player-object/player.js';
+import {mapParams} from './table-params.js';
 
 export var loadHang3d = function() {
   let app = new MatrixEngineWGPU({
@@ -125,7 +126,11 @@ export var loadHang3d = function() {
       })
     }
 
-    downloadMeshes({cube: './res/meshes/blender/cube.obj', ball: './res/meshes/blender/sphepe-mob.obj'}, async (m) => {
+    downloadMeshes({
+      cube: './res/meshes/blender/cube.obj',
+      ball: './res/meshes/blender/sphepe-mob.obj',
+      energyItem: './res/meshes/obj/energy-cube.obj'
+    }, async (m) => {
 
       const mc = new MapCreator(app, m.cube, app.collisionSystem, {
         wallTexture: './res/textures/shooter/metal-block.webp',
@@ -196,6 +201,41 @@ export var loadHang3d = function() {
         roofLevels: true
       });
 
+      mapParams.collectItems.forEach((item) => {
+        if(item.type === 'energy') {
+          const meshScale = 2;
+          const nName = item.type + item.id;
+          const obj = app.addMeshObj({
+            shadowsCast: true,
+            material: {type: 'standard', shared: false},
+            position: item.position,
+            rotationSpeed: {x: 0, y: 1, z: 0},
+            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+            texturesPaths: [item.tex],
+            name: nName,
+            mesh: m.energyItem,
+            physics: {enabled: false, mass: 0, geometry: 'Cube'},
+            raycast: {enabled: true, radius: 1}
+          });
+          app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        } else if(item.type === 'cube') {
+          const meshScale = 2;
+          const nName = item.type + item.id;
+          const obj = app.addMeshObj({
+            shadowsCast: true,
+            material: {type: 'standard', shared: false},
+            position: item.position,
+            rotationSpeed: {x: 0, y: 1, z: 0},
+            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+            texturesPaths: [item.tex],
+            name: nName,
+            mesh: m.cube,
+            physics: {enabled: false, mass: 0, geometry: 'Cube'},
+            raycast: {enabled: true, radius: 1}
+          });
+          app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        }
+      })
       // mc.createFPSMapCompound({
       //   origin:     { x: 0, y: 0, z: 100 },
       //   multiLevel: true,
@@ -215,16 +255,16 @@ export var loadHang3d = function() {
 
       const options1 = {
         core: app,
-        name: 'zombi-cap-red',
+        name: 'zombi-red',
         archetypes: ["zombie"],
         // -8.35 ,1.1, 0.2
-        position: {x: -8.35, y: 0.2, z: -10},
+        position: {x: -4.35, y: 0.2, z: -10},
         data: glbFile01
       }
 
-      app.zombies = [new Zombi(options),  new Zombi(options1)];
+      app.zombies = [new Zombi(options), new Zombi(options1)];
 
-      app.matrixSounds.play('music');
+      // app.matrixSounds.play('music');
 
       const light = app.lightContainer[0];
       light.setPosition(0, 60, 0);
@@ -241,8 +281,9 @@ export var loadHang3d = function() {
             console.log('app.getCamera().position[0] ', app.getCamera().position[0]);
             console.log('app.getCamera().position[0] ', app.getCamera().position[1]);
             let t = app.zombies.filter((z) => z.name === entry.id)[0]
-            if (t) t.takeDamage();
-            console.log('ray hit', t);
+            if(t) t.takeDamage();
+            // console.log('ray hit', t);
+
           },
           onProjectileHit: (hitPoint, normal, entry) => {
             console.log('rocket hit', entry.id);
