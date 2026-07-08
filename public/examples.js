@@ -4074,6 +4074,11 @@ function isMobile() {
   mobileCheckResult = mobileRegexPatterns.some((pattern) => pattern.test(cachedUserAgent));
   return mobileCheckResult;
 }
+function vecOf(p2) {
+  if (p2 == null) return null;
+  if (p2.x !== void 0) return p2;
+  return { x: p2[0], y: p2[1], z: p2[2] };
+}
 function degToRad(degrees) {
   return degrees * Math.PI / 180;
 }
@@ -17050,6 +17055,296 @@ var MSDFTextEffect = class {
   }
 };
 
+// src/shaders/blood/blood-target.js
+var bloodBurstShader = `
+struct Camera {
+  viewProj : mat4x4<f32>
+};
+
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct ModelData {
+  model : mat4x4<f32>,
+  life  : vec4<f32>, // x=life, y=maxLife, z=pad, w=pad
+  color : vec4<f32>
+};
+@group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
+
+struct VSIn {
+  @location(0) position : vec3<f32>,
+  @location(1) uv : vec2<f32>,
+  @builtin(instance_index) instanceIdx : u32,
+};
+
+struct VSOut {
+  @builtin(position) position : vec4<f32>,
+  @location(0) uv : vec2<f32>,
+  @location(1) color : vec4<f32>,
+  @location(2) fragNorm : vec3<f32>,
+  @location(3) fragPos  : vec3<f32>,
+};
+
+fn hash2(n : vec2<f32>) -> f32 {
+  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn noise(p : vec2<f32>) -> f32 {
+  let i = floor(p); let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash2(i + vec2<f32>(0.0,0.0)), hash2(i + vec2<f32>(1.0,0.0)), u.x),
+    mix(hash2(i + vec2<f32>(0.0,1.0)), hash2(i + vec2<f32>(1.0,1.0)), u.x),
+    u.y
+  );
+}
+
+@vertex
+fn vsMain(input : VSIn) -> VSOut {
+  var output : VSOut;
+  let modelData = modelDataArray[input.instanceIdx];
+
+  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+  output.position = camera.viewProj * worldPos;
+  output.uv = input.uv;
+  output.color = modelData.color;
+
+  output.fragPos = worldPos.xyz;
+  let localNormal = vec3<f32>(0.0, 0.0, 1.0);
+  output.fragNorm = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz) * localNormal;
+
+  return output;
+}
+
+struct FragOut {
+  @location(0) color    : vec4f,
+  @location(1) normal   : vec4f,
+  @location(2) worldPos : vec4f,
+}
+@fragment
+fn fsMain(input : VSOut) -> FragOut {
+  let centered = input.uv - vec2<f32>(0.5, 0.5);
+  let d = length(centered);
+
+  // irregular blob edge \u2014 warp the distance field with noise instead of a clean circle
+  let angle = atan2(centered.y, centered.x);
+  let wobble = noise(vec2<f32>(angle * 2.5, d * 4.0)) * 0.18;
+  let edge = smoothstep(0.5, 0.28, d + wobble);
+
+  // internal density variation so it doesn't read as a flat solid disc
+  let density = 0.65 + 0.35 * noise(input.uv * 6.0);
+  let alpha = input.color.a * edge * density;
+  if (alpha < 0.02) { discard; }
+
+  // slight dark core / lighter rim gives it volume instead of flat fill
+  let rim = smoothstep(0.0, 0.5, d);
+  let shaded = mix(input.color.rgb * 1.3, input.color.rgb * 0.6, rim);
+
+  return FragOut(
+    vec4f(shaded, alpha),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
+}`;
+
+// src/engine/effects/blood-target.js
+var BloodBurst = class {
+  constructor(device2, format, maxParticles = 64, cameraBuffer) {
+    this.device = device2;
+    this.format = format;
+    this.maxParticles = maxParticles;
+    this.floatsPerInstance = 24;
+    this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
+    this.gravity = -9.8;
+    this.drag = 0.98;
+    this.cameraBuffer = cameraBuffer;
+    this.pool = [];
+    for (let i2 = 0; i2 < maxParticles; i2++) {
+      this.pool.push({
+        active: false,
+        position: [0, 0, 0],
+        velocity: [0, 0, 0],
+        scale: 0.1,
+        rotation: 0,
+        life: 0,
+        maxLife: 1,
+        color: [0.5, 0.02, 0.02, 1]
+      });
+    }
+    this._localMatrix = mat4Impl.create();
+    this._finalMatrix = mat4Impl.create();
+    this._initPipeline();
+  }
+  // one-shot burst spawn — hook this at your hitscan/animationEnd impact point
+  spawn(origin, baseModelMatrix, count = 20, speed = 6) {
+    let spawned = 0;
+    for (const p2 of this.pool) {
+      if (spawned >= count) break;
+      if (p2.active) continue;
+      p2.active = true;
+      p2.position[0] = origin[0];
+      p2.position[1] = origin[1];
+      p2.position[2] = origin[2];
+      const u2 = randomFloatFromTo(-1, 1);
+      const theta = randomFloatFromTo(0, Math.PI * 2);
+      const r3 = Math.sqrt(1 - u2 * u2);
+      let dirX = r3 * Math.cos(theta);
+      let dirY = u2;
+      let dirZ = r3 * Math.sin(theta);
+      const isSpurt = Math.random() < 0.12;
+      let s2 = speed * randomFloatFromTo(0.4, 1);
+      if (isSpurt) {
+        dirY = Math.abs(dirY) * randomFloatFromTo(1.4, 2);
+        s2 *= randomFloatFromTo(1.3, 1.8);
+      }
+      p2.velocity[0] = dirX * s2;
+      p2.velocity[1] = dirY * s2;
+      p2.velocity[2] = dirZ * s2;
+      p2.gravityMul = randomFloatFromTo(0.7, 1.4);
+      p2.dragMul = randomFloatFromTo(0.94, 0.99);
+      p2.driftPhase = randomFloatFromTo(0, Math.PI * 2);
+      p2.driftAmp = randomFloatFromTo(0.3, 1.2);
+      p2.scale = randomFloatFromTo(0.25, 0.6);
+      p2.rotation = randomFloatFromTo(0, Math.PI * 2);
+      p2.life = 0;
+      p2.maxLife = randomFloatFromTo(1, 2.2);
+      p2.color = [1, 0.02, 0.02, 1];
+      spawned++;
+    }
+  }
+  updateInstanceData = (baseModelMatrix) => {
+    const basePos = mat4Impl.getTranslation(baseModelMatrix);
+    const cleanBase = mat4Impl.translation(basePos);
+    let count = 0;
+    const floatsPerInstance = this.floatsPerInstance;
+    for (const p2 of this.pool) {
+      if (!p2.active) continue;
+      const local2 = this._localMatrix;
+      mat4Impl.identity(local2);
+      mat4Impl.translate(local2, p2.position, local2);
+      mat4Impl.rotateY(local2, p2.rotation, local2);
+      const shrink = 1 - p2.life / p2.maxLife * 0.3;
+      mat4Impl.scale(local2, [p2.scale * shrink, p2.scale * shrink, p2.scale * shrink], local2);
+      mat4Impl.identity(this._finalMatrix);
+      mat4Impl.multiply(cleanBase, local2, this._finalMatrix);
+      const offset = count * floatsPerInstance;
+      this.instanceData.set(this._finalMatrix, offset);
+      const alpha = 1 - p2.life / p2.maxLife;
+      this.instanceData[offset + 16] = p2.life;
+      this.instanceData[offset + 17] = p2.maxLife;
+      this.instanceData[offset + 18] = 0;
+      this.instanceData[offset + 19] = 0;
+      this.instanceData[offset + 20] = p2.color[0];
+      this.instanceData[offset + 21] = p2.color[1];
+      this.instanceData[offset + 22] = p2.color[2];
+      this.instanceData[offset + 23] = p2.color[3] * alpha;
+      count++;
+    }
+    this.activeCount = count;
+    if (count > 0) {
+      this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
+    }
+  };
+  render(pass, mesh, viewProjMatrix, dt2 = 0.1) {
+    for (const p2 of this.pool) {
+      if (!p2.active) continue;
+      p2.life += dt2;
+      if (p2.life >= p2.maxLife) {
+        p2.active = false;
+        continue;
+      }
+      p2.velocity[1] += this.gravity * p2.gravityMul * dt2;
+      p2.velocity[0] *= p2.dragMul;
+      p2.velocity[1] *= p2.dragMul;
+      p2.velocity[2] *= p2.dragMul;
+      const wobble = Math.sin(p2.life * 6 + p2.driftPhase) * p2.driftAmp * dt2;
+      p2.position[0] += p2.velocity[0] * dt2 + wobble * 0.3;
+      p2.position[1] += p2.velocity[1] * dt2;
+      p2.position[2] += p2.velocity[2] * dt2 + wobble * 0.2;
+      p2.rotation += dt2 * 4;
+    }
+    if (!this.activeCount) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, this.activeCount);
+  }
+  _initPipeline() {
+    const vertexData = new Float32Array([
+      -0.5,
+      0.5,
+      0,
+      0.5,
+      0.5,
+      0,
+      -0.5,
+      -0.5,
+      0,
+      0.5,
+      -0.5,
+      0
+    ]);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+    this.vertexBuffer = this.device.createBuffer({ size: vertexData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({ size: uvData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({ size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.modelBuffer = this.device.createBuffer({ label: "blood-burst modelBuffer", size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      label: "blood-burst bindGroupLayout",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      label: "blood-burst bindGroup",
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: bloodBurstShader });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    this.pipeline = this.device.createRenderPipeline({
+      label: "blood-burst pipeline",
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
+      },
+      primitive: { topology: "triangle-list" },
+      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
+    });
+  }
+};
+
 // src/engine/mesh-obj.js
 var MEMeshObj = class extends Materials {
   constructor(canvas, device2, context, o3, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
@@ -17678,6 +17973,9 @@ var MEMeshObj = class extends Materials {
         }
         if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device2, "rgba16float", 20, this.cameraBuffer);
+        }
+        if (typeof this.pointerEffect.bloodBurst !== "undefined" && this.pointerEffect.bloodBurst == true) {
+          this.effects.bloodBurst = new BloodBurst(device2, "rgba16float", 20, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.destructionEffect !== "undefined" && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect2(device2, "rgba16float", {
@@ -25785,8 +26083,15 @@ var GenGeoTexture = class {
     pass.setIndexBuffer(this.indexBuffer, "uint16");
     pass.drawIndexed(this.indexCount, this.instanceCount);
   }
-  render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
+  render(pass, mesh, viewProjMatrix, dt2 = 0.1) {
+    if (!this.activeCount) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, this.activeCount);
   }
 };
 
@@ -44798,7 +45103,8 @@ var loadObjFile = function() {
         },
         pointerEffect: {
           enabled: true,
-          flameEmitter: true
+          flameEmitter: true,
+          bloodBurst: true
         }
       });
       loadObjFile2.lightContainer[0].setIntensity(15);
@@ -50361,9 +50667,9 @@ var InstancedKinematicOperations = class {
 // src/engine/procedures/sceneobjectKinematics.js
 function animateRotationY(targetObject, targetAngle, duration = 1e3) {
   const startAngle = 0;
-  const startTime = performance.now();
+  const startTime2 = performance.now();
   function step(currentTime) {
-    const elapsed = currentTime - startTime;
+    const elapsed = currentTime - startTime2;
     const progress = Math.min(elapsed / duration, 1);
     const currentAngle = startAngle + (targetAngle - startAngle) * progress;
     targetObject.setRotationY(currentAngle);
@@ -54040,7 +54346,7 @@ var MapCreator = class {
   _ceil(name2, pos2, width, depth) {
     return this._block(name2, pos2, [width, 0.2, depth], this._ceilTex, "standard", false, 0, "floor");
   }
-  _block(name2, pos2, scale4, tex, mat2 = "standard", registerCollision = true, collisionRadius = 1, group = "walls", uvShema = false) {
+  _block(name2, pos2, scale4, tex, mat2 = "standard", registerCollision = true, collisionRadius = 1, group = "walls", uvShema = false, effects = false) {
     const meshScale = 2;
     const obj2 = this.engine.addMeshObj({
       shadowsCast: this.shadowsCast,
@@ -54051,10 +54357,28 @@ var MapCreator = class {
       name: name2,
       mesh: this.mesh,
       physics: { enabled: false, mass: 0, geometry: "Cube" },
-      raycast: { enabled: true, radius: 1 }
+      raycast: { enabled: true, radius: 1 },
+      pointerEffect: {
+        enabled: effects,
+        flameEmitter: effects
+      }
     });
     if (uvShema !== false) {
       obj2.setUVScale(uvShema[0], uvShema[1]);
+    }
+    if (effects === true) {
+      setTimeout(() => {
+        obj2.effects.flameEmitter.recreateVertexDataFromData([
+          -2.5825,
+          0.2112,
+          0.4249,
+          0.4724,
+          2.38,
+          3.01,
+          -2.379,
+          -3.46
+        ]);
+      }, 150);
     }
     if (registerCollision) {
       this.collision.registerStatic(name2, pos2, collisionRadius, group, {
@@ -54409,6 +54733,10 @@ var MapCreator = class {
           [0.6, pillarH, 0.6],
           this._wallTex,
           "standard",
+          true,
+          void 0,
+          void 0,
+          void 0,
           true
         ));
       }
@@ -54537,7 +54865,7 @@ var MapCreator = class {
       origin,
       levels: levels2 = 3,
       mazeSize = 15,
-      spacing: spacing2 = 2,
+      spacing: spacing2 = 1,
       wallHeight = 3,
       levelGap = 1,
       stairSteps = 6,
@@ -54559,7 +54887,7 @@ var MapCreator = class {
       results.layers.push(layer);
       if (lvl < levels2 - 1) {
         const stairOrigin = {
-          x: layer.exit.x + spacing2,
+          x: layer.exit.x + spacing2 - 1,
           y: y3,
           z: layer.exit.z
         };
@@ -54749,7 +55077,8 @@ var ProjectileSystem = class {
       }
     }
   }
-  spawnDecal(hitPoint, normal) {
+  spawnDecal(hitPoint, normal, groupHit) {
+    const group = groupHit;
     const name2 = `decal_${this._uid++}`;
     const offset = 0.02;
     const s2 = this._decalSize;
@@ -54763,6 +55092,7 @@ var ProjectileSystem = class {
       normal.y !== 0 ? 0.02 : s2,
       normal.z !== 0 ? 0.02 : s2
     ];
+    const isEnemy = group === "enemy" || group === "zombi_head";
     const obj2 = this.engine.addMeshObj({
       shadowsCast: false,
       material: { type: "standard", shared: false, useBlend: true },
@@ -54773,11 +55103,14 @@ var ProjectileSystem = class {
       mesh: this.mesh,
       physics: { enabled: false, mass: 0, geometry: "Cube" },
       pointerEffect: {
-        enabled: true
+        enabled: true,
+        bloodBurst: isEnemy ? true : false
       }
     });
+    if (isEnemy) obj2.setBlend(1e-3);
     setTimeout(() => {
-      obj2.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
+      console.log(group);
+      if (isEnemy) obj2.effects.bloodBurst.spawn([0, 0, 0], null, 30, 3);
     }, 20);
     setTimeout(() => this._despawn(name2), this._decalLifetime);
     return obj2;
@@ -54813,14 +55146,6 @@ var ProjectileSystem = class {
     }
     return { hitPoint, normal: closestN, reflect, entry: closest, distance: closestT };
   }
-  /**
-   * Spawn a moving projectile from camera position.
-   * Position.translateByXYZ drives movement — no manual update needed.
-   *
-   * Collision check per frame:
-   *   // in your game loop / after collisionSystem.update():
-   *   ps.checkProjectiles();
-   */
   fireProjectile() {
     const { origin, dir } = this._getCameraState();
     const name2 = `proj_${this._uid++}`;
@@ -54829,12 +55154,14 @@ var ProjectileSystem = class {
     let closest = null;
     let closestT = maxDist;
     let closestN = null;
+    let groupHit = null;
     for (const entry of this.collision.staticEntries) {
       const result2 = this._rayVsAABB(origin, dir, entry);
       if (result2 && result2.t > 1e-3 && result2.t < closestT) {
         closestT = result2.t;
         closest = entry;
         closestN = result2.normal;
+        groupHit = entry.group;
       }
     }
     const travelDist = closest ? closestT : maxDist;
@@ -54851,13 +55178,15 @@ var ProjectileSystem = class {
       name: name2,
       mesh: this.mesh,
       physics: { enabled: false, mass: 0, geometry: "Cube" },
-      pointerEffect: { enabled: true }
+      pointerEffect: {
+        enabled: true
+      }
     });
     obj2.effects = {};
-    obj2.setBlend(0.1);
+    obj2.setBlend(0.7);
     setTimeout(() => {
       obj2.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
-      obj2.effects.kaleBullet.recreateVertexData(2);
+      obj2.effects.kaleBullet.setIntensity(200);
     }, 10);
     obj2.position.setSpeed(this._speed);
     obj2.position.translateByXYZ(targetX, targetY, targetZ);
@@ -54865,7 +55194,7 @@ var ProjectileSystem = class {
       if (closest) {
         const hitPoint = { x: targetX, y: targetY, z: targetZ };
         const reflect = this._reflect(dir, closestN);
-        setTimeout(() => this.spawnDecal(hitPoint, closestN), 100);
+        setTimeout(() => this.spawnDecal(hitPoint, closestN, groupHit), 60);
         if (this.onHitscanHit) {
           this.onHitscanHit(hitPoint, closestN, reflect, closest);
         }
@@ -54952,16 +55281,7 @@ var settingsBox = `
         <span class="sliderSwitch round"></span>
       </label>
     </div>
-      <div style="margin-top:20px;margin-bottom:15px;">
-        <span style="font-size: larger;margin-bottom:15px" data-label="graphics"></span>
-        <p></p>
-        <label>Anim speed:</label>
-        <select id="physicsSpeed" class="setting-select">
-          <option value="1">Slow</option>
-          <option value="2">Normal</option>
-          <option value="3">Fast</option>
-        </select>
-      </div>
+ 
 
       <div>
         <label>Blur:</label>
@@ -55056,7 +55376,7 @@ var hang3dUI = class {
     messageBox.style.display = "none";
     messageBox.style.zIndex = 1e4;
     messageBox.style.top = isMobile() ? "10%" : "5%";
-    messageBox.style.width = isMobile() ? "100%" : "50%";
+    messageBox.style.width = isMobile() ? "100%" : "82%";
     messageBox.style.background = "black";
     messageBox.innerHTML = settingsBox;
     document.body.appendChild(messageBox);
@@ -55106,12 +55426,12 @@ var hang3dUI = class {
     byId2("settingsLight").addEventListener("change", (e2) => {
       if (e2.target.checked == true) {
         const light = app.lightContainer[0];
-        light.setPosition(0, 60, 0);
-        light.setIntensity(2);
+        light.setIntensity(20);
+        light.setColor([100, 0.5, 1]);
       } else {
         const light = app.lightContainer[0];
-        light.setPosition(0, 60, 0);
-        light.setIntensity(20);
+        light.setIntensity(10);
+        light.setColor([100, 1, 100]);
       }
     });
     setupCanvasFilters();
@@ -55138,19 +55458,16 @@ var mapParams = {
     }
   },
   collectItems: [
-    { id: "1", position: { x: 0, y: 0.2, z: 0 }, radius: 1, type: "energy", amount: "50", scale: [1, 1, 1], tex: "./res/textures/blankgray2.webp" },
-    { id: "1", position: { x: 10, y: 2.2, z: 0 }, radius: 1, type: "cube", amount: "-10", scale: [1, 1, 1], tex: "./res/textures/shooter/hang3d.png" }
+    { id: "1", position: { x: 4.5, y: 1.3, z: -10 }, radius: 1, type: "ammo", amount: "100", scale: [1, 1, 1], tex: "./res/textures/shooter/hang3d.png" },
+    { id: "2", position: { x: -4, y: 1.3, z: -10 }, radius: 1, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" },
+    { id: "3", position: { x: -60.56, y: -1.799, z: -0.045 }, radius: 1, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" }
   ]
 };
 
 // examples/games/first-person-shooter/zombie.js
 var DEG2RAD = Math.PI / 180;
 var RAD2DEG = 180 / Math.PI;
-function vecOf(p2) {
-  if (p2 == null) return null;
-  if (p2.x !== void 0) return p2;
-  return { x: p2[0], y: p2[1], z: p2[2] };
-}
+var startTime = performance.now();
 var Zombi = class {
   zombieAnims = {
     dead: null,
@@ -55162,7 +55479,6 @@ var Zombi = class {
   creepHPReset = 10;
   creepFocusAttackOn = null;
   zombieSpeedWalk = 3e-3;
-  // --- combat / hp state ---
   hp = this.creepHPReset;
   isDead = false;
   attackDamage = 5;
@@ -55176,6 +55492,7 @@ var Zombi = class {
     rotationStepDeg: 35,
     stepDistance: 0.4
   };
+  zombiDieEvent = new CustomEvent("zombie-die", { detail: null });
   aiState = "attack";
   // idle | chase | attack | dead
   constructor(o3, archetypes = ["zombie"], group = "enemy", team) {
@@ -55224,6 +55541,7 @@ var Zombi = class {
         let bPos;
         this.zombie_bodies.forEach((subMesh, idx) => {
           subMesh.position.thrust = this.zombieSpeedWalk;
+          subMesh.animationSpeed = 500;
           subMesh.animationIndex = 0;
           subMesh.glb.glbJsonData.animations.forEach((a2, index) => {
             console.info(`%c Animation loading for creeps: ${a2.name} index ${index}`, LOG_MATRIX);
@@ -55245,13 +55563,23 @@ var Zombi = class {
               this.group,
               {
                 x: subMesh.scale[0] / 3.5,
-                y: subMesh.scale[1] * 2.3,
+                y: subMesh.scale[1] * 1.5,
                 z: subMesh.scale[2] / 3.5
               }
             );
           } else {
             subMesh.position = bPos;
-            this.core.collisionSystem.registerStatic(o3.name, subMesh.position, 0.1, "zombi_head");
+            this.core.collisionSystem.registerStatic(
+              o3.name,
+              subMesh.position,
+              0.2,
+              "zombi_head",
+              {
+                x: subMesh.scale[0] / 4,
+                y: subMesh.scale[1] * 1.75,
+                z: subMesh.scale[2] / 4
+              }
+            );
           }
         });
         this.attachEvents();
@@ -55310,7 +55638,8 @@ var Zombi = class {
         mapParams.zombie.startUpPositions["p" + id2][2]
       );
     });
-    setTimeout(() => this.isDead = false, 2e3);
+    this.isDead = false;
+    this.hp = this.creepHPReset;
   }
   updateEnergyBar() {
     const head = this.zombie_bodies[0];
@@ -55322,13 +55651,23 @@ var Zombi = class {
     if (this.isDead) return;
     this.hp = Math.max(0, this.hp - amount);
     this.updateEnergyBar();
-    if (this.hp <= 0) this.die();
+    app.matrixSounds.play("zombie" + randomIntFromTo(1, 3));
+    if (this.hp <= 0) {
+      this.die();
+      app.matrixSounds.play("zombiedead");
+    }
   }
   die() {
     this.isDead = true;
     this.aiState = "dead";
     this.setDead();
     this.core.collisionSystem.unregister?.(this.name);
+    dispatchEvent(this.zombiDieEvent);
+    setTimeout(() => {
+      console.log("animationEnd  test spawn zombi ->>>>>>>>>>>>>>>>>>>>");
+      this.spawnPosZombie(1);
+      this.setIdle();
+    }, 600);
   }
   getPlayerPosition() {
     const cam2 = app.getCamera();
@@ -55381,7 +55720,6 @@ var Zombi = class {
     }
     return newRotY;
   }
-  // called once per animationEnd tick while in attack range
   resolveAttack() {
     if (this._attackCooldownLeft > 0) {
       this._attackCooldownLeft--;
@@ -55410,6 +55748,7 @@ var Zombi = class {
         this.aiState = "idle";
         this.setIdle();
       }
+      this.exposeDamage = false;
       return;
     }
     if (dist2 <= this.aiConfig.attackRange) {
@@ -55417,6 +55756,7 @@ var Zombi = class {
         this.aiState = "attack";
         this.setAttack();
       }
+      app.matrixSounds.play("zombie1");
       this.resolveAttack();
       return;
     }
@@ -55425,6 +55765,7 @@ var Zombi = class {
     this.zombie_bodies.forEach((subMesh) => {
       subMesh.rotation.y = newRotY;
     });
+    this.exposeDamage = false;
     this.setWalk();
   }
   _rotAnimHandle = null;
@@ -55432,9 +55773,9 @@ var Zombi = class {
     if (this._rotAnimHandle) cancelAnimationFrame(this._rotAnimHandle);
     const startY = subMesh.rotation.y;
     let diff = (targetY - startY + 540) % 360 - 180;
-    const startTime = performance.now();
+    const startTime2 = performance.now();
     const step = (now) => {
-      const t3 = Math.min(1, (now - startTime) / durationMs);
+      const t3 = Math.min(1, (now - startTime2) / durationMs);
       subMesh.rotation.y = (startY + diff * t3 + 360) % 360;
       console.log("subMesh.rotation.y : ", subMesh.rotation.y);
       if (t3 < 1) {
@@ -55446,21 +55787,17 @@ var Zombi = class {
     this._rotAnimHandle = requestAnimationFrame(step);
   }
   attachEvents() {
-    app.autoUpdate.push({
-      update: () => {
-        this.navigateStep();
-      }
-    });
-    console.log("animationEnd init");
+    app.autoUpdate.push({ update: () => {
+      this.navigateStep();
+    } });
     addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e2) => {
       if (e2.detail.animationName === "dead") {
-        this.spawnPosZombie(1);
-        this.setIdle();
+        console.log("animationEnd  test spawn zombi ->>>>>>>>>>>>>>>>>>>>");
         return;
       }
       if (this.exposeDamage === true) {
-        console.log(" EXPOSE DAMAGE");
-        this.setAttack();
+        console.log("animationEnd is player.takeDamage .>>>>>>>>>>>>>>>>>>>>>>>");
+        app.matrixSounds.play("zombie2");
         app.player.takeDamage(this.attackDamage);
         app.energy.setValue(app.player.energy);
       }
@@ -55476,7 +55813,7 @@ var Player = class {
     this.maxEnergy = o3.maxEnergy ?? 100;
     this.energy = o3.energy ?? this.maxEnergy;
     this.lives = o3.lives ?? 1;
-    this.ammo = o3.ammo ?? 0;
+    this.ammo = o3.ammo ?? 100;
     this.kills = o3.kills ?? 0;
     this.isDead = false;
     this.onEnergyChange = o3.onEnergyChange || null;
@@ -55488,6 +55825,10 @@ var Player = class {
       const { type: type2, amount } = e2.detail.entry;
       if (type2 === "energy") app.player.heal(amount);
       if (type2 === "ammo") app.player.addAmmo(amount);
+    });
+    addEventListener("zombie-die", () => {
+      console.log("addKill addKill addKill");
+      this.addKill(1);
     });
   }
   setEnergy(value2) {
@@ -55518,10 +55859,12 @@ var Player = class {
   }
   addKill(n3 = 1) {
     this.kills += n3;
+    byId2("player-status").textContent = "Kills " + this.kills;
   }
   useAmmo(n3 = 1) {
     if (this.ammo < n3) return false;
     this.ammo -= n3;
+    byId2("player-ammo").textContent = "Ammo " + this.ammo;
     return true;
   }
   addAmmo(n3) {
@@ -55554,6 +55897,12 @@ var loadHang3d = function() {
     app2.activateHZB();
     app2.activateBloomEffect();
     app2.matrixSounds.createAudio("music", "res/audios/audionautix-black-fly.mp3", 1);
+    app2.matrixSounds.createAudio("shot", "res/audios/gun/gunshot.mp3", 3);
+    app2.matrixSounds.createAudio("zombie1", "res/audios/zombie/zombie-1.mp3", 2);
+    app2.matrixSounds.createAudio("zombie2", "res/audios/zombie/zombie-2.mp3", 2);
+    app2.matrixSounds.createAudio("zombie3", "res/audios/zombie/zombie-9.mp3", 2);
+    app2.matrixSounds.createAudio("zombiedead", "res/audios/zombie/zombie-10.mp3", 2);
+    app2.matrixSounds.createAudio("feelgood", "res/audios/feel.mp3", 1);
     app2.matrixSounds.audios.music.loop = true;
     app2.UI = new hang3dUI();
     MobileDOM.addButton("T", () => {
@@ -55566,13 +55915,24 @@ var loadHang3d = function() {
     });
     app2.energy = MobileDOM.addProgressBar({ size: innerWidth / 3, bottom: 95, left: 33, color: "#00bcd4" });
     app2.energy.setValue(100);
-    MobileDOM.addButton("status", () => {
+    MobileDOM.addButton("Kills 0", () => {
     }, void 0, {
       id: "player-status",
       image: "./res/textures/shooter/s.webp",
       left: isMobile() === true ? 10 : 15,
       bottom: isMobile() === true ? 90 : 85,
-      color: "black",
+      color: "red",
+      size: innerHeight / 10
+    });
+    const timeNode = document.createTextNode("");
+    byId2("player-status").appendChild(timeNode);
+    MobileDOM.addButton("Ammo 100", () => {
+    }, void 0, {
+      id: "player-ammo",
+      image: "./res/textures/shooter/s.webp",
+      left: isMobile() === true ? 20 : 25,
+      bottom: isMobile() === true ? 90 : 85,
+      color: "red",
       size: innerHeight / 10
     });
     app2.player = new Player({
@@ -55685,7 +56045,7 @@ var loadHang3d = function() {
         origin: { x: -6, y: 0, z: 0 },
         axis: "z",
         steps: 8,
-        stepW: 2,
+        stepW: 3,
         stepH: 0.4,
         stepD: 0.8,
         walls: true,
@@ -55716,13 +56076,22 @@ var loadHang3d = function() {
             name: nName,
             mesh: m2.energyItem,
             physics: { enabled: false, mass: 0, geometry: "Cube" },
-            raycast: { enabled: true, radius: 1 }
+            raycast: { enabled: true, radius: 1 },
+            pointerEffect: {
+              enabled: true
+            }
           });
           app2.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+          setTimeout(() => {
+            if (!obj2.effects) obj2.effects = {};
+            obj2.effects.kaleBullet = new KaleidoscopeEmitter(app2.device, "rgba16float", 30, app2.cameraBuffer);
+            obj2.effects.kaleBullet.recreateVertexDataCrazzy(20);
+            console.log(obj2.effects.kaleBullet);
+          }, 56);
         } else if (item.type === "cube") {
           const meshScale = 2;
           const nName = item.type + item.id;
-          const obj2 = app2.addMeshObj({
+          app2.addMeshObj({
             shadowsCast: true,
             material: { type: "standard", shared: false },
             position: item.position,
@@ -55758,7 +56127,6 @@ var loadHang3d = function() {
         core: app2,
         name: "zombi-crawl",
         archetypes: ["zombie-crawl"],
-        // -8.35 ,1.1, 0.2
         position: { x: 4.35, y: 0.2, z: -10 },
         data: glbFile02
       };
@@ -55767,8 +56135,8 @@ var loadHang3d = function() {
       light.setPosition(0, 60, 0);
       light.setIntensity(20);
       app2.cameras.firstPersonCamera.movementSpeed = 0.1;
-      app2.cameras.firstPersonCamera.setPosition(0, 5, 0);
-      app2.collisionSystem.registerCamera(app2.cameras.firstPersonCamera.position, 1);
+      app2.cameras.firstPersonCamera.setPosition(0, 7, 0);
+      app2.collisionSystem.registerCamera(app2.cameras.firstPersonCamera.position, 1.1);
       app2.projectileSystem = new ProjectileSystem(
         app2,
         m2.ball,
@@ -55777,10 +56145,12 @@ var loadHang3d = function() {
           projectileSpeed: 0.5,
           projectileScale: 0.075,
           onHitscanHit: (hitPoint, normal, reflect, entry) => {
-            console.log("app.getCamera().position[0] ", app2.getCamera().position[0]);
-            console.log("app.getCamera().position[0] ", app2.getCamera().position[1]);
             let t3 = app2.zombies.filter((z2) => z2.name === entry.id)[0];
-            if (t3) t3.takeDamage();
+            if (t3 && entry.group) {
+              if (t3 && entry.group && entry.group === "enemy") t3.takeDamage();
+              if (t3 && entry.group && entry.group === "zombi_head") t3.takeDamage(2.5);
+            }
+            console.log("ray hit", t3);
           },
           onProjectileHit: (hitPoint, normal, entry) => {
             console.log("rocket hit", entry.id);
@@ -55789,7 +56159,10 @@ var loadHang3d = function() {
       );
       app2.canvas.addEventListener("ray.hit.event", (e2) => {
         console.log("ray.hit.event detected", e2.detail.hitObject.name);
+        if (app2.player.ammo < 1) return;
+        app2.matrixSounds.play("shot");
         app2.projectileSystem.fireProjectile();
+        app2.player.useAmmo(1);
       });
     }, { scale: [1, 1, 1] });
   });

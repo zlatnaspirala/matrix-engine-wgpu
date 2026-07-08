@@ -1,3 +1,5 @@
+import {byId} from "../../utils";
+
 /**
  * USAGE EXAMPLE:
  *
@@ -14,7 +16,7 @@ export class Player {
     this.maxEnergy = o.maxEnergy ?? 100;
     this.energy = o.energy ?? this.maxEnergy;
     this.lives = o.lives ?? 1;
-    this.ammo = o.ammo ?? 0;
+    this.ammo = o.ammo ?? 100;
     this.kills = o.kills ?? 0;
     this.isDead = false;
     // optional hook: called whenever energy changes, so HUD stays in sync
@@ -30,6 +32,11 @@ export class Player {
       if(type === 'energy') app.player.heal(amount);
       if(type === 'ammo') app.player.addAmmo(amount);
     });
+
+    addEventListener('zombie-die', () => {
+      console.log('addKill addKill addKill')
+      this.addKill(1);
+    })
   }
 
   setEnergy(value) {
@@ -65,11 +72,13 @@ export class Player {
 
   addKill(n = 1) {
     this.kills += n;
+    byId('player-status').textContent = 'Kills ' + this.kills;
   }
 
   useAmmo(n = 1) {
     if(this.ammo < n) return false;
     this.ammo -= n;
+    byId('player-ammo').textContent = 'Ammo ' + this.ammo;
     return true;
   }
 

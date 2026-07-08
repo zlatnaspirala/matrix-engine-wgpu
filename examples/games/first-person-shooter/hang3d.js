@@ -1,6 +1,6 @@
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
-import {isMobile, randomIntFromTo} from "../../../src/engine/utils.js";
+import {byId, isMobile, randomIntFromTo} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from '../../../src/world.js';
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {MapCreator} from "../../../src/engine/buildin/map-creator/map-creator.js";
@@ -11,7 +11,13 @@ import {Zombi} from './zombie.js';
 import {uploadGLBModel} from '../../../src/engine/loaders/webgpu-gltf.js';
 import {Player} from '../../../src/engine/plugin/player-object/player.js';
 import {mapParams} from './table-params.js';
+import {KaleidoscopeEffect} from '../../../src/engine/effects/KaleidoscopeEffect.js';
+import {KaleidoscopeEmitter} from '../../../src/engine/effects/kaleidoscopeEffectInstance.js';
 
+/**
+ * @description
+ * This is First Person Shooter demo.
+ */
 export var loadHang3d = function() {
   let app = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
@@ -37,6 +43,13 @@ export var loadHang3d = function() {
     app.activateBloomEffect();
 
     app.matrixSounds.createAudio('music', 'res/audios/audionautix-black-fly.mp3', 1);
+    app.matrixSounds.createAudio('shot', 'res/audios/gun/gunshot.mp3', 3);
+    app.matrixSounds.createAudio('zombie1', 'res/audios/zombie/zombie-1.mp3', 2);
+    app.matrixSounds.createAudio('zombie2', 'res/audios/zombie/zombie-2.mp3', 2);
+    app.matrixSounds.createAudio('zombie3', 'res/audios/zombie/zombie-9.mp3', 2);
+    app.matrixSounds.createAudio('zombiedead', 'res/audios/zombie/zombie-10.mp3', 2);
+    app.matrixSounds.createAudio('feelgood', 'res/audios/feel.mp3', 1);
+
     app.matrixSounds.audios.music.loop = true;
 
     app.UI = new hang3dUI();
@@ -52,12 +65,23 @@ export var loadHang3d = function() {
     app.energy = MobileDOM.addProgressBar({size: innerWidth / 3, bottom: 95, left: 33, color: '#00bcd4'});
     app.energy.setValue(100);
 
-    MobileDOM.addButton("status", () => {}, undefined, {
+    MobileDOM.addButton("Kills 0", () => {}, undefined, {
       id: 'player-status',
       image: "./res/textures/shooter/s.webp",
       left: isMobile() === true ? 10 : 15,
       bottom: isMobile() === true ? 90 : 85,
-      color: 'black',
+      color: 'red',
+      size: innerHeight / 10
+    })
+    const timeNode = document.createTextNode('');
+    byId('player-status').appendChild(timeNode);
+
+    MobileDOM.addButton("Ammo 100", () => {}, undefined, {
+      id: 'player-ammo',
+      image: "./res/textures/shooter/s.webp",
+      left: isMobile() === true ? 20 : 25,
+      bottom: isMobile() === true ? 90 : 85,
+      color: 'red',
       size: innerHeight / 10
     })
 
@@ -71,7 +95,6 @@ export var loadHang3d = function() {
     let preventFire = false;
 
     if(isMobile() === true) {
-
       MobileDOM.addButton("FIRE", () => {
         app.projectileSystem.fireProjectile();
       }, undefined, {
@@ -173,22 +196,13 @@ export var loadHang3d = function() {
         origin: {x: -6, y: 0, z: 0},
         axis: 'z',
         steps: 8,
-        stepW: 2,
+        stepW: 3,
         stepH: 0.4,
         stepD: 0.8,
         walls: true,
         uvShema: [3, 6],
         tag: 'stairs_up'
       });
-
-      // mc.createMazeLayer({
-      //   origin:    { x: -65, y: 0, z: 0 },
-      //   mazeSize:  15,
-      //   spacing:   2,
-      //   wallHeight: 3,
-      //   roof:      false,
-      //   tag:       'ground_maze'
-      // });
 
       mc.createMultiLevelMaze({
         origin: {x: -65, y: -3, z: -22},
@@ -215,13 +229,25 @@ export var loadHang3d = function() {
             name: nName,
             mesh: m.energyItem,
             physics: {enabled: false, mass: 0, geometry: 'Cube'},
-            raycast: {enabled: true, radius: 1}
+            raycast: {enabled: true, radius: 1},
+            pointerEffect: {
+              enabled: true,
+            }
           });
           app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+
+          setTimeout(() => {
+
+            if(!obj.effects) obj.effects = {};
+            obj.effects.kaleBullet = new KaleidoscopeEmitter(app.device, 'rgba16float', 30, app.cameraBuffer)
+            obj.effects.kaleBullet.recreateVertexDataCrazzy(20);
+            console.log(obj.effects.kaleBullet)
+          }, 56);
+
         } else if(item.type === 'cube') {
           const meshScale = 2;
           const nName = item.type + item.id;
-          const obj = app.addMeshObj({
+          app.addMeshObj({
             shadowsCast: true,
             material: {type: 'standard', shared: false},
             position: item.position,
@@ -236,12 +262,6 @@ export var loadHang3d = function() {
           app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
         }
       })
-      // mc.createFPSMapCompound({
-      //   origin:     { x: 0, y: 0, z: 100 },
-      //   multiLevel: true,
-      //   mazeLevels: 2,
-      //   mazeSize:   19
-      // });
 
       var glbFile01 = await fetch('./res/meshes/glb/zombie-cap.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
       var glbFile02 = await fetch('./res/meshes/glb/zombi-crawl.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
@@ -267,33 +287,31 @@ export var loadHang3d = function() {
         core: app,
         name: 'zombi-crawl',
         archetypes: ["zombie-crawl"],
-        // -8.35 ,1.1, 0.2
         position: {x: 4.35, y: 0.2, z: -10},
         data: glbFile02
       }
 
       app.zombies = [new Zombi(options), new Zombi(options1), new Zombi(optionsZC)];
-      // app.getSceneObjectIfIncludes("zombi-cap")
-
 
       const light = app.lightContainer[0];
       light.setPosition(0, 60, 0);
       light.setIntensity(20);
       app.cameras.firstPersonCamera.movementSpeed = 0.1;
-      app.cameras.firstPersonCamera.setPosition(0, 5, 0);
-      app.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1);
+      app.cameras.firstPersonCamera.setPosition(0, 7, 0);
+      app.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.1);
 
       app.projectileSystem = new ProjectileSystem(app, m.ball, app.collisionSystem,
         {
           projectileSpeed: 0.5,
           projectileScale: 0.075,
           onHitscanHit: (hitPoint, normal, reflect, entry) => {
-            console.log('app.getCamera().position[0] ', app.getCamera().position[0]);
-            console.log('app.getCamera().position[0] ', app.getCamera().position[1]);
+            // console.log('app.getCamera().position[0] ', app.getCamera().position[0]);
             let t = app.zombies.filter((z) => z.name === entry.id)[0]
-            if(t) t.takeDamage();
-            // console.log('ray hit', t);
-
+            if(t && entry.group) {
+              if(t && entry.group && entry.group === 'enemy') t.takeDamage();
+              if(t && entry.group && entry.group === 'zombi_head') t.takeDamage(2.5);
+            }
+            console.log('ray hit', t);
           },
           onProjectileHit: (hitPoint, normal, entry) => {
             console.log('rocket hit', entry.id);
@@ -304,7 +322,10 @@ export var loadHang3d = function() {
       app.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected', e.detail.hitObject.name);
         // app.projectileSystem.fireHitscan();
+        if (app.player.ammo < 1) return;
+        app.matrixSounds.play('shot');
         app.projectileSystem.fireProjectile();
+        app.player.useAmmo(1)
       });
     }, {scale: [1, 1, 1]});
   });

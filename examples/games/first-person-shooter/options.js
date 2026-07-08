@@ -72,16 +72,7 @@ export let settingsBox = `
         <span class="sliderSwitch round"></span>
       </label>
     </div>
-      <div style="margin-top:20px;margin-bottom:15px;">
-        <span style="font-size: larger;margin-bottom:15px" data-label="graphics"></span>
-        <p></p>
-        <label>Anim speed:</label>
-        <select id="physicsSpeed" class="setting-select">
-          <option value="1">Slow</option>
-          <option value="2">Normal</option>
-          <option value="3">Fast</option>
-        </select>
-      </div>
+ 
 
       <div>
         <label>Blur:</label>
@@ -197,7 +188,7 @@ export class hang3dUI {
     messageBox.style.display = 'none';
     messageBox.style.zIndex = 10000;
     messageBox.style.top = isMobile() ? '10%' : '5%';
-    messageBox.style.width = isMobile() ? '100%' : '50%';
+    messageBox.style.width = isMobile() ? '100%' : '82%';
     messageBox.style.background = 'black';
     messageBox.innerHTML = settingsBox;
     document.body.appendChild(messageBox);
@@ -248,12 +239,14 @@ export class hang3dUI {
     byId('settingsLight').addEventListener('change', (e) => {
       if(e.target.checked == true) {
         const light = app.lightContainer[0];
-        light.setPosition(0, 60, 0);
-        light.setIntensity(2);
+        // light.setPosition(0, 60, 0);
+        light.setIntensity(20);
+        light.setColor([100, 0.5, 1])
       } else {
         const light = app.lightContainer[0];
-        light.setPosition(0, 60, 0);
-        light.setIntensity(20);
+        // light.setPosition(0, 60, 0);
+        light.setIntensity(10);
+        light.setColor([100, 1, 100])
       }
     });
     setupCanvasFilters();

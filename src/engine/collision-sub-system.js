@@ -1,5 +1,4 @@
 export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
-  // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
   const dx = Bpos.x - Apos.x;
   const dz = Bpos.z - Apos.z;
   const distSq = dx * dx + dz * dz;
@@ -16,10 +15,6 @@ export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrengt
     Apos.z -= nz * pushA;
     Bpos.x += nx * pushB;
     Bpos.z += nz * pushB;
-    // Apos.targetX = Apos.x;
-    // Apos.targetZ = Apos.z;
-    // Bpos.targetX = Bpos.x;
-    // Bpos.targetZ = Bpos.z;
     return true;
   }
   // exact overlap (practically same point) -> small jitter to separate
@@ -101,7 +96,7 @@ export class CollisionSystem {
         camPos[0] = fakePos.x;
         camPos[1] = fakePos.y;
         camPos[2] = fakePos.z;
-        if(fakePos.y > prevY) { // entry.group === 'floor'
+        if(fakePos.y > prevY) {
           this._gravityAcc = 0;
           this._onGround = true;
         }
@@ -240,7 +235,7 @@ export class CollisionSystem {
   }
 
   removePickup(entry) {
-    entry.collected = true; // mark first, cheap flag check before any array splice
+    entry.collected = true;
     const idx = this.pickupEntries.indexOf(entry);
     if(idx !== -1) this.pickupEntries.splice(idx, 1);
     const key = this._cellKey(entry.pos.x, entry.pos.y ?? 0, entry.pos.z);
@@ -273,7 +268,6 @@ export class CollisionSystem {
   update() {
     if(!this.cameraEntry) return;
     this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
-    // XZ wall resolve — same neighbors, walls only, pass real entry
     const cam = this.cameraEntry;
     this.checkPickups(cam.pos, cam.radius);
     this._getNeighborCells(cam.pos[0], cam.pos[1], cam.pos[2], this._staticGrid, this._staticNeighbors);

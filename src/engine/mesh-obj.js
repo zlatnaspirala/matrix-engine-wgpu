@@ -16,6 +16,7 @@ import {MEConfig} from '../me-config';
 import {PointerEffect} from './effects/pointerEffect';
 import {buildPipelineKey, PipelineManager} from './pipelineManager';
 import {MSDFTextEffect} from './effects/msdfText';
+import {BloodBurst} from './effects/blood-target';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
@@ -684,6 +685,9 @@ export default class MEMeshObj extends Materials {
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device, "rgba16float", 20, this.cameraBuffer);
+        }
+        if(typeof this.pointerEffect.bloodBurst !== 'undefined' && this.pointerEffect.bloodBurst == true) {
+          this.effects.bloodBurst = new BloodBurst(device, "rgba16float", 20, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect(device, 'rgba16float', {

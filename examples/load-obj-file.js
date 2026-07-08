@@ -89,7 +89,8 @@ export var loadObjFile = function() {
         },
         pointerEffect: {
           enabled: true,
-          flameEmitter: true
+          flameEmitter: true,
+          bloodBurst: true
         }
       })
 

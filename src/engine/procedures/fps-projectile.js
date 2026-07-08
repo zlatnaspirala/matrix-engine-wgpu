@@ -2,6 +2,7 @@ import {flameEffect} from "../../shaders/flame-effect/flameEffect";
 import {pointerEffect} from "../../shaders/standalone/pointer.effect";
 import {FlameEffect} from "../effects/flame";
 import {FlameEmitter} from "../effects/flame-emmiter";
+import {KaleidoscopeEffect} from "../effects/KaleidoscopeEffect";
 import {KaleidoscopeEmitter} from "../effects/kaleidoscopeEffectInstance";
 import {randomIntFromTo} from "../utils";
 
@@ -124,11 +125,12 @@ export class ProjectileSystem {
     } else {
       // console.log("RE POS  ", name);
       const obj = this.engine.mainRenderBundle?.find(o => o.name === name);
-      if(obj) {obj.position.x = 99999; obj.position.y = 99999; obj.position.z = 99999;}      
+      if(obj) {obj.position.x = 99999; obj.position.y = 99999; obj.position.z = 99999;}
     }
   }
 
-  spawnDecal(hitPoint, normal) {
+  spawnDecal(hitPoint, normal, groupHit) {
+    const group = groupHit;
     const name = `decal_${this._uid++}`;
     const offset = 0.02;
     const s = this._decalSize;
@@ -137,12 +139,13 @@ export class ProjectileSystem {
       y: hitPoint.y + normal.y * offset,
       z: hitPoint.z + normal.z * offset,
     };
-    // flatten on normal axis — makes a quad oriented to the hit surface
     const scale = [
       normal.x !== 0 ? 0.02 : s,
       normal.y !== 0 ? 0.02 : s,
       normal.z !== 0 ? 0.02 : s,
     ];
+
+    const isEnemy = group === 'enemy' || group === 'zombi_head';
     const obj = this.engine.addMeshObj({
       shadowsCast: false,
       material: {type: 'standard', shared: false, useBlend: true},
@@ -154,19 +157,20 @@ export class ProjectileSystem {
       physics: {enabled: false, mass: 0, geometry: 'Cube'},
       pointerEffect: {
         enabled: true,
+        bloodBurst: isEnemy ? true : false
       }
     });
 
-    // obj.setBlend(0.1)
+    if(isEnemy) obj.setBlend(0.001)
     setTimeout(() => {
       // obj.effects.kaleBullet = new FlameEffect(this.engine.device, "rgba16float", "rgba16float", undefined, this.engine.cameraBuffer);
-      obj.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
+      // obj.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
+      console.log(group)
+      if(isEnemy) obj.effects.bloodBurst.spawn([0, 0, 0], null, 30, 3.0);
       // obj.effects.kaleBullet.recreateVertexData(5);
       // obj.effects.kaleBullet.setIntensity(100);
       // obj.effects.kaleBullet.setDirection("forward")
     }, 20)
-
-
     setTimeout(() => this._despawn(name), this._decalLifetime);
     return obj;
   }
@@ -181,7 +185,6 @@ export class ProjectileSystem {
     let closest = null;
     let closestT = maxDist;
     let closestN = null;
-
     for(const entry of this.collision.staticEntries) {
       const result = this._rayVsAABB(origin, dir, entry);
       if(result && result.t > 0.5 && result.t < closestT) {
@@ -190,60 +193,44 @@ export class ProjectileSystem {
         closestN = result.normal;
       }
     }
-
     if(!closest) return null;
-
     const hitPoint = {
       x: origin.x + dir.x * closestT,
       y: origin.y + dir.y * closestT,
       z: origin.z + dir.z * closestT,
     };
-
     const reflect = this._reflect(dir, closestN);
-
     this.spawnDecal(hitPoint, closestN);
-
     if(this.onHitscanHit) {
       this.onHitscanHit(hitPoint, closestN, reflect, closest);
     }
-
     return {hitPoint, normal: closestN, reflect, entry: closest, distance: closestT};
   }
 
-  /**
-   * Spawn a moving projectile from camera position.
-   * Position.translateByXYZ drives movement — no manual update needed.
-   *
-   * Collision check per frame:
-   *   // in your game loop / after collisionSystem.update():
-   *   ps.checkProjectiles();
-   */
   fireProjectile() {
     const {origin, dir} = this._getCameraState();
     const name = `proj_${this._uid++}`;
     const maxDist = 200;
     const rotation = this._dirToEuler(dir);
-
     // sweep the full path NOW, same test fireHitscan uses
     let closest = null;
     let closestT = maxDist;
     let closestN = null;
-
+    let groupHit = null;
     for(const entry of this.collision.staticEntries) {
       const result = this._rayVsAABB(origin, dir, entry);
       if(result && result.t > 0.001 && result.t < closestT) {
         closestT = result.t;
         closest = entry;
         closestN = result.normal;
+        groupHit = entry.group;
       }
     }
-
     // travel distance is capped at the wall, not the arbitrary 200
     const travelDist = closest ? closestT : maxDist;
     const targetX = origin.x + dir.x * travelDist;
     const targetY = origin.y + dir.y * travelDist;
     const targetZ = origin.z + dir.z * travelDist;
-
     const obj = this.engine.addMeshObj({
       shadowsCast: false,
       material: {type: 'standard', shared: false, useBlend: true},
@@ -254,15 +241,20 @@ export class ProjectileSystem {
       name,
       mesh: this.mesh,
       physics: {enabled: false, mass: 0, geometry: 'Cube'},
-      pointerEffect: {enabled: true}
+      pointerEffect: {
+        enabled: true
+      }
     });
 
     obj.effects = {};
-    obj.setBlend(0.1);
+    obj.setBlend(0.7);
     setTimeout(() => {
       obj.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
-      obj.effects.kaleBullet.recreateVertexData(2);
-      // obj.effects.kaleBullet.setIntensity(100);
+      // obj.effects.kaleBullet = new KaleidoscopeEffect(this.engine.device, "rgba16float", 'pyramid', undefined, this.engine.cameraBuffer);
+      // obj.effects.kaleBullet.recreateVertexData(12);
+      // console.log(obj.effects.kaleBullet)
+      obj.effects.kaleBullet.setIntensity(200);
+
     }, 10);
 
     obj.position.setSpeed(this._speed);
@@ -273,12 +265,12 @@ export class ProjectileSystem {
       if(closest) {
         const hitPoint = {x: targetX, y: targetY, z: targetZ};
         const reflect = this._reflect(dir, closestN);
-        setTimeout(() =>  this.spawnDecal(hitPoint, closestN) , 100)
+        setTimeout(() => this.spawnDecal(hitPoint, closestN, groupHit), 60)
         if(this.onHitscanHit) {
           this.onHitscanHit(hitPoint, closestN, reflect, closest);
         }
       }
-      setTimeout( () => this._despawn(name) , 100)
+      setTimeout(() => this._despawn(name), 100)
     };
 
     this.pArg.name = name;

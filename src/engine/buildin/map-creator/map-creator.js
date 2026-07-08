@@ -1,3 +1,6 @@
+import {pointerEffect} from "../../../shaders/standalone/pointer.effect";
+import {FlameEmitter} from "../../effects/flame-emmiter";
+
 /**
  * MapCreator — Map generator for matrix-engine-wgpu (the beast)
  * @description
@@ -51,7 +54,7 @@ export class MapCreator {
     return this._block(name, pos, [width, 0.2, depth], this._ceilTex, 'standard', false, 0, 'floor');
   }
 
-  _block(name, pos, scale, tex, mat = 'standard', registerCollision = true, collisionRadius = 1.0, group = 'walls', uvShema = false) {
+  _block(name, pos, scale, tex, mat = 'standard', registerCollision = true, collisionRadius = 1.0, group = 'walls', uvShema = false, effects = false) {
     const meshScale = 2; // nativly from core blender cube is 2 unit bound.
     const obj = this.engine.addMeshObj({
       shadowsCast: this.shadowsCast,
@@ -62,11 +65,22 @@ export class MapCreator {
       name,
       mesh: this.mesh,
       physics: {enabled: false, mass: 0, geometry: 'Cube'},
-      raycast: {enabled: true, radius: 1}
+      raycast: {enabled: true, radius: 1},
+      pointerEffect: {
+        enabled: effects,
+        flameEmitter: effects
+      }
     });
-    if(uvShema !== false) {
-      obj.setUVScale(uvShema[0], uvShema[1])
+    if(uvShema !== false) {obj.setUVScale(uvShema[0], uvShema[1])}
+    if(effects === true) {
+      setTimeout(() => {
+        // console.log('------------------', obj.effects)
+        obj.effects.flameEmitter.recreateVertexDataFromData([
+          -2.5825, 0.2112, 0.4249,
+          0.4724, 2.38, 3.01, -2.379, -3.46]);
+      }, 150)
     }
+
     if(registerCollision) {
       // always derive half-extents from actual scale — never from collisionRadius
       this.collision.registerStatic(name, pos, collisionRadius, group, {
@@ -116,10 +130,8 @@ export class MapCreator {
 
     const results = {walls: [], doors: [], floor: null, ceil: null};
     const hasDoor = (side) => doors.includes(side);
-
     const xWallDepth = depth - t * 2;   // trimmed
     const zWallWidth = width - t * 2;   // trimmed
-
     // 4 corner blocks — each is t × height × t
     const corners = [
       {x: x + hw - t / 2, z: z + hd - t / 2},
@@ -135,7 +147,7 @@ export class MapCreator {
         this._wallTex, 'standard', true, t
       ));
     }
-    // ── +X wall — trimmed ──
+    // +X wall — trimmed
     {
       const wx = x + hw - t / 2;
       if(hasDoor('+x')) {
@@ -145,7 +157,7 @@ export class MapCreator {
       }
     }
 
-    // ── -X wall — trimmed ──
+    // -X wall — trimmed
     {
       const wx = x - hw + t / 2;
       if(hasDoor('-x')) {
@@ -155,7 +167,7 @@ export class MapCreator {
       }
     }
 
-    // ── +Z wall — trimmed ──
+    // +Z wall — trimmed
     {
       const wz = z + hd - t / 2;
       if(hasDoor('+z')) {
@@ -165,7 +177,7 @@ export class MapCreator {
       }
     }
 
-    // ── -Z wall — trimmed ──
+    // -Z wall — trimmed
     {
       const wz = z - hd + t / 2;
       if(hasDoor('-z')) {
@@ -415,7 +427,7 @@ export class MapCreator {
           this._id(`${tag}_pillar`),
           {x: px, y: y + pillarH / 2, z: pz},
           [0.6, pillarH, 0.6],
-          this._wallTex, 'standard', true
+          this._wallTex, 'standard', true, undefined, undefined, undefined, true
         ));
       }
     }
@@ -549,7 +561,7 @@ export class MapCreator {
       origin,
       levels = 3,
       mazeSize = 15,
-      spacing = 2,
+      spacing = 1,
       wallHeight = 3,
       levelGap = 1,
       stairSteps = 6,
@@ -576,7 +588,7 @@ export class MapCreator {
       // Connect this level to the next via stairs at exit point
       if(lvl < levels - 1) {
         const stairOrigin = {
-          x: layer.exit.x + spacing,
+          x: layer.exit.x + spacing - 1,
           y,
           z: layer.exit.z
         };
