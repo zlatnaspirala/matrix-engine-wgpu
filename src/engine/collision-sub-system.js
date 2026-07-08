@@ -296,7 +296,7 @@ export class CollisionSystem {
       this._getNeighborCells(A.pos.x, A.pos.y, A.pos.z, this._grid, this._neighbors);
       for(let j = 0;j < this._neighbors.length;j++) {
         const B = this._neighbors[j];
-        // if(A === B) continue;
+        // if(A === B) continue; ??
         const minDist = (A.radius + B.radius) * 0.5;
         if(A.group === B.group) {
           resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);

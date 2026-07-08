@@ -756,7 +756,6 @@ export default class MatrixEngineWGPU {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-
     this.run(callback);
   }
 
@@ -838,6 +837,10 @@ export default class MatrixEngineWGPU {
   }
 
   getSceneObjectByName = (name) => {return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name)}
+
+  getSceneObjectIfIncludes = (str) => {
+    return this.mainRenderBundle.filter((o) => o.name.includes(str) === true);
+  }
 
   getSceneLightByName = (name) => {return this.lightContainer.find((l) => l.name === name)}
 

@@ -4647,13 +4647,6 @@ var CameraPath = class _CameraPath {
     return 1;
   }
 };
-function distance3D(a2, b2) {
-  if (!b2) return 1e3;
-  const dx = a2.x - b2.x;
-  const dy = a2.y - b2.y;
-  const dz = a2.z - b2.z;
-  return Math.sqrt(dx * dx + dy * dy + dz * dz);
-}
 
 // src/me-config.js
 window.urlQ = urlQuery;
@@ -43603,6 +43596,9 @@ var MatrixEngineWGPU = class {
   getSceneObjectByName = (name2) => {
     return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name2);
   };
+  getSceneObjectIfIncludes = (str2) => {
+    return this.mainRenderBundle.filter((o3) => o3.name.includes(str2) === true);
+  };
   getSceneLightByName = (name2) => {
     return this.lightContainer.find((l2) => l2.name === name2);
   };
@@ -55165,7 +55161,7 @@ var Zombi = class {
   };
   creepHPReset = 10;
   creepFocusAttackOn = null;
-  zombieSpeedWalk = 1e-3;
+  zombieSpeedWalk = 3e-3;
   // --- combat / hp state ---
   hp = this.creepHPReset;
   isDead = false;
@@ -55176,9 +55172,9 @@ var Zombi = class {
   aiConfig = {
     detectRangeFront: 25,
     detectRangeBack: 10,
-    attackRange: 2.6,
+    attackRange: 1.6,
     rotationStepDeg: 35,
-    stepDistance: 0.2
+    stepDistance: 0.4
   };
   aiState = "attack";
   // idle | chase | attack | dead
@@ -55187,6 +55183,7 @@ var Zombi = class {
     this.core = o3.core;
     this.group = group;
     this.team = team;
+    this.archetype = archetypes[0];
     this.loadCreep(o3);
     return this;
   }
@@ -55230,6 +55227,7 @@ var Zombi = class {
           subMesh.animationIndex = 0;
           subMesh.glb.glbJsonData.animations.forEach((a2, index) => {
             console.info(`%c Animation loading for creeps: ${a2.name} index ${index}`, LOG_MATRIX);
+            if (a2.name == "crawl") this.zombieAnims.crawl = index;
             if (a2.name == "dead") this.zombieAnims.dead = index;
             if (a2.name == "zombi-walking") this.zombieAnims.walk = index;
             if (a2.name == "no_no") this.zombieAnims.nono = index;
@@ -55243,7 +55241,7 @@ var Zombi = class {
             this.core.collisionSystem.registerStatic(
               o3.name,
               subMesh.position,
-              0.7,
+              0.1,
               this.group,
               {
                 x: subMesh.scale[0] / 3.5,
@@ -55253,7 +55251,7 @@ var Zombi = class {
             );
           } else {
             subMesh.position = bPos;
-            this.core.collisionSystem.registerStatic(o3.name, subMesh.position, 0.7, "zombi_head");
+            this.core.collisionSystem.registerStatic(o3.name, subMesh.position, 0.1, "zombi_head");
           }
         });
         this.attachEvents();
@@ -55263,7 +55261,11 @@ var Zombi = class {
   };
   setWalk() {
     this.zombie_bodies.forEach((subMesh) => {
-      subMesh.playAnimationByIndex(this.zombieAnims.walk);
+      if (this.archetype === "zombie-crawl") {
+        subMesh.playAnimationByIndex(this.zombieAnims.crawl);
+      } else {
+        subMesh.playAnimationByIndex(this.zombieAnims.walk);
+      }
     });
   }
   setSalute() {
@@ -55284,6 +55286,11 @@ var Zombi = class {
   setAttack() {
     this.zombie_bodies.forEach((subMesh) => {
       subMesh.playAnimationByIndex(this.zombieAnims.attack);
+    });
+  }
+  setAmbientColor(r3, b2, g2) {
+    this.core.getSceneObjectIfIncludes("zombi-cap").forEach((part) => {
+      part.setAmbient(r3, b2, g2, 1);
     });
   }
   setStartUpPosCreep() {
@@ -55369,7 +55376,7 @@ var Zombi = class {
     if (step > 0) {
       const rawX = zp.x + nx * step;
       const rawZ = zp.z + nz * step;
-      const resolved = this.resolveStaticCollisionXZ(rawX, zp.y, rawZ, 0.5);
+      const resolved = this.resolveStaticCollisionXZ(rawX, zp.y, rawZ, 0.7);
       zombiePos.translateByXYZ(resolved.x, zp.y, resolved.z);
     }
     return newRotY;
@@ -55382,6 +55389,12 @@ var Zombi = class {
     }
     this._attackCooldownLeft = this.attackCooldownTicks;
     this.exposeDamage = true;
+    this.setAttack();
+  }
+  distanceXZ(a2, b2) {
+    const dx = a2.x - b2.x;
+    const dz = a2.z - b2.z;
+    return Math.sqrt(dx * dx + dz * dz);
   }
   navigateStep() {
     if (this.isDead) return;
@@ -55389,7 +55402,7 @@ var Zombi = class {
     const playerPos = this.getPlayerPosition();
     if (!playerPos) return;
     const zp = vecOf(head.position);
-    const dist2 = distance3D(zp, playerPos);
+    const dist2 = this.distanceXZ(zp, playerPos);
     const inFront = this.isPlayerInFront(head.position, head.rotation.y, playerPos);
     const detectRange = inFront ? this.aiConfig.detectRangeFront : this.aiConfig.detectRangeBack;
     if (dist2 > detectRange) {
@@ -55446,6 +55459,8 @@ var Zombi = class {
         return;
       }
       if (this.exposeDamage === true) {
+        console.log(" EXPOSE DAMAGE");
+        this.setAttack();
         app.player.takeDamage(this.attackDamage);
         app.energy.setValue(app.player.energy);
       }
@@ -55723,6 +55738,7 @@ var loadHang3d = function() {
         }
       });
       var glbFile01 = await fetch("./res/meshes/glb/zombie-cap.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
+      var glbFile02 = await fetch("./res/meshes/glb/zombi-crawl.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
       const options2 = {
         core: app2,
         name: "zombi-cap",
@@ -55738,7 +55754,15 @@ var loadHang3d = function() {
         position: { x: -4.35, y: 0.2, z: -10 },
         data: glbFile01
       };
-      app2.zombies = [new Zombi(options2), new Zombi(options1)];
+      const optionsZC = {
+        core: app2,
+        name: "zombi-crawl",
+        archetypes: ["zombie-crawl"],
+        // -8.35 ,1.1, 0.2
+        position: { x: 4.35, y: 0.2, z: -10 },
+        data: glbFile02
+      };
+      app2.zombies = [new Zombi(options2), new Zombi(options1), new Zombi(optionsZC)];
       const light = app2.lightContainer[0];
       light.setPosition(0, 60, 0);
       light.setIntensity(20);

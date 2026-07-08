@@ -244,6 +244,7 @@ export var loadHang3d = function() {
       // });
 
       var glbFile01 = await fetch('./res/meshes/glb/zombie-cap.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
+      var glbFile02 = await fetch('./res/meshes/glb/zombi-crawl.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
 
       const options = {
         core: app,
@@ -262,16 +263,25 @@ export var loadHang3d = function() {
         data: glbFile01
       }
 
-      app.zombies = [new Zombi(options), new Zombi(options1)];
+      const optionsZC = {
+        core: app,
+        name: 'zombi-crawl',
+        archetypes: ["zombie-crawl"],
+        // -8.35 ,1.1, 0.2
+        position: {x: 4.35, y: 0.2, z: -10},
+        data: glbFile02
+      }
 
-      // app.matrixSounds.play('music');
+      app.zombies = [new Zombi(options), new Zombi(options1), new Zombi(optionsZC)];
+      // app.getSceneObjectIfIncludes("zombi-cap")
+
 
       const light = app.lightContainer[0];
       light.setPosition(0, 60, 0);
       light.setIntensity(20);
       app.cameras.firstPersonCamera.movementSpeed = 0.1;
       app.cameras.firstPersonCamera.setPosition(0, 5, 0);
-      app.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
+      app.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1);
 
       app.projectileSystem = new ProjectileSystem(app, m.ball, app.collisionSystem,
         {
