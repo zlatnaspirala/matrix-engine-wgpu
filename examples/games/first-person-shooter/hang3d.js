@@ -312,11 +312,11 @@ export var loadHang3d = function() {
       })
 
       var glbFile01 = await fetch('./res/meshes/glb/zombie-cap.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
-      var glbFile02 = await fetch('./res/meshes/glb/zombi-crawl.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
+      var glbFile02 = await fetch('./res/meshes/glb/zombi-crawl1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
 
-      const options = {
+      const options0 = {
         core: app,
-        name: 'zombi-cap',
+        name: 'zombi-cap0',
         archetypes: ["zombie"],
         position: {x: 0, y: 0.2, z: -10},
         data: glbFile01
@@ -324,33 +324,70 @@ export var loadHang3d = function() {
 
       const options1 = {
         core: app,
-        name: 'zombi-red',
+        name: 'zombi-cap1',
         archetypes: ["zombie"],
         // -8.35 ,1.1, 0.2
         position: {x: -4.35, y: 0.2, z: -10},
         data: glbFile01
       }
 
-      const optionsZC = {
+      const options2 = {
         core: app,
-        name: 'zombi-crawl',
+        name: 'zombi-cap2',
+        archetypes: ["zombie"],
+        // -8.35 ,1.1, 0.2
+        position: {x: -4.35, y: 0.2, z: -10},
+        data: glbFile01
+      }
+
+      const optionsC0 = {
+        core: app,
+        name: 'zombi-crawl0',
         archetypes: ["zombie-crawl"],
         position: {x: 4.35, y: 0.2, z: -10},
         data: glbFile02
       }
 
-      const optionsZombiMaze = {
+      const optionsC1 = {
         core: app,
-        name: 'zombi-crawl',
+        name: 'zombi-crawl1',
         archetypes: ["zombie-crawl"],
-        //-44.79292678833008, 2.200000047683716, -0.2890084981918335
-        position: {x: -44.79292678833008, y: 2.3, z: -0.29},
+        position: {x: 0, y: 0.2, z: -10},
+        data: glbFile02
+      }
+
+      const optionsZombiMaze0 = {
+        core: app,
+        name: 'zombi-c-maze0',
+        archetypes: ["zombie-crawl"],
+        position: {x: -44.79292678833008, y: 1.3, z: -0.29},
+        data: glbFile02
+      }
+
+      const optionsZombiMaze1 = {
+        core: app,
+        name: 'zombi-c-maze1',
+        archetypes: ["zombie-crawl"],
+        position: {x: -43.14, y: 1.3, z: -19.38},
+        data: glbFile02
+      }
+
+      const optionsZombiMaze2 = {
+        core: app,
+        name: 'zombi-c-maze2',
+        archetypes: ["zombie-crawl"],
+        position: {x: -42.14, y: 1.3, z: -19.38},
         data: glbFile02
       }
 
       // -50.89930725097656, 2.200000047683716, -15.458013534545898
-
-      app.zombies = [new Zombi(options), new Zombi(options1), new Zombi(optionsZC), new Zombi(optionsZombiMaze)];
+      app.zombies = [
+        // base
+         new Zombi(options0), new Zombi(options1), new Zombi(options2),
+         new Zombi(optionsC0), new Zombi(optionsC1),
+        // maze
+        new Zombi(optionsZombiMaze0), new Zombi(optionsZombiMaze1), new Zombi(optionsZombiMaze2)
+      ];
 
       const light = app.lightContainer[0];
       light.setPosition(0, 60, 0);

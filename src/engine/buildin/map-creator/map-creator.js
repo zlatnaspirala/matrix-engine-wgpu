@@ -120,15 +120,15 @@ export class MapCreator {
         // console.log('------------------', obj.effects)
         if(!obj.effects) obj.effects = {};
         obj.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
-        // obj.effects.flameEmitter.recreateVertexDataFromData([
-        //   -2.5825, 0.2112, 0.4249,
-        //   0.4724, 2.38, 3.01, -2.379, -3.46]);
+        obj.effects.flameEmitter.recreateVertexDataFromData([
+          -2.5825, 0.2112, 0.4249,
+          0.4724, 2.38, 3.01, -2.379, -3.46]);
 
         obj.effects.flameEmitter.setIntensity(randomIntFromTo(1,10));
         // obj.effects.flameEmitter.recreateVertexDataCrazzy(1);
-        obj.effects.flameEmitter.recreateVertexDataRND(2);
+        // obj.effects.flameEmitter.recreateVertexDataRND(2);
         obj.effects.flameEmitter.instanceTargets.forEach((e) => {
-          e.currentScale = [2.5, 3, 2.5]
+          e.currentScale = [1, 2, 1]
         })
         obj.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
           array[i].color = [randomIntFromTo(5,20), randomIntFromTo(0,2), randomIntFromTo(0,2), 0.7];

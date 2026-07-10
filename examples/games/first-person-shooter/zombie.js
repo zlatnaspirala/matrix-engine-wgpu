@@ -52,16 +52,17 @@ export class Zombi {
     this.o = o;
     try {
       this.core.addGlbObjInctance({
-        material: {type: 'standard', useTextureFromGlb: true , shared: true},
+        material: {type: 'standard', useTextureFromGlb: (this.o.name.includes("zombi-cap") === true ? false : true) , shared: true},
         shadowsCast: false,
         scale: [0.9, 0.9, 0.9],
         position: o.position,
         name: o.name,
+        texturesPaths: ['./res/meshes/glb/zombi-cap.webp'],
         // texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {enabled: true, radius: 1.1},
         pointerEffect: {
           enabled: true,
-          energyBar: true
+          // energyBar: true
         }
       }, null, o.data);
       this.asyncHelper(this.o).then(() => {
@@ -76,11 +77,13 @@ export class Zombi {
   asyncHelper = async (o) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        this.zombie_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name));
+        this.zombie_bodies = app.mainRenderBundle.filter(obj => obj.name && obj.name.includes(o.name) === true);
         if(this.zombie_bodies.length == 0) {
           reject();
           return;
         }
+
+        console.log('proccessed this.zombie_bodies ', this.zombie_bodies)
         let bPos;
         this.zombie_bodies.forEach((subMesh, idx) => {
           subMesh.position.thrust = this.zombieSpeedWalk;
@@ -99,7 +102,7 @@ export class Zombi {
           if(idx == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             bPos = subMesh.position;
-            this.core.collisionSystem.register(o.name, subMesh.position, 0.1, this.group,
+            this.core.collisionSystem.registerStatic(o.name, subMesh.position, 0.1, this.group,
               {
                 x: subMesh.scale[0] / 3.5,
                 y: subMesh.scale[1] * 1.5,
@@ -181,9 +184,9 @@ export class Zombi {
 
   updateEnergyBar() {
     const head = this.zombie_bodies[0];
-    if(head?.effects?.energyBar) {
-      head.effects.energyBar.setProgress(this.hp / this.creepHPReset); // 0-1 scale
-    }
+    // if(head?.effects?.energyBar) {
+    //   head.effects.energyBar.setProgress(this.hp / this.creepHPReset); // 0-1 scale
+    // }
   }
 
   takeDamage(amount = 0.2) {
@@ -204,8 +207,8 @@ export class Zombi {
     this.core.collisionSystem.unregister?.(this.name);
     dispatchEvent(this.zombiDieEvent);
     setTimeout(() => {
-      console.log('animationEnd  test spawn zombi ->>>>>>>>>>>>>>>>>>>>')
-      this.spawnPosZombie(1);
+      // console.log('<>')
+      this.spawnPosZombie(randomIntFromTo(1,3));
       this.setIdle();
     }, 600);
   }

@@ -513,7 +513,7 @@ export default class MaterialsInstanced {
 
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
-    if(!matDef) {console.warn('[engine] no material in glb...'); return null;}
+    if(!matDef) {console.warn('[engine][ins] no material in glb...'); return null;}
     if(matDef.pbrMetallicRoughness?.baseColorTexture) {
       const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
       return glb.glbJsonData.glbTextures[texIndex].createView();

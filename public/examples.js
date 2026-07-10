@@ -24934,7 +24934,7 @@ var MaterialsInstanced = class {
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
     if (!matDef) {
-      console.warn("[engine] no material in glb...");
+      console.warn("[engine][ins] no material in glb...");
       return null;
     }
     if (matDef.pbrMetallicRoughness?.baseColorTexture) {
@@ -54420,10 +54420,19 @@ var MapCreator = class {
       setTimeout(() => {
         if (!obj2.effects) obj2.effects = {};
         obj2.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
+        obj2.effects.flameEmitter.recreateVertexDataFromData([
+          -2.5825,
+          0.2112,
+          0.4249,
+          0.4724,
+          2.38,
+          3.01,
+          -2.379,
+          -3.46
+        ]);
         obj2.effects.flameEmitter.setIntensity(randomIntFromTo(1, 10));
-        obj2.effects.flameEmitter.recreateVertexDataRND(2);
         obj2.effects.flameEmitter.instanceTargets.forEach((e2) => {
-          e2.currentScale = [2.5, 3, 2.5];
+          e2.currentScale = [1, 2, 1];
         });
         obj2.effects.flameEmitter.instanceTargets.forEach((p2, i2, array) => {
           array[i2].color = [randomIntFromTo(5, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 0.7];
@@ -55509,7 +55518,8 @@ var mapParams = {
     startUpPositions: {
       south: [-20, 0.2, 20],
       p1: [-8.35, 0.2, 4.56],
-      p2: [-8.35, 0.2, 4.56],
+      p2: [8.35, 0.2, 4.56],
+      p3: [4.35, 0.2, 4.56],
       north: [20, 0.2, -20]
     }
   },
@@ -55566,16 +55576,17 @@ var Zombi = class {
     this.o = o3;
     try {
       this.core.addGlbObjInctance({
-        material: { type: "standard", useTextureFromGlb: true, shared: true },
+        material: { type: "standard", useTextureFromGlb: this.o.name.includes("zombi-cap") === true ? false : true, shared: true },
         shadowsCast: false,
         scale: [0.9, 0.9, 0.9],
         position: o3.position,
         name: o3.name,
+        texturesPaths: ["./res/meshes/glb/zombi-cap.webp"],
         // texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: { enabled: true, radius: 1.1 },
         pointerEffect: {
-          enabled: true,
-          energyBar: true
+          enabled: true
+          // energyBar: true
         }
       }, null, o3.data);
       this.asyncHelper(this.o).then(() => {
@@ -55592,11 +55603,12 @@ var Zombi = class {
   asyncHelper = async (o3) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        this.zombie_bodies = app.mainRenderBundle.filter((obj2) => obj2.name && obj2.name.includes(o3.name));
+        this.zombie_bodies = app.mainRenderBundle.filter((obj2) => obj2.name && obj2.name.includes(o3.name) === true);
         if (this.zombie_bodies.length == 0) {
           reject();
           return;
         }
+        console.log("proccessed this.zombie_bodies ", this.zombie_bodies);
         let bPos;
         this.zombie_bodies.forEach((subMesh, idx) => {
           subMesh.position.thrust = this.zombieSpeedWalk;
@@ -55615,7 +55627,7 @@ var Zombi = class {
           if (idx == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             bPos = subMesh.position;
-            this.core.collisionSystem.register(
+            this.core.collisionSystem.registerStatic(
               o3.name,
               subMesh.position,
               0.1,
@@ -55702,9 +55714,6 @@ var Zombi = class {
   }
   updateEnergyBar() {
     const head = this.zombie_bodies[0];
-    if (head?.effects?.energyBar) {
-      head.effects.energyBar.setProgress(this.hp / this.creepHPReset);
-    }
   }
   takeDamage(amount = 0.2) {
     if (this.isDead) return;
@@ -55723,8 +55732,7 @@ var Zombi = class {
     this.core.collisionSystem.unregister?.(this.name);
     dispatchEvent(this.zombiDieEvent);
     setTimeout(() => {
-      console.log("animationEnd  test spawn zombi ->>>>>>>>>>>>>>>>>>>>");
-      this.spawnPosZombie(1);
+      this.spawnPosZombie(randomIntFromTo(1, 3));
       this.setIdle();
     }, 600);
   }
@@ -56231,38 +56239,77 @@ var loadHang3d = function() {
         }
       });
       var glbFile01 = await fetch("./res/meshes/glb/zombie-cap.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
-      var glbFile02 = await fetch("./res/meshes/glb/zombi-crawl.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
-      const options2 = {
+      var glbFile02 = await fetch("./res/meshes/glb/zombi-crawl1.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
+      const options0 = {
         core: app2,
-        name: "zombi-cap",
+        name: "zombi-cap0",
         archetypes: ["zombie"],
         position: { x: 0, y: 0.2, z: -10 },
         data: glbFile01
       };
       const options1 = {
         core: app2,
-        name: "zombi-red",
+        name: "zombi-cap1",
         archetypes: ["zombie"],
         // -8.35 ,1.1, 0.2
         position: { x: -4.35, y: 0.2, z: -10 },
         data: glbFile01
       };
-      const optionsZC = {
+      const options2 = {
         core: app2,
-        name: "zombi-crawl",
+        name: "zombi-cap2",
+        archetypes: ["zombie"],
+        // -8.35 ,1.1, 0.2
+        position: { x: -4.35, y: 0.2, z: -10 },
+        data: glbFile01
+      };
+      const optionsC0 = {
+        core: app2,
+        name: "zombi-crawl0",
         archetypes: ["zombie-crawl"],
         position: { x: 4.35, y: 0.2, z: -10 },
         data: glbFile02
       };
-      const optionsZombiMaze = {
+      const optionsC1 = {
         core: app2,
-        name: "zombi-crawl",
+        name: "zombi-crawl1",
         archetypes: ["zombie-crawl"],
-        //-44.79292678833008, 2.200000047683716, -0.2890084981918335
-        position: { x: -44.79292678833008, y: 2.3, z: -0.29 },
+        position: { x: 0, y: 0.2, z: -10 },
         data: glbFile02
       };
-      app2.zombies = [new Zombi(options2), new Zombi(options1), new Zombi(optionsZC), new Zombi(optionsZombiMaze)];
+      const optionsZombiMaze0 = {
+        core: app2,
+        name: "zombi-c-maze0",
+        archetypes: ["zombie-crawl"],
+        position: { x: -44.79292678833008, y: 1.3, z: -0.29 },
+        data: glbFile02
+      };
+      const optionsZombiMaze1 = {
+        core: app2,
+        name: "zombi-c-maze1",
+        archetypes: ["zombie-crawl"],
+        position: { x: -43.14, y: 1.3, z: -19.38 },
+        data: glbFile02
+      };
+      const optionsZombiMaze2 = {
+        core: app2,
+        name: "zombi-c-maze2",
+        archetypes: ["zombie-crawl"],
+        position: { x: -42.14, y: 1.3, z: -19.38 },
+        data: glbFile02
+      };
+      app2.zombies = [
+        // base
+        new Zombi(options0),
+        new Zombi(options1),
+        new Zombi(options2),
+        new Zombi(optionsC0),
+        new Zombi(optionsC1),
+        // maze
+        new Zombi(optionsZombiMaze0),
+        new Zombi(optionsZombiMaze1),
+        new Zombi(optionsZombiMaze2)
+      ];
       const light = app2.lightContainer[0];
       light.setPosition(0, 60, 0);
       light.setIntensity(20);
