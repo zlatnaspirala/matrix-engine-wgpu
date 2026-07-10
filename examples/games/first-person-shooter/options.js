@@ -199,7 +199,7 @@ export class hang3dUI {
       position: 'fixed',
       top: `2%`,
       right: `5%`,
-      width: '140px',
+      // width: '140px',
       // height: `80px`,
       background: `rgba(0,0,0,1)`,
       border: `2px solid rgba(255,255,255,1)`,

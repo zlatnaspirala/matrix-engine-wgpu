@@ -8209,7 +8209,7 @@ var MobileDOM = {
       bottom: `${bottom}%`,
       left: `${left2}%`,
       width: `${size2}px`,
-      height: `${size2 * 0.01}px`,
+      height: `${size2 * 0.04}px`,
       background: `rgba(0,0,0,${opacity})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
       borderRadius: `${size2 * 0.05}px`,
@@ -54319,6 +54319,25 @@ var loadStreamRenderHost = function() {
   window.app = streamRender;
 };
 
+// examples/games/first-person-shooter/table-params.js
+var mapParams = {
+  zombie: {
+    startUpPositions: {
+      south: [-20, 0.2, 20],
+      p1: [-8.35, 0.2, 4.56],
+      p2: [8.35, 0.2, 4.56],
+      p3: [4.35, 0.2, 4.56],
+      north: [20, 0.2, -20]
+    }
+  },
+  collectItems: [
+    { id: "1", position: { x: 2.5, y: 0.4, z: 10 }, radius: 0.4, type: "ammo", amount: "100", scale: [0.3, 0.3, 0.3], tex: "./res/textures/metal/metal1.webp" },
+    { id: "2", position: { x: -4, y: 0.4, z: -10 }, radius: 0.4, type: "energy", amount: "50", scale: [0.8, 0.8, 0.8], tex: "./res/textures/blankgray2.webp" },
+    { id: "3", position: { x: -60.56, y: -1.799, z: -0.045 }, radius: 0.4, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" },
+    { id: "4", position: { x: -44.79292678833008, y: 2.3, z: -0.29 }, radius: 1, type: "armor", amount: "50", scale: [1, 1, 1], tex: "./res/meshes/obj/armor.webp" }
+  ]
+};
+
 // src/engine/buildin/map-creator/map-creator.js
 var MapCreator = class {
   /**
@@ -54342,6 +54361,7 @@ var MapCreator = class {
     this.pillarsFlame = opts.pillarsFlame || false;
     this.shadowsCast = opts.shadowsCast || true;
     this._uid = 0;
+    this.addMapItems();
   }
   _id(prefix) {
     return `${prefix}_${this._uid++}`;
@@ -55037,6 +55057,161 @@ var MapCreator = class {
     }
     return all;
   }
+  addMapItems() {
+    mapParams.collectItems.forEach((item) => {
+      if (item.type === "energy") {
+        const meshScale = 2;
+        const nName = item.type + item.id;
+        const obj2 = app.addMeshObj({
+          shadowsCast: true,
+          material: { type: "standard", shared: false },
+          position: item.position,
+          rotationSpeed: { x: 0, y: 1, z: 0 },
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          name: nName,
+          mesh: this.meshes.energyItem,
+          physics: { enabled: false, mass: 0, geometry: "Cube" },
+          raycast: { enabled: true, radius: 1 },
+          pointerEffect: { enabled: true }
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        setTimeout(() => {
+          obj2.setBlend(0.85);
+          obj2.setupMaterialPBR([12, 4, 1], 2, 0.1, 0.1);
+          if (!obj2.effects) obj2.effects = {};
+          obj2.effects.kaleBullet1 = new FlameEffect(app.device, "rgba16float", "rgba16float", FlamePresets.bonfire, app.cameraBuffer);
+          obj2.effects.kaleBullet1.setGeometry(geometryTypes.ring, 2);
+          obj2.effects.kaleBullet1.speed = 5;
+          obj2.effects.kaleBullet1.intensity = 40;
+        }, 350);
+      } else if (item.type === "ammo") {
+        const meshScale = 2 + 1;
+        const nName = item.type + item.id;
+        const obj_ = app.addMeshObj({
+          shadowsCast: true,
+          material: { type: "standard", shared: false },
+          position: item.position,
+          rotationSpeed: { x: 0, y: 1, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          useBlend: true,
+          name: nName,
+          mesh: this.meshes.ammo,
+          physics: { enabled: false, mass: 0, geometry: "Cube" },
+          raycast: { enabled: true, radius: 1 },
+          pointerEffect: { enabled: true }
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+      } else if (item.type === "armor") {
+        const meshScale = 2;
+        const nName = item.type + item.id;
+        const obj_ = app.addMeshObj({
+          shadowsCast: true,
+          material: { type: "standard", shared: false },
+          position: item.position,
+          rotationSpeed: { x: 0, y: 2, z: 0 },
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          useBlend: true,
+          name: nName,
+          mesh: this.meshes.armor,
+          physics: { enabled: false, mass: 0, geometry: "Cube" },
+          raycast: { enabled: true, radius: 1 },
+          pointerEffect: { enabled: true }
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        setTimeout(() => {
+          obj_.setBlend(0.5);
+          if (!obj_.effects) obj_.effects = {};
+          obj_.effects.kaleBullet1 = new FlameEffect(app.device, "rgba16float", "rgba16float", FlamePresets.torch, app.cameraBuffer);
+          obj_.effects.kaleBullet1.setScale(0.5);
+          obj_.effects.kaleBullet1.speed = 5;
+          obj_.effects.kaleBullet1.intensity = 40;
+        }, 350);
+      }
+    });
+  }
+  respawnMapItem(type2, id2) {
+    mapParams.collectItems.forEach((item) => {
+      if (item.type === "energy" && type2 === "energy") {
+        const nName = item.type + item.id;
+        if (id2 !== nName) return;
+        const meshScale = 2;
+        const obj2 = app.addMeshObj({
+          shadowsCast: true,
+          material: { type: "standard", shared: false },
+          position: item.position,
+          rotationSpeed: { x: 0, y: 1, z: 0 },
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          name: nName,
+          mesh: this.meshes.energyItem,
+          physics: { enabled: false, mass: 0, geometry: "Cube" },
+          raycast: { enabled: true, radius: 1 },
+          pointerEffect: { enabled: true }
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        setTimeout(() => {
+          obj2.setBlend(0.85);
+          obj2.setupMaterialPBR([12, 4, 1], 2, 0.1, 0.1);
+          if (!obj2.effects) obj2.effects = {};
+          obj2.effects.kaleBullet1 = new FlameEffect(app.device, "rgba16float", "rgba16float", FlamePresets.bonfire, app.cameraBuffer);
+          obj2.effects.kaleBullet1.setGeometry(geometryTypes.ring, 2);
+          obj2.effects.kaleBullet1.speed = 5;
+          obj2.effects.kaleBullet1.intensity = 40;
+        }, 350);
+      } else if (item.type === "ammo" && type2 === "ammo") {
+        const nName = item.type + item.id;
+        if (id2 !== nName) return;
+        const meshScale = 2 + 1;
+        const obj_ = app.addMeshObj({
+          shadowsCast: true,
+          material: { type: "standard", shared: false },
+          position: item.position,
+          rotationSpeed: { x: 0, y: 1, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          useBlend: true,
+          name: nName,
+          mesh: this.meshes.ammo,
+          physics: { enabled: false, mass: 0, geometry: "Cube" },
+          raycast: { enabled: true, radius: 1 },
+          pointerEffect: { enabled: true }
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+      } else if (item.type === "armor" && type2 === "armor") {
+        const nName = item.type + item.id;
+        if (id2 !== nName) return;
+        const meshScale = 2;
+        const obj_ = app.addMeshObj({
+          shadowsCast: true,
+          material: { type: "standard", shared: false },
+          position: item.position,
+          rotationSpeed: { x: 0, y: 2, z: 0 },
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          useBlend: true,
+          name: nName,
+          mesh: this.meshes.armor,
+          physics: { enabled: false, mass: 0, geometry: "Cube" },
+          raycast: { enabled: true, radius: 1 },
+          pointerEffect: { enabled: true }
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        setTimeout(() => {
+          obj_.setBlend(0.5);
+          if (!obj_.effects) obj_.effects = {};
+          obj_.effects.kaleBullet1 = new FlameEffect(app.device, "rgba16float", "rgba16float", FlamePresets.torch, app.cameraBuffer);
+          obj_.effects.kaleBullet1.setScale(0.5);
+          obj_.effects.kaleBullet1.speed = 5;
+          obj_.effects.kaleBullet1.intensity = 40;
+        }, 350);
+      }
+    });
+  }
 };
 
 // src/engine/procedures/fps-projectile.js
@@ -55451,7 +55626,7 @@ var hang3dUI = class {
       position: "fixed",
       top: `2%`,
       right: `5%`,
-      width: "140px",
+      // width: '140px',
       // height: `80px`,
       background: `rgba(0,0,0,1)`,
       border: `2px solid rgba(255,255,255,1)`,
@@ -55512,26 +55687,6 @@ var hang3dUI = class {
   }
 };
 
-// examples/games/first-person-shooter/table-params.js
-var mapParams = {
-  zombie: {
-    startUpPositions: {
-      south: [-20, 0.2, 20],
-      p1: [-8.35, 0.2, 4.56],
-      p2: [8.35, 0.2, 4.56],
-      p3: [4.35, 0.2, 4.56],
-      north: [20, 0.2, -20]
-    }
-  },
-  collectItems: [
-    { id: "1", position: { x: 2.5, y: 1.3, z: 10 }, radius: 0.5, type: "ammo", amount: "100", scale: [-0.5, -0.5, -0.5], tex: "./res/textures/shooter/hang3d.png" },
-    { id: "2", position: { x: -4, y: 1.3, z: -10 }, radius: 1, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" },
-    { id: "3", position: { x: -60.56, y: -1.799, z: -0.045 }, radius: 1, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" },
-    { id: "4", position: { x: -44.79292678833008, y: 2.3, z: -0.29 }, radius: 1, type: "armor", amount: "50", scale: [1, 1, 1], tex: "./res/meshes/obj/armor.webp" }
-    //-3.297156572341919, 1.2999999523162842, 19.40506362915039
-  ]
-};
-
 // examples/games/first-person-shooter/zombie.js
 var DEG2RAD = Math.PI / 180;
 var RAD2DEG = 180 / Math.PI;
@@ -55549,7 +55704,7 @@ var Zombi = class {
   zombieSpeedWalk = 3e-3;
   hp = this.creepHPReset;
   isDead = false;
-  attackDamage = 8;
+  attackDamage = 32;
   exposeDamage = false;
   attackCooldownTicks = 100;
   _attackCooldownLeft = 0;
@@ -55563,6 +55718,7 @@ var Zombi = class {
   zombiDieEvent = new CustomEvent("zombie-die", { detail: null });
   aiState = "attack";
   // idle | chase | attack | dead
+  cam = app.getCamera();
   constructor(o3, archetypes = ["zombie"], group = "enemy", team) {
     this.name = o3.name;
     this.core = o3.core;
@@ -55578,11 +55734,10 @@ var Zombi = class {
       this.core.addGlbObjInctance({
         material: { type: "standard", useTextureFromGlb: this.o.name.includes("zombi-cap") === true ? false : true, shared: true },
         shadowsCast: false,
-        scale: [0.9, 0.9, 0.9],
+        scale: [0.8, 0.8, 0.8],
         position: o3.position,
         name: o3.name,
-        texturesPaths: ["./res/meshes/glb/zombi-cap.webp"],
-        // texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+        texturesPaths: this.o.name.includes("zombi-cap") === true ? ["./res/meshes/glb/zombi-cap.webp"] : void 0,
         raycast: { enabled: true, radius: 1.1 },
         pointerEffect: {
           enabled: true
@@ -55590,7 +55745,6 @@ var Zombi = class {
         }
       }, null, o3.data);
       this.asyncHelper(this.o).then(() => {
-        console.log("creeps loaded in scene... on firts hand !!!");
       }).catch(() => {
         setTimeout(() => {
           this.asyncHelper(this.o);
@@ -55608,14 +55762,14 @@ var Zombi = class {
           reject();
           return;
         }
-        console.log("proccessed this.zombie_bodies ", this.zombie_bodies);
         let bPos;
+        const delta_ = randomIntFromTo(0, 150);
         this.zombie_bodies.forEach((subMesh, idx) => {
+          subMesh.setAmbient(randomIntFromTo(0, 2), randomIntFromTo(0, 2), randomIntFromTo(0, 2));
           subMesh.position.thrust = this.zombieSpeedWalk;
-          subMesh.animationSpeed = 500;
+          subMesh.animationSpeed = 450 + delta_;
           subMesh.animationIndex = 0;
           subMesh.glb.glbJsonData.animations.forEach((a2, index) => {
-            console.info(`%c Animation loading for creeps: ${a2.name} index ${index}`, LOG_MATRIX);
             if (a2.name == "crawl") this.zombieAnims.crawl = index;
             if (a2.name == "dead") this.zombieAnims.dead = index;
             if (a2.name == "zombi-walking") this.zombieAnims.walk = index;
@@ -55803,6 +55957,9 @@ var Zombi = class {
   }
   navigateStep() {
     if (this.isDead) return;
+    if (app.getCamera().position[1] < -10) {
+      app.player.die();
+    }
     const head = this.zombie_bodies[0];
     const playerPos = this.getPlayerPosition();
     if (!playerPos) return;
@@ -55823,7 +55980,7 @@ var Zombi = class {
         this.aiState = "attack";
         this.setAttack();
       }
-      app.matrixSounds.play("zombie1");
+      app.matrixSounds.play("zombie" + randomIntFromTo(1, 4));
       this.resolveAttack();
       return;
     }
@@ -55844,7 +56001,6 @@ var Zombi = class {
     const step = (now) => {
       const t3 = Math.min(1, (now - startTime2) / durationMs);
       subMesh.rotation.y = (startY + diff * t3 + 360) % 360;
-      console.log("subMesh.rotation.y : ", subMesh.rotation.y);
       if (t3 < 1) {
         this._rotAnimHandle = requestAnimationFrame(step);
       } else {
@@ -55858,24 +56014,33 @@ var Zombi = class {
       this.navigateStep();
     } });
     addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e2) => {
-      if (e2.detail.animationName === "dead") {
-        console.log("animationEnd  test spawn zombi ->>>>>>>>>>>>>>>>>>>>");
-        return;
-      }
       if (this.exposeDamage === true) {
-        console.log("animationEnd is player.takeDamage .>>>>>>>>>>>>>>>>>>>>>>>");
         app.matrixSounds.play("zombie2");
         app.player.takeDamage(this.attackDamage);
         app.energy.setValue(app.player.energy);
+        return;
+      }
+      if (randomIntFromTo(0, 50) < 1) {
+        app.matrixSounds.play("zombie" + randomIntFromTo(1, 4));
       }
     });
   }
 };
 
 // src/engine/plugin/player-object/player.js
+var tiers = [
+  { threshold: 500, text: "GODLIKE" },
+  { threshold: 250, text: "UNSTOPPABLE" },
+  { threshold: 100, text: "RAMPAGE" },
+  { threshold: 50, text: "KILLING SPREE" },
+  { threshold: 25, text: "WARMING UP" },
+  { threshold: 10, text: "FIRST BLOOD" },
+  { threshold: 1, text: "WEEKEND WARRIOR" }
+];
 var Player = class {
   constructor(o3 = {}) {
     this.name = o3.name || "local_player";
+    this.respawnItemsInterval = o3.respawnItemsInterval || 12e4;
     this.typeOfController = o3.typeOfController || "fps";
     this.maxEnergy = o3.maxEnergy ?? 100;
     this.energy = o3.energy ?? this.maxEnergy;
@@ -55885,22 +56050,21 @@ var Player = class {
     this.kills = o3.kills ?? 0;
     this.isDead = false;
     this.onEnergyChange = o3.onEnergyChange || null;
+    this._killTiersHit = /* @__PURE__ */ new Set();
     this.attachEvents();
   }
   attachEvents() {
     addEventListener("pickup-collected", (e2) => {
-      console.log("pickup-collected", e2.detail.entry);
-      const { type: type2, amount } = e2.detail.entry;
+      const { type: type2 } = e2.detail.entry;
       if (type2 === "energy") {
-        app.player.heal(parseInt(amount));
+        app.player.heal(e2.detail.entry);
       } else if (type2 === "ammo") {
-        app.player.addAmmo(parseInt(amount));
+        app.player.gotAmmo(e2.detail.entry);
       } else if (type2 === "armor") {
-        app.player.gotArmor();
+        app.player.gotArmor(e2.detail.entry);
       }
     });
     addEventListener("zombie-die", () => {
-      console.log("addKill addKill addKill");
       this.addKill(1);
     });
   }
@@ -55916,16 +56080,29 @@ var Player = class {
     }
     this.setEnergy(this.energy - amount);
   }
-  heal(amount) {
+  heal(entry) {
+    let { amount } = entry;
+    amount = parseInt(amount);
     if (this.isDead) return;
-    console.log("heal ", amount);
-    console.log("heal ", this.energy);
     this.setEnergy(this.energy + amount);
+    app.matrixSounds.play("feelgood");
+    setTimeout(() => {
+      app.gameMap.respawnMapItem("energy", entry.id);
+    }, this.respawnItemsInterval);
   }
   die() {
+    this.energy = 0;
+    app.energy.setValue(0);
     if (this.isDead) return;
     this.isDead = true;
     this.lives = Math.max(0, this.lives - 1);
+    for (const t3 of tiers) {
+      if (this.kills >= t3.threshold && !this._killTiersHit.has(t3.threshold)) {
+        mb.show(`${t3.text} \u2014 ${this.kills} KILLS.`, void 0, 5e3);
+        this._killTiersHit.add(t3.threshold);
+        break;
+      }
+    }
   }
   respawn(fullEnergy = true) {
     if (this.lives <= 0) return false;
@@ -55943,17 +56120,25 @@ var Player = class {
     byId2("player-ammo").textContent = "Ammo " + this.ammo;
     return true;
   }
-  gotArmor() {
+  gotArmor(entry) {
     this.armor = true;
     byId2("player-armor").textContent = "Armor " + (this.armor === true ? "YES" : "NO");
+    app.matrixSounds.play("feelgood");
     setTimeout(() => {
       this.armor = false;
-      byId2("player-armor").textContent = "Armor " + (this.armor === true ? "YES" : "NO");
-    }, 12e4);
+      byId2("player-armor").textContent = "Armor NO";
+      app.gameMap.respawnMapItem("armor", entry.id);
+    }, this.respawnItemsInterval);
   }
-  addAmmo(n3) {
+  gotAmmo(entry) {
+    const { amount } = entry;
+    const n3 = parseInt(amount);
     this.ammo += n3;
     byId2("player-ammo").textContent = "Ammo " + this.ammo;
+    app.matrixSounds.play("feelgood");
+    setTimeout(() => {
+      app.gameMap.respawnMapItem("ammo", entry.id);
+    }, this.respawnItemsInterval);
   }
 };
 
@@ -55978,7 +56163,7 @@ var loadHang3d = function() {
   }, () => {
     app2.collisionSystem = new CollisionSystem(app2);
     app2.addLight();
-    addRaycastsAABBListener();
+    addRaycastsAABBListener(void 0, "mousedown");
     app2.activateHZB();
     app2.activateBloomEffect();
     app2.matrixSounds.createAudio("music", "res/audios/audionautix-black-fly.mp3", 1);
@@ -55986,6 +56171,7 @@ var loadHang3d = function() {
     app2.matrixSounds.createAudio("zombie1", "res/audios/zombie/zombie-1.mp3", 2);
     app2.matrixSounds.createAudio("zombie2", "res/audios/zombie/zombie-2.mp3", 2);
     app2.matrixSounds.createAudio("zombie3", "res/audios/zombie/zombie-9.mp3", 2);
+    app2.matrixSounds.createAudio("zombie4", "res/audios/zombie/zombie-16.mp3", 2);
     app2.matrixSounds.createAudio("zombiedead", "res/audios/zombie/zombie-10.mp3", 2);
     app2.matrixSounds.createAudio("feelgood", "res/audios/feel.mp3", 1);
     app2.matrixSounds.audios.music.loop = true;
@@ -55998,7 +56184,7 @@ var loadHang3d = function() {
       color: "black",
       size: innerHeight / 10
     });
-    app2.energy = MobileDOM.addProgressBar({ size: innerWidth / 3, bottom: 95, left: 33, color: "#00bcd4" });
+    app2.energy = MobileDOM.addProgressBar({ size: innerWidth / 3, bottom: 82.5, left: 33, color: "#00bcd4" });
     app2.energy.setValue(100);
     MobileDOM.addButton("Kills 0", () => {
     }, void 0, {
@@ -56041,11 +56227,12 @@ var loadHang3d = function() {
       ball: "./res/meshes/blender/sphepe-mob.obj",
       armor: "./res/meshes/obj/armor.obj",
       energyItem: "./res/meshes/obj/energy-cube.obj",
-      hang2: "./res/meshes/obj/modelpack19/hang2/hang2.obj"
+      hang2: "./res/meshes/obj/modelpack19/hang2/hang2.obj",
+      ammo: "./res/meshes/obj/ammo.obj"
     }, async (m2) => {
       if (isMobile() === true) {
         MobileDOM.addButton("FIRE", () => {
-          app2.projectileSystem.fireProjectile();
+          fire();
         }, void 0, {
           width: "30px",
           height: "30px",
@@ -56057,7 +56244,7 @@ var loadHang3d = function() {
         }, () => {
           if (preventFire === false) {
             preventFire = true;
-            app2.projectileSystem.fireProjectile();
+            fire();
             setTimeout(() => {
               preventFire = false;
             }, 350);
@@ -56080,7 +56267,7 @@ var loadHang3d = function() {
           size: innerHeight / 10
         });
         MobileDOM.addButton("FIRE", () => {
-          app2.projectileSystem.fireProjectile();
+          fire();
         }, void 0, {
           width: "30px",
           height: "30px",
@@ -56092,14 +56279,13 @@ var loadHang3d = function() {
         }, () => {
           if (preventFire === false) {
             preventFire = true;
-            app2.projectileSystem.fireProjectile();
+            fire();
             setTimeout(() => {
               preventFire = false;
             }, 210);
           }
         });
       }
-      console.log(">>>>>>>>>>>>>>>>>app.collisionSystem>", app2.collisionSystem);
       const mc2 = new MapCreator(app2, m2, app2.collisionSystem, {
         wallTexture: "./res/textures/shooter/metal-block.webp",
         floorTexture: "./res/textures/shooter/metal-block.webp",
@@ -56161,83 +56347,7 @@ var loadHang3d = function() {
         stairSteps: 8,
         roofLevels: true
       });
-      mapParams.collectItems.forEach((item) => {
-        if (item.type === "energy") {
-          const meshScale = 2;
-          const nName = item.type + item.id;
-          const obj2 = app2.addMeshObj({
-            shadowsCast: true,
-            material: { type: "standard", shared: false },
-            position: item.position,
-            rotationSpeed: { x: 0, y: 1, z: 0 },
-            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-            texturesPaths: [item.tex],
-            name: nName,
-            mesh: m2.energyItem,
-            physics: { enabled: false, mass: 0, geometry: "Cube" },
-            raycast: { enabled: true, radius: 1 },
-            pointerEffect: { enabled: true }
-          });
-          app2.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-          setTimeout(() => {
-            obj2.setBlend(0.8);
-            if (!obj2.effects) obj2.effects = {};
-            obj2.effects.kaleBullet = new KaleidoscopeEmitter(app2.device, "rgba16float", 30, app2.cameraBuffer);
-            obj2.effects.kaleBullet.recreateVertexDataCrazzy(5);
-          }, 350);
-        } else if (item.type === "ammo") {
-          const meshScale = 2 + 1;
-          const nName = item.type + item.id;
-          const obj_ = app2.addMeshObj({
-            shadowsCast: true,
-            material: { type: "standard", shared: false },
-            position: item.position,
-            rotationSpeed: { x: 0, y: 1, z: 0 },
-            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-            texturesPaths: [item.tex],
-            useBlend: true,
-            name: nName,
-            mesh: m2.cube,
-            physics: { enabled: false, mass: 0, geometry: "Cube" },
-            raycast: { enabled: true, radius: 1 },
-            pointerEffect: { enabled: true }
-          });
-          app2.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-          setTimeout(() => {
-            obj_.setBlend(0.75);
-            if (!obj_.effects) obj_.effects = {};
-            obj_.effects.kaleBullet1 = new KaleidoscopeEmitter(app2.device, "rgba16float", 30, app2.cameraBuffer);
-            obj_.effects.kaleBullet1.recreateVertexDataCrazzy(5);
-          }, 350);
-        } else if (item.type === "armor") {
-          const meshScale = 2;
-          const nName = item.type + item.id;
-          const obj_ = app2.addMeshObj({
-            shadowsCast: true,
-            material: { type: "standard", shared: false },
-            position: item.position,
-            rotationSpeed: { x: 0, y: 2, z: 0 },
-            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-            texturesPaths: [item.tex],
-            useBlend: true,
-            name: nName,
-            mesh: m2.armor,
-            physics: { enabled: false, mass: 0, geometry: "Cube" },
-            raycast: { enabled: true, radius: 1 },
-            pointerEffect: { enabled: true }
-          });
-          app2.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-          setTimeout(() => {
-            obj_.setBlend(0.5);
-            if (!obj_.effects) obj_.effects = {};
-            obj_.effects.kaleBullet1 = new FlameEffect(app2.device, "rgba16float", "rgba16float", FlamePresets.torch, app2.cameraBuffer);
-            obj_.effects.kaleBullet1.setScale(0.5);
-            obj_.effects.kaleBullet1.speed = 5;
-            obj_.effects.kaleBullet1.intensity = 40;
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>" + obj_.effects.kaleBullet1);
-          }, 350);
-        }
-      });
+      app2.gameMap = mc2;
       var glbFile01 = await fetch("./res/meshes/glb/zombie-cap.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
       var glbFile02 = await fetch("./res/meshes/glb/zombi-crawl1.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
       const options0 = {
@@ -56251,7 +56361,6 @@ var loadHang3d = function() {
         core: app2,
         name: "zombi-cap1",
         archetypes: ["zombie"],
-        // -8.35 ,1.1, 0.2
         position: { x: -4.35, y: 0.2, z: -10 },
         data: glbFile01
       };
@@ -56259,8 +56368,7 @@ var loadHang3d = function() {
         core: app2,
         name: "zombi-cap2",
         archetypes: ["zombie"],
-        // -8.35 ,1.1, 0.2
-        position: { x: -4.35, y: 0.2, z: -10 },
+        position: { x: -5.35, y: 0.2, z: -10 },
         data: glbFile01
       };
       const optionsC0 = {
@@ -56281,21 +56389,21 @@ var loadHang3d = function() {
         core: app2,
         name: "zombi-c-maze0",
         archetypes: ["zombie-crawl"],
-        position: { x: -44.79292678833008, y: 1.3, z: -0.29 },
+        position: { x: -44.79292678833008, y: 1.1, z: -0.29 },
         data: glbFile02
       };
       const optionsZombiMaze1 = {
         core: app2,
         name: "zombi-c-maze1",
         archetypes: ["zombie-crawl"],
-        position: { x: -43.14, y: 1.3, z: -19.38 },
+        position: { x: -43.14, y: 1.1, z: -19.38 },
         data: glbFile02
       };
       const optionsZombiMaze2 = {
         core: app2,
         name: "zombi-c-maze2",
         archetypes: ["zombie-crawl"],
-        position: { x: -42.14, y: 1.3, z: -19.38 },
+        position: { x: -42.14, y: 1.1, z: -19.38 },
         data: glbFile02
       };
       app2.zombies = [
@@ -56335,13 +56443,28 @@ var loadHang3d = function() {
           }
         }
       );
-      app2.canvas.addEventListener("ray.hit.event", (e2) => {
-        if (app2.player.ammo < 1) return;
-        app2.matrixSounds.play("shot");
-        app2.projectileSystem.fireProjectile();
-        app2.player.useAmmo(1);
+      if (isMobile() === false) {
+        app2.canvas.addEventListener("mouseup", (e2) => {
+          console.log("ETST ", e2.button);
+          setTimeout(() => {
+            if (e2.button == 2) app2.getCamera().setProjection(2 * Math.PI / 5, app2.getCamera().aspect, 0.3, 200);
+          }, 100);
+        });
+      }
+      app2.canvas.addEventListener("ray.hit.mousedown", (e2) => {
+        if (e2.detail.button === 2) {
+          app2.getCamera().setProjection(0.5 * Math.PI / 5, app2.getCamera().aspect, 0.3, 200);
+          return;
+        }
+        fire();
       });
     }, { scale: [1, 1, 1] });
+    const fire = () => {
+      if (app2.player.ammo < 1) return;
+      app2.matrixSounds.play("shot");
+      app2.projectileSystem.fireProjectile();
+      app2.player.useAmmo(1);
+    };
   });
   window.app = app2;
 };

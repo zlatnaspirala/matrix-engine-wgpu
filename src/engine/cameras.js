@@ -1930,7 +1930,7 @@ export const MobileDOM = {
       bottom: `${bottom}%`,
       left: `${left}%`,
       width: `${size}px`,
-      height: `${size * 0.01}px`,
+      height: `${size * 0.04}px`,
       background: `rgba(0,0,0,${opacity})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
       borderRadius: `${size * 0.05}px`,

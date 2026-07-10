@@ -7,18 +7,18 @@ var __export = (target, all) => {
 // ../../../engine/utils.js
 var supportsTouch = "ontouchstart" in window || navigator.msMaxTouchPoints;
 var MeshType = Object.freeze({ MESH: 0, INSTANCED: 1, PROCEDURAL: 2, BVHANIM: 3 });
-var touchStartHandler = function(e2) {
-  if (e2.touches.length > 1) {
-    e2.preventDefault();
+var touchStartHandler = function(e) {
+  if (e.touches.length > 1) {
+    e.preventDefault();
   }
 };
-var touchMoveHandler = function(e2) {
-  if (e2.touches.length > 1) {
-    e2.preventDefault();
+var touchMoveHandler = function(e) {
+  if (e.touches.length > 1) {
+    e.preventDefault();
   }
 };
-var gestureStartHandler = function(e2) {
-  e2.preventDefault();
+var gestureStartHandler = function(e) {
+  e.preventDefault();
 };
 var preventZoomApplied = false;
 function preventZoom() {
@@ -29,6 +29,13 @@ function preventZoom() {
   document.addEventListener("gesturestart", gestureStartHandler);
 }
 var screenOrientationSupported = null;
+function getOrientation() {
+  if (window.innerWidth > window.innerHeight) {
+    return "landscape";
+  } else {
+    return "portrait";
+  }
+}
 function getScreenOrientationSupport() {
   if (screenOrientationSupported === null) {
     screenOrientationSupported = !!(screen.orientation && screen.orientation.lock);
@@ -453,13 +460,16 @@ var geoTypesForMorph = Object.freeze({
 window.urlQ = urlQuery;
 var MEConfig = {
   fsManager: new FullScreenManagerElement(),
-  SHADOW_RES: isMobile() == true ? 128 : 512,
+  SHADOW_RES: isMobile() == true ? 256 : 512,
   MAX_BONES: isMobile() == true ? 70 : 100,
   MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
+  MOUSE_SENS: 0.01,
+  TOUCH_SENS: 0.03,
+  CAM_SPEED: isMobile() == true ? 0.1 : 0.2,
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
@@ -495,8 +505,32 @@ var MEConfig = {
       this.MAX_BONES = options2.MAX_BONES;
     }
     console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+    if (urlQ["TOUCH_SENS"]) {
+      this.TOUCH_SENS = parseInt(urlQ["TOUCH_SENS"]);
+    }
+    if (options2.TOUCH_SENS) {
+      this.TOUCH_SENS = options2.TOUCH_SENS;
+    }
+    console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
+    if (urlQ["MOUSE_SENS"]) {
+      this.MOUSE_SENS = parseInt(urlQ["MOUSE_SENS"]);
+    }
+    if (options2.MOUSE_SENS) {
+      this.MOUSE_SENS = options2.MOUSE_SENS;
+    }
+    console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
+    if (urlQ["CAM_SPEED"]) {
+      this.CAM_SPEED = parseInt(urlQ["CAM_SPEED"]);
+    }
+    if (options2.CAM_SPEED) {
+      this.CAM_SPEED = options2.CAM_SPEED;
+    }
+    console.log(`%cCAM_SPEED : ${this.CAM_SPEED}`, LOG_FUNNY_ARCADE);
     if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
+    }
+    if (options2.LOAD_AFTER_CLICK_MOBILE) {
+      this.LOAD_AFTER_CLICK_MOBILE = options2.LOAD_AFTER_CLICK_MOBILE;
     }
     if (urlQ["fs"] || isMobile()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
@@ -506,7 +540,7 @@ var MEConfig = {
         this.fsManager.request();
         setTimeout(() => {
           dispatchEvent(new CustomEvent("run_mobile_fs", {}));
-        }, 300);
+        }, 1);
         window.removeEventListener("click", this._fs);
       };
       window.addEventListener("click", this._fs);
@@ -2323,10 +2357,9 @@ var WASDCamera = class _WASDCamera {
   _viewScratch = mat4Impl.create();
   _digital = { forward: false, backward: false, left: false, right: false, up: false, down: false };
   _mouseDown = false;
-  // Sensitivity matching standard FPCamera parameters
-  MOUSE_SENS = 0.01;
-  TOUCH_SENS = 0.03;
-  movementSpeed = 0.2;
+  MOUSE_SENS = MEConfig.MOUSE_SENS;
+  TOUCH_SENS = MEConfig.TOUCH_SENS;
+  movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
   _dirtyAngle = false;
   constructor(options2 = {}) {
@@ -2340,6 +2373,11 @@ var WASDCamera = class _WASDCamera {
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1e3);
+    if (options2.noEvents) {
+      this.noEvent = true;
+    } else {
+      this.noEvent = false;
+    }
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
@@ -2413,15 +2451,15 @@ var WASDCamera = class _WASDCamera {
     canvas.style.touchAction = "none";
     let touchStartX = 0, touchStartY = 0;
     if (isMobile() === true) {
-      canvas.addEventListener("touchstart", (e2) => {
-        if (e2.touches.length > 0) {
-          touchStartX = e2.touches[0].clientX;
-          touchStartY = e2.touches[0].clientY;
+      canvas.addEventListener("touchstart", (e) => {
+        if (e.touches.length > 0) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
         }
       }, { passive: false });
-      canvas.addEventListener("touchmove", (e2) => {
-        if (e2.touches.length > 0) {
-          const touch = e2.touches[0];
+      canvas.addEventListener("touchmove", (e) => {
+        if (e.touches.length > 0) {
+          const touch = e.touches[0];
           const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
           const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
           this.yaw -= dx * this.rotationSpeed;
@@ -2432,26 +2470,26 @@ var WASDCamera = class _WASDCamera {
           touchStartX = touch.clientX;
           touchStartY = touch.clientY;
         }
-        e2.preventDefault();
+        e.preventDefault();
       }, { passive: false });
     }
     if (isMobile() === false) {
-      canvas.addEventListener("pointerdown", (e2) => {
-        if (e2.pointerType === "mouse") {
+      canvas.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse") {
           this._mouseDown = true;
           if (canvas.requestPointerLock) {
           } else {
-            canvas.setPointerCapture(e2.pointerId);
+            canvas.setPointerCapture(e.pointerId);
           }
         }
       }, { passive: false });
-      canvas.addEventListener("pointermove", (e2) => {
-        if (e2.pointerType === "mouse" && this._mouseDown) {
+      canvas.addEventListener("pointermove", (e) => {
+        if (e.pointerType === "mouse" && this._mouseDown) {
           if (window.__isDragging === true) {
             return;
           }
-          const dx = e2.movementX * this.MOUSE_SENS;
-          const dy = e2.movementY * this.MOUSE_SENS;
+          const dx = e.movementX * this.MOUSE_SENS;
+          const dy = e.movementY * this.MOUSE_SENS;
           this.yaw -= dx * this.rotationSpeed;
           this.pitch -= dy * this.rotationSpeed;
           this.yaw %= Math.PI * 2;
@@ -2459,15 +2497,15 @@ var WASDCamera = class _WASDCamera {
           this._dirtyAngle = true;
         }
       }, { passive: true });
-      canvas.addEventListener("pointerup", (e2) => {
-        if (e2.pointerType === "mouse") {
+      canvas.addEventListener("pointerup", (e) => {
+        if (e.pointerType === "mouse") {
           this._mouseDown = false;
         }
       }, { passive: true });
     }
     this._keyInterval = null;
-    const setDigital = (e2, value2) => {
-      switch (e2.code) {
+    const setDigital = (e, value2) => {
+      switch (e.code) {
         case "ArrowUp":
           this._digital.forward = value2;
           break;
@@ -2515,8 +2553,10 @@ var WASDCamera = class _WASDCamera {
         }
       }
     };
-    window.addEventListener("keydown", (e2) => setDigital(e2, true), { passive: true });
-    window.addEventListener("keyup", (e2) => setDigital(e2, false), { passive: true });
+    if (this.noEvent !== true) {
+      window.addEventListener("keydown", (e) => setDigital(e, true), { passive: true });
+      window.addEventListener("keyup", (e) => setDigital(e, false), { passive: true });
+    }
   }
   _applyDigitalMovement() {
     const d = this._digital;
@@ -2718,8 +2758,8 @@ var RPGCamera = class _RPGCamera {
     this._dirty = true;
   }
   _setupKeyboard() {
-    const setDigital = (e2, value2) => {
-      switch (e2.code) {
+    const setDigital = (e, value2) => {
+      switch (e.code) {
         case "KeyW":
           this._digital.forward = value2;
           break;
@@ -2756,8 +2796,8 @@ var RPGCamera = class _RPGCamera {
         }
       }
     };
-    window.addEventListener("keydown", (e2) => setDigital(e2, true), { passive: true });
-    window.addEventListener("keyup", (e2) => setDigital(e2, false), { passive: true });
+    window.addEventListener("keydown", (e) => setDigital(e, true), { passive: true });
+    window.addEventListener("keyup", (e) => setDigital(e, false), { passive: true });
   }
   _pinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
@@ -2766,9 +2806,9 @@ var RPGCamera = class _RPGCamera {
   }
   _setupEvents() {
     if (isMobile() == false) {
-      addEventListener("wheel", (e2) => {
+      addEventListener("wheel", (e) => {
         this.mousRollInAction = true;
-        this.scrollY -= e2.deltaY * this.scrollSpeed * 0.01;
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
         this._dirty = true;
       });
@@ -2776,9 +2816,9 @@ var RPGCamera = class _RPGCamera {
     } else {
       let lastPinchDist;
       let lastTouchX = null, lastTouchY = null;
-      addEventListener("touchmove", (e2) => {
-        if (e2.touches.length === 2) {
-          const dist2 = this._pinchDist(e2.touches);
+      addEventListener("touchmove", (e) => {
+        if (e.touches.length === 2) {
+          const dist2 = this._pinchDist(e.touches);
           if (lastPinchDist === null) {
             lastPinchDist = dist2;
             return;
@@ -2790,9 +2830,9 @@ var RPGCamera = class _RPGCamera {
           lastPinchDist = dist2;
           return;
         }
-        if (e2.touches.length === 1) {
-          const tx = e2.touches[0].clientX;
-          const tz = e2.touches[0].clientY;
+        if (e.touches.length === 1) {
+          const tx = e.touches[0].clientX;
+          const tz = e.touches[0].clientY;
           if (lastTouchX === null) {
             lastTouchX = tx;
             lastTouchY = tz;
@@ -2811,9 +2851,9 @@ var RPGCamera = class _RPGCamera {
           this._dirty = true;
         }
       }, { passive: true });
-      addEventListener("touchend", (e2) => {
-        if (e2.touches.length < 2) lastPinchDist = null;
-        if (e2.touches.length === 0) {
+      addEventListener("touchend", (e) => {
+        if (e.touches.length < 2) lastPinchDist = null;
+        if (e.touches.length === 0) {
           lastTouchX = null;
           lastTouchY = null;
         }
@@ -2908,9 +2948,9 @@ var FirstPersonCamera = class _FirstPersonCamera {
   _lastY = 0;
   _mouseDown = false;
   _pointerLastScratch = { x: 0, y: 0 };
-  MOUSE_SENS = 0.01;
-  TOUCH_SENS = 0.03;
-  movementSpeed = 0.2;
+  MOUSE_SENS = MEConfig.MOUSE_SENS;
+  TOUCH_SENS = MEConfig.TOUCH_SENS;
+  movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
   _dirtyAngle = false;
   constructor(options2 = {}) {
@@ -2924,12 +2964,12 @@ var FirstPersonCamera = class _FirstPersonCamera {
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
-    console.log("___________________________" + this.canvas);
+    this._jumpVelocity = 0;
+    this._isGrounded = false;
     if (this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if (isMobile() == true && options2.isActive == "init active cam") {
-      console.log("FPCAMERA");
-      MobileDOM.createWASD(this, { margin: 50 });
+      MobileDOM.createWASD(this, { margin: 50, forMobileJoystick: true, color: "red" });
     }
   }
   setPitch = (p) => {
@@ -3023,47 +3063,67 @@ var FirstPersonCamera = class _FirstPersonCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
+    let lookTouchId = null;
     let touchStartX = 0, touchStartY = 0;
-    if (isMobile() === true) canvas.addEventListener("touchstart", (e2) => {
-      if (e2.touches.length > 0) {
-        touchStartX = e2.touches[0].clientX;
-        touchStartY = e2.touches[0].clientY;
-        console.log("touchstart:", touchStartX, touchStartY);
+    if (isMobile() === true) canvas.addEventListener("touchstart", (e) => {
+      if (lookTouchId !== null) return;
+      for (const t of e.changedTouches) {
+        if (t.target === canvas) {
+          lookTouchId = t.identifier;
+          touchStartX = t.clientX;
+          touchStartY = t.clientY;
+          break;
+        }
       }
     }, { passive: false });
-    if (isMobile() === true) canvas.addEventListener("touchmove", (e2) => {
-      if (e2.touches.length > 0) {
-        const touch = e2.touches[0];
-        const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
-        const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
-        console.log("touchmove dx=", dx, "dy=", dy);
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
-        this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-        this._dirtyAngle = true;
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
+    if (isMobile() === true) canvas.addEventListener("touchmove", (e) => {
+      if (lookTouchId === null) return;
+      let touch = null;
+      for (const t of e.touches) {
+        if (t.identifier === lookTouchId) {
+          touch = t;
+          break;
+        }
       }
-      e2.preventDefault();
+      if (!touch) return;
+      const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+      const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+      this.yaw -= dx * this.rotationSpeed;
+      this.pitch -= dy * this.rotationSpeed;
+      this.yaw %= Math.PI * 2;
+      this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+      this._dirtyAngle = true;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      e.preventDefault();
     }, { passive: false });
-    if (isMobile() === false) canvas.addEventListener("pointerdown", (e2) => {
-      if (e2.pointerType === "mouse") {
+    const clearLookTouch = (e) => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === lookTouchId) {
+          lookTouchId = null;
+          break;
+        }
+      }
+    };
+    if (isMobile() === true) canvas.addEventListener("touchend", clearLookTouch, { passive: true });
+    if (isMobile() === true) canvas.addEventListener("touchcancel", clearLookTouch, { passive: true });
+    if (isMobile() === false) canvas.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse") {
         this._mouseDown = true;
         if (canvas.requestPointerLock) {
           canvas.requestPointerLock();
         } else {
-          canvas.setPointerCapture(e2.pointerId);
+          canvas.setPointerCapture(e.pointerId);
         }
       }
     }, { passive: false });
-    if (isMobile() === false) canvas.addEventListener("pointermove", (e2) => {
-      if (e2.pointerType === "mouse" && this._mouseDown) {
+    if (isMobile() === false) canvas.addEventListener("pointermove", (e) => {
+      if (e.pointerType === "mouse") {
         if (window.__isDragging === true) {
           return;
         }
-        const dx = e2.movementX * this.MOUSE_SENS;
-        const dy = e2.movementY * this.MOUSE_SENS;
+        const dx = e.movementX * this.MOUSE_SENS;
+        const dy = e.movementY * this.MOUSE_SENS;
         this.yaw -= dx * this.rotationSpeed;
         this.pitch -= dy * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
@@ -3071,14 +3131,14 @@ var FirstPersonCamera = class _FirstPersonCamera {
         this._dirtyAngle = true;
       }
     }, { passive: true });
-    if (isMobile() === false) canvas.addEventListener("pointerup", (e2) => {
-      if (e2.pointerType === "mouse") {
+    if (isMobile() === false) canvas.addEventListener("pointerup", (e) => {
+      if (e.pointerType === "mouse") {
         this._mouseDown = false;
       }
     }, { passive: true });
     this._keyInterval = null;
-    const setDigital = (e2, value2) => {
-      switch (e2.code) {
+    const setDigital = (e, value2) => {
+      switch (e.code) {
         case "KeyW":
           this._digital.forward = value2;
           break;
@@ -3103,6 +3163,14 @@ var FirstPersonCamera = class _FirstPersonCamera {
         case "ArrowRight":
           this._digital.right = value2;
           break;
+        case "Space":
+          if (value2 === true && window.app?.collisionSystem?._onGround) {
+            window.app.collisionSystem._gravityAcc = 0.22;
+            window.app.collisionSystem._onGround = false;
+            this._dirty = true;
+            this._dirtyAngle = true;
+          }
+          break;
       }
       if (value2 == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
@@ -3120,8 +3188,13 @@ var FirstPersonCamera = class _FirstPersonCamera {
         }
       }
     };
-    window.addEventListener("keydown", (e2) => setDigital(e2, true), { passive: true });
-    window.addEventListener("keyup", (e2) => setDigital(e2, false), { passive: true });
+    window.addEventListener("keydown", (e) => setDigital(e, true), { passive: true });
+    window.addEventListener("keyup", (e) => setDigital(e, false), { passive: true });
+  }
+  forceViewUpdate() {
+    this._dirtyAngle = true;
+    this._dirty = true;
+    this._recalculateViewVP();
   }
   _applyDigitalMovement() {
     const d = this._digital;
@@ -3152,6 +3225,10 @@ var FirstPersonCamera = class _FirstPersonCamera {
     const s = this.movementSpeed / len2;
     this.position[0] += vx * s;
     this.position[2] += vz * s;
+    if (this._jumpVelocity !== 0) {
+      this.position[1] += this._jumpVelocity;
+      this._jumpVelocity = 0;
+    }
     const rx = this.right, uy = this.up, bz = this.back, p = this.position;
     this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
     this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
@@ -3266,7 +3343,7 @@ var CinematicCamera = class _CinematicCamera {
     mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
   };
-  // ── cinematic-only setters ───────────────────────────────────────────────────
+  // Cinematic-only setters
   setTarget = (x2, y2, z) => {
     this._target[0] = x2;
     this._target[1] = y2;
@@ -3308,11 +3385,9 @@ var CinematicCamera = class _CinematicCamera {
     this._t = t;
     return this;
   };
-  // ── shake ────────────────────────────────────────────────────────────────────
   shake = (amplitude, duration, frequency = 15) => {
     this._shake = { active: true, amplitude, frequency, duration, elapsed: 0 };
   };
-  // ── _recalculateViewVP — mirrors FirstPersonCamera exactly when not using target
   _recalculateViewVP() {
     if (this._useTarget) {
       this._buildViewFromTarget();
@@ -3430,7 +3505,6 @@ var CinematicCamera = class _CinematicCamera {
     vs[15] = 1;
     _CinematicCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
-  // ── update — same signature as FirstPersonCamera ─────────────────────────────
   update(dt = 0.016) {
     if (this._playing && this._path) {
       const totalT = this._path.totalTime;
@@ -3566,8 +3640,8 @@ var PlaneCamera = class {
     MobileDOM.addButton("B", () => this.onAction2?.(), () => this.onAction2Release?.(), { left: "80", bottom: "30" });
   }
   _setupKeyboard() {
-    const handle = (e2, isDown) => {
-      switch (e2.code) {
+    const handle = (e, isDown) => {
+      switch (e.code) {
         case "KeyA":
         case "ArrowLeft":
           isDown ? this.onLeft?.() : this.onLeftRelease?.();
@@ -3592,10 +3666,10 @@ var PlaneCamera = class {
           break;
       }
     };
-    window.addEventListener("keydown", (e2) => {
-      if (!e2.repeat) handle(e2, true);
+    window.addEventListener("keydown", (e) => {
+      if (!e.repeat) handle(e, true);
     }, { passive: true });
-    window.addEventListener("keyup", (e2) => handle(e2, false), { passive: true });
+    window.addEventListener("keyup", (e) => handle(e, false), { passive: true });
   }
   _pinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
@@ -3604,9 +3678,9 @@ var PlaneCamera = class {
   }
   _setupEvents() {
     if (isMobile() == false) {
-      addEventListener("wheel", (e2) => {
+      addEventListener("wheel", (e) => {
         this.mousRollInAction = true;
-        this.scrollY -= e2.deltaY * this.scrollSpeed * 0.1;
+        this.scrollY -= e.deltaY * this.scrollSpeed * 0.1;
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
         this._dirty = true;
       });
@@ -3614,9 +3688,9 @@ var PlaneCamera = class {
     } else {
       let lastPinchDist = null;
       let lastTouchX = null, lastTouchY = null;
-      addEventListener("touchmove", (e2) => {
-        if (e2.touches.length === 2) {
-          const dist2 = this._pinchDist(e2.touches);
+      addEventListener("touchmove", (e) => {
+        if (e.touches.length === 2) {
+          const dist2 = this._pinchDist(e.touches);
           if (lastPinchDist !== null) {
             const delta = lastPinchDist - dist2;
             this.scrollY -= delta * this.scrollSpeed * 0.5;
@@ -3626,18 +3700,18 @@ var PlaneCamera = class {
           lastPinchDist = dist2;
           return;
         }
-        if (e2.touches.length === 1) {
-          const tx = e2.touches[0].clientX;
-          const tz = e2.touches[0].clientY;
+        if (e.touches.length === 1) {
+          const tx = e.touches[0].clientX;
+          const tz = e.touches[0].clientY;
           if (lastTouchX !== null) {
           }
           lastTouchX = tx;
           lastTouchY = tz;
         }
       }, { passive: true });
-      addEventListener("touchend", (e2) => {
-        if (e2.touches.length < 2) lastPinchDist = null;
-        if (e2.touches.length === 0) {
+      addEventListener("touchend", (e) => {
+        if (e.touches.length < 2) lastPinchDist = null;
+        if (e.touches.length === 0) {
           lastTouchX = null;
           lastTouchY = null;
         }
@@ -3702,6 +3776,7 @@ var MobileDOM = {
     const marginB = options2.marginB ?? 0;
     const opacity = options2.opacity ?? 0.35;
     const color = options2.color ?? "#ffffff";
+    const forMobileJoystick = options2.forMobileJoystick ?? false;
     const wrap = document.createElement("div");
     wrap.id = "mobileControls";
     Object.assign(wrap.style, {
@@ -3723,9 +3798,11 @@ var MobileDOM = {
       ["S", "\u25BC", 2, 2, "backward"],
       ["D", "\u25B6", 3, 2, "right"]
     ];
+    const buttons = {};
     for (const [, label, col, row2, action] of defs) {
       const btn = document.createElement("div");
       btn.id = label;
+      btn.dataset.action = action;
       Object.assign(btn.style, {
         width: `${size2}px`,
         height: `${size2}px`,
@@ -3743,42 +3820,98 @@ var MobileDOM = {
         WebkitTapHighlightColor: "transparent"
       });
       btn.textContent = label;
-      const press = () => {
-        camera._digital[action] = true;
-        btn.style.background = `rgba(255,255,255,${opacity})`;
-        if (camera._keyInterval === null) {
+      buttons[action] = btn;
+      if (!forMobileJoystick) {
+        const press = () => {
+          camera._digital[action] = true;
+          btn.style.background = `rgba(255,255,255,${opacity})`;
+          if (camera._keyInterval === null) {
+            camera._keyInterval = setInterval(() => {
+              camera._dirty = true;
+              camera._dirtyAngle = true;
+              camera._applyDigitalMovement();
+            }, 16);
+          }
+        };
+        const release = () => {
+          camera._digital[action] = false;
+          btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+          const d = camera._digital;
+          if (!d.forward && !d.backward && !d.left && !d.right) {
+            clearInterval(camera._keyInterval);
+            camera._keyInterval = null;
+            camera._dirty = false;
+          }
+        };
+        MobileDOM.eventDown = (e) => {
+          e.stopPropagation();
+          press();
+          btn.setPointerCapture(e.pointerId);
+        };
+        MobileDOM.eventUp = (e) => {
+          release();
+        };
+        MobileDOM.eventCancel = (e) => {
+          release();
+        };
+        btn.addEventListener("pointerdown", MobileDOM.eventDown, { passive: true });
+        btn.addEventListener("pointerup", MobileDOM.eventUp, { passive: true });
+        btn.addEventListener("pointercancel", MobileDOM.eventCancel, { passive: true });
+      }
+      wrap.appendChild(btn);
+    }
+    if (forMobileJoystick) {
+      let activePointerId = null;
+      let activeAction = null;
+      const setActive = (action) => {
+        if (activeAction === action) return;
+        if (activeAction) {
+          camera._digital[activeAction] = false;
+          buttons[activeAction].style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        }
+        activeAction = action;
+        if (activeAction) {
+          camera._digital[activeAction] = true;
+          buttons[activeAction].style.background = `rgba(255,255,255,${opacity})`;
+        }
+        if (activeAction && camera._keyInterval === null) {
           camera._keyInterval = setInterval(() => {
             camera._dirty = true;
             camera._dirtyAngle = true;
             camera._applyDigitalMovement();
           }, 16);
-        }
-      };
-      const release = () => {
-        camera._digital[action] = false;
-        btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-        const d = camera._digital;
-        if (!d.forward && !d.backward && !d.left && !d.right) {
+        } else if (!activeAction && camera._keyInterval !== null) {
           clearInterval(camera._keyInterval);
           camera._keyInterval = null;
           camera._dirty = false;
         }
       };
-      MobileDOM.eventDown = (e2) => {
-        e2.stopPropagation();
-        press();
-        btn.setPointerCapture(e2.pointerId);
+      const actionAt = (x2, y2) => {
+        const el2 = document.elementFromPoint(x2, y2);
+        return el2?.dataset?.action ?? null;
       };
-      MobileDOM.eventUp = (e2) => {
-        release();
+      const onDown = (e) => {
+        e.stopPropagation();
+        activePointerId = e.pointerId;
+        wrap.setPointerCapture(e.pointerId);
+        setActive(actionAt(e.clientX, e.clientY));
       };
-      MobileDOM.eventCancel = (e2) => {
-        release();
+      const onMove = (e) => {
+        if (e.pointerId !== activePointerId) return;
+        setActive(actionAt(e.clientX, e.clientY));
       };
-      btn.addEventListener("pointerdown", MobileDOM.eventDown, { passive: true });
-      btn.addEventListener("pointerup", MobileDOM.eventUp, { passive: true });
-      btn.addEventListener("pointercancel", MobileDOM.eventCancel, { passive: true });
-      wrap.appendChild(btn);
+      const onUp = (e) => {
+        if (e.pointerId !== activePointerId) return;
+        activePointerId = null;
+        setActive(null);
+      };
+      MobileDOM.eventDown = onDown;
+      MobileDOM.eventUp = onUp;
+      MobileDOM.eventCancel = onUp;
+      wrap.addEventListener("pointerdown", onDown, { passive: true });
+      wrap.addEventListener("pointermove", onMove, { passive: true });
+      wrap.addEventListener("pointerup", onUp, { passive: true });
+      wrap.addEventListener("pointercancel", onUp, { passive: true });
     }
     document.body.appendChild(wrap);
     return wrap;
@@ -3803,13 +3936,20 @@ var MobileDOM = {
     byId("\u25B6").remove();
     byId("mobileControls").remove();
   },
-  addButton(label, onClick, onRelease, options2 = {}) {
+  addButton(label, onClick, onRelease = () => {
+  }, options2 = {}, onMove = () => {
+  }) {
     document.body.style.touchAction = "none";
     const size2 = options2.size ?? 56;
     const bottom = options2.bottom ?? 0;
     const left2 = options2.left ?? 0;
     const opacity = options2.opacity ?? 0.35;
+    const image = options2.image ?? null;
+    const setID = options2.id ?? null;
     const btn = document.createElement("div");
+    if (setID !== null) {
+      btn.id = setID;
+    }
     Object.assign(btn.style, {
       position: "fixed",
       bottom: `${bottom}%`,
@@ -3819,9 +3959,9 @@ var MobileDOM = {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontSize: `${size2 * 0.35}px`,
+      fontSize: `${size2 * 0.25}px`,
       color: options2.color ?? "#ffffff",
-      background: `rgba(255,255,255,${opacity * 0.4})`,
+      background: image ? `url('${image}') no-repeat center/contain` : `rgba(255,255,255,${opacity * 0.4})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
       borderRadius: "50%",
       zIndex: "9999",
@@ -3832,27 +3972,103 @@ var MobileDOM = {
     });
     btn.textContent = label;
     if (isMobile() === true) {
-      btn.addEventListener("touchstart", (e2) => {
-        e2.stopPropagation();
-        onClick(e2);
+      btn.addEventListener("touchstart", (e) => {
+        e.stopPropagation();
+        onClick(e);
       }, { passive: true });
-      btn.addEventListener("touchend", (e2) => {
-        onRelease(e2);
-      }, { passive: true });
-      btn.addEventListener("touchcancel", () => {
+      btn.addEventListener("touchend", (e) => {
         onRelease(e);
       }, { passive: true });
-    } else {
-      btn.addEventListener("click", (e2) => {
-        e2.stopPropagation();
-        onClick(e2);
+      btn.addEventListener("touchcancel", (e) => {
+        onRelease(e);
       }, { passive: true });
-      btn.addEventListener("mouseup", (e2) => {
-        onRelease(e2);
+      btn.addEventListener("touchmove", (e) => {
+        onMove(e);
+      }, { passive: true });
+    } else {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onClick(e);
+      }, { passive: true });
+      btn.addEventListener("mouseup", (e) => {
+        onRelease(e);
+      }, { passive: true });
+      btn.addEventListener("mousemove", (e) => {
+        onMove(e);
       }, { passive: true });
     }
     document.body.appendChild(btn);
     return btn;
+  },
+  addProgressBar(options2 = {}) {
+    const size2 = options2.size ?? 200;
+    const bottom = options2.bottom ?? 10;
+    const left2 = options2.left ?? 10;
+    const opacity = options2.opacity ?? 0.35;
+    const color = options2.color ?? "#4caf50";
+    const barWrapper = document.createElement("div");
+    Object.assign(barWrapper.style, {
+      position: "fixed",
+      bottom: `${bottom}%`,
+      left: `${left2}%`,
+      width: `${size2}px`,
+      height: `${size2 * 0.04}px`,
+      background: `rgba(0,0,0,${opacity})`,
+      border: `2px solid rgba(255,255,255,${opacity})`,
+      borderRadius: `${size2 * 0.05}px`,
+      zIndex: "9999",
+      overflow: "hidden"
+    });
+    const fill = document.createElement("div");
+    Object.assign(fill.style, {
+      width: "100%",
+      height: "100%",
+      background: color,
+      transition: "width 0.2s ease, background 0.3s ease"
+    });
+    barWrapper.appendChild(fill);
+    document.body.appendChild(barWrapper);
+    return Object.assign(barWrapper, {
+      setValue: (percent) => {
+        const p = Math.max(0, Math.min(100, percent));
+        fill.style.width = `${p}%`;
+        fill.style.background = p > 60 ? "#4caf50" : p > 30 ? "#ffc107" : "#f44336";
+      }
+    });
+  },
+  addSlider(onChange = (v) => {
+  }, options2 = {}) {
+    const width = options2.width ?? 200;
+    const bottom = options2.bottom ?? 5;
+    const left2 = options2.left ?? 10;
+    const opacity = options2.opacity ?? 0.35;
+    const slider = document.createElement("input");
+    Object.assign(slider, {
+      type: "range",
+      min: options2.min ?? 0,
+      max: options2.max ?? 100,
+      value: options2.value ?? 50
+    });
+    Object.assign(slider.style, {
+      position: "fixed",
+      bottom: `${bottom}%`,
+      left: `${left2}%`,
+      width: `${width}px`,
+      zIndex: "9999",
+      accentColor: options2.color ?? "#ffffff",
+      cursor: "pointer",
+      touchAction: "none"
+    });
+    const handleInput = (e) => onChange(parseFloat(slider.value));
+    if (isMobile()) {
+      slider.addEventListener("touchmove", handleInput, { passive: true });
+      slider.addEventListener("touchstart", handleInput, { passive: true });
+    } else {
+      slider.addEventListener("mousemove", handleInput, { passive: true });
+      slider.addEventListener("mousedown", handleInput, { passive: true });
+    }
+    document.body.appendChild(slider);
+    return slider;
   }
 };
 
@@ -3911,6 +4127,12 @@ var Position = class {
     this.inMove = true;
     this.targetX = parseFloat(x2);
     this.targetY = parseFloat(y2);
+  }
+  translateByXYZ(x2, y2, z) {
+    this.inMove = true;
+    this.targetX = parseFloat(x2);
+    this.targetY = parseFloat(y2);
+    this.targetZ = parseFloat(z);
   }
   translateByXZ(x2, z) {
     if (parseFloat(z) == this.targetZ && parseFloat(x2) == this.targetX) return;
@@ -8082,9 +8304,9 @@ var Materials = class {
     );
     return texture;
   }
-  setBlend = (alpha) => {
+  setBlend = (alpha, r2 = 1, g = 1, b = 1) => {
     this.material.useBlend = true;
-    this.setupMaterialPBR([1, 0, 0, alpha]);
+    this.setupMaterialPBR([r2, g, b, alpha]);
     if (app) app.buildLightShadowBuckets();
   };
   createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
@@ -9055,8 +9277,8 @@ var GizmoEffect = class {
     };
     this._initPipeline();
     this._setupEventListeners();
-    this._onGizmoModeChange = (e2) => {
-      this.setMode(e2.detail.mode);
+    this._onGizmoModeChange = (e) => {
+      this.setMode(e.detail.mode);
     };
     addEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
@@ -9312,24 +9534,24 @@ var GizmoEffect = class {
     this.vertexCount = positions.length / 3;
   }
   _setupEventListeners() {
-    app.canvas.addEventListener("ray.hit.mousedown", (e2) => {
-      const detail = e2.detail;
+    app.canvas.addEventListener("ray.hit.mousedown", (e) => {
+      const detail = e.detail;
       if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
         console.log("test _handleRayHit ");
         this._handleRayHit(detail);
       } else {
-        e2.detail.hitObject.effects.gizmoEffect = this;
+        e.detail.hitObject.effects.gizmoEffect = this;
         if (this.parentMesh && this.parentMesh.effects) {
           this.parentMesh.effects.gizmoEffect = null;
         }
-        this.parentMesh = e2.detail.hitObject;
+        this.parentMesh = e.detail.hitObject;
         app.editor.editorHud.updateSceneObjPropertiesFromGizmo(this.parentMesh.name);
       }
     });
-    app.canvas.addEventListener("mousemove", (e2) => {
-      if (this.isDragging && e2.buttons === 1) {
-        this._handleDrag(e2);
-      } else if (this.isDragging && e2.buttons === 0) {
+    app.canvas.addEventListener("mousemove", (e) => {
+      if (this.isDragging && e.buttons === 1) {
+        this._handleDrag(e);
+      } else if (this.isDragging && e.buttons === 0) {
         this.isDragging = false;
         window.__isDragging = false;
         this.selectedAxis = 0;
@@ -9519,11 +9741,11 @@ var GizmoEffect = class {
     const b = cache.rd[0] * cache.line[0] + cache.rd[1] * cache.line[1] + cache.rd[2] * cache.line[2];
     const c = cache.line[0] * cache.line[0] + cache.line[1] * cache.line[1] + cache.line[2] * cache.line[2];
     const d = cache.rd[0] * cache.w[0] + cache.rd[1] * cache.w[1] + cache.rd[2] * cache.w[2];
-    const e2 = cache.line[0] * cache.w[0] + cache.line[1] * cache.w[1] + cache.line[2] * cache.w[2];
+    const e = cache.line[0] * cache.w[0] + cache.line[1] * cache.w[1] + cache.line[2] * cache.w[2];
     const denom = a * c - b * b;
     if (Math.abs(denom) < 1e-7) return false;
-    const sc = (b * e2 - c * d) / denom;
-    const tc = (a * e2 - b * d) / denom;
+    const sc = (b * e - c * d) / denom;
+    const tc = (a * e - b * d) / denom;
     if (tc < 0 || tc > 1) return false;
     cache.closestOnRay[0] = cache.ro[0] + sc * cache.rd[0];
     cache.closestOnRay[1] = cache.ro[1] + sc * cache.rd[1];
@@ -11709,6 +11931,7 @@ var FlameEffect = class {
     this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
     this.setGeometry("quad", this.scale);
+    this.currentGeometry = "quad";
     this._localMatrix = mat4Impl.create();
     this._finalMatrix = mat4Impl.create();
     this._timeSpeed = new Float32Array(4);
@@ -11716,8 +11939,12 @@ var FlameEffect = class {
     this._tint = new Float32Array(4);
     this._uniformData = new Float32Array(28);
   }
+  setScale(s) {
+    this.setGeometry(this.currentGeometry, s);
+  }
   setGeometry(type2, size2 = 1, segments = 32) {
     const geo2 = GeometryFactory.create(type2, size2, segments);
+    this.currentGeometry = type2;
     this.vertexBuffer = this._uploadVertex(geo2.positions);
     this.uvBuffer = this._uploadVertex(geo2.uvs);
     const byteLen = geo2.indices.byteLength;
@@ -12024,9 +12251,9 @@ var FlameEmitter = class {
     this.smoothFlickeringScale = 0.1;
     this.minBound = 0;
     this.maxBound = 1.9;
-    this.swap0 = 0;
+    this.swap0 = 2;
     this.swap1 = 1;
-    this.swap2 = 2;
+    this.swap2 = 0;
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
@@ -12072,16 +12299,16 @@ var FlameEmitter = class {
     const vertexData = new Float32Array([
       -randomFloatFromTo(0.1, 0.8) * S,
       randomFloatFromTo(0.4, 0.6) * S,
-      0 * S,
+      0.1 * S,
       randomFloatFromTo(0.1, 0.8) * S,
       randomFloatFromTo(0.4, 0.6) * S,
-      0 * S,
+      0.1 * S,
       -randomFloatFromTo(0.1, 0.4) * S,
       -randomFloatFromTo(0.4, 0.6) * S,
-      0 * S,
+      0.1 * S,
       randomFloatFromTo(0.1, 0.4) * S,
       -randomFloatFromTo(0.4, 0.6) * S,
-      0 * S
+      0.1 * S
     ]);
     if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
@@ -12636,6 +12863,296 @@ var MSDFTextEffect = class {
   }
 };
 
+// ../../../shaders/blood/blood-target.js
+var bloodBurstShader = `
+struct Camera {
+  viewProj : mat4x4<f32>
+};
+
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct ModelData {
+  model : mat4x4<f32>,
+  life  : vec4<f32>, // x=life, y=maxLife, z=pad, w=pad
+  color : vec4<f32>
+};
+@group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
+
+struct VSIn {
+  @location(0) position : vec3<f32>,
+  @location(1) uv : vec2<f32>,
+  @builtin(instance_index) instanceIdx : u32,
+};
+
+struct VSOut {
+  @builtin(position) position : vec4<f32>,
+  @location(0) uv : vec2<f32>,
+  @location(1) color : vec4<f32>,
+  @location(2) fragNorm : vec3<f32>,
+  @location(3) fragPos  : vec3<f32>,
+};
+
+fn hash2(n : vec2<f32>) -> f32 {
+  return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn noise(p : vec2<f32>) -> f32 {
+  let i = floor(p); let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash2(i + vec2<f32>(0.0,0.0)), hash2(i + vec2<f32>(1.0,0.0)), u.x),
+    mix(hash2(i + vec2<f32>(0.0,1.0)), hash2(i + vec2<f32>(1.0,1.0)), u.x),
+    u.y
+  );
+}
+
+@vertex
+fn vsMain(input : VSIn) -> VSOut {
+  var output : VSOut;
+  let modelData = modelDataArray[input.instanceIdx];
+
+  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+  output.position = camera.viewProj * worldPos;
+  output.uv = input.uv;
+  output.color = modelData.color;
+
+  output.fragPos = worldPos.xyz;
+  let localNormal = vec3<f32>(0.0, 0.0, 1.0);
+  output.fragNorm = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz) * localNormal;
+
+  return output;
+}
+
+struct FragOut {
+  @location(0) color    : vec4f,
+  @location(1) normal   : vec4f,
+  @location(2) worldPos : vec4f,
+}
+@fragment
+fn fsMain(input : VSOut) -> FragOut {
+  let centered = input.uv - vec2<f32>(0.5, 0.5);
+  let d = length(centered);
+
+  // irregular blob edge \u2014 warp the distance field with noise instead of a clean circle
+  let angle = atan2(centered.y, centered.x);
+  let wobble = noise(vec2<f32>(angle * 2.5, d * 4.0)) * 0.18;
+  let edge = smoothstep(0.5, 0.28, d + wobble);
+
+  // internal density variation so it doesn't read as a flat solid disc
+  let density = 0.65 + 0.35 * noise(input.uv * 6.0);
+  let alpha = input.color.a * edge * density;
+  if (alpha < 0.02) { discard; }
+
+  // slight dark core / lighter rim gives it volume instead of flat fill
+  let rim = smoothstep(0.0, 0.5, d);
+  let shaded = mix(input.color.rgb * 1.3, input.color.rgb * 0.6, rim);
+
+  return FragOut(
+    vec4f(shaded, alpha),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
+}`;
+
+// ../../../engine/effects/blood-target.js
+var BloodBurst = class {
+  constructor(device2, format, maxParticles = 64, cameraBuffer) {
+    this.device = device2;
+    this.format = format;
+    this.maxParticles = maxParticles;
+    this.floatsPerInstance = 24;
+    this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
+    this.gravity = -9.8;
+    this.drag = 0.98;
+    this.cameraBuffer = cameraBuffer;
+    this.pool = [];
+    for (let i = 0; i < maxParticles; i++) {
+      this.pool.push({
+        active: false,
+        position: [0, 0, 0],
+        velocity: [0, 0, 0],
+        scale: 0.1,
+        rotation: 0,
+        life: 0,
+        maxLife: 1,
+        color: [0.5, 0.02, 0.02, 1]
+      });
+    }
+    this._localMatrix = mat4Impl.create();
+    this._finalMatrix = mat4Impl.create();
+    this._initPipeline();
+  }
+  // one-shot burst spawn — hook this at your hitscan/animationEnd impact point
+  spawn(origin, baseModelMatrix, count = 20, speed = 6) {
+    let spawned = 0;
+    for (const p of this.pool) {
+      if (spawned >= count) break;
+      if (p.active) continue;
+      p.active = true;
+      p.position[0] = origin[0];
+      p.position[1] = origin[1];
+      p.position[2] = origin[2];
+      const u = randomFloatFromTo(-1, 1);
+      const theta = randomFloatFromTo(0, Math.PI * 2);
+      const r2 = Math.sqrt(1 - u * u);
+      let dirX = r2 * Math.cos(theta);
+      let dirY = u;
+      let dirZ = r2 * Math.sin(theta);
+      const isSpurt = Math.random() < 0.12;
+      let s = speed * randomFloatFromTo(0.4, 1);
+      if (isSpurt) {
+        dirY = Math.abs(dirY) * randomFloatFromTo(1.4, 2);
+        s *= randomFloatFromTo(1.3, 1.8);
+      }
+      p.velocity[0] = dirX * s;
+      p.velocity[1] = dirY * s;
+      p.velocity[2] = dirZ * s;
+      p.gravityMul = randomFloatFromTo(0.7, 1.4);
+      p.dragMul = randomFloatFromTo(0.94, 0.99);
+      p.driftPhase = randomFloatFromTo(0, Math.PI * 2);
+      p.driftAmp = randomFloatFromTo(0.3, 1.2);
+      p.scale = randomFloatFromTo(0.25, 0.6);
+      p.rotation = randomFloatFromTo(0, Math.PI * 2);
+      p.life = 0;
+      p.maxLife = randomFloatFromTo(1, 2.2);
+      p.color = [1, 0.02, 0.02, 1];
+      spawned++;
+    }
+  }
+  updateInstanceData = (baseModelMatrix) => {
+    const basePos = mat4Impl.getTranslation(baseModelMatrix);
+    const cleanBase = mat4Impl.translation(basePos);
+    let count = 0;
+    const floatsPerInstance = this.floatsPerInstance;
+    for (const p of this.pool) {
+      if (!p.active) continue;
+      const local2 = this._localMatrix;
+      mat4Impl.identity(local2);
+      mat4Impl.translate(local2, p.position, local2);
+      mat4Impl.rotateY(local2, p.rotation, local2);
+      const shrink = 1 - p.life / p.maxLife * 0.3;
+      mat4Impl.scale(local2, [p.scale * shrink, p.scale * shrink, p.scale * shrink], local2);
+      mat4Impl.identity(this._finalMatrix);
+      mat4Impl.multiply(cleanBase, local2, this._finalMatrix);
+      const offset = count * floatsPerInstance;
+      this.instanceData.set(this._finalMatrix, offset);
+      const alpha = 1 - p.life / p.maxLife;
+      this.instanceData[offset + 16] = p.life;
+      this.instanceData[offset + 17] = p.maxLife;
+      this.instanceData[offset + 18] = 0;
+      this.instanceData[offset + 19] = 0;
+      this.instanceData[offset + 20] = p.color[0];
+      this.instanceData[offset + 21] = p.color[1];
+      this.instanceData[offset + 22] = p.color[2];
+      this.instanceData[offset + 23] = p.color[3] * alpha;
+      count++;
+    }
+    this.activeCount = count;
+    if (count > 0) {
+      this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
+    }
+  };
+  render(pass, mesh, viewProjMatrix, dt = 0.1) {
+    for (const p of this.pool) {
+      if (!p.active) continue;
+      p.life += dt;
+      if (p.life >= p.maxLife) {
+        p.active = false;
+        continue;
+      }
+      p.velocity[1] += this.gravity * p.gravityMul * dt;
+      p.velocity[0] *= p.dragMul;
+      p.velocity[1] *= p.dragMul;
+      p.velocity[2] *= p.dragMul;
+      const wobble = Math.sin(p.life * 6 + p.driftPhase) * p.driftAmp * dt;
+      p.position[0] += p.velocity[0] * dt + wobble * 0.3;
+      p.position[1] += p.velocity[1] * dt;
+      p.position[2] += p.velocity[2] * dt + wobble * 0.2;
+      p.rotation += dt * 4;
+    }
+    if (!this.activeCount) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, this.activeCount);
+  }
+  _initPipeline() {
+    const vertexData = new Float32Array([
+      -0.5,
+      0.5,
+      0,
+      0.5,
+      0.5,
+      0,
+      -0.5,
+      -0.5,
+      0,
+      0.5,
+      -0.5,
+      0
+    ]);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
+    this.vertexBuffer = this.device.createBuffer({ size: vertexData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = this.device.createBuffer({ size: uvData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = this.device.createBuffer({ size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexCount = indexData.length;
+    this.modelBuffer = this.device.createBuffer({ label: "blood-burst modelBuffer", size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      label: "blood-burst bindGroupLayout",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      label: "blood-burst bindGroup",
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: bloodBurstShader });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    this.pipeline = this.device.createRenderPipeline({
+      label: "blood-burst pipeline",
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
+      },
+      primitive: { topology: "triangle-list" },
+      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
+    });
+  }
+};
+
 // ../../../engine/mesh-obj.js
 var MEMeshObj = class extends Materials {
   constructor(canvas, device2, context, o2, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
@@ -12913,6 +13430,19 @@ var MEMeshObj = class extends Materials {
       new Float32Array(weightsBuffer.getMappedRange()).set(weightsData);
       weightsBuffer.unmap();
       this.mesh.weightsBuffer = weightsBuffer;
+      if (typeof o2.primitive === "undefined") {
+        this.primitive = {
+          topology: "triangle-list",
+          cullMode: "back",
+          frontFace: "ccw"
+        };
+      } else {
+        this.primitive = {
+          topology: o2.primitive.topology ? o2.primitive.topology : "triangle-list",
+          cullMode: o2.primitive.cullMode ? o2.primitive.cullMode : "back",
+          frontFace: o2.primitive.frontFace ? o2.primitive.frontFace : "ccw"
+        };
+      }
     }
     this.runProgram = () => {
       return new Promise(async (resolve) => {
@@ -13003,28 +13533,23 @@ var MEMeshObj = class extends Materials {
         });
       }
       this.topology = "triangle-list";
-      this.setTopology = (t) => {
+      this.setTopology = (t, cullMode = "none", frontFace = "ccw") => {
         const isStrip = t === "triangle-strip" || t === "line-strip";
         if (isStrip) {
           this.primitive = {
             topology: t,
             stripIndexFormat: "uint16",
-            cullMode: "none",
-            frontFace: "ccw"
+            cullMode,
+            frontFace
           };
         } else {
           this.primitive = {
             topology: t,
-            cullMode: "none",
-            frontFace: "ccw"
+            cullMode,
+            frontFace
           };
         }
         this.setupPipeline();
-      };
-      this.primitive = {
-        topology: this.topology,
-        cullMode: "none",
-        frontFace: "ccw"
       };
       this.mirrorBindGroupLayout = device2.createBindGroupLayout({
         label: "mirrorBindGroupLayout",
@@ -13034,11 +13559,7 @@ var MEMeshObj = class extends Materials {
           { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
         ]
       });
-      this.modelUniformBuffer = this.device.createBuffer({
-        size: 4 * 16,
-        // 4x4 matrix
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
+      this.modelUniformBuffer = this.device.createBuffer({ size: 4 * 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       function alignTo256(n2) {
         return Math.ceil(n2 / 256) * 256;
       }
@@ -13091,7 +13612,6 @@ var MEMeshObj = class extends Materials {
       this.vertexAnimBuffer = this.device.createBuffer({
         label: "Vertex Animation Params",
         size: this.vertexAnimParams.byteLength,
-        // 128 bytes
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
       });
       this.vertexAnim = {
@@ -13241,7 +13761,7 @@ var MEMeshObj = class extends Materials {
           { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } }
         ]
       });
-      this.effects = {};
+      if (typeof this.effects === "undefined") this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
@@ -13261,6 +13781,9 @@ var MEMeshObj = class extends Materials {
         }
         if (typeof this.pointerEffect.flameEmitter !== "undefined" && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device2, "rgba16float", 20, this.cameraBuffer);
+        }
+        if (typeof this.pointerEffect.bloodBurst !== "undefined" && this.pointerEffect.bloodBurst == true) {
+          this.effects.bloodBurst = new BloodBurst(device2, "rgba16float", 20, this.cameraBuffer);
         }
         if (typeof this.pointerEffect.destructionEffect !== "undefined" && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect2(device2, "rgba16float", {
@@ -13582,6 +14105,19 @@ var MEMeshObj = class extends Materials {
     shadowPass.drawIndexed(mesh.indexCount);
   };
   destroy = () => {
+    if (app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(this.name);
+      if (testPB !== null) {
+        try {
+          app.matrixPhysics.removeRigidBody(testPB);
+        } catch (e) {
+          console.warn("Physics cleanup err:", e);
+        }
+      }
+    } else {
+      app.removeSceneObjectByName(this.name);
+      return;
+    }
     if (this._destroyed) return;
     this._destroyed = true;
     this.vertexBuffer?.destroy();
@@ -13622,16 +14158,7 @@ var MEMeshObj = class extends Materials {
     };
     this.drawShadows = () => {
     };
-    if (app.matrixPhysics) {
-      let testPB = app.matrixPhysics.getBodyByName(this.name);
-      if (testPB !== null) {
-        try {
-          app.matrixPhysics.removeRigidBody(testPB);
-        } catch (e2) {
-          console.warn("Physics cleanup err:", e2);
-        }
-      }
-    }
+    console.info(`\u{1F9F9}Destroyed: ${this.name}`);
   };
   initBoundingSphere() {
     if (!this.mesh || !this.mesh.vertices) return;
@@ -13657,6 +14184,7 @@ var MEMeshObj = class extends Materials {
       const dz = pos2[i + 2] - cz;
       r2 = Math.max(r2, Math.sqrt(dx * dx + dy * dy + dz * dz));
     }
+    r2 = r2 * Math.max(this.scale[0], this.scale[1], this.scale[2]);
     this.boundingSphere = {
       center: new Float32Array([cx, cy, cz]),
       radius: r2
@@ -13665,12 +14193,10 @@ var MEMeshObj = class extends Materials {
   updateBoundingSphere() {
     if (!this.boundingSphere) return;
     const local2 = this.boundingSphere.center;
-    const m = this.modelMatrix;
-    const center = new Float32Array(3);
-    center[0] = m[12] + local2[0] * m[0] + local2[1] * m[4] + local2[2] * m[8];
-    center[1] = m[13] + local2[0] * m[1] + local2[1] * m[5] + local2[2] * m[9];
-    center[2] = m[14] + local2[0] * m[2] + local2[1] * m[6] + local2[2] * m[10];
-    this.boundingSphere.center = center;
+    const m = this._modelMatrix;
+    this.boundingSphere.center[0] = m[12] + local2[0] * m[0] + local2[1] * m[4] + local2[2] * m[8];
+    this.boundingSphere.center[1] = m[13] + local2[0] * m[1] + local2[1] * m[5] + local2[2] * m[9];
+    this.boundingSphere.center[2] = m[14] + local2[0] * m[2] + local2[1] * m[6] + local2[2] * m[10];
   }
 };
 
@@ -13743,27 +14269,25 @@ var en = {
 var MultiLang = class {
   constructor() {
     addEventListener("updateLang", () => {
-      console.log("Multilang updated.");
       this.update();
     });
   }
   update = function() {
     var allTranDoms = document.querySelectorAll("[data-label]");
-    allTranDoms.forEach((i) => {
-      i.innerHTML = this.get[i.getAttribute("data-label")];
-    });
+    try {
+      allTranDoms.forEach((i) => {
+        i.innerHTML = this.get[i.getAttribute("data-label")];
+      });
+    } catch (e) {
+      console.warn("MultiLang error:" + e);
+    }
   };
   loadMultilang = async function(lang = "en") {
     if (lang == "rs") lang = "sr";
     lang = "res/multilang/" + lang + ".json";
     console.info(`%cMultilang: ${lang}`, LOG_FUNNY_ARCADE);
     try {
-      const r2 = await fetch(lang, {
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json"
-        }
-      });
+      const r2 = await fetch(lang, { headers: { "Accept": "application/json", "Content-Type": "application/json" } });
       return await r2.json();
     } catch (err) {
       console.warn("Not possible to access multilang json asset! Err => ", err, ". Use backup lang predefinited object. Only english avaible.");
@@ -13785,6 +14309,10 @@ var MatrixSounds = class {
   }
   unmuteAll() {
     this.enabled = true;
+    Object.values(this.audios).forEach((audio) => {
+      audio.pause();
+      if (audio.loop) audio.play();
+    });
   }
   createClones(c, name2, path2) {
     for (let x2 = 1; x2 < c; x2++) {
@@ -13810,8 +14338,8 @@ var MatrixSounds = class {
     const audio = this.audios[name2];
     if (!audio) return;
     if (audio.paused) {
-      audio.play().catch((e2) => {
-        if (e2.name !== "NotAllowedError") console.warn("sounds error:", e2);
+      audio.play().catch((e) => {
+        if (e.name !== "NotAllowedError") console.warn("sounds error:", e);
       });
     } else {
       this.tryClone(name2);
@@ -19950,9 +20478,9 @@ var MaterialsInstanced = class {
     this.material.type = newType;
     this.setupPipeline();
   }
-  setBlend = (alpha) => {
+  setBlend = (alpha, r2 = 1, g = 1, b = 1) => {
     this.material.useBlend = true;
-    this.setupMaterialPBR([1, 1, 1, alpha]);
+    this.setupMaterialPBR([r2, g, b, alpha]);
     if (app) app.buildLightShadowBuckets();
   };
   getMaterial() {
@@ -20168,7 +20696,7 @@ var MaterialsInstanced = class {
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
     if (!matDef) {
-      console.warn("[engine] no material in glb...");
+      console.warn("[engine][ins] no material in glb...");
       return null;
     }
     if (matDef.pbrMetallicRoughness?.baseColorTexture) {
@@ -20762,7 +21290,7 @@ fn fsMain(in : VertexOutput) -> FragOut {
 
 // ../../../engine/effects/energy-bar.js
 var HPBarEffect = class {
-  constructor(device2, format, cameraBuffer) {
+  constructor(device2, format, cameraBuffer, barWidth = 20, barHeight = 1.5) {
     this.device = device2;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
@@ -20776,11 +21304,11 @@ var HPBarEffect = class {
     this._colorScratch = new Float32Array(4);
     this._progressScratch = new Float32Array(1);
     this._translateVec = new Float32Array(3);
-    this._initPipeline();
+    this._initPipeline(barWidth, barHeight);
   }
-  _initPipeline() {
-    const W = 20;
-    const H = 1.5;
+  _initPipeline(barWidth, barHeight) {
+    const W = barWidth;
+    const H = barHeight;
     const vertexData = new Float32Array([
       -W,
       H,
@@ -20864,11 +21392,7 @@ var HPBarEffect = class {
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [
-          { format: "rgba16float" },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
+        targets: [{ format: "rgba16float" }, { format: "rgba16float" }, { format: "rgba16float" }]
       },
       primitive: { topology: "triangle-list" },
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
@@ -21324,8 +21848,15 @@ var GenGeoTexture = class {
     pass.setIndexBuffer(this.indexBuffer, "uint16");
     pass.drawIndexed(this.indexCount, this.instanceCount);
   }
-  render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
+  render(pass, mesh, viewProjMatrix, dt = 0.1) {
+    if (!this.activeCount) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, this.activeCount);
   }
 };
 
@@ -21908,11 +22439,36 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           ]
         });
       }
-      this.primitive = {
-        topology: "triangle-list",
-        cullMode: "back",
-        // typical for shadow passes
-        frontFace: "ccw"
+      if (typeof o2.primitive === "undefined") {
+        this.primitive = {
+          topology: "triangle-list",
+          cullMode: "back",
+          frontFace: "ccw"
+        };
+      } else {
+        this.primitive = {
+          topology: o2.primitive.topology ? o2.primitive.topology : "triangle-list",
+          cullMode: o2.primitive.cullMode ? o2.primitive.cullMode : "back",
+          frontFace: o2.primitive.frontFace ? o2.primitive.frontFace : "ccw"
+        };
+      }
+      this.setTopology = (t, cullMode = "none", frontFace = "ccw") => {
+        const isStrip = t === "triangle-strip" || t === "line-strip";
+        if (isStrip) {
+          this.primitive = {
+            topology: t,
+            stripIndexFormat: "uint16",
+            cullMode,
+            frontFace
+          };
+        } else {
+          this.primitive = {
+            topology: t,
+            cullMode,
+            frontFace
+          };
+        }
+        this.setupPipeline();
       };
       this.mirrorBindGroupLayout = this.device.createBindGroupLayout({
         label: "mirrorBindGroupLayout",
@@ -22263,7 +22819,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } }
         ]
       });
-      this.effects = {};
+      if (typeof this.effects === "undefined") this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = "rgba16float";
@@ -22459,6 +23015,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         primitive: this.primitive
       }
     });
+    this.initBoundingSphere();
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
   updateModelUniformBuffer = () => {
@@ -22914,10 +23471,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         if (this.animationIndex == null) {
           this.animationIndex = 0;
         }
-        window.dispatchEvent(
-          this.glbAnimEvents["animEndEvent" + capturedIndex]
-        );
-      }, inTime * 1200);
+        window.dispatchEvent(this.glbAnimEvents["animEndEvent" + capturedIndex]);
+      }, inTime * 1e3);
     }
     if (this.glb.glbJsonData.animations && this.glb.glbJsonData.animations.length > 0) {
       if (this.sharedBones === true) {
@@ -23294,13 +23849,13 @@ var METoolTip = class {
     this.tooltip = tooltip;
   }
   attachTooltip(element, text) {
-    element.addEventListener("mouseenter", (e2) => {
+    element.addEventListener("mouseenter", (e) => {
       this.tooltip.textContent = text;
       this.tooltip.style.opacity = "1";
     });
-    element.addEventListener("mousemove", (e2) => {
-      this.tooltip.style.left = e2.clientX + 12 + "px";
-      this.tooltip.style.top = e2.clientY + 12 + "px";
+    element.addEventListener("mousemove", (e) => {
+      this.tooltip.style.left = e.clientX + 12 + "px";
+      this.tooltip.style.top = e.clientY + 12 + "px";
     });
     element.addEventListener("mouseleave", () => {
       this.tooltip.style.opacity = "0";
@@ -23388,8 +23943,8 @@ var MEEditorClient = class {
             mb.show("From editorX:" + data.ok);
           }
         }
-      } catch (e2) {
-        console.error("[WS ERROR PARSE]", e2);
+      } catch (e) {
+        console.error("[WS ERROR PARSE]", e);
       }
     };
     this.ws.onerror = (err) => {
@@ -23402,7 +23957,7 @@ var MEEditorClient = class {
     this.attachEvents();
   }
   attachEvents() {
-    document.addEventListener("lp", (e2) => {
+    document.addEventListener("lp", (e) => {
       console.info("Load project <signal>");
       let o2 = {
         action: "lp"
@@ -23410,124 +23965,124 @@ var MEEditorClient = class {
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("cnp", (e2) => {
+    document.addEventListener("cnp", (e) => {
       console.info("Create new project <signal>");
       let o2 = {
         action: "cnp",
-        name: e2.detail.name,
-        features: e2.detail.features
+        name: e.detail.name,
+        features: e.detail.features
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("stop-watch", (e2) => {
+    document.addEventListener("stop-watch", (e) => {
       console.info("stop-watch <signal>");
       let o2 = {
         action: "stop-watch",
-        name: e2.detail.name
+        name: e.detail.name
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("start-watch", (e2) => {
+    document.addEventListener("start-watch", (e) => {
       console.info("start-watch <signal>");
       let o2 = {
         action: "watch",
-        name: e2.detail.name
+        name: e.detail.name
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("nav-folder", (e2) => {
+    document.addEventListener("nav-folder", (e) => {
       console.info("nav-folder <signal>");
       let o2 = {
         action: "nav-folder",
-        name: e2.detail.name,
-        rootFolder: e2.detail.rootFolder
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("file-detail", (e2) => {
+    document.addEventListener("file-detail", (e) => {
       console.info("%c[file-detail <signal>]", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "file-detail",
-        name: e2.detail.name,
-        rootFolder: e2.detail.rootFolder
+        name: e.detail.name,
+        rootFolder: e.detail.rootFolder
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addCube", (e2) => {
+    document.addEventListener("web.editor.addCube", (e) => {
       console.info("%c[web.editor.addCube]", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "addCube",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        options: e2.detail
+        options: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addSphere", (e2) => {
+    document.addEventListener("web.editor.addSphere", (e) => {
       console.info("%c[web.editor.addSphere]", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "addSphere",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        options: e2.detail
+        options: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("save-methods", (e2) => {
+    document.addEventListener("save-methods", (e) => {
       console.info("%cSave methods <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-methods",
-        methodsContainer: e2.detail.methodsContainer
+        methodsContainer: e.detail.methodsContainer
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("save-graph", (e2) => {
-      console.info(`%cSave graph <signal> ${e2.detail}`, LOG_FUNNY_ARCADE);
+    document.addEventListener("save-graph", (e) => {
+      console.info(`%cSave graph <signal> ${e.detail}`, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-graph",
-        graphData: e2.detail.data
+        graphData: e.detail.data
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("save-shader-graph", (e2) => {
+    document.addEventListener("save-shader-graph", (e) => {
       console.info("%cSave shader-graph <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "save-shader-graph",
-        graphData: e2.detail
+        graphData: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("aiGenGraphCall", (e2) => {
+    document.addEventListener("aiGenGraphCall", (e) => {
       console.info("%caiGenGraphCall fluxCodexVertex <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "aiGenGraphCall",
-        prompt: e2.detail
+        prompt: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("load-shader-graph", (e2) => {
+    document.addEventListener("load-shader-graph", (e) => {
       console.info("%cLoad shader-graph <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "load-shader-graph",
-        name: e2.detail
+        name: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("delete-shader-graph", (e2) => {
+    document.addEventListener("delete-shader-graph", (e) => {
       console.info("%cDelete shader-graph <signal>", LOG_FUNNY_ARCADE);
       let o2 = {
         action: "delete-shader-graph",
-        name: e2.detail
+        name: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -23541,74 +24096,74 @@ var MEEditorClient = class {
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addGlb", (e2) => {
-      console.log("%c[web.editor.addGlb]: " + e2.detail, LOG_FUNNY_ARCADE);
+    document.addEventListener("web.editor.addGlb", (e) => {
+      console.log("%c[web.editor.addGlb]: " + e.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "addGlb",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        options: e2.detail
+        options: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addObj", (e2) => {
-      console.log("%c[web.editor.addObj]: " + e2.detail, LOG_FUNNY_ARCADE);
+    document.addEventListener("web.editor.addObj", (e) => {
+      console.log("%c[web.editor.addObj]: " + e.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "addObj",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        options: e2.detail
+        options: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.addMp3", (e2) => {
+    document.addEventListener("web.editor.addMp3", (e) => {
     });
-    document.addEventListener("web.editor.delete", (e2) => {
-      console.log("%c[web.editor.delete]: " + e2.detail, LOG_FUNNY_ARCADE);
+    document.addEventListener("web.editor.delete", (e) => {
+      console.log("%c[web.editor.delete]: " + e.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "delete-obj",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        name: e2.detail.prefix
+        name: e.detail.prefix
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.update.pos", (e2) => {
-      console.log("%c[web.editor.update.pos]: " + e2.detail, LOG_FUNNY_ARCADE);
+    document.addEventListener("web.editor.update.pos", (e) => {
+      console.log("%c[web.editor.update.pos]: " + e.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "updatePos",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        data: e2.detail
+        data: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.update.rot", (e2) => {
-      console.log("%c[web.editor.update.rot]: " + e2.detail, LOG_FUNNY_ARCADE);
+    document.addEventListener("web.editor.update.rot", (e) => {
+      console.log("%c[web.editor.update.rot]: " + e.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "updateRot",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        data: e2.detail
+        data: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.update.scale", (e2) => {
-      console.log("%c[web.editor.update.scale]: " + e2.detail, LOG_FUNNY_ARCADE);
+    document.addEventListener("web.editor.update.scale", (e) => {
+      console.log("%c[web.editor.update.scale]: " + e.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "updateScale",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        data: e2.detail
+        data: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
     });
-    document.addEventListener("web.editor.update.useScale", (e2) => {
-      console.log("%c[web.editor.update.useScale]: " + e2.detail, LOG_FUNNY_ARCADE);
+    document.addEventListener("web.editor.update.useScale", (e) => {
+      console.log("%c[web.editor.update.useScale]: " + e.detail, LOG_FUNNY_ARCADE);
       let o2 = {
         action: "useScale",
         projectName: location.href.split("/public/")[1].split(".")[0],
-        data: e2.detail
+        data: e.detail
       };
       o2 = JSON.stringify(o2);
       this.ws.send(o2);
@@ -23632,38 +24187,38 @@ var EditorProvider = class {
     return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");
   }
   addEditorEvents() {
-    document.addEventListener("web.editor.input", (e2) => {
-      console.log("[EDITOR-input]: ", e2.detail);
-      switch (e2.detail.propertyId) {
+    document.addEventListener("web.editor.input", (e) => {
+      console.log("[EDITOR-input]: ", e.detail);
+      switch (e.detail.propertyId) {
         case "position": {
-          console.log("change signal for pos", e2.detail);
-          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") {
-            this._ev.updatePos.detail.inputFor = e2.detail.inputFor;
-            this._ev.updatePos.detail.property = e2.detail.property;
-            this._ev.updatePos.detail.propertyId = e2.detail.propertyId;
-            this._ev.updatePos.detail.value = e2.detail.value;
+          console.log("change signal for pos", e.detail);
+          if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") {
+            this._ev.updatePos.detail.inputFor = e.detail.inputFor;
+            this._ev.updatePos.detail.property = e.detail.property;
+            this._ev.updatePos.detail.propertyId = e.detail.propertyId;
+            this._ev.updatePos.detail.value = e.detail.value;
             document.dispatchEvent(this._ev.updatePos);
           }
           break;
         }
         case "rotation": {
           console.log("[signal][rot]");
-          if (e2.detail.property == "x" || e2.detail.property == "y" || e2.detail.property == "z") {
-            this._ev.updateRot.detail.inputFor = e2.detail.inputFor;
-            this._ev.updateRot.detail.property = e2.detail.property;
-            this._ev.updateRot.detail.propertyId = e2.detail.propertyId;
-            this._ev.updateRot.detail.value = e2.detail.value;
+          if (e.detail.property == "x" || e.detail.property == "y" || e.detail.property == "z") {
+            this._ev.updateRot.detail.inputFor = e.detail.inputFor;
+            this._ev.updateRot.detail.property = e.detail.property;
+            this._ev.updateRot.detail.propertyId = e.detail.propertyId;
+            this._ev.updateRot.detail.value = e.detail.value;
             document.dispatchEvent(this._ev.updateRot);
           }
           break;
         }
         case "scale": {
           console.log("[signal][scale]");
-          if (e2.detail.property == "0" || e2.detail.property == "1" || e2.detail.property == "2") {
-            this._ev.updateScale.detail.inputFor = e2.detail.inputFor;
-            this._ev.updateScale.detail.property = e2.detail.property;
-            this._ev.updateScale.detail.propertyId = e2.detail.propertyId;
-            this._ev.updateScale.detail.value = e2.detail.value;
+          if (e.detail.property == "0" || e.detail.property == "1" || e.detail.property == "2") {
+            this._ev.updateScale.detail.inputFor = e.detail.inputFor;
+            this._ev.updateScale.detail.property = e.detail.property;
+            this._ev.updateScale.detail.propertyId = e.detail.propertyId;
+            this._ev.updateScale.detail.value = e.detail.value;
             document.dispatchEvent(this._ev.updateScale);
           }
           break;
@@ -23671,26 +24226,26 @@ var EditorProvider = class {
         default:
           console.log("changes not saved.");
       }
-      let sceneObj = this.core.getSceneObjectByName(e2.detail.inputFor);
-      if (e2.detail.property == "no info") {
-        sceneObj[e2.detail.propertyId] = e2.detail.value;
-        if (e2.detail.propertyId === "useScale") {
-          this._ev.updateUseScale.detail.inputFor = e2.detail.inputFor;
-          this._ev.updateUseScale.detail.property = e2.detail.property;
-          this._ev.updateUseScale.detail.propertyId = e2.detail.propertyId;
-          this._ev.updateUseScale.detail.value = e2.detail.value;
+      let sceneObj = this.core.getSceneObjectByName(e.detail.inputFor);
+      if (e.detail.property == "no info") {
+        sceneObj[e.detail.propertyId] = e.detail.value;
+        if (e.detail.propertyId === "useScale") {
+          this._ev.updateUseScale.detail.inputFor = e.detail.inputFor;
+          this._ev.updateUseScale.detail.property = e.detail.property;
+          this._ev.updateUseScale.detail.propertyId = e.detail.propertyId;
+          this._ev.updateUseScale.detail.value = e.detail.value;
           document.dispatchEvent(this._ev.updateUseScale);
         }
         return;
       }
       if (sceneObj) {
-        sceneObj[e2.detail.propertyId][e2.detail.property] = parseFloat(e2.detail.value);
+        sceneObj[e.detail.propertyId][e.detail.property] = parseFloat(e.detail.value);
       } else {
         console.warn("EditorProvider input error");
         return;
       }
     });
-    document.addEventListener("web.editor.addCube", (e2) => {
+    document.addEventListener("web.editor.addCube", (e) => {
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
         const texturesPaths = "./res/textures/cube-g1-extra_low.png";
         this.core.addMeshObj({
@@ -23698,17 +24253,17 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          name: "" + e2.detail.index,
+          name: "" + e.detail.index,
           mesh: m.cube,
           raycast: { enabled: true, radius: 2 },
           physics: {
-            enabled: e2.detail.physics,
+            enabled: e.detail.physics,
             geometry: "Cube"
           }
         });
       }, { scale: [1, 1, 1] });
     });
-    document.addEventListener("web.editor.addSphere", (e2) => {
+    document.addEventListener("web.editor.addSphere", (e) => {
       downloadMeshes({ mesh: "./res/meshes/shapes/sphere.obj" }, (m) => {
         const texturesPaths = "./res/textures/cube-g1-extra_low.png";
         this.core.addMeshObj({
@@ -23716,52 +24271,52 @@ var EditorProvider = class {
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          name: e2.detail.index,
+          name: e.detail.index,
           mesh: m.mesh,
           raycast: { enabled: true, radius: 2 },
           physics: {
-            enabled: e2.detail.physics,
+            enabled: e.detail.physics,
             geometry: "Sphere"
           }
         });
       }, { scale: [1, 1, 1] });
     });
-    document.addEventListener("web.editor.addGlb", async (e2) => {
-      console.log("[web.editor.addGlb]: ", e2.detail.path);
-      e2.detail.path = e2.detail.path.replace("\\res", "res");
-      var glbFile01 = await fetch(e2.detail.path).then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, this.core.device)));
+    document.addEventListener("web.editor.addGlb", async (e) => {
+      console.log("[web.editor.addGlb]: ", e.detail.path);
+      e.detail.path = e.detail.path.replace("\\res", "res");
+      var glbFile01 = await fetch(e.detail.path).then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, this.core.device)));
       this.core.addGlbObj({
         material: { type: "power", useTextureFromGlb: true },
         scale: [2, 2, 2],
         position: { x: 0, y: 0, z: -20 },
-        name: this.getNameFromPath(e2.detail.path),
+        name: this.getNameFromPath(e.detail.path),
         texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
       }, null, glbFile01);
     });
-    document.addEventListener("web.editor.addObj", (e2) => {
-      console.log("[web.editor.addObj]: ", e2.detail);
-      e2.detail.path = e2.detail.path.replace("\\res", "res");
-      e2.detail.path = e2.detail.path.replace(/\\/g, "/");
-      downloadMeshes({ objMesh: `${e2.detail.path}` }, (m) => {
+    document.addEventListener("web.editor.addObj", (e) => {
+      console.log("[web.editor.addObj]: ", e.detail);
+      e.detail.path = e.detail.path.replace("\\res", "res");
+      e.detail.path = e.detail.path.replace(/\\/g, "/");
+      downloadMeshes({ objMesh: `${e.detail.path}` }, (m) => {
         const texturesPaths = "./res/textures/cube-g1-extra_low.png";
         this.core.addMeshObj({
           position: { x: 0, y: 0, z: -20 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: [texturesPaths],
-          name: e2.detail.index,
+          name: e.detail.index,
           mesh: m.objMesh,
           raycast: { enabled: true, radius: 2 },
           physics: {
-            enabled: e2.detail.physics,
+            enabled: e.detail.physics,
             geometry: "Cube"
           }
         });
       }, { scale: [1, 1, 1] });
     });
-    document.addEventListener("web.editor.delete", (e2) => {
-      console.log("[web.editor.delete]: ", e2.detail.fullName);
-      this.core.removeSceneObjectByName(e2.detail.fullName);
+    document.addEventListener("web.editor.delete", (e) => {
+      console.log("[web.editor.delete]: ", e.detail.fullName);
+      this.core.removeSceneObjectByName(e.detail.fullName);
     });
   }
 };
@@ -24042,18 +24597,18 @@ var FragmentShaderGraph = class {
   }
   makeDraggable(el2, node2, connectionLayer) {
     let ox = 0, oy = 0, drag = false;
-    el2.addEventListener("pointerdown", (e2) => {
+    el2.addEventListener("pointerdown", (e) => {
       drag = true;
-      ox = e2.clientX - el2.offsetLeft;
-      oy = e2.clientY - el2.offsetTop;
-      el2.setPointerCapture(e2.pointerId);
+      ox = e.clientX - el2.offsetLeft;
+      oy = e.clientY - el2.offsetTop;
+      el2.setPointerCapture(e.pointerId);
     });
-    el2.addEventListener("pointermove", (e2) => {
+    el2.addEventListener("pointermove", (e) => {
       if (!drag) return;
-      el2.style.left = e2.clientX - ox + "px";
-      el2.style.top = e2.clientY - oy + "px";
-      node2.x = e2.clientX - ox;
-      node2.y = e2.clientY - oy;
+      el2.style.left = e.clientX - ox + "px";
+      el2.style.top = e.clientY - oy + "px";
+      node2.x = e.clientX - ox;
+      node2.y = e.clientY - oy;
       connectionLayer.redrawAll();
     });
     el2.addEventListener("pointerup", () => drag = false);
@@ -24854,25 +25409,25 @@ var ConnectionLayer = class {
     this.shaderGraph = shaderGraph;
     this.temp = null;
     this.from = null;
-    document.addEventListener("pointermove", (e2) => this.move(e2));
-    document.addEventListener("pointerup", (e2) => this.up(e2));
+    document.addEventListener("pointermove", (e) => this.move(e));
+    document.addEventListener("pointerup", (e) => this.up(e));
   }
   attach(pin) {
-    pin.onpointerdown = (e2) => {
-      e2.stopPropagation();
+    pin.onpointerdown = (e) => {
+      e.stopPropagation();
       if (pin.dataset.type !== "output") return;
       this.from = pin;
       this.temp = this.path();
       this.svg.appendChild(this.temp);
     };
   }
-  move(e2) {
+  move(e) {
     if (!this.temp || !this.from) return;
-    this.draw(this.temp, this.center(this.from), { x: e2.clientX, y: e2.clientY });
+    this.draw(this.temp, this.center(this.from), { x: e.clientX, y: e.clientY });
   }
-  up(e2) {
+  up(e) {
     if (!this.temp || !this.from) return;
-    const t = document.elementFromPoint(e2.clientX, e2.clientY);
+    const t = document.elementFromPoint(e.clientX, e.clientY);
     if (t?.classList.contains("pinShader") && t.dataset.type === "input") {
       this.finalize(this.from, t);
     }
@@ -24954,19 +25509,19 @@ async function openFragmentShaderEditor(id2 = "fragShader") {
     area.classList.add("fancy-grid-bg");
     area.classList.add("dark");
     let pan = { active: false, ox: 0, oy: 0 };
-    area.addEventListener("pointerdown", (e2) => {
-      if (e2.target !== area) return;
+    area.addEventListener("pointerdown", (e) => {
+      if (e.target !== area) return;
       pan.active = true;
-      pan.ox = e2.clientX;
-      pan.oy = e2.clientY;
-      area.setPointerCapture(e2.pointerId);
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
+      area.setPointerCapture(e.pointerId);
     });
-    area.addEventListener("pointermove", (e2) => {
+    area.addEventListener("pointermove", (e) => {
       if (!pan.active) return;
-      const dx = e2.clientX - pan.ox;
-      const dy = e2.clientY - pan.oy;
-      pan.ox = e2.clientX;
-      pan.oy = e2.clientY;
+      const dx = e.clientX - pan.ox;
+      const dy = e.clientY - pan.oy;
+      pan.ox = e.clientX;
+      pan.oy = e.clientY;
       shaderGraph.nodes.forEach((n2) => {
         n2.x += dx;
         n2.y += dy;
@@ -24978,9 +25533,9 @@ async function openFragmentShaderEditor(id2 = "fragShader") {
       });
       connectionLayer.redrawAll();
     });
-    area.addEventListener("pointerup", (e2) => {
+    area.addEventListener("pointerup", (e) => {
       pan.active = false;
-      area.releasePointerCapture(e2.pointerId);
+      area.releasePointerCapture(e.pointerId);
     });
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.style.position = "absolute";
@@ -25112,8 +25667,8 @@ svg path {
       el2.style.top = y2 + "px";
       area.appendChild(el2);
       el2.tabIndex = 0;
-      el2.addEventListener("click", (e2) => {
-        e2.stopPropagation();
+      el2.addEventListener("click", (e) => {
+        e.stopPropagation();
         document.querySelectorAll(".nodeShader.selected").forEach((n2) => n2.classList.remove("selected"));
         el2.classList.add("selected");
       });
@@ -25140,7 +25695,7 @@ svg path {
           const val = type2 === "number" ? parseFloat(input.value) : input.value;
           node2[propName] = val;
         });
-        input.addEventListener("pointerdown", (e2) => e2.stopPropagation());
+        input.addEventListener("pointerdown", (e) => e.stopPropagation());
         row2.appendChild(labelEl);
         row2.appendChild(input);
         propsContainer.appendChild(row2);
@@ -25173,7 +25728,7 @@ svg path {
         ta.value = node2.code;
         ta.style.cssText = "width: 100%; height: 80px; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 4px; font-family: monospace; font-size: 11px; resize: vertical;";
         ta.oninput = () => node2.code = ta.value;
-        ta.onpointerdown = (e2) => e2.stopPropagation();
+        ta.onpointerdown = (e) => e.stopPropagation();
         propsContainer.appendChild(ta);
       }
       if (propsContainer.children.length > 0) {
@@ -25216,8 +25771,8 @@ svg path {
       shaderGraph.connectionLayer = connectionLayer;
       shaderGraph.makeDraggable(el2, node2, connectionLayer);
     }
-    document.addEventListener("keydown", (e2) => {
-      if (e2.key === "Delete") {
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Delete") {
         const sel = document.querySelector(".nodeShader.selected");
         if (!sel) return;
         const nodeId2 = sel.dataset.nodeId;
@@ -25321,7 +25876,7 @@ svg path {
       console.log("[DELETE]", shaderGraph.id);
       document.dispatchEvent(new CustomEvent("delete-shader-graph", { detail: shaderGraph.id }));
     });
-    btn("Import JSON", async (e2) => {
+    btn("Import JSON", async (e) => {
       shaderGraph.clear();
       let nameOfGraphMaterital = prompt("You must define a name for shader graph:", "MyShader1");
       if (nameOfGraphMaterital && nameOfGraphMaterital !== "") {
@@ -25334,8 +25889,8 @@ svg path {
           input.type = "file";
           input.accept = ".json";
           input.style.display = "none";
-          input.onchange = (e3) => {
-            const file = e3.target.files[0];
+          input.onchange = (e2) => {
+            const file = e2.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = () => {
@@ -25368,8 +25923,8 @@ svg path {
     b.classList.add("btnLeftBox");
     b.style.webkitTextStrokeWidth = 0;
     menu.appendChild(b);
-    document.addEventListener("on-shader-graphs-list", (e2) => {
-      const shaders = e2.detail;
+    document.addEventListener("on-shader-graphs-list", (e) => {
+      const shaders = e.detail;
       b.innerHTML = "";
       var __ = 0;
       if (!byId("shader-graphs-list-dom")) {
@@ -25468,18 +26023,18 @@ function saveGraph(shaderGraph, key = "fragShaderGraph") {
 async function loadGraph(key, shaderGraph, addNodeUI) {
   if (shaderGraph.onGraphLoadAttached === false) {
     shaderGraph.onGraphLoadAttached = true;
-    document.addEventListener("on-graph-load", (e2) => {
-      if (e2.detail == null) {
+    document.addEventListener("on-graph-load", (e) => {
+      if (e.detail == null) {
         return;
       }
       shaderGraph.nodes.length = 0;
       shaderGraph.connections.length = 0;
-      shaderGraph.id = e2.detail.name;
+      shaderGraph.id = e.detail.name;
       let data;
-      if (typeof e2.detail.content === "object") {
-        data = e2.detail.content;
+      if (typeof e.detail.content === "object") {
+        data = e.detail.content;
       } else {
-        data = JSON.parse(e2.detail.content);
+        data = JSON.parse(e.detail.content);
       }
       if (!data) return false;
       const map = {};
@@ -25806,11 +26361,11 @@ var CurveEditor = class {
     );
     this._updateToolbar();
   }
-  _getMouse(e2) {
+  _getMouse(e) {
     const r2 = this.canvas.getBoundingClientRect();
     return {
-      x: e2.clientX - r2.left - this.padLeft,
-      y: e2.clientY - r2.top
+      x: e.clientX - r2.left - this.padLeft,
+      y: e.clientY - r2.top
     };
   }
   _bindMouse() {
@@ -25829,8 +26384,8 @@ var CurveEditor = class {
       const playY = this._valueToY(this.getValueNow());
       return Math.hypot(mx - playX, my - playY) < 8;
     };
-    this.canvas.addEventListener("mousedown", (e2) => {
-      const { x: mx, y: my } = this._getMouse(e2);
+    this.canvas.addEventListener("mousedown", (e) => {
+      const { x: mx, y: my } = this._getMouse(e);
       if (hitPlayhead(mx, my)) {
         this.activeKey = "playhead";
         this.dragMode = "playhead";
@@ -25844,12 +26399,12 @@ var CurveEditor = class {
         this._grabDX = mx - kx;
         this._grabDY = my - ky;
         this.activeKey = k;
-        this.dragMode = e2.shiftKey ? "tangent" : "key";
+        this.dragMode = e.shiftKey ? "tangent" : "key";
       }
     });
-    window.addEventListener("mousemove", (e2) => {
+    window.addEventListener("mousemove", (e) => {
       if (!this.activeKey) return;
-      const { x: mx, y: my } = this._getMouse(e2);
+      const { x: mx, y: my } = this._getMouse(e);
       if (this.dragMode === "playhead" && this.activeKey === "playhead") {
         const w = this.width - this.padLeft;
         let t = Math.max(0, Math.min(1, mx / w));
@@ -25884,8 +26439,8 @@ var CurveEditor = class {
       this.activeKey = null;
       this.dragMode = null;
     });
-    this.canvas.addEventListener("dblclick", (e2) => {
-      const { x: x2, y: y2 } = this._getMouse(e2);
+    this.canvas.addEventListener("dblclick", (e) => {
+      const { x: x2, y: y2 } = this._getMouse(e);
       const w = this.width - this.padLeft;
       const t = Math.max(0, Math.min(1, x2 / w));
       const v = this._yToValue(y2);
@@ -25899,9 +26454,9 @@ var CurveEditor = class {
       this._reBake();
       this.draw();
     });
-    this.canvas.addEventListener("contextmenu", (e2) => {
-      e2.preventDefault();
-      const { x: mx, y: my } = this._getMouse(e2);
+    this.canvas.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      const { x: mx, y: my } = this._getMouse(e);
       const k = hitKey(mx, my);
       if (k && this.keys.length > 2) {
         this.keys = this.keys.filter((x2) => x2 !== k);
@@ -26156,28 +26711,28 @@ var CurveEditor = class {
     let startTop = 0;
     handle.style.cursor = "move";
     handle2.style.cursor = "move";
-    handle.addEventListener("mousedown", (e2) => {
+    handle.addEventListener("mousedown", (e) => {
       isDown = true;
-      startX = e2.clientX;
-      startY = e2.clientY;
+      startX = e.clientX;
+      startY = e.clientY;
       const rect = el2.getBoundingClientRect();
       startLeft = rect.left;
       startTop = rect.top;
       document.body.style.userSelect = "none";
     });
-    handle2.addEventListener("mousedown", (e2) => {
+    handle2.addEventListener("mousedown", (e) => {
       isDown = true;
-      startX = e2.clientX;
-      startY = e2.clientY;
+      startX = e.clientX;
+      startY = e.clientY;
       const rect = el2.getBoundingClientRect();
       startLeft = rect.left;
       startTop = rect.top;
       document.body.style.userSelect = "none";
     });
-    window.addEventListener("mousemove", (e2) => {
+    window.addEventListener("mousemove", (e) => {
       if (!isDown) return;
-      const dx = e2.clientX - startX;
-      const dy = e2.clientY - startY;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
       el2.style.left = startLeft + dx + "px";
       el2.style.top = startTop + dy + "px";
       el2.style.transform = "none";
@@ -26305,8 +26860,8 @@ var CurveStore = class {
       const data = JSON.parse(raw);
       if (!data.curves) return;
       this.curves = data.curves.map((c) => this._fromJSON(c));
-    } catch (e2) {
-      console.warn("CurveStore load failed", e2);
+    } catch (e) {
+      console.warn("CurveStore load failed", e);
       this.curves = [];
     }
   }
@@ -26427,9 +26982,9 @@ var FluxCodexVertex = class {
       this.state.zoom = Math.max(0.2, Math.min(2.5, z));
       this.board.style.transform = `scale(${this.state.zoom})`;
     };
-    this.onWheel = (e2) => {
-      e2.preventDefault();
-      const delta = e2.deltaY > 0 ? -0.1 : 0.1;
+    this.onWheel = (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
       this.setZoom(this.state.zoom + delta);
     };
     this.boardWrap.addEventListener("wheel", this.onWheel.bind(this), {
@@ -26441,14 +26996,14 @@ var FluxCodexVertex = class {
     this._createImportInput();
     this.bindGlobalListeners();
     this._varInputs = {};
-    document.addEventListener("on-ai-graph-response", (e2) => {
+    document.addEventListener("on-ai-graph-response", (e) => {
       console.info("%c<AI RESPONSE>", LOG_FUNNY_ARCADE);
-      byId("graphGenJSON").value = e2.detail;
+      byId("graphGenJSON").value = e.detail;
       byId("ai-status").removeAttribute("data-ai-status");
       byId("ai-status").style.color = "";
     });
-    document.addEventListener("keydown", (e2) => {
-      const target = e2.composedPath && e2.composedPath()[0] || e2.target || document.activeElement;
+    document.addEventListener("keydown", (e) => {
+      const target = e.composedPath && e.composedPath()[0] || e.target || document.activeElement;
       function isEditableElement(el2) {
         if (!el2) return false;
         if (el2 instanceof HTMLInputElement || el2 instanceof HTMLTextAreaElement || el2 instanceof HTMLSelectElement) return true;
@@ -26457,32 +27012,32 @@ var FluxCodexVertex = class {
         return false;
       }
       if (isEditableElement(target)) return;
-      if (e2.key == "F6") {
-        e2.preventDefault();
+      if (e.key == "F6") {
+        e.preventDefault();
         this.runGraph();
-      } else if (e2.key === "Delete") {
+      } else if (e.key === "Delete") {
         const toDelete = this.state.selectedNodes.size > 0 ? [...this.state.selectedNodes] : this.state.selectedNode ? [this.state.selectedNode] : [];
         toDelete.forEach((id2) => this.deleteNode(id2));
         this._selectClear();
       }
     });
     this.createContextMenu();
-    document.addEventListener("fluxcodex.input.change", (e2) => {
+    document.addEventListener("fluxcodex.input.change", (e) => {
       console.log("fluxcodex.input.change");
-      const { nodeId: nodeId2, field, value: value2 } = e2.detail;
+      const { nodeId: nodeId2, field, value: value2 } = e.detail;
       const node2 = this.nodes.find((n2) => n2.id === nodeId2);
       if (!node2) return;
       if (node2.type !== "getSubObject") return;
       this.handleGetSubObject(node2, value2);
       if (field !== "path") return;
     });
-    document.addEventListener("web.editor.addMp3", (e2) => {
-      console.log("[web.editor.addMp3]: ", e2.detail);
-      e2.detail.path = e2.detail.path.replace("\\res", "res");
-      e2.detail.path = e2.detail.path.replace(/\\/g, "/");
-      this.addNode("audioMP3", e2.detail);
+    document.addEventListener("web.editor.addMp3", (e) => {
+      console.log("[web.editor.addMp3]: ", e.detail);
+      e.detail.path = e.detail.path.replace("\\res", "res");
+      e.detail.path = e.detail.path.replace(/\\/g, "/");
+      this.addNode("audioMP3", e.detail);
     });
-    document.addEventListener("show-curve-editor", (e2) => {
+    document.addEventListener("show-curve-editor", (e) => {
       this.curveEditor.toggleEditor();
     });
     setTimeout(() => this.init(), 3300);
@@ -26493,14 +27048,14 @@ var FluxCodexVertex = class {
     CMenu.classList.add("fc-context-menu");
     CMenu.classList.add("hidden");
     const board = document.getElementById("board");
-    board.addEventListener("contextmenu", (e2) => {
-      e2.preventDefault();
+    board.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
       CMenu.innerHTML = this.getFluxCodexMenuHTML();
       const menuRect = CMenu.getBoundingClientRect();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      let x2 = e2.clientX;
-      let y2 = e2.clientY;
+      let x2 = e.clientX;
+      let y2 = e.clientY;
       if (x2 + menuRect.width > vw) {
         x2 = vw - menuRect.width - 5;
       }
@@ -26803,15 +27358,15 @@ var FluxCodexVertex = class {
     textAreaManualInput.style.top = "15px";
     textAreaManualInput.classList.add("btn4");
     textAreaManualInput.value = "Hello , ";
-    textAreaManualInput.addEventListener("keydown", (e2) => e2.stopPropagation());
+    textAreaManualInput.addEventListener("keydown", (e) => e.stopPropagation());
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.id = "manualInput";
     checkbox.value = "not in use";
     popup.appendChild(textAreaManualInput);
-    checkbox.onchange = function(e2) {
-      console.log(e2.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-      if (!e2.target.checked) {
+    checkbox.onchange = function(e) {
+      console.log(e.target.checked + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+      if (!e.target.checked) {
         textAreaManualInput.style.display = "none";
         selectPrompt.disabled = false;
       } else {
@@ -26841,15 +27396,15 @@ var FluxCodexVertex = class {
     call.style.width = "200px";
     call.style.fontWeight = "bold";
     call.style.webkitTextStrokeWidth = "0px";
-    call.addEventListener("click", (e2) => {
+    call.addEventListener("click", (e) => {
       if (selectPrompt.selectedIndex > 0) {
         console.log(" use select task...");
       }
-      if (e2.target.getAttribute("data-ai-status") == null) {
-        e2.target.setAttribute("data-ai-status", "wip");
-        e2.target.style.color = "red";
+      if (e.target.getAttribute("data-ai-status") == null) {
+        e.target.setAttribute("data-ai-status", "wip");
+        e.target.style.color = "red";
       } else {
-        if (e2.target.getAttribute("data-ai-status") == "wip") {
+        if (e.target.getAttribute("data-ai-status") == "wip") {
           console.info("gen ai tool call PREVENT ");
           return;
         } else {
@@ -27080,10 +27635,10 @@ var FluxCodexVertex = class {
     let startLeft = 0;
     let startTop = 0;
     handle.style.cursor = "move";
-    handle.addEventListener("mousedown", (e2) => {
+    handle.addEventListener("mousedown", (e) => {
       isDragging = true;
-      startX = e2.clientX;
-      startY = e2.clientY;
+      startX = e.clientX;
+      startY = e.clientY;
       const rect = popup.getBoundingClientRect();
       startLeft = rect.left;
       startTop = rect.top;
@@ -27093,10 +27648,10 @@ var FluxCodexVertex = class {
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
     });
-    const onMove = (e2) => {
+    const onMove = (e) => {
       if (!isDragging) return;
-      popup.style.left = startLeft + (e2.clientX - startX) + "px";
-      popup.style.top = startTop + (e2.clientY - startY) + "px";
+      popup.style.left = startLeft + (e.clientX - startX) + "px";
+      popup.style.top = startTop + (e.clientY - startY) + "px";
     };
     const onUp = () => {
       isDragging = false;
@@ -27281,8 +27836,8 @@ var FluxCodexVertex = class {
       }
       this.populateMethodsSelect(select2);
       if (node2.attachedMethod) select2.value = node2.attachedMethod;
-      select2.onchange = (e2) => {
-        const selected = this.methodsManager.methodsContainer.find((m) => m.name === e2.target.value);
+      select2.onchange = (e) => {
+        const selected = this.methodsManager.methodsContainer.find((m) => m.name === e.target.value);
         console.log("test reference::::", selected);
         if (selected) this.adaptNodeToMethod(node2, selected);
       };
@@ -27298,8 +27853,8 @@ var FluxCodexVertex = class {
     if (!node.accessObject && node.accessObjectLiteral) {
       try {
         node.accessObject = eval(node.accessObjectLiteral);
-      } catch (e2) {
-        console.warn("Failed to eval accessObjectLiteral:", node.accessObjectLiteral, e2);
+      } catch (e) {
+        console.warn("Failed to eval accessObjectLiteral:", node.accessObjectLiteral, e);
         node.accessObject = [];
       }
     }
@@ -27339,8 +27894,8 @@ var FluxCodexVertex = class {
         const selected = node.fields.find((f) => f.key === "selectedObject")?.value;
         if (selected) select.value = selected;
       }
-      select.onchange = (e2) => {
-        const val = e2.target.value;
+      select.onchange = (e) => {
+        const val = e.target.value;
         node.fields.find((f) => f.key === "selectedObject").value = val;
       };
     }
@@ -27582,7 +28137,7 @@ var FluxCodexVertex = class {
         input.value = f.value;
         input.style.width = "40px";
         input.style.marginRight = "4px";
-        input.addEventListener("input", (e2) => f.value = e2.target.value);
+        input.addEventListener("input", (e) => f.value = e.target.value);
         container.appendChild(input);
         const label = document.createElement("span");
         label.textContent = f.key;
@@ -27607,9 +28162,9 @@ var FluxCodexVertex = class {
       if (spec.attachedMethod) {
         select2.value = spec.attachedMethod;
       }
-      select2.addEventListener("change", (e2) => {
+      select2.addEventListener("change", (e) => {
         const selected = this.methodsManager.methodsContainer.find(
-          (m) => m.name === e2.target.value
+          (m) => m.name === e.target.value
         );
         if (selected) {
           console.log("test reference", selected);
@@ -27636,8 +28191,8 @@ var FluxCodexVertex = class {
         spec.accessObject = eval(spec.accessObjectLiteral);
       }
       this.populateDynamicFunctionSelect(select, spec);
-      select.addEventListener("change", (e2) => {
-        const fnName = e2.target.value;
+      select.addEventListener("change", (e) => {
+        const fnName = e.target.value;
         if (fnName) {
           this.adaptDynamicFunction(spec, fnName);
         }
@@ -27661,8 +28216,8 @@ var FluxCodexVertex = class {
         select.appendChild(opt);
       });
       if (spec.fields[0].value) select.value = spec.fields[0].value;
-      select.addEventListener("change", (e2) => {
-        const name2 = e2.target.value;
+      select.addEventListener("change", (e) => {
+        const name2 = e.target.value;
         spec.fields[0].value = name2;
         this.updateSceneObjectPins(spec, name2);
       });
@@ -27683,8 +28238,8 @@ var FluxCodexVertex = class {
         opt.textContent = name2;
         select.appendChild(opt);
       });
-      select.addEventListener("change", (e2) => {
-        const name2 = e2.target.value;
+      select.addEventListener("change", (e) => {
+        const name2 = e.target.value;
         spec.fields[0].value = name2;
         const dom2 = document.querySelector(`.node[data-id="${spec.id}"]`);
         let fields = dom2.querySelectorAll(".node-fields");
@@ -27695,8 +28250,8 @@ var FluxCodexVertex = class {
       setTimeout(() => select.dispatchEvent(new Event("change", { bubbles: true })), 100);
     }
     el.appendChild(body);
-    header.addEventListener("mousedown", (e2) => {
-      e2.preventDefault();
+    header.addEventListener("mousedown", (e) => {
+      e.preventDefault();
       if (!this.state.selectedNodes.has(spec.id)) {
         this._selectClear();
         this._selectAdd(spec.id);
@@ -27705,8 +28260,8 @@ var FluxCodexVertex = class {
       const rect = el.getBoundingClientRect();
       const bx = this.board.getBoundingClientRect();
       this.state.dragOffset = [
-        e2.clientX - rect.left + bx.left,
-        e2.clientY - rect.top + bx.top
+        e.clientX - rect.left + bx.left,
+        e.clientY - rect.top + bx.top
       ];
       this.state.dragStartPositions = {};
       this.state.selectedNodes.forEach((nid) => {
@@ -27719,13 +28274,13 @@ var FluxCodexVertex = class {
       };
       document.body.style.cursor = "grabbing";
     });
-    el.addEventListener("click", (e2) => {
-      e2.stopPropagation();
-      this._selectToggle(spec.id, e2.shiftKey);
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this._selectToggle(spec.id, e.shiftKey);
       this.updateNodeDOM(spec.id);
     });
-    el.addEventListener("dblclick", (e2) => {
-      e2.stopPropagation();
+    el.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
       console.log("DBL " + spec.id);
       this.onNodeDoubleClick(spec);
     });
@@ -29510,9 +30065,9 @@ LIST OF INTEREST OBJECT:
       this.fluxcodexFieldChange.detail.value = field.value;
       document.dispatchEvent(this.fluxcodexFieldChange);
     };
-    input.onkeydown = (e2) => {
-      if (e2.key === "Enter") {
-        e2.preventDefault();
+    input.onkeydown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
         saveInputValue();
       }
     };
@@ -29633,8 +30188,8 @@ LIST OF INTEREST OBJECT:
       if (n2._listenerAttached) return;
       console.log("ON RAY HIT INIT ONLE !!!");
       app.reference.addRaycastsListener();
-      const handler = (e2) => {
-        n2._returnCache = e2.detail;
+      const handler = (e) => {
+        n2._returnCache = e.detail;
         this.enqueueOutputs(n2, "exec");
       };
       app.canvas.addEventListener("ray.hit.event", handler);
@@ -29661,26 +30216,26 @@ LIST OF INTEREST OBJECT:
       if (n2._listenerAttached) return;
       const graph = this;
       n2._isHeld = false;
-      window.addEventListener("keydown", (e2) => {
-        n2.lastKey = e2.key;
+      window.addEventListener("keydown", (e) => {
+        n2.lastKey = e.key;
         graph.enqueueOutputs(n2, "anyKeyDown");
-        if (e2.ctrlKey == true) graph.enqueueOutputs(n2, "ctrl");
-        if (e2.altKey == true) graph.enqueueOutputs(n2, "alt");
-        if (e2.shiftKey == true) graph.enqueueOutputs(n2, "shift");
+        if (e.ctrlKey == true) graph.enqueueOutputs(n2, "ctrl");
+        if (e.altKey == true) graph.enqueueOutputs(n2, "alt");
+        if (e.shiftKey == true) graph.enqueueOutputs(n2, "shift");
         const keyValue = n2.fields.find((f) => f.key === "key")?.value;
         if (!keyValue) return;
-        if (e2.key.toLowerCase() === keyValue.toLowerCase()) {
+        if (e.key.toLowerCase() === keyValue.toLowerCase()) {
           n2._isHeld = true;
           graph.enqueueOutputs(n2, "keyDown");
         }
       });
-      window.addEventListener("keyup", (e2) => {
-        console.log("ON e.shiftKey !!!!!", e2.shiftKey);
-        console.log("ON e.altKey !!!!!", e2.altKey);
-        console.log("ON e.ctrltKey !!!!!", e2.ctrlKey);
+      window.addEventListener("keyup", (e) => {
+        console.log("ON e.shiftKey !!!!!", e.shiftKey);
+        console.log("ON e.altKey !!!!!", e.altKey);
+        console.log("ON e.ctrltKey !!!!!", e.ctrlKey);
         const keyValue = n2.fields.find((f) => f.key === "key")?.value;
         if (!keyValue) return;
-        if (e2.key.toLowerCase() === keyValue.toLowerCase()) {
+        if (e.key.toLowerCase() === keyValue.toLowerCase()) {
           n2._isHeld = false;
           graph.enqueueOutputs(n2, "keyUp");
         }
@@ -29803,8 +30358,8 @@ LIST OF INTEREST OBJECT:
           } else {
             value2 = JSON.parse(value2);
           }
-        } catch (e2) {
-          console.warn("[getValue][json parse err]:", e2);
+        } catch (e) {
+          console.warn("[getValue][json parse err]:", e);
         }
       }
       return value2;
@@ -30088,7 +30643,7 @@ LIST OF INTEREST OBJECT:
       if (typeof arr === "string") {
         try {
           arr = JSON.parse(arr);
-        } catch (e2) {
+        } catch (e) {
           console.warn("Failed to parse array string", arr);
           arr = [];
         }
@@ -30138,9 +30693,9 @@ LIST OF INTEREST OBJECT:
       console.log("********************************");
       const eventName = n.fields?.find((f) => f.key === "name")?.value;
       if (!eventName) return;
-      const handler = (e2) => {
+      const handler = (e) => {
         console.log("**TRUE** HANDLER**");
-        n._returnCache = e2.detail;
+        n._returnCache = e.detail;
         this.enqueueOutputs(n, "exec");
       };
       console.log("**eventName**", eventName);
@@ -31132,8 +31687,8 @@ LIST OF INTEREST OBJECT:
         select2.appendChild(opt);
       });
     });
-    select2.onchange = (e2) => {
-      const [objName, fnName] = e2.target.value.split(".");
+    select2.onchange = (e) => {
+      const [objName, fnName] = e.target.value.split(".");
       this.adaptNodeToAccessMethod(node, objName, fnName);
     };
   }
@@ -31185,11 +31740,11 @@ LIST OF INTEREST OBJECT:
       byId("app").style.opacity = 1;
     });
   }
-  handleMouseMove(e2) {
+  handleMouseMove(e) {
     if (this.state.draggingNode) {
       const el2 = this.state.draggingNode;
-      const newX = e2.clientX - this.state.dragOffset[0];
-      const newY = e2.clientY - this.state.dragOffset[1];
+      const newX = e.clientX - this.state.dragOffset[0];
+      const newY = e.clientY - this.state.dragOffset[1];
       const dx = newX - this.state.dragPrimaryStart.x;
       const dy = newY - this.state.dragPrimaryStart.y;
       this.state.selectedNodes.forEach((nid) => {
@@ -31207,24 +31762,24 @@ LIST OF INTEREST OBJECT:
       });
       this.updateLinks();
     } else if (this.state.rubberBand) {
-      this._updateRubberBand(e2);
+      this._updateRubberBand(e);
     } else if (this.state.panning) {
-      const dx = e2.clientX - this.state.panStart[0];
-      const dy = e2.clientY - this.state.panStart[1];
+      const dx = e.clientX - this.state.panStart[0];
+      const dy = e.clientY - this.state.panStart[1];
       this.state.pan[0] += dx;
       this.state.pan[1] += dy;
       this.board.style.transform = `translate(${this.state.pan[0]}px,${this.state.pan[1]}px)`;
-      this.state.panStart = [e2.clientX, e2.clientY];
+      this.state.panStart = [e.clientX, e.clientY];
       this.updateLinks();
     }
   }
-  handleMouseUp(e2) {
+  handleMouseUp(e) {
     if (this.state.rubberBand) {
       const rb = this.state.rubberBand;
       const r2 = rb.rect;
       const isRealDrag = r2 && (r2.w > 6 || r2.h > 6);
       if (isRealDrag) this.state.panning = false;
-      this._commitRubberBand(e2.shiftKey);
+      this._commitRubberBand(e.shiftKey);
     }
     this.state.draggingNode = null;
     this.state.dragStartPositions = null;
@@ -31232,15 +31787,15 @@ LIST OF INTEREST OBJECT:
     this.state.panning = false;
     document.body.style.cursor = "default";
   }
-  handleBoardWrapMouseDown(e2) {
-    if (!e2.target.closest(".node")) {
-      if (e2.shiftKey) {
-        this._startRubberBand(e2);
+  handleBoardWrapMouseDown(e) {
+    if (!e.target.closest(".node")) {
+      if (e.shiftKey) {
+        this._startRubberBand(e);
         document.body.style.cursor = "crosshair";
       } else {
-        if (!e2.shiftKey) this._selectClear();
+        if (!e.shiftKey) this._selectClear();
         this.state.panning = true;
-        this.state.panStart = [e2.clientX, e2.clientY];
+        this.state.panStart = [e.clientX, e.clientY];
         document.body.style.cursor = "grabbing";
       }
     }
@@ -31383,8 +31938,8 @@ LIST OF INTEREST OBJECT:
     input.type = "file";
     input.accept = ".json";
     input.style.display = "none";
-    input.onchange = (e2) => {
-      const file = e2.target.files[0];
+    input.onchange = (e) => {
+      const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
@@ -31416,7 +31971,7 @@ LIST OF INTEREST OBJECT:
             console.warn("\u26A0\uFE0F No file also no cache for graph, Editor faild to load!");
             return;
           }
-        } catch (e2) {
+        } catch (e) {
           console.warn("\u26A0\uFE0F No cache for graph, load from module!");
           data = app.graph;
         }
@@ -31442,8 +31997,8 @@ LIST OF INTEREST OBJECT:
         this.restoreConnectionsRuntime();
         this.log("Loaded graph.");
         return;
-      } catch (e2) {
-        console.error("Failed to load graph from storage:", e2);
+      } catch (e) {
+        console.error("Failed to load graph from storage:", e);
       }
     }
     this.addNode("event");
@@ -31557,8 +32112,8 @@ LIST OF INTEREST OBJECT:
       this._selectAdd(id2);
     }
   }
-  _startRubberBand(e2) {
-    const pos2 = this._getBoardPos(e2.clientX, e2.clientY);
+  _startRubberBand(e) {
+    const pos2 = this._getBoardPos(e.clientX, e.clientY);
     const el2 = document.createElement("div");
     el2.id = "fc-rubber-band";
     Object.assign(el2.style, {
@@ -31575,10 +32130,10 @@ LIST OF INTEREST OBJECT:
     this.board.appendChild(el2);
     this.state.rubberBand = { startX: pos2.x, startY: pos2.y, el: el2 };
   }
-  _updateRubberBand(e2) {
+  _updateRubberBand(e) {
     const rb = this.state.rubberBand;
     if (!rb) return;
-    const pos2 = this._getBoardPos(e2.clientX, e2.clientY);
+    const pos2 = this._getBoardPos(e.clientX, e.clientY);
     const x2 = Math.min(rb.startX, pos2.x);
     const y2 = Math.min(rb.startY, pos2.y);
     const w = Math.abs(pos2.x - rb.startX);
@@ -31624,8 +32179,8 @@ var RESOURCES_FOR_GRAPH = class {
   glb = [];
   images = [];
   constructor() {
-    addEventListener("editorx-update-assets-list", (e2) => {
-      console.log("editorx-update-assets-list ", e2.detail);
+    addEventListener("editorx-update-assets-list", (e) => {
+      console.log("editorx-update-assets-list ", e.detail);
     });
   }
 };
@@ -31654,9 +32209,9 @@ var EditorHud = class {
     document.addEventListener("editor-not-running", () => {
       this.noEditorConn();
     });
-    document.addEventListener("file-detail-data", (e2) => {
-      console.log(e2.detail.details);
-      let getPATH = e2.detail.details.path.split("public")[1];
+    document.addEventListener("file-detail-data", (e) => {
+      console.log(e.detail.details);
+      let getPATH = e.detail.details.path.split("public")[1];
       const ext = getPATH.split(".").pop();
       if (ext == "glb" && confirm("GLB FILE \u{1F4E6} Do you wanna add it to the scene ?")) {
         let objName = prompt(`Path: ${getPATH} 
@@ -31708,11 +32263,11 @@ var EditorHud = class {
         }));
       } else {
         let s = "";
-        for (let key in e2.detail.details) {
+        for (let key in e.detail.details) {
           if (key == "path") {
-            s += key + ":" + e2.detail.details[key].split("public")[1] + "\n";
+            s += key + ":" + e.detail.details[key].split("public")[1] + "\n";
           } else {
-            s += key + ":" + e2.detail.details[key] + "\n";
+            s += key + ":" + e.detail.details[key] + "\n";
           }
         }
         mb.show(s);
@@ -31870,8 +32425,8 @@ var EditorHud = class {
   `;
     document.body.appendChild(this.editorMenu);
     this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e2) => {
-        const menu = e2.target.nextElementSibling;
+      btn.addEventListener("click", (e) => {
+        const menu = e.target.nextElementSibling;
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           if (d !== menu) d.style.display = "none";
         });
@@ -31890,8 +32445,8 @@ var EditorHud = class {
     byId("stopMainGraphDOM").addEventListener("click", () => {
       app.editor.fluxCodexVertex.clearRuntime();
     });
-    document.addEventListener("click", (e2) => {
-      if (!this.editorMenu.contains(e2.target)) {
+    document.addEventListener("click", (e) => {
+      if (!this.editorMenu.contains(e.target)) {
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           d.style.display = "none";
         });
@@ -32006,19 +32561,19 @@ var EditorHud = class {
         detail: o2
       }));
     });
-    byId("showCodeEditorBtn").addEventListener("click", (e2) => {
+    byId("showCodeEditorBtn").addEventListener("click", (e) => {
       document.dispatchEvent(new CustomEvent("show-method-editor", { detail: {} }));
     });
-    byId("showCurveEditorBtn").addEventListener("click", (e2) => {
+    byId("showCurveEditorBtn").addEventListener("click", (e) => {
       document.dispatchEvent(new CustomEvent("show-curve-editor", { detail: {} }));
     });
-    byId("showShaderEditorBtn").addEventListener("click", (e2) => {
+    byId("showShaderEditorBtn").addEventListener("click", (e) => {
       if (byId("app").style.display == "flex") {
         byId("app").style.display = "none";
       }
       if (byId("shaderDOM") === null) {
-        openFragmentShaderEditor().then((e3) => {
-          app.shaderGraph = e3;
+        openFragmentShaderEditor().then((e2) => {
+          app.shaderGraph = e2;
         });
       } else if (byId("shaderDOM").style.display === "flex") {
         byId("shaderDOM").style.display = "none";
@@ -32026,7 +32581,7 @@ var EditorHud = class {
         byId("shaderDOM").style.display = "flex";
       }
     });
-    byId("showVisualCodeEditorBtn").addEventListener("click", (e2) => {
+    byId("showVisualCodeEditorBtn").addEventListener("click", (e) => {
       if (byId("shaderDOM") && byId("shaderDOM").style.display == "flex") {
         byId("shaderDOM").style.display = "none";
       }
@@ -32037,12 +32592,12 @@ var EditorHud = class {
         if (this.core.editor.fluxCodexVertex) this.core.editor.fluxCodexVertex.updateLinks();
       }
     });
-    byId("showCodeVARSBtn").addEventListener("click", (e2) => {
+    byId("showCodeVARSBtn").addEventListener("click", (e) => {
       byId("app").style.display = "flex";
       byId("varsPopup").style.display = "flex";
       this.core.editor.fluxCodexVertex.updateLinks();
     });
-    document.addEventListener("updateSceneContainer", (e2) => {
+    document.addEventListener("updateSceneContainer", (e) => {
       this.updateSceneContainer();
     });
     this.showAboutModal = () => {
@@ -32111,9 +32666,9 @@ var EditorHud = class {
         `;
       document.head.appendChild(style);
     }
-    const setMode = (e2) => {
+    const setMode = (e) => {
       if (byId("graph-status").innerHTML !== "\u26AB") return;
-      let m = parseInt(e2.target.getAttribute("data-mode"));
+      let m = parseInt(e.target.getAttribute("data-mode"));
       dispatchEvent(new CustomEvent("editor-set-gizmo-mode", { detail: { mode: m } }));
       if (m == 0) {
         byId("mode0").style.border = "gray 1px solid";
@@ -32185,11 +32740,11 @@ var EditorHud = class {
 
     Support for mp3 adding by click also. No support for mp4 - mp4 can be added from 'Set Textures' node.
     `);
-    document.addEventListener("la", (e2) => {
-      console.log(`%c[Editor]Root Resource Folder: ${e2.detail.rootFolder}`, LOG_FUNNY_ARCADE);
-      byId("res-folder").setAttribute("data-root-folder", e2.detail.rootFolder);
+    document.addEventListener("la", (e) => {
+      console.log(`%c[Editor]Root Resource Folder: ${e.detail.rootFolder}`, LOG_FUNNY_ARCADE);
+      byId("res-folder").setAttribute("data-root-folder", e.detail.rootFolder);
       byId("res-folder").innerHTML = "";
-      e2.detail.payload.forEach((i) => {
+      e.detail.payload.forEach((i) => {
         let item = document.createElement("div");
         item.classList.add("file-item");
         if (i.isDir == true) {
@@ -32209,7 +32764,7 @@ var EditorHud = class {
         }
         item.innerHTML = "<p>" + i.name + "</p>";
         byId("res-folder").appendChild(item);
-        item.addEventListener("click", (e3) => {
+        item.addEventListener("click", (e2) => {
           if (i.isDir == true) document.dispatchEvent(new CustomEvent("nav-folder", {
             detail: {
               rootFolder: byId("res-folder").getAttribute("data-root-folder") || "",
@@ -32270,16 +32825,16 @@ var EditorHud = class {
   `;
     document.body.appendChild(this.editorMenu);
     this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e2) => {
-        const menu = e2.target.nextElementSibling;
+      btn.addEventListener("click", (e) => {
+        const menu = e.target.nextElementSibling;
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           if (d !== menu) d.style.display = "none";
         });
         menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
     });
-    document.addEventListener("click", (e2) => {
-      if (!this.editorMenu.contains(e2.target)) {
+    document.addEventListener("click", (e) => {
+      if (!this.editorMenu.contains(e.target)) {
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           d.style.display = "none";
         });
@@ -32356,16 +32911,16 @@ var EditorHud = class {
   `;
     document.body.appendChild(this.editorMenu);
     this.editorMenu.querySelectorAll(".top-btn").forEach((btn) => {
-      btn.addEventListener("click", (e2) => {
-        const menu = e2.target.nextElementSibling;
+      btn.addEventListener("click", (e) => {
+        const menu = e.target.nextElementSibling;
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           if (d !== menu) d.style.display = "none";
         });
         menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
     });
-    document.addEventListener("click", (e2) => {
-      if (!this.editorMenu.contains(e2.target)) {
+    document.addEventListener("click", (e) => {
+      if (!this.editorMenu.contains(e.target)) {
         this.editorMenu.querySelectorAll(".dropdown").forEach((d) => {
           d.style.display = "none";
         });
@@ -32486,13 +33041,13 @@ var EditorHud = class {
     this.sceneProperty.appendChild(this.objectProperies);
     document.body.appendChild(this.sceneProperty);
   }
-  updateSceneObjProperties = (e2) => {
+  updateSceneObjProperties = (e) => {
     this.currentProperties = [];
     this.objectProperiesTitle.style.fontSize = "120%";
     this.objectProperiesTitle.innerHTML = `Scene object properties`;
     this.objectProperies.innerHTML = ``;
-    const currentSO = this.core.getSceneObjectByName(e2.target.innerHTML);
-    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e2.target.innerHTML}</span> 
+    const currentSO = this.core.getSceneObjectByName(e.target.innerHTML);
+    this.objectProperiesTitle.innerHTML = `<span style="color:lime;">Name: ${e.target.innerHTML}</span> 
       <span style="color:yellow;"> [${currentSO.constructor.name}]`;
     const OK = Object.keys(currentSO);
     OK.forEach((prop) => {
@@ -32538,13 +33093,13 @@ var SceneObjectProperty = class {
       this.propName.style.overflow = "hidden";
       this.propName.style.height = "20px";
       this.propName.style.borderBottom = "solid lime 2px";
-      this.propName.addEventListener("click", (e2) => {
-        if (e2.currentTarget.style.height != "fit-content") {
+      this.propName.addEventListener("click", (e) => {
+        if (e.currentTarget.style.height != "fit-content") {
           this.propName.style.overflow = "unset";
-          e2.currentTarget.style.height = "fit-content";
+          e.currentTarget.style.height = "fit-content";
         } else {
           this.propName.style.overflow = "hidden";
-          e2.currentTarget.style.height = "20px";
+          e.currentTarget.style.height = "20px";
         }
       });
       if (propName == "itIsPhysicsBody") {
@@ -32844,16 +33399,16 @@ var SceneObjectProperty = class {
       <div><select id='sceneObjEditorPropEvents' ></select></div>
     </div>`;
     parentDOM.appendChild(this.propName);
-    byId("sceneObjEditorPropEvents").onchange = (e2) => {
-      console.log("Event system selection:", e2.target.value);
-      if (e2.target.value == "none") {
+    byId("sceneObjEditorPropEvents").onchange = (e) => {
+      console.log("Event system selection:", e.target.value);
+      if (e.target.value == "none") {
         currSceneObj.position.onTargetPositionReach = () => {
         };
         console.log("clear event");
         return;
       }
       const method = app.editor.methodsManager.methodsContainer.find(
-        (m) => m.name === e2.target.value
+        (m) => m.name === e.target.value
       );
       let F = app.editor.methodsManager.compileFunction(method.code);
       currSceneObj.position.onTargetPositionReach = F;
@@ -32913,8 +33468,8 @@ var MethodsManager = class {
       this.popup.style.display = "block";
       this.wrapper.style.display = "block";
     });
-    document.addEventListener("XcompileFunction", (e2) => {
-      this.compileFunction(e2.detail.code);
+    document.addEventListener("XcompileFunction", (e) => {
+      this.compileFunction(e.detail.code);
     });
   }
   loadMethods = async (editorType) => {
@@ -32943,17 +33498,17 @@ var MethodsManager = class {
     let offsetX = 0;
     let offsetY = 0;
     this.wrapper.style.cursor = "move";
-    this.wrapper.addEventListener("mousedown", (e2) => {
+    this.wrapper.addEventListener("mousedown", (e) => {
       isDragging = true;
       const rect = this.popup.getBoundingClientRect();
-      offsetX = e2.clientX - rect.left;
-      offsetY = e2.clientY - rect.top;
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
       this.popup.style.transition = "none";
     });
-    document.addEventListener("mousemove", (e2) => {
+    document.addEventListener("mousemove", (e) => {
       if (!isDragging) return;
-      this.popup.style.left = e2.clientX - offsetX + "px";
-      this.popup.style.top = e2.clientY - offsetY + "px";
+      this.popup.style.left = e.clientX - offsetX + "px";
+      this.popup.style.top = e.clientY - offsetY + "px";
       this.popup.style.transform = "none";
     });
     document.addEventListener("mouseup", () => {
@@ -33158,8 +33713,8 @@ var MethodsManager = class {
     try {
       const fn = new Function(code + "; return " + this.extractName(code) + ";")();
       return fn;
-    } catch (e2) {
-      console.error("Compilation error:", e2);
+    } catch (e) {
+      console.error("Compilation error:", e);
       return () => {
       };
     }
@@ -33183,9 +33738,9 @@ var Editor = class {
       this.client = new MEEditorClient(this.check(a));
     } else if (this.check(a) == "created from editor") {
       document.addEventListener("editorx-ws-ready", () => {
-        openFragmentShaderEditor().then((e2) => {
+        openFragmentShaderEditor().then((e) => {
           byId("shaderDOM").style.display = "none";
-          app.shaderGraph = e2;
+          app.shaderGraph = e;
         });
       });
       this.client = new MEEditorClient(this.check(a), projName);
@@ -33641,6 +34196,48 @@ var _invProj = mat4Impl.create();
 var _invView = mat4Impl.create();
 var _clip = new Float32Array([0, 0, 1, 1]);
 var _rayOrigin = new Float32Array(3);
+var rayHitClick = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null
+};
+var rayHitMouseDown = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null
+};
+var rayHitMouseMove = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null
+};
+var rayHitEventClick = new CustomEvent("ray.hit.event", { detail: rayHitClick });
+var rayHitEventMouseDown = new CustomEvent("ray.hit.mousedown", { detail: rayHitMouseDown });
+var rayHitEventMouseMove = new CustomEvent("ray.hit.event.mm", { detail: rayHitMouseMove });
 function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
   let x2, y2;
@@ -33727,13 +34324,19 @@ function computeWorldVertsAndAABB(object) {
   return object._aabbCache;
 }
 function dispatchRayHitEvent(canvas, data) {
-  if (data.eventName == "click") {
-    canvas.dispatchEvent(new CustomEvent("ray.hit.event", { detail: data }));
-  } else if (data.eventName == "mousedown") {
-    canvas.dispatchEvent(new CustomEvent("ray.hit.mousedown", { detail: data }));
-  } else {
-    canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", { detail: data }));
-  }
+  const e = data.eventName === "click" ? rayHitEventClick : data.eventName === "mousedown" ? rayHitEventMouseDown : rayHitEventMouseMove;
+  e.detail.hitObject = data.hitObject;
+  e.detail.hitPoint = data.hitPoint;
+  e.detail.hitNormal = data.hitNormal;
+  e.detail.hitDistance = data.hitDistance;
+  e.detail.rayOrigin = data.rayOrigin;
+  e.detail.rayDirection = data.rayDirection;
+  e.detail.screenCoords = data.screenCoords;
+  e.detail.camera = data.camera;
+  e.detail.timestamp = data.timestamp;
+  e.detail.button = data.button;
+  e.detail.eventName = data.eventName;
+  canvas.dispatchEvent(e);
 }
 function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
   const canvas = document.getElementById(canvasId);
@@ -33854,6 +34457,19 @@ var ProceduralMeshObj = class extends Materials {
     if (typeof o2.fragmentWGSL !== "undefined") {
       this.fragmentWGSL = o2.fragmentWGSL;
     }
+    if (typeof o2.primitive === "undefined") {
+      this.primitive = {
+        topology: "triangle-list",
+        cullMode: "back",
+        frontFace: "ccw"
+      };
+    } else {
+      this.primitive = {
+        topology: o2.primitive.topology ? o2.primitive.topology : "triangle-list",
+        cullMode: o2.primitive.cullMode ? o2.primitive.cullMode : "back",
+        frontFace: o2.primitive.frontFace ? o2.primitive.frontFace : "ccw"
+      };
+    }
     this.runProgram = () => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 512;
@@ -33879,7 +34495,7 @@ var ProceduralMeshObj = class extends Materials {
       this.done = true;
     });
   }
-  // GEOMETRY LOADING old
+  // Old
   _loadGeometry(spec2) {
     const { type: type2, size: size2, segments, options: options2 } = spec2;
     const geo2 = GeometryFactory.create(type2, size2, segments, options2);
@@ -34032,10 +34648,9 @@ var ProceduralMeshObj = class extends Materials {
       { arrayStride: 3 * 4, attributes: [{ shaderLocation: 7, offset: 0, format: "float32x3" }] }
       // normalB
     ];
-    this.primitive = { topology: "triangle-list", cullMode: "none", frontFace: "ccw" };
   }
   _setupUniforms() {
-    this.effects = {};
+    if (typeof this.effects === "undefined") this.effects = {};
     if (this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
       if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
@@ -34636,9 +35251,7 @@ var MeshMorpher = class {
     const allFlat = normalised.every((p) => p.flat);
     return allFlat ? { func: composed, flat: true } : composed;
   }
-  // ─────────────────────────────────────────────────────────────────────────────
   // All original methods below — completely unchanged
-  // ─────────────────────────────────────────────────────────────────────────────
   static computeSmoothNormals(positions, indices) {
     const normals = new Float32Array(positions.length);
     const counts = new Uint16Array(positions.length / 3);
@@ -36398,6 +37011,7 @@ var cullingPass = function() {
     const len2 = this.mainRenderBundle.length;
     for (let i = 0; i < len2; i++) {
       const mesh = this.mainRenderBundle[i];
+      if (!mesh) continue;
       mesh.updateInstanceData?.(mesh.modelMatrix);
       if (mesh.vertexAnim?.active) mesh.updateTime(this.now);
       mesh.position.update();
@@ -36408,9 +37022,7 @@ var cullingPass = function() {
       if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       mesh.updateBoundingSphere?.();
     }
-    const cullStartMs = performance.now();
     this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
-    const cullTimeMs = performance.now() - cullStartMs;
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -36451,7 +37063,7 @@ var cullingPass = function() {
     }
     pass.end();
     if (this.ssrPass.enabled === true) {
-      mat4.invert(camera.VP, this._invViewProj);
+      mat4Impl.invert(camera.VP, this._invViewProj);
       this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
       this.ssrPass.render(commandEncoder, {
         sceneTextureView: this.sceneTextureView,
@@ -36462,7 +37074,7 @@ var cullingPass = function() {
       });
     }
     if (this.volumetricPass.enabled === true) {
-      if (this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
+      if (this.ssrPass.enabled === false) mat4Impl.invert(camera.VP, this._invViewProj);
       this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -36530,9 +37142,7 @@ var noShadowPass = function() {
       if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       mesh.updateBoundingSphere?.();
     }
-    const cullStartMs = performance.now();
     this.culledRenderPass.cullAndGroup(camera, this.opaqueBuckets, this.transparentBuckets);
-    const cullTimeMs = performance.now() - cullStartMs;
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -36573,7 +37183,7 @@ var noShadowPass = function() {
     }
     pass.end();
     if (this.ssrPass.enabled === true) {
-      mat4.invert(camera.VP, this._invViewProj);
+      mat4Impl.invert(camera.VP, this._invViewProj);
       this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
       this.ssrPass.render(commandEncoder, {
         sceneTextureView: this.sceneTextureView,
@@ -36584,7 +37194,7 @@ var noShadowPass = function() {
       });
     }
     if (this.volumetricPass.enabled === true) {
-      if (this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
+      if (this.ssrPass.enabled === false) mat4Impl.invert(camera.VP, this._invViewProj);
       this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -36685,8 +37295,8 @@ var PhysicsBridge = class {
     } else {
       this._worker = new Worker(workerUrl, { type: "module" });
     }
-    this._worker.onerror = (e2) => {
-      console.error("MEWorker error:", e2.message, e2.filename, e2.lineno);
+    this._worker.onerror = (e) => {
+      console.error("MEWorker error:", e.message, e.filename, e.lineno);
     };
     this._snapshot = null;
     this._pending = /* @__PURE__ */ new Map();
@@ -36704,11 +37314,11 @@ var PhysicsBridge = class {
         rayDirection: [0, 0, 0]
       }
     };
-    this.detectCollision = (e2) => {
+    this.detectCollision = (e) => {
     };
-    this.collisionPersisted = (e2) => {
+    this.collisionPersisted = (e) => {
     };
-    this.collisionRemoved = (e2) => {
+    this.collisionRemoved = (e) => {
     };
     this.tempRot = mat4Impl.create();
     this._paused = false;
@@ -36833,6 +37443,10 @@ var PhysicsBridge = class {
   explode(idx, x2, y2, z, radius, strength) {
     if (idx === void 0) return;
     this._worker.postMessage({ cmd: "explode", idx, x: x2, y: y2, z, radius, strength });
+  }
+  explodeAll(idxs, x2, y2, z, radius, strength) {
+    if (idxs === void 0) return;
+    this._worker.postMessage({ cmd: "explodeAll", idxs, x: x2, y: y2, z, radius, strength });
   }
   deactivatePhysics(idx) {
     if (idx === void 0) return;
@@ -38000,11 +38614,11 @@ var KaleidoscopeEffect = class {
 
 // ../../../engine/culling/culling.js
 var CulledRenderPass = class {
-  constructor() {
+  constructor(range = 500) {
     this.visibleOpaqueMeshes = /* @__PURE__ */ new Map();
     this.visibleTransparentMeshes = /* @__PURE__ */ new Map();
     this.cullStats = { total: 0, visible: 0, culled: 0 };
-    this.range = 500;
+    this.range = range;
     this._camPos = new Float32Array(3);
     this._camForward = new Float32Array(3);
     this._opaqueArrayCache = /* @__PURE__ */ new Map();
@@ -38047,7 +38661,7 @@ var CulledRenderPass = class {
           const toObjY = m[13] - this._camPos[1];
           const toObjZ = m[14] - this._camPos[2];
           const distanceSq2 = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
-          if (distanceSq2 < 4) {
+          if (distanceSq2 < mesh.boundingSphere.radius) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
             continue;
@@ -38063,7 +38677,9 @@ var CulledRenderPass = class {
             continue;
           }
           const dot2 = toObjX / distance2 * this._camForward[0] + toObjY / distance2 * this._camForward[1] + toObjZ / distance2 * this._camForward[2];
-          if (dot2 > 0.2) {
+          const radius = mesh.boundingSphere.radius;
+          const threshold = 0.2 - radius / distance2;
+          if (dot2 > threshold) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
           } else {
@@ -38102,7 +38718,7 @@ var CulledRenderPass = class {
             this.cullStats.visible++;
             continue;
           }
-          if (distanceSq2 > this.range) {
+          if (distanceSq2 > this.range * this.range) {
             this.cullStats.culled++;
             continue;
           }
@@ -38113,7 +38729,13 @@ var CulledRenderPass = class {
             continue;
           }
           const dot2 = toObjX / distance2 * this._camForward[0] + toObjY / distance2 * this._camForward[1] + toObjZ / distance2 * this._camForward[2];
-          if (dot2 > 0.2) {
+          const radius = Math.max(
+            mesh.scale[0],
+            mesh.scale[1],
+            mesh.scale[2]
+          );
+          const threshold = 0.2 - radius / distance2;
+          if (dot2 > threshold) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
           } else {
@@ -38269,7 +38891,6 @@ var MatrixEngineWGPU = class {
     this._volumetricUniforms = { invViewProjectionMatrix: null };
     this._volumetricLightUniforms = { viewProjectionMatrix: null, direction: null };
     this.usEvent = new CustomEvent("updateSceneContainer", { detail: {} });
-    this.culledRenderPass = new CulledRenderPass();
     this.editor = void 0;
     if (typeof options2.useEditor !== "undefined") {
       if (typeof options2.projectType !== "undefined" && options2.projectType == "created from editor") {
@@ -38291,12 +38912,14 @@ var MatrixEngineWGPU = class {
       } else if (options2.render == "mobile1") {
         this.overrideRender = mobile1.bind(this);
       } else if (options2.render == "culling") {
+        const arg = { range: options2.cullingRange ? options2.cullingRange : 500 };
+        this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
       }
     }
-    window.addEventListener("keydown", (e2) => {
-      if (e2.code == "F4") {
-        e2.preventDefault();
+    window.addEventListener("keydown", (e) => {
+      if (e.code == "F4") {
+        e.preventDefault();
         mb.error(`Activated WebEditor view.`);
         app.activateEditor();
         return false;
@@ -38360,7 +38983,16 @@ var MatrixEngineWGPU = class {
         };
       } else if ("WASD" == this.options.mainCameraParams.type) {
         this.cameras = {
-          WASD: new WASDCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "WASD" == this.options.mainCameraParams.type ? "init active cam" : null })
+          WASD: new WASDCamera(
+            {
+              position: initialCameraPosition,
+              canvas,
+              pitch: 0.18,
+              yaw: -0.1,
+              isActive: "WASD" == this.options.mainCameraParams.type ? "init active cam" : null,
+              noEvents: this.options.mainCameraParams.noEvents ? "noEvents" : void 0
+            }
+          )
         };
       } else if ("RPG" == this.options.mainCameraParams.type) {
         this.cameras = {
@@ -38418,19 +39050,45 @@ var MatrixEngineWGPU = class {
       }
       meLoader.create();
       this.MEConfig.fsManager.onChange((isFS, target2) => {
-        console.log("GOT BACK FROM FS", isFS);
-        setTimeout(() => this.applyCanvasSizeMobile(this.options.fastRender), 100);
+        console.log("1 BACK FROM FS", isFS);
+        console.log("window style width : ", innerWidth);
+        setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
       });
       addEventListener("run_mobile_fs", () => {
         if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-          console.log("FastRender : ", this.options.fastRender);
-          this.applyCanvasSize(this.options.fastRender);
         }
-        this.init({ canvas, callback });
         meLoader.destroy();
-        setTimeout(() => {
-          if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
-        }, 500);
+        if (typeof this.options.lock !== "undefined") {
+          if (this.options.lock != "landscape" && this.options.lock != "portrait") {
+            this.options.lock = "portrait";
+          }
+          if (checkLock() && isMobile() == true) {
+            screen.orientation.lock(this.options.lock).then(() => {
+              console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
+              setTimeout(() => {
+                this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+                console.log("canvas width: ", canvas.width);
+                console.log("canvas style width : ", canvas.style.width);
+                this.init({ canvas, callback });
+              }, 1e3);
+            }).catch(function(error) {
+              console.error("Orientation lock failed: ", error);
+            });
+          }
+        } else {
+          screen.orientation.lock(getOrientation()).then((e) => {
+            console.log(`%cOrientation locked to ${e}`, LOG_FUNNY_ARCADE);
+            setTimeout(() => {
+              this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+              console.log("canvas width: ", canvas.width);
+              console.log("canvas style width : ", canvas.style.width);
+              this.init({ canvas, callback });
+            }, 1e3);
+          }).catch(function(error) {
+            console.error("Orientation lock failed: ", error);
+          });
+        }
+        if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
       });
     } else {
       this.init({ canvas, callback });
@@ -38484,9 +39142,11 @@ var MatrixEngineWGPU = class {
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
-  applyCanvasSizeMobile(scale4) {
+  applyCanvasSizeMobile(scaleX = 1, scaleY = 1) {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
+    this.canvas.width = screenWidth * scaleX;
+    this.canvas.height = screenHeight * scaleY;
     this.canvas.style.width = screenWidth + "px";
     this.canvas.style.height = screenHeight + "px";
   }
@@ -38511,19 +39171,6 @@ var MatrixEngineWGPU = class {
       format: presentationFormat,
       alphaMode: "premultiplied"
     });
-    if (typeof this.options.lock !== "undefined") {
-      if (this.options.lock != "landscape" && this.options.lock != "portrait") {
-        this.options.lock = "portrait";
-      }
-      if (checkLock() && isMobile() == true) {
-        screen.orientation.lock(this.options.lock).then(() => {
-          console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
-          this.applyCanvasSize(this.options.fastRender);
-        }).catch(function(error) {
-          console.error("Orientation lock failed: ", error);
-        });
-      }
-    }
     this.globalAmbient = vec3Impl.create(1, 1, 1);
     if (this.options.MAX_SPOTLIGHTS) {
       this.MAX_SPOTLIGHTS = this.options.MAX_SPOTLIGHTS;
@@ -38540,10 +39187,10 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.15.7 [The beast] ", LOG_FUNNY);
+    console.log("%c Version 1.16.00 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open...\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
+      "%cMatrix Engine WGPU - Gate is open...\nOptimised MediaPipe buildin library implemented.\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
     );
     console.log(
@@ -38849,6 +39496,9 @@ var MatrixEngineWGPU = class {
   getSceneObjectByName = (name2) => {
     return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name2);
   };
+  getSceneObjectIfIncludes = (str2) => {
+    return this.mainRenderBundle.filter((o2) => o2.name.includes(str2) === true);
+  };
   getSceneLightByName = (name2) => {
     return this.lightContainer.find((l) => l.name === name2);
   };
@@ -38867,14 +39517,15 @@ var MatrixEngineWGPU = class {
       if (testPB !== null) {
         try {
           this.matrixPhysics.removeRigidBody(testPB);
-        } catch (e2) {
-          console.warn("%cPhysics cleanup error:" + e2, LOG_FUNNY_ARCADE);
+        } catch (e) {
+          console.warn("%cPhysics cleanup error:" + e, LOG_FUNNY_ARCADE);
         }
       }
+    } else {
+      this.mainRenderBundle.splice(index, 1);
+      this.buildRenderBuckets(this.mainRenderBundle);
     }
-    obj2.destroy();
-    this.mainRenderBundle.splice(index, 1);
-    this.buildRenderBuckets(this.mainRenderBundle);
+    this.buildLightShadowBuckets();
     return true;
   };
   buildRenderBuckets = () => {
@@ -39135,7 +39786,7 @@ var MatrixEngineWGPU = class {
       callback(this);
     }, 1);
   }
-  // still not perfect but works
+  // Still not perfect
   destroyProgram = () => {
     console.warn("%c[MatrixEngineWGPU] Destroy program", "color: orange");
     this.frame = () => {
@@ -39147,8 +39798,8 @@ var MatrixEngineWGPU = class {
     for (const obj2 of this.mainRenderBundle) {
       try {
         obj2?.destroy?.();
-      } catch (e2) {
-        console.warn("Object destroy error:", obj2?.name, e2);
+      } catch (e) {
+        console.warn("Object destroy error:", obj2?.name, e);
       }
     }
     this.mainRenderBundle.length = 0;
@@ -39176,14 +39827,13 @@ var MatrixEngineWGPU = class {
     console.warn("%c[MatrixEngineWGPU] Destroy complete \u2714", "color: lightgreen");
   };
   updateLights() {
-    const floatsPerLight = 36;
     for (let i = 0; i < this.MAX_SPOTLIGHTS; i++) {
       const light = this.lightContainer[i];
       if (light?.update) {
         const vpDirty = light.update();
         if (vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
       }
-      this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i * floatsPerLight);
+      this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i * 36);
     }
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
   }
@@ -39377,7 +40027,6 @@ var MatrixEngineWGPU = class {
         scale: [1, 1, 1],
         enabled: true,
         geometry: "Sphere",
-        //                   must be fixed<<
         radius: typeof o2.scale == Number ? o2.scale : o2.scale[0],
         name: o2.name,
         rotation: o2.rotation
@@ -39498,7 +40147,6 @@ var MatrixEngineWGPU = class {
         scale: o2.scale,
         enabled: true,
         geometry: "Sphere",
-        //                   must be fixed<<
         radius: typeof o2.scale == Number ? o2.scale : o2.scale[0],
         name: o2.name,
         rotation: o2.rotation

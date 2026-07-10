@@ -1,0 +1,13 @@
+# Blender 4.1.1 MTL File: 'zombi-woman-crawl.blend'
+# www.blender.org
+
+newmtl ZombieGirl_body_Material
+Ns 200.000000
+Ka 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd G:/web_server/xampp/htdocs/PRIVATE_SERVER/me/meGPU/matrix-engine-wgpu/public/res/textures/metal/metal1.webp
+map_Ks C:/zombie_specular.png
+map_Bump -bm 1.000000 C:/zombie_normal.png

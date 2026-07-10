@@ -1,18 +1,20 @@
-import {byId} from "../../utils";
+import {byId, mb} from "../../utils";
 
-/**
- * USAGE EXAMPLE:
- *
- *   app.player = new Player({ name: 'Nikola', typeOfController: 'fps' });
- *   app.player.takeDamage(10);      // syncs app.energy HUD automatically if hooked
- *   app.player.addKill();
- *   app.player.useAmmo(1);
- */
+const tiers = [
+  {threshold: 500, text: 'GODLIKE'},
+  {threshold: 250, text: 'UNSTOPPABLE'},
+  {threshold: 100, text: 'RAMPAGE'},
+  {threshold: 50, text: 'KILLING SPREE'},
+  {threshold: 25, text: 'WARMING UP'},
+  {threshold: 10, text: 'FIRST BLOOD'},
+  {threshold: 1, text: 'WEEKEND WARRIOR'},
+];
+
 export class Player {
-
   constructor(o = {}) {
     this.name = o.name || 'local_player';
-    this.typeOfController = o.typeOfController || 'fps'; // 'fps' | 'rpg' | 'moba' | 'spectator' ...
+    this.respawnItemsInterval = o.respawnItemsInterval || 120000;
+    this.typeOfController = o.typeOfController || 'fps';
     this.maxEnergy = o.maxEnergy ?? 100;
     this.energy = o.energy ?? this.maxEnergy;
     this.lives = o.lives ?? 1;
@@ -20,23 +22,19 @@ export class Player {
     this.armor = o.armor ?? false;
     this.kills = o.kills ?? 0;
     this.isDead = false;
-    // optional hook: called whenever energy changes, so HUD stays in sync
-    // without Player needing to know about app.energy directly
     this.onEnergyChange = o.onEnergyChange || null;
+    this._killTiersHit = new Set();
     this.attachEvents();
   }
 
   attachEvents() {
     addEventListener('pickup-collected', (e) => {
-      console.log('pickup-collected', e.detail.entry)
-      const {type, amount} = e.detail.entry;
-      if(type === 'energy') {app.player.heal(parseInt(amount))}
-      else if(type === 'ammo') {app.player.addAmmo(parseInt(amount))}
-      else if(type === 'armor') {app.player.gotArmor()}
+      const {type} = e.detail.entry;
+      if(type === 'energy') {app.player.heal(e.detail.entry)}
+      else if(type === 'ammo') {app.player.gotAmmo(e.detail.entry)}
+      else if(type === 'armor') {app.player.gotArmor(e.detail.entry)}
     });
-
     addEventListener('zombie-die', () => {
-      console.log('addKill addKill addKill')
       this.addKill(1);
     })
   }
@@ -49,23 +47,36 @@ export class Player {
 
   takeDamage(amount) {
     if(this.isDead) return;
-    if (this.armor === true) {
+    if(this.armor === true) {
       amount = amount * 0.75;
     }
     this.setEnergy(this.energy - amount);
   }
 
-  heal(amount) {
+  heal(entry) {
+    let {amount} = entry;
+    amount = parseInt(amount);
     if(this.isDead) return;
-    console.log('heal ', amount)
-    console.log('heal ', this.energy)
     this.setEnergy(this.energy + amount);
+    app.matrixSounds.play('feelgood');
+    setTimeout(() => {
+      app.gameMap.respawnMapItem('energy', entry.id)
+    }, this.respawnItemsInterval)
   }
 
   die() {
+    this.energy = 0;
+    app.energy.setValue(0);
     if(this.isDead) return;
     this.isDead = true;
     this.lives = Math.max(0, this.lives - 1);
+    for(const t of tiers) {
+      if(this.kills >= t.threshold && !this._killTiersHit.has(t.threshold)) {
+        mb.show(`${t.text} — ${this.kills} KILLS.`, undefined, 5000);
+        this._killTiersHit.add(t.threshold);
+        break;
+      }
+    }
   }
 
   respawn(fullEnergy = true) {
@@ -87,25 +98,33 @@ export class Player {
     return true;
   }
 
-  gotArmor() {
+  gotArmor(entry) {
     this.armor = true;
     byId('player-armor').textContent = 'Armor ' + (this.armor === true ? 'YES' : 'NO');
+    app.matrixSounds.play('feelgood');
     setTimeout(() => {
       this.armor = false;
-      byId('player-armor').textContent = 'Armor ' + (this.armor === true ? 'YES' : 'NO');
-    }, 120000)
+      byId('player-armor').textContent = 'Armor NO';
+      app.gameMap.respawnMapItem('armor', entry.id)
+    }, this.respawnItemsInterval);
   }
 
-  addAmmo(n) {
+  gotAmmo(entry) {
+    const {amount} = entry;
+    const n = parseInt(amount);
     this.ammo += n;
     byId('player-ammo').textContent = 'Ammo ' + this.ammo;
+    app.matrixSounds.play('feelgood');
+    setTimeout(() => {
+      app.gameMap.respawnMapItem('ammo', entry.id)
+    }, this.respawnItemsInterval);
   }
 }
 
 export class CollectItem {
   constructor({id, type = 'energy', amount = 10, position, radius = 0.6, core}) {
     this.id = id;
-    this.type = type;   // 'energy' | 'ammo' | 'health' | extend freely
+    this.type = type;
     this.amount = amount;
     this.core = core;
     this.entry = core.collisionSystem.registerPickup(id, position, radius, type, amount);

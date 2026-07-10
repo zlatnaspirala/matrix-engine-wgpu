@@ -1,6 +1,6 @@
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
-import {byId, isMobile, randomIntFromTo} from "../../../src/engine/utils.js";
+import {byId, isMobile} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from '../../../src/world.js';
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {MapCreator} from "../../../src/engine/buildin/map-creator/map-creator.js";
@@ -10,14 +10,18 @@ import {hang3dUI} from './options.js';
 import {Zombi} from './zombie.js';
 import {uploadGLBModel} from '../../../src/engine/loaders/webgpu-gltf.js';
 import {Player} from '../../../src/engine/plugin/player-object/player.js';
-import {mapParams} from './table-params.js';
-import {KaleidoscopeEffect} from '../../../src/engine/effects/KaleidoscopeEffect.js';
-import {KaleidoscopeEmitter} from '../../../src/engine/effects/kaleidoscopeEffectInstance.js';
-import {FlameEffect, FlamePresets} from '../../../src/engine/effects/flame.js';
 
 /**
  * @description
  * This is First Person Shooter demo.
+ * Free for commercials - no need to republish source but
+ * need to have all references.
+ * Keep engine attribute links (git)
+ * In this example i use 
+ * @www mixamo.com objects rigs.
+ * and for zombi template also used objects downloaded from:
+ * @www md2.sitters-electronics.nl
+ * Keep this "readme.md" file with files.
  */
 export var loadHang3d = function() {
   let app = new MatrixEngineWGPU({
@@ -39,18 +43,18 @@ export var loadHang3d = function() {
   }, () => {
     app.collisionSystem = new CollisionSystem(app);
     app.addLight();
-    addRaycastsAABBListener();
+    addRaycastsAABBListener(undefined, "mousedown");
     app.activateHZB();
     app.activateBloomEffect();
-
+    // Audios
     app.matrixSounds.createAudio('music', 'res/audios/audionautix-black-fly.mp3', 1);
     app.matrixSounds.createAudio('shot', 'res/audios/gun/gunshot.mp3', 3);
     app.matrixSounds.createAudio('zombie1', 'res/audios/zombie/zombie-1.mp3', 2);
     app.matrixSounds.createAudio('zombie2', 'res/audios/zombie/zombie-2.mp3', 2);
     app.matrixSounds.createAudio('zombie3', 'res/audios/zombie/zombie-9.mp3', 2);
+    app.matrixSounds.createAudio('zombie4', 'res/audios/zombie/zombie-16.mp3', 2);
     app.matrixSounds.createAudio('zombiedead', 'res/audios/zombie/zombie-10.mp3', 2);
     app.matrixSounds.createAudio('feelgood', 'res/audios/feel.mp3', 1);
-
     app.matrixSounds.audios.music.loop = true;
 
     app.UI = new hang3dUI();
@@ -63,7 +67,7 @@ export var loadHang3d = function() {
       size: innerHeight / 10
     })
 
-    app.energy = MobileDOM.addProgressBar({size: innerWidth / 3, bottom: 95, left: 33, color: '#00bcd4'});
+    app.energy = MobileDOM.addProgressBar({size: innerWidth / 3, bottom: 82.5, left: 33, color: '#00bcd4'});
     app.energy.setValue(100);
 
     MobileDOM.addButton("Kills 0", () => {}, undefined, {
@@ -109,66 +113,65 @@ export var loadHang3d = function() {
       ball: './res/meshes/blender/sphepe-mob.obj',
       armor: './res/meshes/obj/armor.obj',
       energyItem: './res/meshes/obj/energy-cube.obj',
-      hang2: './res/meshes/obj/modelpack19/hang2/hang2.obj'
+      hang2: './res/meshes/obj/modelpack19/hang2/hang2.obj',
+      ammo: './res/meshes/obj/ammo.obj'
     }, async (m) => {
 
-      
-    if(isMobile() === true) {
-      MobileDOM.addButton("FIRE", () => {
-        app.projectileSystem.fireProjectile();
-      }, undefined, {
-        width: '30px',
-        height: '30px',
-        image: "./res/textures/shooter/s.webp",
-        color: 'red',
-        left: 60,
-        bottom: 20,
-        size: innerHeight / 10
-      }, () => {
-        if(preventFire === false) {
-          preventFire = true;
-          app.projectileSystem.fireProjectile();
-          setTimeout(() => {preventFire = false;}, 350)
-        }
-      })
+      if(isMobile() === true) {
+        MobileDOM.addButton("FIRE", () => {
+          fire();
+        }, undefined, {
+          width: '30px',
+          height: '30px',
+          image: "./res/textures/shooter/s.webp",
+          color: 'red',
+          left: 60,
+          bottom: 20,
+          size: innerHeight / 10
+        }, () => {
+          if(preventFire === false) {
+            preventFire = true;
+            fire();
+            setTimeout(() => {preventFire = false;}, 350)
+          }
+        })
 
-      MobileDOM.addButton("JUMP", () => {
-        if(app.collisionSystem?._onGround) {
-          app.collisionSystem._gravityAcc = 0.22;
-          app.collisionSystem._onGround = false;
-          this._dirty = true;
-          this._dirtyAngle = true;
-        }
-      }, undefined, {
-        width: '30px',
-        height: '30px',
-        image: "./res/textures/shooter/s.webp",
-        color: 'red',
-        left: 80,
-        bottom: 20,
-        size: innerHeight / 10
-      })
+        MobileDOM.addButton("JUMP", () => {
+          if(app.collisionSystem?._onGround) {
+            app.collisionSystem._gravityAcc = 0.22;
+            app.collisionSystem._onGround = false;
+            this._dirty = true;
+            this._dirtyAngle = true;
+          }
+        }, undefined, {
+          width: '30px',
+          height: '30px',
+          image: "./res/textures/shooter/s.webp",
+          color: 'red',
+          left: 80,
+          bottom: 20,
+          size: innerHeight / 10
+        })
 
-      MobileDOM.addButton("FIRE", () => {
-        app.projectileSystem.fireProjectile();
-      }, undefined, {
-        width: '30px',
-        height: '30px',
-        image: "./res/textures/shooter/s.webp",
-        color: 'red',
-        left: 10,
-        bottom: 20,
-        size: innerHeight / 10
-      }, () => {
-        if(preventFire === false) {
-          preventFire = true;
-          app.projectileSystem.fireProjectile();
-          setTimeout(() => {preventFire = false;}, 210)
-        }
-      })
-    }
+        MobileDOM.addButton("FIRE", () => {
+          fire();
+        }, undefined, {
+          width: '30px',
+          height: '30px',
+          image: "./res/textures/shooter/s.webp",
+          color: 'red',
+          left: 10,
+          bottom: 20,
+          size: innerHeight / 10
+        }, () => {
+          if(preventFire === false) {
+            preventFire = true;
+            fire();
+            setTimeout(() => {preventFire = false;}, 210)
+          }
+        })
+      }
 
-    console.log('>>>>>>>>>>>>>>>>>app.collisionSystem>', app.collisionSystem)
       const mc = new MapCreator(app, m, app.collisionSystem, {
         wallTexture: './res/textures/shooter/metal-block.webp',
         floorTexture: './res/textures/shooter/metal-block.webp',
@@ -231,85 +234,7 @@ export var loadHang3d = function() {
         roofLevels: true
       });
 
-      mapParams.collectItems.forEach((item) => {
-        if(item.type === 'energy') {
-          const meshScale = 2;
-          const nName = item.type + item.id;
-          const obj = app.addMeshObj({
-            shadowsCast: true,
-            material: {type: 'standard', shared: false},
-            position: item.position,
-            rotationSpeed: {x: 0, y: 1, z: 0},
-            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-            texturesPaths: [item.tex],
-            name: nName,
-            mesh: m.energyItem,
-            physics: {enabled: false, mass: 0, geometry: 'Cube'},
-            raycast: {enabled: true, radius: 1},
-            pointerEffect: {enabled: true}
-          });
-          app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-          setTimeout(() => {
-            obj.setBlend(0.8);
-            if(!obj.effects) obj.effects = {};
-            obj.effects.kaleBullet = new KaleidoscopeEmitter(app.device, 'rgba16float', 30, app.cameraBuffer)
-            obj.effects.kaleBullet.recreateVertexDataCrazzy(5);
-            // console.log(obj.effects.kaleBullet)
-          }, 350);
-        } else if(item.type === 'ammo') {
-          const meshScale = 2 + 1;
-          const nName = item.type + item.id;
-          const obj_ = app.addMeshObj({
-            shadowsCast: true,
-            material: {type: 'standard', shared: false},
-            position: item.position,
-            rotationSpeed: {x: 0, y: 1, z: 0},
-            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-            texturesPaths: [item.tex],
-            useBlend: true,
-            name: nName,
-            mesh: m.cube,
-            physics: {enabled: false, mass: 0, geometry: 'Cube'},
-            raycast: {enabled: true, radius: 1},
-            pointerEffect: {enabled: true}
-          });
-          app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-          setTimeout(() => {
-            obj_.setBlend(0.75);
-            if(!obj_.effects) obj_.effects = {};
-            obj_.effects.kaleBullet1 = new KaleidoscopeEmitter(app.device, 'rgba16float', 30, app.cameraBuffer)
-            obj_.effects.kaleBullet1.recreateVertexDataCrazzy(5);
-            // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>" + obj_.effects.kaleBullet)
-          }, 350);
-        } else if(item.type === 'armor') {
-          const meshScale = 2;
-          const nName = item.type + item.id;
-          const obj_ = app.addMeshObj({
-            shadowsCast: true,
-            material: {type: 'standard', shared: false},
-            position: item.position,
-            rotationSpeed: {x: 0, y: 2, z: 0},
-            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
-            texturesPaths: [item.tex],
-            useBlend: true,
-            name: nName,
-            mesh: m.armor,
-            physics: {enabled: false, mass: 0, geometry: 'Cube'},
-            raycast: {enabled: true, radius: 1},
-            pointerEffect: {enabled: true}
-          });
-          app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
-          setTimeout(() => {
-            obj_.setBlend(0.5);
-            if(!obj_.effects) obj_.effects = {};
-            obj_.effects.kaleBullet1 = new  FlameEffect(app.device, 'rgba16float', 'rgba16float',FlamePresets.torch ,  app.cameraBuffer)
-            obj_.effects.kaleBullet1.setScale(0.5);
-            obj_.effects.kaleBullet1.speed = 5;
-            obj_.effects.kaleBullet1.intensity = 40;
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>" + obj_.effects.kaleBullet1)
-          }, 350);
-        }
-      })
+      app.gameMap = mc;
 
       var glbFile01 = await fetch('./res/meshes/glb/zombie-cap.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
       var glbFile02 = await fetch('./res/meshes/glb/zombi-crawl1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
@@ -326,7 +251,6 @@ export var loadHang3d = function() {
         core: app,
         name: 'zombi-cap1',
         archetypes: ["zombie"],
-        // -8.35 ,1.1, 0.2
         position: {x: -4.35, y: 0.2, z: -10},
         data: glbFile01
       }
@@ -335,8 +259,7 @@ export var loadHang3d = function() {
         core: app,
         name: 'zombi-cap2',
         archetypes: ["zombie"],
-        // -8.35 ,1.1, 0.2
-        position: {x: -4.35, y: 0.2, z: -10},
+        position: {x: -5.35, y: 0.2, z: -10},
         data: glbFile01
       }
 
@@ -360,7 +283,7 @@ export var loadHang3d = function() {
         core: app,
         name: 'zombi-c-maze0',
         archetypes: ["zombie-crawl"],
-        position: {x: -44.79292678833008, y: 1.3, z: -0.29},
+        position: {x: -44.79292678833008, y: 1.1, z: -0.29},
         data: glbFile02
       }
 
@@ -368,7 +291,7 @@ export var loadHang3d = function() {
         core: app,
         name: 'zombi-c-maze1',
         archetypes: ["zombie-crawl"],
-        position: {x: -43.14, y: 1.3, z: -19.38},
+        position: {x: -43.14, y: 1.1, z: -19.38},
         data: glbFile02
       }
 
@@ -376,15 +299,14 @@ export var loadHang3d = function() {
         core: app,
         name: 'zombi-c-maze2',
         archetypes: ["zombie-crawl"],
-        position: {x: -42.14, y: 1.3, z: -19.38},
+        position: {x: -42.14, y: 1.1, z: -19.38},
         data: glbFile02
       }
 
-      // -50.89930725097656, 2.200000047683716, -15.458013534545898
       app.zombies = [
         // base
-         new Zombi(options0), new Zombi(options1), new Zombi(options2),
-         new Zombi(optionsC0), new Zombi(optionsC1),
+        new Zombi(options0), new Zombi(options1), new Zombi(options2),
+        new Zombi(optionsC0), new Zombi(optionsC1),
         // maze
         new Zombi(optionsZombiMaze0), new Zombi(optionsZombiMaze1), new Zombi(optionsZombiMaze2)
       ];
@@ -414,18 +336,31 @@ export var loadHang3d = function() {
         }
       );
 
+      if (isMobile() === false) {
+        app.canvas.addEventListener("mouseup", (e) => {
+          console.log("ETST ",e.button)
+          setTimeout(() => {
+          if (e.button == 2) app.getCamera().setProjection((2 * Math.PI) / 5, app.getCamera().aspect, 0.3, 200);
+          } , 100)
+        })
+      }
 
-      // ??? mobile fix
-
-      app.canvas.addEventListener("ray.hit.event", (e) => {
-        // console.log('ray.hit.event detected', e.detail.hitObject.name);
+      app.canvas.addEventListener("ray.hit.mousedown", (e) => {
         // app.projectileSystem.fireHitscan();
-        if(app.player.ammo < 1) return;
-        app.matrixSounds.play('shot');
-        app.projectileSystem.fireProjectile();
-        app.player.useAmmo(1)
+        if(e.detail.button === 2) {
+          app.getCamera().setProjection((0.5 * Math.PI) / 5, app.getCamera().aspect, 0.3, 200);
+          return;
+        }
+        // app.getCamera().setProjection((0.5 * Math.PI) / 5, app.getCamera().aspect, 0.3, 200);
+        fire();
       });
     }, {scale: [1, 1, 1]});
+    const fire = () => {
+      if(app.player.ammo < 1) return;
+      app.matrixSounds.play('shot');
+      app.projectileSystem.fireProjectile();
+      app.player.useAmmo(1)
+    }
   });
 
   window.app = app;

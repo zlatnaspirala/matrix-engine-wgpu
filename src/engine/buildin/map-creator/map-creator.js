@@ -1,6 +1,9 @@
+import {mapParams} from "../../../../examples/games/first-person-shooter/table-params";
 import {pointerEffect} from "../../../shaders/standalone/pointer.effect";
+import {FlameEffect, FlamePresets} from "../../effects/flame";
 import {FlameEmitter} from "../../effects/flame-emmiter";
-import {randomIntFromTo} from "../../utils";
+import {KaleidoscopeEmitter} from "../../effects/kaleidoscopeEffectInstance";
+import {geometryTypes, MeshType, randomIntFromTo} from "../../utils";
 
 /**
  * MapCreator — Map generator for matrix-engine-wgpu (the beast)
@@ -46,6 +49,8 @@ export class MapCreator {
     this.pillarsFlame = opts.pillarsFlame || false;
     this.shadowsCast = opts.shadowsCast || true;
     this._uid = 0;
+
+    this.addMapItems();
   }
 
   _id(prefix) {return `${prefix}_${this._uid++}`;}
@@ -77,7 +82,6 @@ export class MapCreator {
     if(uvShema !== false) {obj.setUVScale(uvShema[0], uvShema[1])}
     if(effects === true) {
       setTimeout(() => {
-        // console.log('------------------', obj.effects)
         if(!obj.effects) obj.effects = {};
         obj.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
         obj.effects.flameEmitter.recreateVertexDataFromData([
@@ -117,21 +121,19 @@ export class MapCreator {
     if(uvShema !== false) {obj.setUVScale(uvShema[0], uvShema[1])}
     if(effects === true) {
       setTimeout(() => {
-        // console.log('------------------', obj.effects)
         if(!obj.effects) obj.effects = {};
         obj.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
         obj.effects.flameEmitter.recreateVertexDataFromData([
           -2.5825, 0.2112, 0.4249,
           0.4724, 2.38, 3.01, -2.379, -3.46]);
-
-        obj.effects.flameEmitter.setIntensity(randomIntFromTo(1,10));
+        obj.effects.flameEmitter.setIntensity(randomIntFromTo(1, 10));
         // obj.effects.flameEmitter.recreateVertexDataCrazzy(1);
         // obj.effects.flameEmitter.recreateVertexDataRND(2);
         obj.effects.flameEmitter.instanceTargets.forEach((e) => {
           e.currentScale = [1, 2, 1]
         })
         obj.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
-          array[i].color = [randomIntFromTo(5,20), randomIntFromTo(0,2), randomIntFromTo(0,2), 0.7];
+          array[i].color = [randomIntFromTo(5, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 0.7];
         })
 
       }, 250)
@@ -485,9 +487,9 @@ export class MapCreator {
           [0.6, pillarH, 0.6],
           this._wallTex, 'standard', true, undefined, undefined, undefined, this.pillarsFlame
         ));
-        if (this._pDecorationEnabled === true && randomIntFromTo(0,10) < 1) results.pillars.push(this._pillarDecoration(
+        if(this._pDecorationEnabled === true && randomIntFromTo(0, 10) < 1) results.pillars.push(this._pillarDecoration(
           this._id(`${tag}_pillarDec`),
-          {x: px , y: y + pillarH + 1, z: pz},
+          {x: px, y: y + pillarH + 1, z: pz},
           [0.6, 1, 0.6],
           this._wallTex, 'standard', true, undefined, undefined, undefined, true
         ));
@@ -740,5 +742,164 @@ export class MapCreator {
     }
 
     return all;
+  }
+
+  addMapItems() {
+    mapParams.collectItems.forEach((item) => {
+      if(item.type === 'energy') {
+        const meshScale = 2;
+        const nName = item.type + item.id;
+        const obj = app.addMeshObj({
+          shadowsCast: true,
+          material: {type: 'standard', shared: false},
+          position: item.position,
+          rotationSpeed: {x: 0, y: 1, z: 0},
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          name: nName,
+          mesh: this.meshes.energyItem,
+          physics: {enabled: false, mass: 0, geometry: 'Cube'},
+          raycast: {enabled: true, radius: 1},
+          pointerEffect: {enabled: true}
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        setTimeout(() => {
+          obj.setBlend(0.85);
+          obj.setupMaterialPBR([12, 4, 1], 2, .1, 0.1)
+          if(!obj.effects) obj.effects = {};
+          obj.effects.kaleBullet1 = new FlameEffect(app.device, 'rgba16float', 'rgba16float', FlamePresets.bonfire, app.cameraBuffer)
+          obj.effects.kaleBullet1.setGeometry(geometryTypes.ring, 2)
+          obj.effects.kaleBullet1.speed = 5;
+          obj.effects.kaleBullet1.intensity = 40;
+        }, 350);
+      } else if(item.type === 'ammo') {
+        const meshScale = 2 + 1;
+        const nName = item.type + item.id;
+        const obj_ = app.addMeshObj({
+          shadowsCast: true,
+          material: {type: 'standard', shared: false},
+          position: item.position,
+          rotationSpeed: {x: 0, y: 1, z: 0},
+          rotation: {x: 0, y: 0, z: 0},
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          useBlend: true,
+          name: nName,
+          mesh: this.meshes.ammo,
+          physics: {enabled: false, mass: 0, geometry: 'Cube'},
+          raycast: {enabled: true, radius: 1},
+          pointerEffect: {enabled: true}
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+      } else if(item.type === 'armor') {
+        const meshScale = 2;
+        const nName = item.type + item.id;
+        const obj_ = app.addMeshObj({
+          shadowsCast: true,
+          material: {type: 'standard', shared: false},
+          position: item.position,
+          rotationSpeed: {x: 0, y: 2, z: 0},
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          useBlend: true,
+          name: nName,
+          mesh: this.meshes.armor,
+          physics: {enabled: false, mass: 0, geometry: 'Cube'},
+          raycast: {enabled: true, radius: 1},
+          pointerEffect: {enabled: true}
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        setTimeout(() => {
+          obj_.setBlend(0.5);
+          if(!obj_.effects) obj_.effects = {};
+          obj_.effects.kaleBullet1 = new FlameEffect(app.device, 'rgba16float', 'rgba16float', FlamePresets.torch, app.cameraBuffer)
+          obj_.effects.kaleBullet1.setScale(0.5);
+          obj_.effects.kaleBullet1.speed = 5;
+          obj_.effects.kaleBullet1.intensity = 40;
+        }, 350);
+      }
+    })
+  }
+
+  respawnMapItem(type, id) {
+    mapParams.collectItems.forEach((item) => {
+      if(item.type === 'energy' && type === 'energy') {
+        const nName = item.type + item.id;
+        if(id !== nName) return;
+        const meshScale = 2;
+        const obj = app.addMeshObj({
+          shadowsCast: true,
+          material: {type: 'standard', shared: false},
+          position: item.position,
+          rotationSpeed: {x: 0, y: 1, z: 0},
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          name: nName,
+          mesh: this.meshes.energyItem,
+          physics: {enabled: false, mass: 0, geometry: 'Cube'},
+          raycast: {enabled: true, radius: 1},
+          pointerEffect: {enabled: true}
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        setTimeout(() => {
+          obj.setBlend(0.85);
+          obj.setupMaterialPBR([12, 4, 1], 2, .1, 0.1)
+          if(!obj.effects) obj.effects = {};
+          obj.effects.kaleBullet1 = new FlameEffect(app.device, 'rgba16float', 'rgba16float', FlamePresets.bonfire, app.cameraBuffer)
+          obj.effects.kaleBullet1.setGeometry(geometryTypes.ring, 2)
+          obj.effects.kaleBullet1.speed = 5;
+          obj.effects.kaleBullet1.intensity = 40;
+          // console.log(obj.effects.kaleBullet)
+        }, 350);
+      } else if(item.type === 'ammo' && type === 'ammo') {
+        const nName = item.type + item.id;
+        if(id !== nName) return;
+        const meshScale = 2 + 1;
+        const obj_ = app.addMeshObj({
+          shadowsCast: true,
+          material: {type: 'standard', shared: false},
+          position: item.position,
+          rotationSpeed: {x: 0, y: 1, z: 0},
+          rotation: {x: 0, y: 0, z: 0},
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          useBlend: true,
+          name: nName,
+          mesh: this.meshes.ammo,
+          physics: {enabled: false, mass: 0, geometry: 'Cube'},
+          raycast: {enabled: true, radius: 1},
+          pointerEffect: {enabled: true}
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+      } else if(item.type === 'armor' && type === 'armor') {
+        const nName = item.type + item.id;
+        if(id !== nName) return;
+        const meshScale = 2;
+        const obj_ = app.addMeshObj({
+          shadowsCast: true,
+          material: {type: 'standard', shared: false},
+          position: item.position,
+          rotationSpeed: {x: 0, y: 2, z: 0},
+          scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+          texturesPaths: [item.tex],
+          useBlend: true,
+          name: nName,
+          mesh: this.meshes.armor,
+          physics: {enabled: false, mass: 0, geometry: 'Cube'},
+          raycast: {enabled: true, radius: 1},
+          pointerEffect: {enabled: true}
+        });
+        app.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+        setTimeout(() => {
+          obj_.setBlend(0.5);
+          if(!obj_.effects) obj_.effects = {};
+          obj_.effects.kaleBullet1 = new FlameEffect(app.device, 'rgba16float', 'rgba16float', FlamePresets.torch, app.cameraBuffer)
+          obj_.effects.kaleBullet1.setScale(0.5);
+          obj_.effects.kaleBullet1.speed = 5;
+          obj_.effects.kaleBullet1.intensity = 40;
+          // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>" + obj_.effects.kaleBullet1)
+        }, 350);
+      }
+    })
   }
 }

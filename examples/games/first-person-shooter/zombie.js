@@ -22,7 +22,7 @@ export class Zombi {
 
   hp = this.creepHPReset;
   isDead = false;
-  attackDamage = 8;
+  attackDamage = 32;
   exposeDamage = false;
   attackCooldownTicks = 100;
   _attackCooldownLeft = 0;
@@ -35,8 +35,10 @@ export class Zombi {
     stepDistance: 0.4
   }
 
-  zombiDieEvent = new CustomEvent('zombie-die', {detail : null})
+  zombiDieEvent = new CustomEvent('zombie-die', {detail: null})
   aiState = 'attack'; // idle | chase | attack | dead
+
+  cam = app.getCamera();
 
   constructor(o, archetypes = ["zombie"], group = "enemy", team) {
     this.name = o.name;
@@ -52,13 +54,12 @@ export class Zombi {
     this.o = o;
     try {
       this.core.addGlbObjInctance({
-        material: {type: 'standard', useTextureFromGlb: (this.o.name.includes("zombi-cap") === true ? false : true) , shared: true},
+        material: {type: 'standard', useTextureFromGlb: (this.o.name.includes("zombi-cap") === true ? false : true), shared: true},
         shadowsCast: false,
-        scale: [0.9, 0.9, 0.9],
+        scale: [0.8, 0.8, 0.8],
         position: o.position,
         name: o.name,
-        texturesPaths: ['./res/meshes/glb/zombi-cap.webp'],
-        // texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+        texturesPaths: (this.o.name.includes("zombi-cap") === true ? ['./res/meshes/glb/zombi-cap.webp'] : undefined),
         raycast: {enabled: true, radius: 1.1},
         pointerEffect: {
           enabled: true,
@@ -66,7 +67,7 @@ export class Zombi {
         }
       }, null, o.data);
       this.asyncHelper(this.o).then(() => {
-        console.log('creeps loaded in scene... on firts hand !!!')
+        // console.log('creeps loaded in scene... on firts hand !!!')
       }).catch(() => {
         setTimeout(() => {this.asyncHelper(this.o);}, 1000);
       });
@@ -82,15 +83,15 @@ export class Zombi {
           reject();
           return;
         }
-
-        console.log('proccessed this.zombie_bodies ', this.zombie_bodies)
         let bPos;
+        const delta_ = randomIntFromTo(0, 150);
         this.zombie_bodies.forEach((subMesh, idx) => {
+          subMesh.setAmbient(randomIntFromTo(0, 2), randomIntFromTo(0, 2), randomIntFromTo(0, 2));
           subMesh.position.thrust = this.zombieSpeedWalk;
-          subMesh.animationSpeed = 500;
+          subMesh.animationSpeed = 450 + delta_;
           subMesh.animationIndex = 0;
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
-            console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
+            // console.info(`%c Animation loading for creeps: ${a.name} index ${index}`, LOG_MATRIX)
             if(a.name == 'crawl') this.zombieAnims.crawl = index;
             if(a.name == 'dead') this.zombieAnims.dead = index;
             if(a.name == 'zombi-walking') this.zombieAnims.walk = index;
@@ -193,7 +194,7 @@ export class Zombi {
     if(this.isDead) return;
     this.hp = Math.max(0, this.hp - amount);
     this.updateEnergyBar();
-    app.matrixSounds.play('zombie' + randomIntFromTo(1,3));
+    app.matrixSounds.play('zombie' + randomIntFromTo(1, 3));
     if(this.hp <= 0) {
       this.die();
       app.matrixSounds.play('zombiedead');
@@ -207,8 +208,7 @@ export class Zombi {
     this.core.collisionSystem.unregister?.(this.name);
     dispatchEvent(this.zombiDieEvent);
     setTimeout(() => {
-      // console.log('<>')
-      this.spawnPosZombie(randomIntFromTo(1,3));
+      this.spawnPosZombie(randomIntFromTo(1, 3));
       this.setIdle();
     }, 600);
   }
@@ -291,7 +291,8 @@ export class Zombi {
 
   navigateStep() {
     if(this.isDead) return;
-    
+    if(app.getCamera().position[1] < -10) {app.player.die()}
+
     const head = this.zombie_bodies[0];
     const playerPos = this.getPlayerPosition();
     if(!playerPos) return;
@@ -308,7 +309,7 @@ export class Zombi {
 
     if(dist <= this.aiConfig.attackRange) {
       if(this.aiState !== 'attack') {this.aiState = 'attack'; this.setAttack();}
-      app.matrixSounds.play('zombie1');
+      app.matrixSounds.play('zombie' + randomIntFromTo(1, 4));
       this.resolveAttack();
       return;
     }
@@ -331,7 +332,7 @@ export class Zombi {
     const step = (now) => {
       const t = Math.min(1, (now - startTime) / durationMs);
       subMesh.rotation.y = (startY + diff * t + 360) % 360;
-      console.log("subMesh.rotation.y : ", subMesh.rotation.y)
+      // console.log("subMesh.rotation.y : ", subMesh.rotation.y)
       if(t < 1) {
         this._rotAnimHandle = requestAnimationFrame(step);
       } else {
@@ -344,19 +345,16 @@ export class Zombi {
   attachEvents() {
     app.autoUpdate.push({update: () => {this.navigateStep()}})
     addEventListener(`animationEnd-${this.zombie_bodies[0].name}`, (e) => {
-      if(e.detail.animationName === 'dead') {
-        console.log('animationEnd  test spawn zombi ->>>>>>>>>>>>>>>>>>>>')
-        // this.spawnPosZombie(1);
-        // this.setIdle();
-        return;
-      }
+      // if(e.detail.animationName === 'dead') {return;}
       if(this.exposeDamage === true) {
-        console.log('animationEnd is player.takeDamage .>>>>>>>>>>>>>>>>>>>>>>>')
         app.matrixSounds.play('zombie2');
         app.player.takeDamage(this.attackDamage);
         app.energy.setValue(app.player.energy);
+        return;
       }
-      // if(this.isDead === true) {}
+      if(randomIntFromTo(0, 50) < 1) {
+        app.matrixSounds.play('zombie' + randomIntFromTo(1, 4));
+      }
     })
   }
 }
