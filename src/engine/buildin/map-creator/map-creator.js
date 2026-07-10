@@ -1,5 +1,6 @@
 import {pointerEffect} from "../../../shaders/standalone/pointer.effect";
 import {FlameEmitter} from "../../effects/flame-emmiter";
+import {randomIntFromTo} from "../../utils";
 
 /**
  * MapCreator — Map generator for matrix-engine-wgpu (the beast)
@@ -33,13 +34,16 @@ export class MapCreator {
    * @param {string} [opts.floorTexture]  — path to floor texture
    * @param {string} [opts.ceilTexture]   — path to ceiling texture
    */
-  constructor(engine, mesh, collision, opts = {}) {
+  constructor(engine, m, collision, opts = {}) {
     this.engine = engine;
-    this.mesh = mesh;
+    this.meshes = m;
     this.collision = collision;
     this._wallTex = opts.wallTexture || './res/textures/blankgray2.webp';
     this._floorTex = opts.floorTexture || './res/textures/blankgray2.webp';
     this._ceilTex = opts.ceilTexture || './res/textures/blankgray2.webp';
+    this._pillarDecorationTex = './res/meshes/obj/modelpack19/hang2/512/hang2.webp';
+    this._pDecorationEnabled = opts.pillarDecoration || false;
+    this.pillarsFlame = opts.pillarsFlame || false;
     this.shadowsCast = opts.shadowsCast || true;
     this._uid = 0;
   }
@@ -58,27 +62,28 @@ export class MapCreator {
     const meshScale = 2; // nativly from core blender cube is 2 unit bound.
     const obj = this.engine.addMeshObj({
       shadowsCast: this.shadowsCast,
-      material: {type: mat, shared: false},
+      material: {type: mat, shared: true},
       position: pos,
       scale: [scale[0] / meshScale, scale[1] / meshScale, scale[2] / meshScale],
       texturesPaths: [tex],
       name,
-      mesh: this.mesh,
+      mesh: this.meshes.cube,
       physics: {enabled: false, mass: 0, geometry: 'Cube'},
       raycast: {enabled: true, radius: 1},
       pointerEffect: {
-        enabled: effects,
-        flameEmitter: effects
+        enabled: effects
       }
     });
     if(uvShema !== false) {obj.setUVScale(uvShema[0], uvShema[1])}
     if(effects === true) {
       setTimeout(() => {
         // console.log('------------------', obj.effects)
+        if(!obj.effects) obj.effects = {};
+        obj.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
         obj.effects.flameEmitter.recreateVertexDataFromData([
           -2.5825, 0.2112, 0.4249,
           0.4724, 2.38, 3.01, -2.379, -3.46]);
-      }, 150)
+      }, 250)
     }
 
     if(registerCollision) {
@@ -89,6 +94,57 @@ export class MapCreator {
         z: scale[2] / 2
       });
     }
+    return obj;
+  }
+
+  _pillarDecoration(name, pos, scale, tex, mat = 'standard', registerCollision = true, collisionRadius = 1.0, group = 'walls', uvShema = false, effects = false) {
+    const meshScale = 2; // nativly from core blender cube is 2 unit bound.
+    const obj = this.engine.addMeshObj({
+      shadowsCast: this.shadowsCast,
+      material: {type: mat, shared: true},
+      position: pos,
+      // scale: [scale[0] / meshScale, scale[1] / meshScale, scale[2] / meshScale],
+      scale: [0.9, 0.9, 0.9],
+      texturesPaths: [this._pillarDecorationTex],
+      name,
+      mesh: this.meshes.hang2,
+      physics: {enabled: false, mass: 0, geometry: 'Cube'},
+      raycast: {enabled: true, radius: 1},
+      pointerEffect: {
+        enabled: effects
+      }
+    });
+    if(uvShema !== false) {obj.setUVScale(uvShema[0], uvShema[1])}
+    if(effects === true) {
+      setTimeout(() => {
+        // console.log('------------------', obj.effects)
+        if(!obj.effects) obj.effects = {};
+        obj.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
+        // obj.effects.flameEmitter.recreateVertexDataFromData([
+        //   -2.5825, 0.2112, 0.4249,
+        //   0.4724, 2.38, 3.01, -2.379, -3.46]);
+
+        obj.effects.flameEmitter.setIntensity(randomIntFromTo(1,10));
+        // obj.effects.flameEmitter.recreateVertexDataCrazzy(1);
+        obj.effects.flameEmitter.recreateVertexDataRND(2);
+        obj.effects.flameEmitter.instanceTargets.forEach((e) => {
+          e.currentScale = [2.5, 3, 2.5]
+        })
+        obj.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
+          array[i].color = [randomIntFromTo(5,20), randomIntFromTo(0,2), randomIntFromTo(0,2), 0.7];
+        })
+
+      }, 250)
+    }
+
+    // if(registerCollision) {
+    //   // always derive half-extents from actual scale — never from collisionRadius
+    //   this.collision.registerStatic(name, pos, collisionRadius, group, {
+    //     x: scale[0] / 2,
+    //     y: scale[1] / 2,
+    //     z: scale[2] / 2
+    //   });
+    // }
     return obj;
   }
 
@@ -427,6 +483,12 @@ export class MapCreator {
           this._id(`${tag}_pillar`),
           {x: px, y: y + pillarH / 2, z: pz},
           [0.6, pillarH, 0.6],
+          this._wallTex, 'standard', true, undefined, undefined, undefined, this.pillarsFlame
+        ));
+        if (this._pDecorationEnabled === true && randomIntFromTo(0,10) < 1) results.pillars.push(this._pillarDecoration(
+          this._id(`${tag}_pillarDec`),
+          {x: px , y: y + pillarH + 1, z: pz},
+          [0.6, 1, 0.6],
           this._wallTex, 'standard', true, undefined, undefined, undefined, true
         ));
       }

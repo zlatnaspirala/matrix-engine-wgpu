@@ -283,10 +283,9 @@ export default class Materials {
     return texture;
   }
 
-  setBlend = (alpha) => {
+  setBlend = (alpha, r=1 , g=1 , b=1) => {
     this.material.useBlend = true;
-    // this.setupMaterialPBR([1, 1, 1, alpha]);
-    this.setupMaterialPBR([1, 0, 0, alpha]);
+    this.setupMaterialPBR([r, g, b, alpha]);
     if(app) app.buildLightShadowBuckets();
   }
 

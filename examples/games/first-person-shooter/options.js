@@ -187,8 +187,9 @@ export class hang3dUI {
     // messageBox.innerHTML = welcomeBoxHTML;
     messageBox.style.display = 'none';
     messageBox.style.zIndex = 10000;
-    messageBox.style.top = isMobile() ? '10%' : '5%';
+    messageBox.style.top = isMobile() ? '0' : '0';
     messageBox.style.width = isMobile() ? '100%' : '82%';
+    messageBox.style.height = isMobile() ? '100%' : '100%';
     messageBox.style.background = 'black';
     messageBox.innerHTML = settingsBox;
     document.body.appendChild(messageBox);

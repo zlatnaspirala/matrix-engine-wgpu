@@ -386,7 +386,6 @@ export default class MatrixEngineWGPU {
 
         }
         if(this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent('PhysicsReady', {}));
-
       })
     } else {
       this.init({canvas, callback});

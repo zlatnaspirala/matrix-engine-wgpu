@@ -17,6 +17,7 @@ export class Player {
     this.energy = o.energy ?? this.maxEnergy;
     this.lives = o.lives ?? 1;
     this.ammo = o.ammo ?? 100;
+    this.armor = o.armor ?? false;
     this.kills = o.kills ?? 0;
     this.isDead = false;
     // optional hook: called whenever energy changes, so HUD stays in sync
@@ -29,8 +30,9 @@ export class Player {
     addEventListener('pickup-collected', (e) => {
       console.log('pickup-collected', e.detail.entry)
       const {type, amount} = e.detail.entry;
-      if(type === 'energy') app.player.heal(amount);
-      if(type === 'ammo') app.player.addAmmo(amount);
+      if(type === 'energy') {app.player.heal(parseInt(amount))}
+      else if(type === 'ammo') {app.player.addAmmo(parseInt(amount))}
+      else if(type === 'armor') {app.player.gotArmor()}
     });
 
     addEventListener('zombie-die', () => {
@@ -47,6 +49,9 @@ export class Player {
 
   takeDamage(amount) {
     if(this.isDead) return;
+    if (this.armor === true) {
+      amount = amount * 0.75;
+    }
     this.setEnergy(this.energy - amount);
   }
 
@@ -82,8 +87,18 @@ export class Player {
     return true;
   }
 
+  gotArmor() {
+    this.armor = true;
+    byId('player-armor').textContent = 'Armor ' + (this.armor === true ? 'YES' : 'NO');
+    setTimeout(() => {
+      this.armor = false;
+      byId('player-armor').textContent = 'Armor ' + (this.armor === true ? 'YES' : 'NO');
+    }, 120000)
+  }
+
   addAmmo(n) {
     this.ammo += n;
+    byId('player-ammo').textContent = 'Ammo ' + this.ammo;
   }
 }
 

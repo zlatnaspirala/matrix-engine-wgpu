@@ -164,5 +164,5 @@ if(urlQ['demo'] === '1') {
 setTimeout(() => {hideMenu()}, 2000);
 
 // Pre cache politic 0 Only big one
-fetch("res/meshes/glb/monster.glb");
-fetch("./res/meshes/glb/woman1.glb");
+fetch("res/meshes/glb/zombie-cap.glb");
+// fetch("./res/meshes/glb/woman1.glb");

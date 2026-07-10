@@ -16,13 +16,13 @@ export class Zombi {
     idle: null
   }
 
-  creepHPReset = 10;
+  creepHPReset = 20;
   creepFocusAttackOn = null;
   zombieSpeedWalk = 0.003;
 
   hp = this.creepHPReset;
   isDead = false;
-  attackDamage = 5;
+  attackDamage = 8;
   exposeDamage = false;
   attackCooldownTicks = 100;
   _attackCooldownLeft = 0;
@@ -52,12 +52,12 @@ export class Zombi {
     this.o = o;
     try {
       this.core.addGlbObjInctance({
-        material: {type: 'standard', useTextureFromGlb: true},
+        material: {type: 'standard', useTextureFromGlb: true , shared: true},
         shadowsCast: false,
         scale: [0.9, 0.9, 0.9],
         position: o.position,
         name: o.name,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+        // texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: {enabled: true, radius: 1.1},
         pointerEffect: {
           enabled: true,
@@ -65,9 +65,9 @@ export class Zombi {
         }
       }, null, o.data);
       this.asyncHelper(this.o).then(() => {
-        // console.log('creeps loaded in scene...')
+        console.log('creeps loaded in scene... on firts hand !!!')
       }).catch(() => {
-        setTimeout(() => {this.asyncHelper(this.o);}, 3000);
+        setTimeout(() => {this.asyncHelper(this.o);}, 1000);
       });
 
     } catch(err) {throw err;}
@@ -99,7 +99,7 @@ export class Zombi {
           if(idx == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             bPos = subMesh.position;
-            this.core.collisionSystem.registerStatic(o.name, subMesh.position, 0.1, this.group,
+            this.core.collisionSystem.register(o.name, subMesh.position, 0.1, this.group,
               {
                 x: subMesh.scale[0] / 3.5,
                 y: subMesh.scale[1] * 1.5,
@@ -118,7 +118,7 @@ export class Zombi {
         });
         this.attachEvents();
         resolve();
-      }, 3000);
+      }, 250);
     })
   }
 

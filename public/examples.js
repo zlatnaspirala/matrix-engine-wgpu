@@ -12501,9 +12501,9 @@ var Materials = class {
     );
     return texture;
   }
-  setBlend = (alpha) => {
+  setBlend = (alpha, r3 = 1, g2 = 1, b2 = 1) => {
     this.material.useBlend = true;
-    this.setupMaterialPBR([1, 0, 0, alpha]);
+    this.setupMaterialPBR([r3, g2, b2, alpha]);
     if (app) app.buildLightShadowBuckets();
   };
   createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
@@ -16128,6 +16128,7 @@ var FlameEffect = class {
     this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
     this.setGeometry("quad", this.scale);
+    this.currentGeometry = "quad";
     this._localMatrix = mat4Impl.create();
     this._finalMatrix = mat4Impl.create();
     this._timeSpeed = new Float32Array(4);
@@ -16135,8 +16136,12 @@ var FlameEffect = class {
     this._tint = new Float32Array(4);
     this._uniformData = new Float32Array(28);
   }
+  setScale(s2) {
+    this.setGeometry(this.currentGeometry, s2);
+  }
   setGeometry(type2, size2 = 1, segments = 32) {
     const geo2 = GeometryFactory.create(type2, size2, segments);
+    this.currentGeometry = type2;
     this.vertexBuffer = this._uploadVertex(geo2.positions);
     this.uvBuffer = this._uploadVertex(geo2.uvs);
     const byteLen = geo2.indices.byteLength;
@@ -16491,16 +16496,16 @@ var FlameEmitter = class {
     const vertexData = new Float32Array([
       -randomFloatFromTo(0.1, 0.8) * S2,
       randomFloatFromTo(0.4, 0.6) * S2,
-      0 * S2,
+      0.1 * S2,
       randomFloatFromTo(0.1, 0.8) * S2,
       randomFloatFromTo(0.4, 0.6) * S2,
-      0 * S2,
+      0.1 * S2,
       -randomFloatFromTo(0.1, 0.4) * S2,
       -randomFloatFromTo(0.4, 0.6) * S2,
-      0 * S2,
+      0.1 * S2,
       randomFloatFromTo(0.1, 0.4) * S2,
       -randomFloatFromTo(0.4, 0.6) * S2,
-      0 * S2
+      0.1 * S2
     ]);
     if (this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;
@@ -17953,7 +17958,7 @@ var MEMeshObj = class extends Materials {
           { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } }
         ]
       });
-      this.effects = {};
+      if (typeof this.effects === "undefined") this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
@@ -18461,27 +18466,25 @@ var en = {
 var MultiLang = class {
   constructor() {
     addEventListener("updateLang", () => {
-      console.log("Multilang updated.");
       this.update();
     });
   }
   update = function() {
     var allTranDoms = document.querySelectorAll("[data-label]");
-    allTranDoms.forEach((i2) => {
-      i2.innerHTML = this.get[i2.getAttribute("data-label")];
-    });
+    try {
+      allTranDoms.forEach((i2) => {
+        i2.innerHTML = this.get[i2.getAttribute("data-label")];
+      });
+    } catch (e2) {
+      console.warn("MultiLang error:" + e2);
+    }
   };
   loadMultilang = async function(lang = "en") {
     if (lang == "rs") lang = "sr";
     lang = "res/multilang/" + lang + ".json";
     console.info(`%cMultilang: ${lang}`, LOG_FUNNY_ARCADE);
     try {
-      const r3 = await fetch(lang, {
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json"
-        }
-      });
+      const r3 = await fetch(lang, { headers: { "Accept": "application/json", "Content-Type": "application/json" } });
       return await r3.json();
     } catch (err) {
       console.warn("Not possible to access multilang json asset! Err => ", err, ". Use backup lang predefinited object. Only english avaible.");
@@ -24713,9 +24716,9 @@ var MaterialsInstanced = class {
     this.material.type = newType;
     this.setupPipeline();
   }
-  setBlend = (alpha) => {
+  setBlend = (alpha, r3 = 1, g2 = 1, b2 = 1) => {
     this.material.useBlend = true;
-    this.setupMaterialPBR([1, 1, 1, alpha]);
+    this.setupMaterialPBR([r3, g2, b2, alpha]);
     if (app) app.buildLightShadowBuckets();
   };
   getMaterial() {
@@ -27054,7 +27057,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } }
         ]
       });
-      this.effects = {};
+      if (typeof this.effects === "undefined") this.effects = {};
       if (this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = "rgba16float";
@@ -38923,7 +38926,7 @@ var ProceduralMeshObj = class extends Materials {
     ];
   }
   _setupUniforms() {
-    this.effects = {};
+    if (typeof this.effects === "undefined") this.effects = {};
     if (this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
       if (typeof this.pointerEffect.pointer !== "undefined" && this.pointerEffect.pointer == true) {
@@ -54327,13 +54330,16 @@ var MapCreator = class {
    * @param {string} [opts.floorTexture]  — path to floor texture
    * @param {string} [opts.ceilTexture]   — path to ceiling texture
    */
-  constructor(engine, mesh, collision, opts = {}) {
+  constructor(engine, m2, collision, opts = {}) {
     this.engine = engine;
-    this.mesh = mesh;
+    this.meshes = m2;
     this.collision = collision;
     this._wallTex = opts.wallTexture || "./res/textures/blankgray2.webp";
     this._floorTex = opts.floorTexture || "./res/textures/blankgray2.webp";
     this._ceilTex = opts.ceilTexture || "./res/textures/blankgray2.webp";
+    this._pillarDecorationTex = "./res/meshes/obj/modelpack19/hang2/512/hang2.webp";
+    this._pDecorationEnabled = opts.pillarDecoration || false;
+    this.pillarsFlame = opts.pillarsFlame || false;
     this.shadowsCast = opts.shadowsCast || true;
     this._uid = 0;
   }
@@ -54350,17 +54356,16 @@ var MapCreator = class {
     const meshScale = 2;
     const obj2 = this.engine.addMeshObj({
       shadowsCast: this.shadowsCast,
-      material: { type: mat2, shared: false },
+      material: { type: mat2, shared: true },
       position: pos2,
       scale: [scale4[0] / meshScale, scale4[1] / meshScale, scale4[2] / meshScale],
       texturesPaths: [tex],
       name: name2,
-      mesh: this.mesh,
+      mesh: this.meshes.cube,
       physics: { enabled: false, mass: 0, geometry: "Cube" },
       raycast: { enabled: true, radius: 1 },
       pointerEffect: {
-        enabled: effects,
-        flameEmitter: effects
+        enabled: effects
       }
     });
     if (uvShema !== false) {
@@ -54368,6 +54373,8 @@ var MapCreator = class {
     }
     if (effects === true) {
       setTimeout(() => {
+        if (!obj2.effects) obj2.effects = {};
+        obj2.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
         obj2.effects.flameEmitter.recreateVertexDataFromData([
           -2.5825,
           0.2112,
@@ -54378,7 +54385,7 @@ var MapCreator = class {
           -2.379,
           -3.46
         ]);
-      }, 150);
+      }, 250);
     }
     if (registerCollision) {
       this.collision.registerStatic(name2, pos2, collisionRadius, group, {
@@ -54386,6 +54393,42 @@ var MapCreator = class {
         y: scale4[1] / 2,
         z: scale4[2] / 2
       });
+    }
+    return obj2;
+  }
+  _pillarDecoration(name2, pos2, scale4, tex, mat2 = "standard", registerCollision = true, collisionRadius = 1, group = "walls", uvShema = false, effects = false) {
+    const meshScale = 2;
+    const obj2 = this.engine.addMeshObj({
+      shadowsCast: this.shadowsCast,
+      material: { type: mat2, shared: true },
+      position: pos2,
+      // scale: [scale[0] / meshScale, scale[1] / meshScale, scale[2] / meshScale],
+      scale: [0.9, 0.9, 0.9],
+      texturesPaths: [this._pillarDecorationTex],
+      name: name2,
+      mesh: this.meshes.hang2,
+      physics: { enabled: false, mass: 0, geometry: "Cube" },
+      raycast: { enabled: true, radius: 1 },
+      pointerEffect: {
+        enabled: effects
+      }
+    });
+    if (uvShema !== false) {
+      obj2.setUVScale(uvShema[0], uvShema[1]);
+    }
+    if (effects === true) {
+      setTimeout(() => {
+        if (!obj2.effects) obj2.effects = {};
+        obj2.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
+        obj2.effects.flameEmitter.setIntensity(randomIntFromTo(1, 10));
+        obj2.effects.flameEmitter.recreateVertexDataRND(2);
+        obj2.effects.flameEmitter.instanceTargets.forEach((e2) => {
+          e2.currentScale = [2.5, 3, 2.5];
+        });
+        obj2.effects.flameEmitter.instanceTargets.forEach((p2, i2, array) => {
+          array[i2].color = [randomIntFromTo(5, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 0.7];
+        });
+      }, 250);
     }
     return obj2;
   }
@@ -54731,6 +54774,18 @@ var MapCreator = class {
           this._id(`${tag}_pillar`),
           { x: px, y: y3 + pillarH / 2, z: pz },
           [0.6, pillarH, 0.6],
+          this._wallTex,
+          "standard",
+          true,
+          void 0,
+          void 0,
+          void 0,
+          this.pillarsFlame
+        ));
+        if (this._pDecorationEnabled === true && randomIntFromTo(0, 10) < 1) results.pillars.push(this._pillarDecoration(
+          this._id(`${tag}_pillarDec`),
+          { x: px, y: y3 + pillarH + 1, z: pz },
+          [0.6, 1, 0.6],
           this._wallTex,
           "standard",
           true,
@@ -55375,8 +55430,9 @@ var hang3dUI = class {
     messageBox.classList.add("msg-box");
     messageBox.style.display = "none";
     messageBox.style.zIndex = 1e4;
-    messageBox.style.top = isMobile() ? "10%" : "5%";
+    messageBox.style.top = isMobile() ? "0" : "0";
     messageBox.style.width = isMobile() ? "100%" : "82%";
+    messageBox.style.height = isMobile() ? "100%" : "100%";
     messageBox.style.background = "black";
     messageBox.innerHTML = settingsBox;
     document.body.appendChild(messageBox);
@@ -55458,9 +55514,11 @@ var mapParams = {
     }
   },
   collectItems: [
-    { id: "1", position: { x: 4.5, y: 1.3, z: -10 }, radius: 1, type: "ammo", amount: "100", scale: [1, 1, 1], tex: "./res/textures/shooter/hang3d.png" },
+    { id: "1", position: { x: 2.5, y: 1.3, z: 10 }, radius: 0.5, type: "ammo", amount: "100", scale: [-0.5, -0.5, -0.5], tex: "./res/textures/shooter/hang3d.png" },
     { id: "2", position: { x: -4, y: 1.3, z: -10 }, radius: 1, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" },
-    { id: "3", position: { x: -60.56, y: -1.799, z: -0.045 }, radius: 1, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" }
+    { id: "3", position: { x: -60.56, y: -1.799, z: -0.045 }, radius: 1, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" },
+    { id: "4", position: { x: -44.79292678833008, y: 2.3, z: -0.29 }, radius: 1, type: "armor", amount: "50", scale: [1, 1, 1], tex: "./res/meshes/obj/armor.webp" }
+    //-3.297156572341919, 1.2999999523162842, 19.40506362915039
   ]
 };
 
@@ -55476,12 +55534,12 @@ var Zombi = class {
     attack: null,
     idle: null
   };
-  creepHPReset = 10;
+  creepHPReset = 20;
   creepFocusAttackOn = null;
   zombieSpeedWalk = 3e-3;
   hp = this.creepHPReset;
   isDead = false;
-  attackDamage = 5;
+  attackDamage = 8;
   exposeDamage = false;
   attackCooldownTicks = 100;
   _attackCooldownLeft = 0;
@@ -55508,12 +55566,12 @@ var Zombi = class {
     this.o = o3;
     try {
       this.core.addGlbObjInctance({
-        material: { type: "standard", useTextureFromGlb: true },
+        material: { type: "standard", useTextureFromGlb: true, shared: true },
         shadowsCast: false,
         scale: [0.9, 0.9, 0.9],
         position: o3.position,
         name: o3.name,
-        texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"],
+        // texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
         raycast: { enabled: true, radius: 1.1 },
         pointerEffect: {
           enabled: true,
@@ -55521,10 +55579,11 @@ var Zombi = class {
         }
       }, null, o3.data);
       this.asyncHelper(this.o).then(() => {
+        console.log("creeps loaded in scene... on firts hand !!!");
       }).catch(() => {
         setTimeout(() => {
           this.asyncHelper(this.o);
-        }, 3e3);
+        }, 1e3);
       });
     } catch (err) {
       throw err;
@@ -55556,7 +55615,7 @@ var Zombi = class {
           if (idx == 0) {
             subMesh.sharedState.emitAnimationEvent = true;
             bPos = subMesh.position;
-            this.core.collisionSystem.registerStatic(
+            this.core.collisionSystem.register(
               o3.name,
               subMesh.position,
               0.1,
@@ -55584,7 +55643,7 @@ var Zombi = class {
         });
         this.attachEvents();
         resolve();
-      }, 3e3);
+      }, 250);
     });
   };
   setWalk() {
@@ -55814,6 +55873,7 @@ var Player = class {
     this.energy = o3.energy ?? this.maxEnergy;
     this.lives = o3.lives ?? 1;
     this.ammo = o3.ammo ?? 100;
+    this.armor = o3.armor ?? false;
     this.kills = o3.kills ?? 0;
     this.isDead = false;
     this.onEnergyChange = o3.onEnergyChange || null;
@@ -55823,8 +55883,13 @@ var Player = class {
     addEventListener("pickup-collected", (e2) => {
       console.log("pickup-collected", e2.detail.entry);
       const { type: type2, amount } = e2.detail.entry;
-      if (type2 === "energy") app.player.heal(amount);
-      if (type2 === "ammo") app.player.addAmmo(amount);
+      if (type2 === "energy") {
+        app.player.heal(parseInt(amount));
+      } else if (type2 === "ammo") {
+        app.player.addAmmo(parseInt(amount));
+      } else if (type2 === "armor") {
+        app.player.gotArmor();
+      }
     });
     addEventListener("zombie-die", () => {
       console.log("addKill addKill addKill");
@@ -55838,6 +55903,9 @@ var Player = class {
   }
   takeDamage(amount) {
     if (this.isDead) return;
+    if (this.armor === true) {
+      amount = amount * 0.75;
+    }
     this.setEnergy(this.energy - amount);
   }
   heal(amount) {
@@ -55867,8 +55935,17 @@ var Player = class {
     byId2("player-ammo").textContent = "Ammo " + this.ammo;
     return true;
   }
+  gotArmor() {
+    this.armor = true;
+    byId2("player-armor").textContent = "Armor " + (this.armor === true ? "YES" : "NO");
+    setTimeout(() => {
+      this.armor = false;
+      byId2("player-armor").textContent = "Armor " + (this.armor === true ? "YES" : "NO");
+    }, 12e4);
+  }
   addAmmo(n3) {
     this.ammo += n3;
+    byId2("player-ammo").textContent = "Ammo " + this.ammo;
   }
 };
 
@@ -55919,8 +55996,8 @@ var loadHang3d = function() {
     }, void 0, {
       id: "player-status",
       image: "./res/textures/shooter/s.webp",
-      left: isMobile() === true ? 10 : 15,
-      bottom: isMobile() === true ? 90 : 85,
+      left: isMobile() === true ? 2 : 15,
+      bottom: isMobile() === true ? 85 : 85,
       color: "red",
       size: innerHeight / 10
     });
@@ -55930,9 +56007,18 @@ var loadHang3d = function() {
     }, void 0, {
       id: "player-ammo",
       image: "./res/textures/shooter/s.webp",
-      left: isMobile() === true ? 20 : 25,
-      bottom: isMobile() === true ? 90 : 85,
-      color: "red",
+      left: isMobile() === true ? 23.5 : 25,
+      bottom: isMobile() === true ? 85 : 85,
+      color: "#ffeb3b",
+      size: innerHeight / 10
+    });
+    MobileDOM.addButton("Armor NO", () => {
+    }, void 0, {
+      id: "player-armor",
+      image: "./res/textures/shooter/s.webp",
+      left: isMobile() === true ? 44.5 : 35,
+      bottom: isMobile() === true ? 85 : 85,
+      color: "#6cff3b",
       size: innerHeight / 10
     });
     app2.player = new Player({
@@ -55942,72 +56028,77 @@ var loadHang3d = function() {
     });
     const cam2 = app2.getCamera();
     let preventFire = false;
-    if (isMobile() === true) {
-      MobileDOM.addButton("FIRE", () => {
-        app2.projectileSystem.fireProjectile();
-      }, void 0, {
-        width: "30px",
-        height: "30px",
-        image: "./res/textures/shooter/s.webp",
-        color: "red",
-        left: 60,
-        bottom: 20,
-        size: innerHeight / 10
-      }, () => {
-        if (preventFire === false) {
-          preventFire = true;
-          app2.projectileSystem.fireProjectile();
-          setTimeout(() => {
-            preventFire = false;
-          }, 350);
-        }
-      });
-      MobileDOM.addButton("JUMP", () => {
-        if (app2.collisionSystem?._onGround) {
-          app2.collisionSystem._gravityAcc = 0.22;
-          app2.collisionSystem._onGround = false;
-          this._dirty = true;
-          this._dirtyAngle = true;
-        }
-      }, void 0, {
-        width: "30px",
-        height: "30px",
-        image: "./res/textures/shooter/s.webp",
-        color: "red",
-        left: 80,
-        bottom: 20,
-        size: innerHeight / 10
-      });
-      MobileDOM.addButton("FIRE", () => {
-        app2.projectileSystem.fireProjectile();
-      }, void 0, {
-        width: "30px",
-        height: "30px",
-        image: "./res/textures/shooter/s.webp",
-        color: "red",
-        left: 10,
-        bottom: 20,
-        size: innerHeight / 10
-      }, () => {
-        if (preventFire === false) {
-          preventFire = true;
-          app2.projectileSystem.fireProjectile();
-          setTimeout(() => {
-            preventFire = false;
-          }, 210);
-        }
-      });
-    }
     downloadMeshes({
       cube: "./res/meshes/blender/cube.obj",
       ball: "./res/meshes/blender/sphepe-mob.obj",
-      energyItem: "./res/meshes/obj/energy-cube.obj"
+      armor: "./res/meshes/obj/armor.obj",
+      energyItem: "./res/meshes/obj/energy-cube.obj",
+      hang2: "./res/meshes/obj/modelpack19/hang2/hang2.obj"
     }, async (m2) => {
-      const mc2 = new MapCreator(app2, m2.cube, app2.collisionSystem, {
+      if (isMobile() === true) {
+        MobileDOM.addButton("FIRE", () => {
+          app2.projectileSystem.fireProjectile();
+        }, void 0, {
+          width: "30px",
+          height: "30px",
+          image: "./res/textures/shooter/s.webp",
+          color: "red",
+          left: 60,
+          bottom: 20,
+          size: innerHeight / 10
+        }, () => {
+          if (preventFire === false) {
+            preventFire = true;
+            app2.projectileSystem.fireProjectile();
+            setTimeout(() => {
+              preventFire = false;
+            }, 350);
+          }
+        });
+        MobileDOM.addButton("JUMP", () => {
+          if (app2.collisionSystem?._onGround) {
+            app2.collisionSystem._gravityAcc = 0.22;
+            app2.collisionSystem._onGround = false;
+            this._dirty = true;
+            this._dirtyAngle = true;
+          }
+        }, void 0, {
+          width: "30px",
+          height: "30px",
+          image: "./res/textures/shooter/s.webp",
+          color: "red",
+          left: 80,
+          bottom: 20,
+          size: innerHeight / 10
+        });
+        MobileDOM.addButton("FIRE", () => {
+          app2.projectileSystem.fireProjectile();
+        }, void 0, {
+          width: "30px",
+          height: "30px",
+          image: "./res/textures/shooter/s.webp",
+          color: "red",
+          left: 10,
+          bottom: 20,
+          size: innerHeight / 10
+        }, () => {
+          if (preventFire === false) {
+            preventFire = true;
+            app2.projectileSystem.fireProjectile();
+            setTimeout(() => {
+              preventFire = false;
+            }, 210);
+          }
+        });
+      }
+      console.log(">>>>>>>>>>>>>>>>>app.collisionSystem>", app2.collisionSystem);
+      const mc2 = new MapCreator(app2, m2, app2.collisionSystem, {
         wallTexture: "./res/textures/shooter/metal-block.webp",
         floorTexture: "./res/textures/shooter/metal-block.webp",
         ceilTexture: "./res/textures/blankgray2.webp",
-        shadowsCast: true
+        shadowsCast: true,
+        pillarDecoration: true,
+        pillarsFlame: false
       });
       mc2.createRoom({
         origin: { x: -0, y: 0.1, z: 20 },
@@ -56053,7 +56144,7 @@ var loadHang3d = function() {
         tag: "stairs_up"
       });
       mc2.createMultiLevelMaze({
-        origin: { x: -65, y: -3, z: -22 },
+        origin: { x: -65.3, y: -3.3, z: -22 },
         levels: 2,
         mazeSize: 13,
         spacing: 2,
@@ -56077,33 +56168,66 @@ var loadHang3d = function() {
             mesh: m2.energyItem,
             physics: { enabled: false, mass: 0, geometry: "Cube" },
             raycast: { enabled: true, radius: 1 },
-            pointerEffect: {
-              enabled: true
-            }
+            pointerEffect: { enabled: true }
           });
           app2.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
           setTimeout(() => {
+            obj2.setBlend(0.8);
             if (!obj2.effects) obj2.effects = {};
             obj2.effects.kaleBullet = new KaleidoscopeEmitter(app2.device, "rgba16float", 30, app2.cameraBuffer);
-            obj2.effects.kaleBullet.recreateVertexDataCrazzy(20);
-            console.log(obj2.effects.kaleBullet);
-          }, 56);
-        } else if (item.type === "cube") {
-          const meshScale = 2;
+            obj2.effects.kaleBullet.recreateVertexDataCrazzy(5);
+          }, 350);
+        } else if (item.type === "ammo") {
+          const meshScale = 2 + 1;
           const nName = item.type + item.id;
-          app2.addMeshObj({
+          const obj_ = app2.addMeshObj({
             shadowsCast: true,
             material: { type: "standard", shared: false },
             position: item.position,
             rotationSpeed: { x: 0, y: 1, z: 0 },
             scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
             texturesPaths: [item.tex],
+            useBlend: true,
             name: nName,
             mesh: m2.cube,
             physics: { enabled: false, mass: 0, geometry: "Cube" },
-            raycast: { enabled: true, radius: 1 }
+            raycast: { enabled: true, radius: 1 },
+            pointerEffect: { enabled: true }
           });
           app2.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+          setTimeout(() => {
+            obj_.setBlend(0.75);
+            if (!obj_.effects) obj_.effects = {};
+            obj_.effects.kaleBullet1 = new KaleidoscopeEmitter(app2.device, "rgba16float", 30, app2.cameraBuffer);
+            obj_.effects.kaleBullet1.recreateVertexDataCrazzy(5);
+          }, 350);
+        } else if (item.type === "armor") {
+          const meshScale = 2;
+          const nName = item.type + item.id;
+          const obj_ = app2.addMeshObj({
+            shadowsCast: true,
+            material: { type: "standard", shared: false },
+            position: item.position,
+            rotationSpeed: { x: 0, y: 2, z: 0 },
+            scale: [item.scale[0] / meshScale, item.scale[1] / meshScale, item.scale[2] / meshScale],
+            texturesPaths: [item.tex],
+            useBlend: true,
+            name: nName,
+            mesh: m2.armor,
+            physics: { enabled: false, mass: 0, geometry: "Cube" },
+            raycast: { enabled: true, radius: 1 },
+            pointerEffect: { enabled: true }
+          });
+          app2.collisionSystem.registerPickup(nName, item.position, item.radius, item.type, item.amount);
+          setTimeout(() => {
+            obj_.setBlend(0.5);
+            if (!obj_.effects) obj_.effects = {};
+            obj_.effects.kaleBullet1 = new FlameEffect(app2.device, "rgba16float", "rgba16float", FlamePresets.torch, app2.cameraBuffer);
+            obj_.effects.kaleBullet1.setScale(0.5);
+            obj_.effects.kaleBullet1.speed = 5;
+            obj_.effects.kaleBullet1.intensity = 40;
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>" + obj_.effects.kaleBullet1);
+          }, 350);
         }
       });
       var glbFile01 = await fetch("./res/meshes/glb/zombie-cap.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, app2.device)));
@@ -56130,20 +56254,28 @@ var loadHang3d = function() {
         position: { x: 4.35, y: 0.2, z: -10 },
         data: glbFile02
       };
-      app2.zombies = [new Zombi(options2), new Zombi(options1), new Zombi(optionsZC)];
+      const optionsZombiMaze = {
+        core: app2,
+        name: "zombi-crawl",
+        archetypes: ["zombie-crawl"],
+        //-44.79292678833008, 2.200000047683716, -0.2890084981918335
+        position: { x: -44.79292678833008, y: 2.3, z: -0.29 },
+        data: glbFile02
+      };
+      app2.zombies = [new Zombi(options2), new Zombi(options1), new Zombi(optionsZC), new Zombi(optionsZombiMaze)];
       const light = app2.lightContainer[0];
       light.setPosition(0, 60, 0);
       light.setIntensity(20);
       app2.cameras.firstPersonCamera.movementSpeed = 0.1;
       app2.cameras.firstPersonCamera.setPosition(0, 7, 0);
-      app2.collisionSystem.registerCamera(app2.cameras.firstPersonCamera.position, 1.1);
+      app2.collisionSystem.registerCamera(app2.cameras.firstPersonCamera.position, 1.08);
       app2.projectileSystem = new ProjectileSystem(
         app2,
         m2.ball,
         app2.collisionSystem,
         {
-          projectileSpeed: 0.5,
-          projectileScale: 0.075,
+          projectileSpeed: 0.45,
+          projectileScale: 0.07,
           onHitscanHit: (hitPoint, normal, reflect, entry) => {
             let t3 = app2.zombies.filter((z2) => z2.name === entry.id)[0];
             if (t3 && entry.group) {
@@ -56153,12 +56285,10 @@ var loadHang3d = function() {
             console.log("ray hit", t3);
           },
           onProjectileHit: (hitPoint, normal, entry) => {
-            console.log("rocket hit", entry.id);
           }
         }
       );
       app2.canvas.addEventListener("ray.hit.event", (e2) => {
-        console.log("ray.hit.event detected", e2.detail.hitObject.name);
         if (app2.player.ammo < 1) return;
         app2.matrixSounds.play("shot");
         app2.projectileSystem.fireProjectile();
@@ -56286,8 +56416,7 @@ if (urlQ["demo"] === "1") {
 setTimeout(() => {
   hideMenu();
 }, 2e3);
-fetch("res/meshes/glb/monster.glb");
-fetch("./res/meshes/glb/woman1.glb");
+fetch("res/meshes/glb/zombie-cap.glb");
 /*! Bundled license information:
 
 bvh-loader/module/bvh-loader.js:

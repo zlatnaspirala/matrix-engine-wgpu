@@ -56,7 +56,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._camVP = mat4.create();
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
 
-    // EDIT INSTANCED PART
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.lerpSpeedAlpha = 0.05;
@@ -784,7 +783,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ],
       });
 
-      this.effects = {};
+      if (typeof this.effects === 'undefined') this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
@@ -909,8 +908,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       buffers: this.vertexBuffers,
     };
     const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
-
-    // OPAQUE
+    // O
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
@@ -939,7 +937,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         primitive: this.primitive,
       }
     });
-    // TRANSPARENT
+    // T
     this.pipelineTransparent = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
