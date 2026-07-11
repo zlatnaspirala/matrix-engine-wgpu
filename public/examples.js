@@ -56386,14 +56386,14 @@ var loadHang3d = function() {
         core: app2,
         name: "zombi-c-maze1",
         archetypes: ["zombie-crawl"],
-        position: { x: -43.14, y: 1.1, z: -19.38 },
+        position: { x: -44.14, y: 1.1, z: -21.38 },
         data: glbFile02
       };
       const optionsZombiMaze2 = {
         core: app2,
         name: "zombi-c-maze2",
         archetypes: ["zombie-crawl"],
-        position: { x: -42.14, y: 1.1, z: -19.38 },
+        position: { x: -44.14, y: 1.1, z: -21.38 },
         data: glbFile02
       };
       app2.zombies = [

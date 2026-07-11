@@ -16,7 +16,7 @@
  * But resouces must be shared if both on same domain.
  */
 
-var cacheVersion = 89;
+var cacheVersion = 91;
 var prefix = 'matrix-engine-examples';
 var cacheName = prefix + cacheVersion;
 

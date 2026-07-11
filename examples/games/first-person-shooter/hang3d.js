@@ -291,7 +291,7 @@ export var loadHang3d = function() {
         core: app,
         name: 'zombi-c-maze1',
         archetypes: ["zombie-crawl"],
-        position: {x: -43.14, y: 1.1, z: -19.38},
+        position: {x: -44.14, y: 1.1, z: -21.38},
         data: glbFile02
       }
 
@@ -299,7 +299,7 @@ export var loadHang3d = function() {
         core: app,
         name: 'zombi-c-maze2',
         archetypes: ["zombie-crawl"],
-        position: {x: -42.14, y: 1.1, z: -19.38},
+        position: {x: -44.14, y: 1.1, z: -21.38},
         data: glbFile02
       }
 
