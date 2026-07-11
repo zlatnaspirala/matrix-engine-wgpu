@@ -161,16 +161,12 @@ export class ProjectileSystem {
       }
     });
 
-    if(isEnemy) obj.setBlend(0.001)
+    if(isEnemy) obj.setBlend(0.001);
+
     setTimeout(() => {
-      // obj.effects.kaleBullet = new FlameEffect(this.engine.device, "rgba16float", "rgba16float", undefined, this.engine.cameraBuffer);
-      // obj.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
-      console.log(group)
       if(isEnemy) obj.effects.bloodBurst.spawn([0, 0, 0], null, 30, 3.0);
-      // obj.effects.kaleBullet.recreateVertexData(5);
-      // obj.effects.kaleBullet.setIntensity(100);
-      // obj.effects.kaleBullet.setDirection("forward")
-    }, 20)
+    }, 20);
+    
     setTimeout(() => this._despawn(name), this._decalLifetime);
     return obj;
   }

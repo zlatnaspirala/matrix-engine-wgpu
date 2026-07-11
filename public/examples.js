@@ -54422,13 +54422,12 @@ var MapCreator = class {
       shadowsCast: this.shadowsCast,
       material: { type: mat2, shared: true },
       position: pos2,
-      // scale: [scale[0] / meshScale, scale[1] / meshScale, scale[2] / meshScale],
-      scale: [0.9, 0.9, 0.9],
+      scale: [scale4[0] / meshScale, scale4[1] / meshScale, scale4[2] / meshScale],
       texturesPaths: [this._pillarDecorationTex],
       name: name2,
       mesh: this.meshes.hang2,
       physics: { enabled: false, mass: 0, geometry: "Cube" },
-      raycast: { enabled: true, radius: 1 },
+      raycast: { enabled: false, radius: 1 },
       pointerEffect: {
         enabled: effects
       }
@@ -54440,22 +54439,14 @@ var MapCreator = class {
       setTimeout(() => {
         if (!obj2.effects) obj2.effects = {};
         obj2.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
-        obj2.effects.flameEmitter.recreateVertexDataFromData([
-          -2.5825,
-          0.2112,
-          0.4249,
-          0.4724,
-          2.38,
-          3.01,
-          -2.379,
-          -3.46
-        ]);
-        obj2.effects.flameEmitter.setIntensity(randomIntFromTo(1, 10));
+        obj2.effects.flameEmitter.recreateVertexDataCrazzy(1);
+        obj2.effects.flameEmitter.rotSpeed = 0.1;
+        obj2.effects.flameEmitter.setIntensity(randomIntFromTo(5, 10));
         obj2.effects.flameEmitter.instanceTargets.forEach((e2) => {
-          e2.currentScale = [1, 2, 1];
+          e2.currentScale = [0.5, 4, 0.5];
         });
         obj2.effects.flameEmitter.instanceTargets.forEach((p2, i2, array) => {
-          array[i2].color = [randomIntFromTo(5, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 0.7];
+          array[i2].color = [randomIntFromTo(7, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 1];
         });
       }, 250);
     }
@@ -54813,8 +54804,8 @@ var MapCreator = class {
         ));
         if (this._pDecorationEnabled === true && randomIntFromTo(0, 10) < 1) results.pillars.push(this._pillarDecoration(
           this._id(`${tag}_pillarDec`),
-          { x: px, y: y3 + pillarH + 1, z: pz },
-          [0.6, 1, 0.6],
+          { x: px, y: y3 + 2.6, z: pz + 0.4 },
+          [0.6, 0.6, 0.6],
           this._wallTex,
           "standard",
           true,
@@ -55348,7 +55339,6 @@ var ProjectileSystem = class {
     });
     if (isEnemy) obj2.setBlend(1e-3);
     setTimeout(() => {
-      console.log(group);
       if (isEnemy) obj2.effects.bloodBurst.spawn([0, 0, 0], null, 30, 3);
     }, 20);
     setTimeout(() => this._despawn(name2), this._decalLifetime);
@@ -56437,7 +56427,6 @@ var loadHang3d = function() {
               if (t3 && entry.group && entry.group === "enemy") t3.takeDamage();
               if (t3 && entry.group && entry.group === "zombi_head") t3.takeDamage(2.5);
             }
-            console.log("ray hit", t3);
           },
           onProjectileHit: (hitPoint, normal, entry) => {
           }
@@ -56445,7 +56434,6 @@ var loadHang3d = function() {
       );
       if (isMobile() === false) {
         app2.canvas.addEventListener("mouseup", (e2) => {
-          console.log("ETST ", e2.button);
           setTimeout(() => {
             if (e2.button == 2) app2.getCamera().setProjection(2 * Math.PI / 5, app2.getCamera().aspect, 0.3, 200);
           }, 100);

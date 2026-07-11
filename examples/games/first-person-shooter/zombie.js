@@ -297,7 +297,7 @@ export class Zombi {
     const playerPos = this.getPlayerPosition();
     if(!playerPos) return;
     const zp = vecOf(head.position);
-    const dist = this.distanceXZ(zp, playerPos);   // <-- was distance3D
+    const dist = this.distanceXZ(zp, playerPos);
     const inFront = this.isPlayerInFront(head.position, head.rotation.y, playerPos);
     const detectRange = inFront ? this.aiConfig.detectRangeFront : this.aiConfig.detectRangeBack;
 

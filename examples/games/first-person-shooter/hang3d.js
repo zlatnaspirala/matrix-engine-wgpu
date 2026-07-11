@@ -328,17 +328,14 @@ export var loadHang3d = function() {
               if(t && entry.group && entry.group === 'enemy') t.takeDamage();
               if(t && entry.group && entry.group === 'zombi_head') t.takeDamage(2.5);
             }
-            console.log('ray hit', t);
+            // console.log('ray hit', t);
           },
-          onProjectileHit: (hitPoint, normal, entry) => {
-            // console.log('rocket hit', entry.id);
-          }
+          onProjectileHit: (hitPoint, normal, entry) => {}
         }
       );
 
       if (isMobile() === false) {
         app.canvas.addEventListener("mouseup", (e) => {
-          console.log("ETST ",e.button)
           setTimeout(() => {
           if (e.button == 2) app.getCamera().setProjection((2 * Math.PI) / 5, app.getCamera().aspect, 0.3, 200);
           } , 100)
@@ -351,7 +348,6 @@ export var loadHang3d = function() {
           app.getCamera().setProjection((0.5 * Math.PI) / 5, app.getCamera().aspect, 0.3, 200);
           return;
         }
-        // app.getCamera().setProjection((0.5 * Math.PI) / 5, app.getCamera().aspect, 0.3, 200);
         fire();
       });
     }, {scale: [1, 1, 1]});

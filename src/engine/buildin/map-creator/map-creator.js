@@ -102,18 +102,17 @@ export class MapCreator {
   }
 
   _pillarDecoration(name, pos, scale, tex, mat = 'standard', registerCollision = true, collisionRadius = 1.0, group = 'walls', uvShema = false, effects = false) {
-    const meshScale = 2; // nativly from core blender cube is 2 unit bound.
+    const meshScale = 2;
     const obj = this.engine.addMeshObj({
       shadowsCast: this.shadowsCast,
       material: {type: mat, shared: true},
       position: pos,
-      // scale: [scale[0] / meshScale, scale[1] / meshScale, scale[2] / meshScale],
-      scale: [0.9, 0.9, 0.9],
+      scale: [scale[0] / meshScale, scale[1] / meshScale, scale[2] / meshScale],
       texturesPaths: [this._pillarDecorationTex],
       name,
       mesh: this.meshes.hang2,
       physics: {enabled: false, mass: 0, geometry: 'Cube'},
-      raycast: {enabled: true, radius: 1},
+      raycast: {enabled: false, radius: 1},
       pointerEffect: {
         enabled: effects
       }
@@ -123,19 +122,19 @@ export class MapCreator {
       setTimeout(() => {
         if(!obj.effects) obj.effects = {};
         obj.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
-        obj.effects.flameEmitter.recreateVertexDataFromData([
-          -2.5825, 0.2112, 0.4249,
-          0.4724, 2.38, 3.01, -2.379, -3.46]);
-        obj.effects.flameEmitter.setIntensity(randomIntFromTo(1, 10));
-        // obj.effects.flameEmitter.recreateVertexDataCrazzy(1);
-        // obj.effects.flameEmitter.recreateVertexDataRND(2);
+        // obj.effects.flameEmitter.recreateVertexDataFromData([
+        //   -2.5825, 0.2112, 0.4249,
+        //   0.4724, 2.38, 3.01, -2.379, -3.46]);
+        obj.effects.flameEmitter.recreateVertexDataCrazzy(1);
+        obj.effects.flameEmitter.rotSpeed = 0.1;
+        obj.effects.flameEmitter.setIntensity(randomIntFromTo(5, 10));
         obj.effects.flameEmitter.instanceTargets.forEach((e) => {
-          e.currentScale = [1, 2, 1]
+          e.currentScale = [0.5, 4, 0.5]
         })
+        // obj.setAmbient(4, 1, 0.5);
         obj.effects.flameEmitter.instanceTargets.forEach((p, i, array) => {
-          array[i].color = [randomIntFromTo(5, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 0.7];
+          array[i].color = [randomIntFromTo(7, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 1];
         })
-
       }, 250)
     }
 
@@ -489,8 +488,8 @@ export class MapCreator {
         ));
         if(this._pDecorationEnabled === true && randomIntFromTo(0, 10) < 1) results.pillars.push(this._pillarDecoration(
           this._id(`${tag}_pillarDec`),
-          {x: px, y: y + pillarH + 1, z: pz},
-          [0.6, 1, 0.6],
+          {x: px, y: y + 2.6, z: pz + 0.4},
+          [0.6, 0.6, 0.6],
           this._wallTex, 'standard', true, undefined, undefined, undefined, true
         ));
       }
