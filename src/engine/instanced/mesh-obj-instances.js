@@ -588,18 +588,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ],
       });
 
-      // dummy for non skin mesh like this class
-      function alignTo256(n) {
-        return Math.ceil(n / 256) * 256;
-      }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      console.log('maxInstances', MEConfig.MAX_BONES);
-      console.log(
-        'INIT',
-        this.maxInstances,
-        this.instanceCount
-      );
-
       const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device.createBuffer({
         label: 'bonesBuffer',

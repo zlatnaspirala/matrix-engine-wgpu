@@ -38,14 +38,6 @@ import {loadHand} from "./examples/games/nui/hand.js";
 import {loadStreamRenderHost} from "./examples/stream-render.js";
 import {loadHang3d} from "./examples/games/first-person-shooter/hang3d.js";
 
-window.urlQ = urlQuery;
-
-if('serviceWorker' in navigator) {
-  if(location.hostname.indexOf('localhost') == -1) {
-    navigator.serviceWorker.register('cache.js');
-  }
-}
-
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
   url.searchParams.set('demo', id);
@@ -97,65 +89,65 @@ byId('moba').addEventListener("click", () => window.open('https://maximumroulett
 
 window.loadObjFile = loadObjFile;
 
-if(urlQ['demo'] === '1') {
+if(urlQuery['demo'] === '1') {
   loadObjFile();
-} else if(urlQ['demo'] === '2') {
+} else if(urlQuery['demo'] === '2') {
   physicsPlayground();
-} else if(urlQ['demo'] === '3') {
+} else if(urlQuery['demo'] === '3') {
   loadCameraTexture();
-} else if(urlQ['demo'] === '4') {
+} else if(urlQuery['demo'] === '4') {
   loadVideoTexture();
-} else if(urlQ['demo'] === '5') {
+} else if(urlQuery['demo'] === '5') {
   loadObjsSequence();
-} else if(urlQ['demo'] === '6') {
+} else if(urlQuery['demo'] === '6') {
   loadGLBLoader();
-} else if(urlQ['demo'] === '7') {
+} else if(urlQuery['demo'] === '7') {
   procMesh();
-} else if(urlQ['demo'] === '8') {
+} else if(urlQuery['demo'] === '8') {
   loadObjFile();
-} else if(urlQ['demo'] === '9') {
+} else if(urlQuery['demo'] === '9') {
   myLights();
-} else if(urlQ['demo'] === '10') {
+} else if(urlQuery['demo'] === '10') {
   snakeLights();
-} else if(urlQ['demo'] === '11') {
+} else if(urlQuery['demo'] === '11') {
   snakeLightsInstanced();
-} else if(urlQ['demo'] === '12') {
+} else if(urlQuery['demo'] === '12') {
   mazeGame();
-} else if(urlQ['demo'] === '13') {
+} else if(urlQuery['demo'] === '13') {
   flipperJolt();
-} else if(urlQ['demo'] === '14') {
+} else if(urlQuery['demo'] === '14') {
   flipperAmmo();
-} else if(urlQ['demo'] === '15') {
+} else if(urlQuery['demo'] === '15') {
   testJolt();
-} else if(urlQ['demo'] === '16') {
+} else if(urlQuery['demo'] === '16') {
   testCannonES();
-} else if(urlQ['demo'] === '17') {
+} else if(urlQuery['demo'] === '17') {
   canvasInline();
-} else if(urlQ['demo'] === '18') {
+} else if(urlQuery['demo'] === '18') {
   loadCinematicCamera();
-} else if(urlQ['demo'] === '19') {
+} else if(urlQuery['demo'] === '19') {
   loadDestructionProcedural();
-} else if(urlQ['demo'] === '20') {
+} else if(urlQuery['demo'] === '20') {
   loadKale();
-} else if(urlQ['demo'] === '21') {
+} else if(urlQuery['demo'] === '21') {
   loadHZB();
-} else if(urlQ['demo'] === '22') {
+} else if(urlQuery['demo'] === '22') {
   loadKinematicCollision();
-} else if(urlQ['demo'] === '23') {
+} else if(urlQuery['demo'] === '23') {
   loadSprite1();
-} else if(urlQ['demo'] === '24') {
+} else if(urlQuery['demo'] === '24') {
   loadSprite2();
-} else if(urlQ['demo'] === '25') {
+} else if(urlQuery['demo'] === '25') {
   loadDrumCannon();
-} else if(urlQ['demo'] === '26') {
+} else if(urlQuery['demo'] === '26') {
   loadGaussianSplat();
-} else if(urlQ['demo'] === '27') {
+} else if(urlQuery['demo'] === '27') {
   loadGaussianSplatVertAnim();
-} else if(urlQ['demo'] === '28') {
+} else if(urlQuery['demo'] === '28') {
   loadHand();
-} else if(urlQ['demo'] === '29') {
+} else if(urlQuery['demo'] === '29') {
   loadStreamRenderHost();
-} else if(urlQ['demo'] === '30') {
+} else if(urlQuery['demo'] === '30') {
   loadHang3d();
 } else {
   loadObjFile();
@@ -164,5 +156,5 @@ if(urlQ['demo'] === '1') {
 setTimeout(() => {hideMenu()}, 2000);
 
 // Pre cache politic 0 Only big one
-fetch("res/meshes/glb/zombie-cap.glb");
+// fetch("res/meshes/glb/zombie-cap.glb");
 // fetch("./res/meshes/glb/woman1.glb");

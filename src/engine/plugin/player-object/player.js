@@ -1,3 +1,4 @@
+import {MobileDOM} from "../../cameras";
 import {byId, mb} from "../../utils";
 
 const tiers = [
@@ -7,7 +8,8 @@ const tiers = [
   {threshold: 50, text: 'KILLING SPREE'},
   {threshold: 25, text: 'WARMING UP'},
   {threshold: 10, text: 'FIRST BLOOD'},
-  {threshold: 1, text: 'WEEKEND WARRIOR'},
+  {threshold: 2, text: 'JUNIO ZOMBIE KILLER'},
+  {threshold: 0, text: 'WEEKEND WARRIOR'},
 ];
 
 export class Player {
@@ -51,6 +53,7 @@ export class Player {
       amount = amount * 0.75;
     }
     this.setEnergy(this.energy - amount);
+    // app.tts.speakHero('slayzer', 'dead');
   }
 
   heal(entry) {
@@ -68,12 +71,26 @@ export class Player {
     this.energy = 0;
     app.energy.setValue(0);
     if(this.isDead) return;
+    console.log('....is dead')
+
     this.isDead = true;
     this.lives = Math.max(0, this.lives - 1);
     for(const t of tiers) {
       if(this.kills >= t.threshold && !this._killTiersHit.has(t.threshold)) {
         mb.show(`${t.text} — ${this.kills} KILLS.`, undefined, 5000);
         this._killTiersHit.add(t.threshold);
+        app.getCamera().removeKeyboard();
+        MobileDOM.addButton(`GAME OVER ${t.text} YOUR SCORE ${this.kills} kills.`, () => {
+          location.reload()
+        }, undefined, {
+          size: 240,
+          bottom: 40,
+          left: 45,
+          color: 'orangered',
+        });
+        if(document.pointerLockElement === app.canvas) {
+          document.exitPointerLock()
+        }
         break;
       }
     }

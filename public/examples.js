@@ -4303,7 +4303,7 @@ function genName(length2) {
   return result2;
 }
 var meLoader = {
-  create: function(callback) {
+  create: function(text = "RUN RETURN", callback) {
     const loader = document.createElement("div");
     loader.id = "loader";
     Object.assign(loader.style, {
@@ -4336,7 +4336,7 @@ var meLoader = {
       0 0 40px #00ffff;
     animation: glowPulse 1.5s infinite alternate;
   ">
-    RUN MEWGPU
+    ${text}
   </div>
 
   <style>
@@ -4670,6 +4670,7 @@ var MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
+  CACHE: true,
   logLoopError: true,
   construct: function(options2 = {}) {
     if (urlQ["GRAVITY_Y_AXIS"]) {
@@ -7334,7 +7335,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    const setDigital = (e2, value2) => {
+    this.setDigital = (e2, value2) => {
       switch (e2.code) {
         case "KeyW":
           this._digital.forward = value2;
@@ -7385,8 +7386,20 @@ var FirstPersonCamera = class _FirstPersonCamera {
         }
       }
     };
-    window.addEventListener("keydown", (e2) => setDigital(e2, true), { passive: true });
-    window.addEventListener("keyup", (e2) => setDigital(e2, false), { passive: true });
+    this._onKeyDown = (e2) => this.setDigital(e2, true);
+    this._onKeyUp = (e2) => this.setDigital(e2, false);
+    window.addEventListener("keydown", this._onKeyDown, { passive: true });
+    window.addEventListener("keyup", this._onKeyUp, { passive: true });
+  }
+  removeKeyboard() {
+    clearInterval(this._keyInterval);
+    this._keyInterval = null;
+    window.removeEventListener("keydown", this._onKeyDown);
+    window.removeEventListener("keyup", this._onKeyUp);
+    this._onKeyDown = null;
+    this._onKeyUp = null;
+    this._dirty = false;
+    this._dirtyAngle = false;
   }
   forceViewUpdate() {
     this._dirtyAngle = true;
@@ -7837,7 +7850,7 @@ var PlaneCamera = class {
     MobileDOM.addButton("B", () => this.onAction2?.(), () => this.onAction2Release?.(), { left: "80", bottom: "30" });
   }
   _setupKeyboard() {
-    const handle = (e2, isDown) => {
+    this.handle = (e2, isDown) => {
       switch (e2.code) {
         case "KeyA":
         case "ArrowLeft":
@@ -7864,9 +7877,13 @@ var PlaneCamera = class {
       }
     };
     window.addEventListener("keydown", (e2) => {
-      if (!e2.repeat) handle(e2, true);
+      if (!e2.repeat) this.handle(e2, true);
     }, { passive: true });
-    window.addEventListener("keyup", (e2) => handle(e2, false), { passive: true });
+    window.addEventListener("keyup", (e2) => this.handle(e2, false), { passive: true });
+  }
+  removeKeyboard() {
+    window.removeEventListener("keydown", this.handle);
+    window.removeEventListener("keyup", this.handle);
   }
   _pinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
@@ -26844,16 +26861,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
         ]
       });
-      function alignTo256(n3) {
-        return Math.ceil(n3 / 256) * 256;
-      }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      console.log("maxInstances", MEConfig.MAX_BONES);
-      console.log(
-        "INIT",
-        this.maxInstances,
-        this.instanceCount
-      );
       const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
@@ -43168,6 +43176,29 @@ var CulledRenderPass = class {
 };
 
 // src/world.js
+var APP_READY = false;
+if (MEConfig.CACHE !== true) {
+  APP_READY = true;
+}
+if ("serviceWorker" in navigator) {
+  if (MEConfig.CACHE === true) {
+    if (APP_READY === false) {
+    }
+    navigator.serviceWorker.register("cache.js").then((registration) => {
+      if (!navigator.serviceWorker.controller) {
+        console.log("Installing & caching for the first time");
+        meLoader.create("LOADING");
+        APP_READY = false;
+      } else {
+        APP_READY = true;
+      }
+    }).catch((cacheErr) => {
+      console.warn("cacheErr: ", cacheErr);
+    });
+  }
+} else {
+  APP_READY = true;
+}
 var MatrixEngineWGPU = class {
   // Save class reference
   reference = {
@@ -43438,7 +43469,7 @@ var MatrixEngineWGPU = class {
     }
     if (this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
       if (byId2("msgBox")) byId2("msgBox").style.left = "30%";
-      if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
+      if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false && MEConfig.CACHE === false) {
         console.log("GOT DIRECT WHAT EVER");
         this.applyCanvasSize(this.options.fastRender);
         this.init({ canvas, callback });
@@ -43456,48 +43487,72 @@ var MatrixEngineWGPU = class {
         });
         return;
       }
-      meLoader.create();
-      this.MEConfig.fsManager.onChange((isFS, target2) => {
-        console.log("1 BACK FROM FS", isFS);
-        console.log("window style width : ", innerWidth);
-        setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
-      });
-      addEventListener("run_mobile_fs", () => {
-        if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-        }
-        meLoader.destroy();
-        if (typeof this.options.lock !== "undefined") {
-          if (this.options.lock != "landscape" && this.options.lock != "portrait") {
-            this.options.lock = "portrait";
-          }
-          if (checkLock() && isMobile() == true) {
-            screen.orientation.lock(this.options.lock).then(() => {
-              console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
-              setTimeout(() => {
-                this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
-                console.log("canvas width: ", canvas.width);
-                console.log("canvas style width : ", canvas.style.width);
-                this.init({ canvas, callback });
-              }, 1e3);
-            }).catch(function(error) {
-              console.error("Orientation lock failed: ", error);
-            });
-          }
+      setTimeout(() => {
+        if (APP_READY === false && isMobile() === true) {
+          console.log("app is installing cache");
+          setTimeout(() => {
+            location.reload();
+          }, 4e3);
         } else {
-          screen.orientation.lock(getOrientation2()).then((e2) => {
-            console.log(`%cOrientation locked to ${e2}`, LOG_FUNNY_ARCADE);
-            setTimeout(() => {
-              this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
-              console.log("canvas width: ", canvas.width);
-              console.log("canvas style width : ", canvas.style.width);
-              this.init({ canvas, callback });
-            }, 1e3);
-          }).catch(function(error) {
-            console.error("Orientation lock failed: ", error);
+          if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
+            this.applyCanvasSize(this.options.fastRender);
+            this.init({ canvas, callback });
+            this.MEConfig.fsManager.onChange((isFS, target2) => {
+              if (isFS == false) {
+                setTimeout(() => this.applyCanvasSize(this.options.fastRender), 100);
+              }
+            });
+            addEventListener("run_mobile_fs", () => {
+              if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+                this.applyCanvasSizeMobile(this.options.fastRender);
+              }
+            });
+            return;
+          }
+          meLoader.create("RUN");
+          this.MEConfig.fsManager.onChange((isFS, target2) => {
+            console.log("1 BACK FROM FS", isFS);
+            console.log("window style width : ", innerWidth);
+            setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
+          });
+          addEventListener("run_mobile_fs", () => {
+            if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+            }
+            meLoader.destroy();
+            if (typeof this.options.lock !== "undefined") {
+              if (this.options.lock != "landscape" && this.options.lock != "portrait") {
+                this.options.lock = "portrait";
+              }
+              if (checkLock() && isMobile() == true) {
+                if (screen.orientation && screen.orientation.lock) screen.orientation.lock(this.options.lock).then(() => {
+                  console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
+                  setTimeout(() => {
+                    this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+                    console.log("canvas width: ", canvas.width);
+                    console.log("canvas style width : ", canvas.style.width);
+                    this.init({ canvas, callback });
+                  }, 1e3);
+                }).catch(function(error) {
+                  console.error("Orientation lock failed: ", error);
+                });
+              }
+            } else {
+              if (screen.orientation && screen.orientation.lock) screen.orientation.lock(getOrientation2()).then((e2) => {
+                console.log(`%cOrientation locked to ${e2}`, LOG_FUNNY_ARCADE);
+                setTimeout(() => {
+                  this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+                  console.log("canvas width:", canvas.width);
+                  console.log("canvas style width :", canvas.style.width);
+                  this.init({ canvas, callback });
+                }, 1e3);
+              }).catch(function(error) {
+                console.error("Orientation lock failed: ", error);
+              });
+            }
+            if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
           });
         }
-        if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
-      });
+      }, 500);
     } else {
       this.init({ canvas, callback });
     }
@@ -44189,7 +44244,7 @@ var MatrixEngineWGPU = class {
     }
     setTimeout(() => {
       this.frame();
-    }, 500);
+    }, 200);
     setTimeout(() => {
       callback(this);
     }, 1);
@@ -54331,7 +54386,7 @@ var mapParams = {
     }
   },
   collectItems: [
-    { id: "1", position: { x: 2.5, y: 0.4, z: 10 }, radius: 0.4, type: "ammo", amount: "100", scale: [0.3, 0.3, 0.3], tex: "./res/textures/metal/metal1.webp" },
+    { id: "1", position: { x: 2.5, y: 0.4, z: 10 }, radius: 0.4, type: "ammo", amount: "100", scale: [0.2, 0.2, 0.2], tex: "./res/textures/metal/metal1.webp" },
     { id: "2", position: { x: -4, y: 0.4, z: -10 }, radius: 0.4, type: "energy", amount: "50", scale: [0.8, 0.8, 0.8], tex: "./res/textures/blankgray2.webp" },
     { id: "3", position: { x: -60.56, y: -1.799, z: -0.045 }, radius: 0.4, type: "energy", amount: "50", scale: [1, 1.5, 1], tex: "./res/textures/blankgray2.webp" },
     { id: "4", position: { x: -44.79292678833008, y: 2.3, z: -0.29 }, radius: 1, type: "armor", amount: "50", scale: [1, 1, 1], tex: "./res/meshes/obj/armor.webp" }
@@ -54786,6 +54841,7 @@ var MapCreator = class {
     const pillarsPerSide = Math.round(Math.sqrt(pillars));
     const marginX = (width - 2 * pillarMargin) / (pillarsPerSide - 1);
     const marginZ = (depth - 2 * pillarMargin) / (pillarsPerSide - 1);
+    let _MAX = isMobile() === true ? 1 : 5;
     for (let row2 = 0; row2 < pillarsPerSide; row2++) {
       for (let col = 0; col < pillarsPerSide; col++) {
         const px = x3 - width / 2 + pillarMargin + col * marginX;
@@ -54802,7 +54858,7 @@ var MapCreator = class {
           void 0,
           this.pillarsFlame
         ));
-        if (this._pDecorationEnabled === true && randomIntFromTo(0, 10) < 1) results.pillars.push(this._pillarDecoration(
+        if (this._pDecorationEnabled === true && randomIntFromTo(0, 10) < _MAX) results.pillars.push(this._pillarDecoration(
           this._id(`${tag}_pillarDec`),
           { x: px, y: y3 + 2.6, z: pz + 0.4 },
           [0.6, 0.6, 0.6],
@@ -55631,7 +55687,6 @@ var hang3dUI = class {
       byId2("settingsAudios").click();
       byId2("settingsAudios").value = "on";
       byId2("settingsAudios").checked = true;
-      app.matrixSounds.play("music");
     } else if (localStorage.getItem("settingsAudios") === "off") {
       byId2("settingsAudios").value = "off";
       byId2("settingsAudios").checked = false;
@@ -55639,14 +55694,12 @@ var hang3dUI = class {
       byId2("settingsAudios").click();
       byId2("settingsAudios").value = "on";
       byId2("settingsAudios").checked = true;
-      app.matrixSounds.play("music");
       localStorage.setItem("settingsAudios", "on");
     }
     byId2("settingsAudios").addEventListener("change", (e2) => {
       console.log("byId('settingsAudios')", byId2("settingsAudios"));
       if (e2.target.checked == true) {
         app.matrixSounds.unmuteAll();
-        app.matrixSounds.play("music");
         localStorage.setItem("settingsAudios", "on");
       } else {
         app.matrixSounds.muteAll();
@@ -55656,12 +55709,12 @@ var hang3dUI = class {
     byId2("settingsLight").addEventListener("change", (e2) => {
       if (e2.target.checked == true) {
         const light = app.lightContainer[0];
-        light.setIntensity(20);
-        light.setColor([100, 0.5, 1]);
+        light.setIntensity(10);
+        light.setColor([100, 1, 100]);
       } else {
         const light = app.lightContainer[0];
         light.setIntensity(10);
-        light.setColor([100, 1, 100]);
+        light.setColor([1, 2, 1]);
       }
     });
     setupCanvasFilters();
@@ -56025,7 +56078,8 @@ var tiers = [
   { threshold: 50, text: "KILLING SPREE" },
   { threshold: 25, text: "WARMING UP" },
   { threshold: 10, text: "FIRST BLOOD" },
-  { threshold: 1, text: "WEEKEND WARRIOR" }
+  { threshold: 2, text: "JUNIO ZOMBIE KILLER" },
+  { threshold: 0, text: "WEEKEND WARRIOR" }
 ];
 var Player = class {
   constructor(o3 = {}) {
@@ -56084,12 +56138,25 @@ var Player = class {
     this.energy = 0;
     app.energy.setValue(0);
     if (this.isDead) return;
+    console.log("....is dead");
     this.isDead = true;
     this.lives = Math.max(0, this.lives - 1);
     for (const t3 of tiers) {
       if (this.kills >= t3.threshold && !this._killTiersHit.has(t3.threshold)) {
         mb.show(`${t3.text} \u2014 ${this.kills} KILLS.`, void 0, 5e3);
         this._killTiersHit.add(t3.threshold);
+        app.getCamera().removeKeyboard();
+        MobileDOM.addButton(`GAME OVER ${t3.text} YOUR SCORE ${this.kills} kills.`, () => {
+          location.reload();
+        }, void 0, {
+          size: 240,
+          bottom: 40,
+          left: 45,
+          color: "orangered"
+        });
+        if (document.pointerLockElement === app.canvas) {
+          document.exitPointerLock();
+        }
         break;
       }
     }
@@ -56156,7 +56223,6 @@ var loadHang3d = function() {
     addRaycastsAABBListener(void 0, "mousedown");
     app2.activateHZB();
     app2.activateBloomEffect();
-    app2.matrixSounds.createAudio("music", "res/audios/audionautix-black-fly.mp3", 1);
     app2.matrixSounds.createAudio("shot", "res/audios/gun/gunshot.mp3", 3);
     app2.matrixSounds.createAudio("zombie1", "res/audios/zombie/zombie-1.mp3", 2);
     app2.matrixSounds.createAudio("zombie2", "res/audios/zombie/zombie-2.mp3", 2);
@@ -56164,7 +56230,6 @@ var loadHang3d = function() {
     app2.matrixSounds.createAudio("zombie4", "res/audios/zombie/zombie-16.mp3", 2);
     app2.matrixSounds.createAudio("zombiedead", "res/audios/zombie/zombie-10.mp3", 2);
     app2.matrixSounds.createAudio("feelgood", "res/audios/feel.mp3", 1);
-    app2.matrixSounds.audios.music.loop = true;
     app2.UI = new hang3dUI();
     MobileDOM.addButton("T", () => {
     }, void 0, {
@@ -56458,12 +56523,6 @@ var loadHang3d = function() {
 };
 
 // examples.js
-window.urlQ = urlQuery;
-if ("serviceWorker" in navigator) {
-  if (location.hostname.indexOf("localhost") == -1) {
-    navigator.serviceWorker.register("cache.js");
-  }
-}
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
   url.searchParams.set("demo", id2);
@@ -56508,65 +56567,65 @@ byId2("hang3d").addEventListener("click", () => switchDemo("30"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
-if (urlQ["demo"] === "1") {
+if (urlQuery["demo"] === "1") {
   loadObjFile();
-} else if (urlQ["demo"] === "2") {
+} else if (urlQuery["demo"] === "2") {
   physicsPlayground();
-} else if (urlQ["demo"] === "3") {
+} else if (urlQuery["demo"] === "3") {
   loadCameraTexture();
-} else if (urlQ["demo"] === "4") {
+} else if (urlQuery["demo"] === "4") {
   loadVideoTexture();
-} else if (urlQ["demo"] === "5") {
+} else if (urlQuery["demo"] === "5") {
   loadObjsSequence();
-} else if (urlQ["demo"] === "6") {
+} else if (urlQuery["demo"] === "6") {
   loadGLBLoader();
-} else if (urlQ["demo"] === "7") {
+} else if (urlQuery["demo"] === "7") {
   procMesh();
-} else if (urlQ["demo"] === "8") {
+} else if (urlQuery["demo"] === "8") {
   loadObjFile();
-} else if (urlQ["demo"] === "9") {
+} else if (urlQuery["demo"] === "9") {
   myLights();
-} else if (urlQ["demo"] === "10") {
+} else if (urlQuery["demo"] === "10") {
   snakeLights();
-} else if (urlQ["demo"] === "11") {
+} else if (urlQuery["demo"] === "11") {
   snakeLightsInstanced();
-} else if (urlQ["demo"] === "12") {
+} else if (urlQuery["demo"] === "12") {
   mazeGame();
-} else if (urlQ["demo"] === "13") {
+} else if (urlQuery["demo"] === "13") {
   flipperJolt();
-} else if (urlQ["demo"] === "14") {
+} else if (urlQuery["demo"] === "14") {
   flipperAmmo();
-} else if (urlQ["demo"] === "15") {
+} else if (urlQuery["demo"] === "15") {
   testJolt();
-} else if (urlQ["demo"] === "16") {
+} else if (urlQuery["demo"] === "16") {
   testCannonES();
-} else if (urlQ["demo"] === "17") {
+} else if (urlQuery["demo"] === "17") {
   canvasInline();
-} else if (urlQ["demo"] === "18") {
+} else if (urlQuery["demo"] === "18") {
   loadCinematicCamera();
-} else if (urlQ["demo"] === "19") {
+} else if (urlQuery["demo"] === "19") {
   loadDestructionProcedural();
-} else if (urlQ["demo"] === "20") {
+} else if (urlQuery["demo"] === "20") {
   loadKale();
-} else if (urlQ["demo"] === "21") {
+} else if (urlQuery["demo"] === "21") {
   loadHZB();
-} else if (urlQ["demo"] === "22") {
+} else if (urlQuery["demo"] === "22") {
   loadKinematicCollision();
-} else if (urlQ["demo"] === "23") {
+} else if (urlQuery["demo"] === "23") {
   loadSprite1();
-} else if (urlQ["demo"] === "24") {
+} else if (urlQuery["demo"] === "24") {
   loadSprite2();
-} else if (urlQ["demo"] === "25") {
+} else if (urlQuery["demo"] === "25") {
   loadDrumCannon();
-} else if (urlQ["demo"] === "26") {
+} else if (urlQuery["demo"] === "26") {
   loadGaussianSplat();
-} else if (urlQ["demo"] === "27") {
+} else if (urlQuery["demo"] === "27") {
   loadGaussianSplatVertAnim();
-} else if (urlQ["demo"] === "28") {
+} else if (urlQuery["demo"] === "28") {
   loadHand();
-} else if (urlQ["demo"] === "29") {
+} else if (urlQuery["demo"] === "29") {
   loadStreamRenderHost();
-} else if (urlQ["demo"] === "30") {
+} else if (urlQuery["demo"] === "30") {
   loadHang3d();
 } else {
   loadObjFile();
@@ -56574,7 +56633,6 @@ if (urlQ["demo"] === "1") {
 setTimeout(() => {
   hideMenu();
 }, 2e3);
-fetch("res/meshes/glb/zombie-cap.glb");
 /*! Bundled license information:
 
 bvh-loader/module/bvh-loader.js:

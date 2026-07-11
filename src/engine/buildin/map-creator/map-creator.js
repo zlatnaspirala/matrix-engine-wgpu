@@ -3,7 +3,7 @@ import {pointerEffect} from "../../../shaders/standalone/pointer.effect";
 import {FlameEffect, FlamePresets} from "../../effects/flame";
 import {FlameEmitter} from "../../effects/flame-emmiter";
 import {KaleidoscopeEmitter} from "../../effects/kaleidoscopeEffectInstance";
-import {geometryTypes, MeshType, randomIntFromTo} from "../../utils";
+import {geometryTypes, isMobile, MeshType, randomIntFromTo} from "../../utils";
 
 /**
  * MapCreator — Map generator for matrix-engine-wgpu (the beast)
@@ -476,6 +476,7 @@ export class MapCreator {
     const marginX = (width - 2 * pillarMargin) / (pillarsPerSide - 1);
     const marginZ = (depth - 2 * pillarMargin) / (pillarsPerSide - 1);
 
+    let _MAX = isMobile() === true ? 1 : 5;
     for(let row = 0;row < pillarsPerSide;row++) {
       for(let col = 0;col < pillarsPerSide;col++) {
         const px = x - width / 2 + pillarMargin + col * marginX;
@@ -486,7 +487,7 @@ export class MapCreator {
           [0.6, pillarH, 0.6],
           this._wallTex, 'standard', true, undefined, undefined, undefined, this.pillarsFlame
         ));
-        if(this._pDecorationEnabled === true && randomIntFromTo(0, 10) < 1) results.pillars.push(this._pillarDecoration(
+        if(this._pDecorationEnabled === true && randomIntFromTo(0, 10) < _MAX) results.pillars.push(this._pillarDecoration(
           this._id(`${tag}_pillarDec`),
           {x: px, y: y + 2.6, z: pz + 0.4},
           [0.6, 0.6, 0.6],

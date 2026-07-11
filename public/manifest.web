@@ -1,11 +1,11 @@
 {
-  "name": "Matrix Engine wGpu",
-  "short_name": "matrix-wgpu",
-  "start_url": "build.html",
+  "name": "Matrix Engine WGPU",
+  "short_name": "the-beast",
+  "start_url": "examples.html",
   "orientation": "any",
-  "theme_color": "lime",
+  "theme_color": "purple",
   "background_color": "black",
-  "description": "Welcome here !",
+  "description": "Welcome here !Matrix Engine WGPU alias 'The beast' can provide best multiplatform optimised solutions.Native builded in JavaScript.Features Culling ,horizontal Z-buffer, draw per material(pipeline), all examples pass mobile browsers (android-chrome), custom optimisation on all levels of graphics language, glb animations loader, game templates for MOBA and Hang3d Zombie area and yatchy dice game with real physics, Physics bridge support for ammojs, joltjs, cannonjs and matterjs for 2d and more...",
   "display": "standalone",
   "lang": "en-US",
   "icons": [

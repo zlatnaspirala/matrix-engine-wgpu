@@ -891,7 +891,7 @@ export class FirstPersonCamera {
     }, {passive: true});
 
     this._keyInterval = null;
-    const setDigital = (e, value) => {
+    this.setDigital = (e, value) => {
       switch(e.code) {
         case 'KeyW': this._digital.forward = value; break;
         case 'KeyS': this._digital.backward = value; break;
@@ -926,8 +926,21 @@ export class FirstPersonCamera {
         }
       }
     };
-    window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
-    window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
+    this._onKeyDown = e => this.setDigital(e, true);
+    this._onKeyUp = e => this.setDigital(e, false);
+    window.addEventListener('keydown', this._onKeyDown, {passive: true});
+    window.addEventListener('keyup', this._onKeyUp, {passive: true});
+  }
+
+  removeKeyboard() {
+    clearInterval(this._keyInterval);
+    this._keyInterval = null;
+    window.removeEventListener('keydown', this._onKeyDown);
+    window.removeEventListener('keyup', this._onKeyUp);
+    this._onKeyDown = null;
+    this._onKeyUp = null;
+    this._dirty = false;
+    this._dirtyAngle = false;
   }
 
   forceViewUpdate() {
@@ -1342,7 +1355,7 @@ export class PlaneCamera {
   }
 
   _setupKeyboard() {
-    const handle = (e, isDown) => {
+    this.handle = (e, isDown) => {
       switch(e.code) {
         case 'KeyA': case 'ArrowLeft': isDown ? this.onLeft?.() : this.onLeftRelease?.(); break;
         case 'KeyD': case 'ArrowRight': isDown ? this.onRight?.() : this.onRightRelease?.(); break;
@@ -1352,9 +1365,13 @@ export class PlaneCamera {
         case 'KeyK': isDown ? this.onAction2?.() : this.onAction2Release?.(); break;
       }
     };
+    window.addEventListener('keydown', e => {if(!e.repeat) this.handle(e, true);}, {passive: true});
+    window.addEventListener('keyup', e => this.handle(e, false), {passive: true});
+  }
 
-    window.addEventListener('keydown', e => {if(!e.repeat) handle(e, true);}, {passive: true});
-    window.addEventListener('keyup', e => handle(e, false), {passive: true});
+  removeKeyboard() {
+    window.removeEventListener('keydown', this.handle);
+    window.removeEventListener('keyup', this.handle);
   }
 
   _pinchDist(touches) {

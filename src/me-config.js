@@ -30,6 +30,7 @@ export const MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
+  CACHE: true,
   logLoopError: true,
 
   construct: function(options = {}) {

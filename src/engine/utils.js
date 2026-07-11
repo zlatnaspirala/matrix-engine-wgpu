@@ -41,8 +41,7 @@ export function checkLock() {
 
 export function mobileLock(o) {
   if(getScreenOrientationSupport()) {
-    // Lock to landscape
-    screen.orientation.lock(o).then(function() {
+    if(screen.orientation && screen.orientation.lock) screen.orientation.lock(o).then(function() {
       console.log(`%c[utils]Orientation locked to ${o}`, LOG_FUNNY_ARCADE);
     }).catch(function(error) {
       console.error("Orientation lock failed: ", error);
@@ -479,7 +478,7 @@ export function genName(length) {
 }
 
 export const meLoader = {
-  create: function(callback) {
+  create: function(text = "RUN RETURN", callback) {
     const loader = document.createElement("div");
     loader.id = "loader";
 
@@ -514,7 +513,7 @@ export const meLoader = {
       0 0 40px #00ffff;
     animation: glowPulse 1.5s infinite alternate;
   ">
-    RUN MEWGPU
+    ${text}
   </div>
 
   <style>

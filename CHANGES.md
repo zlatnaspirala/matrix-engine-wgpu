@@ -1,7 +1,10 @@
 
 ## CHANGES [Started from feb 2026]
 
-[1.16.xx]
+[1.16.xx - 1.17.00]
+ - Added plugin 'player object' now only fot FPShooter prototypes
+ - Added zomby area (Hang3d series)
+ - removeKeyboard for FirstPerson Camera
  - Splat class + animator for colors also vertex positions.
  - Visual scripting improvments in general + ai tool part.
  - MediaPipe implemented (hand model)

@@ -215,7 +215,7 @@ export class hang3dUI {
       byId('settingsAudios').click();
       byId('settingsAudios').value = 'on';
       byId('settingsAudios').checked = true;
-      app.matrixSounds.play('music');
+      // app.matrixSounds.play('music');
     } else if (localStorage.getItem('settingsAudios') === 'off') { 
       byId('settingsAudios').value = 'off';
       byId('settingsAudios').checked = false;
@@ -223,14 +223,14 @@ export class hang3dUI {
       byId('settingsAudios').click();
       byId('settingsAudios').value = 'on';
       byId('settingsAudios').checked = true;
-      app.matrixSounds.play('music');
+      // app.matrixSounds.play('music');
       localStorage.setItem('settingsAudios', 'on');
     }
     byId('settingsAudios').addEventListener('change', (e) => {
       console.log("byId('settingsAudios')", byId('settingsAudios'))
       if(e.target.checked == true) {
         app.matrixSounds.unmuteAll();
-        app.matrixSounds.play('music');
+        // app.matrixSounds.play('music');
         localStorage.setItem('settingsAudios', 'on');
       } else {
         app.matrixSounds.muteAll();
@@ -241,13 +241,13 @@ export class hang3dUI {
       if(e.target.checked == true) {
         const light = app.lightContainer[0];
         // light.setPosition(0, 60, 0);
-        light.setIntensity(20);
-        light.setColor([100, 0.5, 1])
+        light.setIntensity(10);
+        light.setColor([100, 1, 100])
       } else {
         const light = app.lightContainer[0];
         // light.setPosition(0, 60, 0);
         light.setIntensity(10);
-        light.setColor([100, 1, 100])
+        light.setColor([1, 2, 1])
       }
     });
     setupCanvasFilters();

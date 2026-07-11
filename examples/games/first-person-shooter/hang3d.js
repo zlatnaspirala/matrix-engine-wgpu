@@ -10,6 +10,7 @@ import {hang3dUI} from './options.js';
 import {Zombi} from './zombie.js';
 import {uploadGLBModel} from '../../../src/engine/loaders/webgpu-gltf.js';
 import {Player} from '../../../src/engine/plugin/player-object/player.js';
+import {MatrixTTS} from '../moba/tts.js';
 
 /**
  * @description
@@ -41,13 +42,14 @@ export var loadHang3d = function() {
     },
     clearColor: {r: 0, b: 0, g: 0, a: 1}
   }, () => {
+    // app.tts = new MatrixTTS();
     app.collisionSystem = new CollisionSystem(app);
     app.addLight();
     addRaycastsAABBListener(undefined, "mousedown");
     app.activateHZB();
     app.activateBloomEffect();
     // Audios
-    app.matrixSounds.createAudio('music', 'res/audios/audionautix-black-fly.mp3', 1);
+    // app.matrixSounds.createAudio('music', 'res/audios/audionautix-black-fly.mp3', 1);
     app.matrixSounds.createAudio('shot', 'res/audios/gun/gunshot.mp3', 3);
     app.matrixSounds.createAudio('zombie1', 'res/audios/zombie/zombie-1.mp3', 2);
     app.matrixSounds.createAudio('zombie2', 'res/audios/zombie/zombie-2.mp3', 2);
@@ -55,7 +57,7 @@ export var loadHang3d = function() {
     app.matrixSounds.createAudio('zombie4', 'res/audios/zombie/zombie-16.mp3', 2);
     app.matrixSounds.createAudio('zombiedead', 'res/audios/zombie/zombie-10.mp3', 2);
     app.matrixSounds.createAudio('feelgood', 'res/audios/feel.mp3', 1);
-    app.matrixSounds.audios.music.loop = true;
+    // app.matrixSounds.audios.music.loop = true;
 
     app.UI = new hang3dUI();
 
@@ -334,11 +336,11 @@ export var loadHang3d = function() {
         }
       );
 
-      if (isMobile() === false) {
+      if(isMobile() === false) {
         app.canvas.addEventListener("mouseup", (e) => {
           setTimeout(() => {
-          if (e.button == 2) app.getCamera().setProjection((2 * Math.PI) / 5, app.getCamera().aspect, 0.3, 200);
-          } , 100)
+            if(e.button == 2) app.getCamera().setProjection((2 * Math.PI) / 5, app.getCamera().aspect, 0.3, 200);
+          }, 100)
         })
       }
 
