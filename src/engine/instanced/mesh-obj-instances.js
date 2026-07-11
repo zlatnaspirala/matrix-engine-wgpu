@@ -56,7 +56,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this._camVP = mat4.create();
     this.buildPipelineBucketsEvent = new CustomEvent('update-pipeine-buckets', {});
 
-    // EDIT INSTANCED PART
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
     this.lerpSpeedAlpha = 0.05;
@@ -589,18 +588,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ],
       });
 
-      // dummy for non skin mesh like this class
-      function alignTo256(n) {
-        return Math.ceil(n / 256) * 256;
-      }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      console.log('maxInstances', MEConfig.MAX_BONES);
-      console.log(
-        'INIT',
-        this.maxInstances,
-        this.instanceCount
-      );
-
       const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device.createBuffer({
         label: 'bonesBuffer',
@@ -784,7 +772,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ],
       });
 
-      this.effects = {};
+      if (typeof this.effects === 'undefined') this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
@@ -909,8 +897,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       buffers: this.vertexBuffers,
     };
     const fragmentConstants = {shadowDepthTextureSize: this.shadowDepthTextureSize};
-
-    // OPAQUE
+    // O
     this.pipeline = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
@@ -939,7 +926,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         primitive: this.primitive,
       }
     });
-    // TRANSPARENT
+    // T
     this.pipelineTransparent = pm.getPipeline({
       key: buildPipelineKey({
         ...baseKey,
@@ -982,6 +969,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         primitive: this.primitive,
       }
     });
+    this.initBoundingSphere();
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
 

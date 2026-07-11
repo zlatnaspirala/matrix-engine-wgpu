@@ -252,18 +252,14 @@ export default class Materials {
   }
 
   createCheckerboardTexture(size = 256, tileSize = 32, colorA = [255, 0, 0, 255], colorB = [255, 255, 255, 255]) {
-
     const mipLevelCount = Math.floor(Math.log2(size)) + 1;
-
     const texture = this.device.createTexture({
       size: [size, size, 1],
       format: 'rgba8unorm',
       // mipLevelCount,
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
     });
-
     const data = new Uint8Array(size * size * 4);
-
     for(let y = 0;y < size;y++) {
       for(let x = 0;x < size;x++) {
         const tileX = Math.floor(x / tileSize);
@@ -287,13 +283,10 @@ export default class Materials {
     return texture;
   }
 
-  setBlend = (alpha) => {
+  setBlend = (alpha, r=1 , g=1 , b=1) => {
     this.material.useBlend = true;
-    // this.setupMaterialPBR([1, 1, 1, alpha]);
-    this.setupMaterialPBR([1, 0, 0, alpha]);
-    // fast fix
+    this.setupMaterialPBR([r, g, b, alpha]);
     if(app) app.buildLightShadowBuckets();
-    // this.setupPipeline()
   }
 
   createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {

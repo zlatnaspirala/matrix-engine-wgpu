@@ -15,6 +15,48 @@ const _invProj = mat4.create();
 const _invView = mat4.create();
 const _clip = new Float32Array([0, 0, 1, 1]);
 const _rayOrigin = new Float32Array(3);
+const rayHitClick = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null,
+};
+const rayHitMouseDown = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null,
+};
+const rayHitMouseMove = {
+  hitObject: null,
+  hitPoint: null,
+  hitNormal: null,
+  hitDistance: null,
+  rayOrigin: null,
+  rayDirection: null,
+  screenCoords: null,
+  camera: null,
+  timestamp: null,
+  button: null,
+  eventName: null,
+};
+const rayHitEventClick = new CustomEvent("ray.hit.event", {detail: rayHitClick});
+const rayHitEventMouseDown = new CustomEvent("ray.hit.mousedown", {detail: rayHitMouseDown});
+const rayHitEventMouseMove = new CustomEvent("ray.hit.event.mm", {detail: rayHitMouseMove});
 
 export function getRayFromMouse(event, canvas, camera) {
   const rect = canvas.getBoundingClientRect();
@@ -143,15 +185,25 @@ export function computeWorldVertsAndAABB(object) {
   return object._aabbCache;
 }
 
-// 🧠 Dispatch rich event
 function dispatchRayHitEvent(canvas, data) {
-  if(data.eventName == 'click') {
-    canvas.dispatchEvent(new CustomEvent("ray.hit.event", {detail: data}));
-  } else if(data.eventName == 'mousedown') {
-    canvas.dispatchEvent(new CustomEvent("ray.hit.mousedown", {detail: data}));
-  } else {
-    canvas.dispatchEvent(new CustomEvent("ray.hit.event.mm", {detail: data}));
-  }
+  const e =
+    data.eventName === "click"
+      ? rayHitEventClick
+      : data.eventName === "mousedown"
+        ? rayHitEventMouseDown
+        : rayHitEventMouseMove;
+  e.detail.hitObject = data.hitObject;
+  e.detail.hitPoint = data.hitPoint;
+  e.detail.hitNormal = data.hitNormal;
+  e.detail.hitDistance = data.hitDistance;
+  e.detail.rayOrigin = data.rayOrigin;
+  e.detail.rayDirection = data.rayDirection;
+  e.detail.screenCoords = data.screenCoords;
+  e.detail.camera = data.camera;
+  e.detail.timestamp = data.timestamp;
+  e.detail.button = data.button;
+  e.detail.eventName = data.eventName;
+  canvas.dispatchEvent(e);
 }
 
 export function addRaycastsListener(canvasId = "canvas1", eventName = 'click') {

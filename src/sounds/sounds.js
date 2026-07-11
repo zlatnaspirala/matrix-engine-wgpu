@@ -13,6 +13,10 @@ export class MatrixSounds {
 
   unmuteAll() {
     this.enabled = true;
+    Object.values(this.audios).forEach(audio => {
+      audio.pause();
+      if (audio.loop) audio.play();
+    });
   }
 
   createClones(c, name, path) {
@@ -37,11 +41,9 @@ export class MatrixSounds {
   }
 
   play(name) {
-    if(!this.enabled) return; // 🔇 prevent playing if muted
-
+    if(!this.enabled) return;
     const audio = this.audios[name];
     if(!audio) return;
-
     if(audio.paused) {
       audio.play().catch((e) => {
         if(e.name !== 'NotAllowedError') console.warn("sounds error:", e);
@@ -52,8 +54,7 @@ export class MatrixSounds {
   }
 
   tryClone(name) {
-    if(!this.enabled) return; // 🔇 prevent playing clones
-
+    if(!this.enabled) return;
     let cc = 1;
     try {
       while(this.audios[name + cc] && this.audios[name + cc].paused === false) {

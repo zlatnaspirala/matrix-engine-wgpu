@@ -17,16 +17,20 @@ window.urlQ = urlQuery;
 export const MEConfig = {
 
   fsManager: new FullScreenManagerElement(),
-  SHADOW_RES: isMobile() == true ? 128.0 : 512.0,
+  SHADOW_RES: isMobile() == true ? 256.0 : 512.0,
   MAX_BONES: isMobile() == true ? 70 : 100,
   MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
   GRAVITY_Y_AXIS: -10,
+  MOUSE_SENS: 0.01,
+  TOUCH_SENS: 0.03,
+  CAM_SPEED: isMobile() == true ? 0.1 : 0.2,
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
+  CACHE: true,
   logLoopError: true,
 
   construct: function(options = {}) {
@@ -60,16 +64,45 @@ export const MEConfig = {
       this.MAX_BONES = options.MAX_BONES;
     }
     console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+
+    if(urlQ['TOUCH_SENS']) {
+      this.TOUCH_SENS = parseInt(urlQ['TOUCH_SENS']);
+    }
+    if(options.TOUCH_SENS) {
+      this.TOUCH_SENS = options.TOUCH_SENS;
+    }
+    console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
+
+    if(urlQ['MOUSE_SENS']) {
+      this.MOUSE_SENS = parseInt(urlQ['MOUSE_SENS']);
+    }
+    if(options.MOUSE_SENS) {
+      this.MOUSE_SENS = options.MOUSE_SENS;
+    }
+    console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
+
+        if(urlQ['CAM_SPEED']) {
+      this.CAM_SPEED = parseInt(urlQ['CAM_SPEED']);
+    }
+    if(options.CAM_SPEED) {
+      this.CAM_SPEED = options.CAM_SPEED;
+    }
+    console.log(`%cCAM_SPEED : ${this.CAM_SPEED}`, LOG_FUNNY_ARCADE);
+
     if(urlQ['LOAD_AFTER_CLICK_MOBILE']) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ['LOAD_AFTER_CLICK_MOBILE'];
     }
+    if(options.LOAD_AFTER_CLICK_MOBILE) {
+      this.LOAD_AFTER_CLICK_MOBILE = options.LOAD_AFTER_CLICK_MOBILE;
+    }
+
     if(urlQ['fs'] || isMobile()) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
-        setTimeout(() => {dispatchEvent(new CustomEvent('run_mobile_fs', {}))}, 300)
+        setTimeout(() => {dispatchEvent(new CustomEvent('run_mobile_fs', {}))}, 1)
         window.removeEventListener('click', this._fs);
       }
       window.addEventListener('click', this._fs);

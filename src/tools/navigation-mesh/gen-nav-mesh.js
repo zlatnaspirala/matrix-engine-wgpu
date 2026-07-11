@@ -61,6 +61,19 @@ function computeAdjacency(faces, vertices) {
   return polys;
 }
 
+function computeCentroids(polygons, vertices) {
+  for (const poly of polygons) {
+    let x = 0, y = 0, z = 0;
+    for (const i of poly.indices) {
+      x += vertices[i][0];
+      y += vertices[i][1];
+      z += vertices[i][2];
+    }
+    const n = poly.indices.length;
+    poly.centroid = [x/n, y/n, z/n];
+  }
+}
+
 function convertOBJToNavMesh(inputPath, outputPath) {
   const text = fs.readFileSync(inputPath, "utf8");
   const { vertices, faces } = parseOBJ(text);

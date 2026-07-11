@@ -1,11 +1,19 @@
 
 ## CHANGES [Started from feb 2026]
 
-[1.16.xx]
+[1.16.xx - 1.17.00]
+ - Added plugin 'player object' now only fot FPShooter prototypes
+ - Added zomby area (Hang3d series)
+ - removeKeyboard for FirstPerson Camera
  - Splat class + animator for colors also vertex positions.
  - Visual scripting improvments in general + ai tool part.
  - MediaPipe implemented (hand model)
  - Test webRTC canvas capture to android TV  main instance for recceiver android-tv-cast.js/html
+ - Added First person shooter example (hang3d series - the-beast-hang3d)
+ - Base Position class changes, added `translateByXYZ`
+ - Micro optimisation : define CulledRenderPass only if culling activated from begin.
+ - Adding MatrixTTS to export/import npm services
+ - Make npm services sync with 1.16.2
 
 [1.15.xx]
  - Added `npm install @google/generative-ai` like new ai tool provider.

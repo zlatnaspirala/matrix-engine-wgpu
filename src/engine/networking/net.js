@@ -120,6 +120,26 @@ export class MatrixStream {
       });
     })
 
+    // test
+    addEventListener("streamPlaying", (e) => {
+      console.log('streamPlaying from engine ', e.detail);
+      const isRemote = e.detail.target.id.indexOf('remote-video') !== -1;
+      const vr = e.detail.target.videos[0].video;
+      const streamId = e.detail.target.id;
+      if(isRemote) {
+        StreamSlotManager.addRemote(vr, streamId);
+      } else {
+        StreamSlotManager.addLocal(vr);
+      }
+    });
+
+    addEventListener("connectionDestroyed", (e) => {
+      // console.log('connectionDestroyed from engine ', e.detail);
+      const rc = byId('video-container');
+      if(!rc) return;
+        rc.querySelectorAll('div:not(:has(*))').forEach(div => div.remove());
+    });
+
     this.joinSessionUI.addEventListener('click', () => {
       console.log(`%c JOIN SESSION [${netConfig.resolution}] `, REDLOG)
       joinSession({
@@ -127,6 +147,8 @@ export class MatrixStream {
         isDataOnly: netConfig.isDataOnly
       })
     })
+
+    this.joinSessionUI.style.zIndex = '10';
 
     // this.buttonCloseSession.remove();
     this.buttonCloseSession.addEventListener('click', closeSession);
@@ -137,6 +159,8 @@ export class MatrixStream {
       leaveSession();
     })
 
+    byId('netHeaderTitle').style.position = 'relative';
+    byId('netHeaderTitle').style.zIndex = '10';
     byId('netHeaderTitle').addEventListener('click', this.domManipulation.hideNetPanel)
 
     setTimeout(() => dispatchEvent(new CustomEvent('net-ready', {})), 2500)
@@ -210,4 +234,52 @@ export let activateNet2 = (sessionOption) => {
   addEventListener(`setTitle`, (e) => {
     document.title = e.detail;
   })
+};
+
+const StreamSlotManager = {
+  slots: [],
+
+  _updateLayout() {
+    const container = document.getElementById('video-container');
+    const count = this.slots.length;
+    if(!container || count === 0) return;
+
+    const cols = count === 1 ? 1 : count <= 4 ? 2 : 3;
+    const pct = (100 / cols).toFixed(2) + '%';
+
+    this.slots.forEach(slot => {
+      slot.wrapper.style.width = `calc(${pct} - 4px)`;
+    });
+  },
+
+  addRemote(videoEl, streamId) {
+    const container = document.getElementById('video-container');
+    const wrapper = document.createElement('div');
+    wrapper.dataset.streamId = streamId;
+    Object.assign(wrapper.style, {
+      overflow: 'hidden',
+      background: '#000',
+      aspectRatio: '16/9',
+      transition: 'width 0.3s ease',
+    });
+
+    videoEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    wrapper.appendChild(videoEl);
+    container.appendChild(wrapper);
+    this.slots.push({wrapper, streamId});
+    this._updateLayout();
+  },
+
+  addLocal(videoEl) {
+    // local PiP stays in corner, outside the grid
+    videoEl.style.cssText = 'position:fixed;bottom:16px;right:16px;width:180px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;border:2px solid rgba(255,255,255,0.3);z-index:999;';
+  },
+
+  removeRemote(streamId) {
+    const idx = this.slots.findIndex(s => s.streamId === streamId);
+    if(idx === -1) return;
+    this.slots[idx].wrapper.remove();
+    this.slots.splice(idx, 1);
+    this._updateLayout();
+  },
 };

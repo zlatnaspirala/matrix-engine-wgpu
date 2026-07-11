@@ -44,6 +44,8 @@ Backend editor (works in local env - desktop browsers) support list:
 - ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/).
 - ✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend.
 - ✔️ MediaPipe implemented - dinamic loading (if not in use no loading script or any related to mediapipe)
+- ✔️ Remote render stream emit example (standard engine networking) and special endpoint for "wachers" `tv-10.html`
+    Replace webcam stream with canvas capture - on endpoint use webRTC and video tag to preview remote render.
 
 ## Roadmap
 
@@ -1032,21 +1034,26 @@ urlQuery.lang;
 ```
 
 Also render config can be controlled:
-
+<pre>
 ?PHYSICS_GROUND_Y=1
-?fs=true               // Force-Fullscreen
-?MAX_BONES=0           // optimisation [use this for mobile devices]
-?MAX_SPOTLIGHTS=1      // optimisation [use this for mobile devices]
-?SHADOW_RES=250        // optimisation [use this for mobile devices]
-?GRAVITY_Y_AXIS=10     // optimisation [use this for mobile devices]
+?fs=true                      // Force-Fullscreen
+?MAX_BONES=0                  // optimisation [use this for mobile devices]
+?MAX_SPOTLIGHTS=1             // optimisation [use this for mobile devices]
+?SHADOW_RES=250               // optimisation [use this for mobile devices]
+?GRAVITY_Y_AXIS=10            // optimisation [use this for mobile devices]
+?MOUSE_SENS: 0.01             // Works for WASD and firstPersonCamera
+?TOUCH_SENS: 0.03             // Works for WASD and firstPersonCamera
+?CAM_SPEED: mobile 0.1 : 0.2  // Works for WASD and firstPersonCamera
+?LOAD_AFTER_CLICK_MOBILE: false
+</pre>
 
 Use it :
 `matrix-engine-wgpu/public/examples?demo=1&SHADOW_RES=250`
 
 If you wanna full performance on mobile devices than use in constructor:
-
+This is width of canvas inself. Value 1 is the best quality case also default if not exist.
 ```js
-fastRender = anynumber;
+fastRender = from 0.1 to 1 - Best for mobile 0.85
 ```
 
 In this case FORCE_FULL_SCREEN is true by default.
@@ -1085,14 +1092,17 @@ It is the plain text JavaScript ready for exec.
 ---
 
 
-## Android TV render stream receiver
+## Android TV or any other supported device render stream receiver
 
   Tech:L webRTC (used standard kurento/openvidu matrixStream)
-  Look in ./public/tv-10.html
+  Look for ./public/tv-10.html 
+
   To make or build you own see android native part at:
   https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv
   At thie repo (cef) you can find way to port also on windows, macos or linux OS but
   this not priory for project.
+  Dev help for android studio:
+  "adb connect 192.168.0.XX:5555"
 
   We need somewhere to run standard render and use networking just with new flag (streamRender): 
   ```js
@@ -1157,7 +1167,7 @@ Features done:
 Install it on your desktop with one click.
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game5.png?raw=true" />
 
-[Invest in Forest Of Hollow Blood 9,660$](https://goldenspiral.itch.io/forest-of-hollow-blood)
+[Invest in Forest Of Hollow Blood 1,000$](https://goldenspiral.itch.io/forest-of-hollow-blood)
 See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Support-the-Future-of-Forest-of-Hollow-Blood)
 
 ---
@@ -1251,6 +1261,7 @@ You may use, modify, and sell projects based on this code — just keep this not
 - GLTF Loader: https://github.com/Twinklebear/webgpu-gltf, improved with chatgpt.
 - Origin jpg (free format) source:  http://spiralgraphics.biz/
   More: Https://blenderartists.org/t/is-spiral-graphics-genetica-dead/1446058
+- https://polyhaven.com/a/checkered_pavement_tiles
 - Music by <a href="https://pixabay.com/users/mfcc-28627740/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Mykola Sosin</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=274290">Pixabay</a>
 - Characters used from great mixamo.com
   -✅What you can do
@@ -1265,6 +1276,10 @@ You may use, modify, and sell projects based on this code — just keep this not
 
 - Used free assets from great https://craftpix.net
   Magic icons : https://craftpix.net/freebies/free-rpg-splash-game-512x512-icons/
+
+- For Hang3d zombi template - objects are downloaded from:
+  www.md2.sitters-electronics.nl
+  Keep this "readme.md" file with files.
 
 - For background music in rpg template used:
   Music by <a href="https://pixabay.com/users/sonican-38947841/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Dvir Silverstone</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Pixabay</a>
@@ -1283,6 +1298,9 @@ You may use, modify, and sell projects based on this code — just keep this not
   "Dancing girl" (https://skfb.ly/p7vNU) by planetrey.com is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
   Skeletal system by: Aidan Sanderson - from blender addson blenderKit.
+
+  Title: Zombies Sound Pack - Author: artisticdude Source URL: https://opengameart.org/content/zombies-sound-pack
+  License: CC0 1.0 Universal (Public Domain Dedication)
 
 ---
 

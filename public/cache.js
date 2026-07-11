@@ -16,7 +16,7 @@
  * But resouces must be shared if both on same domain.
  */
 
-var cacheVersion = 82;
+var cacheVersion = 127;
 var prefix = 'matrix-engine-examples';
 var cacheName = prefix + cacheVersion;
 
@@ -31,13 +31,36 @@ try {
   }
 } catch(e) {}
 
-const offlineUrl = 'offline.html';
 self.addEventListener('install', function(event) {
   self.skipWaiting();
   event.waitUntil(
     caches.open(cacheName).then(function(cache) {
       return cache.addAll([
-        offlineUrl
+        '/apps/webgpu/examples.html',
+        '/apps/webgpu/examples.js',
+        '/apps/webgpu/manifest.web',
+        '/apps/webgpu/offline.html',
+        '/apps/webgpu/res/fonts/stormfaze.ttf',
+        '/apps/webgpu/res/icons/512.png',
+        '/apps/webgpu/res/icons/512.webp',
+        '/apps/webgpu/res/icons/default.png',
+        '/apps/webgpu/res/meshes/blender/cube.obj',
+        '/apps/webgpu/res/meshes/blender/sphepe-mob.obj',
+        '/apps/webgpu/res/meshes/glb/zombi-cap.webp',
+        '/apps/webgpu/res/meshes/glb/zombi-crawl1.glb',
+        '/apps/webgpu/res/meshes/glb/zombie-cap.glb',
+        '/apps/webgpu/res/meshes/obj/ammo.obj',
+        '/apps/webgpu/res/meshes/obj/armor.obj',
+        '/apps/webgpu/res/meshes/obj/armor.webp',
+        '/apps/webgpu/res/meshes/obj/energy-cube.obj',
+        '/apps/webgpu/res/meshes/obj/modelpack19/hang2/512/hang2.webp',
+        '/apps/webgpu/res/meshes/obj/modelpack19/hang2/hang2.obj',
+        '/apps/webgpu/res/multilang/en.json',
+        '/apps/webgpu/res/textures/blankgray2.webp',
+        '/apps/webgpu/res/textures/default.png',
+        '/apps/webgpu/res/textures/metal/metal1.webp',
+        '/apps/webgpu/res/textures/shooter/metal-block.webp',
+        '/apps/webgpu/res/textures/shooter/s.webp'
       ]);
     })
   );

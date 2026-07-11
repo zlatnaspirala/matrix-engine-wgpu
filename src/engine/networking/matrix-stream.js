@@ -33,20 +33,16 @@ export function joinSession(options) {
     session = OV.initSession();
 
     session.on('connectionCreated', event => {
-      // console.log(`connectionCreated ${event.connection.connectionId}`)
       dispatchEvent(new CustomEvent('onConnectionCreated', {detail: event}))
       pushEvent(event)
     });
 
     session.on('connectionDestroyed', e => {
-      console.log(`Connection destroyed ${e.connection.connectionId}`)
       dispatchEvent(new CustomEvent('connectionDestroyed', {detail: {connectionId: e.connection.connectionId, event: e}}))
-      // byId("pwa-container-2").style.display = "none";
       pushEvent(e);
     });
 
     if(!options.isDataOnly) {
-      // On every new Stream received...
       session.on('streamCreated', event => {
         pushEvent(event);
         console.log(`%c [onStreamCreated] ${event.stream.streamId}`)
@@ -211,11 +207,8 @@ export function joinSession(options) {
 
           // When the publisher stream has started playing media...
           publisher.on('streamPlaying', event => {
-            console.log("publisher.on streamPlaying");
-            // if(document.getElementById("pwa-container-1").style.display != 'none') {
-            // 	document.getElementById("pwa-container-1").style.display = 'none';
-            // }
-            // pushEvent(event);
+            console.log("streamPlaying");
+            dispatchEvent(new CustomEvent(`streamPlaying`, {detail: event}))
           });
 
           session.publish(publisher);

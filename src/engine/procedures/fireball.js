@@ -1,5 +1,10 @@
 import {uploadGLBModel} from "../loaders/webgpu-gltf";
 
+/**
+ * @description
+ * This is special agnostic class for 
+ * MOBA template.
+ */
 export class FireballSystem {
 
   static CONFIG = {
@@ -34,10 +39,7 @@ export class FireballSystem {
         circlePlaneTexPath: './res/textures/star1.png',
       }
     }, null, glbFile01);
-
-    console.log('this.fireballMesh', this.fireballMesh)
-    // setTimeout(() => this.fireballMesh = app.getSceneObjectByName('FIRE_Circle'), 300);
-
+    // console.log('this.fireballMesh', this.fireballMesh)
   }
 
   constructor(parent, core) {
@@ -53,15 +55,9 @@ export class FireballSystem {
   // Spawn a new fireball scene object
   async spawn(fromPosition, target) {
     if(this.projectiles.length >= FireballSystem.CONFIG.maxActive) return;
-    // Create new MeshObjInstanced for this fireball
-    // position: new Position(fromPosition.x, fromPosition.y, fromPosition.z),
-    // let fireballMesh = app.getSceneObjectByName('FIRE_Circle');
-
-    // change it to setX
     this.fireballMesh.position.x = fromPosition.x;
     this.fireballMesh.position.y = fromPosition.y;
     this.fireballMesh.position.z = fromPosition.z;
-
     this.fireballMesh.position.setSpeed(FireballSystem.CONFIG.speed);
     this.projectiles.push({
       mesh: this.fireballMesh,
@@ -88,7 +84,6 @@ export class FireballSystem {
       let dx = 0;
       let dy = 0;
       let dz = 0;
-
       if(p.target.heroe_bodies) {
         p.mesh.position.translateByXZ(p.target.heroe_bodies[0].position.x, p.target.heroe_bodies[0].position.z);
         p.mesh.position.translateByY(p.target.heroe_bodies[0].position.y);
@@ -116,12 +111,8 @@ export class FireballSystem {
   }
 
   _onHit(p) {
-
     console.log('_ FireballSystem.CONFIG.damage', FireballSystem.CONFIG.damage);
     p.target.hp -= FireballSystem.CONFIG.damage;
-    // new CustomEvent('fireball-hit', {
-    //     detail: {target: p.target, damage: FireballSystem.CONFIG.damage}
-    //   })
     this.FBHitEvent.detail.target = p.target;
     this.FBHitEvent.detail.damage = FireballSystem.CONFIG.damage;
     dispatchEvent(this.FBHitEvent);

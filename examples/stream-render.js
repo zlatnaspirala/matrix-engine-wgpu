@@ -28,6 +28,15 @@ export var loadStreamRenderHost = function() {
 
     addRaycastsAABBListener('canvas1', 'click');
 
+    // alert(`
+    //   Endpoint is tv-10.html you can use it on mobile browser or desktop browser not 
+    //   limited on tv android browsers or native wrapper builded on android sdk. \n
+    //   Android part is not yet published on googlePlay, you can use
+    //   android studio via LAN or USB to push receiver part of app on TV device. \n
+    //   You can find code at : https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv \n
+    //   Endpoint for receiver is tv-10.html and main instance is android-tv-cast.js in root of project.
+    //     `);
+
     function onGround(m) {
       streamRender.addMeshObj({
         material: {type: 'standard', share: true},
@@ -158,7 +167,7 @@ export var loadStreamRenderHost = function() {
       streamRender.setWaitingList();
       // check game-play channel
       setTimeout(() => {
-        app.net.fetchInfo('tv-cast');
+        // app.net.fetchInfo('tv-cast');
         // app.sendmsg = (m) => {
         //   if(typeof m != 'string') return;
         //   if(m.length > 120) return;
@@ -169,7 +178,7 @@ export var loadStreamRenderHost = function() {
     });
 
     addEventListener('connectionDestroyed', (e) => {
-      //
+      // console.log('DISCONNECT')
     });
 
     addEventListener("onConnectionCreated", (e) => {

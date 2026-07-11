@@ -288,9 +288,9 @@ export default class MaterialsInstanced {
     this.setupPipeline();
   }
 
-  setBlend = (alpha) => {
+  setBlend = (alpha, r=1, g=1, b=1) => {
     this.material.useBlend = true;
-    this.setupMaterialPBR([1, 1, 1, alpha]);
+    this.setupMaterialPBR([r, g, b, alpha]);
     if(app) app.buildLightShadowBuckets();
   }
 
@@ -513,7 +513,7 @@ export default class MaterialsInstanced {
 
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
-    if(!matDef) {console.warn('[engine] no material in glb...'); return null;}
+    if(!matDef) {console.warn('[engine][ins] no material in glb...'); return null;}
     if(matDef.pbrMetallicRoughness?.baseColorTexture) {
       const texIndex = matDef.pbrMetallicRoughness.baseColorTexture.index;
       return glb.glbJsonData.glbTextures[texIndex].createView();

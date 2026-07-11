@@ -198,7 +198,14 @@ export class GenGeoTexture {
     pass.drawIndexed(this.indexCount, this.instanceCount);
   }
 
-  render(transPass, mesh, viewProjMatrix) {
-    this.draw(transPass, viewProjMatrix);
+  render(pass, mesh, viewProjMatrix, dt = 0.1) {
+    if(!this.activeCount) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, this.activeCount);
   }
 }

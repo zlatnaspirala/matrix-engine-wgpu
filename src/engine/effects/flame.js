@@ -106,7 +106,7 @@ export class FlameEffect {
     this.activeRotate = config.activeRotate ?? defaults.activeRotate;
     this._initPipeline();
     this.setGeometry("quad", this.scale);
-
+    this.currentGeometry = 'quad';
     this._localMatrix = mat4.create();
     this._finalMatrix = mat4.create();
     this._timeSpeed = new Float32Array(4);
@@ -115,8 +115,13 @@ export class FlameEffect {
     this._uniformData = new Float32Array(28);
   }
 
+  setScale(s) {
+    this.setGeometry(this.currentGeometry, s);
+  }
+
   setGeometry(type, size = 1, segments = 32) {
     const geo = GeometryFactory.create(type, size, segments);
+    this.currentGeometry = type;
     this.vertexBuffer = this._uploadVertex(geo.positions);
     this.uvBuffer = this._uploadVertex(geo.uvs);
     const byteLen = geo.indices.byteLength;

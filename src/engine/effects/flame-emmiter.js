@@ -21,9 +21,12 @@ export class FlameEmitter {
     this.smoothFlickeringScale = 0.1;
     this.minBound = 0;
     this.maxBound = 1.9;
-    this.swap0 = 0;
+    // this.swap0 = 0;
+    // this.swap1 = 1;
+    // this.swap2 = 2;
+    this.swap0 = 2;
     this.swap1 = 1;
-    this.swap2 = 2;
+    this.swap2 = 0;
     this.riseDirection = 1;
     this.baseRotation = [0, 0, 0];
     this.scaleCoeficient = 0.12;
@@ -63,10 +66,10 @@ export class FlameEmitter {
 
   recreateVertexDataRND(S) {
     const vertexData = new Float32Array([
-      -randomFloatFromTo(0.1, 0.8) * S, randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
-      randomFloatFromTo(0.1, 0.8) * S, randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
-      -randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
-      randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
+      -randomFloatFromTo(0.1, 0.8) * S, randomFloatFromTo(0.4, 0.6) * S, 0.1 * S,
+      randomFloatFromTo(0.1, 0.8) * S, randomFloatFromTo(0.4, 0.6) * S, 0.1 * S,
+      -randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.1 * S,
+      randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.1 * S,
     ]);
     if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     return vertexData;

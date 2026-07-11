@@ -1,5 +1,6 @@
 import {mat4, vec3} from 'wgpu-matrix';
 import {byId, isMobile} from './utils';
+import {MEConfig} from '../me-config';
 
 export class WASDCamera {
   pitch = 0;
@@ -20,10 +21,9 @@ export class WASDCamera {
   _viewScratch = mat4.create();
   _digital = {forward: false, backward: false, left: false, right: false, up: false, down: false};
   _mouseDown = false;
-  // Sensitivity matching standard FPCamera parameters
-  MOUSE_SENS = 0.01;
-  TOUCH_SENS = 0.03;
-  movementSpeed = 0.2;
+  MOUSE_SENS = MEConfig.MOUSE_SENS;
+  TOUCH_SENS = MEConfig.TOUCH_SENS;
+  movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
   _dirtyAngle = false;
 
@@ -254,18 +254,15 @@ export class ArcballCamera {
   right = new Float32Array(3);
   up = new Float32Array(3);
   back = new Float32Array(3);
-
   view = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   VP = new Float32Array(16);
-
   distance = 0;
   angularVelocity = 0;
   axis = new Float32Array(3);
   rotationSpeed = 1;
   zoomSpeed = 0.1;
   frictionCoefficient = 0.999;
-
   _movement = new Float32Array(3);
   _cross = new Float32Array(3);
 
@@ -703,9 +700,9 @@ export class FirstPersonCamera {
   _lastY = 0;
   _mouseDown = false;
   _pointerLastScratch = {x: 0, y: 0};
-  MOUSE_SENS = 0.01;
-  TOUCH_SENS = 0.03;
-  movementSpeed = 0.2;
+  MOUSE_SENS = MEConfig.MOUSE_SENS;
+  TOUCH_SENS = MEConfig.TOUCH_SENS;
+  movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
   _dirtyAngle = false;
 
@@ -720,10 +717,14 @@ export class FirstPersonCamera {
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 200);
+
+    this._jumpVelocity = 0;
+    this._isGrounded = false;
+
     if(this.canvas) this._setupInput(this.canvas);
     this._recalculateViewVP();
     if(isMobile() == true && options.isActive == 'init active cam') {
-      MobileDOM.createWASD(this, {margin: 50});
+      MobileDOM.createWASD(this, {margin: 50, forMobileJoystick: true, color: 'red'});
     }
   }
 
@@ -809,34 +810,54 @@ export class FirstPersonCamera {
 
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
+    let lookTouchId = null;
     let touchStartX = 0, touchStartY = 0;
+
     if(isMobile() === true) canvas.addEventListener('touchstart', e => {
-      if(e.touches.length > 0) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        console.log('touchstart:', touchStartX, touchStartY);
+      // only adopt a touch if we don't already have one, and it started on the canvas
+      if(lookTouchId !== null) return;
+      for(const t of e.changedTouches) {
+        if(t.target === canvas) {
+          lookTouchId = t.identifier;
+          touchStartX = t.clientX;
+          touchStartY = t.clientY;
+          break;
+        }
       }
     }, {passive: false});
 
     if(isMobile() === true) canvas.addEventListener('touchmove', e => {
-      if(e.touches.length > 0) {
-        const touch = e.touches[0];
-        const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
-        const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+      if(lookTouchId === null) return;
 
-        console.log('touchmove dx=', dx, 'dy=', dy);
-
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
-        this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-        this._dirtyAngle = true;
-
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
+      let touch = null;
+      for(const t of e.touches) {
+        if(t.identifier === lookTouchId) {touch = t; break;}
       }
+      if(!touch) return;
+
+      const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+      const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+      this.yaw -= dx * this.rotationSpeed;
+      this.pitch -= dy * this.rotationSpeed;
+      this.yaw %= Math.PI * 2;
+      this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+      this._dirtyAngle = true;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+
       e.preventDefault();
     }, {passive: false});
+
+    const clearLookTouch = e => {
+      for(const t of e.changedTouches) {
+        if(t.identifier === lookTouchId) {
+          lookTouchId = null;
+          break;
+        }
+      }
+    };
+    if(isMobile() === true) canvas.addEventListener('touchend', clearLookTouch, {passive: true});
+    if(isMobile() === true) canvas.addEventListener('touchcancel', clearLookTouch, {passive: true});
 
     // MOUSE
     if(isMobile() === false) canvas.addEventListener('pointerdown', e => {
@@ -851,7 +872,7 @@ export class FirstPersonCamera {
     }, {passive: false});
 
     if(isMobile() === false) canvas.addEventListener('pointermove', e => {
-      if(e.pointerType === 'mouse' && this._mouseDown) {
+      if(e.pointerType === 'mouse') {
         if(window.__isDragging === true) {return }
         const dx = e.movementX * this.MOUSE_SENS;
         const dy = e.movementY * this.MOUSE_SENS;
@@ -870,7 +891,7 @@ export class FirstPersonCamera {
     }, {passive: true});
 
     this._keyInterval = null;
-    const setDigital = (e, value) => {
+    this.setDigital = (e, value) => {
       switch(e.code) {
         case 'KeyW': this._digital.forward = value; break;
         case 'KeyS': this._digital.backward = value; break;
@@ -880,6 +901,14 @@ export class FirstPersonCamera {
         case 'ArrowDown': this._digital.backward = value; break;
         case 'ArrowLeft': this._digital.left = value; break;
         case 'ArrowRight': this._digital.right = value; break;
+        case 'Space':
+          if(value === true && window.app?.collisionSystem?._onGround) {
+            window.app.collisionSystem._gravityAcc = 0.22;
+            window.app.collisionSystem._onGround = false;
+            this._dirty = true;
+            this._dirtyAngle = true;
+          }
+          break;
       }
       if(value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
@@ -897,8 +926,27 @@ export class FirstPersonCamera {
         }
       }
     };
-    window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
-    window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
+    this._onKeyDown = e => this.setDigital(e, true);
+    this._onKeyUp = e => this.setDigital(e, false);
+    window.addEventListener('keydown', this._onKeyDown, {passive: true});
+    window.addEventListener('keyup', this._onKeyUp, {passive: true});
+  }
+
+  removeKeyboard() {
+    clearInterval(this._keyInterval);
+    this._keyInterval = null;
+    window.removeEventListener('keydown', this._onKeyDown);
+    window.removeEventListener('keyup', this._onKeyUp);
+    this._onKeyDown = null;
+    this._onKeyUp = null;
+    this._dirty = false;
+    this._dirtyAngle = false;
+  }
+
+  forceViewUpdate() {
+    this._dirtyAngle = true;
+    this._dirty = true;
+    this._recalculateViewVP();
   }
 
   _applyDigitalMovement() {
@@ -922,9 +970,11 @@ export class FirstPersonCamera {
 
     const s = this.movementSpeed / len;
     this.position[0] += vx * s;
-    // position[1] never touched — stays at whatever was set in constructor
     this.position[2] += vz * s;
-
+    if(this._jumpVelocity !== 0) {
+      this.position[1] += this._jumpVelocity;
+      this._jumpVelocity = 0;
+    }
     const rx = this.right, uy = this.up, bz = this.back, p = this.position;
     this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
     this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
@@ -1048,7 +1098,7 @@ export class CinematicCamera {
     this._recalculateViewVP();
   }
 
-  // ── cinematic-only setters ───────────────────────────────────────────────────
+  // Cinematic-only setters
   setTarget = (x, y, z) => {
     this._target[0] = x;
     this._target[1] = y;
@@ -1305,7 +1355,7 @@ export class PlaneCamera {
   }
 
   _setupKeyboard() {
-    const handle = (e, isDown) => {
+    this.handle = (e, isDown) => {
       switch(e.code) {
         case 'KeyA': case 'ArrowLeft': isDown ? this.onLeft?.() : this.onLeftRelease?.(); break;
         case 'KeyD': case 'ArrowRight': isDown ? this.onRight?.() : this.onRightRelease?.(); break;
@@ -1315,9 +1365,13 @@ export class PlaneCamera {
         case 'KeyK': isDown ? this.onAction2?.() : this.onAction2Release?.(); break;
       }
     };
+    window.addEventListener('keydown', e => {if(!e.repeat) this.handle(e, true);}, {passive: true});
+    window.addEventListener('keyup', e => this.handle(e, false), {passive: true});
+  }
 
-    window.addEventListener('keydown', e => {if(!e.repeat) handle(e, true);}, {passive: true});
-    window.addEventListener('keyup', e => handle(e, false), {passive: true});
+  removeKeyboard() {
+    window.removeEventListener('keydown', this.handle);
+    window.removeEventListener('keyup', this.handle);
   }
 
   _pinchDist(touches) {
@@ -1638,6 +1692,7 @@ export const MobileDOM = {
     const marginB = options.marginB ?? 0;
     const opacity = options.opacity ?? 0.35;
     const color = options.color ?? '#ffffff';
+    const forMobileJoystick = options.forMobileJoystick ?? false; // NEW: drag-over-pad instead of press/release
 
     const wrap = document.createElement('div');
     wrap.id = "mobileControls";
@@ -1663,9 +1718,11 @@ export const MobileDOM = {
       ['D', '▶', 3, 2, 'right'],
     ];
 
+    const buttons = {};
     for(const [, label, col, row, action] of defs) {
       const btn = document.createElement('div');
       btn.id = label;
+      btn.dataset.action = action;
       Object.assign(btn.style, {
         width: `${size}px`,
         height: `${size}px`,
@@ -1683,46 +1740,112 @@ export const MobileDOM = {
         WebkitTapHighlightColor: 'transparent',
       });
       btn.textContent = label;
+      buttons[action] = btn;
 
-      const press = () => {
-        camera._digital[action] = true;
-        btn.style.background = `rgba(255,255,255,${opacity})`;
-        if(camera._keyInterval === null) {
+      if(!forMobileJoystick) {
+        // first touch press/release behavior
+        const press = () => {
+          camera._digital[action] = true;
+          btn.style.background = `rgba(255,255,255,${opacity})`;
+          if(camera._keyInterval === null) {
+            camera._keyInterval = setInterval(() => {
+              camera._dirty = true;
+              camera._dirtyAngle = true;
+              camera._applyDigitalMovement();
+            }, 16);
+          }
+        };
+
+        const release = () => {
+          camera._digital[action] = false;
+          btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+          const d = camera._digital;
+          if(!d.forward && !d.backward && !d.left && !d.right) {
+            clearInterval(camera._keyInterval);
+            camera._keyInterval = null;
+            camera._dirty = false;
+          }
+        };
+
+        MobileDOM.eventDown = e => {
+          e.stopPropagation(); press();
+          btn.setPointerCapture(e.pointerId);
+        };
+        MobileDOM.eventUp = e => {release()};
+        MobileDOM.eventCancel = e => {release()};
+
+        btn.addEventListener('pointerdown', MobileDOM.eventDown, {passive: true});
+        btn.addEventListener('pointerup', MobileDOM.eventUp, {passive: true});
+        btn.addEventListener('pointercancel', MobileDOM.eventCancel, {passive: true});
+      }
+
+      wrap.appendChild(btn);
+    }
+
+    if(forMobileJoystick) {
+      // ---- joystick-style: direction follows the finger across the pad ----
+      let activePointerId = null;
+      let activeAction = null;
+
+      const setActive = (action) => {
+        if(activeAction === action) return;
+
+        if(activeAction) {
+          camera._digital[activeAction] = false;
+          buttons[activeAction].style.background = `rgba(255,255,255,${opacity * 0.4})`;
+        }
+        activeAction = action;
+        if(activeAction) {
+          camera._digital[activeAction] = true;
+          buttons[activeAction].style.background = `rgba(255,255,255,${opacity})`;
+        }
+
+        if(activeAction && camera._keyInterval === null) {
           camera._keyInterval = setInterval(() => {
             camera._dirty = true;
             camera._dirtyAngle = true;
             camera._applyDigitalMovement();
           }, 16);
-        }
-      };
-
-      const release = () => {
-        camera._digital[action] = false;
-        btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-        const d = camera._digital;
-        if(!d.forward && !d.backward && !d.left && !d.right) {
+        } else if(!activeAction && camera._keyInterval !== null) {
           clearInterval(camera._keyInterval);
           camera._keyInterval = null;
           camera._dirty = false;
         }
       };
 
-      MobileDOM.eventDown = e => {
-        e.stopPropagation(); press();
-        btn.setPointerCapture(e.pointerId);
+      const actionAt = (x, y) => {
+        const el = document.elementFromPoint(x, y);
+        return el?.dataset?.action ?? null;
       };
-      MobileDOM.eventUp = e => {release()};
-      MobileDOM.eventCancel = e => {release()};
 
-      btn.addEventListener('pointerdown', MobileDOM.eventDown, {passive: true});
-      btn.addEventListener('pointerup', MobileDOM.eventUp, {passive: true});
-      btn.addEventListener('pointercancel', MobileDOM.eventCancel, {passive: true});
+      const onDown = e => {
+        e.stopPropagation();
+        activePointerId = e.pointerId;
+        wrap.setPointerCapture(e.pointerId);
+        setActive(actionAt(e.clientX, e.clientY));
+      };
+      const onMove = e => {
+        if(e.pointerId !== activePointerId) return;
+        setActive(actionAt(e.clientX, e.clientY));
+      };
+      const onUp = e => {
+        if(e.pointerId !== activePointerId) return;
+        activePointerId = null;
+        setActive(null);
+      };
 
-      wrap.appendChild(btn);
+      MobileDOM.eventDown = onDown;
+      MobileDOM.eventUp = onUp;
+      MobileDOM.eventCancel = onUp;
+
+      wrap.addEventListener('pointerdown', onDown, {passive: true});
+      wrap.addEventListener('pointermove', onMove, {passive: true});
+      wrap.addEventListener('pointerup', onUp, {passive: true});
+      wrap.addEventListener('pointercancel', onUp, {passive: true});
     }
 
     document.body.appendChild(wrap);
-    return wrap; // caller can hide/remove later
+    return wrap;
   },
 
   destroyWASD() {
@@ -1746,15 +1869,18 @@ export const MobileDOM = {
     byId('mobileControls').remove();
   },
 
-  addButton(label, onClick, onRelease = () => {}, options = {}) {
+  addButton(label, onClick, onRelease = () => {}, options = {}, onMove = () => {}) {
     document.body.style.touchAction = 'none';
-
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
     const left = options.left ?? 0;
     const opacity = options.opacity ?? 0.35;
-
+    const image = options.image ?? null;
+    const setID = options.id ?? null;
     const btn = document.createElement('div');
+    if(setID !== null) {
+      btn.id = setID;
+    }
     Object.assign(btn.style, {
       position: 'fixed',
       bottom: `${bottom}%`,
@@ -1766,7 +1892,7 @@ export const MobileDOM = {
       justifyContent: 'center',
       fontSize: `${size * 0.25}px`,
       color: options.color ?? '#ffffff',
-      background: `rgba(255,255,255,${opacity * 0.4})`,
+      background: image ? `url('${image}') no-repeat center/contain` : `rgba(255,255,255,${opacity * 0.4})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
       borderRadius: '50%',
       zIndex: '9999',
@@ -1778,31 +1904,105 @@ export const MobileDOM = {
     btn.textContent = label;
 
     if(isMobile() === true) {
-      btn.addEventListener('touchstart', e => {
+      btn.addEventListener('touchstart', (e) => {
         e.stopPropagation();
-        // btn.style.background = `rgba(255,255,255,${opacity})`;
         onClick(e);
       }, {passive: true});
       btn.addEventListener('touchend', (e) => {
-        // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
         onRelease(e);
       }, {passive: true});
-      btn.addEventListener('touchcancel', () => {
-        // btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
+      btn.addEventListener('touchcancel', (e) => {
         onRelease(e);
       }, {passive: true});
-
+      btn.addEventListener('touchmove', (e) => {
+        onMove(e);
+      }, {passive: true});
     } else {
-      btn.addEventListener('click', e => {
+      btn.addEventListener('click', (e) => {
         e.stopPropagation();
         onClick(e);
       }, {passive: true});
       btn.addEventListener('mouseup', (e) => {
         onRelease(e);
       }, {passive: true});
+      btn.addEventListener('mousemove', (e) => {
+        onMove(e);
+      }, {passive: true});
     }
 
     document.body.appendChild(btn);
     return btn;
+  },
+
+  addProgressBar(options = {}) {
+    const size = options.size ?? 200;
+    const bottom = options.bottom ?? 10;
+    const left = options.left ?? 10;
+    const opacity = options.opacity ?? 0.35;
+    const color = options.color ?? '#4caf50';
+
+    const barWrapper = document.createElement('div');
+    Object.assign(barWrapper.style, {
+      position: 'fixed',
+      bottom: `${bottom}%`,
+      left: `${left}%`,
+      width: `${size}px`,
+      height: `${size * 0.04}px`,
+      background: `rgba(0,0,0,${opacity})`,
+      border: `2px solid rgba(255,255,255,${opacity})`,
+      borderRadius: `${size * 0.05}px`,
+      zIndex: '9999',
+      overflow: 'hidden'
+    });
+    const fill = document.createElement('div');
+    Object.assign(fill.style, {
+      width: '100%',
+      height: '100%',
+      background: color,
+      transition: 'width 0.2s ease, background 0.3s ease'
+    });
+    barWrapper.appendChild(fill);
+    document.body.appendChild(barWrapper);
+    return Object.assign(barWrapper, {
+      setValue: (percent) => {
+        const p = Math.max(0, Math.min(100, percent));
+        fill.style.width = `${p}%`;
+        fill.style.background = p > 60 ? '#4caf50' : p > 30 ? '#ffc107' : '#f44336';
+      }
+    });
+  },
+
+  addSlider(onChange = (v) => {}, options = {}) {
+    const width = options.width ?? 200;
+    const bottom = options.bottom ?? 5;
+    const left = options.left ?? 10;
+    const opacity = options.opacity ?? 0.35;
+    const slider = document.createElement('input');
+    Object.assign(slider, {
+      type: 'range',
+      min: options.min ?? 0,
+      max: options.max ?? 100,
+      value: options.value ?? 50
+    });
+    Object.assign(slider.style, {
+      position: 'fixed',
+      bottom: `${bottom}%`,
+      left: `${left}%`,
+      width: `${width}px`,
+      zIndex: '9999',
+      accentColor: options.color ?? '#ffffff',
+      cursor: 'pointer',
+      touchAction: 'none'
+    });
+    const handleInput = (e) => onChange(parseFloat(slider.value));
+    if(isMobile()) {
+      slider.addEventListener('touchmove', handleInput, {passive: true});
+      slider.addEventListener('touchstart', handleInput, {passive: true});
+    } else {
+      slider.addEventListener('mousemove', handleInput, {passive: true});
+      slider.addEventListener('mousedown', handleInput, {passive: true});
+    }
+    document.body.appendChild(slider);
+    return slider;
   }
 };

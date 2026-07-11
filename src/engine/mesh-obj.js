@@ -16,6 +16,7 @@ import {MEConfig} from '../me-config';
 import {PointerEffect} from './effects/pointerEffect';
 import {buildPipelineKey, PipelineManager} from './pipelineManager';
 import {MSDFTextEffect} from './effects/msdfText';
+import {BloodBurst} from './effects/blood-target';
 
 export default class MEMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
@@ -664,7 +665,7 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      this.effects = {};
+      if (typeof this.effects === 'undefined') this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
@@ -684,6 +685,9 @@ export default class MEMeshObj extends Materials {
         }
         if(typeof this.pointerEffect.flameEmitter !== 'undefined' && this.pointerEffect.flameEmitter == true) {
           this.effects.flameEmitter = new FlameEmitter(device, "rgba16float", 20, this.cameraBuffer);
+        }
+        if(typeof this.pointerEffect.bloodBurst !== 'undefined' && this.pointerEffect.bloodBurst == true) {
+          this.effects.bloodBurst = new BloodBurst(device, "rgba16float", 20, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.destructionEffect !== 'undefined' && this.pointerEffect.destructionEffect == true) {
           this.effects.destructionEffect = new DestructionEffect(device, 'rgba16float', {
@@ -877,9 +881,7 @@ export default class MEMeshObj extends Materials {
       },
     });
 
-    // test 
     this.initBoundingSphere();
-
     dispatchEvent(this.buildPipelineBucketsEvent);
   };
 
@@ -1034,6 +1036,15 @@ export default class MEMeshObj extends Materials {
   }
 
   destroy = () => {
+    if(app.matrixPhysics) {
+      let testPB = app.matrixPhysics.getBodyByName(this.name);
+      if(testPB !== null) {
+        try {app.matrixPhysics.removeRigidBody(testPB)} catch(e) {console.warn("Physics cleanup err:", e)}
+      }
+    } else {
+      app.removeSceneObjectByName(this.name);
+      return;
+    }
     if(this._destroyed) return;
     this._destroyed = true;
     // GPU Buffers
@@ -1065,7 +1076,6 @@ export default class MEMeshObj extends Materials {
     }
 
     if(this.effects?.pointer?.destroy) {this.effects.pointer.destroy()}
-
     this.pipeline = null;
     this.modelBindGroup = null;
     this.sceneBindGroupForRender = null;
@@ -1076,13 +1086,7 @@ export default class MEMeshObj extends Materials {
     this.drawElements = () => {};
     this.drawElementsAnim = () => {};
     this.drawShadows = () => {};
-    if(app.matrixPhysics) {
-      let testPB = app.matrixPhysics.getBodyByName(this.name);
-      if(testPB !== null) {
-        try {app.matrixPhysics.removeRigidBody(testPB)} catch(e) {console.warn("Physics cleanup err:", e)}
-      }
-    }
-    // console.info(`🧹Destroyed: ${this.name}`);
+    console.info(`🧹Destroyed: ${this.name}`);
   }
 
   initBoundingSphere() {
@@ -1109,20 +1113,19 @@ export default class MEMeshObj extends Materials {
       const dz = pos[i + 2] - cz;
       r = Math.max(r, Math.sqrt(dx * dx + dy * dy + dz * dz));
     }
+    r = r * Math.max(this.scale[0], this.scale[1], this.scale[2])
     this.boundingSphere = {
       center: new Float32Array([cx, cy, cz]),
       radius: r,
-    };
+    }
   }
 
   updateBoundingSphere() {
     if(!this.boundingSphere) return;
     const local = this.boundingSphere.center;
-    const m = this.modelMatrix;
-    const center = new Float32Array(3);
-    center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
-    center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
-    center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
-    this.boundingSphere.center = center;
+    const m = this._modelMatrix;
+    this.boundingSphere.center[0] = m[12] + local[0] * m[0] + local[1] * m[4] + local[2] * m[8];
+    this.boundingSphere.center[1] = m[13] + local[0] * m[1] + local[1] * m[5] + local[2] * m[9];
+    this.boundingSphere.center[2] = m[14] + local[0] * m[2] + local[1] * m[6] + local[2] * m[10];
   }
 }

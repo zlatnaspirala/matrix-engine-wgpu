@@ -4,10 +4,10 @@ import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
 /**
  * @description
  * KaleidoscopeEmitter
- * procedural kaleidoscope particles with vertex animation
+ * procedural kaleidoscope particles with vertex animation.
  */
 export class KaleidoscopeEmitter {
-  constructor(device, format, maxParticles = 20, cameraBuffer) {
+  constructor(device, format, maxParticles = 20, cameraBuffer, initSwap = [0, 1, 2], baseRotation = [0, 0, 0]) {
     this.device = device;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
@@ -16,28 +16,33 @@ export class KaleidoscopeEmitter {
     this.enabled = true;
     this.maxParticles = maxParticles;
     this.instanceTargets = [];
-    this.floatsPerInstance = 28; // model(16) + timeSpeed(4) + params(4) + tint(4)
+    this.floatsPerInstance = 28;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
     this.smoothFlickeringScale = 0.1;
     this.minBound = 0;
     this.maxBound = 1.9;
-    this.swap0 = 0;
-    this.swap1 = 1;
-    this.swap2 = 2;
+    this.swap0 = initSwap[0];
+    this.swap1 = initSwap[1];
+    this.swap2 = initSwap[2];
     this.riseDirection = 1;
-    this.baseRotation = [0, 0, 0];
+    // this.baseRotation = [0, 0, 0];
+    this.baseRotation = baseRotation;
     this.scaleCoeficient = 0.12;
     this.rotSpeed = 0.1;
-
     // Global kaleidoscope params
     this.globalSegments = 6;
     this.globalZoom = 1.0;
     this.globalColorShiftSpeed = 0.3;
-
-    // cache
     this._localMatrix = mat4.create();
     this._finalMatrix = mat4.create();
     this._scratch4 = new Float32Array(4);
+
+    this.VERTEX_TEMPLATE = new Float32Array([
+      -0.4, 0.5, 0.0,
+      0.4, 0.5, 0.0,
+      -0.2, -0.5, 0.0,
+      0.2, -0.5, 0.0
+    ]);
 
     for(let i = 0;i < maxParticles;i++) {
       this.instanceTargets.push({
@@ -59,24 +64,36 @@ export class KaleidoscopeEmitter {
   }
 
   recreateVertexData(S) {
-    const vertexData = new Float32Array([
-      -0.4 * S, 0.5 * S, 0.0 * S,
-      0.4 * S, 0.5 * S, 0.0 * S,
-      -0.2 * S, -0.5 * S, 0.0 * S,
-      0.2 * S, -0.5 * S, 0.0 * S,
-    ]);
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.VERTEX_TEMPLATE[0] = this.VERTEX_TEMPLATE[0] * S;
+    this.VERTEX_TEMPLATE[1] = this.VERTEX_TEMPLATE[1] * S;
+    this.VERTEX_TEMPLATE[2] = this.VERTEX_TEMPLATE[2] * S;
+    this.VERTEX_TEMPLATE[3] = this.VERTEX_TEMPLATE[3] * S;
+    this.VERTEX_TEMPLATE[4] = this.VERTEX_TEMPLATE[4] * S;
+    this.VERTEX_TEMPLATE[5] = this.VERTEX_TEMPLATE[5] * S;
+    this.VERTEX_TEMPLATE[6] = this.VERTEX_TEMPLATE[6] * S;
+    this.VERTEX_TEMPLATE[7] = this.VERTEX_TEMPLATE[7] * S;
+    this.VERTEX_TEMPLATE[8] = this.VERTEX_TEMPLATE[8] * S;
+    this.VERTEX_TEMPLATE[9] = this.VERTEX_TEMPLATE[9] * S;
+    this.VERTEX_TEMPLATE[10] = this.VERTEX_TEMPLATE[10] * S;
+    this.VERTEX_TEMPLATE[11] = this.VERTEX_TEMPLATE[11] * S;
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
   }
 
   recreateVertexDataRND(S) {
-    const vertexData = new Float32Array([
-      -randomFloatFromTo(0.1, 0.8) * S, randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
-      randomFloatFromTo(0.1, 0.8) * S, randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
-      -randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
-      randomFloatFromTo(0.1, 0.4) * S, -randomFloatFromTo(0.4, 0.6) * S, 0.0 * S,
-    ]);
-    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
+    this.VERTEX_TEMPLATE[0] = -randomFloatFromTo(0.1, 0.8) * S;
+    this.VERTEX_TEMPLATE[1] = randomFloatFromTo(0.4, 0.6) * S;
+    this.VERTEX_TEMPLATE[2] = 0.0 * S;
+    this.VERTEX_TEMPLATE[3] = randomFloatFromTo(0.1, 0.8) * S;
+    this.VERTEX_TEMPLATE[4] = randomFloatFromTo(0.4, 0.6) * S;
+    this.VERTEX_TEMPLATE[5] = 0.0 * S;
+    this.VERTEX_TEMPLATE[6] = -randomFloatFromTo(0.1, 0.4) * S;
+    this.VERTEX_TEMPLATE[7] = -randomFloatFromTo(0.4, 0.6) * S;
+    this.VERTEX_TEMPLATE[8] = 0.0 * S;
+    this.VERTEX_TEMPLATE[9] = randomFloatFromTo(0.1, 0.4) * S;
+    this.VERTEX_TEMPLATE[10] = -randomFloatFromTo(0.4, 0.6) * S;
+    this.VERTEX_TEMPLATE[11] = 0.0 * S;
+    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
+    return this.VERTEX_TEMPLATE;
   }
 
   recreateVertexDataCrazzy(S) {
@@ -88,16 +105,22 @@ export class KaleidoscopeEmitter {
     const memory21 = randomFloatFromTo(0.4, 0.4 + S);
     const memory22 = -randomFloatFromTo(0.4, 0.4 + S);
     const memory23 = -randomFloatFromTo(0.4, 0.4 + S);
-    this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info(`%cCrazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
-    const vertexData = new Float32Array([
-      memory1, memory2, 0.0,
-      memory11, memory21, 0.0,
-      memory12, memory22, 0.0,
-      memory13, memory23, 0.0,
-    ]);
-    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
+    // this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
+    // console.info(`%cCrazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
+    this.VERTEX_TEMPLATE[0] = memory1;
+    this.VERTEX_TEMPLATE[1] = memory2;
+    this.VERTEX_TEMPLATE[2] = 0.0;
+    this.VERTEX_TEMPLATE[3] = memory11;
+    this.VERTEX_TEMPLATE[4] = memory21;
+    this.VERTEX_TEMPLATE[5] = 0.0;
+    this.VERTEX_TEMPLATE[6] = memory12;
+    this.VERTEX_TEMPLATE[7] = memory22;
+    this.VERTEX_TEMPLATE[8] = 0.0;
+    this.VERTEX_TEMPLATE[9] = memory13;
+    this.VERTEX_TEMPLATE[10] = memory23;
+    this.VERTEX_TEMPLATE[11] = 0.0;
+    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
+    return this.VERTEX_TEMPLATE;
   }
 
   recreateVertexDataCrazzy(S) {
@@ -109,60 +132,67 @@ export class KaleidoscopeEmitter {
     const memory21 = randomFloatFromTo(0.4, 0.4 + S);
     const memory22 = -randomFloatFromTo(0.4, 0.4 + S);
     const memory23 = -randomFloatFromTo(0.4, 0.4 + S);
-    this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    console.info(`%cCrazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
-    const vertexData = new Float32Array([
-      memory1, memory2, 0.0,
-      memory11, memory21, 0.0,
-      memory12, memory22, 0.0,
-      memory13, memory23, 0.0,
-    ]);
-    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
+    // this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
+    // console.info(`%cCrazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
+    this.VERTEX_TEMPLATE[0] = memory1;
+    this.VERTEX_TEMPLATE[1] = memory2;
+    this.VERTEX_TEMPLATE[2] = 0.0;
+    this.VERTEX_TEMPLATE[3] = memory11;
+    this.VERTEX_TEMPLATE[4] = memory21;
+    this.VERTEX_TEMPLATE[5] = 0.0;
+    this.VERTEX_TEMPLATE[6] = memory12;
+    this.VERTEX_TEMPLATE[7] = memory22;
+    this.VERTEX_TEMPLATE[8] = 0.0;
+    this.VERTEX_TEMPLATE[9] = memory13;
+    this.VERTEX_TEMPLATE[10] = memory23;
+    this.VERTEX_TEMPLATE[11] = 0.0;
+    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
+    return this.VERTEX_TEMPLATE;
   }
 
   recreateVertexDataFromData(data) {
-    console.info(`%c Crazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
-    const vertexData = new Float32Array([
-      data[0], data[4], 0.0,
-      data[1], data[5], 0.0,
-      data[2], data[6], 0.0,
-      data[3], data[7], 0.0,
-    ]);
-    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    return vertexData;
+    // console.info(`%c Crazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
+    this.VERTEX_TEMPLATE[0] = data[0];
+    this.VERTEX_TEMPLATE[1] = data[4];
+    this.VERTEX_TEMPLATE[2] = 0.0;
+    this.VERTEX_TEMPLATE[3] = data[1];
+    this.VERTEX_TEMPLATE[4] = data[5];
+    this.VERTEX_TEMPLATE[5] = 0.0;
+    this.VERTEX_TEMPLATE[6] = data[2];
+    this.VERTEX_TEMPLATE[7] = data[6];
+    this.VERTEX_TEMPLATE[8] = 0.0;
+    this.VERTEX_TEMPLATE[9] = data[3];
+    this.VERTEX_TEMPLATE[10] = data[7];
+    this.VERTEX_TEMPLATE[11] = 0.0;
+    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
+    return this.VERTEX_TEMPLATE;
   }
 
   _initPipeline() {
     const vertexData = this.recreateVertexDataRND(1);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-
     this.uvBuffer = this.device.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-
     this.indexBuffer = this.device.createBuffer({
       size: Math.ceil(indexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-
     this.modelBuffer = this.device.createBuffer({
       label: 'kale-emitter modelBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-
     const bindGroupLayout = this.device.createBindGroupLayout({
       label: 'kale-emitter layout',
       entries: [
@@ -170,7 +200,6 @@ export class KaleidoscopeEmitter {
         {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
       ]
     });
-
     this.bindGroup = this.device.createBindGroup({
       label: 'kaleidoscope-emitter bindGroup',
       layout: bindGroupLayout,
@@ -179,10 +208,8 @@ export class KaleidoscopeEmitter {
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
-
     const shaderModule = this.device.createShaderModule({code: kaleidoscopeEffectInstance});
     const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-
     this.pipeline = this.device.createRenderPipeline({
       label: 'kaleidoscope-emitter pipeline',
       layout: pipelineLayout,
@@ -215,7 +242,7 @@ export class KaleidoscopeEmitter {
         },
         {format: this.format},
         {format: this.format}
-        
+
         ]
       },
       primitive: {topology: "triangle-list"},
@@ -226,60 +253,53 @@ export class KaleidoscopeEmitter {
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
     const floatsPerInstance = 28;
-
     for(let i = 0;i < count;i++) {
       const t = this.instanceTargets[i];
-
       // Smooth position lerp
       for(let j = 0;j < 3;j++) {
         t.currentPosition[j] += (t.position[j] - t.currentPosition[j]) * this.scaleCoeficient;
       }
-
       const local = this._localMatrix;
       mat4.identity(local);
       mat4.translate(local, t.currentPosition, local);
+      // mat4.rotateX(local, this.baseRotation[0], local);
+      // mat4.rotateY(local, this.baseRotation[1] + t.rotation, local);
+      // mat4.rotateZ(local, this.baseRotation[2], local);
       mat4.rotateY(local, t.rotation, local);
+
       mat4.scale(local, t.currentScale, local);
       mat4.identity(this._finalMatrix);
       mat4.multiply(baseModelMatrix, local, this._finalMatrix);
-
       const offset = i * floatsPerInstance;
-      this.instanceData.set(this._finalMatrix, offset); // 0-15: mat4
-
+      this.instanceData.set(this._finalMatrix, offset);
       // timeSpeed vec4 (16-19) — matches flame structure
-      this.instanceData[offset + 16] = t.time ?? 0;      // time
-      this.instanceData[offset + 17] = t.speed ?? 0.5;   // speed
+      this.instanceData[offset + 16] = t.time ?? 0;
+      this.instanceData[offset + 17] = t.speed ?? 0.5;
       this.instanceData[offset + 18] = 0;
       this.instanceData[offset + 19] = 0;
-
       // params vec4 (20-23) — intensity, segments, zoom, colorShift
-      this.instanceData[offset + 20] = (t.intensity ?? 1.0) * this.intensity;  // intensity
+      this.instanceData[offset + 20] = (t.intensity ?? 1.0) * this.intensity;   // intensity
       this.instanceData[offset + 21] = this.globalSegments;                     // segments
       this.instanceData[offset + 22] = this.globalZoom;                         // zoom
       this.instanceData[offset + 23] = this.globalColorShiftSpeed;              // colorShiftSpeed
-
       // tint vec4 (24-27) — RGB + tintStrength
       this.instanceData[offset + 24] = t.color[0];
       this.instanceData[offset + 25] = t.color[1];
       this.instanceData[offset + 26] = t.color[2];
       this.instanceData[offset + 27] = t.tintStrength ?? 0.5;
     }
-
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData.subarray(0, count * floatsPerInstance));
   };
 
   render(pass, mesh, viewProjMatrix, dt = 0.1) {
     this.time += dt;
-
     for(const p of this.instanceTargets) {
       p.time = (p.time ?? 0) + dt;
       p.colorShift = (p.colorShift ?? 0) + dt * this.globalColorShiftSpeed;
-
       p.position[this.swap1] += dt * p.riseSpeed * this.riseDirection;
       const resetCondition = this.riseDirection > 0
         ? p.position[this.swap1] > this.maxBound
         : p.position[this.swap1] < this.minBound;
-
       if(resetCondition) {
         p.position[this.swap1] = this.riseDirection > 0
           ? this.minBound + Math.random() * 0.5
@@ -289,11 +309,9 @@ export class KaleidoscopeEmitter {
         p.riseSpeed = 0.2 + Math.random() * 1.0;
         p.colorShift = randomFloatFromTo(0, Math.PI * 2);
       }
-
       p.scale[0] = p.scale[1] = this.smoothFlickeringScale + Math.sin(this.time * 2.0 + p.position[this.swap1]) * 0.1;
       p.rotation += dt * this.rotSpeed;
     }
-
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);

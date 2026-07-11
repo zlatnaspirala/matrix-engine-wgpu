@@ -3,8 +3,14 @@
 
 <head>
   <link rel="manifest" href="manifest.web" />
-  <title>Matrix Engine Powered by webGPU. Created by Nikola Lukic zlatnaspirala@gmail.com </title>
-  <meta name="description" content="The benefits of this project is offering an overview of the entire application logic, easy native implementations (hybrid app), object structural. " />
+  <title>Matrix Engine Powered by webGPU (The Beast). Created by Nikola Lukic zlatnaspirala@gmail.com </title>
+  <meta name="description" content="Draw loop per pipeline not per mesh (PipelineManager) with share material. Power optimisation.
+✔️ Support for 3D objects and scene transformations.
+✔️ Ammo.js, cannonES && Jolt Physics libs integration (app-bridge-worker). Physics use webworkers by default.
+✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs - frontend.
+✔️ Bloom post processing.
+✔️ HZB post processing.
+✔️ Scene Culling feature" />
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <!-- <link defer rel="stylesheet" href="css/style.css" /> -->
   <link defer rel="stylesheet" href="css/mobile.css" />
@@ -18,7 +24,7 @@
 
 <body allow="autoplay">
   <div class="header" style="display: contents;text-align: center;font-size: large;">
-    MATRIX-ENGINE-WGPU<span>+Android Chrome</span> <a style="color:black;font-size: small;" href="https://github.com/zlatnaspirala/matrix-engine-wgpu">Source and Credits github project</a>
+    The Beast <span>+Android Chrome</span> <a style="color:black;font-size: small;" href="https://github.com/zlatnaspirala/matrix-engine-wgpu">Source and Credits github project</a>
   </div>
   <button class="btn" style="top: 42px;left: 0;position:absolute;font-size: 13px;width: 150px;" id="sliderMenu1">Menu 👉🏼</button>
   <div id="examples" style="top: 100px;left: 0;display: flex; flex-direction: column;width: 180px;position: absolute;height: 80%;overflow-y: scroll;overflow-x: hidden;">
@@ -31,7 +37,6 @@
     <button class="btn" id="camera-texture">Camera texture</button>
     <button class="btn" id="glb-loader">GLB loader</button>
     <button class="btn" id="procedural-mesh">Procedural-mesh-morph</button>
-    <!-- <button class="btn" id="fontana">Fontana</button> -->
     <button class="btn" id="myLights">My Lights</button>
     <button class="btn" id="snake-light">Snake Lights</button>
     <button class="btn" id="snake-light-instanced">Snake Lights - Instanced</button>
@@ -51,6 +56,7 @@
     <button class="btn" id="loadGaussianSplatVertAnim">Gaussian splat vertex animation</button>
     <button class="btn" id="hand">Hand commander</button>
     <button class="btn" id="loadStreamRenderHost">Port render to android TV</button>
+    <button class="btn" id="hang3d">First prson shooter hang3d-the-beast</button>
     <button class="btn" id="jamb">Jamb game</button>
     <button class="btn" id="moba">MOBA game</button>
   </div>

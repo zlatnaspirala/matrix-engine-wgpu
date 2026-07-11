@@ -177,7 +177,7 @@ export class MatrixTTS {
   }
 }
 
-export const speakBot = {
+export let speakBot = {
   mariasword: {
     hello: [
       'Hello my friend',

@@ -335,7 +335,7 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   _setupUniforms() {
-    this.effects = {};
+    if (typeof this.effects === 'undefined') this.effects = {};
     if(this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
       if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
