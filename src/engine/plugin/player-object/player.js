@@ -1,5 +1,5 @@
 import {MobileDOM} from "../../cameras";
-import {byId, mb} from "../../utils";
+import {byId, isMobile, mb} from "../../utils";
 
 const tiers = [
   {threshold: 500, text: 'GODLIKE'},
@@ -83,9 +83,9 @@ export class Player {
         MobileDOM.addButton(`GAME OVER ${t.text} YOUR SCORE ${this.kills} kills.`, () => {
           location.reload()
         }, undefined, {
-          size: 240,
+          size: isMobile() === true ? 200 : 240,
           bottom: 40,
-          left: 45,
+          left: isMobile() === true ? 30 : 45,
           color: 'orangered',
         });
         if(document.pointerLockElement === app.canvas) {

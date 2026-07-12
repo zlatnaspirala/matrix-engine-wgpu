@@ -214,7 +214,7 @@ function genName(length2) {
   return result2;
 }
 var meLoader = {
-  create: function(callback) {
+  create: function(text = "RUN RETURN", callback) {
     const loader = document.createElement("div");
     loader.id = "loader";
     Object.assign(loader.style, {
@@ -247,7 +247,7 @@ var meLoader = {
       0 0 40px #00ffff;
     animation: glowPulse 1.5s infinite alternate;
   ">
-    RUN MEWGPU
+    ${text}
   </div>
 
   <style>
@@ -473,6 +473,7 @@ var MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
+  CACHE: true,
   logLoopError: true,
   construct: function(options2 = {}) {
     if (urlQ["GRAVITY_Y_AXIS"]) {
@@ -3137,7 +3138,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    const setDigital = (e, value2) => {
+    this.setDigital = (e, value2) => {
       switch (e.code) {
         case "KeyW":
           this._digital.forward = value2;
@@ -3188,8 +3189,20 @@ var FirstPersonCamera = class _FirstPersonCamera {
         }
       }
     };
-    window.addEventListener("keydown", (e) => setDigital(e, true), { passive: true });
-    window.addEventListener("keyup", (e) => setDigital(e, false), { passive: true });
+    this._onKeyDown = (e) => this.setDigital(e, true);
+    this._onKeyUp = (e) => this.setDigital(e, false);
+    window.addEventListener("keydown", this._onKeyDown, { passive: true });
+    window.addEventListener("keyup", this._onKeyUp, { passive: true });
+  }
+  removeKeyboard() {
+    clearInterval(this._keyInterval);
+    this._keyInterval = null;
+    window.removeEventListener("keydown", this._onKeyDown);
+    window.removeEventListener("keyup", this._onKeyUp);
+    this._onKeyDown = null;
+    this._onKeyUp = null;
+    this._dirty = false;
+    this._dirtyAngle = false;
   }
   forceViewUpdate() {
     this._dirtyAngle = true;
@@ -3640,7 +3653,7 @@ var PlaneCamera = class {
     MobileDOM.addButton("B", () => this.onAction2?.(), () => this.onAction2Release?.(), { left: "80", bottom: "30" });
   }
   _setupKeyboard() {
-    const handle = (e, isDown) => {
+    this.handle = (e, isDown) => {
       switch (e.code) {
         case "KeyA":
         case "ArrowLeft":
@@ -3667,9 +3680,13 @@ var PlaneCamera = class {
       }
     };
     window.addEventListener("keydown", (e) => {
-      if (!e.repeat) handle(e, true);
+      if (!e.repeat) this.handle(e, true);
     }, { passive: true });
-    window.addEventListener("keyup", (e) => handle(e, false), { passive: true });
+    window.addEventListener("keyup", (e) => this.handle(e, false), { passive: true });
+  }
+  removeKeyboard() {
+    window.removeEventListener("keydown", this.handle);
+    window.removeEventListener("keyup", this.handle);
   }
   _pinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
@@ -22606,16 +22623,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
         ]
       });
-      function alignTo256(n2) {
-        return Math.ceil(n2 / 256) * 256;
-      }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      console.log("maxInstances", MEConfig.MAX_BONES);
-      console.log(
-        "INIT",
-        this.maxInstances,
-        this.instanceCount
-      );
       const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
@@ -24255,7 +24263,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: "" + e.detail.index,
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"
@@ -24273,7 +24281,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: e.detail.index,
           mesh: m.mesh,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e.detail.physics,
             geometry: "Sphere"
@@ -24306,7 +24314,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: e.detail.index,
           mesh: m.objMesh,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"
@@ -38760,6 +38768,27 @@ var CulledRenderPass = class {
 };
 
 // ../../../world.js
+var APP_READY = false;
+if (MEConfig.CACHE !== true && location.hostname != "localhost") {
+  APP_READY = true;
+}
+if ("serviceWorker" in navigator) {
+  if (MEConfig.CACHE === true && location.hostname.indexOf("localhost") == -1) {
+    navigator.serviceWorker.register("cache.js").then((registration) => {
+      if (!navigator.serviceWorker.controller) {
+        console.log("Installing & caching for the first time");
+        meLoader.create("LOADING");
+        APP_READY = false;
+      } else {
+        APP_READY = true;
+      }
+    }).catch((cacheErr) => {
+      console.warn("cacheErr: ", cacheErr);
+    });
+  }
+} else {
+  APP_READY = true;
+}
 var MatrixEngineWGPU = class {
   // Save class reference
   reference = {
@@ -39030,7 +39059,7 @@ var MatrixEngineWGPU = class {
     }
     if (this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
       if (byId("msgBox")) byId("msgBox").style.left = "30%";
-      if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
+      if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false && MEConfig.CACHE === false) {
         console.log("GOT DIRECT WHAT EVER");
         this.applyCanvasSize(this.options.fastRender);
         this.init({ canvas, callback });
@@ -39048,48 +39077,72 @@ var MatrixEngineWGPU = class {
         });
         return;
       }
-      meLoader.create();
-      this.MEConfig.fsManager.onChange((isFS, target2) => {
-        console.log("1 BACK FROM FS", isFS);
-        console.log("window style width : ", innerWidth);
-        setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
-      });
-      addEventListener("run_mobile_fs", () => {
-        if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-        }
-        meLoader.destroy();
-        if (typeof this.options.lock !== "undefined") {
-          if (this.options.lock != "landscape" && this.options.lock != "portrait") {
-            this.options.lock = "portrait";
-          }
-          if (checkLock() && isMobile() == true) {
-            screen.orientation.lock(this.options.lock).then(() => {
-              console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
-              setTimeout(() => {
-                this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
-                console.log("canvas width: ", canvas.width);
-                console.log("canvas style width : ", canvas.style.width);
-                this.init({ canvas, callback });
-              }, 1e3);
-            }).catch(function(error) {
-              console.error("Orientation lock failed: ", error);
-            });
-          }
+      setTimeout(() => {
+        if (APP_READY === false && isMobile() === true) {
+          console.log("app is installing cache");
+          setTimeout(() => {
+            location.reload();
+          }, 4e3);
         } else {
-          screen.orientation.lock(getOrientation()).then((e) => {
-            console.log(`%cOrientation locked to ${e}`, LOG_FUNNY_ARCADE);
-            setTimeout(() => {
-              this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
-              console.log("canvas width: ", canvas.width);
-              console.log("canvas style width : ", canvas.style.width);
-              this.init({ canvas, callback });
-            }, 1e3);
-          }).catch(function(error) {
-            console.error("Orientation lock failed: ", error);
+          if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
+            this.applyCanvasSize(this.options.fastRender);
+            this.init({ canvas, callback });
+            this.MEConfig.fsManager.onChange((isFS, target2) => {
+              if (isFS == false) {
+                setTimeout(() => this.applyCanvasSize(this.options.fastRender), 100);
+              }
+            });
+            addEventListener("run_mobile_fs", () => {
+              if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+                this.applyCanvasSizeMobile(this.options.fastRender);
+              }
+            });
+            return;
+          }
+          meLoader.create("RUN");
+          this.MEConfig.fsManager.onChange((isFS, target2) => {
+            console.log("1 BACK FROM FS", isFS);
+            console.log("window style width : ", innerWidth);
+            setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
+          });
+          addEventListener("run_mobile_fs", () => {
+            if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+            }
+            meLoader.destroy();
+            if (typeof this.options.lock !== "undefined") {
+              if (this.options.lock != "landscape" && this.options.lock != "portrait") {
+                this.options.lock = "portrait";
+              }
+              if (checkLock() && isMobile() == true) {
+                if (screen.orientation && screen.orientation.lock) screen.orientation.lock(this.options.lock).then(() => {
+                  console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
+                  setTimeout(() => {
+                    this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+                    console.log("canvas width: ", canvas.width);
+                    console.log("canvas style width : ", canvas.style.width);
+                    this.init({ canvas, callback });
+                  }, 1e3);
+                }).catch(function(error) {
+                  console.error("Orientation lock failed: ", error);
+                });
+              }
+            } else {
+              if (screen.orientation && screen.orientation.lock) screen.orientation.lock(getOrientation()).then((e) => {
+                console.log(`%cOrientation locked to ${e}`, LOG_FUNNY_ARCADE);
+                setTimeout(() => {
+                  this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+                  console.log("canvas width:", canvas.width);
+                  console.log("canvas style width :", canvas.style.width);
+                  this.init({ canvas, callback });
+                }, 1e3);
+              }).catch(function(error) {
+                console.error("Orientation lock failed: ", error);
+              });
+            }
+            if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
           });
         }
-        if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
-      });
+      }, 500);
     } else {
       this.init({ canvas, callback });
     }
@@ -39781,7 +39834,7 @@ var MatrixEngineWGPU = class {
     }
     setTimeout(() => {
       this.frame();
-    }, 500);
+    }, 200);
     setTimeout(() => {
       callback(this);
     }, 1);
@@ -40360,7 +40413,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "FLOOR",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" },
           pointerEffect: {
             enabled: true,
@@ -40377,7 +40430,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "L_BOX",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
@@ -40390,7 +40443,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "R_BOX",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
@@ -40403,7 +40456,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "REEL_1",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
@@ -40425,7 +40478,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "REEL_2",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
@@ -40447,7 +40500,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "REEL_3",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
@@ -40478,7 +40531,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "BANNER1",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
@@ -40491,7 +40544,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "BANNER2",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
@@ -40531,7 +40584,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "BANNER3",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });
@@ -40598,7 +40651,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: "REEL_TOP",
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" }
         });
       }, { scale: [1, 1, 1] });

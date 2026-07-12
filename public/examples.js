@@ -56149,9 +56149,9 @@ var Player = class {
         MobileDOM.addButton(`GAME OVER ${t3.text} YOUR SCORE ${this.kills} kills.`, () => {
           location.reload();
         }, void 0, {
-          size: 240,
+          size: isMobile() === true ? 200 : 240,
           bottom: 40,
-          left: 45,
+          left: isMobile() === true ? 30 : 45,
           color: "orangered"
         });
         if (document.pointerLockElement === app.canvas) {
