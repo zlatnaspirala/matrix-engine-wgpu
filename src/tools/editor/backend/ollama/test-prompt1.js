@@ -972,9 +972,10 @@ Outputs:
 Node: onTargetPositionReach
 Category: event
 Inputs:
+- exec : action
 - position : object
 Outputs:
-- exec : action
+- execOut : action
 
 Node: fetch
 Category: action
