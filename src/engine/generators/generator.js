@@ -112,73 +112,84 @@ export function physicsBodiesGeneratorWall(
   delay = 200,
   orientationOfwall = "ByX", spacingY = 3,
   useMeshPath = "./res/meshes/blender/cube.obj",) {
-  const engine = this;
-  const [width, height] = size
-    .toLowerCase()
-    .split("x")
-    .map(n => parseInt(n, 10));
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const [width, height] = size
+      .toLowerCase()
+      .split("x")
+      .map(n => parseInt(n, 10));
 
-  console.log(width)
-  console.log(height)
-  const inputCube = {mesh: useMeshPath};
+    console.log(width)
+    console.log(height)
+    const inputCube = {mesh: useMeshPath};
 
-  function handler(m) {
-    let index = 0;
-    const RAY = {enabled: raycast, radius: 1};
-    for(let y = 0;y < height;y++) {
-      for(let x = 0;x < width;x++) {
-        const cubeName = `${name}_${index}`;
-        setTimeout(() => {
+    function handler(m) {
+      let index = 0;
+      const totalCubes = width * height;
+      const lastIndex = totalCubes - 1;
+      const RAY = {enabled: raycast, radius: 1};
+      const objects = [];
+      for(let y = 0;y < height;y++) {
+        for(let x = 0;x < width;x++) {
+          const cubeName = `${name}_${index}`;
+          const currentIndex = index;
+          setTimeout(() => {
 
-          let __x = 0, __y = 0, __z = 0;
-          if(orientationOfwall === 'ByX') {
-            __x = x * spacing;
-            __y = y * spacing + spacingY;
-            __z = 0;
-          } else if(orientationOfwall === 'ByZ') {
-            __x = 0;
-            __y = y * spacing + spacingY;
-            __z = x * spacing;
-          }
+            let __x = 0, __y = 0, __z = 0;
+            if(orientationOfwall === 'ByX') {
+              __x = x * spacing;
+              __y = y * spacing + spacingY;
+              __z = 0;
+            } else if(orientationOfwall === 'ByZ') {
+              __x = 0;
+              __y = y * spacing + spacingY;
+              __z = x * spacing;
+            }
 
-          engine.addMeshObj({
-            material: {type: material},
-            envMapParams: (material == 'mirror' ? {
-              baseColorMix: 0.5, // normal mix
-              mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-              reflectivity: 0.95,               // 25% reflection blend
-              illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-              illuminateStrength: 0.4,          // Gentle rim
-              illuminatePulse: 0.01,            // No pulse (static)
-              fresnelPower: 2.0,                // Medium-sharp edge
-              envLodBias: 2.5,
-              usePlanarReflection: false,       // ✅ Env map mode - wip
-            } : undefined),
-            position: {
-              x: pos.x + __x,
-              y: pos.y + __y,
-              z: pos.z + __z
-            },
-            rotation: rot,
-            rotationSpeed: {x: 0, y: 0, z: 0},
-            texturesPaths: typeof texturePath == "object" ? texturePath : [texturePath],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              scale: scale,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          });
-          const o = app.getSceneObjectByName(cubeName);
-          runtimeCacheObjs.push(o);
-        }, index * delay)
-        index++;
+            engine.addMeshObj({
+              material: {type: material},
+              envMapParams: (material == 'mirror' ? {
+                baseColorMix: 0.5, // normal mix
+                mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+                reflectivity: 0.95,               // 25% reflection blend
+                illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+                illuminateStrength: 0.4,          // Gentle rim
+                illuminatePulse: 0.01,            // No pulse (static)
+                fresnelPower: 2.0,                // Medium-sharp edge
+                envLodBias: 2.5,
+                usePlanarReflection: false,       // ✅ Env map mode - wip
+              } : undefined),
+              position: {
+                x: pos.x + __x,
+                y: pos.y + __y,
+                z: pos.z + __z
+              },
+              rotation: rot,
+              rotationSpeed: {x: 0, y: 0, z: 0},
+              texturesPaths: typeof texturePath == "object" ? texturePath : [texturePath],
+              name: cubeName,
+              mesh: m.mesh,
+              physics: {
+                scale: scale,
+                enabled: true,
+                geometry: "Cube"
+              },
+              raycast: RAY
+            });
+            const o = app.getSceneObjectByName(cubeName);
+            runtimeCacheObjs.push(o);
+            objects.push(o.name);
+            if(currentIndex === lastIndex) {
+              // console.log("Last cube added!");
+              resolve(objects);
+            }
+          }, index * delay)
+          index++;
+        }
       }
     }
-  }
-  downloadMeshes(inputCube, handler, {scale});
+    downloadMeshes(inputCube, handler, {scale});
+  });
 }
 
 /**

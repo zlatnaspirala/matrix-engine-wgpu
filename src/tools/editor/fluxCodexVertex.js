@@ -1842,7 +1842,9 @@ export default class FluxCodexVertex {
           {name: "spacingByY", type: "number"},
         ],
         outputs: [
-          {name: "execOut", type: "action"}
+          {name: "execOut", type: "action"},
+          {name: "complete", type: "action"},
+          {name: "objectNames", type: "object"}
         ],
         fields: [
           {key: "material", value: "standard"},
@@ -3608,6 +3610,7 @@ LIST OF INTEREST OBJECT:
     if(node.title === "On Key" && pinName == "isHeld") return node._isHeld;
     if(node.title === "On Key" && pinName == "keyCode") return node.lastKey;
     if(node.title === "Generator Pyramid" && pinName == "objectNames") return node._returnCache;
+    if(node.title === "Generator Wall" && pinName == "objectNames") return node._returnCache;
 
     if(node.title === "Audio Reactive Node") {
       if(pinName === "low") {
@@ -4181,7 +4184,7 @@ LIST OF INTEREST OBJECT:
         if(n.title == "Set Object") {
           if(value == 0) {
             let varliteral = n.fields?.find(f => f.key === "literal");
-            // console.log("set object  varliteral.value ", varliteral.value);
+            // console.log("set object varliteral.value ", varliteral.value);
             this.variables[type][varField.value] = JSON.parse(varliteral.value);
           }
         } else {
@@ -4378,7 +4381,10 @@ LIST OF INTEREST OBJECT:
         const createdField = n.fields.find(f => f.key === "created");
         if(createdField.value == "false" || createdField.value == false) {
           app.physicsBodiesGeneratorWall(mat, pos, rot, texturePath, name, size, raycast, scale, spacing, delay,
-            ori, spacingByY);
+            ori, spacingByY).then((objects) => {
+              n._returnCache = objects;
+              this.enqueueOutputs(n, "complete");
+            });
           // createdField.value = true;
         }
 

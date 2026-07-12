@@ -28434,7 +28434,9 @@ var FluxCodexVertex = class {
           { name: "spacingByY", type: "number" }
         ],
         outputs: [
-          { name: "execOut", type: "action" }
+          { name: "execOut", type: "action" },
+          { name: "complete", type: "action" },
+          { name: "objectNames", type: "object" }
         ],
         fields: [
           { key: "material", value: "standard" },
@@ -30302,6 +30304,7 @@ LIST OF INTEREST OBJECT:
     if (node2.title === "On Key" && pinName == "isHeld") return node2._isHeld;
     if (node2.title === "On Key" && pinName == "keyCode") return node2.lastKey;
     if (node2.title === "Generator Pyramid" && pinName == "objectNames") return node2._returnCache;
+    if (node2.title === "Generator Wall" && pinName == "objectNames") return node2._returnCache;
     if (node2.title === "Audio Reactive Node") {
       if (pinName === "low") {
         return node2._returnCache[0];
@@ -30975,7 +30978,10 @@ LIST OF INTEREST OBJECT:
             delay,
             ori,
             spacingByY
-          );
+          ).then((objects) => {
+            n._returnCache = objects;
+            this.enqueueOutputs(n, "complete");
+          });
         }
         this.enqueueOutputs(n, "execOut");
         return;
@@ -35942,74 +35948,84 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
   });
 }
 function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
-  const engine = this;
-  const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
-  console.log(width);
-  console.log(height);
-  const inputCube = { mesh: useMeshPath };
-  function handler(m) {
-    let index = 0;
-    const RAY = { enabled: raycast2, radius: 1 };
-    for (let y2 = 0; y2 < height; y2++) {
-      for (let x2 = 0; x2 < width; x2++) {
-        const cubeName = `${name2}_${index}`;
-        setTimeout(() => {
-          let __x = 0, __y = 0, __z = 0;
-          if (orientationOfwall === "ByX") {
-            __x = x2 * spacing2;
-            __y = y2 * spacing2 + spacingY;
-            __z = 0;
-          } else if (orientationOfwall === "ByZ") {
-            __x = 0;
-            __y = y2 * spacing2 + spacingY;
-            __z = x2 * spacing2;
-          }
-          engine.addMeshObj({
-            material: { type: material },
-            envMapParams: material == "mirror" ? {
-              baseColorMix: 0.5,
-              // normal mix
-              mirrorTint: [0.9, 0.95, 1],
-              // Slight cool tint
-              reflectivity: 0.95,
-              // 25% reflection blend
-              illuminateColor: [0.3, 0.7, 1],
-              // Soft cyan
-              illuminateStrength: 0.4,
-              // Gentle rim
-              illuminatePulse: 0.01,
-              // No pulse (static)
-              fresnelPower: 2,
-              // Medium-sharp edge
-              envLodBias: 2.5,
-              usePlanarReflection: false
-              // ✅ Env map mode - wip
-            } : void 0,
-            position: {
-              x: pos2.x + __x,
-              y: pos2.y + __y,
-              z: pos2.z + __z
-            },
-            rotation: rot2,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              scale: scale4,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          });
-          const o2 = app.getSceneObjectByName(cubeName);
-          runtimeCacheObjs.push(o2);
-        }, index * delay2);
-        index++;
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
+    console.log(width);
+    console.log(height);
+    const inputCube = { mesh: useMeshPath };
+    function handler(m) {
+      let index = 0;
+      const totalCubes = width * height;
+      const lastIndex = totalCubes - 1;
+      const RAY = { enabled: raycast2, radius: 1 };
+      const objects = [];
+      for (let y2 = 0; y2 < height; y2++) {
+        for (let x2 = 0; x2 < width; x2++) {
+          const cubeName = `${name2}_${index}`;
+          const currentIndex = index;
+          setTimeout(() => {
+            let __x = 0, __y = 0, __z = 0;
+            if (orientationOfwall === "ByX") {
+              __x = x2 * spacing2;
+              __y = y2 * spacing2 + spacingY;
+              __z = 0;
+            } else if (orientationOfwall === "ByZ") {
+              __x = 0;
+              __y = y2 * spacing2 + spacingY;
+              __z = x2 * spacing2;
+            }
+            engine.addMeshObj({
+              material: { type: material },
+              envMapParams: material == "mirror" ? {
+                baseColorMix: 0.5,
+                // normal mix
+                mirrorTint: [0.9, 0.95, 1],
+                // Slight cool tint
+                reflectivity: 0.95,
+                // 25% reflection blend
+                illuminateColor: [0.3, 0.7, 1],
+                // Soft cyan
+                illuminateStrength: 0.4,
+                // Gentle rim
+                illuminatePulse: 0.01,
+                // No pulse (static)
+                fresnelPower: 2,
+                // Medium-sharp edge
+                envLodBias: 2.5,
+                usePlanarReflection: false
+                // ✅ Env map mode - wip
+              } : void 0,
+              position: {
+                x: pos2.x + __x,
+                y: pos2.y + __y,
+                z: pos2.z + __z
+              },
+              rotation: rot2,
+              rotationSpeed: { x: 0, y: 0, z: 0 },
+              texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
+              name: cubeName,
+              mesh: m.mesh,
+              physics: {
+                scale: scale4,
+                enabled: true,
+                geometry: "Cube"
+              },
+              raycast: RAY
+            });
+            const o2 = app.getSceneObjectByName(cubeName);
+            runtimeCacheObjs.push(o2);
+            objects.push(o2.name);
+            if (currentIndex === lastIndex) {
+              resolve(objects);
+            }
+          }, index * delay2);
+          index++;
+        }
       }
     }
-  }
-  downloadMeshes(inputCube, handler, { scale: scale4 });
+    downloadMeshes(inputCube, handler, { scale: scale4 });
+  });
 }
 function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 500) {
   const engine = this;
