@@ -24263,7 +24263,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: "" + e.detail.index,
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"
@@ -24281,7 +24281,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: e.detail.index,
           mesh: m.mesh,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e.detail.physics,
             geometry: "Sphere"
@@ -24314,7 +24314,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: e.detail.index,
           mesh: m.objMesh,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"
@@ -38769,13 +38769,11 @@ var CulledRenderPass = class {
 
 // ../../../world.js
 var APP_READY = false;
-if (MEConfig.CACHE !== true) {
+if (MEConfig.CACHE !== true && location.hostname != "localhost") {
   APP_READY = true;
 }
 if ("serviceWorker" in navigator) {
-  if (MEConfig.CACHE === true) {
-    if (APP_READY === false) {
-    }
+  if (MEConfig.CACHE === true && location.hostname.indexOf("localhost") == -1) {
     navigator.serviceWorker.register("cache.js").then((registration) => {
       if (!navigator.serviceWorker.controller) {
         console.log("Installing & caching for the first time");
@@ -40398,7 +40396,7 @@ var app2 = new MatrixEngineWGPU(
         texturesPaths,
         name: "FLOOR",
         mesh: m.mesh,
-        raycast: { enabled: true, radius: 2 },
+        raycast: { enabled: true, radius: 1 },
         physics: { enabled: false, geometry: "Cube" },
         pointerEffect: {
           enabled: true,

@@ -906,10 +906,11 @@ export default class MatrixEngineWGPU {
           console.warn("%cPhysics cleanup error:" + e, LOG_FUNNY_ARCADE);
         }
       }
-    } else {
-      this.mainRenderBundle.splice(index, 1);
-      this.buildRenderBuckets(this.mainRenderBundle);
     }
+    try {
+    this.mainRenderBundle.splice(index, 1);
+    this.buildRenderBuckets(this.mainRenderBundle);
+    } catch(err) {}
     // obj.destroy();
     this.buildLightShadowBuckets()
     return true;
