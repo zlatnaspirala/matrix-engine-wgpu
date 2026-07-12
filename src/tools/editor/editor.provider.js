@@ -109,7 +109,7 @@ export default class EditorProvider {
           texturesPaths: [texturesPaths],
           name: "" + e.detail.index,
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"
@@ -128,7 +128,7 @@ export default class EditorProvider {
           texturesPaths: [texturesPaths],
           name: e.detail.index,
           mesh: m.mesh,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {
             enabled: e.detail.physics,
             geometry: "Sphere"
@@ -163,7 +163,7 @@ export default class EditorProvider {
           texturesPaths: [texturesPaths],
           name: e.detail.index,
           mesh: m.objMesh,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"

@@ -44,16 +44,12 @@ import {CulledRenderPass} from "./engine/culling/culling.js";
  */
 let APP_READY = false;
 
-if(MEConfig.CACHE !== true) {
+if(MEConfig.CACHE !== true && location.hostname != 'localhost') {
   APP_READY = true;
 }
 
 if('serviceWorker' in navigator) {
-  // if(location.hostname.indexOf('localhost') == -1) {
-  if(MEConfig.CACHE === true) {
-    if(APP_READY === false) {
-      // meLoader.create('LOADING');
-    }
+  if(MEConfig.CACHE === true && location.hostname.indexOf('localhost') == -1) {
     navigator.serviceWorker.register('cache.js').then(registration => {
       if(!navigator.serviceWorker.controller) {
         console.log('Installing & caching for the first time');

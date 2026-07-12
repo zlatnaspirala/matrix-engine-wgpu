@@ -43,7 +43,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'FLOOR',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"},
           pointerEffect: {
             enabled: true,
@@ -61,7 +61,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'L_BOX',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [1, 1, 1]});
@@ -75,7 +75,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'R_BOX',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [1, 1, 1]});
@@ -90,7 +90,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'REEL_1',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [1, 1, 1]});
@@ -123,7 +123,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'REEL_2',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [1, 1, 1]});
@@ -156,7 +156,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'REEL_3',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [1, 1, 1]});
@@ -207,7 +207,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'BANNER1',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [1, 1, 1]});
@@ -222,7 +222,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'BANNER2',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [1, 1, 1]});
@@ -291,7 +291,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'BANNER3',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [1, 1, 1]});
@@ -419,7 +419,7 @@ let app = new MatrixEngineWGPU(
           texturesPaths: [texturesPaths],
           name: 'REEL_TOP',
           mesh: m.cube,
-          raycast: {enabled: true, radius: 2},
+          raycast: {enabled: true, radius: 1},
           physics: {enabled: false, geometry: "Cube"}
         });
       }, {scale: [1, 1, 1]});

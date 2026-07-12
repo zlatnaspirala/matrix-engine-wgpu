@@ -45,7 +45,7 @@ app.addLight();
             texturesPaths: texturesPaths,
             name: 'FLOOR',
             mesh: m.mesh,
-            raycast: {enabled: true, radius: 2},
+            raycast: {enabled: true, radius: 1},
             physics: {enabled: false, geometry: "Cube"},
             pointerEffect: {
               enabled: true,

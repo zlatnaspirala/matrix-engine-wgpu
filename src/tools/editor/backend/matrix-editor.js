@@ -321,7 +321,7 @@ async function cnp(ws, msg) {
             texturesPaths: texturesPaths,
             name: 'FLOOR',
             mesh: m.mesh,
-            raycast: {enabled: true, radius: 2},
+            raycast: {enabled: true, radius: 1},
             physics: {enabled: false, geometry: "Cube"},
             pointerEffect: {
               enabled: true,
@@ -503,7 +503,7 @@ async function addCube(msg, ws) {
   content.addLine(`     texturesPaths: [texturesPaths],`);
   content.addLine(`     name: '${msg.options.index}',`);
   content.addLine(`     mesh: m.cube,`);
-  content.addLine(`     raycast: {enabled: true, radius: 2},`);
+  content.addLine(`     raycast: {enabled: true, radius: 1},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
@@ -708,7 +708,7 @@ async function addGlb(msg, ws) {
   content.addLine(`     scale: [2, 2, 2],`);
   content.addLine(`     name:  app.getNameFromPath('${msg.options.path}'),`);
   content.addLine(`     material: {type: 'standard', useTextureFromGlb: true},`);
-  content.addLine(`     raycast: {enabled: true, radius: 2},`);
+  content.addLine(`     raycast: {enabled: true, radius: 1},`);
   content.addLine(`     pointerEffect: {enabled: true},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }, null, glbFile01);`);
@@ -737,7 +737,7 @@ async function addObj(msg, ws) {
   content.addLine(`     texturesPaths: [texturesPaths],`);
   content.addLine(`     name: '${msg.options.index}',`);
   content.addLine(`     mesh: m.cube,`);
-  content.addLine(`     raycast: {enabled: true, radius: 2},`);
+  content.addLine(`     raycast: {enabled: true, radius: 1},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Cube"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);
@@ -765,7 +765,7 @@ async function addSphere(msg, ws) {
   content.addLine(`     texturesPaths: [texturesPaths],`);
   content.addLine(`     name: "${msg.options.index}",`);
   content.addLine(`     mesh: m.sphere,`);
-  content.addLine(`     raycast: {enabled: true, radius: 2},`);
+  content.addLine(`     raycast: {enabled: true, radius: 1},`);
   content.addLine(`     physics: {enabled: ${msg.options.physics}, geometry: "Sphere"}`);
   content.addLine(`   }); `);
   content.addLine(` }, {scale: [1, 1, 1]});  `);

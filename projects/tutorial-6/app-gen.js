@@ -45,7 +45,7 @@ app.addLight();
             texturesPaths: texturesPaths,
             name: 'FLOOR',
             mesh: m.mesh,
-            raycast: {enabled: true, radius: 2},
+            raycast: {enabled: true, radius: 1},
             physics: {enabled: false, geometry: "Cube"},
             pointerEffect: {
               enabled: true,
@@ -63,17 +63,17 @@ app.addLight();
  }, 800);
  // ME END FLOOR updatePosx
  
-   // ME START FLOOR updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(0);
- }, 800);
- // ME END FLOOR updatePosy
- 
-  // ME START FLOOR updatePosz
+   // ME START FLOOR updatePosz
  setTimeout(() => {
   app.getSceneObjectByName('FLOOR').position.SetZ(-20);
  }, 800);
  // ME END FLOOR updatePosz
+ 
+                      // ME START FLOOR updatePosy
+ setTimeout(() => {
+  app.getSceneObjectByName('FLOOR').position.SetY(0);
+ }, 800);
+ // ME END FLOOR updatePosy
  
  // [MAIN_REPLACE2]
  })

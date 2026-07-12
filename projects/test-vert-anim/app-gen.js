@@ -44,7 +44,7 @@ app.addLight();
             texturesPaths: texturesPaths,
             name: 'FLOOR',
             mesh: m.mesh,
-            raycast: {enabled: true, radius: 2},
+            raycast: {enabled: true, radius: 1},
             physics: {enabled: false, geometry: "Cube"},
             pointerEffect: {
               enabled: true,
@@ -65,7 +65,7 @@ app.addLight();
      texturesPaths: [texturesPaths],
      name: 'SUB16',
      mesh: m.cube,
-     raycast: {enabled: true, radius: 2},
+     raycast: {enabled: true, radius: 1},
      physics: {enabled: false, geometry: "Cube"}
    }); 
  }, {scale: [1, 1, 1]});  
@@ -110,7 +110,7 @@ app.addLight();
      texturesPaths: [texturesPaths],
      name: 'OCEAN',
      mesh: m.cube,
-     raycast: {enabled: true, radius: 2},
+     raycast: {enabled: true, radius: 1},
      physics: {enabled: false, geometry: "Cube"}
    }); 
  }, {scale: [1, 1, 1]});  
@@ -150,7 +150,7 @@ app.addLight();
      texturesPaths: [texturesPaths],
      name: 'WAVE',
      mesh: m.cube,
-     raycast: {enabled: true, radius: 2},
+     raycast: {enabled: true, radius: 1},
      physics: {enabled: false, geometry: "Cube"}
    }); 
  }, {scale: [1, 1, 1]});  

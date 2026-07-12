@@ -214,7 +214,7 @@ function genName(length2) {
   return result2;
 }
 var meLoader = {
-  create: function(callback) {
+  create: function(text = "RUN RETURN", callback) {
     const loader = document.createElement("div");
     loader.id = "loader";
     Object.assign(loader.style, {
@@ -247,7 +247,7 @@ var meLoader = {
       0 0 40px #00ffff;
     animation: glowPulse 1.5s infinite alternate;
   ">
-    RUN MEWGPU
+    ${text}
   </div>
 
   <style>
@@ -473,6 +473,7 @@ var MEConfig = {
   LOAD_AFTER_CLICK_MOBILE: false,
   FORCE_FULL_SCREEN: false,
   SINGLE_CAMERA: true,
+  CACHE: true,
   logLoopError: true,
   construct: function(options2 = {}) {
     if (urlQ["GRAVITY_Y_AXIS"]) {
@@ -3137,7 +3138,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    const setDigital = (e, value2) => {
+    this.setDigital = (e, value2) => {
       switch (e.code) {
         case "KeyW":
           this._digital.forward = value2;
@@ -3188,8 +3189,20 @@ var FirstPersonCamera = class _FirstPersonCamera {
         }
       }
     };
-    window.addEventListener("keydown", (e) => setDigital(e, true), { passive: true });
-    window.addEventListener("keyup", (e) => setDigital(e, false), { passive: true });
+    this._onKeyDown = (e) => this.setDigital(e, true);
+    this._onKeyUp = (e) => this.setDigital(e, false);
+    window.addEventListener("keydown", this._onKeyDown, { passive: true });
+    window.addEventListener("keyup", this._onKeyUp, { passive: true });
+  }
+  removeKeyboard() {
+    clearInterval(this._keyInterval);
+    this._keyInterval = null;
+    window.removeEventListener("keydown", this._onKeyDown);
+    window.removeEventListener("keyup", this._onKeyUp);
+    this._onKeyDown = null;
+    this._onKeyUp = null;
+    this._dirty = false;
+    this._dirtyAngle = false;
   }
   forceViewUpdate() {
     this._dirtyAngle = true;
@@ -3640,7 +3653,7 @@ var PlaneCamera = class {
     MobileDOM.addButton("B", () => this.onAction2?.(), () => this.onAction2Release?.(), { left: "80", bottom: "30" });
   }
   _setupKeyboard() {
-    const handle = (e, isDown) => {
+    this.handle = (e, isDown) => {
       switch (e.code) {
         case "KeyA":
         case "ArrowLeft":
@@ -3667,9 +3680,13 @@ var PlaneCamera = class {
       }
     };
     window.addEventListener("keydown", (e) => {
-      if (!e.repeat) handle(e, true);
+      if (!e.repeat) this.handle(e, true);
     }, { passive: true });
-    window.addEventListener("keyup", (e) => handle(e, false), { passive: true });
+    window.addEventListener("keyup", (e) => this.handle(e, false), { passive: true });
+  }
+  removeKeyboard() {
+    window.removeEventListener("keydown", this.handle);
+    window.removeEventListener("keyup", this.handle);
   }
   _pinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
@@ -22606,16 +22623,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
         ]
       });
-      function alignTo256(n2) {
-        return Math.ceil(n2 / 256) * 256;
-      }
       this.MAX_BONES = MEConfig.MAX_BONES;
-      console.log("maxInstances", MEConfig.MAX_BONES);
-      console.log(
-        "INIT",
-        this.maxInstances,
-        this.instanceCount
-      );
       const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
       this.bonesBuffer = device2.createBuffer({
         label: "bonesBuffer",
@@ -24255,7 +24263,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: "" + e.detail.index,
           mesh: m.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"
@@ -24273,7 +24281,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: e.detail.index,
           mesh: m.mesh,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e.detail.physics,
             geometry: "Sphere"
@@ -24306,7 +24314,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: e.detail.index,
           mesh: m.objMesh,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e.detail.physics,
             geometry: "Cube"
@@ -38760,6 +38768,27 @@ var CulledRenderPass = class {
 };
 
 // ../../../world.js
+var APP_READY = false;
+if (MEConfig.CACHE !== true && location.hostname != "localhost") {
+  APP_READY = true;
+}
+if ("serviceWorker" in navigator) {
+  if (MEConfig.CACHE === true && location.hostname.indexOf("localhost") == -1) {
+    navigator.serviceWorker.register("cache.js").then((registration) => {
+      if (!navigator.serviceWorker.controller) {
+        console.log("Installing & caching for the first time");
+        meLoader.create("LOADING");
+        APP_READY = false;
+      } else {
+        APP_READY = true;
+      }
+    }).catch((cacheErr) => {
+      console.warn("cacheErr: ", cacheErr);
+    });
+  }
+} else {
+  APP_READY = true;
+}
 var MatrixEngineWGPU = class {
   // Save class reference
   reference = {
@@ -39030,7 +39059,7 @@ var MatrixEngineWGPU = class {
     }
     if (this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
       if (byId("msgBox")) byId("msgBox").style.left = "30%";
-      if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
+      if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false && MEConfig.CACHE === false) {
         console.log("GOT DIRECT WHAT EVER");
         this.applyCanvasSize(this.options.fastRender);
         this.init({ canvas, callback });
@@ -39048,48 +39077,72 @@ var MatrixEngineWGPU = class {
         });
         return;
       }
-      meLoader.create();
-      this.MEConfig.fsManager.onChange((isFS, target2) => {
-        console.log("1 BACK FROM FS", isFS);
-        console.log("window style width : ", innerWidth);
-        setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
-      });
-      addEventListener("run_mobile_fs", () => {
-        if (this.options.fastRender && !isNaN(this.options.fastRender)) {
-        }
-        meLoader.destroy();
-        if (typeof this.options.lock !== "undefined") {
-          if (this.options.lock != "landscape" && this.options.lock != "portrait") {
-            this.options.lock = "portrait";
-          }
-          if (checkLock() && isMobile() == true) {
-            screen.orientation.lock(this.options.lock).then(() => {
-              console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
-              setTimeout(() => {
-                this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
-                console.log("canvas width: ", canvas.width);
-                console.log("canvas style width : ", canvas.style.width);
-                this.init({ canvas, callback });
-              }, 1e3);
-            }).catch(function(error) {
-              console.error("Orientation lock failed: ", error);
-            });
-          }
+      setTimeout(() => {
+        if (APP_READY === false && isMobile() === true) {
+          console.log("app is installing cache");
+          setTimeout(() => {
+            location.reload();
+          }, 4e3);
         } else {
-          screen.orientation.lock(getOrientation()).then((e) => {
-            console.log(`%cOrientation locked to ${e}`, LOG_FUNNY_ARCADE);
-            setTimeout(() => {
-              this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
-              console.log("canvas width: ", canvas.width);
-              console.log("canvas style width : ", canvas.style.width);
-              this.init({ canvas, callback });
-            }, 1e3);
-          }).catch(function(error) {
-            console.error("Orientation lock failed: ", error);
+          if (MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
+            this.applyCanvasSize(this.options.fastRender);
+            this.init({ canvas, callback });
+            this.MEConfig.fsManager.onChange((isFS, target2) => {
+              if (isFS == false) {
+                setTimeout(() => this.applyCanvasSize(this.options.fastRender), 100);
+              }
+            });
+            addEventListener("run_mobile_fs", () => {
+              if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+                this.applyCanvasSizeMobile(this.options.fastRender);
+              }
+            });
+            return;
+          }
+          meLoader.create("RUN");
+          this.MEConfig.fsManager.onChange((isFS, target2) => {
+            console.log("1 BACK FROM FS", isFS);
+            console.log("window style width : ", innerWidth);
+            setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
+          });
+          addEventListener("run_mobile_fs", () => {
+            if (this.options.fastRender && !isNaN(this.options.fastRender)) {
+            }
+            meLoader.destroy();
+            if (typeof this.options.lock !== "undefined") {
+              if (this.options.lock != "landscape" && this.options.lock != "portrait") {
+                this.options.lock = "portrait";
+              }
+              if (checkLock() && isMobile() == true) {
+                if (screen.orientation && screen.orientation.lock) screen.orientation.lock(this.options.lock).then(() => {
+                  console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
+                  setTimeout(() => {
+                    this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+                    console.log("canvas width: ", canvas.width);
+                    console.log("canvas style width : ", canvas.style.width);
+                    this.init({ canvas, callback });
+                  }, 1e3);
+                }).catch(function(error) {
+                  console.error("Orientation lock failed: ", error);
+                });
+              }
+            } else {
+              if (screen.orientation && screen.orientation.lock) screen.orientation.lock(getOrientation()).then((e) => {
+                console.log(`%cOrientation locked to ${e}`, LOG_FUNNY_ARCADE);
+                setTimeout(() => {
+                  this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
+                  console.log("canvas width:", canvas.width);
+                  console.log("canvas style width :", canvas.style.width);
+                  this.init({ canvas, callback });
+                }, 1e3);
+              }).catch(function(error) {
+                console.error("Orientation lock failed: ", error);
+              });
+            }
+            if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
           });
         }
-        if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
-      });
+      }, 500);
     } else {
       this.init({ canvas, callback });
     }
@@ -39781,7 +39834,7 @@ var MatrixEngineWGPU = class {
     }
     setTimeout(() => {
       this.frame();
-    }, 500);
+    }, 200);
     setTimeout(() => {
       callback(this);
     }, 1);
@@ -40287,7 +40340,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/tutorial-6/graph.js
-var graph_default = { "nodes": { "node_0": { "id": "node_0", "title": "onLoad", "x": 18.768198372743797, "y": 41.788048365825375, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_1": { "id": "node_1", "title": "if", "x": 812.3533006266587, "y": 4.87721485964596, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_2": { "id": "node_2", "x": 1231.8014379830397, "y": 57.39765234156937, "title": "Set Speed", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "semantic": "position", "type": "any" }, { "name": "thrust", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_3": { "id": "node_3", "x": 1568.5676787435991, "y": 59.175574008428214, "title": "Translate By Z", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "semantic": "position", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_4": { "id": "node_4", "title": "Starts With [string]", "x": 853.3317099241609, "y": 256.4507924308058, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_5": { "id": "node_5", "x": 232.1977192475411, "y": 53.55418717836827, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "myCube" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_7": { "id": "node_7", "title": "Get Number", "x": 1204.7661137960492, "y": 465.07530186732083, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEG" }], "isGetterNode": true }, "node_8": { "id": "node_8", "title": "Get Number", "x": 1210.9696177443848, "y": 227.0371544534089, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPEED_OF_OBJ" }], "isGetterNode": true }, "node_9": { "id": "node_9", "title": "Get String", "x": 679.0244671925948, "y": 456.42593561799106, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "NAME_ID" }], "isGetterNode": true, "finished": true }, "node_10": { "id": "node_10", "title": "Get Number", "x": 1564.7956192440295, "y": 219.17110172449665, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "TARGET_DESTINATION" }], "isGetterNode": true }, "node_11": { "id": "node_11", "x": 511.1684836433403, "y": 24.01088865880655, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_12": { "id": "node_12", "title": "Print", "x": 1114.8458826082613, "y": -89.6020740439917, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "IT IS FALSE OBJ" }], "builtIn": true, "noselfExec": "true" } }, "links": [{ "id": "link_116", "from": { "node": "node_0", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }, { "id": "link_118", "from": { "node": "node_4", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_1", "pin": "condition" }, "type": "boolean" }, { "id": "link_120", "from": { "node": "node_9", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "prefix" }, "type": "string" }, { "id": "link_122", "from": { "node": "node_1", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_123", "from": { "node": "node_8", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_2", "pin": "thrust" }, "type": "any" }, { "id": "link_124", "from": { "node": "node_10", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "z" }, "type": "any" }, { "id": "link_125", "from": { "node": "node_2", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_127", "from": { "node": "node_11", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_1", "pin": "exec" }, "type": "action" }, { "id": "link_128", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_2", "pin": "position" }, "type": "any" }, { "id": "link_129", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "position" }, "type": "any" }, { "id": "link_130", "from": { "node": "node_11", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "input" }, "type": "string" }, { "id": "link_131", "from": { "node": "node_1", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }], "nodeCounter": 13, "linkCounter": 132, "pan": [-604, 181], "variables": { "number": { "NEG": -1, "SPEED_OF_OBJ": 1, "TARGET_DESTINATION": -20 }, "boolean": {}, "string": { "NAME_ID": "myCube" }, "object": {} } };
+var graph_default = { "nodes": { "node_0": { "id": "node_0", "title": "onLoad", "x": 18.768198372743797, "y": 41.788048365825375, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_1": { "id": "node_1", "title": "if", "x": 812.3533006266587, "y": 4.87721485964596, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_2": { "id": "node_2", "x": 1263.8014379830397, "y": 60.39765234156937, "title": "Set Speed", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "semantic": "position", "type": "any" }, { "name": "thrust", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_3": { "id": "node_3", "x": 1568.5676787435991, "y": 59.175574008428214, "title": "Translate By Z", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "semantic": "position", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_4": { "id": "node_4", "title": "Starts With [string]", "x": 982.3317099241609, "y": 246.4507924308058, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_5": { "id": "node_5", "x": 232.1977192475411, "y": 53.55418717836827, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "myCube" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_7": { "id": "node_7", "title": "Get Number", "x": 1204.7661137960492, "y": 465.07530186732083, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEG" }], "isGetterNode": true }, "node_8": { "id": "node_8", "title": "Get Number", "x": 1210.9696177443848, "y": 227.0371544534089, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPEED_OF_OBJ" }], "isGetterNode": true }, "node_9": { "id": "node_9", "title": "Get String", "x": 598.0244671925948, "y": 399.42593561799106, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "NAME_ID" }], "isGetterNode": true, "finished": true }, "node_10": { "id": "node_10", "title": "Get Number", "x": 1564.7956192440295, "y": 219.17110172449665, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "TARGET_DESTINATION" }], "isGetterNode": true }, "node_11": { "id": "node_11", "x": 511.1684836433403, "y": 24.01088865880655, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_12": { "id": "node_12", "title": "Print", "x": 1138.8458826082613, "y": -197.6020740439917, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "IT IS FALSE OBJ" }], "builtIn": true, "noselfExec": "true" }, "node_13": { "id": "node_13", "title": "Print", "x": 1511.10069360561, "y": -167.53894610086365, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true" } }, "links": [{ "id": "link_116", "from": { "node": "node_0", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }, { "id": "link_118", "from": { "node": "node_4", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_1", "pin": "condition" }, "type": "boolean" }, { "id": "link_120", "from": { "node": "node_9", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "prefix" }, "type": "string" }, { "id": "link_122", "from": { "node": "node_1", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_123", "from": { "node": "node_8", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_2", "pin": "thrust" }, "type": "any" }, { "id": "link_124", "from": { "node": "node_10", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "z" }, "type": "any" }, { "id": "link_125", "from": { "node": "node_2", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_127", "from": { "node": "node_11", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_1", "pin": "exec" }, "type": "action" }, { "id": "link_128", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_2", "pin": "position" }, "type": "any" }, { "id": "link_129", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "position" }, "type": "any" }, { "id": "link_130", "from": { "node": "node_11", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "input" }, "type": "string" }, { "id": "link_131", "from": { "node": "node_1", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_132", "from": { "node": "node_11", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_13", "pin": "value" }, "type": "any" }, { "id": "link_133", "from": { "node": "node_12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_13", "pin": "exec" }, "type": "action" }], "nodeCounter": 14, "linkCounter": 134, "pan": [-553, 331], "variables": { "number": { "NEG": -1, "SPEED_OF_OBJ": 1, "TARGET_DESTINATION": -20 }, "boolean": {}, "string": { "NAME_ID": "myCube" }, "object": {} } };
 
 // ../../../../projects/tutorial-6/shader-graphs.js
 var shaderGraphsProdc = [
@@ -40344,7 +40397,7 @@ var app2 = new MatrixEngineWGPU(
           texturesPaths,
           name: "FLOOR",
           mesh: m.mesh,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: { enabled: false, geometry: "Cube" },
           pointerEffect: {
             enabled: true,
@@ -40356,10 +40409,10 @@ var app2 = new MatrixEngineWGPU(
         app3.getSceneObjectByName("FLOOR").position.SetX(0);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetY(0);
+        app3.getSceneObjectByName("FLOOR").position.SetZ(-20);
       }, 800);
       setTimeout(() => {
-        app3.getSceneObjectByName("FLOOR").position.SetZ(-20);
+        app3.getSceneObjectByName("FLOOR").position.SetY(0);
       }, 800);
     });
   }
