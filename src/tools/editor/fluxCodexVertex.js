@@ -3128,7 +3128,7 @@ export default class FluxCodexVertex {
         title: "On Target Position Reach",
         category: "event",
         noExec: true,
-        inputs: [{name: "position", type: "object"}],
+        inputs: [{name: "exec", type: "action"}, {name: "position", type: "object"}],
         outputs: [{name: "exec", type: "action"}],
         _listenerAttached: false,
       }),
@@ -3486,15 +3486,16 @@ LIST OF INTEREST OBJECT:
   activateEventNode(nodeId) {
     const n = this.nodes[nodeId];
     if(n.title === "On Target Position Reach") {
+      console.log('On Target Position Reach - activateEventNode')
       const pos = this.getValue(nodeId, "position");
-      if(!pos) return;
+      if(!pos || !pos.onTargetPositionReach) return;
       pos.onTargetPositionReach = () => {
         this.enqueueOutputs(n, "exec");
       };
       n._listenerAttached = true;
     } else if(n.title == "On Ray Hit") {
       if(n._listenerAttached) return;
-      console.log('ON RAY HIT INIT ONLE !!!')
+      // console.log('ON RAY HIT INIT ONLE !!!')
       app.reference.addRaycastsListener();
       const handler = (e) => {
         n._returnCache = e.detail;
@@ -4173,9 +4174,8 @@ LIST OF INTEREST OBJECT:
     if(n.isVariableNode) {
       const type = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find(f => f.key === "var");
-      console.log("isVariableNode set object ", value);
+      console.log("isVariableNode: ", type);
       if(varField && varField.value) {
-
         let value = this.getValue(nodeId, "value");
         // if 0 probably no pin connection
         if(n.title == "Set Object") {
@@ -4183,7 +4183,6 @@ LIST OF INTEREST OBJECT:
             let varliteral = n.fields?.find(f => f.key === "literal");
             // console.log("set object  varliteral.value ", varliteral.value);
             this.variables[type][varField.value] = JSON.parse(varliteral.value);
-            // ??
           }
         } else {
           if(value == 0) {

@@ -2505,40 +2505,40 @@ var WASDCamera = class _WASDCamera {
       }, { passive: true });
     }
     this._keyInterval = null;
-    const setDigital = (e, value2) => {
+    const setDigital = (e, value) => {
       switch (e.code) {
         case "ArrowUp":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "ArrowDown":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "ArrowLeft":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "ArrowRight":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "KeyW":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "KeyS":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "KeyA":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "KeyD":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "KeyV":
-          this._digital.up = value2;
+          this._digital.up = value;
           break;
         case "KeyC":
-          this._digital.down = value2;
+          this._digital.down = value;
           break;
       }
-      if (value2 == true && this._keyInterval === null) {
+      if (value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -2759,34 +2759,34 @@ var RPGCamera = class _RPGCamera {
     this._dirty = true;
   }
   _setupKeyboard() {
-    const setDigital = (e, value2) => {
+    const setDigital = (e, value) => {
       switch (e.code) {
         case "KeyW":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "KeyS":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "KeyA":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "KeyD":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "ArrowUp":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "ArrowDown":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "ArrowLeft":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "ArrowRight":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
       }
-      if (value2 && this._keyInterval === null) {
+      if (value && this._keyInterval === null) {
         this._detachedFromFollow = true;
         this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
       } else {
@@ -3138,34 +3138,34 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    this.setDigital = (e, value2) => {
+    this.setDigital = (e, value) => {
       switch (e.code) {
         case "KeyW":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "KeyS":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "KeyA":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "KeyD":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "ArrowUp":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "ArrowDown":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "ArrowLeft":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "ArrowRight":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "Space":
-          if (value2 === true && window.app?.collisionSystem?._onGround) {
+          if (value === true && window.app?.collisionSystem?._onGround) {
             window.app.collisionSystem._gravityAcc = 0.22;
             window.app.collisionSystem._onGround = false;
             this._dirty = true;
@@ -3173,7 +3173,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
           }
           break;
       }
-      if (value2 == true && this._keyInterval === null) {
+      if (value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -4164,6 +4164,7 @@ var Position = class {
     this.targetZ = parseFloat(z);
   }
   onTargetPositionReach() {
+    console.log("onTargetPositionReach");
   }
   update() {
     var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist2 = Math.sqrt(tx * tx + ty * ty + tz * tz);
@@ -13743,8 +13744,8 @@ var MEMeshObj = class extends Materials {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value2) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
+        setIntensity: (value) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -16959,25 +16960,25 @@ var MEBvhJoint = class {
     let r2 = [0, 0, 0];
     for (let i = 0; i < this.channels.length; i++) {
       const channel = this.channels[i];
-      const value2 = frameData[this.channelOffset + i];
+      const value = frameData[this.channelOffset + i];
       switch (channel) {
         case "Xposition":
-          t[0] = value2;
+          t[0] = value;
           break;
         case "Yposition":
-          t[1] = value2;
+          t[1] = value;
           break;
         case "Zposition":
-          t[2] = value2;
+          t[2] = value;
           break;
         case "Xrotation":
-          r2[0] = degToRad2(value2);
+          r2[0] = degToRad2(value);
           break;
         case "Yrotation":
-          r2[1] = degToRad2(value2);
+          r2[1] = degToRad2(value);
           break;
         case "Zrotation":
-          r2[2] = degToRad2(value2);
+          r2[2] = degToRad2(value);
           break;
       }
     }
@@ -21415,8 +21416,8 @@ var HPBarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value2) {
-    const clamped = value2 < 0 ? 0 : value2 > 1 ? 1 : value2;
+  setProgress(value) {
+    const clamped = value < 0 ? 0 : value > 1 ? 1 : value;
     if (this.progress !== clamped) {
       this.progress = clamped;
       this._progressDirty = true;
@@ -21564,8 +21565,8 @@ var MANABarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value2) {
-    this.progress = Math.max(0, Math.min(1, value2));
+  setProgress(value) {
+    this.progress = Math.max(0, Math.min(1, value));
   }
   setColor(r2, g, b, a = 1) {
     this.color = [r2, g, b, a];
@@ -22787,8 +22788,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value2) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
+        setIntensity: (value) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -24674,17 +24675,17 @@ var CompileContext = class {
     }
     this.resolving.add(key);
     const conn = this.shaderGraph.getInput(node2, pin);
-    let value2;
+    let value;
     if (conn) {
-      value2 = this.resolve(conn.fromNode, conn.fromPin);
+      value = this.resolve(conn.fromNode, conn.fromPin);
     } else {
       if (node2.inputs && pin in node2.inputs) {
-        value2 = node2.inputs[pin].default;
+        value = node2.inputs[pin].default;
       } else {
-        value2 = void 0;
+        value = void 0;
       }
     }
-    const result2 = node2.build(pin, value2, this);
+    const result2 = node2.build(pin, value, this);
     if (result2?.out !== void 0) {
       this.cache.set(key, result2.out);
     }
@@ -24723,9 +24724,9 @@ var ShaderNode = class {
   default(pin) {
     return this.inputs[pin]?.default ?? "0.0";
   }
-  build(_, value2, ctx) {
+  build(_, value, ctx) {
     return {
-      out: value2,
+      out: value,
       type: "f32"
     };
   }
@@ -24737,13 +24738,13 @@ var FragmentOutputNode = class extends ShaderNode {
   }
   build(_, __, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "color");
-    let value2;
+    let value;
     if (conn) {
-      value2 = ctx.resolve(conn.fromNode, conn.fromPin);
+      value = ctx.resolve(conn.fromNode, conn.fromPin);
     } else {
-      value2 = this.inputs.color.default;
+      value = this.inputs.color.default;
     }
-    ctx.outputs.outColor = value2;
+    ctx.outputs.outColor = value;
     return { out: ctx.outputs.outColor, type: "vec4f" };
   }
 };
@@ -24803,7 +24804,7 @@ var LightToColorNode = class extends ShaderNode {
       light: { default: "vec3f(1.0)" }
     };
   }
-  build(pin, value2, ctx) {
+  build(pin, value, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "light");
     let l;
     if (conn) {
@@ -24992,9 +24993,9 @@ var ContrastNode = class extends ShaderNode {
   }
 };
 var FloatNode = class extends ShaderNode {
-  constructor(value2 = 1) {
+  constructor(value = 1) {
     super("Float");
-    this.value = value2;
+    this.value = value;
   }
   build(_, __, ctx) {
     return {
@@ -25688,7 +25689,7 @@ svg path {
       const propsContainer = document.createElement("div");
       propsContainer.className = "node-properties";
       propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
-      function addPropertyInput(label, propName, value2, type2 = "number", step = "0.01") {
+      function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
         const row2 = document.createElement("div");
         row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
         const labelEl = document.createElement("label");
@@ -25696,7 +25697,7 @@ svg path {
         labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
         const input = document.createElement("input");
         input.type = type2;
-        input.value = value2;
+        input.value = value;
         input.step = step;
         input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
         input.addEventListener("input", () => {
@@ -26248,10 +26249,10 @@ var CurveEditor = class {
     const n2 = 1 - y2 / this.height;
     return this.valueMin + n2 * (this.valueMax - this.valueMin);
   }
-  _snap(value2, steps) {
-    if (!this.snapEnabled) return value2;
+  _snap(value, steps) {
+    if (!this.snapEnabled) return value;
     const range = this.valueMax - this.valueMin;
-    return Math.round((value2 - this.valueMin) / range * steps) / steps * range + this.valueMin;
+    return Math.round((value - this.valueMin) / range * steps) / steps * range + this.valueMin;
   }
   // VALUE EVALUATION (HERMITE)
   getValue(t) {
@@ -27032,11 +27033,11 @@ var FluxCodexVertex = class {
     this.createContextMenu();
     document.addEventListener("fluxcodex.input.change", (e) => {
       console.log("fluxcodex.input.change");
-      const { nodeId: nodeId2, field, value: value2 } = e.detail;
+      const { nodeId: nodeId2, field, value } = e.detail;
       const node2 = this.nodes.find((n2) => n2.id === nodeId2);
       if (!node2) return;
       if (node2.type !== "getSubObject") return;
-      this.handleGetSubObject(node2, value2);
+      this.handleGetSubObject(node2, value);
       if (field !== "path") return;
     });
     document.addEventListener("web.editor.addMp3", (e) => {
@@ -28015,9 +28016,9 @@ var FluxCodexVertex = class {
     if (!obj2) return;
     node2.outputs = [];
     node2.exposeProps.forEach((p) => {
-      const value2 = this.getByPath(obj2, p);
-      if (value2 !== void 0) {
-        const type2 = typeof value2 === "number" ? "number" : typeof value2 === "string" ? "string" : "object";
+      const value = this.getByPath(obj2, p);
+      if (value !== void 0) {
+        const type2 = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
         node2.outputs.push({ name: p, type: type2 });
       }
     });
@@ -29875,7 +29876,7 @@ var FluxCodexVertex = class {
         title: "On Target Position Reach",
         category: "event",
         noExec: true,
-        inputs: [{ name: "position", type: "object" }],
+        inputs: [{ name: "exec", type: "action" }, { name: "position", type: "object" }],
         outputs: [{ name: "exec", type: "action" }],
         _listenerAttached: false
       }),
@@ -29997,9 +29998,9 @@ LIST OF INTEREST OBJECT:
     }
     return null;
   }
-  setVariable(type2, key, value2) {
-    console.log("Test -setVariable  value", value2);
-    this.variables[type2][key].value = value2;
+  setVariable(type2, key, value) {
+    console.log("Test -setVariable  value", value);
+    this.variables[type2][key].value = value;
     this.notifyVariableChanged(type2, key);
   }
   updateArrayNode(node2, newValue) {
@@ -30186,15 +30187,15 @@ LIST OF INTEREST OBJECT:
   activateEventNode(nodeId2) {
     const n2 = this.nodes[nodeId2];
     if (n2.title === "On Target Position Reach") {
+      console.log("On Target Position Reach - activateEventNode");
       const pos2 = this.getValue(nodeId2, "position");
-      if (!pos2) return;
+      if (!pos2 || !pos2.onTargetPositionReach) return;
       pos2.onTargetPositionReach = () => {
         this.enqueueOutputs(n2, "exec");
       };
       n2._listenerAttached = true;
     } else if (n2.title == "On Ray Hit") {
       if (n2._listenerAttached) return;
-      console.log("ON RAY HIT INIT ONLE !!!");
       app.reference.addRaycastsListener();
       const handler = (e) => {
         n2._returnCache = e.detail;
@@ -30359,18 +30360,18 @@ LIST OF INTEREST OBJECT:
       if (node2._returnCache === void 0) {
         this.triggerNode(node2.id);
       }
-      let value2 = node2._returnCache;
-      if (typeof value2 === "string") {
+      let value = node2._returnCache;
+      if (typeof value === "string") {
         try {
           if (node2.title == "Get String") {
           } else {
-            value2 = JSON.parse(value2);
+            value = JSON.parse(value);
           }
         } catch (e) {
           console.warn("[getValue][json parse err]:", e);
         }
       }
-      return value2;
+      return value;
     }
     const link = this.links.find((l) => l.to.node === nodeId2 && l.to.pin === pinName);
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
@@ -30734,15 +30735,15 @@ LIST OF INTEREST OBJECT:
       const varField = n.fields?.find((f) => f.key === "var");
       if (varField && varField.value) {
         const type2 = n.title.replace("Get ", "").toLowerCase();
-        const value2 = this.getVariable(type2, varField.value);
-        n._returnCache = value2;
+        const value = this.getVariable(type2, varField.value);
+        n._returnCache = value;
         if (n.displayEl) {
           if (type2 === "object") {
-            n.displayEl.textContent = value2 !== void 0 ? JSON.stringify(value2) : "{}";
-          } else if (typeof value2 === "number") {
-            n.displayEl.textContent = value2.toFixed(3);
+            n.displayEl.textContent = value !== void 0 ? JSON.stringify(value) : "{}";
+          } else if (typeof value === "number") {
+            n.displayEl.textContent = value.toFixed(3);
           } else {
-            n.displayEl.textContent = String(value2);
+            n.displayEl.textContent = String(value);
           }
         }
       }
@@ -30785,22 +30786,22 @@ LIST OF INTEREST OBJECT:
     if (n.isVariableNode) {
       const type2 = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find((f) => f.key === "var");
-      console.log("isVariableNode set object ", value);
+      console.log("isVariableNode: ", type2);
       if (varField && varField.value) {
-        let value2 = this.getValue(nodeId, "value");
+        let value = this.getValue(nodeId, "value");
         if (n.title == "Set Object") {
-          if (value2 == 0) {
+          if (value == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
           }
         } else {
-          if (value2 == 0) {
+          if (value == 0) {
             let varliteral = n.fields?.find((f) => f.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
-            value2 = JSON.parse(varliteral.value);
+            value = JSON.parse(varliteral.value);
           } else {
-            console.log("set object ", value2);
-            this.variables[type2][varField.value] = { value: value2 };
+            console.log("set object ", value);
+            this.variables[type2][varField.value] = { value };
           }
         }
         this.notifyVariableChanged(type2, varField.value);
@@ -30810,11 +30811,11 @@ LIST OF INTEREST OBJECT:
             const vf2 = node2.fields?.find((f) => f.key === "var");
             if (vf2 && vf2.value === varField.value && node2.displayEl) {
               if (type2 === "object") {
-                node2.displayEl.textContent = JSON.stringify(value2);
+                node2.displayEl.textContent = JSON.stringify(value);
               } else {
-                node2.displayEl.textContent = typeof value2 === "number" ? value2.toFixed(3) : String(value2);
+                node2.displayEl.textContent = typeof value === "number" ? value.toFixed(3) : String(value);
               }
-              node2._returnCache = value2;
+              node2._returnCache = value;
             }
           }
         }
@@ -31853,9 +31854,9 @@ LIST OF INTEREST OBJECT:
       pan: this.state.pan,
       variables: this.variables
     };
-    function saveReplacer(key, value2) {
-      if (value2 instanceof Element) return void 0;
-      if (value2 instanceof Node) return void 0;
+    function saveReplacer(key, value) {
+      if (value instanceof Element) return void 0;
+      if (value instanceof Node) return void 0;
       if (key === "fn") {
         console.log("stripping fn from", key);
         return void 0;
@@ -31870,7 +31871,7 @@ LIST OF INTEREST OBJECT:
       if (key === "_loading") return false;
       if (key === "_energyHistory") return void 0;
       if (key === "_beatCooldown") return 0;
-      return value2;
+      return value;
     }
     let d = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d);
@@ -31924,12 +31925,12 @@ LIST OF INTEREST OBJECT:
   exportToJSON() {
     const bundle = this._buildSaveBundle();
     console.log(bundle);
-    function saveReplacer(key, value2) {
+    function saveReplacer(key, value) {
       if (key === "fn") return void 0;
       if (key === "accessObject") return void 0;
       if (key === "_returnCache") return void 0;
       if (key === "_listenerAttached") return false;
-      return value2;
+      return value;
     }
     const json = JSON.stringify(bundle, saveReplacer);
     const blob = new Blob([json], { type: "application/json" });
@@ -34876,8 +34877,8 @@ var ProceduralMeshObj = class extends Materials {
         this.vertexAnimParams[26] = speed;
         this.updateVertexAnimBuffer();
       },
-      setIntensity: (value2) => {
-        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
+      setIntensity: (value) => {
+        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
         this.updateVertexAnimBuffer();
       },
       getIntensity: () => {
@@ -37505,8 +37506,8 @@ var PhysicsBridge = class {
   clearBody(idx) {
     this._worker.postMessage({ cmd: "clearBody", idx });
   }
-  speedUpSimulation(value2) {
-    this._worker.postMessage({ cmd: "speedUpSimulation", value: value2 });
+  speedUpSimulation(value) {
+    this._worker.postMessage({ cmd: "speedUpSimulation", value });
   }
   setCollisionFlags(idx, flags) {
     if (idx === void 0 || idx === -1) return;
@@ -40342,7 +40343,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/tutorial-6/graph.js
-var graph_default = { "nodes": { "node_0": { "id": "node_0", "title": "onLoad", "x": 18.768198372743797, "y": 41.788048365825375, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_1": { "id": "node_1", "title": "if", "x": 812.3533006266587, "y": 4.87721485964596, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_2": { "id": "node_2", "x": 1263.8014379830397, "y": 60.39765234156937, "title": "Set Speed", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "semantic": "position", "type": "any" }, { "name": "thrust", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_3": { "id": "node_3", "x": 1568.5676787435991, "y": 59.175574008428214, "title": "Translate By Z", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "semantic": "position", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_4": { "id": "node_4", "title": "Starts With [string]", "x": 982.3317099241609, "y": 246.4507924308058, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_5": { "id": "node_5", "x": 232.1977192475411, "y": 53.55418717836827, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:1, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "myCube" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": "[2,2,2]" }, { "key": "isPhysicsBody", "type": false, "value": "false" }, { "key": "isInstancedObj", "type": false, "value": "" }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_7": { "id": "node_7", "title": "Get Number", "x": 1204.7661137960492, "y": 465.07530186732083, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEG" }], "isGetterNode": true }, "node_8": { "id": "node_8", "title": "Get Number", "x": 1210.9696177443848, "y": 227.0371544534089, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPEED_OF_OBJ" }], "isGetterNode": true, "finished": true }, "node_9": { "id": "node_9", "title": "Get String", "x": 598.0244671925948, "y": 399.42593561799106, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "NAME_ID" }], "isGetterNode": true, "finished": true }, "node_10": { "id": "node_10", "title": "Get Number", "x": 1564.7956192440295, "y": 219.17110172449665, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "TARGET_DESTINATION" }], "isGetterNode": true, "finished": true }, "node_11": { "id": "node_11", "x": 511.1684836433403, "y": 24.01088865880655, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_12": { "id": "node_12", "title": "Print", "x": 1138.8458826082613, "y": -197.6020740439917, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "IT IS FALSE OBJ" }], "builtIn": true, "noselfExec": "true" }, "node_13": { "id": "node_13", "title": "Print", "x": 1511.10069360561, "y": -167.53894610086365, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true" } }, "links": [{ "id": "link_116", "from": { "node": "node_0", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }, { "id": "link_118", "from": { "node": "node_4", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_1", "pin": "condition" }, "type": "boolean" }, { "id": "link_120", "from": { "node": "node_9", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "prefix" }, "type": "string" }, { "id": "link_122", "from": { "node": "node_1", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_123", "from": { "node": "node_8", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_2", "pin": "thrust" }, "type": "any" }, { "id": "link_124", "from": { "node": "node_10", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "z" }, "type": "any" }, { "id": "link_125", "from": { "node": "node_2", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_127", "from": { "node": "node_11", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_1", "pin": "exec" }, "type": "action" }, { "id": "link_128", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_2", "pin": "position" }, "type": "any" }, { "id": "link_129", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "position" }, "type": "any" }, { "id": "link_130", "from": { "node": "node_11", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "input" }, "type": "string" }, { "id": "link_131", "from": { "node": "node_1", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_132", "from": { "node": "node_11", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_13", "pin": "value" }, "type": "any" }, { "id": "link_133", "from": { "node": "node_12", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_13", "pin": "exec" }, "type": "action" }], "nodeCounter": 14, "linkCounter": 134, "pan": [-16, -2], "variables": { "number": { "NEG": -1, "SPEED_OF_OBJ": 1, "TARGET_DESTINATION": -20 }, "boolean": {}, "string": { "NAME_ID": "myCube" }, "object": {} } };
+var graph_default = { "nodes": { "node_0": { "id": "node_0", "title": "onLoad", "x": 18.768198372743797, "y": 41.788048365825375, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_1": { "id": "node_1", "title": "if", "x": 857.3533006266587, "y": 57.87721485964596, "category": "logic", "inputs": [{ "name": "exec", "type": "action" }, { "name": "condition", "type": "boolean" }], "outputs": [{ "name": "true", "type": "action" }, { "name": "false", "type": "action" }], "fields": [{ "key": "condition", "value": true }], "noselfExec": "true" }, "node_2": { "id": "node_2", "x": 1263.8014379830397, "y": 60.39765234156937, "title": "Set Speed", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "semantic": "position", "type": "any" }, { "name": "thrust", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_3": { "id": "node_3", "x": 1568.5676787435991, "y": 59.175574008428214, "title": "Translate By Z", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "semantic": "position", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_4": { "id": "node_4", "title": "Starts With [string]", "x": 842.3317099241609, "y": 232.4507924308058, "category": "stringOperation", "inputs": [{ "name": "input", "type": "string" }, { "name": "prefix", "type": "string" }], "outputs": [{ "name": "return", "type": "boolean" }] }, "node_5": { "id": "node_5", "x": 232.1977192475411, "y": 53.55418717836827, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:1, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "myCube" }, { "key": "raycast", "value": "true" }, { "key": "scale", "value": "[2,2,2]" }, { "key": "isPhysicsBody", "type": false, "value": "false" }, { "key": "isInstancedObj", "type": false, "value": "" }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_7": { "id": "node_7", "title": "Get Number", "x": 1333.7661137960492, "y": 683.0753018673208, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "NEG" }], "isGetterNode": true }, "node_8": { "id": "node_8", "title": "Get Number", "x": 1265.9696177443848, "y": 198.0371544534089, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "SPEED_OF_OBJ" }], "isGetterNode": true, "finished": true }, "node_9": { "id": "node_9", "title": "Get String", "x": 598.0244671925948, "y": 399.42593561799106, "category": "value", "outputs": [{ "name": "result", "type": "string" }], "fields": [{ "key": "var", "value": "NAME_ID" }], "isGetterNode": true, "finished": true }, "node_10": { "id": "node_10", "title": "Get Number", "x": 1270.7956192440295, "y": 347.1711017244967, "category": "value", "outputs": [{ "name": "result", "type": "value" }], "fields": [{ "key": "var", "value": "TARGET_DESTINATION" }], "isGetterNode": true, "finished": true }, "node_11": { "id": "node_11", "x": 511.1684836433403, "y": 24.01088865880655, "title": "On Ray Hit", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "hitObjectName", "type": "string" }, { "name": "screenCoords", "type": "object" }, { "name": "rayOrigin", "type": "object" }, { "name": "rayDirection", "type": "object" }, { "name": "hitObject", "type": "object" }, { "name": "position", "type": "object" }, { "name": "rotation", "type": "object" }, { "name": "hitNormal", "type": "object" }, { "name": "hitDistance", "type": "object" }, { "name": "eventName", "type": "object" }, { "name": "button", "type": "value" }, { "name": "timestamp", "type": "value" }], "noselfExec": "true", "_listenerAttached": false }, "node_12": { "id": "node_12", "title": "Print", "x": 1176.8458826082613, "y": -99.6020740439917, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "IT IS FALSE OBJ" }], "builtIn": true, "noselfExec": "true" }, "node_14": { "id": "node_14", "title": "Mul", "x": 1705.0235564094587, "y": 656.4966144870917, "category": "math", "inputs": [{ "name": "a", "type": "value" }, { "name": "b", "type": "value" }], "outputs": [{ "name": "result", "type": "value" }] }, "node_16": { "id": "node_16", "x": 2123.3463063310755, "y": 327.8696658543088, "title": "Translate By Z", "category": "scene", "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "semantic": "position", "type": "any" }, { "name": "z", "semantic": "number", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }] }, "node_17": { "id": "node_17", "title": "Set Number", "x": 1850.5803474158065, "y": 448.32168861018704, "category": "action", "isVariableNode": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "var", "value": "TARGET_DESTINATION" }, { "key": "literal", "value": 0 }] }, "node_19": { "id": "node_19", "title": "Print", "x": 1547.277768899441, "y": 457.263998530882, "category": "actionprint", "inputs": [{ "name": "exec", "type": "action" }, { "name": "value", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [{ "key": "label", "value": "Result" }], "builtIn": true, "noselfExec": "true" }, "node_20": { "id": "node_20", "x": 1828.9000400537614, "y": 176.12125736074074, "title": "On Target Position Reach", "category": "event", "noExec": true, "inputs": [{ "name": "exec", "type": "action" }, { "name": "position", "type": "object" }], "outputs": [{ "name": "exec", "type": "action" }], "_listenerAttached": false } }, "links": [{ "id": "link_116", "from": { "node": "node_0", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_5", "pin": "exec" }, "type": "action" }, { "id": "link_118", "from": { "node": "node_4", "pin": "return", "type": "boolean", "out": true }, "to": { "node": "node_1", "pin": "condition" }, "type": "boolean" }, { "id": "link_120", "from": { "node": "node_9", "pin": "result", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "prefix" }, "type": "string" }, { "id": "link_122", "from": { "node": "node_1", "pin": "true", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }, { "id": "link_123", "from": { "node": "node_8", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_2", "pin": "thrust" }, "type": "any" }, { "id": "link_124", "from": { "node": "node_10", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_3", "pin": "z" }, "type": "any" }, { "id": "link_125", "from": { "node": "node_2", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_3", "pin": "exec" }, "type": "action" }, { "id": "link_127", "from": { "node": "node_11", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_1", "pin": "exec" }, "type": "action" }, { "id": "link_128", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_2", "pin": "position" }, "type": "any" }, { "id": "link_129", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_3", "pin": "position" }, "type": "any" }, { "id": "link_130", "from": { "node": "node_11", "pin": "hitObjectName", "type": "string", "out": true }, "to": { "node": "node_4", "pin": "input" }, "type": "string" }, { "id": "link_131", "from": { "node": "node_1", "pin": "false", "type": "action", "out": true }, "to": { "node": "node_12", "pin": "exec" }, "type": "action" }, { "id": "link_135", "from": { "node": "node_7", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_14", "pin": "b" }, "type": "value" }, { "id": "link_136", "from": { "node": "node_10", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_14", "pin": "a" }, "type": "value" }, { "id": "link_137", "from": { "node": "node_14", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_17", "pin": "value" }, "type": "value" }, { "id": "link_139", "from": { "node": "node_17", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_16", "pin": "exec" }, "type": "action" }, { "id": "link_140", "from": { "node": "node_10", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_16", "pin": "z" }, "type": "any" }, { "id": "link_141", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_16", "pin": "position" }, "type": "any" }, { "id": "link_144", "from": { "node": "node_7", "pin": "result", "type": "value", "out": true }, "to": { "node": "node_19", "pin": "value" }, "type": "any" }, { "id": "link_145", "from": { "node": "node_11", "pin": "position", "type": "object", "out": true }, "to": { "node": "node_20", "pin": "position" }, "type": "object" }, { "id": "link_146", "from": { "node": "node_3", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_20", "pin": "exec" }, "type": "action" }, { "id": "link_147", "from": { "node": "node_19", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_17", "pin": "exec" }, "type": "action" }, { "id": "link_148", "from": { "node": "node_20", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_19", "pin": "exec" }, "type": "action" }], "nodeCounter": 21, "linkCounter": 149, "pan": [-1318, -258], "variables": { "number": { "NEG": -1, "SPEED_OF_OBJ": 1, "TARGET_DESTINATION": -20 }, "boolean": {}, "string": { "NAME_ID": "myCube" }, "object": {} } };
 
 // ../../../../projects/tutorial-6/shader-graphs.js
 var shaderGraphsProdc = [

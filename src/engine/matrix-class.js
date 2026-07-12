@@ -88,7 +88,9 @@ export class Position {
     this.targetZ = parseFloat(z);
   }
 
-  onTargetPositionReach() {}
+  onTargetPositionReach() {
+    console.log('onTargetPositionReach')
+  }
 
   update() {
     var tx = parseFloat(this.targetX) - parseFloat(this.x),

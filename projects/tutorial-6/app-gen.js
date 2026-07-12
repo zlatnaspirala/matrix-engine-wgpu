@@ -69,7 +69,7 @@ app.addLight();
  }, 800);
  // ME END FLOOR updatePosx
  
-         // ME START FLOOR updatePosy
+           // ME START FLOOR updatePosy
  setTimeout(() => {
   app.getSceneObjectByName('FLOOR').position.SetY(0);
  }, 800);
