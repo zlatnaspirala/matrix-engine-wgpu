@@ -201,6 +201,42 @@ export default class FluxCodexVertex {
       this.curveEditor.toggleEditor();
     });
 
+    // In constructor, alongside your other one-time listener bindings:
+    this.svg.addEventListener("dblclick", (e) => {
+      console.log('DBL LINK');
+      console.log('DBL LINK, target:', e.target.tagName, e.target.outerHTML);
+      const linkId = e.target.dataset.linkId;
+      if(linkId) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.removeLink(linkId);
+      }
+    });
+
+    this.svg.addEventListener("contextmenu", (e) => {
+      const linkId = e.target.dataset.linkId;
+      if(linkId) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.removeLink(linkId);
+      }
+    });
+
+    this.svg.addEventListener("mouseover", (e) => {
+      const linkId = e.target.dataset.linkId;
+      if(linkId) {
+        const visible = this.svg.querySelector(`path.link[data-link-id="${linkId}"]`);
+        if(visible) visible.style.stroke = "#ff5252"; // inline style wins over CSS class
+      }
+    });
+
+    this.svg.addEventListener("mouseout", (e) => {
+      const linkId = e.target.dataset.linkId;
+      if(linkId) {
+        const visible = this.svg.querySelector(`path.link[data-link-id="${linkId}"]`);
+        if(visible) visible.style.stroke = ""; // clear inline style, falls back to CSS class color
+      }
+    });
     // EXTRA TIME
     setTimeout(() => this.init(), 3300);
   }
@@ -5254,6 +5290,7 @@ LIST OF INTEREST OBJECT:
     }
   }
 
+  // updateLinks() now only builds paths, no listener attachment at all:
   updateLinks() {
     while(this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
     const bRect = this.board.getBoundingClientRect();
@@ -5267,17 +5304,33 @@ LIST OF INTEREST OBJECT:
         y1 = fRect.top - bRect.top + 6;
       const x2 = tRect.left - bRect.left + 6,
         y2 = tRect.top - bRect.top + 6;
-      const path = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path"
-      );
+      const d = `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`;
+
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hit.setAttribute("d", d);
+      hit.setAttribute("stroke", "transparent");
+      hit.setAttribute("stroke-width", "14");
+      hit.setAttribute("fill", "none");
+      // hit.setAttribute("pointer-events", "stroke"); // <-- the actual fix
+      hit.style.pointerEvents = "stroke";
+      hit.style.cursor = "pointer";
+      hit.dataset.linkId = l.id;
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("class", "link " + (l.type === "value" ? "value" : ""));
-      path.setAttribute(
-        "d",
-        `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`
-      );
+      path.setAttribute("d", d);
+      path.dataset.linkId = l.id;
+
       this.svg.appendChild(path);
+      this.svg.appendChild(hit);
     });
+  }
+
+  removeLink(linkId) {
+    const idx = this.links.findIndex(l => l.id === linkId);
+    if(idx === -1) return;
+    this.links.splice(idx, 1);
+    this.updateLinks();
   }
 
   runGraph() {

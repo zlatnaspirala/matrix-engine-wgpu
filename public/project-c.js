@@ -27049,6 +27049,38 @@ var FluxCodexVertex = class {
     document.addEventListener("show-curve-editor", (e) => {
       this.curveEditor.toggleEditor();
     });
+    this.svg.addEventListener("dblclick", (e) => {
+      console.log("DBL LINK");
+      console.log("DBL LINK, target:", e.target.tagName, e.target.outerHTML);
+      const linkId = e.target.dataset.linkId;
+      if (linkId) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.removeLink(linkId);
+      }
+    });
+    this.svg.addEventListener("contextmenu", (e) => {
+      const linkId = e.target.dataset.linkId;
+      if (linkId) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.removeLink(linkId);
+      }
+    });
+    this.svg.addEventListener("mouseover", (e) => {
+      const linkId = e.target.dataset.linkId;
+      if (linkId) {
+        const visible = this.svg.querySelector(`path.link[data-link-id="${linkId}"]`);
+        if (visible) visible.style.stroke = "#ff5252";
+      }
+    });
+    this.svg.addEventListener("mouseout", (e) => {
+      const linkId = e.target.dataset.linkId;
+      if (linkId) {
+        const visible = this.svg.querySelector(`path.link[data-link-id="${linkId}"]`);
+        if (visible) visible.style.stroke = "";
+      }
+    });
     setTimeout(() => this.init(), 3300);
   }
   createContextMenu() {
@@ -31815,6 +31847,7 @@ LIST OF INTEREST OBJECT:
       }
     }
   }
+  // updateLinks() now only builds paths, no listener attachment at all:
   updateLinks() {
     while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
     const bRect = this.board.getBoundingClientRect();
@@ -31825,17 +31858,28 @@ LIST OF INTEREST OBJECT:
       const fRect = fromDot.getBoundingClientRect(), tRect = toDot.getBoundingClientRect();
       const x1 = fRect.left - bRect.left + 6, y1 = fRect.top - bRect.top + 6;
       const x2 = tRect.left - bRect.left + 6, y2 = tRect.top - bRect.top + 6;
-      const path2 = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path"
-      );
+      const d = `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`;
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hit.setAttribute("d", d);
+      hit.setAttribute("stroke", "transparent");
+      hit.setAttribute("stroke-width", "14");
+      hit.setAttribute("fill", "none");
+      hit.style.pointerEvents = "stroke";
+      hit.style.cursor = "pointer";
+      hit.dataset.linkId = l.id;
+      const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path2.setAttribute("class", "link " + (l.type === "value" ? "value" : ""));
-      path2.setAttribute(
-        "d",
-        `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`
-      );
+      path2.setAttribute("d", d);
+      path2.dataset.linkId = l.id;
       this.svg.appendChild(path2);
+      this.svg.appendChild(hit);
     });
+  }
+  removeLink(linkId) {
+    const idx = this.links.findIndex((l) => l.id === linkId);
+    if (idx === -1) return;
+    this.links.splice(idx, 1);
+    this.updateLinks();
   }
   runGraph() {
     if (byId("graph-status").innerHTML == "\u{1F534}" || Object.values(this.nodes).length == 0) {
@@ -40359,7 +40403,7 @@ var MatrixEngineWGPU = class {
 };
 
 // ../../../../projects/project-c/graph.js
-var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 200.34460239409304, "y": 125.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_4": { "id": "node_4", "x": 514.3179687358331, "y": 125.69680699902915, "title": "Generator Wall", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }, { "name": "orientation", "type": "string" }, { "name": "spacingByY", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "objectNames", "type": "object" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:3, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "TEST" }, { "key": "size", "value": "10x3" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": 2 }, { "key": "delay", "value": 500 }, { "key": "orientation", "value": "ByX" }, { "key": "spacingByY", "value": 3 }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_6": { "id": "node_6", "x": 852.4561787293419, "y": 493.0799536459816, "title": "On Draw", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "delta", "type": "value" }, { "name": "skip", "type": "value" }], "fields": [{ "key": "skip", "value": 5 }], "noselfExec": "true", "_listenerAttached": false }, "node_7": { "id": "node_7", "x": 1218.0808451968664, "y": 467.9983551206061, "title": "Audio Reactive Node", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "audioSrc", "type": "string" }, { "name": "loop", "type": "boolean" }, { "name": "thresholdBeat", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "low", "type": "value" }, { "name": "mid", "type": "value" }, { "name": "high", "type": "value" }, { "name": "energy", "type": "value" }, { "name": "beat", "type": "boolean" }], "fields": [{ "key": "audioSrc", "value": "audionautix-black-fly.mp3" }, { "key": "loop", "value": true }, { "key": "thresholdBeat", "value": 0.7 }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_8": { "id": "node_8", "title": "For Each", "type": "forEach", "x": 1553.228067303868, "y": 227.33406563035714, "state": { "item": null, "index": 0 }, "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "loop", "type": "action" }, { "name": "completed", "type": "action" }, { "name": "item", "type": "any" }, { "name": "index", "type": "value" }] }, "node_9": { "id": "node_9", "type": "getArray", "title": "Get Array", "x": 1282.4631501891504, "y": 246.20023942572203, "fields": [{ "key": "array", "value": [] }], "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "array", "type": "any" }] }, "node_10": { "id": "node_10", "x": 1850.504682867192, "y": 393.1198724850753, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_11": { "id": "node_11", "title": "Get Object", "x": 1856.5990497817647, "y": 574.6434470398377, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "DIR" }], "isGetterNode": true } }, "links": [{ "id": "link_2", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_4", "pin": "exec" }, "type": "action" }, { "id": "link_5", "from": { "node": "node_6", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_7", "from": { "node": "node_4", "pin": "objectNames", "type": "object", "out": true }, "to": { "node": "node_9", "pin": "array" }, "type": "any" }, { "id": "link_8", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_9", "pin": "exec" }, "type": "action" }, { "id": "link_9", "from": { "node": "node_9", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_8", "pin": "exec" }, "type": "action" }, { "id": "link_10", "from": { "node": "node_8", "pin": "item", "type": "any", "out": true }, "to": { "node": "node_10", "pin": "objectName" }, "type": "string" }, { "id": "link_11", "from": { "node": "node_8", "pin": "loop", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_12", "from": { "node": "node_11", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "rayDirection" }, "type": "object" }, { "id": "link_13", "from": { "node": "node_7", "pin": "low", "type": "value", "out": true }, "to": { "node": "node_10", "pin": "strength" }, "type": "value" }], "nodeCounter": 12, "linkCounter": 14, "pan": [-795, -145], "variables": { "number": {}, "boolean": {}, "string": {}, "object": { "DIR": [0, 1, 0] } } };
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 200.34460239409304, "y": 125.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_4": { "id": "node_4", "x": 514.3179687358331, "y": 125.69680699902915, "title": "Generator Wall", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "size", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "spacing", "type": "value" }, { "name": "delay", "type": "value" }, { "name": "orientation", "type": "string" }, { "name": "spacingByY", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "objectNames", "type": "object" }], "fields": [{ "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:3, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "TEST" }, { "key": "size", "value": "10x1" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "spacing", "value": 2 }, { "key": "delay", "value": 500 }, { "key": "orientation", "value": "ByX" }, { "key": "spacingByY", "value": 3 }, { "key": "created", "value": false }], "noselfExec": "true" }, "node_6": { "id": "node_6", "x": 852.4561787293419, "y": 493.0799536459816, "title": "On Draw", "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }, { "name": "delta", "type": "value" }, { "name": "skip", "type": "value" }], "fields": [{ "key": "skip", "value": "150" }], "noselfExec": "true", "_listenerAttached": false, "_frameCounter": 0 }, "node_7": { "id": "node_7", "x": 1218.0808451968664, "y": 467.9983551206061, "title": "Audio Reactive Node", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "audioSrc", "type": "string" }, { "name": "loop", "type": "boolean" }, { "name": "thresholdBeat", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "low", "type": "value" }, { "name": "mid", "type": "value" }, { "name": "high", "type": "value" }, { "name": "energy", "type": "value" }, { "name": "beat", "type": "boolean" }], "fields": [{ "key": "audioSrc", "value": "audionautix-black-fly.mp3" }, { "key": "loop", "value": true }, { "key": "thresholdBeat", "value": 0.7 }, { "key": "created", "value": true, "disabled": true }], "noselfExec": "true", "_loading": false, "_beatCooldown": 0 }, "node_8": { "id": "node_8", "title": "For Each", "type": "forEach", "x": 1553.228067303868, "y": 227.33406563035714, "state": { "item": "TEST_9", "index": 9 }, "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "loop", "type": "action" }, { "name": "completed", "type": "action" }, { "name": "item", "type": "any" }, { "name": "index", "type": "value" }] }, "node_9": { "id": "node_9", "type": "getArray", "title": "Get Array", "x": 1282.4631501891504, "y": 246.20023942572203, "fields": [{ "key": "array", "value": [] }], "inputs": [{ "name": "exec", "type": "action" }, { "name": "array", "type": "any" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "array", "type": "any" }] }, "node_10": { "id": "node_10", "x": 1822.504682867192, "y": 337.1198724850753, "title": "Set Force On Hit", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "objectName", "type": "string" }, { "name": "rayDirection", "type": "object" }, { "name": "strength", "type": "value" }], "outputs": [{ "name": "execOut", "type": "action" }], "fields": [], "noselfExec": "true" }, "node_12": { "id": "node_12", "title": "Get Object", "x": 1490.3541489309293, "y": 574.460454403904, "category": "value", "outputs": [{ "name": "result", "type": "object" }], "fields": [{ "key": "var", "value": "DIR" }], "isGetterNode": true, "finished": true } }, "links": [{ "id": "link_2", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_4", "pin": "exec" }, "type": "action" }, { "id": "link_5", "from": { "node": "node_6", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_7", "pin": "exec" }, "type": "action" }, { "id": "link_7", "from": { "node": "node_4", "pin": "objectNames", "type": "object", "out": true }, "to": { "node": "node_9", "pin": "array" }, "type": "any" }, { "id": "link_8", "from": { "node": "node_7", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_9", "pin": "exec" }, "type": "action" }, { "id": "link_9", "from": { "node": "node_9", "pin": "execOut", "type": "action", "out": true }, "to": { "node": "node_8", "pin": "exec" }, "type": "action" }, { "id": "link_10", "from": { "node": "node_8", "pin": "item", "type": "any", "out": true }, "to": { "node": "node_10", "pin": "objectName" }, "type": "string" }, { "id": "link_11", "from": { "node": "node_8", "pin": "loop", "type": "action", "out": true }, "to": { "node": "node_10", "pin": "exec" }, "type": "action" }, { "id": "link_13", "from": { "node": "node_7", "pin": "low", "type": "value", "out": true }, "to": { "node": "node_10", "pin": "strength" }, "type": "value" }, { "id": "link_18", "from": { "node": "node_12", "pin": "result", "type": "object", "out": true }, "to": { "node": "node_10", "pin": "rayDirection" }, "type": "object" }], "nodeCounter": 13, "linkCounter": 19, "pan": [-269, -294], "variables": { "number": {}, "boolean": {}, "string": {}, "object": { "DIR": [0, 1, 0] } } };
 
 // ../../../../projects/project-c/shader-graphs.js
 var shaderGraphsProdc = [
@@ -40424,6 +40468,9 @@ var app2 = new MatrixEngineWGPU(
           }
         });
       }, { scale: [25, 1, 25] });
+      setTimeout(() => {
+        app3.getSceneObjectByName("FLOOR").position.SetZ(-20);
+      }, 800);
     });
   }
 );
