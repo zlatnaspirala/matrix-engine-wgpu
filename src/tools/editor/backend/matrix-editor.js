@@ -556,7 +556,8 @@ async function saveMethods(msg, ws) {
 
 // FLUXCODEXSHADER
 async function saveGraph(msg, ws) {
-  console.log('.............savevg PROJECT_NAME', msg.graphData);
+  console.log('[backend] saveGraph PROJECT_NAME: ', PROJECT_NAME);
+  // console.log('[backend] saveGraph : ', msg.graphData);
   const folderPerProject = path.join(PROJECTS_DIR, PROJECT_NAME);
   fs.mkdir(folderPerProject, {recursive: true});
   const file = path.join(folderPerProject, "graph.js");
