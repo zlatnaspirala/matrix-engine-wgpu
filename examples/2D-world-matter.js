@@ -47,12 +47,15 @@ export var loadSprite2 = function() {
     clearColor: {r: 0, b: 0, g: 0, a: 1}
   }, () => {
 
+    let _;
     world2D.addLight();
     addEventListener('PhysicsReady', () => {
 
       downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [43, 1.5, 43]})
       addRaycastsAABBListener('canvas1', 'click');
+
+      
 
       function onGround(m) {
         world2D.addMeshObj({
@@ -93,6 +96,8 @@ export var loadSprite2 = function() {
           physics: {enabled: true, mass: 1, geometry: "Cube"},
           pointerEffect: {enabled: true}
         });
+
+  
 
         world2D.addMeshObj({
           material: {type: 'standard'},
@@ -177,6 +182,7 @@ export var loadSprite2 = function() {
         world2D.lightContainer[0].setTarget(0, 0, 0);
 
         setTimeout(() => {
+          _ = app.matrixPhysics.getBodyByName('PLAYER');
           world2D.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
           PLAYER.setAmbient(2, 1, 0);
 
@@ -192,6 +198,7 @@ export var loadSprite2 = function() {
             update: () => {
               t += 0.02;
               world2D.matrixPhysics.setKinematicInterpolate(BLOCK2_ID, Math.sin(t) * 8, 20, 0, 0.15);
+
             }
           });
 
@@ -214,7 +221,7 @@ export var loadSprite2 = function() {
 
           let mt = 0;
           world2D.autoUpdate.push({
-            update: () => {
+            update: async () => {
               mt += 0.018;
               for(const b of movingBlocks) {
                 world2D.matrixPhysics.setKinematicInterpolate(
@@ -224,6 +231,14 @@ export var loadSprite2 = function() {
                   0,
                   0.2
                 );
+              }
+              // check player failing
+              const pos = await app.matrixPhysics.getPosition(_);
+              if (pos.y < -10) {
+                await app.matrixPhysics.switchToKinematic(_);
+                app.matrixPhysics.setKinematicTransform(_, 0, 5, -25);
+                app.matrixPhysics.switchToDinamic(_);
+
               }
             }
           });
@@ -284,7 +299,7 @@ export var loadSprite2 = function() {
 
       world2D.canvas.addEventListener("ray.hit.event", (e) => {
         if(e.detail.hitObject.name.startsWith('PLAYER')) {
-          let _ = app.matrixPhysics.getBodyByName('PLAYER');
+         
           app.matrixPhysics.applyImpulse(_, new PVector(0, 1, 0));
         }
       });

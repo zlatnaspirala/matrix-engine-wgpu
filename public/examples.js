@@ -51158,6 +51158,7 @@ var loadSprite2 = function() {
     },
     clearColor: { r: 0, b: 0, g: 0, a: 1 }
   }, () => {
+    let _2;
     world2D.addLight();
     addEventListener("PhysicsReady", () => {
       downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
@@ -51272,6 +51273,7 @@ var loadSprite2 = function() {
         world2D.lightContainer[0].setRange(200);
         world2D.lightContainer[0].setTarget(0, 0, 0);
         setTimeout(() => {
+          _2 = app.matrixPhysics.getBodyByName("PLAYER");
           world2D.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
           PLAYER.setAmbient(2, 1, 0);
           let cam2 = world2D.getCamera();
@@ -51305,7 +51307,7 @@ var loadSprite2 = function() {
           }
           let mt2 = 0;
           world2D.autoUpdate.push({
-            update: () => {
+            update: async () => {
               mt2 += 0.018;
               for (const b2 of movingBlocks) {
                 world2D.matrixPhysics.setKinematicInterpolate(
@@ -51315,6 +51317,12 @@ var loadSprite2 = function() {
                   0,
                   0.2
                 );
+              }
+              const pos2 = await app.matrixPhysics.getPosition(_2);
+              if (pos2.y < -10) {
+                await app.matrixPhysics.switchToKinematic(_2);
+                app.matrixPhysics.setKinematicTransform(_2, 0, 5, -25);
+                app.matrixPhysics.switchToDinamic(_2);
               }
             }
           });
@@ -51363,7 +51371,6 @@ var loadSprite2 = function() {
       }
       world2D.canvas.addEventListener("ray.hit.event", (e2) => {
         if (e2.detail.hitObject.name.startsWith("PLAYER")) {
-          let _2 = app.matrixPhysics.getBodyByName("PLAYER");
           app.matrixPhysics.applyImpulse(_2, new PVector(0, 1, 0));
         }
       });
