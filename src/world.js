@@ -361,7 +361,9 @@ export default class MatrixEngineWGPU {
       }
 
       setTimeout(() => {
-        if(APP_READY === false && isMobile() === true) {
+        if(APP_READY === false && isMobile() === true && 
+             location.hostname.indexOf('192.168.') === -1
+            ) {
           console.log('app is installing cache');
           setTimeout(() => {location.reload();}, 4000)
         } else {
@@ -429,7 +431,10 @@ export default class MatrixEngineWGPU {
                 console.error("Orientation lock failed: ", error);
               });
             }
-            if(this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent('PhysicsReady', {}));
+            if(this.mainRenderBundle.length == 0) {
+                console.log('PhysicsReady w')
+              dispatchEvent(new CustomEvent('PhysicsReady', {}));
+            }
           });
         }
 

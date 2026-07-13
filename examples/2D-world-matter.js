@@ -4,17 +4,17 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {PVector} from "../src/engine/matrix-class.js";
 
 const BLOCK_TYPES = {
-  SAFE:             { color: [0.2, 0.8, 0.2],  moving: false, dangerous: false },
-  MOVING:           { color: [0.2, 0.4, 1.0],  moving: true,  dangerous: false },
-  DANGEROUS_STATIC: { color: [1.0, 0.2, 0.2],  moving: false, dangerous: true  },
-  DANGEROUS_MOVING: { color: [1.0, 0.5, 0.0],  moving: true,  dangerous: true  },
+  SAFE: {color: [0.2, 0.8, 0.2], moving: false, dangerous: false},
+  MOVING: {color: [0.2, 0.4, 1.0], moving: true, dangerous: false},
+  DANGEROUS_STATIC: {color: [1.0, 0.2, 0.2], moving: false, dangerous: true},
+  DANGEROUS_MOVING: {color: [1.0, 0.5, 0.0], moving: true, dangerous: true},
 };
 
 function pickType() {
   const r = Math.random();
-  if (r > 0.85) return 'DANGEROUS_MOVING';
-  if (r > 0.70) return 'DANGEROUS_STATIC';
-  if (r > 0.50) return 'MOVING';
+  if(r > 0.85) return 'DANGEROUS_MOVING';
+  if(r > 0.70) return 'DANGEROUS_STATIC';
+  if(r > 0.50) return 'MOVING';
   return 'SAFE';
 }
 
@@ -33,7 +33,7 @@ const COLLISION = {
 };
 
 export var loadSprite2 = function() {
-
+ 
   let world2D = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
@@ -44,11 +44,12 @@ export var loadSprite2 = function() {
       type: 'planeCamera',
       responseCoef: 1000
     },
-    clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
+    clearColor: {r: 0, b: 0, g: 0, a: 1}
   }, () => {
 
+    world2D.addLight();
     addEventListener('PhysicsReady', () => {
-      world2D.addLight();
+
       downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [43, 1.5, 43]})
       addRaycastsAABBListener('canvas1', 'click');
@@ -128,7 +129,7 @@ export var loadSprite2 = function() {
         const levelRegistry = new Map();
 
         function generateLevel(startHeight, count, meshData) {
-          for (let i = 1; i <= count; i++) {
+          for(let i = 1;i <= count;i++) {
             let y = startHeight + (i * 7);
             let x = (Math.random() * 24) - 12;
             let type = pickType();
@@ -151,7 +152,7 @@ export var loadSprite2 = function() {
             block.setAmbient(...def.color);
             block._blockType = type;
 
-            if (def.moving) {
+            if(def.moving) {
               block.isKinematic = true;
               block._baseX = x;
               block._baseY = y;
@@ -182,7 +183,7 @@ export var loadSprite2 = function() {
           let cam = world2D.getCamera();
           world2D._PlayerCanJump = true;
           let moveSpeed = 0.2;
-          let jumpPower = moveSpeed * 2.3;
+          let jumpPower = moveSpeed * 2.4;
           let _playerID = world2D.matrixPhysics.getBodyByName('PLAYER');
 
           const BLOCK2_ID = world2D.matrixPhysics.getBodyByName('BLOCK2');
@@ -195,11 +196,11 @@ export var loadSprite2 = function() {
           });
 
           const movingBlocks = [];
-          for (let i = 1; i <= 20; i++) {
-            for (const type of ['MOVING', 'DANGEROUS_MOVING']) {
+          for(let i = 1;i <= 20;i++) {
+            for(const type of ['MOVING', 'DANGEROUS_MOVING']) {
               const name = `BLOCK_${type}_${i}`;
               const id = world2D.matrixPhysics.getBodyByName(name);
-              if (id !== undefined && id !== -1) {
+              if(id !== undefined && id !== -1) {
                 const entry = levelRegistry.get(name);
                 movingBlocks.push({
                   id,
@@ -215,7 +216,7 @@ export var loadSprite2 = function() {
           world2D.autoUpdate.push({
             update: () => {
               mt += 0.018;
-              for (const b of movingBlocks) {
+              for(const b of movingBlocks) {
                 world2D.matrixPhysics.setKinematicInterpolate(
                   b.id,
                   b.baseX + Math.sin(mt + b.offset) * 5,
@@ -228,13 +229,13 @@ export var loadSprite2 = function() {
           });
 
           cam.onUp = () => {
-            if (world2D._PlayerCanJump === true) {
+            if(world2D._PlayerCanJump === true) {
               world2D.matrixPhysics.applyImpulse(_playerID, new PVector(0, jumpPower, 0));
               world2D._PlayerCanJump = false;
               return;
             }
             world2D.matrixPhysics.isSleeping(_playerID).then((a) => {
-              if (a) {
+              if(a) {
                 world2D.matrixPhysics.applyImpulse(_playerID, new PVector(0, jumpPower, 0));
                 world2D._PlayerCanJump = false;
               }
@@ -255,7 +256,7 @@ export var loadSprite2 = function() {
             const rayDirection = e.detail.rayDirection;
 
             const isPlayer = body0Name === 'PLAYER' || body1Name === 'PLAYER';
-            if (!isPlayer) return;
+            if(!isPlayer) return;
 
             const otherName = body0Name === 'PLAYER' ? body1Name : body0Name;
             const mesh = world2D.getSceneObjectByName(otherName);
@@ -263,9 +264,9 @@ export var loadSprite2 = function() {
 
             COLLISION.onPlayerLand(world2D);
 
-            if (!blockType) return;
+            if(!blockType) return;
 
-            if (blockType === 'DANGEROUS_STATIC' || blockType === 'DANGEROUS_MOVING') {
+            if(blockType === 'DANGEROUS_STATIC' || blockType === 'DANGEROUS_MOVING') {
               COLLISION.onDangerous(world2D, _playerID, rayDirection);
             }
           };
@@ -278,13 +279,13 @@ export var loadSprite2 = function() {
 
           world2D.buildRenderBuckets();
           cam._dirtyAngle = true;
-        }, 700);
+        }, 2500);
       }
 
       world2D.canvas.addEventListener("ray.hit.event", (e) => {
-        if (e.detail.hitObject.name.startsWith('PLAYER')) {
-          let _ = world2D.matrixPhysics.getBodyByName('PLAYER');
-          world2D.matrixPhysics.applyImpulse(_, new PVector(0, 1, 0));
+        if(e.detail.hitObject.name.startsWith('PLAYER')) {
+          let _ = app.matrixPhysics.getBodyByName('PLAYER');
+          app.matrixPhysics.applyImpulse(_, new PVector(0, 1, 0));
         }
       });
 

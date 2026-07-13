@@ -31018,6 +31018,7 @@ LIST OF INTEREST OBJECT:
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Generator Wall NONPhysics") {
+        console.log("DEBUG =====");
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
@@ -31046,6 +31047,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
+          console.log("DEBUG =====");
           app.generatorWallNONPHYSICS(
             mat,
             pos,

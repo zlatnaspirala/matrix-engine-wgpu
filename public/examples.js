@@ -6702,40 +6702,40 @@ var WASDCamera = class _WASDCamera {
       }, { passive: true });
     }
     this._keyInterval = null;
-    const setDigital = (e2, value2) => {
+    const setDigital = (e2, value) => {
       switch (e2.code) {
         case "ArrowUp":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "ArrowDown":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "ArrowLeft":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "ArrowRight":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "KeyW":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "KeyS":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "KeyA":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "KeyD":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "KeyV":
-          this._digital.up = value2;
+          this._digital.up = value;
           break;
         case "KeyC":
-          this._digital.down = value2;
+          this._digital.down = value;
           break;
       }
-      if (value2 == true && this._keyInterval === null) {
+      if (value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -6956,34 +6956,34 @@ var RPGCamera = class _RPGCamera {
     this._dirty = true;
   }
   _setupKeyboard() {
-    const setDigital = (e2, value2) => {
+    const setDigital = (e2, value) => {
       switch (e2.code) {
         case "KeyW":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "KeyS":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "KeyA":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "KeyD":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "ArrowUp":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "ArrowDown":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "ArrowLeft":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "ArrowRight":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
       }
-      if (value2 && this._keyInterval === null) {
+      if (value && this._keyInterval === null) {
         this._detachedFromFollow = true;
         this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
       } else {
@@ -7335,34 +7335,34 @@ var FirstPersonCamera = class _FirstPersonCamera {
       }
     }, { passive: true });
     this._keyInterval = null;
-    this.setDigital = (e2, value2) => {
+    this.setDigital = (e2, value) => {
       switch (e2.code) {
         case "KeyW":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "KeyS":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "KeyA":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "KeyD":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "ArrowUp":
-          this._digital.forward = value2;
+          this._digital.forward = value;
           break;
         case "ArrowDown":
-          this._digital.backward = value2;
+          this._digital.backward = value;
           break;
         case "ArrowLeft":
-          this._digital.left = value2;
+          this._digital.left = value;
           break;
         case "ArrowRight":
-          this._digital.right = value2;
+          this._digital.right = value;
           break;
         case "Space":
-          if (value2 === true && window.app?.collisionSystem?._onGround) {
+          if (value === true && window.app?.collisionSystem?._onGround) {
             window.app.collisionSystem._gravityAcc = 0.22;
             window.app.collisionSystem._onGround = false;
             this._dirty = true;
@@ -7370,7 +7370,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
           }
           break;
       }
-      if (value2 == true && this._keyInterval === null) {
+      if (value == true && this._keyInterval === null) {
         this._keyInterval = setInterval(() => {
           this._dirty = true;
           this._dirtyAngle = true;
@@ -8361,6 +8361,7 @@ var Position = class {
     this.targetZ = parseFloat(z2);
   }
   onTargetPositionReach() {
+    console.log("onTargetPositionReach");
   }
   update() {
     var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist2 = Math.sqrt(tx * tx + ty * ty + tz * tz);
@@ -17940,8 +17941,8 @@ var MEMeshObj = class extends Materials {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value2) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
+        setIntensity: (value) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -21197,25 +21198,25 @@ var MEBvhJoint = class {
     let r3 = [0, 0, 0];
     for (let i2 = 0; i2 < this.channels.length; i2++) {
       const channel = this.channels[i2];
-      const value2 = frameData[this.channelOffset + i2];
+      const value = frameData[this.channelOffset + i2];
       switch (channel) {
         case "Xposition":
-          t3[0] = value2;
+          t3[0] = value;
           break;
         case "Yposition":
-          t3[1] = value2;
+          t3[1] = value;
           break;
         case "Zposition":
-          t3[2] = value2;
+          t3[2] = value;
           break;
         case "Xrotation":
-          r3[0] = degToRad2(value2);
+          r3[0] = degToRad2(value);
           break;
         case "Yrotation":
-          r3[1] = degToRad2(value2);
+          r3[1] = degToRad2(value);
           break;
         case "Zrotation":
-          r3[2] = degToRad2(value2);
+          r3[2] = degToRad2(value);
           break;
       }
     }
@@ -25653,8 +25654,8 @@ var HPBarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value2) {
-    const clamped = value2 < 0 ? 0 : value2 > 1 ? 1 : value2;
+  setProgress(value) {
+    const clamped = value < 0 ? 0 : value > 1 ? 1 : value;
     if (this.progress !== clamped) {
       this.progress = clamped;
       this._progressDirty = true;
@@ -25802,8 +25803,8 @@ var MANABarEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
-  setProgress(value2) {
-    this.progress = Math.max(0, Math.min(1, value2));
+  setProgress(value) {
+    this.progress = Math.max(0, Math.min(1, value));
   }
   setColor(r3, g2, b2, a2 = 1) {
     this.color = [r3, g2, b2, a2];
@@ -27025,8 +27026,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
-        setIntensity: (value2) => {
-          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
+        setIntensity: (value) => {
+          this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
           this.updateVertexAnimBuffer();
         },
         getIntensity: () => {
@@ -28112,6 +28113,7 @@ var METoolTip = class {
 // src/tools/editor/client.js
 var MEEditorClient = class {
   ws = null;
+  updateSceneEvent = new CustomEvent("updateSceneContainer", { detail: {} });
   constructor(typeOfRun, name2) {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
@@ -28168,7 +28170,7 @@ var MEEditorClient = class {
             detail: data
           }));
         } else if (data.refresh == "refresh") {
-          setTimeout(() => document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} })), 1e3);
+          setTimeout(() => document.dispatchEvent(this.updateSceneEvent), 1e3);
         } else {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
@@ -28501,7 +28503,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: "" + e2.detail.index,
           mesh: m2.cube,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e2.detail.physics,
             geometry: "Cube"
@@ -28519,7 +28521,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: e2.detail.index,
           mesh: m2.mesh,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e2.detail.physics,
             geometry: "Sphere"
@@ -28552,7 +28554,7 @@ var EditorProvider = class {
           texturesPaths: [texturesPaths],
           name: e2.detail.index,
           mesh: m2.objMesh,
-          raycast: { enabled: true, radius: 2 },
+          raycast: { enabled: true, radius: 1 },
           physics: {
             enabled: e2.detail.physics,
             geometry: "Cube"
@@ -28912,17 +28914,17 @@ var CompileContext = class {
     }
     this.resolving.add(key);
     const conn = this.shaderGraph.getInput(node2, pin);
-    let value2;
+    let value;
     if (conn) {
-      value2 = this.resolve(conn.fromNode, conn.fromPin);
+      value = this.resolve(conn.fromNode, conn.fromPin);
     } else {
       if (node2.inputs && pin in node2.inputs) {
-        value2 = node2.inputs[pin].default;
+        value = node2.inputs[pin].default;
       } else {
-        value2 = void 0;
+        value = void 0;
       }
     }
-    const result2 = node2.build(pin, value2, this);
+    const result2 = node2.build(pin, value, this);
     if (result2?.out !== void 0) {
       this.cache.set(key, result2.out);
     }
@@ -28961,9 +28963,9 @@ var ShaderNode = class {
   default(pin) {
     return this.inputs[pin]?.default ?? "0.0";
   }
-  build(_2, value2, ctx) {
+  build(_2, value, ctx) {
     return {
-      out: value2,
+      out: value,
       type: "f32"
     };
   }
@@ -28975,13 +28977,13 @@ var FragmentOutputNode = class extends ShaderNode {
   }
   build(_2, __, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "color");
-    let value2;
+    let value;
     if (conn) {
-      value2 = ctx.resolve(conn.fromNode, conn.fromPin);
+      value = ctx.resolve(conn.fromNode, conn.fromPin);
     } else {
-      value2 = this.inputs.color.default;
+      value = this.inputs.color.default;
     }
-    ctx.outputs.outColor = value2;
+    ctx.outputs.outColor = value;
     return { out: ctx.outputs.outColor, type: "vec4f" };
   }
 };
@@ -29041,7 +29043,7 @@ var LightToColorNode = class extends ShaderNode {
       light: { default: "vec3f(1.0)" }
     };
   }
-  build(pin, value2, ctx) {
+  build(pin, value, ctx) {
     const conn = ctx.shaderGraph.getInput(this, "light");
     let l2;
     if (conn) {
@@ -29230,9 +29232,9 @@ var ContrastNode = class extends ShaderNode {
   }
 };
 var FloatNode = class extends ShaderNode {
-  constructor(value2 = 1) {
+  constructor(value = 1) {
     super("Float");
-    this.value = value2;
+    this.value = value;
   }
   build(_2, __, ctx) {
     return {
@@ -29926,7 +29928,7 @@ svg path {
       const propsContainer = document.createElement("div");
       propsContainer.className = "node-properties";
       propsContainer.style.cssText = "padding: 4px 8px; background: #1a1f2e;";
-      function addPropertyInput(label, propName, value2, type2 = "number", step = "0.01") {
+      function addPropertyInput(label, propName, value, type2 = "number", step = "0.01") {
         const row2 = document.createElement("div");
         row2.style.cssText = "display: flex; align-items: center; gap: 6px; margin: 2px 0;";
         const labelEl = document.createElement("label");
@@ -29934,7 +29936,7 @@ svg path {
         labelEl.style.cssText = "font-size: 11px; color: #aaa; min-width: 30px;";
         const input = document.createElement("input");
         input.type = type2;
-        input.value = value2;
+        input.value = value;
         input.step = step;
         input.style.cssText = "flex: 1; background: #0a0d14; border: 1px solid #333; color: #fff; padding: 2px 4px; font-size: 11px; border-radius: 3px;";
         input.addEventListener("input", () => {
@@ -30486,10 +30488,10 @@ var CurveEditor = class {
     const n3 = 1 - y3 / this.height;
     return this.valueMin + n3 * (this.valueMax - this.valueMin);
   }
-  _snap(value2, steps) {
-    if (!this.snapEnabled) return value2;
+  _snap(value, steps) {
+    if (!this.snapEnabled) return value;
     const range = this.valueMax - this.valueMin;
-    return Math.round((value2 - this.valueMin) / range * steps) / steps * range + this.valueMin;
+    return Math.round((value - this.valueMin) / range * steps) / steps * range + this.valueMin;
   }
   // VALUE EVALUATION (HERMITE)
   getValue(t3) {
@@ -31270,11 +31272,11 @@ var FluxCodexVertex = class {
     this.createContextMenu();
     document.addEventListener("fluxcodex.input.change", (e2) => {
       console.log("fluxcodex.input.change");
-      const { nodeId: nodeId2, field, value: value2 } = e2.detail;
+      const { nodeId: nodeId2, field, value } = e2.detail;
       const node2 = this.nodes.find((n3) => n3.id === nodeId2);
       if (!node2) return;
       if (node2.type !== "getSubObject") return;
-      this.handleGetSubObject(node2, value2);
+      this.handleGetSubObject(node2, value);
       if (field !== "path") return;
     });
     document.addEventListener("web.editor.addMp3", (e2) => {
@@ -31285,6 +31287,38 @@ var FluxCodexVertex = class {
     });
     document.addEventListener("show-curve-editor", (e2) => {
       this.curveEditor.toggleEditor();
+    });
+    this.svg.addEventListener("dblclick", (e2) => {
+      console.log("DBL LINK");
+      console.log("DBL LINK, target:", e2.target.tagName, e2.target.outerHTML);
+      const linkId = e2.target.dataset.linkId;
+      if (linkId) {
+        e2.preventDefault();
+        e2.stopPropagation();
+        this.removeLink(linkId);
+      }
+    });
+    this.svg.addEventListener("contextmenu", (e2) => {
+      const linkId = e2.target.dataset.linkId;
+      if (linkId) {
+        e2.preventDefault();
+        e2.stopPropagation();
+        this.removeLink(linkId);
+      }
+    });
+    this.svg.addEventListener("mouseover", (e2) => {
+      const linkId = e2.target.dataset.linkId;
+      if (linkId) {
+        const visible = this.svg.querySelector(`path.link[data-link-id="${linkId}"]`);
+        if (visible) visible.style.stroke = "#ff5252";
+      }
+    });
+    this.svg.addEventListener("mouseout", (e2) => {
+      const linkId = e2.target.dataset.linkId;
+      if (linkId) {
+        const visible = this.svg.querySelector(`path.link[data-link-id="${linkId}"]`);
+        if (visible) visible.style.stroke = "";
+      }
     });
     setTimeout(() => this.init(), 3300);
   }
@@ -32253,9 +32287,9 @@ var FluxCodexVertex = class {
     if (!obj2) return;
     node2.outputs = [];
     node2.exposeProps.forEach((p2) => {
-      const value2 = this.getByPath(obj2, p2);
-      if (value2 !== void 0) {
-        const type2 = typeof value2 === "number" ? "number" : typeof value2 === "string" ? "string" : "object";
+      const value = this.getByPath(obj2, p2);
+      if (value !== void 0) {
+        const type2 = typeof value === "number" ? "number" : typeof value === "string" ? "string" : "object";
         node2.outputs.push({ name: p2, type: type2 });
       }
     });
@@ -32671,7 +32705,9 @@ var FluxCodexVertex = class {
           { name: "spacingByY", type: "number" }
         ],
         outputs: [
-          { name: "execOut", type: "action" }
+          { name: "execOut", type: "action" },
+          { name: "complete", type: "action" },
+          { name: "objectNames", type: "object" }
         ],
         fields: [
           { key: "material", value: "standard" },
@@ -34113,7 +34149,7 @@ var FluxCodexVertex = class {
         title: "On Target Position Reach",
         category: "event",
         noExec: true,
-        inputs: [{ name: "position", type: "object" }],
+        inputs: [{ name: "exec", type: "action" }, { name: "position", type: "object" }],
         outputs: [{ name: "exec", type: "action" }],
         _listenerAttached: false
       }),
@@ -34235,9 +34271,9 @@ LIST OF INTEREST OBJECT:
     }
     return null;
   }
-  setVariable(type2, key, value2) {
-    console.log("Test -setVariable  value", value2);
-    this.variables[type2][key].value = value2;
+  setVariable(type2, key, value) {
+    console.log("Test -setVariable  value", value);
+    this.variables[type2][key].value = value;
     this.notifyVariableChanged(type2, key);
   }
   updateArrayNode(node2, newValue) {
@@ -34424,15 +34460,15 @@ LIST OF INTEREST OBJECT:
   activateEventNode(nodeId2) {
     const n3 = this.nodes[nodeId2];
     if (n3.title === "On Target Position Reach") {
+      console.log("On Target Position Reach - activateEventNode");
       const pos2 = this.getValue(nodeId2, "position");
-      if (!pos2) return;
+      if (!pos2 || !pos2.onTargetPositionReach) return;
       pos2.onTargetPositionReach = () => {
         this.enqueueOutputs(n3, "exec");
       };
       n3._listenerAttached = true;
     } else if (n3.title == "On Ray Hit") {
       if (n3._listenerAttached) return;
-      console.log("ON RAY HIT INIT ONLE !!!");
       app.reference.addRaycastsListener();
       const handler = (e2) => {
         n3._returnCache = e2.detail;
@@ -34539,6 +34575,7 @@ LIST OF INTEREST OBJECT:
     if (node2.title === "On Key" && pinName == "isHeld") return node2._isHeld;
     if (node2.title === "On Key" && pinName == "keyCode") return node2.lastKey;
     if (node2.title === "Generator Pyramid" && pinName == "objectNames") return node2._returnCache;
+    if (node2.title === "Generator Wall" && pinName == "objectNames") return node2._returnCache;
     if (node2.title === "Audio Reactive Node") {
       if (pinName === "low") {
         return node2._returnCache[0];
@@ -34597,18 +34634,18 @@ LIST OF INTEREST OBJECT:
       if (node2._returnCache === void 0) {
         this.triggerNode(node2.id);
       }
-      let value2 = node2._returnCache;
-      if (typeof value2 === "string") {
+      let value = node2._returnCache;
+      if (typeof value === "string") {
         try {
           if (node2.title == "Get String") {
           } else {
-            value2 = JSON.parse(value2);
+            value = JSON.parse(value);
           }
         } catch (e2) {
           console.warn("[getValue][json parse err]:", e2);
         }
       }
-      return value2;
+      return value;
     }
     const link = this.links.find((l2) => l2.to.node === nodeId2 && l2.to.pin === pinName);
     if (link) return this.getValue(link.from.node, link.from.pin, visited);
@@ -34972,15 +35009,15 @@ LIST OF INTEREST OBJECT:
       const varField = n.fields?.find((f2) => f2.key === "var");
       if (varField && varField.value) {
         const type2 = n.title.replace("Get ", "").toLowerCase();
-        const value2 = this.getVariable(type2, varField.value);
-        n._returnCache = value2;
+        const value = this.getVariable(type2, varField.value);
+        n._returnCache = value;
         if (n.displayEl) {
           if (type2 === "object") {
-            n.displayEl.textContent = value2 !== void 0 ? JSON.stringify(value2) : "{}";
-          } else if (typeof value2 === "number") {
-            n.displayEl.textContent = value2.toFixed(3);
+            n.displayEl.textContent = value !== void 0 ? JSON.stringify(value) : "{}";
+          } else if (typeof value === "number") {
+            n.displayEl.textContent = value.toFixed(3);
           } else {
-            n.displayEl.textContent = String(value2);
+            n.displayEl.textContent = String(value);
           }
         }
       }
@@ -35023,22 +35060,22 @@ LIST OF INTEREST OBJECT:
     if (n.isVariableNode) {
       const type2 = n.title.replace("Set ", "").toLowerCase();
       const varField = n.fields?.find((f2) => f2.key === "var");
-      console.log("isVariableNode set object ", value);
+      console.log("isVariableNode: ", type2);
       if (varField && varField.value) {
-        let value2 = this.getValue(nodeId, "value");
+        let value = this.getValue(nodeId, "value");
         if (n.title == "Set Object") {
-          if (value2 == 0) {
+          if (value == 0) {
             let varliteral = n.fields?.find((f2) => f2.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
           }
         } else {
-          if (value2 == 0) {
+          if (value == 0) {
             let varliteral = n.fields?.find((f2) => f2.key === "literal");
             this.variables[type2][varField.value] = JSON.parse(varliteral.value);
-            value2 = JSON.parse(varliteral.value);
+            value = JSON.parse(varliteral.value);
           } else {
-            console.log("set object ", value2);
-            this.variables[type2][varField.value] = { value: value2 };
+            console.log("set object ", value);
+            this.variables[type2][varField.value] = { value };
           }
         }
         this.notifyVariableChanged(type2, varField.value);
@@ -35048,11 +35085,11 @@ LIST OF INTEREST OBJECT:
             const vf2 = node2.fields?.find((f2) => f2.key === "var");
             if (vf2 && vf2.value === varField.value && node2.displayEl) {
               if (type2 === "object") {
-                node2.displayEl.textContent = JSON.stringify(value2);
+                node2.displayEl.textContent = JSON.stringify(value);
               } else {
-                node2.displayEl.textContent = typeof value2 === "number" ? value2.toFixed(3) : String(value2);
+                node2.displayEl.textContent = typeof value === "number" ? value.toFixed(3) : String(value);
               }
-              node2._returnCache = value2;
+              node2._returnCache = value;
             }
           }
         }
@@ -35212,11 +35249,15 @@ LIST OF INTEREST OBJECT:
             delay,
             ori,
             spacingByY
-          );
+          ).then((objects) => {
+            n._returnCache = objects;
+            this.enqueueOutputs(n, "complete");
+          });
         }
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Generator Wall NONPhysics") {
+        console.log("DEBUG =====");
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
@@ -35245,6 +35286,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f2) => f2.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
+          console.log("DEBUG =====");
           app.generatorWallNONPHYSICS(
             mat,
             pos,
@@ -36046,6 +36088,7 @@ LIST OF INTEREST OBJECT:
       }
     }
   }
+  // updateLinks() now only builds paths, no listener attachment at all:
   updateLinks() {
     while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
     const bRect = this.board.getBoundingClientRect();
@@ -36056,17 +36099,28 @@ LIST OF INTEREST OBJECT:
       const fRect = fromDot.getBoundingClientRect(), tRect = toDot.getBoundingClientRect();
       const x1 = fRect.left - bRect.left + 6, y1 = fRect.top - bRect.top + 6;
       const x22 = tRect.left - bRect.left + 6, y22 = tRect.top - bRect.top + 6;
-      const path2 = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path"
-      );
+      const d2 = `M${x1},${y1} C${x1 + 50},${y1} ${x22 - 50},${y22} ${x22},${y22}`;
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hit.setAttribute("d", d2);
+      hit.setAttribute("stroke", "transparent");
+      hit.setAttribute("stroke-width", "14");
+      hit.setAttribute("fill", "none");
+      hit.style.pointerEvents = "stroke";
+      hit.style.cursor = "pointer";
+      hit.dataset.linkId = l2.id;
+      const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path2.setAttribute("class", "link " + (l2.type === "value" ? "value" : ""));
-      path2.setAttribute(
-        "d",
-        `M${x1},${y1} C${x1 + 50},${y1} ${x22 - 50},${y22} ${x22},${y22}`
-      );
+      path2.setAttribute("d", d2);
+      path2.dataset.linkId = l2.id;
       this.svg.appendChild(path2);
+      this.svg.appendChild(hit);
     });
+  }
+  removeLink(linkId) {
+    const idx = this.links.findIndex((l2) => l2.id === linkId);
+    if (idx === -1) return;
+    this.links.splice(idx, 1);
+    this.updateLinks();
   }
   runGraph() {
     if (byId2("graph-status").innerHTML == "\u{1F534}" || Object.values(this.nodes).length == 0) {
@@ -36091,9 +36145,9 @@ LIST OF INTEREST OBJECT:
       pan: this.state.pan,
       variables: this.variables
     };
-    function saveReplacer(key, value2) {
-      if (value2 instanceof Element) return void 0;
-      if (value2 instanceof Node) return void 0;
+    function saveReplacer(key, value) {
+      if (value instanceof Element) return void 0;
+      if (value instanceof Node) return void 0;
       if (key === "fn") {
         console.log("stripping fn from", key);
         return void 0;
@@ -36108,7 +36162,7 @@ LIST OF INTEREST OBJECT:
       if (key === "_loading") return false;
       if (key === "_energyHistory") return void 0;
       if (key === "_beatCooldown") return 0;
-      return value2;
+      return value;
     }
     let d2 = JSON.stringify(bundle, saveReplacer);
     localStorage.setItem(this.SAVE_KEY, d2);
@@ -36162,12 +36216,12 @@ LIST OF INTEREST OBJECT:
   exportToJSON() {
     const bundle = this._buildSaveBundle();
     console.log(bundle);
-    function saveReplacer(key, value2) {
+    function saveReplacer(key, value) {
       if (key === "fn") return void 0;
       if (key === "accessObject") return void 0;
       if (key === "_returnCache") return void 0;
       if (key === "_listenerAttached") return false;
-      return value2;
+      return value;
     }
     const json = JSON.stringify(bundle, saveReplacer);
     const blob = new Blob([json], { type: "application/json" });
@@ -39152,8 +39206,8 @@ var ProceduralMeshObj = class extends Materials {
         this.vertexAnimParams[26] = speed;
         this.updateVertexAnimBuffer();
       },
-      setIntensity: (value2) => {
-        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value2));
+      setIntensity: (value) => {
+        this.vertexAnimParams[2] = Math.max(0, Math.min(1, value));
         this.updateVertexAnimBuffer();
       },
       getIntensity: () => {
@@ -40217,74 +40271,84 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
   });
 }
 function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
-  const engine = this;
-  const [width, height] = size2.toLowerCase().split("x").map((n3) => parseInt(n3, 10));
-  console.log(width);
-  console.log(height);
-  const inputCube = { mesh: useMeshPath };
-  function handler(m2) {
-    let index = 0;
-    const RAY = { enabled: raycast2, radius: 1 };
-    for (let y3 = 0; y3 < height; y3++) {
-      for (let x3 = 0; x3 < width; x3++) {
-        const cubeName = `${name2}_${index}`;
-        setTimeout(() => {
-          let __x = 0, __y = 0, __z = 0;
-          if (orientationOfwall === "ByX") {
-            __x = x3 * spacing2;
-            __y = y3 * spacing2 + spacingY;
-            __z = 0;
-          } else if (orientationOfwall === "ByZ") {
-            __x = 0;
-            __y = y3 * spacing2 + spacingY;
-            __z = x3 * spacing2;
-          }
-          engine.addMeshObj({
-            material: { type: material },
-            envMapParams: material == "mirror" ? {
-              baseColorMix: 0.5,
-              // normal mix
-              mirrorTint: [0.9, 0.95, 1],
-              // Slight cool tint
-              reflectivity: 0.95,
-              // 25% reflection blend
-              illuminateColor: [0.3, 0.7, 1],
-              // Soft cyan
-              illuminateStrength: 0.4,
-              // Gentle rim
-              illuminatePulse: 0.01,
-              // No pulse (static)
-              fresnelPower: 2,
-              // Medium-sharp edge
-              envLodBias: 2.5,
-              usePlanarReflection: false
-              // ✅ Env map mode - wip
-            } : void 0,
-            position: {
-              x: pos2.x + __x,
-              y: pos2.y + __y,
-              z: pos2.z + __z
-            },
-            rotation: rot2,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
-            name: cubeName,
-            mesh: m2.mesh,
-            physics: {
-              scale: scale4,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          });
-          const o3 = app.getSceneObjectByName(cubeName);
-          runtimeCacheObjs.push(o3);
-        }, index * delay2);
-        index++;
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const [width, height] = size2.toLowerCase().split("x").map((n3) => parseInt(n3, 10));
+    console.log(width);
+    console.log(height);
+    const inputCube = { mesh: useMeshPath };
+    function handler(m2) {
+      let index = 0;
+      const totalCubes = width * height;
+      const lastIndex = totalCubes - 1;
+      const RAY = { enabled: raycast2, radius: 1 };
+      const objects = [];
+      for (let y3 = 0; y3 < height; y3++) {
+        for (let x3 = 0; x3 < width; x3++) {
+          const cubeName = `${name2}_${index}`;
+          const currentIndex = index;
+          setTimeout(() => {
+            let __x = 0, __y = 0, __z = 0;
+            if (orientationOfwall === "ByX") {
+              __x = x3 * spacing2;
+              __y = y3 * spacing2 + spacingY;
+              __z = 0;
+            } else if (orientationOfwall === "ByZ") {
+              __x = 0;
+              __y = y3 * spacing2 + spacingY;
+              __z = x3 * spacing2;
+            }
+            engine.addMeshObj({
+              material: { type: material },
+              envMapParams: material == "mirror" ? {
+                baseColorMix: 0.5,
+                // normal mix
+                mirrorTint: [0.9, 0.95, 1],
+                // Slight cool tint
+                reflectivity: 0.95,
+                // 25% reflection blend
+                illuminateColor: [0.3, 0.7, 1],
+                // Soft cyan
+                illuminateStrength: 0.4,
+                // Gentle rim
+                illuminatePulse: 0.01,
+                // No pulse (static)
+                fresnelPower: 2,
+                // Medium-sharp edge
+                envLodBias: 2.5,
+                usePlanarReflection: false
+                // ✅ Env map mode - wip
+              } : void 0,
+              position: {
+                x: pos2.x + __x,
+                y: pos2.y + __y,
+                z: pos2.z + __z
+              },
+              rotation: rot2,
+              rotationSpeed: { x: 0, y: 0, z: 0 },
+              texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
+              name: cubeName,
+              mesh: m2.mesh,
+              physics: {
+                scale: scale4,
+                enabled: true,
+                geometry: "Cube"
+              },
+              raycast: RAY
+            });
+            const o3 = app.getSceneObjectByName(cubeName);
+            runtimeCacheObjs.push(o3);
+            objects.push(o3.name);
+            if (currentIndex === lastIndex) {
+              resolve(objects);
+            }
+          }, index * delay2);
+          index++;
+        }
       }
     }
-  }
-  downloadMeshes(inputCube, handler, { scale: scale4 });
+    downloadMeshes(inputCube, handler, { scale: scale4 });
+  });
 }
 function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 500) {
   const engine = this;
@@ -41626,7 +41690,7 @@ var PhysicsBridge = class {
     this._queue = [];
     setTimeout(() => {
       dispatchEvent(new CustomEvent("PhysicsReady", {}));
-    }, 100);
+    }, 300);
   }
   addPhysics(MEObject, pOptions) {
     if (!this._ready) {
@@ -41781,8 +41845,8 @@ var PhysicsBridge = class {
   clearBody(idx) {
     this._worker.postMessage({ cmd: "clearBody", idx });
   }
-  speedUpSimulation(value2) {
-    this._worker.postMessage({ cmd: "speedUpSimulation", value: value2 });
+  speedUpSimulation(value) {
+    this._worker.postMessage({ cmd: "speedUpSimulation", value });
   }
   setCollisionFlags(idx, flags) {
     if (idx === void 0 || idx === -1) return;
@@ -43177,13 +43241,11 @@ var CulledRenderPass = class {
 
 // src/world.js
 var APP_READY = false;
-if (MEConfig.CACHE !== true) {
+if (MEConfig.CACHE !== true && location.hostname != "localhost") {
   APP_READY = true;
 }
 if ("serviceWorker" in navigator) {
-  if (MEConfig.CACHE === true) {
-    if (APP_READY === false) {
-    }
+  if (MEConfig.CACHE === true && location.hostname.indexOf("localhost") == -1) {
     navigator.serviceWorker.register("cache.js").then((registration) => {
       if (!navigator.serviceWorker.controller) {
         console.log("Installing & caching for the first time");
@@ -43488,7 +43550,7 @@ var MatrixEngineWGPU = class {
         return;
       }
       setTimeout(() => {
-        if (APP_READY === false && isMobile() === true) {
+        if (APP_READY === false && isMobile() === true && location.hostname.indexOf("192.168.") === -1) {
           console.log("app is installing cache");
           setTimeout(() => {
             location.reload();
@@ -43549,7 +43611,10 @@ var MatrixEngineWGPU = class {
                 console.error("Orientation lock failed: ", error);
               });
             }
-            if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
+            if (this.mainRenderBundle.length == 0) {
+              console.log("PhysicsReady w");
+              dispatchEvent(new CustomEvent("PhysicsReady", {}));
+            }
           });
         }
       }, 500);
@@ -43984,9 +44049,11 @@ var MatrixEngineWGPU = class {
           console.warn("%cPhysics cleanup error:" + e2, LOG_FUNNY_ARCADE);
         }
       }
-    } else {
+    }
+    try {
       this.mainRenderBundle.splice(index, 1);
       this.buildRenderBuckets(this.mainRenderBundle);
+    } catch (err) {
     }
     this.buildLightShadowBuckets();
     return true;
@@ -50743,7 +50810,6 @@ var loadSprite1 = function() {
   let world2D = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
-    useMatter: true,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -51090,10 +51156,10 @@ var loadSprite2 = function() {
       type: "planeCamera",
       responseCoef: 1e3
     },
-    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+    clearColor: { r: 0, b: 0, g: 0, a: 1 }
   }, () => {
+    world2D.addLight();
     addEventListener("PhysicsReady", () => {
-      world2D.addLight();
       downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [43, 1.5, 43] });
       addRaycastsAABBListener("canvas1", "click");
@@ -51211,7 +51277,7 @@ var loadSprite2 = function() {
           let cam2 = world2D.getCamera();
           world2D._PlayerCanJump = true;
           let moveSpeed = 0.2;
-          let jumpPower = moveSpeed * 2.3;
+          let jumpPower = moveSpeed * 2.4;
           let _playerID = world2D.matrixPhysics.getBodyByName("PLAYER");
           const BLOCK2_ID = world2D.matrixPhysics.getBodyByName("BLOCK2");
           let t3 = 0;
@@ -51293,12 +51359,12 @@ var loadSprite2 = function() {
           cam2.followMe = PLAYER.position;
           world2D.buildRenderBuckets();
           cam2._dirtyAngle = true;
-        }, 700);
+        }, 2500);
       }
       world2D.canvas.addEventListener("ray.hit.event", (e2) => {
         if (e2.detail.hitObject.name.startsWith("PLAYER")) {
-          let _2 = world2D.matrixPhysics.getBodyByName("PLAYER");
-          world2D.matrixPhysics.applyImpulse(_2, new PVector(0, 1, 0));
+          let _2 = app.matrixPhysics.getBodyByName("PLAYER");
+          app.matrixPhysics.applyImpulse(_2, new PVector(0, 1, 0));
         }
       });
     });
@@ -56112,8 +56178,8 @@ var Player = class {
       this.addKill(1);
     });
   }
-  setEnergy(value2) {
-    this.energy = Math.max(0, Math.min(this.maxEnergy, value2));
+  setEnergy(value) {
+    this.energy = Math.max(0, Math.min(this.maxEnergy, value));
     this.onEnergyChange?.(this.energy);
     if (this.energy <= 0) this.die();
   }

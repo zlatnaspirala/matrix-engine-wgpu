@@ -33,7 +33,7 @@ export class PhysicsBridge {
     this.tempRot = mat4.create();
     this._paused = false;
     this.updates = [];
-    this._kinematicIdx = new Uint16Array(1024); // or max bodies
+    this._kinematicIdx = new Uint16Array(1024);
     this._kinematicPos = new Float32Array(1024 * 3);
     this._kinematicCount = 0;
     this.c = 0;
@@ -50,7 +50,7 @@ export class PhysicsBridge {
     this._ready = true;
     for(const {MEObject, pOptions} of this._queue) {this._doAddPhysics(MEObject, pOptions)}
     this._queue = [];
-    setTimeout(() => {dispatchEvent(new CustomEvent('PhysicsReady', {}))}, 100);
+    setTimeout(() => {dispatchEvent(new CustomEvent('PhysicsReady', {}))}, 300);
   }
 
   addPhysics(MEObject, pOptions) {
@@ -369,12 +369,4 @@ export class PhysicsBridge {
         break;
     }
   }
-}
-
-// axis/angle → [qw,qx,qy,qz] for quaternion_rotation_matrix
-function _snapQuat(snap, b) {
-  const ax = snap[b + 3], ay = snap[b + 4], az = snap[b + 5];
-  const a = snap[b + 6];
-  const s = Math.sin(a / 2);
-  return [Math.cos(a / 2), ax * s, ay * s, az * s];
 }

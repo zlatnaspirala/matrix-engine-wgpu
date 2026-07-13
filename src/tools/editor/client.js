@@ -1,7 +1,9 @@
-import {LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_TERMINAL, mb} from "../../engine/utils";
+import {LOG_FUNNY_ARCADE, mb} from "../../engine/utils";
 
 export class MEEditorClient {
   ws = null;
+  updateSceneEvent = new CustomEvent('updateSceneContainer', {detail: {}});
+
   constructor(typeOfRun, name) {
     this.ws = new WebSocket("ws://localhost:1243");
 
@@ -65,8 +67,7 @@ export class MEEditorClient {
             detail: data
           }))
         } else if(data.refresh == 'refresh') {
-          // setTimeout(() => location.reload(true) , 1500);
-          setTimeout(() => document.dispatchEvent(new CustomEvent('updateSceneContainer', {detail: {}})), 1000)
+          setTimeout(() => document.dispatchEvent(this.updateSceneEvent), 1000)
         } else {
           if(data.methodSaves && data.ok == true) {
             mb.show("Graph saved ✅");

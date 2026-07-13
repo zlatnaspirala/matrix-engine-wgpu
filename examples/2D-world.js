@@ -13,7 +13,6 @@ export var loadSprite1 = function() {
   let world2D = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
-    useMatter: true,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
