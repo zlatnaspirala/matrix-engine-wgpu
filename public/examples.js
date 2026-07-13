@@ -51387,7 +51387,7 @@ var loadDrumCannon = function() {
   let DRUM = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     useJolt: true,
-    fastRender: 0.9,
+    fastRender: 0.8,
     MAX_SPOTLIGHTS: 4,
     MAX_BONES: 0,
     mainCameraParams: {
@@ -51833,7 +51833,7 @@ var loadDrumCannon = function() {
           }
         }
       };
-      const NUM_LIGHTS = 4;
+      const NUM_LIGHTS = isMobile() === true ? 2 : 4;
       const ORBIT_RADIUS = 15;
       const ORBIT_SPEED = 1;
       const TARGET = { x: 0, y: 25, z: -10 };
@@ -56598,6 +56598,737 @@ var loadHang3d = function() {
   window.app = app2;
 };
 
+// node_modules/nui-commander/scripts/controls/main-function-menu.js
+var indicatorsBlocks = {
+  name: "this",
+  shemaX: 8,
+  shemaY: 8,
+  opacity: [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  text: [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "nui",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  iconsStyle: {
+    localScale: 0
+  },
+  icons: [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  draw: function(engine) {
+    var c2 = 0;
+    engine.ctx.save();
+    for (var j2 = 0; j2 < this.shemaX; j2++) {
+      for (var i2 = 0; i2 < this.shemaY; i2++) {
+        if (typeof engine.interActionController.main[c2] !== "undefined" && engine.interActionController.main[c2].status == true) {
+          this.opacity[c2] = this.opacity[c2] + 0.02;
+          engine.ctx.fillStyle = "rgba(250, 250, 100, " + this.opacity[c2] + " )";
+          engine.ctx.fillRect(
+            engine.getCanvasWidth(100) / this.shemaX * i2,
+            engine.getCanvasHeight(100) / this.shemaY * j2,
+            engine.getCanvasWidth(100) / this.shemaX,
+            engine.getCanvasHeight(100) / this.shemaY
+          );
+        } else {
+          engine.ctx.fillStyle = "rgba(250, 250, 100, " + this.opacity[c2] + " )";
+          engine.ctx.fillRect(
+            engine.getCanvasWidth(100) / this.shemaX * i2,
+            engine.getCanvasHeight(100) / this.shemaY * j2,
+            engine.getCanvasWidth(100) / this.shemaX,
+            engine.getCanvasHeight(100) / this.shemaY
+          );
+        }
+        var localScale = this.iconsStyle.localScale;
+        if (typeof this.icons[c2] !== "undefined" && this.icons[c2] !== null) {
+          engine.ctx.drawImage(
+            this.icons[c2],
+            engine.getCanvasWidth(100) / this.shemaX * i2 + localScale,
+            engine.getCanvasHeight(100) / this.shemaY * j2 + localScale,
+            engine.getCanvasWidth(100) / this.shemaX - 2 * localScale,
+            engine.getCanvasHeight(100) / this.shemaY - 2 * localScale
+          );
+        } else if (this.text[c2] != "") {
+          engine.ctx.fillStyle = "rgba(250, 100, 100, 1)";
+          engine.ctx.fillRect(
+            engine.getCanvasWidth(100) / this.shemaX * j2,
+            engine.getCanvasHeight(100) / this.shemaY * i2,
+            engine.getCanvasWidth(100) / this.shemaX,
+            engine.getCanvasHeight(2.1)
+          );
+          engine.ctx.fillStyle = "black";
+          engine.ctx.font = "16px arial";
+          engine.ctx.fillText(
+            this.text[c2],
+            engine.getCanvasWidth(100) / this.shemaX * j2,
+            engine.getCanvasHeight(100) / this.shemaY * i2 + 10,
+            engine.getCanvasWidth(12.5),
+            engine.getCanvasHeight(12.5)
+          );
+        }
+        c2++;
+      }
+    }
+    engine.ctx.restore();
+  },
+  update: function() {
+    this.opacity.forEach(function(item, index, array) {
+      if (item > 0) {
+        array[index] = array[index] - 8e-3;
+      } else {
+        array[index] = 0;
+      }
+    });
+  }
+};
+
+// node_modules/nui-commander/scripts/system/buffer-load.js
+function BufferLoader(context, urlList, callback) {
+  this.context = context;
+  this.urlList = urlList;
+  this.onload = callback;
+  this.bufferList = new Array();
+  this.loadCount = 0;
+}
+BufferLoader.prototype.loadBuffer = function(url, index) {
+  var request = new XMLHttpRequest();
+  request.open("GET", url, true);
+  request.responseType = "arraybuffer";
+  var loader = this;
+  request.onload = function() {
+    loader.context.decodeAudioData(
+      request.response,
+      function(buffer) {
+        if (!buffer) {
+          console.log("error decoding file data: " + url);
+          return;
+        }
+        loader.bufferList[index] = buffer;
+        if (++loader.loadCount == loader.urlList.length)
+          loader.onload(loader.bufferList);
+      }
+    );
+  };
+  request.onerror = function() {
+    console.warn("BufferLoader: XHR error");
+  };
+  request.send();
+};
+BufferLoader.prototype.load = function() {
+  for (var i2 = 0; i2 < this.urlList.length; ++i2)
+    this.loadBuffer(this.urlList[i2], i2);
+};
+function modelBlock(x3) {
+  this.index = x3;
+  this.status = false;
+  this.action = function() {
+    var localRoot = this;
+    setTimeout(function() {
+      localRoot.status = false;
+    }, 350);
+    if (localRoot.status == false) {
+      this.onAction();
+      this.status = true;
+    }
+  };
+  this.onAction = function() {
+  };
+}
+
+// node_modules/nui-commander/scripts/helper.js
+function getDom(id2) {
+  return document.getElementById(id2);
+}
+
+// node_modules/nui-commander/scripts/CanvasEngine.js
+var CanvasEngine = class {
+  constructor(interActionController2, options2 = { domVisual: false }) {
+    this.options = options2;
+    this.interActionController = interActionController2;
+    this.canvasDom = document.createElement("canvas");
+    this.canvasDom.id = "drawer";
+    this.canvasDom.width = 640;
+    this.canvasDom.height = 480;
+    this.canvasDom.style.cssText = "position:absolute;z-index:20;left:0;top:0;";
+    this.ctx = this.canvasDom.getContext("2d");
+    getDom("nui-commander-container").appendChild(this.canvasDom);
+    this.systemOnPause = false;
+    this.elements = [];
+    this.notes = [];
+    this.blockIndicatorSize = 8;
+    this._canvasW = this.canvasDom.width;
+    this._canvasH = this.canvasDom.height;
+    this._cellW = this._canvasW / this.blockIndicatorSize;
+    this._cellH = this._canvasH / this.blockIndicatorSize;
+    this._lastImageData = null;
+    this._canvasSource = getDom("canvas-source");
+    this._canvasBlended = getDom("canvas-blended");
+    this._ctxSource = this._canvasSource.getContext("2d", { willReadFrequently: true });
+    this._ctxBlended = this._canvasBlended.getContext("2d", { willReadFrequently: true });
+    this._ctxSource.translate(this._canvasSource.width, 0);
+    this._ctxSource.scale(-1, 1);
+    window.requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || ((cb) => window.setTimeout(cb, 1e3 / 60));
+    this._blendedData = this._ctxSource.createImageData(
+      this._canvasSource.width,
+      this._canvasSource.height
+    );
+    if (this.options.domVisual) {
+      for (let j2 = 0; j2 < this.blockIndicatorSize ** 2; j2++) {
+        const domIndicator = document.createElement("div");
+        domIndicator.id = "note" + j2;
+        domIndicator.className = "note";
+        domIndicator.innerHTML = `<div class="gui-func-field">field ${j2}</div>`;
+        getDom("xylo").appendChild(domIndicator);
+      }
+    }
+    this._video = getDom("webcam");
+    this._initUserMedia();
+  }
+  // ─── Public API ────────────────────────────────────────────────────────────
+  removeElementByName(name2) {
+    this.elements = this.elements.filter((el2) => el2.name !== name2);
+  }
+  getCanvasWidth(per) {
+    return per === 0 ? 0 : this._canvasW / 100 * per;
+  }
+  getCanvasHeight(per) {
+    return per === 0 ? 0 : this._canvasH / 100 * per;
+  }
+  draw() {
+    this.ctx.clearRect(0, 0, this._canvasW, this._canvasH);
+    this.elements.forEach((el2) => {
+      el2.draw(this);
+      el2.update(this);
+    });
+    setTimeout(() => this.draw(), 20);
+  }
+  update() {
+    if (!this.systemOnPause) {
+      this.drawVideo();
+      this.blend();
+      this.checkAreas();
+      requestAnimFrame(() => this.update());
+    }
+  }
+  drawVideo() {
+    this._ctxSource.drawImage(
+      this._video,
+      0,
+      0,
+      this._video.width,
+      this._video.height
+    );
+  }
+  blend() {
+    const w2 = this._canvasSource.width;
+    const h2 = this._canvasSource.height;
+    const sourceData = this._ctxSource.getImageData(0, 0, w2, h2);
+    if (!this._lastImageData) this._lastImageData = this._ctxSource.getImageData(0, 0, w2, h2);
+    this._differenceAccuracy(this._blendedData.data, sourceData.data, this._lastImageData.data);
+    this._ctxBlended.putImageData(this._blendedData, 0, 0);
+    this._lastImageData = sourceData;
+  }
+  // Default checkAreas — with optional DOM visual feedback
+  checkAreas() {
+    for (let r3 = 0; r3 < this.notes.length; r3++) {
+      const note = this.notes[r3];
+      if (!note.area.status) continue;
+      const { x: x3, y: y3, w: w2, h: h2 } = note.area;
+      const blendedData = this._ctxBlended.getImageData(x3, y3, w2, h2);
+      const average = this._calcAverage(blendedData.data);
+      if (average > 10) {
+        this._playSound(note);
+        if (note.visual) note.visual.style.opacity = 1;
+        this._fireAction(r3);
+      } else if (note.visual) {
+        note.visual.style.opacity = Math.max(0, note.visual.style.opacity - 0.1);
+      }
+    }
+  }
+  // Overridden checkAreas — no DOM visual feedback
+  checkAreasOverride1() {
+    for (let r3 = 0; r3 < this.notes.length; r3++) {
+      const note = this.notes[r3];
+      if (!note.area.status) continue;
+      const { x: x3, y: y3, w: w2, h: h2 } = note.area;
+      const blendedData = this._ctxBlended.getImageData(x3, y3, w2, h2);
+      const average = this._calcAverage(blendedData.data);
+      if (average > 10) {
+        this._playSound(note);
+        this._fireAction(r3);
+      }
+    }
+  }
+  // ─── Private ───────────────────────────────────────────────────────────────
+  _initUserMedia() {
+    const hasGetUserMedia = !!(navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    if (!hasGetUserMedia) {
+      console.warn("hasGetUserMedia FALSE");
+      return;
+    }
+    console.log("hasGetUserMedia TRUE");
+    const onStream = (stream) => {
+      this._video.srcObject = stream;
+      this._initialize();
+    };
+    const onError = (e2) => alert("Webcam error!", e2);
+    if (navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true }).then(onStream, onError);
+    } else if (navigator.getUserMedia) {
+      navigator.getUserMedia({ video: true }, onStream, onError);
+    } else if (navigator.webkitGetUserMedia) {
+      navigator.webkitGetUserMedia({ video: true }, (stream) => {
+        this._video.srcObject = window.webkitURL.createObjectURL(stream);
+        this._initialize();
+      }, onError);
+    }
+  }
+  _initialize() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext || null;
+    if (!AudioContext) {
+      alert("AudioContext not supported!");
+      return;
+    }
+    setTimeout(() => this._loadSounds(AudioContext), 1e3);
+  }
+  _loadSounds(AudioContext) {
+    this._soundContext = new AudioContext();
+    const soundFiles = Array.from({ length: 8 }, (_2, i2) => `sounds/note${i2 + 1}.mp3`);
+    const loader = new BufferLoader(this._soundContext, soundFiles, (bufferList) => this._finishedLoading(bufferList));
+    loader.load();
+  }
+  _finishedLoading(bufferList) {
+    const totalCells = this.blockIndicatorSize ** 2;
+    for (let j2 = 0; j2 < this.blockIndicatorSize; j2++) {
+      for (let d2 = 0; d2 < this.blockIndicatorSize; d2++) {
+        const i2 = j2 * this.blockIndicatorSize + d2;
+        const source = this._soundContext.createBufferSource();
+        source.buffer = bufferList[i2];
+        source.connect(this._soundContext.destination);
+        const note = {
+          note: source,
+          ready: true,
+          visual: this.options.domVisual ? getDom("note" + i2) : false,
+          area: {
+            x: d2 * this._cellW,
+            y: j2 * this._cellH,
+            w: this._cellW,
+            h: this._cellH,
+            status: true
+          }
+        };
+        this.notes.push(note);
+      }
+    }
+    if (!this.options.domVisual) {
+      this.checkAreas = this.checkAreasOverride1;
+    }
+    this.update();
+  }
+  _playSound(obj2) {
+    if (!obj2.ready) return;
+    const source = this._soundContext.createBufferSource();
+    source.buffer = obj2.note.buffer;
+    source.connect(this._soundContext.destination);
+    source.start(0);
+    obj2.ready = false;
+    setTimeout(() => {
+      obj2.ready = true;
+    }, 400);
+  }
+  _fireAction(index) {
+    const entry = this.interActionController.main[index];
+    if (entry?.action) entry.action();
+  }
+  // ─── Image processing helpers ──────────────────────────────────────────────
+  /** Pixel-accurate motion diff using grayscale average + threshold */
+  _differenceAccuracy(target, data1, data2) {
+    const len2 = data1.length;
+    if (len2 !== data2.length) return;
+    for (let i2 = 0; i2 < len2; i2 += 4) {
+      const avg1 = (data1[i2] + data1[i2 + 1] + data1[i2 + 2]) / 3;
+      const avg2 = (data2[i2] + data2[i2 + 1] + data2[i2 + 2]) / 3;
+      const diff = this._threshold(this._fastAbs(avg1 - avg2));
+      target[i2] = target[i2 + 1] = target[i2 + 2] = diff;
+      target[i2 + 3] = 255;
+    }
+  }
+  /** Average brightness of a pixel region */
+  _calcAverage(data) {
+    let sum2 = 0;
+    const pixels = data.length / 4;
+    for (let i2 = 0; i2 < data.length; i2 += 4) {
+      sum2 += (data[i2] + data[i2 + 1] + data[i2 + 2]) / 3;
+    }
+    return Math.round(sum2 / pixels);
+  }
+  _fastAbs(value) {
+    return (value ^ value >> 31) - (value >> 31);
+  }
+  _threshold(value) {
+    return value > 21 ? 255 : 0;
+  }
+};
+
+// node_modules/nui-commander/scripts/controller.js
+var interActionController = {
+  main: []
+};
+for (x3 = 0; x3 < 64; x3++) {
+  interActionController.main.push(new modelBlock(x3));
+}
+var x3;
+interActionController.main[0].onAction = function() {
+  console.log("Default command ... ", this.status);
+};
+
+// src/engine/buildin/adapter-nui-commander.js
+function createNuiContainer() {
+  const container = document.createElement("div");
+  container.id = "nui-commander-container";
+  const webcam = document.createElement("video");
+  webcam.id = "webcam";
+  webcam.autoplay = true;
+  webcam.width = 640;
+  webcam.height = 480;
+  const canvasSource = document.createElement("canvas");
+  canvasSource.id = "canvas-source";
+  canvasSource.width = 640;
+  canvasSource.height = 480;
+  const canvasBlended = document.createElement("canvas");
+  canvasBlended.id = "canvas-blended";
+  canvasBlended.width = 640;
+  canvasBlended.height = 480;
+  canvasBlended.style.display = "none";
+  const xylo = document.createElement("div");
+  xylo.id = "xylo";
+  container.appendChild(webcam);
+  container.appendChild(canvasSource);
+  container.appendChild(canvasBlended);
+  container.appendChild(xylo);
+  document.body.appendChild(container);
+  return {
+    container,
+    webcam,
+    canvasSource,
+    canvasBlended,
+    xylo
+  };
+}
+
+// examples/games/my-nui/menu-beast.js
+var nuiCommander = {};
+var loadMenuBeast = function() {
+  createNuiContainer();
+  let menuBeast = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    // dontUsePhysics: true,
+    useCannon: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      noEvents: true,
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    nuiCommander.drawer = new CanvasEngine(interActionController);
+    nuiCommander.drawer.draw();
+    nuiCommander.indicatorsBlocks = indicatorsBlocks;
+    nuiCommander.drawer.elements.push(nuiCommander.indicatorsBlocks);
+    menuBeast.matrixPhysics.speedUpSimulation(2);
+    const cam2 = app.getCamera();
+    menuBeast.addLight();
+    downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "5" } : { left: "53" };
+      MobileDOM.addButton(
+        "Enable camera",
+        function() {
+          if (byId2("auto-video").style.zIndex === "-1") {
+            byId2("auto-video").style.zIndex = 1;
+            byId2("auto-video").style.opacity = 0.4;
+          } else {
+            byId2("auto-video").style.zIndex = -1;
+            byId2("auto-video").style.opacity = 0.4;
+          }
+        },
+        () => {
+        },
+        arg1
+      );
+      menuBeast.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: 0, y: -1, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    function createPillar(menuBeast2, m2, x3, y3, z2, name2) {
+      const base = menuBeast2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 10, 1],
+        texturesPaths: ["./res/textures/white-metal2.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      const top = menuBeast2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3 + 6, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1.8, 3, 1.8],
+        texturesPaths: ["./res/textures/matrix1.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      return { base, top };
+    }
+    async function onLoadObj(m2) {
+      app.physicsBodiesGeneratorWall(
+        "standard",
+        { x: -4.5, y: 1, z: -10 },
+        { x: 0, y: 0, z: 0 },
+        ["./res/textures/rust.jpg"],
+        "my_set_walls",
+        "5x3",
+        true,
+        [1, 1, 1],
+        2.05,
+        1e3,
+        "ByX"
+      );
+      const pillar1 = createPillar(menuBeast, m2, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(menuBeast, m2, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(menuBeast, m2, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(menuBeast, m2, 20, 6, 20, "pil4");
+      menuBeast.lightContainer[0].setIntensity(0.7);
+      app.lightContainer[0].setColorB(100);
+      menuBeast.activateBloomEffect();
+      menuBeast.lightContainer[0].setPosition(0, 35, 0);
+      menuBeast.lightContainer[0].setTarget(0, 0, -20);
+      setTimeout(() => {
+        menuBeast.activateHZB();
+        let cam3 = app.getCamera();
+        cam3.setYaw(-0.03);
+        cam3.setPitch(-0.49);
+        cam3.setZ(0);
+        cam3.setY(7);
+        app.buildRenderBuckets();
+        cam3._dirtyAngle = true;
+      }, 700);
+    }
+  });
+  window.app = menuBeast;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -56640,6 +57371,7 @@ byId2("loadGaussianSplatVertAnim").addEventListener("click", () => switchDemo("2
 byId2("loadStreamRenderHost").addEventListener("click", () => switchDemo("29"));
 byId2("hand").addEventListener("click", () => switchDemo("28"));
 byId2("hang3d").addEventListener("click", () => switchDemo("30"));
+byId2("loadMenuBeast").addEventListener("click", () => switchDemo("31"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -56703,6 +57435,8 @@ if (urlQuery["demo"] === "1") {
   loadStreamRenderHost();
 } else if (urlQuery["demo"] === "30") {
   loadHang3d();
+} else if (urlQuery["demo"] === "31") {
+  loadMenuBeast();
 } else {
   loadObjFile();
 }

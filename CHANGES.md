@@ -2,6 +2,7 @@
 ## CHANGES [Started from feb 2026]
 
 [1.16.xx - 1.17.00]
+ - Adding to the matterjs switch kinematic dinamic obj type - improve platforme template.
  - Adding new feature for app graph editor part - remove links on double click or right click, also hover effect.
  - Added plugin 'player object' now only fot FPShooter prototypes
  - Added zombie area (Hang3d series)

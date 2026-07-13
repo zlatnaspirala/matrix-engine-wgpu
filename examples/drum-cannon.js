@@ -13,7 +13,7 @@ export var loadDrumCannon = function() {
   let DRUM = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     useJolt: true,
-    fastRender: 0.9,
+    fastRender: 0.8,
     MAX_SPOTLIGHTS: 4,
     MAX_BONES: 0,
     mainCameraParams: {
@@ -443,7 +443,7 @@ export var loadDrumCannon = function() {
         }
       };
 
-      const NUM_LIGHTS = 4;
+      const NUM_LIGHTS = isMobile() === true ? 2 : 4;
       const ORBIT_RADIUS = 15;
       const ORBIT_SPEED = 1;
       const TARGET = {x: 0, y: 25, z: -10};

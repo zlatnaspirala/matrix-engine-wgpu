@@ -37,6 +37,7 @@ import {loadGaussianSplatVertAnim} from "./examples/gaussian-vertex-anim.js";
 import {loadHand} from "./examples/games/nui/hand.js";
 import {loadStreamRenderHost} from "./examples/stream-render.js";
 import {loadHang3d} from "./examples/games/first-person-shooter/hang3d.js";
+import {loadMenuBeast} from "./examples/games/my-nui/menu-beast.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -83,6 +84,9 @@ byId('loadGaussianSplatVertAnim').addEventListener("click", () => switchDemo('27
 byId('loadStreamRenderHost').addEventListener("click", () => switchDemo('29'));
 byId('hand').addEventListener("click", () => switchDemo('28'));
 byId('hang3d').addEventListener("click", () => switchDemo('30'));
+byId('loadMenuBeast').addEventListener("click", () => switchDemo('31'));
+
+
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
@@ -149,6 +153,8 @@ if(urlQuery['demo'] === '1') {
   loadStreamRenderHost();
 } else if(urlQuery['demo'] === '30') {
   loadHang3d();
+} else if(urlQuery['demo'] === '31') {
+  loadMenuBeast();
 } else {
   loadObjFile();
 }
