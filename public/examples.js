@@ -51120,10 +51120,10 @@ var loadSprite1 = function() {
 
 // examples/2D-world-matter.js
 var BLOCK_TYPES = {
-  SAFE: { color: [0.2, 0.8, 0.2], moving: false, dangerous: false },
-  MOVING: { color: [0.2, 0.4, 1], moving: true, dangerous: false },
-  DANGEROUS_STATIC: { color: [1, 0.2, 0.2], moving: false, dangerous: true },
-  DANGEROUS_MOVING: { color: [1, 0.5, 0], moving: true, dangerous: true }
+  SAFE: { color: [0.2, 5, 5], moving: false, dangerous: false },
+  MOVING: { color: [1, 5, 1], moving: true, dangerous: false },
+  DANGEROUS_STATIC: { color: [11, 0.2, 0.2], moving: false, dangerous: true },
+  DANGEROUS_MOVING: { color: [11, 0.5, 0], moving: true, dangerous: true }
 };
 function pickType() {
   const r3 = Math.random();
@@ -51241,6 +51241,7 @@ var loadSprite2 = function() {
               material: { type: "standard" },
               position: { x: x3, y: y3, z: -10 },
               scale: [3, 0.5, 1],
+              texturesPaths: ["./res/textures/floor1.webp"],
               name: `BLOCK_${type2}_${i2}`,
               mesh: meshData,
               physics: {
@@ -51274,6 +51275,7 @@ var loadSprite2 = function() {
         world2D.lightContainer[0].setTarget(0, 0, 0);
         setTimeout(() => {
           _2 = app.matrixPhysics.getBodyByName("PLAYER");
+          app.matrixPhysics.setFriction(_2, 2);
           world2D.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
           PLAYER.setAmbient(2, 1, 0);
           let cam2 = world2D.getCamera();
@@ -51319,7 +51321,8 @@ var loadSprite2 = function() {
                 );
               }
               const pos2 = await app.matrixPhysics.getPosition(_2);
-              if (pos2.y < -10) {
+              if (pos2.y > 1500) {
+                console.log("   --- ", pos2);
                 await app.matrixPhysics.switchToKinematic(_2);
                 app.matrixPhysics.setKinematicTransform(_2, 0, 5, -25);
                 app.matrixPhysics.switchToDinamic(_2);
@@ -51367,7 +51370,7 @@ var loadSprite2 = function() {
           cam2.followMe = PLAYER.position;
           world2D.buildRenderBuckets();
           cam2._dirtyAngle = true;
-        }, 2500);
+        }, 500);
       }
       world2D.canvas.addEventListener("ray.hit.event", (e2) => {
         if (e2.detail.hitObject.name.startsWith("PLAYER")) {

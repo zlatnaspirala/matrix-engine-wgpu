@@ -227,8 +227,8 @@ class MatterPhysicsWorker {
     const my = -(y / this.TUNE);
     // const mx = x;
     // const my = y;
-    // console.log('in worker X:', mx)
-    // console.log('in worker Y:', my)
+    // console.log('in m X:', mx)
+    // console.log('in m Y:', my)
     this.Body.setPosition(body, {x: mx, y: my});
     // Set velocity to 0 immediately after move to stop it from "drifting"
     this.Body.setVelocity(body, {x: 0, y: 0});
@@ -434,6 +434,32 @@ class MatterPhysicsWorker {
     }
   }
 
+  switchToKinematic(idx) {
+    const b = this.rigidBodies[idx];
+    if(!b) return;
+
+    // zero velocity while still dynamic
+    this.Body.setVelocity(b, {x: 0, y: 0});
+    b.angularVelocity = 0;
+
+    // static = immovable by engine forces, position driven manually
+    this.Body.setStatic(b, true);
+    b.isKinematic = true;
+    b.label = 'kinematic';
+  }
+
+  switchToDinamic(idx) {
+    const b = this.rigidBodies[idx];
+    if(!b) return;
+
+    this.Body.setStatic(b, false);
+    b.isKinematic = false;
+
+    // stop tickKinematic() from driving it once it's dynamic again
+    this.kinematicTargets.delete(idx);
+  }
+
+
   //   Matter.Events.on(engine, 'sleepStart', (event) => {
   //     event.source.bodies.forEach(body => {
   //         if (body === myPinball) {
@@ -460,31 +486,31 @@ function _eulerToQuat(ex, ey, ez) {
   ];
 }
 
-const worker = new MatterPhysicsWorker();
+const m = new MatterPhysicsWorker();
 
 self.onmessage = async ({data}) => {
   const {cmd, id} = data;
 
   switch(cmd) {
     case 'init': {
-      await worker.init(data.options);
+      await m.init(data.options);
       self.postMessage({cmd: 'ready', id});
       break;
     }
     case 'addBody':
-      console.log('worker add body');
-      const idx = worker.addBody(data.pOptions);
-      self.postMessage({cmd: 'bodyAdded', id, idx, sab: worker._sab});
+      console.log('m add body');
+      const idx = m.addBody(data.pOptions);
+      self.postMessage({cmd: 'bodyAdded', id, idx, sab: m._sab});
       break;
     case 'step':
-      worker.step();
-      if(!worker._useSAB && worker._snapshot) {
-        const copy = worker._snapshot.slice();
+      m.step();
+      if(!m._useSAB && m._snapshot) {
+        const copy = m._snapshot.slice();
         self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
       }
       break;
     case 'setKinematicTransform':
-      worker.setKinematicTransform(data.idx, data.x, data.y, data.z);
+      m.setKinematicTransform(data.idx, data.x, data.y, data.z);
       break;
     case 'setKinematicTransform2':
       // Loop through the data.count to process all batched updates
@@ -494,28 +520,30 @@ self.onmessage = async ({data}) => {
         const y = data.pos[i * 3 + 1];
         // const z = data.pos[i * 3 + 2] / this.TUNE;
         // Call the logic to actually move the body
-        worker.setKinematicTransform(idx, x, y, 0);
+        m.setKinematicTransform(idx, x, y, 0);
       }
       break;
-    case 'applyImpulse': worker.applyImpulse(data.idx, data.x, data.y, data.z); break;
-    case 'applyTorque': worker.applyTorque(data.idx, data.x, data.y, data.z); break;
-    case 'setLinearVelocity': worker.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
-    case 'setBodyAngularVelocity': worker.setBodyAngularVelocity(data.idx, data.x, data.y, data.z); break;
-    case 'setGravity': worker.setGravity(data.x, data.y, data.z); break;
-    case 'setGravityScale': worker.setGravityScale(data.idx, data.scale); break;
-    case 'setFriction': worker.setFriction(data.idx, data.s); break;
-    case 'setRestitution': worker.setRestitution(data.idx, data.s); break;
-    case 'setDamping': worker.setDamping(data.idx, data.l, data.a); break;
-    case 'setBodyTransform': worker.setBodyTransform(data.idx, data.x, data.y, data.z); break;
-    case 'clearBody': worker.clearBody(data.idx); break;
-    case 'activate': worker.activate(data.idx); break;
-    case 'deactivate': worker.deactivate(data.idx); break;
-    case 'removeRigidBody': worker.removeRigidBody(data.idx); break;
-    case 'speedUpSimulation': worker.speedUpSimulation(data.value); break;
-    case 'getPosition': worker.getPosition(data.idx, data.id); break;
-    case 'shootBody': worker.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;
-    case 'isSleeping': worker.isSleeping(data.idx, data.id); break;
-    case 'setKinematicInterpolate': worker.setKinematicInterpolate(data.idx, data.targetX, data.targetY, data.targetZ, data.lerpFactor = 0.1); break;
+    case 'applyImpulse': m.applyImpulse(data.idx, data.x, data.y, data.z); break;
+    case 'applyTorque': m.applyTorque(data.idx, data.x, data.y, data.z); break;
+    case 'setLinearVelocity': m.setLinearVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setBodyAngularVelocity': m.setBodyAngularVelocity(data.idx, data.x, data.y, data.z); break;
+    case 'setGravity': m.setGravity(data.x, data.y, data.z); break;
+    case 'setGravityScale': m.setGravityScale(data.idx, data.scale); break;
+    case 'setFriction': m.setFriction(data.idx, data.s); break;
+    case 'setRestitution': m.setRestitution(data.idx, data.s); break;
+    case 'setDamping': m.setDamping(data.idx, data.l, data.a); break;
+    case 'setBodyTransform': m.setBodyTransform(data.idx, data.x, data.y, data.z); break;
+    case 'clearBody': m.clearBody(data.idx); break;
+    case 'activate': m.activate(data.idx); break;
+    case 'deactivate': m.deactivate(data.idx); break;
+    case 'removeRigidBody': m.removeRigidBody(data.idx); break;
+    case 'speedUpSimulation': m.speedUpSimulation(data.value); break;
+    case 'getPosition': m.getPosition(data.idx, data.id); break;
+    case 'shootBody': m.shootBody(data.idx, data.lx, data.ly, data.lz, data.ax, data.ay, data.az); break;
+    case 'isSleeping': m.isSleeping(data.idx, data.id); break;
+    case 'setKinematicInterpolate': m.setKinematicInterpolate(data.idx, data.targetX, data.targetY, data.targetZ, data.lerpFactor = 0.1); break;
+    case 'switchToKinematic': m.switchToKinematic(data.idx); break;
+    case 'switchToDinamic': m.switchToDinamic(data.idx); break;
     default:
       console.warn(`Unknown command: ${cmd}`);
   }

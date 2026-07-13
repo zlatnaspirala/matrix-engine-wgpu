@@ -4,10 +4,10 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {PVector} from "../src/engine/matrix-class.js";
 
 const BLOCK_TYPES = {
-  SAFE: {color: [0.2, 0.8, 0.2], moving: false, dangerous: false},
-  MOVING: {color: [0.2, 0.4, 1.0], moving: true, dangerous: false},
-  DANGEROUS_STATIC: {color: [1.0, 0.2, 0.2], moving: false, dangerous: true},
-  DANGEROUS_MOVING: {color: [1.0, 0.5, 0.0], moving: true, dangerous: true},
+  SAFE: {color: [0.2, 5, 5], moving: false, dangerous: false},
+  MOVING: {color: [1, 5, 1], moving: true, dangerous: false},
+  DANGEROUS_STATIC: {color: [11.0, 0.2, 0.2], moving: false, dangerous: true},
+  DANGEROUS_MOVING: {color: [11.0, 0.5, 0.0], moving: true, dangerous: true},
 };
 
 function pickType() {
@@ -144,6 +144,7 @@ export var loadSprite2 = function() {
               material: {type: 'standard'},
               position: {x: x, y: y, z: -10},
               scale: [3, 0.5, 1],
+              texturesPaths: ['./res/textures/floor1.webp'],
               name: `BLOCK_${type}_${i}`,
               mesh: meshData,
               physics: {
@@ -183,6 +184,7 @@ export var loadSprite2 = function() {
 
         setTimeout(() => {
           _ = app.matrixPhysics.getBodyByName('PLAYER');
+          app.matrixPhysics.setFriction(_,2)
           world2D.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
           PLAYER.setAmbient(2, 1, 0);
 
@@ -234,7 +236,8 @@ export var loadSprite2 = function() {
               }
               // check player failing
               const pos = await app.matrixPhysics.getPosition(_);
-              if (pos.y < -10) {
+              if (pos.y > 1500) {
+                console.log('   --- ', pos)
                 await app.matrixPhysics.switchToKinematic(_);
                 app.matrixPhysics.setKinematicTransform(_, 0, 5, -25);
                 app.matrixPhysics.switchToDinamic(_);
@@ -294,7 +297,7 @@ export var loadSprite2 = function() {
 
           world2D.buildRenderBuckets();
           cam._dirtyAngle = true;
-        }, 2500);
+        }, 500);
       }
 
       world2D.canvas.addEventListener("ray.hit.event", (e) => {
