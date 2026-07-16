@@ -84,7 +84,9 @@ byId('loadGaussianSplatVertAnim').addEventListener("click", () => switchDemo('27
 byId('loadStreamRenderHost').addEventListener("click", () => switchDemo('29'));
 byId('hand').addEventListener("click", () => switchDemo('28'));
 byId('hang3d').addEventListener("click", () => switchDemo('30'));
-byId('loadMenuBeast').addEventListener("click", () => switchDemo('31'));
+if (byId('loadMenuBeast')) {
+  byId('loadMenuBeast').addEventListener("click", () => switchDemo('31'));
+}
 
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));

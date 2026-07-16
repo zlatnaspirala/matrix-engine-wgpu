@@ -41690,7 +41690,14 @@ var PhysicsBridge = class {
     this._queue = [];
     setTimeout(() => {
       dispatchEvent(new CustomEvent("PhysicsReady", {}));
-    }, 300);
+      setTimeout(() => {
+        if (app.mainRenderBundle.length == 0) {
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent("PhysicsReady", {}));
+          }, 750);
+        }
+      }, 200);
+    }, 450);
   }
   addPhysics(MEObject, pOptions) {
     if (!this._ready) {
@@ -43571,7 +43578,7 @@ var MatrixEngineWGPU = class {
             });
             return;
           }
-          meLoader.create("RUN");
+          meLoader.create("RUN IN FULL SCREEN");
           this.MEConfig.fsManager.onChange((isFS, target2) => {
             console.log("1 BACK FROM FS", isFS);
             console.log("window style width : ", innerWidth);
@@ -43715,14 +43722,14 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.16.00 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 1.17.5 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open...\nOptimised MediaPipe buildin library implemented.\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
+      "%cMatrix Engine WGPU - Gate is open...\nOptimised MediaPipe buildin library implemented.\nCreative power with intuitive visual scripting work flow.\nNew Features: NUI-Commander, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
     );
     console.log(
-      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
+      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE
     );
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
@@ -44683,7 +44690,7 @@ var MatrixEngineWGPU = class {
       };
     }
     if (typeof o3.physics.enabled === "undefined") {
-      o3.physics.enabled = true;
+      o3.physics.enabled = false;
     }
     if (typeof o3.physics.geometry === "undefined") {
       o3.physics.geometry = "Cube";
@@ -44737,13 +44744,14 @@ var MatrixEngineWGPU = class {
         );
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
+        if (o3.physics.enabled == true) {
+          this.matrixPhysics.addPhysics(bvhPlayer, o3.physics);
+        }
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
-          setTimeout(() => {
-            document.dispatchEvent(this.usEvent);
-          }, 50);
-        }, 200);
+          document.dispatchEvent(this.usEvent);
+        }, 120);
         c2++;
       }
       skinnedNodeIndex++;
@@ -44781,7 +44789,6 @@ var MatrixEngineWGPU = class {
           { binding: 0, resource: this.sceneTexture.createView() },
           { binding: 1, resource: this.presentSampler },
           { binding: 2, resource: this.ssrPass.ssrOutputView }
-          // real
         ]
       });
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
@@ -44793,7 +44800,7 @@ var MatrixEngineWGPU = class {
   };
   activateVolumetricEffect = (arg) => {
     if (this.bloomPass.enabled != true) {
-      console.warn(`%cMEW: You must enable bloom before volumetric.`);
+      console.warn(`%cTheBeast: You must enable bloom before volumetric.`);
       return;
     }
     let p2;
@@ -56870,6 +56877,11 @@ var indicatorsBlocks = {
   }
 };
 
+// node_modules/nui-commander/scripts/helper.js
+function getDom(id2) {
+  return document.getElementById(id2);
+}
+
 // node_modules/nui-commander/scripts/system/buffer-load.js
 function BufferLoader(context, urlList, callback) {
   this.context = context;
@@ -56923,12 +56935,358 @@ function modelBlock(x3) {
   };
 }
 
-// node_modules/nui-commander/scripts/helper.js
-function getDom(id2) {
-  return document.getElementById(id2);
+// node_modules/nui-commander/scripts/controller.js
+var interActionController = {
+  main: []
+};
+for (x3 = 0; x3 < 64; x3++) {
+  interActionController.main.push(new modelBlock(x3));
 }
+var x3;
+interActionController.main[0].onAction = function() {
+  console.log("Default command ... ", this.status);
+};
 
-// node_modules/nui-commander/scripts/CanvasEngine.js
+// node_modules/nui-commander/scripts/controls/controls.js
+var NuiSlider = class {
+  constructor(label, options2 = {}) {
+    this.name = "NuiSlider";
+    this.label = label;
+    this.row = options2.row ?? 6;
+    this.min = options2.min ?? 0;
+    this.max = options2.max ?? 100;
+    this.value = options2.value ?? 50;
+    this.step = options2.step ?? 2;
+    this.color = options2.color ?? "80, 180, 255";
+    this.onChange = options2.onChange ?? null;
+    this._shemaX = 8;
+    this._shemaY = 8;
+    this._opacity = 0.6;
+    this._flash = 0;
+  }
+  draw(engine) {
+    const { ctx } = engine;
+    const W2 = engine.getCanvasWidth(100);
+    const H2 = engine.getCanvasHeight(100);
+    const cellW = W2 / this._shemaX;
+    const cellH = H2 / this._shemaY;
+    const y3 = cellH * this.row;
+    ctx.save();
+    ctx.fillStyle = `rgba(20, 20, 20, 0.5)`;
+    ctx.fillRect(cellW, y3 + cellH * 0.3, W2 - cellW * 2, cellH * 0.4);
+    const pct = (this.value - this.min) / (this.max - this.min);
+    const trackW = W2 - cellW * 2;
+    const fillW = trackW * pct;
+    ctx.fillStyle = `rgba(${this.color}, ${this._opacity + this._flash})`;
+    ctx.fillRect(cellW, y3 + cellH * 0.3, fillW, cellH * 0.4);
+    const thumbX = cellW + fillW;
+    ctx.fillStyle = `rgba(255, 255, 255, ${this._opacity + this._flash})`;
+    ctx.beginPath();
+    ctx.arc(thumbX, y3 + cellH * 0.5, cellH * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.font = "bold 14px monospace";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${this.label}: ${Math.round(this.value)}`, cellW, y3 + cellH * 0.15, trackW);
+    ctx.fillStyle = `rgba(${this.color}, 0.7)`;
+    ctx.font = "20px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("\u25C0", cellW * 0.5, y3 + cellH * 0.5);
+    ctx.fillText("\u25B6", W2 - cellW * 0.5, y3 + cellH * 0.5);
+    ctx.restore();
+  }
+  update(engine) {
+    const row2 = this.row;
+    const main = engine.interActionController.main;
+    const baseIdx = row2 * this._shemaX;
+    const leftActive = main[baseIdx]?.status || main[baseIdx + 1]?.status;
+    const rightActive = main[baseIdx + 6]?.status || main[baseIdx + 7]?.status;
+    let changed = false;
+    if (leftActive) {
+      this.value = Math.max(this.min, this.value - this.step);
+      changed = true;
+    }
+    if (rightActive) {
+      this.value = Math.min(this.max, this.value + this.step);
+      changed = true;
+    }
+    if (changed) {
+      this._flash = 0.3;
+      this.onChange?.(this.value);
+    }
+    if (this._flash > 0) this._flash = Math.max(0, this._flash - 0.02);
+  }
+};
+var NuiCursor = class {
+  constructor(options2 = {}) {
+    this.name = "NuiCursor";
+    this.color = options2.color ?? "255, 80, 80";
+    this.size = options2.size ?? 18;
+    this.visible = options2.visible ?? true;
+    this._shemaX = 8;
+    this._shemaY = 8;
+    this.x = 0;
+    this.y = 0;
+    this.normX = 0;
+    this.normY = 0;
+    this._targetX = 0;
+    this._targetY = 0;
+    this._active = false;
+    this._opacity = 0;
+    this._trail = [];
+    this._trailMax = 8;
+  }
+  draw(engine) {
+    if (!this.visible || !this._active) return;
+    const { ctx } = engine;
+    ctx.save();
+    this._trail.forEach((pt2, i2) => {
+      const t3 = i2 / this._trail.length;
+      const r3 = this.size * 0.4 * t3;
+      ctx.beginPath();
+      ctx.arc(pt2.x, pt2.y, Math.max(1, r3), 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${this.color}, ${t3 * this._opacity * 0.4})`;
+      ctx.fill();
+    });
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(${this.color}, ${this._opacity * 0.6})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * 0.25, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${this.color}, ${this._opacity})`;
+    ctx.fill();
+    ctx.restore();
+  }
+  update(engine) {
+    const main = engine.interActionController.main;
+    const W2 = engine.getCanvasWidth(100);
+    const H2 = engine.getCanvasHeight(100);
+    const cellW = W2 / this._shemaX;
+    const cellH = H2 / this._shemaY;
+    let sumX = 0, sumY = 0, count = 0;
+    for (let row2 = 0; row2 < this._shemaY; row2++) {
+      for (let col = 0; col < this._shemaX; col++) {
+        const idx = row2 * this._shemaX + col;
+        if (main[idx]?.status) {
+          sumX += cellW * col + cellW / 2;
+          sumY += cellH * row2 + cellH / 2;
+          count++;
+        }
+      }
+    }
+    this._active = count > 0;
+    if (this._active) {
+      this._targetX = sumX / count;
+      this._targetY = sumY / count;
+    }
+    const LERP = 0.15;
+    this.x = this.x + (this._targetX - this.x) * LERP;
+    this.y = this.y + (this._targetY - this.y) * LERP;
+    this.normX = this.x / W2;
+    this.normY = this.y / H2;
+    const targetOpacity = this._active ? 1 : 0;
+    this._opacity += (targetOpacity - this._opacity) * 0.08;
+    if (this._active) {
+      this._trail.push({ x: this.x, y: this.y });
+      if (this._trail.length > this._trailMax) this._trail.shift();
+    } else {
+      if (this._trail.length > 0) this._trail.shift();
+    }
+  }
+};
+var NuiMenu = class {
+  constructor(items, options2 = {}) {
+    this.name = "NuiMenu";
+    this.items = items;
+    this.col = options2.col ?? 0;
+    this.cols = options2.cols ?? 3;
+    this.startRow = options2.startRow ?? 0;
+    this.dwellMs = options2.dwellMs ?? 700;
+    this.color = options2.color ?? "80, 160, 255";
+    this.accentColor = options2.accentColor ?? "255, 80, 120";
+    this.onSelect = options2.onSelect ?? null;
+    this._shemaX = 8;
+    this._shemaY = 8;
+    this.hoveredIndex = -1;
+    this.selectedIndex = -1;
+    this._dwellTick = 0;
+    this._gapTick = 0;
+    this._gapMax = 220;
+    this._fired = false;
+    this._itemStates = items.map((_2, i2) => ({
+      alpha: 0,
+      slideX: 1,
+      // 0 = in position, 1 = off to left (entry anim)
+      highlight: 0,
+      // 0→1 hover brightness
+      flash: 0,
+      // selection flash
+      entryDelay: i2 * 80,
+      // stagger entry animation
+      entryDone: false
+    }));
+    this._highlightY = -1;
+    this._highlightA = 0;
+    this._tick = 0;
+  }
+  // ── Public API ────────────────────────────────────────────────────────────
+  selectIndex(i2) {
+    if (i2 < 0 || i2 >= this.items.length) return;
+    this.selectedIndex = i2;
+    this._itemStates[i2].flash = 1;
+    this.onSelect?.(this.items[i2], i2);
+    this.items[i2].action?.();
+  }
+  // ── Draw ──────────────────────────────────────────────────────────────────
+  draw(engine) {
+    const { ctx } = engine;
+    const W2 = engine.getCanvasWidth(100);
+    const H2 = engine.getCanvasHeight(100);
+    const cellW = W2 / this._shemaX;
+    const cellH = H2 / this._shemaY;
+    const menuX = cellW * this.col;
+    const menuW = cellW * this.cols;
+    ctx.save();
+    if (this.hoveredIndex >= 0 && this._highlightA > 0.01) {
+      const barY = cellH * (this.startRow + this.hoveredIndex);
+      this._highlightY = this._highlightY < 0 ? barY : this._highlightY + (barY - this._highlightY) * 0.18;
+      ctx.fillStyle = `rgba(${this.color}, ${this._highlightA * 0.12})`;
+      ctx.fillRect(menuX, this._highlightY, menuW, cellH);
+      ctx.fillStyle = `rgba(${this.accentColor}, ${this._highlightA * 0.9})`;
+      ctx.fillRect(menuX, this._highlightY, 3, cellH);
+    }
+    for (let i2 = 0; i2 < this.items.length; i2++) {
+      const item = this.items[i2];
+      const state = this._itemStates[i2];
+      if (state.alpha < 0.01) continue;
+      const itemY = cellH * (this.startRow + i2);
+      const isHover = i2 === this.hoveredIndex;
+      const isSelect = i2 === this.selectedIndex;
+      const a2 = state.alpha;
+      const slideOff = state.slideX * menuW * 0.4;
+      ctx.save();
+      ctx.globalAlpha = a2;
+      ctx.translate(-slideOff, 0);
+      const rowAlpha = 0.06 + state.highlight * 0.08 + state.flash * 0.15;
+      ctx.fillStyle = `rgba(${this.color}, ${rowAlpha})`;
+      ctx.fillRect(menuX, itemY, menuW, cellH);
+      ctx.strokeStyle = `rgba(${this.color}, ${0.1 + state.highlight * 0.15})`;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(menuX + 12, itemY + cellH - 1);
+      ctx.lineTo(menuX + menuW - 12, itemY + cellH - 1);
+      ctx.stroke();
+      const fontSize = Math.round(cellH * 0.32);
+      ctx.font = `${isHover ? "bold " : ""}${fontSize}px monospace`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = isHover ? `rgba(255, 255, 255, ${0.9 + state.flash * 0.1})` : `rgba(${this.color}, ${0.55 + state.highlight * 0.3})`;
+      ctx.fillText(item.label, menuX + 18, itemY + cellH / 2, menuW - 30);
+      if (isHover) {
+        ctx.font = `${fontSize}px monospace`;
+        ctx.fillStyle = `rgba(${this.accentColor}, ${this._highlightA * 0.9})`;
+        ctx.textAlign = "right";
+        ctx.fillText("\u25B6", menuX + menuW - 8, itemY + cellH / 2);
+      }
+      ctx.font = `${Math.round(cellH * 0.18)}px monospace`;
+      ctx.fillStyle = `rgba(${this.color}, ${0.2 + state.highlight * 0.2})`;
+      ctx.textAlign = "left";
+      ctx.fillText(`${i2 + 1}`, menuX + 5, itemY + cellH * 0.22);
+      ctx.restore();
+      if (isHover && this._dwellTick > 0 && !this._fired) {
+        const progress = Math.min(this._dwellTick / this.dwellMs, 1);
+        ctx.fillStyle = `rgba(${this.color}, 0.1)`;
+        ctx.fillRect(menuX, itemY + cellH - 3, menuW, 3);
+        const grad = ctx.createLinearGradient(menuX, 0, menuX + menuW, 0);
+        grad.addColorStop(0, `rgba(${this.accentColor}, 0.9)`);
+        grad.addColorStop(1, `rgba(${this.color}, 0.9)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(menuX, itemY + cellH - 3, menuW * progress, 3);
+      }
+      if (state.flash > 0.01) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${state.flash * 0.25})`;
+        ctx.fillRect(menuX, itemY, menuW, cellH);
+      }
+    }
+    if (this.hoveredIndex >= 0 && this._highlightA > 0.1) {
+      const scanBaseY = cellH * (this.startRow + this.hoveredIndex);
+      const scanPhase = this._tick % 1200 / 1200;
+      const scanY = scanBaseY + scanPhase * cellH;
+      const sg = ctx.createLinearGradient(0, scanY - 5, 0, scanY + 5);
+      sg.addColorStop(0, `rgba(${this.color}, 0)`);
+      sg.addColorStop(0.5, `rgba(${this.color}, ${this._highlightA * 0.4})`);
+      sg.addColorStop(1, `rgba(${this.color}, 0)`);
+      ctx.fillStyle = sg;
+      ctx.fillRect(menuX, scanY - 5, menuW, 10);
+    }
+    ctx.restore();
+  }
+  // ── Update ────────────────────────────────────────────────────────────────
+  update(engine) {
+    this._tick += 20;
+    const main = engine.interActionController.main;
+    let hovered = -1;
+    for (let i2 = 0; i2 < this.items.length; i2++) {
+      const gridRow = this.startRow + i2;
+      if (gridRow >= this._shemaY) break;
+      for (let c2 = this.col; c2 < this.col + this.cols; c2++) {
+        const idx = gridRow * this._shemaX + c2;
+        if (main[idx]?.status) {
+          hovered = i2;
+          break;
+        }
+      }
+      if (hovered >= 0) break;
+    }
+    if (hovered >= 0) {
+      if (hovered !== this.hoveredIndex) {
+        this.hoveredIndex = hovered;
+        this._dwellTick = 0;
+        this._fired = false;
+        this._gapTick = 0;
+      }
+      this._gapTick = 0;
+      this._dwellTick += 20;
+      if (this._dwellTick >= this.dwellMs && !this._fired) {
+        this._fired = true;
+        this.selectIndex(this.hoveredIndex);
+      }
+    } else {
+      this._gapTick += 20;
+      if (this._gapTick >= this._gapMax) {
+        this.hoveredIndex = -1;
+        this._dwellTick = 0;
+        this._fired = false;
+        this._gapTick = 0;
+      }
+    }
+    const targetHA = this.hoveredIndex >= 0 ? 1 : 0;
+    this._highlightA += (targetHA - this._highlightA) * 0.1;
+    for (let i2 = 0; i2 < this.items.length; i2++) {
+      const state = this._itemStates[i2];
+      const isHover = i2 === this.hoveredIndex;
+      if (!state.entryDone) {
+        if (this._tick >= state.entryDelay) {
+          state.alpha += (1 - state.alpha) * 0.1;
+          state.slideX += (0 - state.slideX) * 0.1;
+          if (state.alpha > 0.98) {
+            state.alpha = 1;
+            state.slideX = 0;
+            state.entryDone = true;
+          }
+        }
+      }
+      const targetHL = isHover ? 1 : 0;
+      state.highlight += (targetHL - state.highlight) * 0.12;
+      if (state.flash > 0) state.flash = Math.max(0, state.flash - 0.04);
+    }
+  }
+};
+
+// node_modules/nui-commander/scripts/canvasEngine.js
 var CanvasEngine = class {
   constructor(interActionController2, options2 = { domVisual: false }) {
     this.options = options2;
@@ -56969,10 +57327,18 @@ var CanvasEngine = class {
         getDom("xylo").appendChild(domIndicator);
       }
     }
+    this._rafId = null;
+    this._drawTimeoutId = null;
+    this._mediaStream = null;
+    this._currFrameData = this._ctxSource.createImageData(this._canvasSource.width, this._canvasSource.height);
+    this._prevFrameData = this._ctxSource.createImageData(this._canvasSource.width, this._canvasSource.height);
+    this._hasPrevFrame = false;
     this._video = getDom("webcam");
     this._initUserMedia();
   }
-  // ─── Public API ────────────────────────────────────────────────────────────
+  removeElement(el2) {
+    this.elements = this.elements.filter((e2) => e2 !== el2);
+  }
   removeElementByName(name2) {
     this.elements = this.elements.filter((el2) => el2.name !== name2);
   }
@@ -56988,33 +57354,31 @@ var CanvasEngine = class {
       el2.draw(this);
       el2.update(this);
     });
-    setTimeout(() => this.draw(), 20);
+    this._drawTimeoutId = setTimeout(() => this.draw(), 20);
   }
   update() {
     if (!this.systemOnPause) {
       this.drawVideo();
       this.blend();
       this.checkAreas();
-      requestAnimFrame(() => this.update());
+      this._rafId = requestAnimFrame(() => this.update());
     }
   }
   drawVideo() {
-    this._ctxSource.drawImage(
-      this._video,
-      0,
-      0,
-      this._video.width,
-      this._video.height
-    );
+    this._ctxSource.drawImage(this._video, 0, 0, this._video.width, this._video.height);
   }
   blend() {
     const w2 = this._canvasSource.width;
     const h2 = this._canvasSource.height;
-    const sourceData = this._ctxSource.getImageData(0, 0, w2, h2);
-    if (!this._lastImageData) this._lastImageData = this._ctxSource.getImageData(0, 0, w2, h2);
-    this._differenceAccuracy(this._blendedData.data, sourceData.data, this._lastImageData.data);
+    const fresh = this._ctxSource.getImageData(0, 0, w2, h2);
+    this._currFrameData.data.set(fresh.data);
+    if (!this._hasPrevFrame) {
+      this._prevFrameData.data.set(this._currFrameData.data);
+      this._hasPrevFrame = true;
+    }
+    this._differenceAccuracy(this._blendedData.data, this._currFrameData.data, this._prevFrameData.data);
     this._ctxBlended.putImageData(this._blendedData, 0, 0);
-    this._lastImageData = sourceData;
+    this._prevFrameData.data.set(this._currFrameData.data);
   }
   // Default checkAreas — with optional DOM visual feedback
   checkAreas() {
@@ -57047,14 +57411,20 @@ var CanvasEngine = class {
       }
     }
   }
-  // ─── Private ───────────────────────────────────────────────────────────────
+  dispose() {
+    if (this._rafId) cancelAnimationFrame(this._rafId);
+    if (this._drawTimeoutId) clearTimeout(this._drawTimeoutId);
+    this._mediaStream?.getTracks().forEach((t3) => t3.stop());
+    this._soundContext?.close();
+    this.canvasDom.remove();
+    this.elements = [];
+  }
   _initUserMedia() {
     const hasGetUserMedia = !!(navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
     if (!hasGetUserMedia) {
       console.warn("hasGetUserMedia FALSE");
       return;
     }
-    console.log("hasGetUserMedia TRUE");
     const onStream = (stream) => {
       this._video.srcObject = stream;
       this._initialize();
@@ -57086,7 +57456,6 @@ var CanvasEngine = class {
     loader.load();
   }
   _finishedLoading(bufferList) {
-    const totalCells = this.blockIndicatorSize ** 2;
     for (let j2 = 0; j2 < this.blockIndicatorSize; j2++) {
       for (let d2 = 0; d2 < this.blockIndicatorSize; d2++) {
         const i2 = j2 * this.blockIndicatorSize + d2;
@@ -57128,8 +57497,6 @@ var CanvasEngine = class {
     const entry = this.interActionController.main[index];
     if (entry?.action) entry.action();
   }
-  // ─── Image processing helpers ──────────────────────────────────────────────
-  /** Pixel-accurate motion diff using grayscale average + threshold */
   _differenceAccuracy(target, data1, data2) {
     const len2 = data1.length;
     if (len2 !== data2.length) return;
@@ -57141,7 +57508,6 @@ var CanvasEngine = class {
       target[i2 + 3] = 255;
     }
   }
-  /** Average brightness of a pixel region */
   _calcAverage(data) {
     let sum2 = 0;
     const pixels = data.length / 4;
@@ -57158,20 +57524,138 @@ var CanvasEngine = class {
   }
 };
 
-// node_modules/nui-commander/scripts/controller.js
-var interActionController = {
-  main: []
-};
-for (x3 = 0; x3 < 64; x3++) {
-  interActionController.main.push(new modelBlock(x3));
+// node_modules/nui-commander/scripts/controls/nui-button.js
+function NuiButton(textMsg, callback, options2) {
+  options2 = options2 || {};
+  this.name = "NuiButton";
+  this.sensitivity = options2.sensitivity || "mid";
+  this.callback = callback;
+  this.shemaX = 8;
+  this.shemaY = 8;
+  this.text = textMsg;
+  this.myOpacity = 0.3;
+  this.textColor = options2.textColor ? options2.textColor : "rgba(0,0,0,1)";
+  this.font = options2.font ? options2.font : "30px sans-serif";
+  this.bgColor = options2.bgColor ? options2.bgColor : "rgba(122,122,222,0.4)";
+  this.discretePositionX = options2.col !== void 0 ? options2.col : 4;
+  this.discretePositionY = options2.row !== void 0 ? options2.row : 3;
+  this.discreteWidth = options2.cols !== void 0 ? options2.cols : 3;
+  this.discreteHeight = options2.rows !== void 0 ? options2.rows : 2;
+  this.borderColors = {
+    r: 10,
+    g: 150,
+    b: 110
+  };
+  this.draw = function(engine) {
+    engine.ctx.save();
+    engine.ctx.fillStyle = "rgba(" + this.borderColors.r + ", 150, " + this.borderColors.b + ", " + this.myOpacity + " )";
+    engine.ctx.fillRect(
+      engine.getCanvasWidth(100) / this.shemaX * this.discretePositionX - 10,
+      engine.getCanvasHeight(100) / this.shemaY * this.discretePositionY - 10,
+      engine.getCanvasWidth(100) / this.shemaX * this.discreteWidth + 20,
+      engine.getCanvasHeight(100) / this.shemaY * this.discreteHeight + 20
+    );
+    engine.ctx.font = this.font;
+    engine.ctx.fillStyle = this.bgColor;
+    engine.ctx.fillRect(
+      engine.getCanvasWidth(100) / this.shemaX * this.discretePositionX,
+      engine.getCanvasHeight(100) / this.shemaY * this.discretePositionY,
+      engine.getCanvasWidth(100) / this.shemaX * this.discreteWidth,
+      engine.getCanvasHeight(100) / this.shemaY * this.discreteHeight
+    );
+    engine.ctx.fillStyle = this.textColor;
+    engine.ctx.fillText(
+      this.text,
+      engine.getCanvasWidth(100) / this.shemaX * this.discretePositionX,
+      engine.getCanvasHeight(100) / this.shemaY * (this.discretePositionY + 0.7),
+      engine.getCanvasWidth(35),
+      engine.getCanvasHeight(9)
+    );
+    engine.ctx.restore();
+  };
+  this.getInteractionIndices = function() {
+    var indices = [];
+    for (var i2 = 0; i2 < this.discreteWidth; i2++) {
+      var col = this.discretePositionX + i2;
+      var row2 = this.discretePositionY;
+      indices.push(row2 * this.shemaX + col);
+    }
+    return indices;
+  };
+  this.update = function(engine) {
+    var indices = this.getInteractionIndices();
+    var statuses = indices.map(function(idx) {
+      var cell = engine.interActionController.main[idx];
+      return cell ? cell.status : false;
+    });
+    var anyTrue = statuses.some(function(s2) {
+      return s2 === true;
+    });
+    var allTrue = statuses.every(function(s2) {
+      return s2 === true;
+    });
+    var pairTrue = false;
+    for (var i2 = 0; i2 < statuses.length - 1; i2++) {
+      if (statuses[i2] === true && statuses[i2 + 1] === true) {
+        pairTrue = true;
+        break;
+      }
+    }
+    var triggered = this.sensitivity === "low" ? allTrue : pairTrue;
+    if (triggered) {
+      console.log("Button is triggered.");
+      this.callback("no");
+    }
+    if (anyTrue) {
+      if (this.borderColors.r < 255) this.borderColors.r += 20;
+      if (this.borderColors.b < 255) this.borderColors.b += 20;
+    } else {
+      if (this.borderColors.r > 0.1) this.borderColors.r -= 20;
+      if (this.borderColors.b > 0.1) this.borderColors.b -= 20;
+    }
+  };
 }
-var x3;
-interActionController.main[0].onAction = function() {
-  console.log("Default command ... ", this.status);
-};
 
 // src/engine/buildin/adapter-nui-commander.js
-function createNuiContainer() {
+var NUI_CONTAINER_STYLES = `
+#nui-commander-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 640px;
+  height: 480px;
+  overflow: hidden;
+  z-index: 0;
+  background-color: transparent;
+  color: lime;
+}
+
+#canvas-source {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+}
+
+#canvas-blended {
+  opacity: 0.5;
+  position: absolute;
+  top: 0px;
+  left: 0;
+  z-index: 1;
+}
+`;
+function injectNuiStyles() {
+  if (document.getElementById("nui-commander-styles")) return;
+  const style = document.createElement("style");
+  style.id = "nui-commander-styles";
+  style.textContent = NUI_CONTAINER_STYLES;
+  document.head.appendChild(style);
+}
+function createNuiContainer(hideSource = false, hideBlend = false, hideWebcam = false) {
+  injectNuiStyles();
   const container = document.createElement("div");
   container.id = "nui-commander-container";
   const webcam = document.createElement("video");
@@ -57179,15 +57663,17 @@ function createNuiContainer() {
   webcam.autoplay = true;
   webcam.width = 640;
   webcam.height = 480;
+  webcam.style.display = hideWebcam === true ? "none" : "block";
   const canvasSource = document.createElement("canvas");
   canvasSource.id = "canvas-source";
   canvasSource.width = 640;
   canvasSource.height = 480;
+  canvasSource.style.display = hideSource === true ? "none" : "block";
   const canvasBlended = document.createElement("canvas");
   canvasBlended.id = "canvas-blended";
   canvasBlended.width = 640;
   canvasBlended.height = 480;
-  canvasBlended.style.display = "none";
+  canvasBlended.style.display = hideBlend === true ? "none" : "block";
   const xylo = document.createElement("div");
   xylo.id = "xylo";
   container.appendChild(webcam);
@@ -57205,9 +57691,8 @@ function createNuiContainer() {
 }
 
 // examples/games/my-nui/menu-beast.js
-var nuiCommander = {};
 var loadMenuBeast = function() {
-  createNuiContainer();
+  createNuiContainer(true, false, true);
   let menuBeast = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
@@ -57222,36 +57707,102 @@ var loadMenuBeast = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
+    byId2("nui-commander-container").style.left = "10%";
+    byId2("nui-commander-container").style.top = "40%";
+    var nuiCommander = {};
     nuiCommander.drawer = new CanvasEngine(interActionController);
     nuiCommander.drawer.draw();
     nuiCommander.indicatorsBlocks = indicatorsBlocks;
     nuiCommander.drawer.elements.push(nuiCommander.indicatorsBlocks);
-    menuBeast.matrixPhysics.speedUpSimulation(2);
+    nuiCommander.indicatorsBlocks.text[7] = "";
+    const cursor = new NuiCursor({ color: "255, 80, 80" });
+    nuiCommander.drawer.elements.push(cursor);
+    const slider = new NuiSlider("Bloom Intesity", {
+      row: 2,
+      value: 1,
+      onChange: (v2) => {
+        app.bloomPass.setIntensity(v2);
+      }
+    });
+    const sliderBloomRad = new NuiSlider("Bloom Blur", {
+      row: 4,
+      value: 1,
+      onChange: (v2) => {
+        app.bloomPass.setBlurRadius(v2);
+      }
+    });
+    const hideSliderBloom = new NuiButton(
+      "hide",
+      () => {
+        nuiCommander.drawer.removeElement(slider);
+        nuiCommander.drawer.removeElement(sliderBloomRad);
+        nuiCommander.drawer.removeElement(hideSliderBloom);
+        nuiCommander.drawer.elements.push(menu);
+      },
+      { col: 3, row: 0, cols: 2, rows: 1, sensitivity: "low", bgColor: "#121234", textColor: "white" }
+    );
+    const menu = new NuiMenu([
+      {
+        label: "Light red",
+        action: () => {
+          app.lightContainer[0].setColor([100, 1, 0]);
+        }
+      },
+      {
+        label: "Light green",
+        action: () => {
+          app.lightContainer[0].setColor([0, 100, 1]);
+        }
+      },
+      {
+        label: "Volumetric",
+        action: () => {
+          app.activateVolumetricEffect({
+            density: 0.5,
+            steps: 30,
+            scatterStrength: 2,
+            heightFalloff: 0.2,
+            lightColor: [0, 1.8, 10]
+          });
+        }
+      },
+      {
+        label: "Bloom settings",
+        action: () => {
+          nuiCommander.drawer.removeElement(menu);
+          nuiCommander.drawer.elements.push(slider);
+          nuiCommander.drawer.elements.push(sliderBloomRad);
+          nuiCommander.drawer.elements.push(hideSliderBloom);
+        }
+      },
+      {
+        label: "Set pos Z",
+        action: () => {
+          console.log("cursor pos : " + cursor.y);
+        }
+      }
+    ], {
+      col: 0,
+      cols: 2,
+      startRow: 0,
+      dwellMs: 200,
+      color: "255, 160, 255",
+      accentColor: "255, 80, 120",
+      onSelect: (item, i2) => console.log("selected:", item.label)
+    });
+    nuiCommander.drawer.elements.push(menu);
+    app.nui = nuiCommander;
+    console.info("nui-commander controls attached.");
+    menuBeast.matrixPhysics.speedUpSimulation(4);
     const cam2 = app.getCamera();
     menuBeast.addLight();
     downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
-    function onGround(m2) {
-      let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "5" } : { left: "53" };
-      MobileDOM.addButton(
-        "Enable camera",
-        function() {
-          if (byId2("auto-video").style.zIndex === "-1") {
-            byId2("auto-video").style.zIndex = 1;
-            byId2("auto-video").style.opacity = 0.4;
-          } else {
-            byId2("auto-video").style.zIndex = -1;
-            byId2("auto-video").style.opacity = 0.4;
-          }
-        },
-        () => {
-        },
-        arg1
-      );
-      menuBeast.addMeshObj({
-        material: { type: "dark", share: true },
-        position: { x: 0, y: -1, z: -10 },
+    async function onGround(m2) {
+      let ground = menuBeast.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: 0, z: -20 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: ["./res/textures/white-metal.png"],
@@ -57263,6 +57814,26 @@ var loadMenuBeast = function() {
           geometry: "Cube"
         }
       });
+      const glbFile = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer()).then((buf) => uploadGLBModel(buf, menuBeast.device));
+      let beast = menuBeast.addGlbObjInctance({
+        material: { type: "standard", useTextureFromGlb: true },
+        useScale: true,
+        scale: [4, 4, 4],
+        position: { x: 0, y: -1, z: -25 },
+        name: "beast",
+        physics: {
+          enabled: true,
+          geometry: "Cube",
+          mass: 1,
+          radius: [0.5, 0.5, 0.5],
+          scale: [2, 0.5, 2],
+          height: 1,
+          group: 2,
+          mask: -1
+        },
+        texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+      }, null, glbFile);
+      app.beast = beast;
     }
     function createPillar(menuBeast2, m2, x3, y3, z2, name2) {
       const base = menuBeast2.addMeshObj({
@@ -57314,6 +57885,15 @@ var loadMenuBeast = function() {
       menuBeast.activateBloomEffect();
       menuBeast.lightContainer[0].setPosition(0, 35, 0);
       menuBeast.lightContainer[0].setTarget(0, 0, -20);
+      let controlBeast = {
+        update: function() {
+          console.log("cursor pos : " + cursor.x);
+          const setNewZ = cursor.y * 0.05;
+          const setNewX = (cursor.x - 300) * 0.05;
+          app.matrixPhysics.setBodyTransform(2, setNewX, 0, -setNewZ);
+        }
+      };
+      app.autoUpdate.push(controlBeast);
       setTimeout(() => {
         menuBeast.activateHZB();
         let cam3 = app.getCamera();
@@ -57371,7 +57951,9 @@ byId2("loadGaussianSplatVertAnim").addEventListener("click", () => switchDemo("2
 byId2("loadStreamRenderHost").addEventListener("click", () => switchDemo("29"));
 byId2("hand").addEventListener("click", () => switchDemo("28"));
 byId2("hang3d").addEventListener("click", () => switchDemo("30"));
-byId2("loadMenuBeast").addEventListener("click", () => switchDemo("31"));
+if (byId2("loadMenuBeast")) {
+  byId2("loadMenuBeast").addEventListener("click", () => switchDemo("31"));
+}
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;

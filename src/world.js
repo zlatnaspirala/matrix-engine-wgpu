@@ -340,7 +340,6 @@ export default class MatrixEngineWGPU {
 
     if(this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
       if(byId('msgBox')) byId('msgBox').style.left = '30%';
-
       if(MEConfig.LOAD_AFTER_CLICK_MOBILE == false && MEConfig.CACHE === false) {
         console.log('GOT DIRECT WHAT EVER')
         this.applyCanvasSize(this.options.fastRender)
@@ -361,9 +360,9 @@ export default class MatrixEngineWGPU {
       }
 
       setTimeout(() => {
-        if(APP_READY === false && isMobile() === true && 
-             location.hostname.indexOf('192.168.') === -1
-            ) {
+        if(APP_READY === false && isMobile() === true &&
+          location.hostname.indexOf('192.168.') === -1
+        ) {
           console.log('app is installing cache');
           setTimeout(() => {location.reload();}, 4000)
         } else {
@@ -385,7 +384,7 @@ export default class MatrixEngineWGPU {
             return;
           }
 
-          meLoader.create('RUN');
+          meLoader.create('RUN IN FULL SCREEN');
           this.MEConfig.fsManager.onChange((isFS, target) => {
             console.log('1 BACK FROM FS', isFS)
             console.log('window style width : ', innerWidth)
@@ -432,7 +431,7 @@ export default class MatrixEngineWGPU {
               });
             }
             if(this.mainRenderBundle.length == 0) {
-                console.log('PhysicsReady w')
+              console.log('PhysicsReady w')
               dispatchEvent(new CustomEvent('PhysicsReady', {}));
             }
           });
@@ -546,13 +545,13 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.16.00 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 1.17.5 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
       "Optimised MediaPipe buildin library implemented.\n" +
       "Creative power with intuitive visual scripting work flow.\n" +
-      "New Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      "New Features: NUI-Commander, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
       "2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
       "Mobile support: chrome-android tested. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
@@ -560,6 +559,8 @@ export default class MatrixEngineWGPU {
       " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
       " - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n" +
       " - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n" +
+      " - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n" +
+      " - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n" +
       " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" +
       " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE);
@@ -913,8 +914,8 @@ export default class MatrixEngineWGPU {
       }
     }
     try {
-    this.mainRenderBundle.splice(index, 1);
-    this.buildRenderBuckets(this.mainRenderBundle);
+      this.mainRenderBundle.splice(index, 1);
+      this.buildRenderBuckets(this.mainRenderBundle);
     } catch(err) {}
     // obj.destroy();
     this.buildLightShadowBuckets()
@@ -1468,7 +1469,7 @@ export default class MatrixEngineWGPU {
         rotation: o.rotation
       }
     }
-    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = true}
+    if(typeof o.physics.enabled === 'undefined') {o.physics.enabled = false}
     if(typeof o.physics.geometry === 'undefined') {o.physics.geometry = "Cube"}
     if(typeof o.physics.radius === 'undefined') {o.physics.radius = o.scale}
     if(typeof o.physics.mass === 'undefined') {o.physics.mass = 1;}
@@ -1481,7 +1482,6 @@ export default class MatrixEngineWGPU {
     } else {
       console.warn('GLB not use objAnim (it is only for obj sequence). GLB use own skinned skeletal animation!');
     }
-
     o.sceneBGL = this.sceneBGL;
     let results = [];
     let skinnedNodeIndex = 0;
@@ -1514,17 +1514,15 @@ export default class MatrixEngineWGPU {
         bvhPlayer.clearColor = clearColor;
 
         results.push(bvhPlayer);
-        // if(o.physics.enabled == true) {
-        //   this.matrixPhysics.addPhysics(myMesh1, o.physics)
-        // }
+        if(o.physics.enabled == true) {
+          this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
+        }
         // Soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
-          setTimeout(() => {
-            document.dispatchEvent(this.usEvent);
-          }, 50);
-        }, 200)
+          document.dispatchEvent(this.usEvent);
+        }, 120);
         c++;
       }
       skinnedNodeIndex++;
@@ -1564,18 +1562,17 @@ export default class MatrixEngineWGPU {
         entries: [
           {binding: 0, resource: this.sceneTexture.createView()},
           {binding: 1, resource: this.presentSampler},
-          {binding: 2, resource: this.ssrPass.ssrOutputView}, // real
+          {binding: 2, resource: this.ssrPass.ssrOutputView},
         ]
       });
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup
-      // Rebuild all mesh pipelines with 2 targets
       PipelineManager.invalidateAll();
       for(const mesh of this.mainRenderBundle) {mesh.setupPipeline()}
     }
   }
 
   activateVolumetricEffect = (arg) => {
-    if(this.bloomPass.enabled != true) {console.warn(`%cMEW: You must enable bloom before volumetric.`); return;}
+    if(this.bloomPass.enabled != true) {console.warn(`%cTheBeast: You must enable bloom before volumetric.`); return;}
     let p;
     if(typeof arg === 'undefined') {
       p = {
