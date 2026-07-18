@@ -7,6 +7,7 @@ import {followPath} from "./nav-mesh";
 import {creepPoints, startUpPositions} from "./static";
 import {FriendlyHero} from "./friendly-character";
 import {FireballSystem} from "../../../src/engine/procedures/fireball";
+import {downloadMeshes} from "../../../src/engine/loader-obj";
 
 export class Character extends Hero {
 
@@ -36,7 +37,7 @@ export class Character extends Hero {
   heroFocusAttackOn = null;
   mouseTarget = null;
 
-  // gold = 100;
+  webcam = null;
 
   constructor(forestOfHollowBlood, path, name = 'MariaSword', archetypes = ["Warrior", "Mage"]) {
     super(name, archetypes);
@@ -134,53 +135,84 @@ export class Character extends Hero {
 
   async loadLocalHero(p) {
     try {
-      var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {type: 'standard', useTextureFromGlb: true},
-        scale: [20, 20, 20],
-        position: {
-          x: startUpPositions[this.core.player.data.team][0],
-          y: startUpPositions[this.core.player.data.team][1],
-          z: startUpPositions[this.core.player.data.team][2]
-        },
-        name: this.name,
-        texturesPaths: ['res/textures/default.png'],
-        raycast: {enabled: true, radius: 5},
-        pointerEffect: {
-          enabled: true,
-          pointer: true,
-          energyBar: true,
-          flameEffect: false,
-          flameEmitter: true,
-          circlePlane: false,
-          circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/star1.png',
-        }
-      }, null, glbFile01);
+      const onLoadObj = async (m) => {
+        // loadVideoTexture
+        this.webcam = this.core.addMeshObj({
+          position: {
+            x: startUpPositions[this.core.player.data.team][0],
+            y: startUpPositions[this.core.player.data.team][1] + 50,
+            z: startUpPositions[this.core.player.data.team][2]
+          },
+          rotation: {x: 90, y: 0, z: 0},
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
+          scale: [12, 12, 12],
+          name: 'localCam',
+          mesh: m.plane,
+          // isVideo: {
+          //   type: 'video',
+          //   src: 'res/videos/tunel.mp4'
+          // },
+          physics: {
+            enabled: false,
+            geometry: "Cube"
+          },
+          raycast: {enabled: true, radius: 2}
+        })
 
-      // Poenter mouse click
-      var glbFile02 = await fetch('./res/meshes/glb/ring1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
-      this.core.addGlbObjInctance({
-        material: {type: 'standard', useTextureFromGlb: false},
-        scale: [20, 20, 20],
-        position: {x: 0, y: -24, z: -220},
-        name: 'mouseTarget',
-        texturesPaths: ['./res/textures/default.png'],
-        raycast: {enabled: false, radius: 1},
-        pointerEffect: {
-          enabled: true,
-          // circlePlane: true,
-          circlePlaneTex: true,
-          circlePlaneTexPath: './res/textures/star1.png',
-        }
-      }, null, glbFile02);
+        var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+        this.core.addGlbObjInctance({
+          material: {type: 'standard', useTextureFromGlb: true},
+          scale: [20, 20, 20],
+          position: {
+            x: startUpPositions[this.core.player.data.team][0],
+            y: startUpPositions[this.core.player.data.team][1],
+            z: startUpPositions[this.core.player.data.team][2]
+          },
+          name: this.name,
+          texturesPaths: ['res/textures/default.png'],
+          raycast: {enabled: true, radius: 5},
+          pointerEffect: {
+            enabled: true,
+            pointer: true,
+            energyBar: true,
+            flameEffect: false,
+            flameEmitter: true,
+            circlePlane: false,
+            circlePlaneTex: true,
+            circlePlaneTexPath: './res/textures/star1.png',
+          }
+        }, null, glbFile01);
 
-      // make small async - cooking glbs files  mouseTarget_Circle
-      this.setupHero().then(() => {
-        //
-      }).catch(() => {
-        this.setupHero().then(() => {}).catch(() => {})
-      })
+        // Poenter mouse click
+        var glbFile02 = await fetch('./res/meshes/glb/ring1.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
+        this.core.addGlbObjInctance({
+          material: {type: 'standard', useTextureFromGlb: false},
+          scale: [20, 20, 20],
+          position: {x: 0, y: -24, z: -220},
+          name: 'mouseTarget',
+          texturesPaths: ['./res/textures/default.png'],
+          raycast: {enabled: false, radius: 1},
+          pointerEffect: {
+            enabled: true,
+            // circlePlane: true,
+            circlePlaneTex: true,
+            circlePlaneTexPath: './res/textures/star1.png',
+          }
+        }, null, glbFile02);
+
+
+        // make small async - cooking glbs files  mouseTarget_Circle
+        this.setupHero().then(() => {
+          //
+  
+        }).catch(() => {
+          this.setupHero().then(() => {}).catch(() => {})
+        })
+      }
+
+      downloadMeshes({plane: "./res/meshes/blender/plane.obj"}, onLoadObj, {scale: [1, 1, 1]})
+
     } catch(err) {throw err;}
   }
 
@@ -203,7 +235,7 @@ export class Character extends Hero {
         );
         this.core.RPG.heroe_bodies = this.heroe_bodies;
         this.core.RPG.heroe_bodies.forEach((subMesh, id, array) => {
-          subMesh.position.thrust = isMobile() == false ? this.moveSpeed* 0.5 : this.moveSpeed;
+          subMesh.position.thrust = isMobile() == false ? this.moveSpeed * 0.5 : this.moveSpeed;
           subMesh.animationIndex = 0;
           // adapt manual if blender is not setup
           subMesh.glb.glbJsonData.animations.forEach((a, index) => {
@@ -228,10 +260,21 @@ export class Character extends Hero {
               this.core.autoUpdate.push(subMesh.fireballSystem);
               subMesh.fireballSystem.parent.effects.flameEmitter.setIntensity(20);
             }
+
+            // this.webcam.position = subMesh.position;
+
+            this.core.autoUpdate.push({
+              update: () => {
+                this.webcam.position.x = subMesh.position.x;
+                this.webcam.position.z = subMesh.position.z;
+              }
+            });
+
+
           }
 
           // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-          this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
+          this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'friendly');
         });
         if(app.localHero.heroe_bodies[0].effects) {
           app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
@@ -268,6 +311,8 @@ export class Character extends Hero {
         dispatchEvent(new CustomEvent('local-hero-bodies-ready', {
           detail: `This is not sync - 99% works`
         }))
+
+        resolve();
       }, 5000); // return to 2 -3 - testing on 3-4 on same computer
     })
   }
@@ -416,12 +461,12 @@ export class Character extends Hero {
   setAttack(on, isSecoundAttackLong = false) {
     this.heroFocusAttackOn = on;
     this.core.RPG.heroe_bodies.forEach(subMesh => {
-      if (isSecoundAttackLong === false) {
+      if(isSecoundAttackLong === false) {
         subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
       } else {
         subMesh.playAnimationByIndex(this.heroAnimationArrange.salute);
       }
-      
+
       // console.info(`%c ${subMesh.name} BEFORE SEND attack index ${subMesh.animationIndex}`, LOG_MATRIX)
       app.net.send({
         sceneName: subMesh.name,
@@ -691,9 +736,9 @@ export class Character extends Hero {
 
     addEventListener('fireball-hit', (e) => {
       // console.log(" SET ATTACK", e.detail.target.name)
-      let enemy = this.core.enemies.enemies.find( x => x.heroe_bodies[0].name == e.detail.target.name)
-      if (!enemy) enemy = this.core.enemies.creeps.find( x => x.heroe_bodies[0].name == e.detail.target.name)
-      if (typeof enemy === 'undefined') return;
+      let enemy = this.core.enemies.enemies.find(x => x.heroe_bodies[0].name == e.detail.target.name)
+      if(!enemy) enemy = this.core.enemies.creeps.find(x => x.heroe_bodies[0].name == e.detail.target.name)
+      if(typeof enemy === 'undefined') return;
       console.log(`%cATTACK LONGRANGE DAMAGE ${enemy.heroe_bodies[0].name}`, LOG_MATRIX);
       // abilityMultiplier
       this.calcDamage(this, enemy, 0.3);

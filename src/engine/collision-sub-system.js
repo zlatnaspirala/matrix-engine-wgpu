@@ -266,20 +266,21 @@ export class CollisionSystem {
   }
 
   update() {
-    if(!this.cameraEntry) return;
-    this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
-    const cam = this.cameraEntry;
-    this.checkPickups(cam.pos, cam.radius);
-    this._getNeighborCells(cam.pos[0], cam.pos[1], cam.pos[2], this._staticGrid, this._staticNeighbors);
-    for(let i = 0;i < this._staticNeighbors.length;i++) {
-      const entry = this._staticNeighbors[i];
-      if(entry.group === 'floor') continue;
-      const fakePos = {x: cam.pos[0], y: cam.pos[1], z: cam.pos[2]};
-      const hit = this.resolveVsStaticCube(fakePos, cam.radius, entry);
-      if(hit) {
-        cam.pos[0] = fakePos.x;
-        cam.pos[1] = fakePos.y;
-        cam.pos[2] = fakePos.z;
+    if(this.cameraEntry) {
+      this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
+      const cam = this.cameraEntry;
+      this.checkPickups(cam.pos, cam.radius);
+      this._getNeighborCells(cam.pos[0], cam.pos[1], cam.pos[2], this._staticGrid, this._staticNeighbors);
+      for(let i = 0;i < this._staticNeighbors.length;i++) {
+        const entry = this._staticNeighbors[i];
+        if(entry.group === 'floor') continue;
+        const fakePos = {x: cam.pos[0], y: cam.pos[1], z: cam.pos[2]};
+        const hit = this.resolveVsStaticCube(fakePos, cam.radius, entry);
+        if(hit) {
+          cam.pos[0] = fakePos.x;
+          cam.pos[1] = fakePos.y;
+          cam.pos[2] = fakePos.z;
+        }
       }
     }
     // dynamic vs dynamic
@@ -290,12 +291,13 @@ export class CollisionSystem {
       this._getNeighborCells(A.pos.x, A.pos.y, A.pos.z, this._grid, this._neighbors);
       for(let j = 0;j < this._neighbors.length;j++) {
         const B = this._neighbors[j];
-        // if(A === B) continue; ??
-        const minDist = (A.radius + B.radius) * 0.5;
-        if(A.group === B.group) {
-          resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
-          continue;
-        }
+        if(A === B) continue;
+        // const minDist = (A.radius + B.radius) * 0.5;
+        const minDist = A.radius + B.radius;
+        // if(A.group === B.group) {
+        //   resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
+        //   continue;
+        // }
         if(A.id >= B.id) continue;
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;
@@ -306,7 +308,7 @@ export class CollisionSystem {
           this._eventDetail.B = B;
           this._event1.detail.data = this._eventDetail;
           dispatchEvent(this._event1);
-          return;
+          // return;
         }
       }
     }

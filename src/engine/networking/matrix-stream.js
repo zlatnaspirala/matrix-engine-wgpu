@@ -141,7 +141,7 @@ export function joinSession(options) {
         });
 
     } else if(!netConfig.isDataOnly) {
-      session.connect(token)
+      session.connect(token,  netConfig.customData)
         .then(() => {
           byId('session-title').innerText = sessionName;
           byId('join').style.display = 'none';

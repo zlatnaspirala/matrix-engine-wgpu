@@ -432,7 +432,7 @@ export default class MaterialsInstanced {
         }
       }, {once: false});
     } else if(arg.type === 'videoElement') {
-      this.video = arg.el;
+      this.video = arg.videoElement;
       await this.video.play();
     } else if(arg.type === 'camera') {
       this.video = document.createElement('video');

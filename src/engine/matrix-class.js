@@ -89,7 +89,7 @@ export class Position {
   }
 
   onTargetPositionReach() {
-    console.log('onTargetPositionReach')
+    // console.log('onTargetPositionReach')
   }
 
   update() {

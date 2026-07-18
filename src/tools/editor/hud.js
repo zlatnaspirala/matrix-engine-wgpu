@@ -1404,7 +1404,7 @@ class SceneObjectProperty {
       );
       let F = app.editor.methodsManager.compileFunction(method.code);
       currSceneObj.position.onTargetPositionReach = F;
-      console.log('[position.onTargetPositionReach][attached]', F);
+      // console.log('[position.onTargetPositionReach][attached]', F);
     };
 
     byId('sceneObjEditorPropEvents').innerHTML = "";

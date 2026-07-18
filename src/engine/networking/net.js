@@ -120,7 +120,6 @@ export class MatrixStream {
       });
     })
 
-    // test
     addEventListener("streamPlaying", (e) => {
       console.log('streamPlaying from engine ', e.detail);
       const isRemote = e.detail.target.id.indexOf('remote-video') !== -1;
@@ -141,7 +140,8 @@ export class MatrixStream {
     });
 
     this.joinSessionUI.addEventListener('click', () => {
-      console.log(`%c JOIN SESSION [${netConfig.resolution}] `, REDLOG)
+      console.log(`%c JOIN SESSION [${netConfig.resolution}] `, REDLOG);
+      console.log(`%c JOIN isDataOnly [${netConfig.isDataOnly}] `, REDLOG);
       joinSession({
         resolution: netConfig.resolution,
         isDataOnly: netConfig.isDataOnly

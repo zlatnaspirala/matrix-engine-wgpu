@@ -85,13 +85,14 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     app.label.get = en;
   }
 
+  console.log("TEST - ", forestOfHollowBlood.player.data.useCameraOrAudio)
   forestOfHollowBlood.net = new MatrixStream({
     active: true,
     domain: 'maximumroulette.com',
     port: 2020,
     sessionName: 'forestOfHollowBlood-free-for-all',
     resolution: '160x240',
-    isDataOnly: forestOfHollowBlood.player.data.useCameraOrAudio, //(urlQuery.camera || urlQuery.audio ? false : true),
+    isDataOnly: !forestOfHollowBlood.player.data.useCameraOrAudio, //(urlQuery.camera || urlQuery.audio ? false : true),
     customData: forestOfHollowBlood.player.data
   });
 
@@ -152,7 +153,10 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
   });
 
   addEventListener("onConnectionCreated", (e) => {
+
     const remoteCons = Array.from(e.detail.connection.session.remoteConnections.entries());
+
+    console.log('TEST remoteCons', remoteCons)
     if(remoteCons.length == 4) {
       if(location.hostname.indexOf('localhost') == -1) app.account.gameStarted();
     }
@@ -191,6 +195,11 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       newPlayer.innerHTML = `Local Player: ${e.detail.connection.connectionId}`;
       newPlayer.id = `local-${e.detail.connection.connectionId}`;
       byId('matrix-net').appendChild(newPlayer);
+
+      // test 
+
+
+
       // document.title = forestOfHollowBlood.label.get.titleBan;
       // document.title = app.net.session.connection.connectionId;
     } else {
@@ -441,6 +450,38 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     }
   })
 
+  addEventListener("streamPlaying", (e) => {
+    // console.log('streamPlaying from engine ', e.detail);
+    const isRemote = e.detail.target.id.indexOf('remote-video') !== -1;
+    const vr = e.detail.target.videos[0].video;
+    const streamId = e.detail.target.id;
+    if(isRemote) {
+      console.log('streamPlaying remote streamId  ?? ', streamId);
+      console.log('streamPlaying remote streamId  ?? ', vr.id);
+      console.log('streamPlaying remote app.net.session.streamManagers  ?? ', app.net.session.streamManagers);
+
+      
+
+      app.enemies.enemies[0].webcam.loadVideoTexture(
+        {
+          type: "videoElement",
+          videoElement: vr
+        }
+      );
+    } else {
+      console.log('>>VIDEO>>', vr);
+      console.log('.......app.net.session.streamManagers[0].videos[0].video............',
+        app.net.session.streamManagers[0].videos[0].video.src)
+      // app.net.session.streamManagers[0].videos[0].video
+      app.getSceneObjectByName('localCam').loadVideoTexture(
+        {
+          type: "videoElement",
+          videoElement: app.net.session.streamManagers[0].videos[0].video
+        }
+      );
+    }
+  });
+
   addEventListener('local-hero-bodies-ready', () => {
     const cam = app.getCamera();
     cam.setY(130);
@@ -455,9 +496,9 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
     // app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
     forestOfHollowBlood.buildRenderBuckets(forestOfHollowBlood.mainRenderBundle);
-    forestOfHollowBlood.buildLightShadowBuckets()
-
+    forestOfHollowBlood.buildLightShadowBuckets();
   });
+
 
   forestOfHollowBlood.RPG = new Controller(forestOfHollowBlood);
   forestOfHollowBlood.mapLoader = new MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");

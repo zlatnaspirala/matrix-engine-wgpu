@@ -541,7 +541,7 @@ export default class Materials {
       }, {once: false});
 
     } else if(arg.type === 'videoElement') {
-      this.video = arg.el;
+      this.video = arg.videoElement;
       await this.video.play();
     } else if(arg.type === 'camera') {
       if(!byId(`core-${this.name}`)) {

@@ -69,10 +69,10 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       navigator.serviceWorker.register('cache.js').then(registration => {
         if(!navigator.serviceWorker.controller) {
           console.log('Installing & caching for the first time');
-          forestOfHollowBloodStartSceen.fakeL = 450;
+          forestOfHollowBloodStartSceen.fakeL = 350;
           //
         } else {
-          forestOfHollowBloodStartSceen.fakeL = 150;
+          forestOfHollowBloodStartSceen.fakeL = 100;
           console.log('Loading from cache as normal');
         }
       });
@@ -415,7 +415,6 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       newPlayer.setAttribute('data-hero-team', team);
       newPlayer.innerHTML = `<div id="${e.detail.connection.connectionId}-title" >Player:${e.detail.connection.connectionId} Team:${team}</div>`;
       setTimeout(() => {
-
         //---------- test
         if(app.net.session.connection != null) {
           console.log("Test team data moment", byId(`waiting-${app.net.session.connection.connectionId}`).getAttribute('data-hero-team'))
