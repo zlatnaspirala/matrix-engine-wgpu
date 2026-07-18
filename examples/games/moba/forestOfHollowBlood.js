@@ -62,15 +62,15 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
       name = 'mariasword';
     } else if(selectHeroIndex == 1) {
       name = 'slayzer';
-    } else if(selectHeroIndex == 2) {
+    } else if(selectHeroIndex == 100) { // disabled
       name = 'steelborn';
-    } else if(selectHeroIndex == 3) {
+    } else if(selectHeroIndex == 100) { // disabled
       name = 'warrok';
-    } else if(selectHeroIndex == 4) {
+    } else if(selectHeroIndex == 2) {
       name = 'skeletonz';
-    } else if(selectHeroIndex == 5) {
+    } else if(selectHeroIndex == 100) { // disabled
       name = 'erika';
-    } else if(selectHeroIndex == 6) {
+    } else if(selectHeroIndex == 3) {
       name = 'arissa';
     }
     return name;

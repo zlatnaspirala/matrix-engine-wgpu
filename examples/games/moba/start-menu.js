@@ -499,12 +499,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
 
   heros = [
     {type: "Warrior", name: 'MariaSword', pathMobile: "res/meshes/glb/woman-mobile.glb", path: "res/meshes/glb/woman1.glb", desc: forestOfHollowBloodStartSceen.label.get.mariasword},
-    {type: "Ranger", name: 'Slayzer',  pathMobile: "res/meshes/glb/monster.glb",  path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
+    {type: "Ranger", name: 'Slayzer', pathMobile: "res/meshes/glb/monster.glb",  path: "res/meshes/glb/monster.glb", desc: forestOfHollowBloodStartSceen.label.get.slayzer},
+    {type: "Necromancer", name: 'Skeletonz', pathMobile: "res/meshes/glb/skeletonz.glb", path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
+    {type: "Support", name: 'Arissa',   pathMobile: "res/meshes/glb/arissa.glb",  path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
+    // {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
     // {type: "Tank", name: 'Steelborn', path: "res/meshes/glb/bot.glb", desc: forestOfHollowBloodStartSceen.label.get.steelborn},
     // {type: "Mage", name: 'Warrok', path: "res/meshes/glb/warrok.glb", desc: forestOfHollowBloodStartSceen.label.get.warrok},
-    {type: "Necromancer", name: 'Skeletonz', pathMobile: "res/meshes/glb/skeletonz.glb", path: "res/meshes/glb/skeletonz.glb", desc: forestOfHollowBloodStartSceen.label.get.skeletonz},
-    // {type: "Assassin", name: 'Erika', path: "res/meshes/glb/erika.glb", desc: forestOfHollowBloodStartSceen.label.get.erika},
-    {type: "Support", name: 'Arissa', pathMobile: "res/meshes/glb/arissa.glb",  path: "res/meshes/glb/arissa.glb", desc: forestOfHollowBloodStartSceen.label.get.arissa},
   ];
 
   forestOfHollowBloodStartSceen.heros = heros;
@@ -515,12 +515,12 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       var glbFile01 = await fetch(heros[x].path).then(
         res => res.arrayBuffer().then(buf => uploadGLBModel(buf, app.device)));
       forestOfHollowBloodStartSceen.addGlbObjInctance({
-        material: (x == 2 || x == 1 ? {type: 'pong', useTextureFromGlb: true} : {type: 'standard', useTextureFromGlb: true}),
+        material: {type: 'standard', useTextureFromGlb: true},
         scale: [20, 20, 20],
         position: {x: 0 + x * 50, y: 0, z: -10},
         name: heros[x].name,
         useScale: true,
-        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+        texturesPaths: ['./res/textures/default.png'],
         raycast: {enabled: true, radius: 1},
         pointerEffect: {
           enabled: true,

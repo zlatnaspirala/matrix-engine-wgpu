@@ -16,7 +16,7 @@
  * But resouces must be shared if both on same domain.
  */
 
-var cacheVersion = 37;
+var cacheVersion = 38;
 var prefixMOBA = 'matrix-engine-fohb';
 var cacheNameMOBA = prefixMOBA + cacheVersion;
 

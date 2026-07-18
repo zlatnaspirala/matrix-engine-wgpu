@@ -44619,7 +44619,12 @@ var MatrixEngineWGPU = class {
           this.globalAmbient.slice()
         );
         bvhPlayer.clearColor = clearColor;
-        bvhPlayer.itIsPhysicsBody = false;
+        if (o3.physics.enabled == true) {
+          this.matrixPhysics.addPhysics(bvhPlayer, o3.physics);
+          bvhPlayer.itIsPhysicsBody = true;
+        } else {
+          bvhPlayer.itIsPhysicsBody = false;
+        }
         this.mainRenderBundle.push(bvhPlayer);
         r3.push(bvhPlayer);
         this.sortRenderBundle();
@@ -44682,7 +44687,7 @@ var MatrixEngineWGPU = class {
     if (typeof o3.physics === "undefined") {
       o3.physics = {
         scale: o3.scale,
-        enabled: true,
+        enabled: false,
         geometry: "Sphere",
         radius: typeof o3.scale == Number ? o3.scale : o3.scale[0],
         name: o3.name,
@@ -44746,6 +44751,9 @@ var MatrixEngineWGPU = class {
         results.push(bvhPlayer);
         if (o3.physics.enabled == true) {
           this.matrixPhysics.addPhysics(bvhPlayer, o3.physics);
+          bvhPlayer.itIsPhysicsBody = true;
+        } else {
+          bvhPlayer.itIsPhysicsBody = false;
         }
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
@@ -57774,13 +57782,14 @@ var loadMenuBeast = function() {
           nuiCommander.drawer.elements.push(sliderBloomRad);
           nuiCommander.drawer.elements.push(hideSliderBloom);
         }
-      },
-      {
-        label: "Set pos Z",
-        action: () => {
-          console.log("cursor pos : " + cursor.y);
-        }
       }
+      // {
+      //   label: "Set pos Z", action: () => {
+      //     console.log( "cursor pos : " + cursor.y )
+      //     // app.matrixPhysics.explodeAll([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      //     //   0, 0, -20, 15.0, 20.0);
+      //   }
+      // },
     ], {
       col: 0,
       cols: 2,

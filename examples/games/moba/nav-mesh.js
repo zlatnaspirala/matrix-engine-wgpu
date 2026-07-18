@@ -326,7 +326,6 @@ export default class NavMesh {
     return bestPoint;
   }
 
-  // Public API: returns an array of [x,y,z] waypoints or [] if unreachable
   findPath(startPoint, endPoint) {
     const startPoly = this.findPolygonContainingPoint(startPoint);
     const endPoly = this.findPolygonContainingPoint(endPoint);
@@ -338,6 +337,12 @@ export default class NavMesh {
       return this.findPath(startPoint, clamped);
     }
     if(startPoly === null) return [];
+
+    // THIS was the missing line — polyPath was never computed
+    const polyPath = this._findPolyPath(startPoly, endPoly);
+
+    // no path found between the two polygons
+    if(polyPath.length === 0) return [];
 
     // If polyPath is single poly, simply return [start,end]
     if(polyPath.length === 1) {

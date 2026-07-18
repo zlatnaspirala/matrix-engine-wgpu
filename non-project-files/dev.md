@@ -1,5 +1,12 @@
 
 
+
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo docker start $(sudo docker ps -aq)
+
+
+
  REDUCE AFTER ALL SIZE !!!!
       this.getTransformationMatrix = (camVP, dt) => {
         // const camVP = mat4.multiply(camera.projectionMatrix, camera.view, this._camVP);

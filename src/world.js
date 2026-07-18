@@ -1421,7 +1421,13 @@ export default class MatrixEngineWGPU {
           this.globalAmbient.slice());
 
         bvhPlayer.clearColor = clearColor;
-        bvhPlayer.itIsPhysicsBody = false;
+
+        if(o.physics.enabled == true) {
+          this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
+          bvhPlayer.itIsPhysicsBody = true;
+        } else {
+          bvhPlayer.itIsPhysicsBody = false;
+        }
         // Soft
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
@@ -1462,7 +1468,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.physics === 'undefined') {
       o.physics = {
         scale: o.scale,
-        enabled: true,
+        enabled: false,
         geometry: "Sphere",
         radius: (typeof o.scale == Number ? o.scale : o.scale[0]),
         name: o.name,
@@ -1510,12 +1516,13 @@ export default class MatrixEngineWGPU {
           this.context,
           this.inputHandler,
           this.globalAmbient.slice(), this.cameraBuffer);
-
         bvhPlayer.clearColor = clearColor;
-
         results.push(bvhPlayer);
         if(o.physics.enabled == true) {
           this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
+          bvhPlayer.itIsPhysicsBody = true;
+        } else {
+          bvhPlayer.itIsPhysicsBody = false;
         }
         // Soft
         setTimeout(() => {

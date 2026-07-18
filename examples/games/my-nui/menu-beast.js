@@ -105,14 +105,13 @@ export var loadMenuBeast = function() {
           nuiCommander.drawer.elements.push(hideSliderBloom);
         }
       },
-      {
-        label: "Set pos Z", action: () => {
-          console.log( "cursor pos : " + cursor.y )
-
-          // app.matrixPhysics.explodeAll([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-          //   0, 0, -20, 15.0, 20.0);
-        }
-      },
+      // {
+      //   label: "Set pos Z", action: () => {
+      //     console.log( "cursor pos : " + cursor.y )
+      //     // app.matrixPhysics.explodeAll([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      //     //   0, 0, -20, 15.0, 20.0);
+      //   }
+      // },
     ], {
       col: 0,
       cols: 2,
