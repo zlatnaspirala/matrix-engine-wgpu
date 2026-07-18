@@ -29,7 +29,7 @@ export class Enemie extends Hero {
         this.webcam = this.core.addMeshObj({
           position: {
             x: startUpPositions[this.core.player.data.team][0],
-            y: startUpPositions[this.core.player.data.team][1] + 50,
+            y: startUpPositions[this.core.player.data.team][1] + 70,
             z: startUpPositions[this.core.player.data.team][2]
           },
           rotation: {x: 90, y: 0, z: 0},
@@ -46,7 +46,7 @@ export class Enemie extends Hero {
             enabled: false,
             geometry: "Cube"
           },
-          raycast: {enabled: true, radius: 2}
+          raycast: {enabled: false, radius: 1}
         })
       }
 
@@ -89,7 +89,7 @@ export class Enemie extends Hero {
             subMesh.setAmbient(2, 2, 3, 1);
           }
           if(idx == 0) {
-            this.core.collisionSystem.register((o.name), subMesh.position, 15.0, 'enemy');
+            this.core.collisionSystem.register((o.name), subMesh.position, 14.0, 'enemy');
 
             this.core.autoUpdate.push({
               update: () => {

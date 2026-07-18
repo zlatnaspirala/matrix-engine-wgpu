@@ -140,7 +140,7 @@ export class Character extends Hero {
         this.webcam = this.core.addMeshObj({
           position: {
             x: startUpPositions[this.core.player.data.team][0],
-            y: startUpPositions[this.core.player.data.team][1] + 50,
+            y: startUpPositions[this.core.player.data.team][1] + 70,
             z: startUpPositions[this.core.player.data.team][2]
           },
           rotation: {x: 90, y: 0, z: 0},
@@ -157,7 +157,7 @@ export class Character extends Hero {
             enabled: false,
             geometry: "Cube"
           },
-          raycast: {enabled: true, radius: 2}
+          raycast: {enabled: false, radius: 1}
         })
 
         var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
@@ -260,21 +260,15 @@ export class Character extends Hero {
               this.core.autoUpdate.push(subMesh.fireballSystem);
               subMesh.fireballSystem.parent.effects.flameEmitter.setIntensity(20);
             }
-
             // this.webcam.position = subMesh.position;
-
             this.core.autoUpdate.push({
               update: () => {
                 this.webcam.position.x = subMesh.position.x;
                 this.webcam.position.z = subMesh.position.z;
               }
             });
-
-
           }
-
-          // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-          this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'friendly');
+          this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         if(app.localHero.heroe_bodies[0].effects) {
           app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);

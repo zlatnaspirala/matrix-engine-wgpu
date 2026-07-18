@@ -551,6 +551,11 @@ export function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30.0, pushStren
     const inv = push / dist;
     Apos.x -= dx * inv; Apos.y -= dy * inv; Apos.z -= dz * inv;
     Bpos.x += dx * inv; Bpos.y += dy * inv; Bpos.z += dz * inv;
+
+    // keep any in-flight target-based movement in sync with the pushed position
+    if(Apos.targetX !== undefined) { Apos.targetX = Apos.x; Apos.targetZ = Apos.z; }
+    if(Bpos.targetX !== undefined) { Bpos.targetX = Bpos.x; Bpos.targetZ = Bpos.z; }
+
     return true;
   }
   if(distSq <= 1e-8) {
@@ -558,6 +563,7 @@ export function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30.0, pushStren
     Apos.x += (Math.random() - .5) * j;
     Apos.y += (Math.random() - .5) * j;
     Apos.z += (Math.random() - .5) * j;
+    if(Apos.targetX !== undefined) { Apos.targetX = Apos.x; Apos.targetZ = Apos.z; }
     return true;
   }
   return false;

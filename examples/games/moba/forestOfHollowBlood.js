@@ -458,7 +458,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     if(isRemote) {
       app.enemies.enemies[0].webcam.loadVideoTexture({type: "videoElement", videoElement: vr});
     } else {
-      app.getSceneObjectByName('localCam').loadVideoTexture({type: "videoElement", videoElement: app.net.session.streamManagers[0].videos[0].video});
+      // app.getSceneObjectByName('localCam').loadVideoTexture({type: "videoElement", videoElement: app.net.session.streamManagers[0].videos[0].video});
+      app.getSceneObjectByName('localCam').loadVideoTexture({type: "videoElement", videoElement: vr});
     }
   });
 

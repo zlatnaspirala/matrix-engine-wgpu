@@ -292,12 +292,12 @@ export class CollisionSystem {
       for(let j = 0;j < this._neighbors.length;j++) {
         const B = this._neighbors[j];
         if(A === B) continue;
-        // const minDist = (A.radius + B.radius) * 0.5;
-        const minDist = A.radius + B.radius;
-        // if(A.group === B.group) {
-        //   resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
-        //   continue;
-        // }
+        const minDist = (A.radius + B.radius) * 0.5;
+        // const minDist = A.radius + B.radius;
+        if(A.group === B.group) {
+          resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
+          continue;
+        }
         if(A.id >= B.id) continue;
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;

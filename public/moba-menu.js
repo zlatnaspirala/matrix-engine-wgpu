@@ -34387,10 +34387,15 @@ class Materials {
     if (this.video) await new Promise(resolve => {
       this.video.requestVideoFrameCallback(() => {
         setTimeout(() => {
-          this.updateVideoTexture();
-          this.createMaterialBindGroupVideo();
-          this.setupPipeline();
-          resolve();
+          try {
+            this.updateVideoTexture();
+            this.createMaterialBindGroupVideo();
+            this.setupPipeline();
+            resolve();
+          } catch (err) {
+            return;
+          }
+
           // Very interest
           const ci1 = document.getElementById('ci1');
           if (ci1) {
@@ -34399,7 +34404,7 @@ class Materials {
             const ci2 = document.getElementById(this.name + 'ci1');
             if (ci2) document.body.removeChild(ci2);
           }
-        }, 200);
+        }, 400);
       });
     });
   }

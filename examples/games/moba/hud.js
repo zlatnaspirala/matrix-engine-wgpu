@@ -611,18 +611,18 @@ export class HUD {
     function fakeProgress() {
       if(progress < 100) {
         // Random step to look "non-linear"
-        progress += Math.random() * 4;
+        progress += Math.random() * 6;
         if(progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = "Prepare" + " gameplay " + Math.floor(progress) + '%';
         let grayEffect = 30 / progress;
         loader.style.filter = `grayscale(${grayEffect})`;
+        // loader.style.opacity = parseFloat(loader.style.opacity) - 0.05;
         setTimeout(fakeProgress, 80 + Math.random() * 170);
       } else {
         counter.textContent = "Let the game begin!";
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
-          // loader.remove();
           loader.style.display = 'none';
           bar = null;
           counter = null;

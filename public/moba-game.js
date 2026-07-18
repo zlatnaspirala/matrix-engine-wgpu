@@ -138,7 +138,7 @@ class Character extends _hero.Hero {
         this.webcam = this.core.addMeshObj({
           position: {
             x: _static.startUpPositions[this.core.player.data.team][0],
-            y: _static.startUpPositions[this.core.player.data.team][1] + 50,
+            y: _static.startUpPositions[this.core.player.data.team][1] + 70,
             z: _static.startUpPositions[this.core.player.data.team][2]
           },
           rotation: {
@@ -164,8 +164,8 @@ class Character extends _hero.Hero {
             geometry: "Cube"
           },
           raycast: {
-            enabled: true,
-            radius: 2
+            enabled: false,
+            radius: 1
           }
         });
         var glbFile01 = await fetch(p).then(res => res.arrayBuffer().then(buf => (0, _webgpuGltf.uploadGLBModel)(buf, this.core.device)));
@@ -281,9 +281,7 @@ class Character extends _hero.Hero {
               this.core.autoUpdate.push(subMesh.fireballSystem);
               subMesh.fireballSystem.parent.effects.flameEmitter.setIntensity(20);
             }
-
             // this.webcam.position = subMesh.position;
-
             this.core.autoUpdate.push({
               update: () => {
                 this.webcam.position.x = subMesh.position.x;
@@ -291,9 +289,7 @@ class Character extends _hero.Hero {
               }
             });
           }
-
-          // this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
-          this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'friendly');
+          this.core.collisionSystem.register(`local${id}`, subMesh.position, 15.0, 'local_hero');
         });
         if (app.localHero.heroe_bodies[0].effects) {
           app.localHero.heroe_bodies[0].effects.flameEmitter.recreateVertexDataRND(1);
@@ -1525,7 +1521,7 @@ class Enemie extends _hero.Hero {
         this.webcam = this.core.addMeshObj({
           position: {
             x: _static.startUpPositions[this.core.player.data.team][0],
-            y: _static.startUpPositions[this.core.player.data.team][1] + 50,
+            y: _static.startUpPositions[this.core.player.data.team][1] + 70,
             z: _static.startUpPositions[this.core.player.data.team][2]
           },
           rotation: {
@@ -1551,8 +1547,8 @@ class Enemie extends _hero.Hero {
             geometry: "Cube"
           },
           raycast: {
-            enabled: true,
-            radius: 2
+            enabled: false,
+            radius: 1
           }
         });
       };
@@ -1601,7 +1597,7 @@ class Enemie extends _hero.Hero {
             subMesh.setAmbient(2, 2, 3, 1);
           }
           if (idx == 0) {
-            this.core.collisionSystem.register(o.name, subMesh.position, 15.0, 'enemy');
+            this.core.collisionSystem.register(o.name, subMesh.position, 14.0, 'enemy');
             this.core.autoUpdate.push({
               update: () => {
                 this.webcam.position.x = subMesh.position.x;
@@ -2125,9 +2121,10 @@ let forestOfHollowBlood = new _world.default({
         videoElement: vr
       });
     } else {
+      // app.getSceneObjectByName('localCam').loadVideoTexture({type: "videoElement", videoElement: app.net.session.streamManagers[0].videos[0].video});
       app.getSceneObjectByName('localCam').loadVideoTexture({
         type: "videoElement",
-        videoElement: app.net.session.streamManagers[0].videos[0].video
+        videoElement: vr
       });
     }
   });
@@ -3536,18 +3533,18 @@ class HUD {
     function fakeProgress() {
       if (progress < 100) {
         // Random step to look "non-linear"
-        progress += Math.random() * 4;
+        progress += Math.random() * 6;
         if (progress > 100) progress = 100;
         bar.style.width = progress + '%';
         counter.textContent = "Prepare" + " gameplay " + Math.floor(progress) + '%';
         let grayEffect = 30 / progress;
         loader.style.filter = `grayscale(${grayEffect})`;
+        // loader.style.opacity = parseFloat(loader.style.opacity) - 0.05;
         setTimeout(fakeProgress, 80 + Math.random() * 170);
       } else {
         counter.textContent = "Let the game begin!";
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
-          // loader.remove();
           loader.style.display = 'none';
           bar = null;
           counter = null;
@@ -5381,6 +5378,16 @@ function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30.0, pushStrength = 0
     Bpos.x += dx * inv;
     Bpos.y += dy * inv;
     Bpos.z += dz * inv;
+
+    // keep any in-flight target-based movement in sync with the pushed position
+    if (Apos.targetX !== undefined) {
+      Apos.targetX = Apos.x;
+      Apos.targetZ = Apos.z;
+    }
+    if (Bpos.targetX !== undefined) {
+      Bpos.targetX = Bpos.x;
+      Bpos.targetZ = Bpos.z;
+    }
     return true;
   }
   if (distSq <= 1e-8) {
@@ -5388,6 +5395,10 @@ function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30.0, pushStrength = 0
     Apos.x += (Math.random() - .5) * j;
     Apos.y += (Math.random() - .5) * j;
     Apos.z += (Math.random() - .5) * j;
+    if (Apos.targetX !== undefined) {
+      Apos.targetX = Apos.x;
+      Apos.targetZ = Apos.z;
+    }
     return true;
   }
   return false;
@@ -26846,12 +26857,12 @@ class CollisionSystem {
       for (let j = 0; j < this._neighbors.length; j++) {
         const B = this._neighbors[j];
         if (A === B) continue;
-        // const minDist = (A.radius + B.radius) * 0.5;
-        const minDist = A.radius + B.radius;
-        // if(A.group === B.group) {
-        //   resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
-        //   continue;
-        // }
+        const minDist = (A.radius + B.radius) * 0.5;
+        // const minDist = A.radius + B.radius;
+        if (A.group === B.group) {
+          resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
+          continue;
+        }
         if (A.id >= B.id) continue;
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;
@@ -38384,10 +38395,15 @@ class Materials {
     if (this.video) await new Promise(resolve => {
       this.video.requestVideoFrameCallback(() => {
         setTimeout(() => {
-          this.updateVideoTexture();
-          this.createMaterialBindGroupVideo();
-          this.setupPipeline();
-          resolve();
+          try {
+            this.updateVideoTexture();
+            this.createMaterialBindGroupVideo();
+            this.setupPipeline();
+            resolve();
+          } catch (err) {
+            return;
+          }
+
           // Very interest
           const ci1 = document.getElementById('ci1');
           if (ci1) {
@@ -38396,7 +38412,7 @@ class Materials {
             const ci2 = document.getElementById(this.name + 'ci1');
             if (ci2) document.body.removeChild(ci2);
           }
-        }, 200);
+        }, 400);
       });
     });
   }
