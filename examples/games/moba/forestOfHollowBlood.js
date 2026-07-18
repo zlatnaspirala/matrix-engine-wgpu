@@ -98,6 +98,8 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
 
   forestOfHollowBlood.net.virtualEmiter = null;
 
+  forestOfHollowBlood.navigateFriendlyCreepsEvent = new CustomEvent('navigate-friendly_creeps', {detail: 'test'});
+
   forestOfHollowBlood.player.remoteByTeam = {
     south: [],
     north: []
@@ -263,7 +265,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
             app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
             app.localHero.friendlyLocal.creeps[getCreepByIndex].hp = 300;
             setTimeout(() => {
-              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+              dispatchEvent(app.navigateFriendlyCreepsEvent)
             }, 100);
           }, 500)
         }
@@ -382,9 +384,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
             app.localHero.friendlyLocal.creeps[getCreepByIndex].gotoFinal = false;
             app.localHero.friendlyLocal.creeps[getCreepByIndex].heroe_bodies[0].effects.energyBar.setProgress(1);
             app.localHero.friendlyLocal.creeps[getCreepByIndex].hp = 300;
-            setTimeout(() => {
-              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
-            }, 200);
+            setTimeout(() => {dispatchEvent(app.navigateFriendlyCreepsEvent)}, 200);
           }, 500)
         }
       } else {
@@ -478,7 +478,7 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     forestOfHollowBlood.buildRenderBuckets(forestOfHollowBlood.mainRenderBundle);
     forestOfHollowBlood.buildLightShadowBuckets();
 
-    if (byId('loader')) {
+    if(byId('loader')) {
       byId('loader').remove()
     }
   });

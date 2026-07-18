@@ -585,16 +585,16 @@ export class Character extends Hero {
 
           if(lc.creepFocusAttackOn === undefined) {
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.A.id)[0];
-            console.info('A = enemy vs B = friendly  <close-distance> is there creap here ', lc.creepFocusAttackOn);
+            // console.info('A = enemy vs B = friendly  <close-distance> is there creap here ', lc.creepFocusAttackOn);
           }
 
           if(lc.creepFocusAttackOn === undefined && e.detail.data.A.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
-            console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
+            // console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
 
           if(lc.creepFocusAttackOn === undefined) {
-            console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
+            // console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
             return;
           }
           app.localHero.setAttackCreep(e.detail.data.B.id[e.detail.data.B.id.length - 1]);
@@ -608,14 +608,14 @@ export class Character extends Hero {
             app.enemies.enemies.filter((enemy) => enemy.name == e.detail.data.B.id)[0];
           if(lc.creepFocusAttackOn == undefined) {
             lc.creepFocusAttackOn = app.enemies.creeps.filter((creep) => creep.name == e.detail.data.B.id)[0];
-            console.info('A = friendly vs B = enemy   <close-distance> prevent attach', lc.creepFocusAttackOn);
+            // console.info('A = friendly vs B = enemy   <close-distance> prevent attach', lc.creepFocusAttackOn);
           }
           if(lc.creepFocusAttackOn === undefined && e.detail.data.B.id.indexOf('enemytron') != -1) {
             lc.creepFocusAttackOn = app.enemytron;
             // console.info('<generate game event here> creeps attack enemy home.', lc.creepFocusAttackOn);
           }
           if(lc.creepFocusAttackOn === undefined) {
-            console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
+            // console.info('A = enemy vs B = friendly  <close-distance> prevent attach', lc.creepFocusAttackOn);
             return;
           }
           app.localHero.setAttackCreep(e.detail.data.A.id[e.detail.data.A.id.length - 1]);

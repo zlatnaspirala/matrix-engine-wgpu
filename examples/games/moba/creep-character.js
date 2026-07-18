@@ -79,9 +79,9 @@ export class Creep extends Hero {
           // adapt
           subMesh.setAmbient(1, 1, 1, 1);
           if(this.name.indexOf('friendly_creeps') != -1) {
-            subMesh.setAmbient(10,10,5)
+            subMesh.setAmbient(10, 10, 5)
           } else if(this.name.indexOf('enemy_creep') != -1) {
-            subMesh.setAmbient(50,10,5)
+            subMesh.setAmbient(50, 10, 5)
           }
 
           if(this.group == 'friendly' && this.name.indexOf('friendly_creeps') != -1) {
@@ -218,7 +218,8 @@ export class Creep extends Hero {
           this.hp = 300;
           this.heroe_bodies[0].effects.energyBar.setProgress(1);
           app.localHero.setWalkCreep(this.name[this.name.length - 1]);
-          dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}));
+          // dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}));
+          dispatchEvent(app.navigateFriendlyCreepsEvent)
         }, 700);
       }
     });
@@ -226,10 +227,9 @@ export class Creep extends Hero {
     if(this.group != 'enemy') {
       addEventListener(`animationEnd-${this.heroe_bodies[0].name}`, (e) => {
         if(e.detail.animationName != 'attack' && this.creepFocusAttackOn == null) {
-          // console.log('animationEnd BLOCK1')
           return;
         }
-        console.info('animationEnd :', e.detail)
+        // console.info('animationEnd :', e.detail)
         if(this.group == "friendly") {
           if(this.creepFocusAttackOn == null) {
             let isEnemiesClose = false;
@@ -255,7 +255,6 @@ export class Creep extends Hero {
                 // console.log(`%c ATTACK DAMAGE ${creep.heroe_bodies[0].name}`, LOG_MATRIX)
                 isEnemiesClose = true;
                 this.calcDamage(this, creep);
-                // no need ?? this.creepFocusAttackOn = null;
                 return;
               }
             });
@@ -286,12 +285,13 @@ export class Creep extends Hero {
             }
 
             if(tt < this.core.RPG.distanceForAction) {
-              console.log(`%c [creep] ATTACK DAMAGE ON`, LOG_MATRIX)
+              // console.log(`%c [creep] ATTACK DAMAGE ON`, LOG_MATRIX)
               this.calcDamage(this, this.creepFocusAttackOn);
               return;
             } else {
               this.creepFocusAttackOn = null;
-              dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+              // dispatchEvent(new CustomEvent('navigate-friendly_creeps', {detail: 'test'}))
+              dispatchEvent(app.navigateFriendlyCreepsEvent)
             }
 
           }
