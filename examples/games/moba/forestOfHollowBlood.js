@@ -477,6 +477,10 @@ let forestOfHollowBlood = new MatrixEngineWGPU({
     // app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
     forestOfHollowBlood.buildRenderBuckets(forestOfHollowBlood.mainRenderBundle);
     forestOfHollowBlood.buildLightShadowBuckets();
+
+    if (byId('loader')) {
+      byId('loader').remove()
+    }
   });
 
 

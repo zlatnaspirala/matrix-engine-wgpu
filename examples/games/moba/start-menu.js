@@ -3,12 +3,9 @@ import {MatrixStream} from "../../../src/engine/networking/net.js";
 import {byId, isOdd, LS, SS, mb, typeText, FullscreenManager, isMobile, CameraPath} from "../../../src/engine/utils.js";
 import MatrixEngineWGPU from "../../../src/world.js";
 import {HERO_ARCHETYPES} from "./hero.js";
-import {AnimatedCursor} from "../../../src/engine/plugin/animated-cursor/animated-cursor.js";
-import {fetchAll, fetchInfo} from "../../../src/engine/networking/matrix-stream.js";
 import {RCSAccount} from "./rocket-crafting-account.js";
 import {en} from "../../../public/res/multilang/en-backup.js";
 import {MatrixTTS} from "./tts.js";
-import {Editor} from "../../../src/tools/editor/editor.js";
 import {MobileDOM} from "../../../src/engine/cameras.js";
 
 /**
@@ -1112,8 +1109,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
         bar.style.boxShadow = "0 0 30px #00ff99";
         setTimeout(() => {
           loader.style.display = 'none';
-          // loader.remove();
-        }, isMobile() ? 10000 : 1250)
+          loader.remove();
+        }, isMobile() ? 6000 : 2500)
       }
     }
 

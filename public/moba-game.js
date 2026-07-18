@@ -2142,6 +2142,9 @@ let forestOfHollowBlood = new _world.default({
     // app.tts.speakHero(app.player.data.hero.toLowerCase(), 'hello');
     forestOfHollowBlood.buildRenderBuckets(forestOfHollowBlood.mainRenderBundle);
     forestOfHollowBlood.buildLightShadowBuckets();
+    if ((0, _matrixStream.byId)('loader')) {
+      (0, _matrixStream.byId)('loader').remove();
+    }
   });
   forestOfHollowBlood.RPG = new _controller.Controller(forestOfHollowBlood);
   forestOfHollowBlood.mapLoader = new _mapLoader.MEMapLoader(forestOfHollowBlood, "./res/meshes/nav-mesh/navmesh.json");
@@ -4131,7 +4134,7 @@ class MEMapLoader {
     const spacing = 150;
     const clusterOffsets = [[0, 0], [700, 0], [0, 700], [700, 700]];
     this.collectionOfTree1.forEach(partOftree => {
-      partOftree.sharedBones = true;
+      // partOftree.sharedBones = true;
       partOftree.setAmbient((0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15), (0, _utils.randomIntFromTo)(5, 15));
       const treesPerCluster = 9;
       const gridSize = Math.ceil(Math.sqrt(treesPerCluster));
@@ -4158,7 +4161,7 @@ class MEMapLoader {
   addInstancingRock() {
     const NUM = 16;
     this.collectionOfRocks.forEach(rock => {
-      rock.sharedBones = true;
+      // rock.sharedBones = true;
       rock.updateMaxInstances(NUM);
       rock.updateInstances(NUM);
       console.log("TEST rock ", rock);
@@ -4186,7 +4189,7 @@ class MEMapLoader {
         instance.color[2] = (0, _utils.randomIntFromTo)(1, 1.5);
       }
     });
-    const NUM2 = 10;
+    const NUM2 = 16;
     this.collectionOfRocks2.forEach(rock => {
       rock.updateMaxInstances(NUM2);
       rock.updateInstances(NUM2);

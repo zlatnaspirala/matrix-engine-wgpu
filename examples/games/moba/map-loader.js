@@ -299,7 +299,7 @@ export class MEMapLoader {
 
     this.collectionOfTree1.forEach((partOftree) => {
 
-      partOftree.sharedBones = true;
+      // partOftree.sharedBones = true;
       partOftree.setAmbient(randomIntFromTo(5, 15), randomIntFromTo(5, 15), randomIntFromTo(5, 15));
 
       const treesPerCluster = 9;
@@ -333,7 +333,7 @@ export class MEMapLoader {
   addInstancingRock() {
     const NUM = 16;
     this.collectionOfRocks.forEach((rock) => {
-      rock.sharedBones = true;
+      // rock.sharedBones = true;
       rock.updateMaxInstances(NUM);
       rock.updateInstances(NUM);
 
@@ -365,7 +365,7 @@ export class MEMapLoader {
     });
 
 
-    const NUM2 = 10;
+    const NUM2 = 16;
     this.collectionOfRocks2.forEach((rock) => {
       rock.updateMaxInstances(NUM2);
       rock.updateInstances(NUM2);
