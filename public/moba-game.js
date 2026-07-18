@@ -2120,17 +2120,11 @@ let forestOfHollowBlood = new _world.default({
     const vr = e.detail.target.videos[0].video;
     const streamId = e.detail.target.id;
     if (isRemote) {
-      console.log('streamPlaying remote streamId  ?? ', streamId);
-      console.log('streamPlaying remote streamId  ?? ', vr.id);
-      console.log('streamPlaying remote app.net.session.streamManagers  ?? ', app.net.session.streamManagers);
       app.enemies.enemies[0].webcam.loadVideoTexture({
         type: "videoElement",
         videoElement: vr
       });
     } else {
-      console.log('>>VIDEO>>', vr);
-      console.log('.......app.net.session.streamManagers[0].videos[0].video............', app.net.session.streamManagers[0].videos[0].video.src);
-      // app.net.session.streamManagers[0].videos[0].video
       app.getSceneObjectByName('localCam').loadVideoTexture({
         type: "videoElement",
         videoElement: app.net.session.streamManagers[0].videos[0].video
@@ -2143,8 +2137,7 @@ let forestOfHollowBlood = new _world.default({
     cam.movementSpeed = 100;
     cam.followMe = forestOfHollowBlood.localHero.heroe_bodies[0].position;
     cam.mousRollInAction = true;
-
-    // diiff heros can MAGIC CASES LEVEL
+    // diff heros can MAGIC CASES LEVEL
     if (app.localHero.name == "MariaSword") {
       app.RPG.distanceForLongAction = 150;
     }

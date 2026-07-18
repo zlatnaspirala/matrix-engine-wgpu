@@ -1151,12 +1151,14 @@ This is static file storage also all builds make outputs here.
 
 Features done:
 
+- Supporetd on mobile browsers.
 - Navigation mesh
 - Hero class
 - GLB animations
 - Automatic team selection (South vs North)
 - Homebase stone (tron / enemytron)
 - Invertory (construct from 2 or 3 new upgraded item)
+- Videochat - stream video follow player character (remote & local 'one on one')
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game2.png?raw=true" />
@@ -1166,7 +1168,7 @@ Features done:
 Install it on your desktop with one click.
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game5.png?raw=true" />
 
-[Invest in Forest Of Hollow Blood 1,000$](https://goldenspiral.itch.io/forest-of-hollow-blood)
+💲💲💲 [Invest in Forest Of Hollow Blood 1,000$](https://goldenspiral.itch.io/forest-of-hollow-blood)
 See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Support-the-Future-of-Forest-of-Hollow-Blood)
 
 ---
@@ -1175,7 +1177,7 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 
 - [Matrix-engine-wgpu Live demos](https://maximumroulette.com/apps/webgpu/examples.html)
 - 💲💲💲 Support JAMB 3D this project on [itch.io](https://goldenspiral.itch.io/jamb-3d-deluxe)
-- [MOBA Forest Of Hollow Blood Live](https://maximumroulette.com/apps/webgpu/examples.html)
+- [MOBA Forest Of Hollow Blood from hosted on maximumroulette.com](https://maximumroulette.com/apps/fohb/)
 
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/2026-loading-performance.png?raw=true" />
 

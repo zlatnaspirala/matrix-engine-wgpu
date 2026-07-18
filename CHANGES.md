@@ -2,6 +2,8 @@
 ## CHANGES [Started from feb 2026]
 
 [1.16.xx - 1.17.00]
+ - Added video chat/stream plane follow local player and remote player
+   for MOBA template - Used streamPlaying to get video elements for networking.
  - Added nui-commander (from npm) and used in demo=31 
  - Added physics enabled for glb and glb instanced class.
  - Adding to the matterjs switch kinematic dinamic obj type - improve platforme template.
