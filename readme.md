@@ -7,8 +7,7 @@
 ---
 
 ## Logo
-
-<img width="320" height="320" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
+<img width="200" height="200" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
 
 
 ---
