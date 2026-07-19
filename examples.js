@@ -1,7 +1,7 @@
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
- * @version 1.15.6
+ * @version 1.17.3
  * @www maximumroulette.com 2026
  */
 
@@ -31,18 +31,22 @@ import {loadKinematicCollision} from "./examples/kinematic-collision.js";
 import {loadSprite1} from "./examples/2D-world.js";
 import {loadSprite2} from "./examples/2D-world-matter.js";
 import {loadDrumCannon} from "./examples/drum-cannon.js";
-// import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {loadGaussianSplat} from "./examples/gaussian-splat.js";
 import {loadGaussianSplatVertAnim} from "./examples/gaussian-vertex-anim.js";
 import {loadHand} from "./examples/games/nui/hand.js";
 import {loadStreamRenderHost} from "./examples/stream-render.js";
 import {loadHang3d} from "./examples/games/first-person-shooter/hang3d.js";
 import {loadMenuBeast} from "./examples/games/my-nui/menu-beast.js";
+import {loadBVHSkeletal} from "./examples/bvh-skeletal.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
   url.searchParams.set('demo', id);
-  window.location.href = url.toString();
+  if(id == 31) {
+    window.location.href = url.toString() + '&fs=true';
+  } else {
+    window.location.href = url.toString();
+  }
 };
 
 const hideMenu = () => {
@@ -84,10 +88,8 @@ byId('loadGaussianSplatVertAnim').addEventListener("click", () => switchDemo('27
 byId('loadStreamRenderHost').addEventListener("click", () => switchDemo('29'));
 byId('hand').addEventListener("click", () => switchDemo('28'));
 byId('hang3d').addEventListener("click", () => switchDemo('30'));
-if (byId('loadMenuBeast')) {
-  byId('loadMenuBeast').addEventListener("click", () => switchDemo('31'));
-}
-
+if(byId('loadMenuBeast')) {byId('loadMenuBeast').addEventListener("click", () => switchDemo('31'))}
+byId('loadBVHSkeletal').addEventListener("click", () => switchDemo('32'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
@@ -157,12 +159,11 @@ if(urlQuery['demo'] === '1') {
   loadHang3d();
 } else if(urlQuery['demo'] === '31') {
   loadMenuBeast();
+} else if(urlQuery['demo'] === '32') {
+  loadBVHSkeletal();
 } else {
   loadObjFile();
 }
 
-setTimeout(() => {hideMenu()}, 2000);
 
-// Pre cache politic 0 Only big one
-// fetch("res/meshes/glb/zombie-cap.glb");
-// fetch("./res/meshes/glb/woman1.glb");
+setTimeout(() => {hideMenu()}, 2000);

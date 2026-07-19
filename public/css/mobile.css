@@ -895,8 +895,8 @@ option {
 }
 
 .progress-container {
-  width: 80%;
-  max-width: 600px;
+  /* width: 80%;
+  max-width: 600px; */
   opacity: 0.5;
   height: 18px;
   background: rgba(255, 255, 255, 0.1);
@@ -1341,4 +1341,26 @@ border: 1px solid rgb(0, 79, 251);
 }
 .themeLogic {
 border: 1px solid rgb(251, 33, 0);
+}
+
+#myAccountLoginForm {
+  width: unset;
+  position: absolute;
+  z-index: 100;
+  width: 30vw;
+  left: 35%;
+  padding: 10px;
+  margin: 0;
+  top: 20%;
+  background: darkslategrey;
+
+  @media screen and (max-width: 1000px) {
+    width: 45%;
+    left: 28%;
+  }
+
+  @media screen and (max-width: 600px) {
+    width: 95%;
+    left: 0;
+  }
 }

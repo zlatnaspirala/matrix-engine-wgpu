@@ -146,13 +146,11 @@ export class MEMapLoader {
     setTimeout(() => {
       this.collectionOfRocks = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks1') != -1);
       this.collectionOfRocks.forEach((item) => {
-        item.setAmbient(10, 10, 10);
-        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
+        item.setAmbient(10, 10, 10)
       });
       this.collectionOfRocks2 = this.core.mainRenderBundle.filter((item) => item.name.indexOf('rocks2') != -1);
       this.collectionOfRocks2.forEach((item) => {
-        item.setAmbient(10, 10, 10);
-        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
+        item.setAmbient(10, 10, 10)
       })
       this.addInstancingRock();
 
@@ -160,7 +158,7 @@ export class MEMapLoader {
         console.log('rock done:', rock.done, 'pipeline:', !!rock.pipeline, 'instanceCount:', rock.instanceCount);
       });
 
-      // trons 
+      // trons
       app.enemytron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('enemytron') != -1)[0];
       app.tron = this.core.mainRenderBundle.filter((item) => item.name.indexOf('friendlytron') != -1)[0];
       app.tron.setAmbient(2, 2, 2);
@@ -214,7 +212,7 @@ export class MEMapLoader {
         app.enemytron.effects.circle.instanceTargets[1].position = [0, 6, 0];
         app.enemytron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
         app.enemytron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
-      }, 500);
+      }, 1500);
 
     }, 7500);
 
@@ -255,7 +253,6 @@ export class MEMapLoader {
 
     setTimeout(() => {
       app.getSceneObjectByName('tree1-leaf2.001-0').position.y = 50
-
     }, 200)
   }
 
@@ -268,7 +265,7 @@ export class MEMapLoader {
     var glbFile01 = await fetch('./res/meshes/maps-objs/tree.glb').then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, this.core.device)));
     this.core.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
-      scale: [randomIntFromTo(10, 15), randomIntFromTo(10, 15), randomIntFromTo(10, 15)],
+      scale: [randomIntFromTo(20, 25), randomIntFromTo(20, 25), randomIntFromTo(20, 25)],
       position: {x: -500, y: -35, z: -500},
       name: 'tree1',
       texturesPaths: ['./res/meshes/maps-objs/textures/green.png'],
@@ -285,7 +282,7 @@ export class MEMapLoader {
         return;
       }
       this.addInstancing();
-    }, 6000);
+    }, 5000);
   }
 
   addInstancing() {
@@ -373,12 +370,12 @@ export class MEMapLoader {
         let instance;
         if(x < 8) {
           instance = rock.instanceTargets[x];
-          instance.position[0] = -50;
+          instance.position[0] = 0;//-50;
           instance.position[2] = -2000 + x * 250;
           instance.position[1] = 0;
         } else if(x < 16) {
           instance = rock.instanceTargets[x];
-          instance.position[0] = 1950;
+          instance.position[0] = 1900;
           instance.position[2] = -1800 + (x - 8) * 250;
           instance.position[1] = 0;
         }

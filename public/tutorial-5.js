@@ -533,7 +533,7 @@ var MEConfig = {
     if (options2.LOAD_AFTER_CLICK_MOBILE) {
       this.LOAD_AFTER_CLICK_MOBILE = options2.LOAD_AFTER_CLICK_MOBILE;
     }
-    if (urlQ["fs"] || isMobile()) {
+    if (urlQ["fs"]) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
       this.fsManager.request();
@@ -4164,7 +4164,6 @@ var Position = class {
     this.targetZ = parseFloat(z);
   }
   onTargetPositionReach() {
-    console.log("onTargetPositionReach");
   }
   update() {
     var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist2 = Math.sqrt(tx * tx + ty * ty + tz * tz);
@@ -8578,7 +8577,7 @@ var Materials = class {
         }
       }, { once: false });
     } else if (arg.type === "videoElement") {
-      this.video = arg.el;
+      this.video = arg.videoElement;
       await this.video.play();
     } else if (arg.type === "camera") {
       if (!byId(`core-${this.name}`)) {
@@ -8681,10 +8680,14 @@ var Materials = class {
     if (this.video) await new Promise((resolve) => {
       this.video.requestVideoFrameCallback(() => {
         setTimeout(() => {
-          this.updateVideoTexture();
-          this.createMaterialBindGroupVideo();
-          this.setupPipeline();
-          resolve();
+          try {
+            this.updateVideoTexture();
+            this.createMaterialBindGroupVideo();
+            this.setupPipeline();
+            resolve();
+          } catch (err) {
+            return;
+          }
           const ci1 = document.getElementById("ci1");
           if (ci1) {
             document.body.removeChild(ci1);
@@ -8692,7 +8695,7 @@ var Materials = class {
             const ci2 = document.getElementById(this.name + "ci1");
             if (ci2) document.body.removeChild(ci2);
           }
-        }, 200);
+        }, 400);
       });
     });
   }
@@ -20634,7 +20637,7 @@ var MaterialsInstanced = class {
         }
       }, { once: false });
     } else if (arg.type === "videoElement") {
-      this.video = arg.el;
+      this.video = arg.videoElement;
       await this.video.play();
     } else if (arg.type === "camera") {
       this.video = document.createElement("video");
@@ -23875,6 +23878,7 @@ var METoolTip = class {
 // ../client.js
 var MEEditorClient = class {
   ws = null;
+  updateSceneEvent = new CustomEvent("updateSceneContainer", { detail: {} });
   constructor(typeOfRun, name2) {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
@@ -23931,7 +23935,7 @@ var MEEditorClient = class {
             detail: data
           }));
         } else if (data.refresh == "refresh") {
-          setTimeout(() => document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} })), 1e3);
+          setTimeout(() => document.dispatchEvent(this.updateSceneEvent), 1e3);
         } else {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
@@ -27049,6 +27053,38 @@ var FluxCodexVertex = class {
     document.addEventListener("show-curve-editor", (e) => {
       this.curveEditor.toggleEditor();
     });
+    this.svg.addEventListener("dblclick", (e) => {
+      console.log("DBL LINK");
+      console.log("DBL LINK, target:", e.target.tagName, e.target.outerHTML);
+      const linkId = e.target.dataset.linkId;
+      if (linkId) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.removeLink(linkId);
+      }
+    });
+    this.svg.addEventListener("contextmenu", (e) => {
+      const linkId = e.target.dataset.linkId;
+      if (linkId) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.removeLink(linkId);
+      }
+    });
+    this.svg.addEventListener("mouseover", (e) => {
+      const linkId = e.target.dataset.linkId;
+      if (linkId) {
+        const visible = this.svg.querySelector(`path.link[data-link-id="${linkId}"]`);
+        if (visible) visible.style.stroke = "#ff5252";
+      }
+    });
+    this.svg.addEventListener("mouseout", (e) => {
+      const linkId = e.target.dataset.linkId;
+      if (linkId) {
+        const visible = this.svg.querySelector(`path.link[data-link-id="${linkId}"]`);
+        if (visible) visible.style.stroke = "";
+      }
+    });
     setTimeout(() => this.init(), 3300);
   }
   createContextMenu() {
@@ -28434,7 +28470,9 @@ var FluxCodexVertex = class {
           { name: "spacingByY", type: "number" }
         ],
         outputs: [
-          { name: "execOut", type: "action" }
+          { name: "execOut", type: "action" },
+          { name: "complete", type: "action" },
+          { name: "objectNames", type: "object" }
         ],
         fields: [
           { key: "material", value: "standard" },
@@ -30302,6 +30340,7 @@ LIST OF INTEREST OBJECT:
     if (node2.title === "On Key" && pinName == "isHeld") return node2._isHeld;
     if (node2.title === "On Key" && pinName == "keyCode") return node2.lastKey;
     if (node2.title === "Generator Pyramid" && pinName == "objectNames") return node2._returnCache;
+    if (node2.title === "Generator Wall" && pinName == "objectNames") return node2._returnCache;
     if (node2.title === "Audio Reactive Node") {
       if (pinName === "low") {
         return node2._returnCache[0];
@@ -30975,11 +31014,15 @@ LIST OF INTEREST OBJECT:
             delay,
             ori,
             spacingByY
-          );
+          ).then((objects) => {
+            n._returnCache = objects;
+            this.enqueueOutputs(n, "complete");
+          });
         }
         this.enqueueOutputs(n, "execOut");
         return;
       } else if (n.title === "Generator Wall NONPhysics") {
+        console.log("DEBUG =====");
         const texturePath = this.getValue(nodeId, "texturePath");
         const mat = this.getValue(nodeId, "material");
         let pos = this.getValue(nodeId, "pos");
@@ -31008,6 +31051,7 @@ LIST OF INTEREST OBJECT:
         }
         const createdField = n.fields.find((f) => f.key === "created");
         if (createdField.value == "false" || createdField.value == false) {
+          console.log("DEBUG =====");
           app.generatorWallNONPHYSICS(
             mat,
             pos,
@@ -31809,6 +31853,7 @@ LIST OF INTEREST OBJECT:
       }
     }
   }
+  // updateLinks() now only builds paths, no listener attachment at all:
   updateLinks() {
     while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
     const bRect = this.board.getBoundingClientRect();
@@ -31819,17 +31864,28 @@ LIST OF INTEREST OBJECT:
       const fRect = fromDot.getBoundingClientRect(), tRect = toDot.getBoundingClientRect();
       const x1 = fRect.left - bRect.left + 6, y1 = fRect.top - bRect.top + 6;
       const x2 = tRect.left - bRect.left + 6, y2 = tRect.top - bRect.top + 6;
-      const path2 = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path"
-      );
+      const d = `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`;
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hit.setAttribute("d", d);
+      hit.setAttribute("stroke", "transparent");
+      hit.setAttribute("stroke-width", "14");
+      hit.setAttribute("fill", "none");
+      hit.style.pointerEvents = "stroke";
+      hit.style.cursor = "pointer";
+      hit.dataset.linkId = l.id;
+      const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path2.setAttribute("class", "link " + (l.type === "value" ? "value" : ""));
-      path2.setAttribute(
-        "d",
-        `M${x1},${y1} C${x1 + 50},${y1} ${x2 - 50},${y2} ${x2},${y2}`
-      );
+      path2.setAttribute("d", d);
+      path2.dataset.linkId = l.id;
       this.svg.appendChild(path2);
+      this.svg.appendChild(hit);
     });
+  }
+  removeLink(linkId) {
+    const idx = this.links.findIndex((l) => l.id === linkId);
+    if (idx === -1) return;
+    this.links.splice(idx, 1);
+    this.updateLinks();
   }
   runGraph() {
     if (byId("graph-status").innerHTML == "\u{1F534}" || Object.values(this.nodes).length == 0) {
@@ -33421,7 +33477,6 @@ var SceneObjectProperty = class {
       );
       let F = app.editor.methodsManager.compileFunction(method.code);
       currSceneObj.position.onTargetPositionReach = F;
-      console.log("[position.onTargetPositionReach][attached]", F);
     };
     byId("sceneObjEditorPropEvents").innerHTML = "";
     this.core.editor.methodsManager.methodsContainer.forEach((m, index) => {
@@ -35942,74 +35997,84 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
   });
 }
 function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
-  const engine = this;
-  const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
-  console.log(width);
-  console.log(height);
-  const inputCube = { mesh: useMeshPath };
-  function handler(m) {
-    let index = 0;
-    const RAY = { enabled: raycast2, radius: 1 };
-    for (let y2 = 0; y2 < height; y2++) {
-      for (let x2 = 0; x2 < width; x2++) {
-        const cubeName = `${name2}_${index}`;
-        setTimeout(() => {
-          let __x = 0, __y = 0, __z = 0;
-          if (orientationOfwall === "ByX") {
-            __x = x2 * spacing2;
-            __y = y2 * spacing2 + spacingY;
-            __z = 0;
-          } else if (orientationOfwall === "ByZ") {
-            __x = 0;
-            __y = y2 * spacing2 + spacingY;
-            __z = x2 * spacing2;
-          }
-          engine.addMeshObj({
-            material: { type: material },
-            envMapParams: material == "mirror" ? {
-              baseColorMix: 0.5,
-              // normal mix
-              mirrorTint: [0.9, 0.95, 1],
-              // Slight cool tint
-              reflectivity: 0.95,
-              // 25% reflection blend
-              illuminateColor: [0.3, 0.7, 1],
-              // Soft cyan
-              illuminateStrength: 0.4,
-              // Gentle rim
-              illuminatePulse: 0.01,
-              // No pulse (static)
-              fresnelPower: 2,
-              // Medium-sharp edge
-              envLodBias: 2.5,
-              usePlanarReflection: false
-              // ✅ Env map mode - wip
-            } : void 0,
-            position: {
-              x: pos2.x + __x,
-              y: pos2.y + __y,
-              z: pos2.z + __z
-            },
-            rotation: rot2,
-            rotationSpeed: { x: 0, y: 0, z: 0 },
-            texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
-            name: cubeName,
-            mesh: m.mesh,
-            physics: {
-              scale: scale4,
-              enabled: true,
-              geometry: "Cube"
-            },
-            raycast: RAY
-          });
-          const o2 = app.getSceneObjectByName(cubeName);
-          runtimeCacheObjs.push(o2);
-        }, index * delay2);
-        index++;
+  return new Promise((resolve, reject) => {
+    const engine = this;
+    const [width, height] = size2.toLowerCase().split("x").map((n2) => parseInt(n2, 10));
+    console.log(width);
+    console.log(height);
+    const inputCube = { mesh: useMeshPath };
+    function handler(m) {
+      let index = 0;
+      const totalCubes = width * height;
+      const lastIndex = totalCubes - 1;
+      const RAY = { enabled: raycast2, radius: 1 };
+      const objects = [];
+      for (let y2 = 0; y2 < height; y2++) {
+        for (let x2 = 0; x2 < width; x2++) {
+          const cubeName = `${name2}_${index}`;
+          const currentIndex = index;
+          setTimeout(() => {
+            let __x = 0, __y = 0, __z = 0;
+            if (orientationOfwall === "ByX") {
+              __x = x2 * spacing2;
+              __y = y2 * spacing2 + spacingY;
+              __z = 0;
+            } else if (orientationOfwall === "ByZ") {
+              __x = 0;
+              __y = y2 * spacing2 + spacingY;
+              __z = x2 * spacing2;
+            }
+            engine.addMeshObj({
+              material: { type: material },
+              envMapParams: material == "mirror" ? {
+                baseColorMix: 0.5,
+                // normal mix
+                mirrorTint: [0.9, 0.95, 1],
+                // Slight cool tint
+                reflectivity: 0.95,
+                // 25% reflection blend
+                illuminateColor: [0.3, 0.7, 1],
+                // Soft cyan
+                illuminateStrength: 0.4,
+                // Gentle rim
+                illuminatePulse: 0.01,
+                // No pulse (static)
+                fresnelPower: 2,
+                // Medium-sharp edge
+                envLodBias: 2.5,
+                usePlanarReflection: false
+                // ✅ Env map mode - wip
+              } : void 0,
+              position: {
+                x: pos2.x + __x,
+                y: pos2.y + __y,
+                z: pos2.z + __z
+              },
+              rotation: rot2,
+              rotationSpeed: { x: 0, y: 0, z: 0 },
+              texturesPaths: typeof texturePath2 == "object" ? texturePath2 : [texturePath2],
+              name: cubeName,
+              mesh: m.mesh,
+              physics: {
+                scale: scale4,
+                enabled: true,
+                geometry: "Cube"
+              },
+              raycast: RAY
+            });
+            const o2 = app.getSceneObjectByName(cubeName);
+            runtimeCacheObjs.push(o2);
+            objects.push(o2.name);
+            if (currentIndex === lastIndex) {
+              resolve(objects);
+            }
+          }, index * delay2);
+          index++;
+        }
       }
     }
-  }
-  downloadMeshes(inputCube, handler, { scale: scale4 });
+    downloadMeshes(inputCube, handler, { scale: scale4 });
+  });
 }
 function physicsBodiesGeneratorPyramid(material = "standard", pos2, rot2, texturePath2, name2 = "pyramidCube", levels2 = 5, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2, delay2 = 500) {
   const engine = this;
@@ -37351,7 +37416,14 @@ var PhysicsBridge = class {
     this._queue = [];
     setTimeout(() => {
       dispatchEvent(new CustomEvent("PhysicsReady", {}));
-    }, 100);
+      setTimeout(() => {
+        if (app.mainRenderBundle.length == 0) {
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent("PhysicsReady", {}));
+          }, 750);
+        }
+      }, 200);
+    }, 450);
   }
   addPhysics(MEObject, pOptions) {
     if (!this._ready) {
@@ -38779,6 +38851,9 @@ if ("serviceWorker" in navigator) {
       if (!navigator.serviceWorker.controller) {
         console.log("Installing & caching for the first time");
         meLoader.create("LOADING");
+        setTimeout(() => {
+          location.reload();
+        }, 3e3);
         APP_READY = false;
       } else {
         APP_READY = true;
@@ -39079,7 +39154,7 @@ var MatrixEngineWGPU = class {
         return;
       }
       setTimeout(() => {
-        if (APP_READY === false && isMobile() === true) {
+        if (APP_READY === false && isMobile() === true && location.hostname.indexOf("192.168.") === -1) {
           console.log("app is installing cache");
           setTimeout(() => {
             location.reload();
@@ -39100,7 +39175,7 @@ var MatrixEngineWGPU = class {
             });
             return;
           }
-          meLoader.create("RUN");
+          meLoader.create("RUN IN FULL SCREEN");
           this.MEConfig.fsManager.onChange((isFS, target2) => {
             console.log("1 BACK FROM FS", isFS);
             console.log("window style width : ", innerWidth);
@@ -39140,7 +39215,10 @@ var MatrixEngineWGPU = class {
                 console.error("Orientation lock failed: ", error);
               });
             }
-            if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
+            if (this.mainRenderBundle.length == 0) {
+              console.log("PhysicsReady w");
+              dispatchEvent(new CustomEvent("PhysicsReady", {}));
+            }
           });
         }
       }, 500);
@@ -39241,14 +39319,14 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.16.00 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 1.17.5 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open...\nOptimised MediaPipe buildin library implemented.\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
+      "%cMatrix Engine WGPU - Gate is open...\nOptimised MediaPipe buildin library implemented.\nCreative power with intuitive visual scripting work flow.\nNew Features: NUI-Commander, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
     );
     console.log(
-      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
+      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE
     );
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
@@ -40138,7 +40216,12 @@ var MatrixEngineWGPU = class {
           this.globalAmbient.slice()
         );
         bvhPlayer.clearColor = clearColor;
-        bvhPlayer.itIsPhysicsBody = false;
+        if (o2.physics.enabled == true && this.matrixPhysics) {
+          this.matrixPhysics.addPhysics(bvhPlayer, o2.physics);
+          bvhPlayer.itIsPhysicsBody = true;
+        } else {
+          bvhPlayer.itIsPhysicsBody = false;
+        }
         this.mainRenderBundle.push(bvhPlayer);
         r2.push(bvhPlayer);
         this.sortRenderBundle();
@@ -40201,7 +40284,7 @@ var MatrixEngineWGPU = class {
     if (typeof o2.physics === "undefined") {
       o2.physics = {
         scale: o2.scale,
-        enabled: true,
+        enabled: false,
         geometry: "Sphere",
         radius: typeof o2.scale == Number ? o2.scale : o2.scale[0],
         name: o2.name,
@@ -40209,7 +40292,7 @@ var MatrixEngineWGPU = class {
       };
     }
     if (typeof o2.physics.enabled === "undefined") {
-      o2.physics.enabled = true;
+      o2.physics.enabled = false;
     }
     if (typeof o2.physics.geometry === "undefined") {
       o2.physics.geometry = "Cube";
@@ -40263,13 +40346,19 @@ var MatrixEngineWGPU = class {
         );
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
+        if (o2.physics.enabled == true) {
+          if (this.matrixPhysics) {
+            this.matrixPhysics.addPhysics(bvhPlayer, o2.physics);
+            bvhPlayer.itIsPhysicsBody = true;
+          }
+        } else {
+          bvhPlayer.itIsPhysicsBody = false;
+        }
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
-          setTimeout(() => {
-            document.dispatchEvent(this.usEvent);
-          }, 50);
-        }, 200);
+          document.dispatchEvent(this.usEvent);
+        }, 120);
         c++;
       }
       skinnedNodeIndex++;
@@ -40307,7 +40396,6 @@ var MatrixEngineWGPU = class {
           { binding: 0, resource: this.sceneTexture.createView() },
           { binding: 1, resource: this.presentSampler },
           { binding: 2, resource: this.ssrPass.ssrOutputView }
-          // real
         ]
       });
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
@@ -40319,7 +40407,7 @@ var MatrixEngineWGPU = class {
   };
   activateVolumetricEffect = (arg) => {
     if (this.bloomPass.enabled != true) {
-      console.warn(`%cMEW: You must enable bloom before volumetric.`);
+      console.warn(`%cTheBeast: You must enable bloom before volumetric.`);
       return;
     }
     let p;

@@ -784,7 +784,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       for(let key in C) {
         byId('desc').innerHTML += ` 
          <div style='font-size: 15px;display: inline-flex;justify-content:space-between'>
-           <span style="color:#00e2ff"> ${key} </span> : <span style="color:#02e2ff">${C[key]} </span>
+           <span style="color:#00e2ff"> ${key}: </span>  <span style="color:#02e2ff">${C[key]} </span>
           </div>
         `;
       }
@@ -794,11 +794,11 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     startBtn.id = 'startBtn';
     Object.assign(startBtn.style, {
       position: "fixed",
-      bottom: isMobile() == true ? "34%" : '40px',
+      bottom: isMobile() == true ? "37%" : '40px',
       right: isMobile() == true ? "16%" : '120px',
       opacity: isMobile() == true ? "0.8" : '1',
       width: "250px",
-      height: "54px",
+      height: isMobile() == true ? "45px" : "54px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -861,8 +861,8 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
       helpBox.style.display = 'none';
       helpBox.style.zIndex = '2';
       helpBox.style.top = '0%';
-      helpBox.style.width = '89%';
-      helpBox.style.height = '100%';
+      helpBox.style.width = '87%';
+      helpBox.style.height = '98%';
       helpBox.style.fontSize = '100%';
     } else {
       helpBox.style.position = 'fixed';

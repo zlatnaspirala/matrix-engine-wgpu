@@ -533,7 +533,7 @@ var MEConfig = {
     if (options2.LOAD_AFTER_CLICK_MOBILE) {
       this.LOAD_AFTER_CLICK_MOBILE = options2.LOAD_AFTER_CLICK_MOBILE;
     }
-    if (urlQ["fs"] || isMobile()) {
+    if (urlQ["fs"]) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
       this.fsManager.request();
@@ -4164,7 +4164,6 @@ var Position = class {
     this.targetZ = parseFloat(z);
   }
   onTargetPositionReach() {
-    console.log("onTargetPositionReach");
   }
   update() {
     var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist2 = Math.sqrt(tx * tx + ty * ty + tz * tz);
@@ -8578,7 +8577,7 @@ var Materials = class {
         }
       }, { once: false });
     } else if (arg.type === "videoElement") {
-      this.video = arg.el;
+      this.video = arg.videoElement;
       await this.video.play();
     } else if (arg.type === "camera") {
       if (!byId(`core-${this.name}`)) {
@@ -8681,10 +8680,14 @@ var Materials = class {
     if (this.video) await new Promise((resolve) => {
       this.video.requestVideoFrameCallback(() => {
         setTimeout(() => {
-          this.updateVideoTexture();
-          this.createMaterialBindGroupVideo();
-          this.setupPipeline();
-          resolve();
+          try {
+            this.updateVideoTexture();
+            this.createMaterialBindGroupVideo();
+            this.setupPipeline();
+            resolve();
+          } catch (err) {
+            return;
+          }
           const ci1 = document.getElementById("ci1");
           if (ci1) {
             document.body.removeChild(ci1);
@@ -8692,7 +8695,7 @@ var Materials = class {
             const ci2 = document.getElementById(this.name + "ci1");
             if (ci2) document.body.removeChild(ci2);
           }
-        }, 200);
+        }, 400);
       });
     });
   }
@@ -20634,7 +20637,7 @@ var MaterialsInstanced = class {
         }
       }, { once: false });
     } else if (arg.type === "videoElement") {
-      this.video = arg.el;
+      this.video = arg.videoElement;
       await this.video.play();
     } else if (arg.type === "camera") {
       this.video = document.createElement("video");
@@ -23875,6 +23878,7 @@ var METoolTip = class {
 // ../client.js
 var MEEditorClient = class {
   ws = null;
+  updateSceneEvent = new CustomEvent("updateSceneContainer", { detail: {} });
   constructor(typeOfRun, name2) {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
@@ -23931,7 +23935,7 @@ var MEEditorClient = class {
             detail: data
           }));
         } else if (data.refresh == "refresh") {
-          setTimeout(() => document.dispatchEvent(new CustomEvent("updateSceneContainer", { detail: {} })), 1e3);
+          setTimeout(() => document.dispatchEvent(this.updateSceneEvent), 1e3);
         } else {
           if (data.methodSaves && data.ok == true) {
             mb.show("Graph saved \u2705");
@@ -33473,7 +33477,6 @@ var SceneObjectProperty = class {
       );
       let F = app.editor.methodsManager.compileFunction(method.code);
       currSceneObj.position.onTargetPositionReach = F;
-      console.log("[position.onTargetPositionReach][attached]", F);
     };
     byId("sceneObjEditorPropEvents").innerHTML = "";
     this.core.editor.methodsManager.methodsContainer.forEach((m, index) => {
@@ -37413,7 +37416,14 @@ var PhysicsBridge = class {
     this._queue = [];
     setTimeout(() => {
       dispatchEvent(new CustomEvent("PhysicsReady", {}));
-    }, 100);
+      setTimeout(() => {
+        if (app.mainRenderBundle.length == 0) {
+          setTimeout(() => {
+            dispatchEvent(new CustomEvent("PhysicsReady", {}));
+          }, 750);
+        }
+      }, 200);
+    }, 450);
   }
   addPhysics(MEObject, pOptions) {
     if (!this._ready) {
@@ -38841,6 +38851,9 @@ if ("serviceWorker" in navigator) {
       if (!navigator.serviceWorker.controller) {
         console.log("Installing & caching for the first time");
         meLoader.create("LOADING");
+        setTimeout(() => {
+          location.reload();
+        }, 3e3);
         APP_READY = false;
       } else {
         APP_READY = true;
@@ -39141,7 +39154,7 @@ var MatrixEngineWGPU = class {
         return;
       }
       setTimeout(() => {
-        if (APP_READY === false && isMobile() === true) {
+        if (APP_READY === false && isMobile() === true && location.hostname.indexOf("192.168.") === -1) {
           console.log("app is installing cache");
           setTimeout(() => {
             location.reload();
@@ -39162,7 +39175,7 @@ var MatrixEngineWGPU = class {
             });
             return;
           }
-          meLoader.create("RUN");
+          meLoader.create("RUN IN FULL SCREEN");
           this.MEConfig.fsManager.onChange((isFS, target2) => {
             console.log("1 BACK FROM FS", isFS);
             console.log("window style width : ", innerWidth);
@@ -39202,7 +39215,10 @@ var MatrixEngineWGPU = class {
                 console.error("Orientation lock failed: ", error);
               });
             }
-            if (this.mainRenderBundle.length == 0) dispatchEvent(new CustomEvent("PhysicsReady", {}));
+            if (this.mainRenderBundle.length == 0) {
+              console.log("PhysicsReady w");
+              dispatchEvent(new CustomEvent("PhysicsReady", {}));
+            }
           });
         }
       }, 500);
@@ -39303,14 +39319,14 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.16.00 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 1.17.5 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open...\nOptimised MediaPipe buildin library implemented.\nCreative power with intuitive visual scripting work flow.\nNew Features: Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
+      "%cMatrix Engine WGPU - Gate is open...\nOptimised MediaPipe buildin library implemented.\nCreative power with intuitive visual scripting work flow.\nNew Features: NUI-Commander, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
       LOG_FUNNY_BIG_ARCADE
     );
     console.log(
-      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
+      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE
     );
     console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
@@ -40200,7 +40216,12 @@ var MatrixEngineWGPU = class {
           this.globalAmbient.slice()
         );
         bvhPlayer.clearColor = clearColor;
-        bvhPlayer.itIsPhysicsBody = false;
+        if (o2.physics.enabled == true && this.matrixPhysics) {
+          this.matrixPhysics.addPhysics(bvhPlayer, o2.physics);
+          bvhPlayer.itIsPhysicsBody = true;
+        } else {
+          bvhPlayer.itIsPhysicsBody = false;
+        }
         this.mainRenderBundle.push(bvhPlayer);
         r2.push(bvhPlayer);
         this.sortRenderBundle();
@@ -40263,7 +40284,7 @@ var MatrixEngineWGPU = class {
     if (typeof o2.physics === "undefined") {
       o2.physics = {
         scale: o2.scale,
-        enabled: true,
+        enabled: false,
         geometry: "Sphere",
         radius: typeof o2.scale == Number ? o2.scale : o2.scale[0],
         name: o2.name,
@@ -40271,7 +40292,7 @@ var MatrixEngineWGPU = class {
       };
     }
     if (typeof o2.physics.enabled === "undefined") {
-      o2.physics.enabled = true;
+      o2.physics.enabled = false;
     }
     if (typeof o2.physics.geometry === "undefined") {
       o2.physics.geometry = "Cube";
@@ -40325,13 +40346,19 @@ var MatrixEngineWGPU = class {
         );
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
+        if (o2.physics.enabled == true) {
+          if (this.matrixPhysics) {
+            this.matrixPhysics.addPhysics(bvhPlayer, o2.physics);
+            bvhPlayer.itIsPhysicsBody = true;
+          }
+        } else {
+          bvhPlayer.itIsPhysicsBody = false;
+        }
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
-          setTimeout(() => {
-            document.dispatchEvent(this.usEvent);
-          }, 50);
-        }, 200);
+          document.dispatchEvent(this.usEvent);
+        }, 120);
         c++;
       }
       skinnedNodeIndex++;
@@ -40369,7 +40396,6 @@ var MatrixEngineWGPU = class {
           { binding: 0, resource: this.sceneTexture.createView() },
           { binding: 1, resource: this.presentSampler },
           { binding: 2, resource: this.ssrPass.ssrOutputView }
-          // real
         ]
       });
       this._activeBindGroup = this.bloomPass.enabled ? this.bloomBindGroup : this.noBloomBindGroup;
@@ -40381,7 +40407,7 @@ var MatrixEngineWGPU = class {
   };
   activateVolumetricEffect = (arg) => {
     if (this.bloomPass.enabled != true) {
-      console.warn(`%cMEW: You must enable bloom before volumetric.`);
+      console.warn(`%cTheBeast: You must enable bloom before volumetric.`);
       return;
     }
     let p;

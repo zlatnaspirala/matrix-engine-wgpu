@@ -911,8 +911,8 @@ option {
 }
 
 .progress-container {
-  width: 80%;
-  max-width: 600px;
+  /* width: 80%;
+  max-width: 600px; */
   opacity: 0.5;
   height: 18px;
   background: rgba(255, 255, 255, 0.1);
@@ -1084,6 +1084,7 @@ option {
   margin: 0;
   top: 20%;
   background: darkslategrey;
+  z-index: 100;
 
   @media screen and (max-width: 1000px) {
     width: 45%;

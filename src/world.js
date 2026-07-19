@@ -52,8 +52,12 @@ if('serviceWorker' in navigator) {
   if(MEConfig.CACHE === true && location.hostname.indexOf('localhost') == -1) {
     navigator.serviceWorker.register('cache.js').then(registration => {
       if(!navigator.serviceWorker.controller) {
+        // console.log('Installing & caching for the first time');
         console.log('Installing & caching for the first time');
         meLoader.create('LOADING');
+        setTimeout(() => {
+          location.reload();
+        }, 3000)
         APP_READY = false;
       } else {
         APP_READY = true;
@@ -1422,7 +1426,7 @@ export default class MatrixEngineWGPU {
 
         bvhPlayer.clearColor = clearColor;
 
-        if(o.physics.enabled == true) {
+        if(o.physics.enabled == true && this.matrixPhysics) {
           this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
           bvhPlayer.itIsPhysicsBody = true;
         } else {
@@ -1519,8 +1523,10 @@ export default class MatrixEngineWGPU {
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
         if(o.physics.enabled == true) {
-          this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
-          bvhPlayer.itIsPhysicsBody = true;
+          if(this.matrixPhysics) {
+            this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
+            bvhPlayer.itIsPhysicsBody = true;
+          }
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }

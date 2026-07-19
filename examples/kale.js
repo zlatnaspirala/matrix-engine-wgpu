@@ -225,16 +225,12 @@ export var loadKale = function() {
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
         app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
-
         if(app.volumetricPass.enabled == false) app.activateVolumetricEffect()
         // e.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(5);
         // e.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(1, 200));
-
-        e.detail.hitObject.setupMaterialPBR([randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)],
-          [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)])
-      }
-
-      else if(e.detail.hitObject.name.startsWith('ball')) {
+        e.detail.hitObject.setupMaterialPBR([randomIntFromTo(1, 10), randomIntFromTo(1, 10), randomIntFromTo(1, 10)],
+          [randomIntFromTo(1, 10), randomIntFromTo(1, 10), randomIntFromTo(1, 10)])
+      } else if(e.detail.hitObject.name.startsWith('ball')) {
         // e.detail.hitObject.effects.keeffect.recreateVertexDataRND(10);
         e.detail.hitObject.setupMaterialPBR([randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)],
           [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)])
@@ -243,8 +239,6 @@ export var loadKale = function() {
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
         app.bloomPass.setBlurRadius(randomIntFromTo(0, 45))
       }
-
-
     });
 
   })

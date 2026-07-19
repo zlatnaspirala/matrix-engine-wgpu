@@ -3956,19 +3956,17 @@ class MEMapLoader {
       this.collectionOfRocks = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks1') != -1);
       this.collectionOfRocks.forEach(item => {
         item.setAmbient(10, 10, 10);
-        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       });
       this.collectionOfRocks2 = this.core.mainRenderBundle.filter(item => item.name.indexOf('rocks2') != -1);
       this.collectionOfRocks2.forEach(item => {
         item.setAmbient(10, 10, 10);
-        // this.core.collisionSystem.register(`rock1`, item.position, 15.0, 'rock');
       });
       this.addInstancingRock();
       this.collectionOfRocks.forEach(rock => {
         console.log('rock done:', rock.done, 'pipeline:', !!rock.pipeline, 'instanceCount:', rock.instanceCount);
       });
 
-      // trons 
+      // trons
       app.enemytron = this.core.mainRenderBundle.filter(item => item.name.indexOf('enemytron') != -1)[0];
       app.tron = this.core.mainRenderBundle.filter(item => item.name.indexOf('friendlytron') != -1)[0];
       app.tron.setAmbient(2, 2, 2);
@@ -4016,7 +4014,7 @@ class MEMapLoader {
         app.enemytron.effects.circle.instanceTargets[1].position = [0, 6, 0];
         app.enemytron.effects.circle.instanceTargets[0].color = [2, 0.1, 0, 0.5];
         app.enemytron.effects.circle.instanceTargets[1].color = [1, 1, 1, 0.11];
-      }, 500);
+      }, 1500);
     }, 7500);
     this.core.lightContainer[0].setPosY(175);
     this.core.lightContainer[0].setIntensity(1);
@@ -4097,7 +4095,7 @@ class MEMapLoader {
         type: 'standard',
         useTextureFromGlb: true
       },
-      scale: [(0, _utils.randomIntFromTo)(10, 15), (0, _utils.randomIntFromTo)(10, 15), (0, _utils.randomIntFromTo)(10, 15)],
+      scale: [(0, _utils.randomIntFromTo)(20, 25), (0, _utils.randomIntFromTo)(20, 25), (0, _utils.randomIntFromTo)(20, 25)],
       position: {
         x: -500,
         y: -35,
@@ -4123,7 +4121,7 @@ class MEMapLoader {
         return;
       }
       this.addInstancing();
-    }, 6000);
+    }, 5000);
   }
   addInstancing() {
     const spacing = 150;
@@ -4192,12 +4190,12 @@ class MEMapLoader {
         let instance;
         if (x < 8) {
           instance = rock.instanceTargets[x];
-          instance.position[0] = -50;
+          instance.position[0] = 0; //-50;
           instance.position[2] = -2000 + x * 250;
           instance.position[1] = 0;
         } else if (x < 16) {
           instance = rock.instanceTargets[x];
-          instance.position[0] = 1950;
+          instance.position[0] = 1900;
           instance.position[2] = -1800 + (x - 8) * 250;
           instance.position[1] = 0;
         }
@@ -47004,7 +47002,7 @@ const MEConfig = exports.MEConfig = {
     if (options.LOAD_AFTER_CLICK_MOBILE) {
       this.LOAD_AFTER_CLICK_MOBILE = options.LOAD_AFTER_CLICK_MOBILE;
     }
-    if (urlQ['fs'] || (0, _utils.isMobile)()) {
+    if (urlQ['fs']) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, _utils.LOG_FUNNY_ARCADE);
       this.fsManager.request();
@@ -67552,8 +67550,12 @@ if ('serviceWorker' in navigator) {
   if (_meConfig.MEConfig.CACHE === true && location.hostname.indexOf('localhost') == -1) {
     navigator.serviceWorker.register('cache.js').then(registration => {
       if (!navigator.serviceWorker.controller) {
+        // console.log('Installing & caching for the first time');
         console.log('Installing & caching for the first time');
         _utils.meLoader.create('LOADING');
+        setTimeout(() => {
+          location.reload();
+        }, 3000);
         APP_READY = false;
       } else {
         APP_READY = true;
@@ -69185,7 +69187,7 @@ class MatrixEngineWGPU {
         o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         bvhPlayer.clearColor = clearColor;
-        if (o.physics.enabled == true) {
+        if (o.physics.enabled == true && this.matrixPhysics) {
           this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
           bvhPlayer.itIsPhysicsBody = true;
         } else {
@@ -69328,8 +69330,10 @@ class MatrixEngineWGPU {
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
         if (o.physics.enabled == true) {
-          this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
-          bvhPlayer.itIsPhysicsBody = true;
+          if (this.matrixPhysics) {
+            this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
+            bvhPlayer.itIsPhysicsBody = true;
+          }
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }

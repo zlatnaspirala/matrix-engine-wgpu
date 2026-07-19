@@ -20,6 +20,7 @@
  - Micro optimisation : define CulledRenderPass only if culling activated from begin.
  - Adding MatrixTTS to export/import npm services
  - Make npm services sync with 1.16.2
+ - FORCE_FULL_SCREEN Only if (urlQ['fs']) - no more || isMobile()
 
 [1.15.xx]
  - Added `npm install @google/generative-ai` like new ai tool provider.

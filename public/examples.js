@@ -4730,7 +4730,7 @@ var MEConfig = {
     if (options2.LOAD_AFTER_CLICK_MOBILE) {
       this.LOAD_AFTER_CLICK_MOBILE = options2.LOAD_AFTER_CLICK_MOBILE;
     }
-    if (urlQ["fs"] || isMobile()) {
+    if (urlQ["fs"]) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ["fs"]);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
       this.fsManager.request();
@@ -8361,7 +8361,6 @@ var Position = class {
     this.targetZ = parseFloat(z2);
   }
   onTargetPositionReach() {
-    console.log("onTargetPositionReach");
   }
   update() {
     var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist2 = Math.sqrt(tx * tx + ty * ty + tz * tz);
@@ -12775,7 +12774,7 @@ var Materials = class {
         }
       }, { once: false });
     } else if (arg.type === "videoElement") {
-      this.video = arg.el;
+      this.video = arg.videoElement;
       await this.video.play();
     } else if (arg.type === "camera") {
       if (!byId2(`core-${this.name}`)) {
@@ -12878,10 +12877,14 @@ var Materials = class {
     if (this.video) await new Promise((resolve) => {
       this.video.requestVideoFrameCallback(() => {
         setTimeout(() => {
-          this.updateVideoTexture();
-          this.createMaterialBindGroupVideo();
-          this.setupPipeline();
-          resolve();
+          try {
+            this.updateVideoTexture();
+            this.createMaterialBindGroupVideo();
+            this.setupPipeline();
+            resolve();
+          } catch (err) {
+            return;
+          }
           const ci1 = document.getElementById("ci1");
           if (ci1) {
             document.body.removeChild(ci1);
@@ -12889,7 +12892,7 @@ var Materials = class {
             const ci2 = document.getElementById(this.name + "ci1");
             if (ci2) document.body.removeChild(ci2);
           }
-        }, 200);
+        }, 400);
       });
     });
   }
@@ -24872,7 +24875,7 @@ var MaterialsInstanced = class {
         }
       }, { once: false });
     } else if (arg.type === "videoElement") {
-      this.video = arg.el;
+      this.video = arg.videoElement;
       await this.video.play();
     } else if (arg.type === "camera") {
       this.video = document.createElement("video");
@@ -37712,7 +37715,6 @@ var SceneObjectProperty = class {
       );
       let F2 = app.editor.methodsManager.compileFunction(method.code);
       currSceneObj.position.onTargetPositionReach = F2;
-      console.log("[position.onTargetPositionReach][attached]", F2);
     };
     byId2("sceneObjEditorPropEvents").innerHTML = "";
     this.core.editor.methodsManager.methodsContainer.forEach((m2, index) => {
@@ -43257,6 +43259,9 @@ if ("serviceWorker" in navigator) {
       if (!navigator.serviceWorker.controller) {
         console.log("Installing & caching for the first time");
         meLoader.create("LOADING");
+        setTimeout(() => {
+          location.reload();
+        }, 3e3);
         APP_READY = false;
       } else {
         APP_READY = true;
@@ -44619,7 +44624,7 @@ var MatrixEngineWGPU = class {
           this.globalAmbient.slice()
         );
         bvhPlayer.clearColor = clearColor;
-        if (o3.physics.enabled == true) {
+        if (o3.physics.enabled == true && this.matrixPhysics) {
           this.matrixPhysics.addPhysics(bvhPlayer, o3.physics);
           bvhPlayer.itIsPhysicsBody = true;
         } else {
@@ -44750,8 +44755,10 @@ var MatrixEngineWGPU = class {
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
         if (o3.physics.enabled == true) {
-          this.matrixPhysics.addPhysics(bvhPlayer, o3.physics);
-          bvhPlayer.itIsPhysicsBody = true;
+          if (this.matrixPhysics) {
+            this.matrixPhysics.addPhysics(bvhPlayer, o3.physics);
+            bvhPlayer.itIsPhysicsBody = true;
+          }
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }
@@ -46328,20 +46335,21 @@ var CollisionSystem = class {
     }
   }
   update() {
-    if (!this.cameraEntry) return;
-    this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
-    const cam2 = this.cameraEntry;
-    this.checkPickups(cam2.pos, cam2.radius);
-    this._getNeighborCells(cam2.pos[0], cam2.pos[1], cam2.pos[2], this._staticGrid, this._staticNeighbors);
-    for (let i2 = 0; i2 < this._staticNeighbors.length; i2++) {
-      const entry = this._staticNeighbors[i2];
-      if (entry.group === "floor") continue;
-      const fakePos = { x: cam2.pos[0], y: cam2.pos[1], z: cam2.pos[2] };
-      const hit = this.resolveVsStaticCube(fakePos, cam2.radius, entry);
-      if (hit) {
-        cam2.pos[0] = fakePos.x;
-        cam2.pos[1] = fakePos.y;
-        cam2.pos[2] = fakePos.z;
+    if (this.cameraEntry) {
+      this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
+      const cam2 = this.cameraEntry;
+      this.checkPickups(cam2.pos, cam2.radius);
+      this._getNeighborCells(cam2.pos[0], cam2.pos[1], cam2.pos[2], this._staticGrid, this._staticNeighbors);
+      for (let i2 = 0; i2 < this._staticNeighbors.length; i2++) {
+        const entry = this._staticNeighbors[i2];
+        if (entry.group === "floor") continue;
+        const fakePos = { x: cam2.pos[0], y: cam2.pos[1], z: cam2.pos[2] };
+        const hit = this.resolveVsStaticCube(fakePos, cam2.radius, entry);
+        if (hit) {
+          cam2.pos[0] = fakePos.x;
+          cam2.pos[1] = fakePos.y;
+          cam2.pos[2] = fakePos.z;
+        }
       }
     }
     this._buildGrid();
@@ -46351,6 +46359,7 @@ var CollisionSystem = class {
       this._getNeighborCells(A2.pos.x, A2.pos.y, A2.pos.z, this._grid, this._neighbors);
       for (let j2 = 0; j2 < this._neighbors.length; j2++) {
         const B2 = this._neighbors[j2];
+        if (A2 === B2) continue;
         const minDist = (A2.radius + B2.radius) * 0.5;
         if (A2.group === B2.group) {
           resolvePairRepulsion3D(A2.pos, B2.pos, minDist, 1);
@@ -46366,7 +46375,6 @@ var CollisionSystem = class {
           this._eventDetail.B = B2;
           this._event1.detail.data = this._eventDetail;
           dispatchEvent(this._event1);
-          return;
         }
       }
     }
@@ -49346,8 +49354,8 @@ var loadKale = function() {
         app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
         if (app.volumetricPass.enabled == false) app.activateVolumetricEffect();
         e2.detail.hitObject.setupMaterialPBR(
-          [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)],
-          [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)]
+          [randomIntFromTo(1, 10), randomIntFromTo(1, 10), randomIntFromTo(1, 10)],
+          [randomIntFromTo(1, 10), randomIntFromTo(1, 10), randomIntFromTo(1, 10)]
         );
       } else if (e2.detail.hitObject.name.startsWith("ball")) {
         e2.detail.hitObject.setupMaterialPBR(
@@ -53875,7 +53883,7 @@ function joinSession(options2) {
         enableBtn();
       });
     } else if (!netConfig.isDataOnly) {
-      session.connect(token).then(() => {
+      session.connect(token, netConfig.customData).then(() => {
         byId4("session-title").innerText = sessionName;
         byId4("join").style.display = "none";
         byId4("session").style.display = "block";
@@ -54196,6 +54204,7 @@ var MatrixStream = class {
     });
     this.joinSessionUI.addEventListener("click", () => {
       console.log(`%c JOIN SESSION [${netConfig.resolution}] `, REDLOG);
+      console.log(`%c JOIN isDataOnly [${netConfig.isDataOnly}] `, REDLOG);
       joinSession({
         resolution: netConfig.resolution,
         isDataOnly: netConfig.isDataOnly
@@ -57918,11 +57927,171 @@ var loadMenuBeast = function() {
   window.app = menuBeast;
 };
 
+// examples/bvh-skeletal.js
+var loadBVHSkeletal = function() {
+  let BVHSkeletal = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "firstPersonCamera",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    BVHSkeletal.addLight();
+    downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      BVHSkeletal.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: { enabled: false }
+      });
+    }
+    async function onLoadObj(m2) {
+      var animBVH2 = new bvh_loader_default();
+      let loadBVH = (path2) => {
+        return new Promise((resolve, reject) => {
+          animBVH2.parse_file(path2).then(() => {
+            animBVH2.plot_hierarchy();
+            var r3 = animBVH2.frame_pose(0);
+            var KEYS = animBVH2.joint_names();
+            let ALL_MESHES = [];
+            for (var x3 = 0; x3 < r3[0].length; x3++) {
+              var boneName = "MEBVH" + KEYS[x3];
+              const mesh = app.addMeshObj({
+                material: { type: "standard", share: true },
+                position: { x: 0, y: -5, z: -10 },
+                rotation: { x: 0, y: 0, z: 0 },
+                rotationSpeed: { x: 0, y: 0, z: 0 },
+                texturesPaths: ["./res/textures/floor1.webp"],
+                name: boneName,
+                mesh: m2.cube,
+                physics: { enabled: false }
+              });
+              ALL_MESHES.push(mesh);
+            }
+            var all = animBVH2.all_frame_poses();
+            var countAnim = 0;
+            app.autoUpdate.push({
+              update: () => {
+                for (var x4 = 0; x4 < ALL_MESHES.length; x4++) {
+                  ALL_MESHES[x4].position.SetX(all[0][countAnim][x4][0] - 30);
+                  ALL_MESHES[x4].position.SetY(all[0][countAnim][x4][1] - 10);
+                  ALL_MESHES[x4].position.SetZ(all[0][countAnim][x4][2] - 80);
+                }
+                countAnim++;
+                if (countAnim >= all[0].length - 1) countAnim = 0;
+              }
+            });
+            resolve(animBVH2);
+          }).catch((err) => {
+            reject(err);
+          });
+        });
+      };
+      loadBVH("./res/bvh/example.bvh").then((r3) => {
+      });
+      let MYCUBE = BVHSkeletal.addMeshObj({
+        material: { type: "mirror" },
+        position: { x: 0, y: 4, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 1, z: 0 },
+        scale: [3, 5, 1],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true,
+          bloodBurst: true
+        }
+      });
+      BVHSkeletal.lightContainer[0].setIntensity(15);
+      BVHSkeletal.activateBloomEffect();
+      BVHSkeletal.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      BVHSkeletal.lightContainer[0].behavior.value_ = -1;
+      BVHSkeletal.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      BVHSkeletal.lightContainer[0].setPosition(0, 15, -10);
+      BVHSkeletal.lightContainer[0].setTarget(0, 0, -10);
+      setTimeout(() => {
+        MYCUBE.effects.circle = new GenGeoTexture2(BVHSkeletal.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
+        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+          -2.582509022040566,
+          0.21125441598805741,
+          0.4249951687253338,
+          0.4724163587305734,
+          2.381811753816671,
+          3.074841196886901,
+          -2.3797025623904164,
+          -3.4608908819087145
+        ]);
+        MYCUBE.setAmbient(2, 3, 0.5);
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(10);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 700);
+    }
+    BVHSkeletal.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cube")) {
+      }
+    });
+  });
+  window.app = BVHSkeletal;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
   url.searchParams.set("demo", id2);
-  window.location.href = url.toString();
+  if (id2 == 31) {
+    window.location.href = url.toString() + "&fs=true";
+  } else {
+    window.location.href = url.toString();
+  }
 };
 var hideMenu = () => {
   document.getElementById("examples").style.left = "-150px";
@@ -57963,6 +58132,7 @@ byId2("hang3d").addEventListener("click", () => switchDemo("30"));
 if (byId2("loadMenuBeast")) {
   byId2("loadMenuBeast").addEventListener("click", () => switchDemo("31"));
 }
+byId2("loadBVHSkeletal").addEventListener("click", () => switchDemo("32"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -58028,6 +58198,8 @@ if (urlQuery["demo"] === "1") {
   loadHang3d();
 } else if (urlQuery["demo"] === "31") {
   loadMenuBeast();
+} else if (urlQuery["demo"] === "32") {
+  loadBVHSkeletal();
 } else {
   loadObjFile();
 }

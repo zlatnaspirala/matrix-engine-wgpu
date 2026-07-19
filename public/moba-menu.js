@@ -1919,7 +1919,7 @@ let forestOfHollowBloodStartSceen = new _world.default({
       for (let key in C) {
         (0, _utils.byId)('desc').innerHTML += ` 
          <div style='font-size: 15px;display: inline-flex;justify-content:space-between'>
-           <span style="color:#00e2ff"> ${key} </span> : <span style="color:#02e2ff">${C[key]} </span>
+           <span style="color:#00e2ff"> ${key}: </span>  <span style="color:#02e2ff">${C[key]} </span>
           </div>
         `;
       }
@@ -1928,11 +1928,11 @@ let forestOfHollowBloodStartSceen = new _world.default({
     startBtn.id = 'startBtn';
     Object.assign(startBtn.style, {
       position: "fixed",
-      bottom: (0, _utils.isMobile)() == true ? "34%" : '40px',
+      bottom: (0, _utils.isMobile)() == true ? "37%" : '40px',
       right: (0, _utils.isMobile)() == true ? "16%" : '120px',
       opacity: (0, _utils.isMobile)() == true ? "0.8" : '1',
       width: "250px",
-      height: "54px",
+      height: (0, _utils.isMobile)() == true ? "45px" : "54px",
       textAlign: "center",
       color: "white",
       fontWeight: "bold",
@@ -1989,8 +1989,8 @@ let forestOfHollowBloodStartSceen = new _world.default({
       helpBox.style.display = 'none';
       helpBox.style.zIndex = '2';
       helpBox.style.top = '0%';
-      helpBox.style.width = '89%';
-      helpBox.style.height = '100%';
+      helpBox.style.width = '87%';
+      helpBox.style.height = '98%';
       helpBox.style.fontSize = '100%';
     } else {
       helpBox.style.position = 'fixed';
@@ -42852,7 +42852,7 @@ const MEConfig = exports.MEConfig = {
     if (options.LOAD_AFTER_CLICK_MOBILE) {
       this.LOAD_AFTER_CLICK_MOBILE = options.LOAD_AFTER_CLICK_MOBILE;
     }
-    if (urlQ['fs'] || (0, _utils.isMobile)()) {
+    if (urlQ['fs']) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, _utils.LOG_FUNNY_ARCADE);
       this.fsManager.request();
@@ -63400,8 +63400,12 @@ if ('serviceWorker' in navigator) {
   if (_meConfig.MEConfig.CACHE === true && location.hostname.indexOf('localhost') == -1) {
     navigator.serviceWorker.register('cache.js').then(registration => {
       if (!navigator.serviceWorker.controller) {
+        // console.log('Installing & caching for the first time');
         console.log('Installing & caching for the first time');
         _utils.meLoader.create('LOADING');
+        setTimeout(() => {
+          location.reload();
+        }, 3000);
         APP_READY = false;
       } else {
         APP_READY = true;
@@ -65033,7 +65037,7 @@ class MatrixEngineWGPU {
         o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
         const bvhPlayer = new _bvh.BVHPlayer(o, BVHANIM, glbFile, c, skinnedNodeIndex, this.canvas, this.device, this.context, this.inputHandler, this.globalAmbient.slice());
         bvhPlayer.clearColor = clearColor;
-        if (o.physics.enabled == true) {
+        if (o.physics.enabled == true && this.matrixPhysics) {
           this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
           bvhPlayer.itIsPhysicsBody = true;
         } else {
@@ -65176,8 +65180,10 @@ class MatrixEngineWGPU {
         bvhPlayer.clearColor = clearColor;
         results.push(bvhPlayer);
         if (o.physics.enabled == true) {
-          this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
-          bvhPlayer.itIsPhysicsBody = true;
+          if (this.matrixPhysics) {
+            this.matrixPhysics.addPhysics(bvhPlayer, o.physics);
+            bvhPlayer.itIsPhysicsBody = true;
+          }
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }
