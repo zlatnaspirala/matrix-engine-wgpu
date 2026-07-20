@@ -57928,6 +57928,20 @@ var loadMenuBeast = function() {
 };
 
 // examples/bvh-skeletal.js
+function buildBoneMap(bvh) {
+  const keys = bvh.joint_names();
+  const nameToIndex = {};
+  keys.forEach((k2, i2) => nameToIndex[k2] = i2);
+  return keys.map((k2) => {
+    const joint = bvh.joints[k2];
+    if (!joint.parent) return null;
+    const [ox, oy, oz] = joint.offset;
+    return {
+      parentIndex: nameToIndex[joint.parent.name],
+      length: Math.sqrt(ox * ox + oy * oy + oz * oz) || 1e-4
+    };
+  });
+}
 var loadBVHSkeletal = function() {
   let BVHSkeletal = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
@@ -57965,8 +57979,10 @@ var loadBVHSkeletal = function() {
             animBVH2.plot_hierarchy();
             var r3 = animBVH2.frame_pose(0);
             var KEYS = animBVH2.joint_names();
+            var BONES = buildBoneMap(animBVH2);
             let ALL_MESHES = [];
             for (var x3 = 0; x3 < r3[0].length; x3++) {
+              console.log("->" + KEYS[x3] + "-> position: " + r3[0][x3] + " rotation: " + r3[1][x3]);
               var boneName = "MEBVH" + KEYS[x3];
               const mesh = app.addMeshObj({
                 material: { type: "standard", share: true },
@@ -57982,12 +57998,49 @@ var loadBVHSkeletal = function() {
             }
             var all = animBVH2.all_frame_poses();
             var countAnim = 0;
+            const THICKNESS = 0.15;
+            const BONE_SCALE = 0.5;
+            let deltaDEV = 40;
             app.autoUpdate.push({
               update: () => {
+                deltaDEV--;
+                if (deltaDEV > 1) {
+                  return;
+                }
+                if (deltaDEV < 1) {
+                  deltaDEV = 40;
+                }
+                const framePos = all[0][countAnim];
+                const frameRot = all[1][countAnim];
                 for (var x4 = 0; x4 < ALL_MESHES.length; x4++) {
-                  ALL_MESHES[x4].position.SetX(all[0][countAnim][x4][0]);
-                  ALL_MESHES[x4].position.SetY(all[0][countAnim][x4][1]);
-                  ALL_MESHES[x4].position.SetZ(all[0][countAnim][x4][2]);
+                  const bone = BONES[x4];
+                  const p2 = framePos[x4];
+                  if (!bone) {
+                    ALL_MESHES[x4].position.SetX(p2[0]);
+                    ALL_MESHES[x4].position.SetY(p2[1]);
+                    ALL_MESHES[x4].position.SetZ(p2[2]);
+                    continue;
+                  }
+                  const parentPos = framePos[bone.parentIndex];
+                  ALL_MESHES[x4].position.SetX((p2[0] + parentPos[0]) / 2);
+                  ALL_MESHES[x4].position.SetY((p2[1] + parentPos[1]) / 2);
+                  ALL_MESHES[x4].position.SetZ((p2[2] + parentPos[2]) / 2);
+                  ALL_MESHES[x4].scale[0] = THICKNESS;
+                  ALL_MESHES[x4].scale[1] = bone.length * BONE_SCALE;
+                  ALL_MESHES[x4].scale[2] = THICKNESS;
+                  let dx = p2[0] - parentPos[0];
+                  let dy = p2[1] - parentPos[1];
+                  let dz = p2[2] - parentPos[2];
+                  const len2 = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-4;
+                  dx /= len2;
+                  dy /= len2;
+                  dz /= len2;
+                  const clampedDx = Math.max(-1, Math.min(1, dx));
+                  const thetaZ = -Math.asin(clampedDx);
+                  const thetaX = Math.atan2(dz, dy);
+                  ALL_MESHES[x4].rotation.setRotationX(radToDeg(thetaX));
+                  ALL_MESHES[x4].rotation.setRotationY(0);
+                  ALL_MESHES[x4].rotation.setRotationZ(radToDeg(thetaZ));
                 }
                 countAnim++;
                 if (countAnim >= all[0].length - 1) countAnim = 0;
@@ -57999,7 +58052,7 @@ var loadBVHSkeletal = function() {
           });
         });
       };
-      loadBVH("./res/bvh/example.bvh").then((r3) => {
+      loadBVH("./res/bvh-running/example.bvh").then((r3) => {
       });
       let MYCUBE = BVHSkeletal.addMeshObj({
         material: { type: "mirror" },

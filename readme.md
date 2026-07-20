@@ -1303,6 +1303,9 @@ You may use, modify, and sell projects based on this code — just keep this not
   Title: Zombies Sound Pack - Author: artisticdude Source URL: https://opengameart.org/content/zombies-sound-pack
   License: CC0 1.0 Universal (Public Domain Dedication)
 
+  Folder './public/res/bvh/'
+  Special thanks to the CMU Graphics Lab Motion Capture Database which provided the data http://mocap.cs.cmu.edu/
+
 ---
 
 ### BSD 3-Clause License (from WebGPU Samples)

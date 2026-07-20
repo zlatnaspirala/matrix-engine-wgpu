@@ -3,6 +3,23 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import MEBvh from "bvh-loader";
+import {degToRad, radToDeg} from "../src/engine/utils.js";
+
+function buildBoneMap(bvh) {
+  const keys = bvh.joint_names();
+  const nameToIndex = {};
+  keys.forEach((k, i) => nameToIndex[k] = i);
+
+  return keys.map((k) => {
+    const joint = bvh.joints[k];
+    if(!joint.parent) return null;
+    const [ox, oy, oz] = joint.offset;
+    return {
+      parentIndex: nameToIndex[joint.parent.name],
+      length: Math.sqrt(ox * ox + oy * oy + oz * oz) || 0.0001
+    };
+  });
+}
 
 export var loadBVHSkeletal = function() {
 
@@ -45,9 +62,10 @@ export var loadBVHSkeletal = function() {
             animBVH.plot_hierarchy();
             var r = animBVH.frame_pose(0);
             var KEYS = animBVH.joint_names();
+            var BONES = buildBoneMap(animBVH);
             let ALL_MESHES = [];
             for(var x = 0;x < r[0].length;x++) {
-              // console.log("->" + KEYS[x] + "-> position: " + r[0][x] + " rotation: " + r[1][x]);
+              console.log("->" + KEYS[x] + "-> position: " + r[0][x] + " rotation: " + r[1][x]);
               var boneName = 'MEBVH' + KEYS[x];
               const mesh = app.addMeshObj({
                 material: {type: 'standard', share: true},
@@ -61,28 +79,80 @@ export var loadBVHSkeletal = function() {
               });
               ALL_MESHES.push(mesh);
             }
-            var all = animBVH.all_frame_poses();
+
+
+
+            var all = animBVH.all_frame_poses(); // all[0] = positions, all[1] = rotations (deg)
             var countAnim = 0;
+            const THICKNESS = 0.15;
+            const BONE_SCALE = 0.5;
+            let deltaDEV = 40;
+
             app.autoUpdate.push({
               update: () => {
-                for(var x = 0;x < ALL_MESHES.length;x++) {
-                  // ALL_MESHES[x].position.SetX(all[0][countAnim][x][0] - 30);
-                  // ALL_MESHES[x].position.SetY(all[0][countAnim][x][1] - 10);
-                  // ALL_MESHES[x].position.SetZ(all[0][countAnim][x][2] - 80);
-                  ALL_MESHES[x].position.SetX(all[0][countAnim][x][0]);
-                  ALL_MESHES[x].position.SetY(all[0][countAnim][x][1]);
-                  ALL_MESHES[x].position.SetZ(all[0][countAnim][x][2]);
+
+                deltaDEV--;
+                if(deltaDEV > 1) {return;}
+
+                if(deltaDEV < 1) {
+                  deltaDEV = 40;
                 }
+
+                const framePos = all[0][countAnim];
+                const frameRot = all[1][countAnim];
+
+                for(var x = 0;x < ALL_MESHES.length;x++) {
+                  const bone = BONES[x];
+                  const p = framePos[x];
+
+                  if(!bone) {
+                    ALL_MESHES[x].position.SetX(p[0]);
+                    ALL_MESHES[x].position.SetY(p[1]);
+                    ALL_MESHES[x].position.SetZ(p[2]);
+                    continue;
+                  }
+
+                  const parentPos = framePos[bone.parentIndex];
+
+                  ALL_MESHES[x].position.SetX((p[0] + parentPos[0]) / 2);
+                  ALL_MESHES[x].position.SetY((p[1] + parentPos[1]) / 2);
+                  ALL_MESHES[x].position.SetZ((p[2] + parentPos[2]) / 2);
+
+                  // scale is a plain [x, y, z] array
+                  ALL_MESHES[x].scale[0] = THICKNESS;
+                  ALL_MESHES[x].scale[1] = bone.length * BONE_SCALE;
+                  ALL_MESHES[x].scale[2] = THICKNESS;
+
+                  // direction from parent -> this joint
+                  let dx = p[0] - parentPos[0];
+                  let dy = p[1] - parentPos[1];
+                  let dz = p[2] - parentPos[2];
+                  const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.0001;
+                  dx /= len; dy /= len; dz /= len;
+
+                  // solve for Rx, Rz (Ry left at 0) matching this engine's
+                  // T * Rx * Ry * Rz * S composition order, aligning local +Y to (dx,dy,dz)
+                  const clampedDx = Math.max(-1, Math.min(1, dx));
+                  const thetaZ = -Math.asin(clampedDx);
+                  const thetaX = Math.atan2(dz, dy);
+
+                  ALL_MESHES[x].rotation.setRotationX(radToDeg(thetaX));
+                  ALL_MESHES[x].rotation.setRotationY(0);
+                  ALL_MESHES[x].rotation.setRotationZ(radToDeg(thetaZ));
+                }
+
+                // advance the frame ONCE per update, not once per joint
                 countAnim++;
                 if(countAnim >= all[0].length - 1) countAnim = 0;
               }
-            })
+            });
+
             resolve(animBVH);
           }).catch((err) => {reject(err)});
         })
       }
 
-      loadBVH('./res/bvh/example.bvh').then((r) => {
+      loadBVH('./res/bvh-running/example.bvh').then((r) => {
         // 
       })
 
