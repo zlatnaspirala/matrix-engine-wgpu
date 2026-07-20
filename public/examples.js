@@ -57927,7 +57927,98 @@ var loadMenuBeast = function() {
   window.app = menuBeast;
 };
 
-// examples/bvh-skeletal.js
+// src/engine/loaders/raw-bvh-skeletal.js
+var BONE_SCALE = 0.5;
+var THICKNESS = 0.15;
+function BVHSkeletal(path2, m2, texturePath2 = void 0) {
+  var animBVH2 = new bvh_loader_default();
+  return new Promise((resolve, reject) => {
+    animBVH2.parse_file(path2).then(() => {
+      animBVH2.plot_hierarchy();
+      var r3 = animBVH2.frame_pose(0);
+      var KEYS = animBVH2.joint_names();
+      var BONES = buildBoneMap(animBVH2);
+      let ALL_MESHES = [];
+      for (var x3 = 0; x3 < r3[0].length; x3++) {
+        var boneName = "BVH" + KEYS[x3];
+        const mesh = app.addMeshObj({
+          material: { type: "standard", share: true },
+          position: { x: 0, y: -5, z: -10 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          texturesPaths: texturePath2 ? [texturePath2] : void 0,
+          name: boneName,
+          mesh: m2.cube,
+          physics: { enabled: false }
+        });
+        ALL_MESHES.push(mesh);
+      }
+      for (var x3 = 0; x3 < ALL_MESHES.length; x3++) {
+        const bone2 = BONES[x3];
+        if (!bone2) {
+          ALL_MESHES[x3].setBlend(0.5);
+          continue;
+        }
+        bone2.scaledLength = bone2.length * BONE_SCALE;
+        ALL_MESHES[x3].scale[0] = THICKNESS;
+        ALL_MESHES[x3].scale[1] = bone2.scaledLength;
+        ALL_MESHES[x3].scale[2] = THICKNESS;
+      }
+      animBVH2.ALL_MESHES = ALL_MESHES;
+      const MESH_POS = ALL_MESHES.map((m3) => m3.position);
+      const MESH_ROT = ALL_MESHES.map((m3) => m3.rotation);
+      let all = animBVH2.all_frame_poses();
+      let countAnim = 0;
+      const numFrames = all[0].length;
+      const numMeshes = ALL_MESHES.length;
+      let dx, dy, dz, len2, invLen, clampedDx, thetaZ, thetaX;
+      let p2, parentPos, bone;
+      let animDeltaDuration = 20;
+      app.autoUpdate.push({
+        update: () => {
+          animDeltaDuration--;
+          if (animDeltaDuration > 1) {
+            return;
+          }
+          animDeltaDuration = 20;
+          const framePos = all[0][countAnim];
+          for (var x4 = 0; x4 < numMeshes; x4++) {
+            bone = BONES[x4];
+            p2 = framePos[x4];
+            if (!bone) {
+              MESH_POS[x4].SetX(p2[0]);
+              MESH_POS[x4].SetY(p2[1]);
+              MESH_POS[x4].SetZ(p2[2]);
+              continue;
+            }
+            parentPos = framePos[bone.parentIndex];
+            MESH_POS[x4].SetX((p2[0] + parentPos[0]) * 0.5);
+            MESH_POS[x4].SetY((p2[1] + parentPos[1]) * 0.5);
+            MESH_POS[x4].SetZ((p2[2] + parentPos[2]) * 0.5);
+            dx = p2[0] - parentPos[0];
+            dy = p2[1] - parentPos[1];
+            dz = p2[2] - parentPos[2];
+            len2 = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-4;
+            invLen = 1 / len2;
+            dx *= invLen;
+            dy *= invLen;
+            dz *= invLen;
+            clampedDx = dx < -1 ? -1 : dx > 1 ? 1 : dx;
+            thetaZ = -Math.asin(clampedDx);
+            thetaX = Math.atan2(dz, dy);
+            MESH_ROT[x4].setRotationX(radToDeg(thetaX));
+            MESH_ROT[x4].setRotationZ(radToDeg(thetaZ));
+          }
+          countAnim++;
+          if (countAnim >= numFrames - 1) countAnim = 0;
+        }
+      });
+      resolve(animBVH2);
+    }).catch((err) => {
+      reject(err);
+    });
+  });
+}
 function buildBoneMap(bvh) {
   const keys = bvh.joint_names();
   const nameToIndex = {};
@@ -57942,8 +58033,10 @@ function buildBoneMap(bvh) {
     };
   });
 }
-var loadBVHSkeletal = function() {
-  let BVHSkeletal = new MatrixEngineWGPU({
+
+// examples/bvh-skeletal.js
+var loadBVHRawExample = function() {
+  let BVHRawExample = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
     dontUsePhysics: true,
@@ -57955,12 +58048,12 @@ var loadBVHSkeletal = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
-    BVHSkeletal.addLight();
+    BVHRawExample.addLight();
     downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     function onGround(m2) {
-      BVHSkeletal.addMeshObj({
+      BVHRawExample.addMeshObj({
         material: { type: "standard", share: true },
         position: { x: 0, y: -5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -57972,89 +58065,10 @@ var loadBVHSkeletal = function() {
       });
     }
     async function onLoadObj(m2) {
-      var animBVH2 = new bvh_loader_default();
-      let loadBVH = (path2) => {
-        return new Promise((resolve, reject) => {
-          animBVH2.parse_file(path2).then(() => {
-            animBVH2.plot_hierarchy();
-            var r3 = animBVH2.frame_pose(0);
-            var KEYS = animBVH2.joint_names();
-            var BONES = buildBoneMap(animBVH2);
-            let ALL_MESHES = [];
-            for (var x3 = 0; x3 < r3[0].length; x3++) {
-              console.log("->" + KEYS[x3] + "-> position: " + r3[0][x3] + " rotation: " + r3[1][x3]);
-              var boneName = "MEBVH" + KEYS[x3];
-              const mesh = app.addMeshObj({
-                material: { type: "standard", share: true },
-                position: { x: 0, y: -5, z: -10 },
-                rotation: { x: 0, y: 0, z: 0 },
-                rotationSpeed: { x: 0, y: 0, z: 0 },
-                texturesPaths: ["./res/textures/floor1.webp"],
-                name: boneName,
-                mesh: m2.cube,
-                physics: { enabled: false }
-              });
-              ALL_MESHES.push(mesh);
-            }
-            var all = animBVH2.all_frame_poses();
-            var countAnim = 0;
-            const THICKNESS = 0.15;
-            const BONE_SCALE = 0.5;
-            let deltaDEV = 40;
-            app.autoUpdate.push({
-              update: () => {
-                deltaDEV--;
-                if (deltaDEV > 1) {
-                  return;
-                }
-                if (deltaDEV < 1) {
-                  deltaDEV = 40;
-                }
-                const framePos = all[0][countAnim];
-                const frameRot = all[1][countAnim];
-                for (var x4 = 0; x4 < ALL_MESHES.length; x4++) {
-                  const bone = BONES[x4];
-                  const p2 = framePos[x4];
-                  if (!bone) {
-                    ALL_MESHES[x4].position.SetX(p2[0]);
-                    ALL_MESHES[x4].position.SetY(p2[1]);
-                    ALL_MESHES[x4].position.SetZ(p2[2]);
-                    continue;
-                  }
-                  const parentPos = framePos[bone.parentIndex];
-                  ALL_MESHES[x4].position.SetX((p2[0] + parentPos[0]) / 2);
-                  ALL_MESHES[x4].position.SetY((p2[1] + parentPos[1]) / 2);
-                  ALL_MESHES[x4].position.SetZ((p2[2] + parentPos[2]) / 2);
-                  ALL_MESHES[x4].scale[0] = THICKNESS;
-                  ALL_MESHES[x4].scale[1] = bone.length * BONE_SCALE;
-                  ALL_MESHES[x4].scale[2] = THICKNESS;
-                  let dx = p2[0] - parentPos[0];
-                  let dy = p2[1] - parentPos[1];
-                  let dz = p2[2] - parentPos[2];
-                  const len2 = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-4;
-                  dx /= len2;
-                  dy /= len2;
-                  dz /= len2;
-                  const clampedDx = Math.max(-1, Math.min(1, dx));
-                  const thetaZ = -Math.asin(clampedDx);
-                  const thetaX = Math.atan2(dz, dy);
-                  ALL_MESHES[x4].rotation.setRotationX(radToDeg(thetaX));
-                  ALL_MESHES[x4].rotation.setRotationY(0);
-                  ALL_MESHES[x4].rotation.setRotationZ(radToDeg(thetaZ));
-                }
-                countAnim++;
-                if (countAnim >= all[0].length - 1) countAnim = 0;
-              }
-            });
-            resolve(animBVH2);
-          }).catch((err) => {
-            reject(err);
-          });
-        });
-      };
-      loadBVH("./res/bvh-running/example.bvh").then((r3) => {
+      BVHSkeletal("./res/bvh/Female1_B17_WalkToHopToWalk1.bvh", m2).then((r3) => {
+        console.log("My bvh anim object", r3);
       });
-      let MYCUBE = BVHSkeletal.addMeshObj({
+      let MYCUBE = BVHRawExample.addMeshObj({
         material: { type: "mirror" },
         position: { x: 0, y: 4, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -58094,18 +58108,18 @@ var loadBVHSkeletal = function() {
           bloodBurst: true
         }
       });
-      BVHSkeletal.lightContainer[0].setIntensity(15);
-      BVHSkeletal.activateBloomEffect();
-      BVHSkeletal.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-      BVHSkeletal.lightContainer[0].behavior.value_ = -1;
-      BVHSkeletal.lightContainer[0].updater.push((light) => {
+      BVHRawExample.lightContainer[0].setIntensity(15);
+      BVHRawExample.activateBloomEffect();
+      BVHRawExample.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      BVHRawExample.lightContainer[0].behavior.value_ = -1;
+      BVHRawExample.lightContainer[0].updater.push((light) => {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       });
-      BVHSkeletal.lightContainer[0].setPosition(0, 15, -10);
-      BVHSkeletal.lightContainer[0].setTarget(0, 0, -10);
+      BVHRawExample.lightContainer[0].setPosition(0, 15, -10);
+      BVHRawExample.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(BVHSkeletal.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
+        MYCUBE.effects.circle = new GenGeoTexture2(BVHRawExample.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566,
@@ -58127,13 +58141,13 @@ var loadBVHSkeletal = function() {
         cam2._dirtyAngle = true;
       }, 700);
     }
-    BVHSkeletal.canvas.addEventListener("ray.hit.event", (e2) => {
+    BVHRawExample.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
       }
     });
   });
-  window.app = BVHSkeletal;
+  window.app = BVHRawExample;
 };
 
 // examples.js
@@ -58252,7 +58266,7 @@ if (urlQuery["demo"] === "1") {
 } else if (urlQuery["demo"] === "31") {
   loadMenuBeast();
 } else if (urlQuery["demo"] === "32") {
-  loadBVHSkeletal();
+  loadBVHRawExample();
 } else {
   loadObjFile();
 }

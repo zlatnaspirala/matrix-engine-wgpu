@@ -37,7 +37,7 @@ import {loadHand} from "./examples/games/nui/hand.js";
 import {loadStreamRenderHost} from "./examples/stream-render.js";
 import {loadHang3d} from "./examples/games/first-person-shooter/hang3d.js";
 import {loadMenuBeast} from "./examples/games/my-nui/menu-beast.js";
-import {loadBVHSkeletal} from "./examples/bvh-skeletal.js";
+import {loadBVHRawExample} from "./examples/bvh-skeletal.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -160,7 +160,7 @@ if(urlQuery['demo'] === '1') {
 } else if(urlQuery['demo'] === '31') {
   loadMenuBeast();
 } else if(urlQuery['demo'] === '32') {
-  loadBVHSkeletal();
+  loadBVHRawExample();
 } else {
   loadObjFile();
 }
