@@ -57985,9 +57985,9 @@ var loadBVHSkeletal = function() {
             app.autoUpdate.push({
               update: () => {
                 for (var x4 = 0; x4 < ALL_MESHES.length; x4++) {
-                  ALL_MESHES[x4].position.SetX(all[0][countAnim][x4][0] - 30);
-                  ALL_MESHES[x4].position.SetY(all[0][countAnim][x4][1] - 10);
-                  ALL_MESHES[x4].position.SetZ(all[0][countAnim][x4][2] - 80);
+                  ALL_MESHES[x4].position.SetX(all[0][countAnim][x4][0]);
+                  ALL_MESHES[x4].position.SetY(all[0][countAnim][x4][1]);
+                  ALL_MESHES[x4].position.SetZ(all[0][countAnim][x4][2]);
                 }
                 countAnim++;
                 if (countAnim >= all[0].length - 1) countAnim = 0;

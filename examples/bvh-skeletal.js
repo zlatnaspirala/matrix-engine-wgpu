@@ -66,9 +66,12 @@ export var loadBVHSkeletal = function() {
             app.autoUpdate.push({
               update: () => {
                 for(var x = 0;x < ALL_MESHES.length;x++) {
-                  ALL_MESHES[x].position.SetX(all[0][countAnim][x][0] - 30);
-                  ALL_MESHES[x].position.SetY(all[0][countAnim][x][1] - 10);
-                  ALL_MESHES[x].position.SetZ(all[0][countAnim][x][2] - 80);
+                  // ALL_MESHES[x].position.SetX(all[0][countAnim][x][0] - 30);
+                  // ALL_MESHES[x].position.SetY(all[0][countAnim][x][1] - 10);
+                  // ALL_MESHES[x].position.SetZ(all[0][countAnim][x][2] - 80);
+                  ALL_MESHES[x].position.SetX(all[0][countAnim][x][0]);
+                  ALL_MESHES[x].position.SetY(all[0][countAnim][x][1]);
+                  ALL_MESHES[x].position.SetZ(all[0][countAnim][x][2]);
                 }
                 countAnim++;
                 if(countAnim >= all[0].length - 1) countAnim = 0;
