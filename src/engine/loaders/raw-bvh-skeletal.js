@@ -1,44 +1,56 @@
 import MEBvh from "bvh-loader";
 import {radToDeg} from "../utils.js";
 
-export let BONE_SCALE = 0.5;
-export let THICKNESS = 0.15;
-
-export function BVHSkeletal(path, m ,texturePath = undefined) {
+export function BVHSkeletal(path, name = "addName",  m, texturePath = undefined, SKELETON_SCALE = 1, position = {x: 0, y: 0, z: -10}, rotation = {x: 0, y: 0, z: 0}, sharedMaterial = false) {
   var animBVH = new MEBvh();
+  animBVH.myName = name;
   return new Promise((resolve, reject) => {
     animBVH.parse_file(path).then(() => {
       animBVH.plot_hierarchy();
+      animBVH.BONE_SCALE = 0.5;
+      animBVH.THICKNESS = 0.5;
+
       var r = animBVH.frame_pose(0);
       var KEYS = animBVH.joint_names();
       var BONES = buildBoneMap(animBVH);
       let ALL_MESHES = [];
+      animBVH.position = position;
+      animBVH.rotation = rotation;
       for(var x = 0;x < r[0].length;x++) {
-        // console.log("->" + KEYS[x] + "-> position: " + r[0][x] + " rotation: " + r[1][x]);
-        var boneName = 'BVH' + KEYS[x];
+        var boneName = animBVH.myName + '_' + KEYS[x];
         const mesh = app.addMeshObj({
-          material: {type: 'standard', share: true},
-          position: {x: 0, y: -5, z: -10},
-          rotation: {x: 0, y: 0, z: 0},
+          material: {type: 'standard', share: sharedMaterial},
+          position: position,
+          rotation: rotation,
           rotationSpeed: {x: 0, y: 0, z: 0},
           texturesPaths: texturePath ? [texturePath] : undefined,
           name: boneName,
           mesh: m.cube,
-          physics: {enabled: false}
+          physics: {enabled: false},
+          raycast: {enabled: true, radius: 2}
         });
         ALL_MESHES.push(mesh);
       }
-      for(var x = 0;x < ALL_MESHES.length;x++) {
-        const bone = BONES[x];
-        if(!bone) {
-          ALL_MESHES[x].setBlend(0.5);
-          continue;
+
+      animBVH.setupScale = () => {
+        for(var x = 0;x < ALL_MESHES.length;x++) {
+          const bone = BONES[x];
+          if(!bone) {
+            ALL_MESHES[x].setBlend(0.5);
+            ALL_MESHES[x].scale[0] = animBVH.THICKNESS * SKELETON_SCALE;
+            ALL_MESHES[x].scale[1] = animBVH.THICKNESS * SKELETON_SCALE;
+            ALL_MESHES[x].scale[2] = animBVH.THICKNESS * SKELETON_SCALE;
+            continue;
+          }
+          bone.scaledLength = bone.length * animBVH.BONE_SCALE * SKELETON_SCALE;
+          ALL_MESHES[x].scale[0] = animBVH.THICKNESS * SKELETON_SCALE;
+          ALL_MESHES[x].scale[1] = bone.scaledLength;
+          ALL_MESHES[x].scale[2] = animBVH.THICKNESS * SKELETON_SCALE;
         }
-        bone.scaledLength = bone.length * BONE_SCALE;
-        ALL_MESHES[x].scale[0] = THICKNESS;
-        ALL_MESHES[x].scale[1] = bone.scaledLength;
-        ALL_MESHES[x].scale[2] = THICKNESS;
-      }
+      };
+
+      animBVH.setupScale()
+
       animBVH.ALL_MESHES = ALL_MESHES;
       const MESH_POS = ALL_MESHES.map(m => m.position);
       const MESH_ROT = ALL_MESHES.map(m => m.rotation);
@@ -48,29 +60,24 @@ export function BVHSkeletal(path, m ,texturePath = undefined) {
       const numMeshes = ALL_MESHES.length;
       let dx, dy, dz, len, invLen, clampedDx, thetaZ, thetaX;
       let p, parentPos, bone;
-      let animDeltaDuration = 20;
+
       app.autoUpdate.push({
         update: () => {
-          animDeltaDuration--;
-          if(animDeltaDuration > 1) {
-            return;
-          }
-          animDeltaDuration = 20;
           const framePos = all[0][countAnim];
           for(var x = 0;x < numMeshes;x++) {
             bone = BONES[x];
             p = framePos[x];
             if(!bone) {
-              MESH_POS[x].SetX(p[0]);
-              MESH_POS[x].SetY(p[1]);
-              MESH_POS[x].SetZ(p[2]);
-              //  console.log("Root joint:", KEYS[x], "mesh:", ALL_MESHES[x].name);
+              MESH_POS[x].SetX(p[0] * SKELETON_SCALE + position.x);
+              MESH_POS[x].SetY(p[1] * SKELETON_SCALE + position.y);
+              MESH_POS[x].SetZ(p[2] * SKELETON_SCALE + position.z);
               continue;
             }
             parentPos = framePos[bone.parentIndex];
-            MESH_POS[x].SetX((p[0] + parentPos[0]) * 0.5);
-            MESH_POS[x].SetY((p[1] + parentPos[1]) * 0.5);
-            MESH_POS[x].SetZ((p[2] + parentPos[2]) * 0.5);
+            MESH_POS[x].SetX((p[0] + parentPos[0]) * 0.5 * SKELETON_SCALE + position.x);
+            MESH_POS[x].SetY((p[1] + parentPos[1]) * 0.5 * SKELETON_SCALE + position.y);
+            MESH_POS[x].SetZ((p[2] + parentPos[2]) * 0.5 * SKELETON_SCALE + position.z);
+            // direction is unit-length, unaffected by scale — no change needed here
             dx = p[0] - parentPos[0];
             dy = p[1] - parentPos[1];
             dz = p[2] - parentPos[2];
@@ -88,8 +95,8 @@ export function BVHSkeletal(path, m ,texturePath = undefined) {
         }
       });
       resolve(animBVH);
-    }).catch((err) => {reject(err)});
-  })
+    }).catch((err) => {reject(err);});
+  });
 }
 
 export function buildBoneMap(bvh) {

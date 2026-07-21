@@ -1,11 +1,12 @@
 
 
+LIST ALL FILENAMES 
+dir /b > filenames.txt
+
 
 sudo systemctl start docker
 sudo systemctl enable docker
 sudo docker start $(sudo docker ps -aq)
-
-
 
  REDUCE AFTER ALL SIZE !!!!
       this.getTransformationMatrix = (camVP, dt) => {
@@ -30,8 +31,6 @@ sudo docker start $(sudo docker ps -aq)
         this._sceneData[47] = 0;
         device.queue.writeBuffer(this.sceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       };
-
-
 
 
 

@@ -18069,7 +18069,6 @@ var MEMeshObj = class extends Materials {
       }
     }).then(() => {
       if (typeof this.objAnim !== "undefined" && this.objAnim !== null) {
-        console.log("After all updateMeshListBuffers...");
         this.updateMeshListBuffers();
       }
     });
@@ -21398,7 +21397,7 @@ var MEBvh = class {
       } else if (channel == "Zrotation") {
         local_rotation[2] = frame_pose[index_offset];
       } else {
-        console.warn("Unknown channel {channel}");
+        console.warn("BVH - Unknown channel");
       }
       index_offset += 1;
     }
@@ -21421,7 +21420,7 @@ var MEBvh = class {
       } else if (channel == "Zrotation") {
         euler_rot = [0, 0, local_rotation[2]];
       } else {
-        console.warn("Unknown channel {channel}");
+        console.warn("BVH (rot) Unknown channel.");
       }
       var M_channel = euler2mat(euler_rot[0], euler_rot[1], euler_rot[2], euler_rot[3]);
       var M_rotation = multiply2(M_rotation, M_channel);
@@ -57928,42 +57927,52 @@ var loadMenuBeast = function() {
 };
 
 // src/engine/loaders/raw-bvh-skeletal.js
-var BONE_SCALE = 0.5;
-var THICKNESS = 0.15;
-function BVHSkeletal(path2, m2, texturePath2 = void 0) {
+function BVHSkeletal(path2, name2 = "addName", m2, texturePath2 = void 0, SKELETON_SCALE = 1, position = { x: 0, y: 0, z: -10 }, rotation3 = { x: 0, y: 0, z: 0 }, sharedMaterial = false) {
   var animBVH2 = new bvh_loader_default();
+  animBVH2.myName = name2;
   return new Promise((resolve, reject) => {
     animBVH2.parse_file(path2).then(() => {
       animBVH2.plot_hierarchy();
+      animBVH2.BONE_SCALE = 0.5;
+      animBVH2.THICKNESS = 0.5;
       var r3 = animBVH2.frame_pose(0);
       var KEYS = animBVH2.joint_names();
       var BONES = buildBoneMap(animBVH2);
       let ALL_MESHES = [];
+      animBVH2.position = position;
+      animBVH2.rotation = rotation3;
       for (var x3 = 0; x3 < r3[0].length; x3++) {
-        var boneName = "BVH" + KEYS[x3];
+        var boneName = animBVH2.myName + "_" + KEYS[x3];
         const mesh = app.addMeshObj({
-          material: { type: "standard", share: true },
-          position: { x: 0, y: -5, z: -10 },
-          rotation: { x: 0, y: 0, z: 0 },
+          material: { type: "standard", share: sharedMaterial },
+          position,
+          rotation: rotation3,
           rotationSpeed: { x: 0, y: 0, z: 0 },
           texturesPaths: texturePath2 ? [texturePath2] : void 0,
           name: boneName,
           mesh: m2.cube,
-          physics: { enabled: false }
+          physics: { enabled: false },
+          raycast: { enabled: true, radius: 2 }
         });
         ALL_MESHES.push(mesh);
       }
-      for (var x3 = 0; x3 < ALL_MESHES.length; x3++) {
-        const bone2 = BONES[x3];
-        if (!bone2) {
-          ALL_MESHES[x3].setBlend(0.5);
-          continue;
+      animBVH2.setupScale = () => {
+        for (var x4 = 0; x4 < ALL_MESHES.length; x4++) {
+          const bone2 = BONES[x4];
+          if (!bone2) {
+            ALL_MESHES[x4].setBlend(0.5);
+            ALL_MESHES[x4].scale[0] = animBVH2.THICKNESS * SKELETON_SCALE;
+            ALL_MESHES[x4].scale[1] = animBVH2.THICKNESS * SKELETON_SCALE;
+            ALL_MESHES[x4].scale[2] = animBVH2.THICKNESS * SKELETON_SCALE;
+            continue;
+          }
+          bone2.scaledLength = bone2.length * animBVH2.BONE_SCALE * SKELETON_SCALE;
+          ALL_MESHES[x4].scale[0] = animBVH2.THICKNESS * SKELETON_SCALE;
+          ALL_MESHES[x4].scale[1] = bone2.scaledLength;
+          ALL_MESHES[x4].scale[2] = animBVH2.THICKNESS * SKELETON_SCALE;
         }
-        bone2.scaledLength = bone2.length * BONE_SCALE;
-        ALL_MESHES[x3].scale[0] = THICKNESS;
-        ALL_MESHES[x3].scale[1] = bone2.scaledLength;
-        ALL_MESHES[x3].scale[2] = THICKNESS;
-      }
+      };
+      animBVH2.setupScale();
       animBVH2.ALL_MESHES = ALL_MESHES;
       const MESH_POS = ALL_MESHES.map((m3) => m3.position);
       const MESH_ROT = ALL_MESHES.map((m3) => m3.rotation);
@@ -57973,28 +57982,22 @@ function BVHSkeletal(path2, m2, texturePath2 = void 0) {
       const numMeshes = ALL_MESHES.length;
       let dx, dy, dz, len2, invLen, clampedDx, thetaZ, thetaX;
       let p2, parentPos, bone;
-      let animDeltaDuration = 20;
       app.autoUpdate.push({
         update: () => {
-          animDeltaDuration--;
-          if (animDeltaDuration > 1) {
-            return;
-          }
-          animDeltaDuration = 20;
           const framePos = all[0][countAnim];
           for (var x4 = 0; x4 < numMeshes; x4++) {
             bone = BONES[x4];
             p2 = framePos[x4];
             if (!bone) {
-              MESH_POS[x4].SetX(p2[0]);
-              MESH_POS[x4].SetY(p2[1]);
-              MESH_POS[x4].SetZ(p2[2]);
+              MESH_POS[x4].SetX(p2[0] * SKELETON_SCALE + position.x);
+              MESH_POS[x4].SetY(p2[1] * SKELETON_SCALE + position.y);
+              MESH_POS[x4].SetZ(p2[2] * SKELETON_SCALE + position.z);
               continue;
             }
             parentPos = framePos[bone.parentIndex];
-            MESH_POS[x4].SetX((p2[0] + parentPos[0]) * 0.5);
-            MESH_POS[x4].SetY((p2[1] + parentPos[1]) * 0.5);
-            MESH_POS[x4].SetZ((p2[2] + parentPos[2]) * 0.5);
+            MESH_POS[x4].SetX((p2[0] + parentPos[0]) * 0.5 * SKELETON_SCALE + position.x);
+            MESH_POS[x4].SetY((p2[1] + parentPos[1]) * 0.5 * SKELETON_SCALE + position.y);
+            MESH_POS[x4].SetZ((p2[2] + parentPos[2]) * 0.5 * SKELETON_SCALE + position.z);
             dx = p2[0] - parentPos[0];
             dy = p2[1] - parentPos[1];
             dz = p2[2] - parentPos[2];
@@ -58034,6 +58037,91 @@ function buildBoneMap(bvh) {
   });
 }
 
+// public/res/bvh/mocap.cs.cmu.edu/mocap.js
+var mocapCsCmuEdu = [
+  "Female1_A01_Stand.bvh",
+  "Female1_A02_Sway.bvh",
+  "Female1_A02_SwayT2.bvh",
+  "Female1_A03_Swing.bvh",
+  "Female1_A03_SwingT2.bvh",
+  "Female1_A04_Look.bvh",
+  "Female1_A05_PickUpBox.bvh",
+  "Female1_A06_LiftBox.bvh",
+  // 'Female1_A06_LiftBoxT2.bvh',
+  // 'Female1_A07_Crouch.bvh',
+  // 'Female1_A08_CrouchToLie.bvh',
+  // 'Female1_A09_LieT2.bvh',
+  // 'Female1_A10_LieToCrouch.bvh',
+  // 'Female1_A11_CrawlForward.bvh',
+  // 'Female1_A12_CrawlBackwards.bvh',
+  // 'Female1_A13_Skipping.bvh',
+  // 'Female1_A14_StandToSkip.bvh',
+  // 'Female1_A15_SkipToStand.bvh',
+  // 'Female1_B01_StandToWalk.bvh',
+  // 'Female1_B02_WalkToStand.bvh',
+  // 'Female1_B02_WalkToStandT2.bvh',
+  // 'Female1_B03_Walk1.bvh',
+  // 'Female1_B04_StandToWalkBack.bvh',
+  // 'Female1_B05_WalkBackwards.bvh',
+  // 'Female1_B06_WalkBackwardsToStand.bvh',
+  // 'Female1_B07_WalkBackwardsTurnForwards.bvh',
+  // 'Female1_B08_WalkBackwardsStopForwards.bvh',
+  // 'Female1_B09_WalkTurnLeft90.bvh',
+  // 'Female1_B10_WalkTurnLeft45.bvh',
+  // 'Female1_B11_WalkTurnLeft135.bvh',
+  // 'Female1_B12_WalkTurnRight90.bvh',
+  // 'Female1_B13_WalkTurnRight45.bvh',
+  // 'Female1_B14_WalkTurnRight135.bvh',
+  // 'Female1_B15_WalkTurnAround180.bvh',
+  // 'Female1_B16_WalkTurnChangeDirection.bvh',
+  // 'Female1_B17_WalkToHopToWalk1.bvh',
+  // 'Female1_B18_WalkToLeapToWalk.bvh',
+  // 'Female1_B19_WalkToPickUpBox.bvh',
+  // 'Female1_B20_WalkWithBox.bvh',
+  // 'Female1_B21_PutDownBoxToWalk.bvh',
+  // 'Female1_B21_S2_PutDownBoxToWalk.bvh',
+  // 'Female1_B21_S3_PutDownBoxToWalk.bvh',
+  // 'Female1_B22_SideStepLeft.bvh',
+  // 'Female1_B23_SideStepRight.bvh',
+  // 'Female1_B24_WalkToCrouch.bvh',
+  // 'Female1_B25_CrouchToWalk.bvh',
+  // 'Female1_B26_WalkToSkip.bvh',
+  // 'Female1_B27_SkipToWalk1.bvh',
+  // 'Female1_C02_RunToStand.bvh',
+  // 'Female1_C03_Run.bvh',
+  // 'Female1_C04_RunToWalk1.bvh',
+  // 'Female1_C05_WalkToRun.bvh',
+  "Female1_C06_StandToRunBackwards.bvh",
+  "Female1_C07_RunBackwards.bvh",
+  "Female1_C08_RunBackwardsToStand.bvh"
+  // 'Female1_C09_RunBackwardsTurnRunForward.bvh',
+  // 'Female1_C10_RunBackwardsStopRunForward.bvh',
+  // 'Female1_C11_RunTurnLeft90.bvh',
+  // 'Female1_C12_RunTurnLeft45.bvh',
+  // 'Female1_C13_RunTurnLeft135.bvh',
+  // 'Female1_C14_RunTurnRight90.bvh',
+  // 'Female1_C15_RunTurnRight45.bvh',
+  // 'Female1_C16_RunTurnRight135.bvh',
+  // 'Female1_C17_RunTurnAround.bvh',
+  // 'Female1_C18_RunChangeDirection.bvh',
+  // 'Female1_C19_RunToHopToWalk.bvh',
+  // 'Female1_C20_RunToJumpToWalk.bvh',
+  // 'Female1_C21_RunToPickUpBox.bvh',
+  // 'Female1_C21_S2_RunToPickUpBox.bvh',
+  // 'Female1_C22_RunWithBox.bvh',
+  // 'Female1_C23_PutDownBoxToRun.bvh',
+  // 'Female1_C24_SideStepLeft.bvh',
+  // 'Female1_C25_SideStepRight.bvh',
+  // 'Female1_C26_RunToCrouch.bvh',
+  // 'Female1_C27_CrouchToRun1.bvh',
+  // 'Female1_D1_Urban.bvh',
+  // 'Female1_D2_Wait.bvh',
+  // 'Female1_D3_ConversationGestures.bvh',
+  // 'Female1_D4_RandomStuff.bvh',
+  // 'Female1_D5_RandomStuff2.bvh',
+  // 'Female1_D6_CartWheel.bvh'
+];
+
 // examples/bvh-skeletal.js
 var loadBVHRawExample = function() {
   let BVHRawExample = new MatrixEngineWGPU({
@@ -58065,15 +58153,12 @@ var loadBVHRawExample = function() {
       });
     }
     async function onLoadObj(m2) {
-      BVHSkeletal("./res/bvh/Female1_B17_WalkToHopToWalk1.bvh", m2).then((r3) => {
-        console.log("My bvh anim object", r3);
-      });
       let MYCUBE = BVHRawExample.addMeshObj({
         material: { type: "mirror" },
         position: { x: 0, y: 4, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 1, z: 0 },
-        scale: [3, 5, 1],
+        scale: [5, 7, 3],
         texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
         name: "cube",
         mesh: m2.cube,
@@ -58104,11 +58189,16 @@ var loadBVHRawExample = function() {
         },
         pointerEffect: {
           enabled: true,
-          flameEmitter: true,
-          bloodBurst: true
+          flameEmitter: true
+          // bloodBurst: true
         }
       });
-      BVHRawExample.lightContainer[0].setIntensity(15);
+      BVHRawExample.ALL_SKELETALS = [];
+      mocapCsCmuEdu.forEach((filename, index) => {
+        BVHSkeletal(`./res/bvh/mocap.cs.cmu.edu/${filename}`, "list" + index, m2, void 0, 0.2, { x: -20 + index * 3, y: -26, z: -30 }).then((r3) => {
+          BVHRawExample.ALL_SKELETALS.push(r3);
+        });
+      });
       BVHRawExample.activateBloomEffect();
       BVHRawExample.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       BVHRawExample.lightContainer[0].behavior.value_ = -1;
@@ -58116,8 +58206,10 @@ var loadBVHRawExample = function() {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       });
-      BVHRawExample.lightContainer[0].setPosition(0, 15, -10);
+      BVHRawExample.lightContainer[0].setPosition(0, 50, -15);
       BVHRawExample.lightContainer[0].setTarget(0, 0, -10);
+      BVHRawExample.lightContainer[0].setIntensity(200);
+      app.lightContainer[0].outerCutoff = 2;
       setTimeout(() => {
         MYCUBE.effects.circle = new GenGeoTexture2(BVHRawExample.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
@@ -58137,13 +58229,18 @@ var loadBVHRawExample = function() {
         cam2.setPitch(-0.49);
         cam2.setZ(0);
         cam2.setY(10);
+        cam2.setY(15);
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
-      }, 700);
+      }, 1e3);
     }
     BVHRawExample.canvas.addEventListener("ray.hit.event", (e2) => {
-      console.log("ray.hit.event detected");
-      if (e2.detail.hitObject.name.startsWith("cube")) {
+      console.log("ray.hit.event detected :", e2.detail.hitObject.name);
+      let t3 = BVHRawExample.ALL_SKELETALS.filter((O2) => e2.detail.hitObject.name.indexOf(O2.myName) !== -1);
+      if (t3.length > 0) {
+        e2.detail.hitObject.setAmbient(randomIntFromTo(0, 2), randomIntFromTo(0, 20), randomIntFromTo(0, 20));
+        t3[0].THICKNESS = t3[0].THICKNESS + 0.2;
+        t3[0].setupScale();
       }
     });
   });
@@ -58273,13 +58370,3 @@ if (urlQuery["demo"] === "1") {
 setTimeout(() => {
   hideMenu();
 }, 2e3);
-/*! Bundled license information:
-
-bvh-loader/module/bvh-loader.js:
-  (**
-   * @description Manual convert python script BVH
-   * from https://github.com/dabeschte/npybvh to the JS.
-   * @author Nikola Lukic
-   * @license GPL-V3
-   *)
-*/

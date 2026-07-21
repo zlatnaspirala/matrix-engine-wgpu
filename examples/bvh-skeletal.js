@@ -2,9 +2,9 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
-import MEBvh from "bvh-loader";
-
 import {BVHSkeletal} from "../src/engine/loaders/raw-bvh-skeletal.js";
+import {mocapCsCmuEdu} from "../public/res/bvh/mocap.cs.cmu.edu/mocap.js";
+import {randomIntFromTo} from "../src/engine/utils.js";
 
 export var loadBVHRawExample = function() {
 
@@ -41,16 +41,12 @@ export var loadBVHRawExample = function() {
 
     async function onLoadObj(m) {
 
-      BVHSkeletal('./res/bvh/Female1_B17_WalkToHopToWalk1.bvh', m).then((r) => {
-        console.log('My bvh anim object', r)
-      })
-
       let MYCUBE = BVHRawExample.addMeshObj({
         material: {type: 'mirror'},
         position: {x: 0, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 1, z: 0},
-        scale: [3, 5, 1],
+        scale: [5, 7, 3],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,
@@ -74,11 +70,20 @@ export var loadBVHRawExample = function() {
         pointerEffect: {
           enabled: true,
           flameEmitter: true,
-          bloodBurst: true
+          // bloodBurst: true
         }
-      })
+      });
 
-      BVHRawExample.lightContainer[0].setIntensity(15);
+      BVHRawExample.ALL_SKELETALS = [];
+
+      mocapCsCmuEdu.forEach((filename, index) => {
+        BVHSkeletal(`./res/bvh/mocap.cs.cmu.edu/${filename}`, ("list" + index) ,  m, undefined, 0.2, {x: -20 + index * 3, y: -26, z: -30}).then((r) => {
+          // console.log('My bvh anim object', r)
+          BVHRawExample.ALL_SKELETALS.push(r);
+        })
+      });
+
+      // BVHRawExample.lightContainer[0].setIntensity(15);
       BVHRawExample.activateBloomEffect();
       BVHRawExample.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       BVHRawExample.lightContainer[0].behavior.value_ = -1;
@@ -86,10 +91,13 @@ export var loadBVHRawExample = function() {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       })
-      BVHRawExample.lightContainer[0].setPosition(0, 15, -10);
+      BVHRawExample.lightContainer[0].setPosition(0, 50, -15);
       BVHRawExample.lightContainer[0].setTarget(0, 0, -10);
+      BVHRawExample.lightContainer[0].setIntensity(200);
+      app.lightContainer[0].outerCutoff = 2;
 
       setTimeout(() => {
+
         MYCUBE.effects.circle = new GenGeoTexture2(BVHRawExample.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
         // Nice fire tourch effect.
@@ -102,16 +110,27 @@ export var loadBVHRawExample = function() {
         cam.setPitch(-0.49);
         cam.setZ(0);
         cam.setY(10);
+        cam.setY(15);
+
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 700);
+      }, 1000);
     }
 
     BVHRawExample.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected');
-      if(e.detail.hitObject.name.startsWith('cube')) {
-        //
-      }
+      console.log('ray.hit.event detected :', e.detail.hitObject.name);
+      // if(e.detail.hitObject.name.startsWith('cube')) {
+       let t = BVHRawExample.ALL_SKELETALS.filter((O) => e.detail.hitObject.name.indexOf(O.myName) !== -1);
+      //  console.log('t ', t)
+       if (t.length > 0) {
+        e.detail.hitObject.setAmbient(randomIntFromTo(0,2),randomIntFromTo(0,20),randomIntFromTo(0,20))
+        t[0].THICKNESS = t[0].THICKNESS  + 0.2;
+        t[0].setupScale();
+       }
+      //
+      //  BVHRawExample.ALL_SKELETALS[0].THICKNESS = 2;
+      //  BVHRawExample.ALL_SKELETALS[0].setupScale();
+      // }
     });
   })
   window.app = BVHRawExample;

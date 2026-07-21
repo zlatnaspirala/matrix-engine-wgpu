@@ -2,6 +2,7 @@
 ## CHANGES [Started from feb 2026]
 
 [1.16.xx - 1.17.00]
+ - Add support for raw bvh (skeletal) implementation.
  - Added video chat/stream plane follow local player and remote player
    for MOBA template - Used streamPlaying to get video elements for networking.
  - Added nui-commander (from npm) and used in demo=31 

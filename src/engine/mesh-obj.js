@@ -275,7 +275,6 @@ export default class MEMeshObj extends Materials {
       // console.warn("GLTF primitive has no TANGENT attribute (normal map won’t work properly).");
     }
     // console.log(`%cMesh loaded: ${o.name}`, LOG_FUNNY_ARCADE);
-
     this.drawElementsOrigin = this.drawElements;
     // ObjSequence animation
     if(typeof o.objAnim !== 'undefined' && o.objAnim != null) {
@@ -750,7 +749,7 @@ export default class MEMeshObj extends Materials {
       }
     }).then(() => {
       if(typeof this.objAnim !== 'undefined' && this.objAnim !== null) {
-        console.log('After all updateMeshListBuffers...');
+        // console.log('After all updateMeshListBuffers...');
         this.updateMeshListBuffers();
       }
     })
