@@ -56308,7 +56308,7 @@ var loadHang3d = function() {
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
-    LOAD_AFTER_CLICK_MOBILE: true,
+    LOAD_AFTER_CLICK_MOBILE: false,
     MOUSE_SENS: 5e-3,
     TOUCH_SENS: 0.01,
     mainCameraParams: {
