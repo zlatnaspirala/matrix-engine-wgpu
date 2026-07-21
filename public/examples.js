@@ -58233,7 +58233,7 @@ var loadBVHRawExample = function() {
       });
       BVHRawExample.ALL_SKELETALS = [];
       mocapCsCmuEdu.forEach((filename, index) => {
-        if (index > 20) {
+        if (index > 16) {
           return;
         }
         BVHSkeletal(
@@ -58381,16 +58381,16 @@ var loadBVHRawExampleShared = function() {
           enabled: false,
           mass: 0,
           geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
-          // bloodBurst: true
         }
+        // pointerEffect: {
+        //   enabled: true,
+        //   flameEmitter: true,
+        //   // bloodBurst: true
+        // }
       });
       BVHRawExample.ALL_SKELETALS = [];
       mocapCsCmuEdu.forEach((filename, index) => {
-        if (index > 25) return;
+        if (index > 10) return;
         BVHSkeletal(
           `./res/bvh/mocap.cs.cmu.edu/${filename}`,
           "list" + index,
@@ -58412,17 +58412,19 @@ var loadBVHRawExampleShared = function() {
       app.lightContainer[0].outerCutoff = 2;
       setTimeout(() => {
         MYCUBE.effects.circle = new GenGeoTexture2(BVHRawExample.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
-        MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566,
-          0.21125441598805741,
-          0.4249951687253338,
-          0.4724163587305734,
-          2.381811753816671,
-          3.074841196886901,
-          -2.3797025623904164,
-          -3.4608908819087145
-        ]);
+        if (MYCUBE.effects.flameEmitter) {
+          MYCUBE.effects.flameEmitter.rotSpeed = 1;
+          MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+            -2.582509022040566,
+            0.21125441598805741,
+            0.4249951687253338,
+            0.4724163587305734,
+            2.381811753816671,
+            3.074841196886901,
+            -2.3797025623904164,
+            -3.4608908819087145
+          ]);
+        }
         MYCUBE.setAmbient(2, 3, 0.5);
         let cam2 = app.getCamera();
         cam2.setYaw(-0.03);
@@ -58430,6 +58432,7 @@ var loadBVHRawExampleShared = function() {
         cam2.setZ(0);
         cam2.setY(10);
         cam2.setY(15);
+        app.activateVolumetricEffect();
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
       }, 1e3);

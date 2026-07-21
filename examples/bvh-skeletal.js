@@ -88,7 +88,7 @@ export var loadBVHRawExample = function() {
       BVHRawExample.ALL_SKELETALS = [];
 
       mocapCsCmuEdu.forEach((filename, index) => {
-        if (index > 20) { return; }
+        if (index > 16) { return; }
         BVHSkeletal(`./res/bvh/mocap.cs.cmu.edu/${filename}`,
            ("list" + index) ,  m,
             ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'], 0.2, 

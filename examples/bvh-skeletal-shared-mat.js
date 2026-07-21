@@ -78,17 +78,17 @@ export var loadBVHRawExampleShared = function() {
           mass: 0,
           geometry: "Cube"
         },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true,
-          // bloodBurst: true
-        }
+        // pointerEffect: {
+        //   enabled: true,
+        //   flameEmitter: true,
+        //   // bloodBurst: true
+        // }
       });
 
       BVHRawExample.ALL_SKELETALS = [];
 
       mocapCsCmuEdu.forEach((filename, index) => {
-        if (index > 25) return; 
+        if (index > 10) return; 
         BVHSkeletal(`./res/bvh/mocap.cs.cmu.edu/${filename}`,
            ("list" + index) ,  m,
             ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'], 0.2, 
@@ -115,11 +115,15 @@ export var loadBVHRawExampleShared = function() {
       setTimeout(() => {
 
         MYCUBE.effects.circle = new GenGeoTexture2(BVHRawExample.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
+
+        if (MYCUBE.effects.flameEmitter) {
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
         // Nice fire tourch effect.
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
           0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+        }
+
         MYCUBE.setAmbient(2, 3, 0.5);
         let cam = app.getCamera();
         cam.setYaw(-0.03);
@@ -127,7 +131,7 @@ export var loadBVHRawExampleShared = function() {
         cam.setZ(0);
         cam.setY(10);
         cam.setY(15);
-
+        app.activateVolumetricEffect()
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 1000);
