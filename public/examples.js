@@ -57927,7 +57927,7 @@ var loadMenuBeast = function() {
 };
 
 // src/engine/loaders/raw-bvh-skeletal.js
-function BVHSkeletal(path2, name2 = "addName", m2, texturePath2 = void 0, SKELETON_SCALE = 1, position = { x: 0, y: 0, z: -10 }, rotation3 = { x: 0, y: 0, z: 0 }, sharedMaterial = false) {
+function BVHSkeletal(path2, name2 = "addName", m2, texturePaths = void 0, SKELETON_SCALE = 1, position = { x: 0, y: 0, z: -10 }, rotation3 = { x: 0, y: 0, z: 0 }, sharedMaterial = false) {
   var animBVH2 = new bvh_loader_default();
   animBVH2.myName = name2;
   return new Promise((resolve, reject) => {
@@ -57944,15 +57944,34 @@ function BVHSkeletal(path2, name2 = "addName", m2, texturePath2 = void 0, SKELET
       for (var x3 = 0; x3 < r3[0].length; x3++) {
         var boneName = animBVH2.myName + "_" + KEYS[x3];
         const mesh = app.addMeshObj({
-          material: { type: "standard", share: sharedMaterial },
+          material: { type: "mirror", share: sharedMaterial },
           position,
           rotation: rotation3,
           rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: texturePath2 ? [texturePath2] : void 0,
+          texturesPaths: texturePaths ? texturePaths : void 0,
           name: boneName,
           mesh: m2.cube,
           physics: { enabled: false },
-          raycast: { enabled: true, radius: 2 }
+          raycast: { enabled: true, radius: 2 },
+          envMapParams: {
+            baseColorMix: 0.1,
+            // CLEAR SKY
+            mirrorTint: [0.9, 0.95, 1],
+            // Slight cool tint
+            reflectivity: 0.75,
+            // 25% reflection blend
+            illuminateColor: [0.3, 0.7, 1],
+            // Soft cyan
+            illuminateStrength: 1.5,
+            // Gentle rim
+            illuminatePulse: 0.1,
+            // No pulse (static)
+            fresnelPower: 5,
+            // Medium-sharp edge
+            envLodBias: 1.5,
+            usePlanarReflection: false
+            // Must be false - WIP
+          }
         });
         ALL_MESHES.push(mesh);
       }
@@ -58047,37 +58066,37 @@ var mocapCsCmuEdu = [
   "Female1_A04_Look.bvh",
   "Female1_A05_PickUpBox.bvh",
   "Female1_A06_LiftBox.bvh",
-  // 'Female1_A06_LiftBoxT2.bvh',
-  // 'Female1_A07_Crouch.bvh',
-  // 'Female1_A08_CrouchToLie.bvh',
-  // 'Female1_A09_LieT2.bvh',
-  // 'Female1_A10_LieToCrouch.bvh',
-  // 'Female1_A11_CrawlForward.bvh',
-  // 'Female1_A12_CrawlBackwards.bvh',
-  // 'Female1_A13_Skipping.bvh',
-  // 'Female1_A14_StandToSkip.bvh',
-  // 'Female1_A15_SkipToStand.bvh',
-  // 'Female1_B01_StandToWalk.bvh',
-  // 'Female1_B02_WalkToStand.bvh',
-  // 'Female1_B02_WalkToStandT2.bvh',
-  // 'Female1_B03_Walk1.bvh',
-  // 'Female1_B04_StandToWalkBack.bvh',
-  // 'Female1_B05_WalkBackwards.bvh',
-  // 'Female1_B06_WalkBackwardsToStand.bvh',
-  // 'Female1_B07_WalkBackwardsTurnForwards.bvh',
-  // 'Female1_B08_WalkBackwardsStopForwards.bvh',
-  // 'Female1_B09_WalkTurnLeft90.bvh',
-  // 'Female1_B10_WalkTurnLeft45.bvh',
-  // 'Female1_B11_WalkTurnLeft135.bvh',
-  // 'Female1_B12_WalkTurnRight90.bvh',
-  // 'Female1_B13_WalkTurnRight45.bvh',
-  // 'Female1_B14_WalkTurnRight135.bvh',
-  // 'Female1_B15_WalkTurnAround180.bvh',
-  // 'Female1_B16_WalkTurnChangeDirection.bvh',
-  // 'Female1_B17_WalkToHopToWalk1.bvh',
-  // 'Female1_B18_WalkToLeapToWalk.bvh',
-  // 'Female1_B19_WalkToPickUpBox.bvh',
-  // 'Female1_B20_WalkWithBox.bvh',
+  "Female1_A06_LiftBoxT2.bvh",
+  "Female1_A07_Crouch.bvh",
+  "Female1_A08_CrouchToLie.bvh",
+  "Female1_A09_LieT2.bvh",
+  "Female1_A10_LieToCrouch.bvh",
+  "Female1_A11_CrawlForward.bvh",
+  "Female1_A12_CrawlBackwards.bvh",
+  "Female1_A13_Skipping.bvh",
+  "Female1_A14_StandToSkip.bvh",
+  "Female1_A15_SkipToStand.bvh",
+  "Female1_B01_StandToWalk.bvh",
+  "Female1_B02_WalkToStand.bvh",
+  "Female1_B02_WalkToStandT2.bvh",
+  "Female1_B03_Walk1.bvh",
+  "Female1_B04_StandToWalkBack.bvh",
+  "Female1_B05_WalkBackwards.bvh",
+  "Female1_B06_WalkBackwardsToStand.bvh",
+  "Female1_B07_WalkBackwardsTurnForwards.bvh",
+  "Female1_B08_WalkBackwardsStopForwards.bvh",
+  "Female1_B09_WalkTurnLeft90.bvh",
+  "Female1_B10_WalkTurnLeft45.bvh",
+  "Female1_B11_WalkTurnLeft135.bvh",
+  "Female1_B12_WalkTurnRight90.bvh",
+  "Female1_B13_WalkTurnRight45.bvh",
+  "Female1_B14_WalkTurnRight135.bvh",
+  "Female1_B15_WalkTurnAround180.bvh",
+  "Female1_B16_WalkTurnChangeDirection.bvh",
+  "Female1_B17_WalkToHopToWalk1.bvh",
+  "Female1_B18_WalkToLeapToWalk.bvh",
+  "Female1_B19_WalkToPickUpBox.bvh",
+  "Female1_B20_WalkWithBox.bvh",
   // 'Female1_B21_PutDownBoxToWalk.bvh',
   // 'Female1_B21_S2_PutDownBoxToWalk.bvh',
   // 'Female1_B21_S3_PutDownBoxToWalk.bvh',
@@ -58142,12 +58161,31 @@ var loadBVHRawExample = function() {
     addRaycastsAABBListener("canvas1", "click");
     function onGround(m2) {
       BVHRawExample.addMeshObj({
-        material: { type: "standard", share: true },
+        material: { type: "mirror", share: true },
         position: { x: 0, y: -5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: ["./res/textures/floor1.webp"],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
         name: "floor",
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
         mesh: m2.cube,
         physics: { enabled: false }
       });
@@ -58195,7 +58233,19 @@ var loadBVHRawExample = function() {
       });
       BVHRawExample.ALL_SKELETALS = [];
       mocapCsCmuEdu.forEach((filename, index) => {
-        BVHSkeletal(`./res/bvh/mocap.cs.cmu.edu/${filename}`, "list" + index, m2, void 0, 0.2, { x: -20 + index * 3, y: -26, z: -30 }).then((r3) => {
+        if (index > 20) {
+          return;
+        }
+        BVHSkeletal(
+          `./res/bvh/mocap.cs.cmu.edu/${filename}`,
+          "list" + index,
+          m2,
+          ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+          0.2,
+          { x: -20 + index * 3, y: -26, z: -30 },
+          void 0,
+          false
+        ).then((r3) => {
           BVHRawExample.ALL_SKELETALS.push(r3);
         });
       });
@@ -58207,7 +58257,7 @@ var loadBVHRawExample = function() {
         light.setPosX(light.behavior.setPath0());
       });
       BVHRawExample.lightContainer[0].setPosition(0, 50, -15);
-      BVHRawExample.lightContainer[0].setTarget(0, 0, -10);
+      BVHRawExample.lightContainer[0].setTarget(0, 0, -15);
       BVHRawExample.lightContainer[0].setIntensity(200);
       app.lightContainer[0].outerCutoff = 2;
       setTimeout(() => {
@@ -58238,7 +58288,159 @@ var loadBVHRawExample = function() {
       console.log("ray.hit.event detected :", e2.detail.hitObject.name);
       let t3 = BVHRawExample.ALL_SKELETALS.filter((O2) => e2.detail.hitObject.name.indexOf(O2.myName) !== -1);
       if (t3.length > 0) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo(0, 2), randomIntFromTo(0, 20), randomIntFromTo(0, 20));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(0, 1), randomIntFromTo(10, 20), randomIntFromTo(10, 20));
+        e2.detail.hitObject.setupMaterialPBR([randomIntFromTo(10, 20), randomIntFromTo(10, 20), 1], 2, 0.1, 0.1);
+        t3[0].THICKNESS = t3[0].THICKNESS + 0.2;
+        t3[0].setupScale();
+      }
+    });
+  });
+  window.app = BVHRawExample;
+};
+
+// examples/bvh-skeletal-shared-mat.js
+var loadBVHRawExampleShared = function() {
+  let BVHRawExample = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "firstPersonCamera",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    BVHRawExample.addLight();
+    downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      BVHRawExample.addMeshObj({
+        material: { type: "mirror", share: true },
+        position: { x: 0, y: -5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "floor",
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        mesh: m2.cube,
+        physics: { enabled: false }
+      });
+    }
+    async function onLoadObj(m2) {
+      let MYCUBE = BVHRawExample.addMeshObj({
+        material: { type: "mirror", shared: true },
+        position: { x: 0, y: 4, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 1, z: 0 },
+        scale: [5, 7, 3],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true
+          // bloodBurst: true
+        }
+      });
+      BVHRawExample.ALL_SKELETALS = [];
+      mocapCsCmuEdu.forEach((filename, index) => {
+        if (index > 25) return;
+        BVHSkeletal(
+          `./res/bvh/mocap.cs.cmu.edu/${filename}`,
+          "list" + index,
+          m2,
+          ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+          0.2,
+          { x: -20 + index * 3, y: -26, z: -30 },
+          void 0,
+          true
+        ).then((r3) => {
+          BVHRawExample.ALL_SKELETALS.push(r3);
+        });
+      });
+      BVHRawExample.activateBloomEffect();
+      BVHRawExample.lightContainer[0].setPosition(0, 50, -15);
+      BVHRawExample.lightContainer[0].setTarget(0, 0, -15);
+      BVHRawExample.lightContainer[0].setIntensity(200);
+      app.lightContainer[0].setRange(100);
+      app.lightContainer[0].outerCutoff = 2;
+      setTimeout(() => {
+        MYCUBE.effects.circle = new GenGeoTexture2(BVHRawExample.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
+        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+          -2.582509022040566,
+          0.21125441598805741,
+          0.4249951687253338,
+          0.4724163587305734,
+          2.381811753816671,
+          3.074841196886901,
+          -2.3797025623904164,
+          -3.4608908819087145
+        ]);
+        MYCUBE.setAmbient(2, 3, 0.5);
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(10);
+        cam2.setY(15);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 1e3);
+    }
+    BVHRawExample.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected :", e2.detail.hitObject.name);
+      let t3 = BVHRawExample.ALL_SKELETALS.filter((O2) => e2.detail.hitObject.name.indexOf(O2.myName) !== -1);
+      if (t3.length > 0) {
+        app.lightContainer[0].setColorR(randomIntFromTo(1, 30));
+        app.lightContainer[0].setColorG(randomIntFromTo(1, 30));
+        app.lightContainer[0].setColorB(randomIntFromTo(1, 30));
         t3[0].THICKNESS = t3[0].THICKNESS + 0.2;
         t3[0].setupScale();
       }
@@ -58297,6 +58499,7 @@ if (byId2("loadMenuBeast")) {
   byId2("loadMenuBeast").addEventListener("click", () => switchDemo("31"));
 }
 byId2("loadBVHSkeletal").addEventListener("click", () => switchDemo("32"));
+byId2("loadBVHSkeletalShared").addEventListener("click", () => switchDemo("33"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -58364,6 +58567,8 @@ if (urlQuery["demo"] === "1") {
   loadMenuBeast();
 } else if (urlQuery["demo"] === "32") {
   loadBVHRawExample();
+} else if (urlQuery["demo"] === "33") {
+  loadBVHRawExampleShared();
 } else {
   loadObjFile();
 }

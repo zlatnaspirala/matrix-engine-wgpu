@@ -6,7 +6,7 @@ import {BVHSkeletal} from "../src/engine/loaders/raw-bvh-skeletal.js";
 import {mocapCsCmuEdu} from "../public/res/bvh/mocap.cs.cmu.edu/mocap.js";
 import {randomIntFromTo} from "../src/engine/utils.js";
 
-export var loadBVHRawExample = function() {
+export var loadBVHRawExampleShared = function() {
 
   let BVHRawExample = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
@@ -53,7 +53,7 @@ export var loadBVHRawExample = function() {
     async function onLoadObj(m) {
 
       let MYCUBE = BVHRawExample.addMeshObj({
-        material: {type: 'mirror'},
+        material: {type: 'mirror', shared: true},
         position: {x: 0, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 1, z: 0},
@@ -88,11 +88,11 @@ export var loadBVHRawExample = function() {
       BVHRawExample.ALL_SKELETALS = [];
 
       mocapCsCmuEdu.forEach((filename, index) => {
-        if (index > 20) { return; }
+        if (index > 25) return; 
         BVHSkeletal(`./res/bvh/mocap.cs.cmu.edu/${filename}`,
            ("list" + index) ,  m,
             ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'], 0.2, 
-            {x: -20 + index * 3, y: -26, z: -30}, undefined, false).then((r) => {
+            {x: -20 + index * 3, y: -26, z: -30}, undefined, true).then((r) => {
           // console.log('My bvh anim object', r)
           BVHRawExample.ALL_SKELETALS.push(r);
         })
@@ -100,15 +100,16 @@ export var loadBVHRawExample = function() {
 
       // BVHRawExample.lightContainer[0].setIntensity(15);
       BVHRawExample.activateBloomEffect();
-      BVHRawExample.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
-      BVHRawExample.lightContainer[0].behavior.value_ = -1;
-      BVHRawExample.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      })
+      // BVHRawExample.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
+      // BVHRawExample.lightContainer[0].behavior.value_ = -1;
+      // BVHRawExample.lightContainer[0].updater.push((light) => {
+      //   light.setTargetX(light.behavior.setPath0());
+      //   light.setPosX(light.behavior.setPath0());
+      // })
       BVHRawExample.lightContainer[0].setPosition(0, 50, -15);
       BVHRawExample.lightContainer[0].setTarget(0, 0, -15);
       BVHRawExample.lightContainer[0].setIntensity(200);
+      app.lightContainer[0].setRange(100)
       app.lightContainer[0].outerCutoff = 2;
 
       setTimeout(() => {
@@ -139,8 +140,9 @@ export var loadBVHRawExample = function() {
       //  console.log('t ', t)
        if (t.length > 0) {
         // on mirror mat not too mush effect
-        e.detail.hitObject.setAmbient(randomIntFromTo(0,1),randomIntFromTo(10,20),randomIntFromTo(10,20));
-        e.detail.hitObject.setupMaterialPBR([randomIntFromTo(10,20), randomIntFromTo(10,20), 1], 2, .1, 0.1)
+        app.lightContainer[0].setColorR(randomIntFromTo(1,30))
+        app.lightContainer[0].setColorG(randomIntFromTo(1,30))
+        app.lightContainer[0].setColorB(randomIntFromTo(1,30))
         t[0].THICKNESS = t[0].THICKNESS  + 0.2;
         t[0].setupScale();
        }

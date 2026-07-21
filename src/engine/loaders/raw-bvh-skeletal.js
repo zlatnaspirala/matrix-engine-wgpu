@@ -1,7 +1,7 @@
 import MEBvh from "bvh-loader";
 import {radToDeg} from "../utils.js";
 
-export function BVHSkeletal(path, name = "addName",  m, texturePath = undefined, SKELETON_SCALE = 1, position = {x: 0, y: 0, z: -10}, rotation = {x: 0, y: 0, z: 0}, sharedMaterial = false) {
+export function BVHSkeletal(path, name = "addName", m, texturePaths = undefined, SKELETON_SCALE = 1, position = {x: 0, y: 0, z: -10}, rotation = {x: 0, y: 0, z: 0}, sharedMaterial = false) {
   var animBVH = new MEBvh();
   animBVH.myName = name;
   return new Promise((resolve, reject) => {
@@ -19,15 +19,26 @@ export function BVHSkeletal(path, name = "addName",  m, texturePath = undefined,
       for(var x = 0;x < r[0].length;x++) {
         var boneName = animBVH.myName + '_' + KEYS[x];
         const mesh = app.addMeshObj({
-          material: {type: 'standard', share: sharedMaterial},
+          material: {type: 'mirror', share: sharedMaterial},
           position: position,
           rotation: rotation,
           rotationSpeed: {x: 0, y: 0, z: 0},
-          texturesPaths: texturePath ? [texturePath] : undefined,
+          texturesPaths: texturePaths ? texturePaths : undefined,
           name: boneName,
           mesh: m.cube,
           physics: {enabled: false},
-          raycast: {enabled: true, radius: 2}
+          raycast: {enabled: true, radius: 2},
+          envMapParams: {
+            baseColorMix: 0.1,                // CLEAR SKY
+            mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+            reflectivity: 0.75,               // 25% reflection blend
+            illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+            illuminateStrength: 1.5,          // Gentle rim
+            illuminatePulse: 0.1,             // No pulse (static)
+            fresnelPower: 5,                  // Medium-sharp edge
+            envLodBias: 1.5,
+            usePlanarReflection: false,       // Must be false - WIP
+          },
         });
         ALL_MESHES.push(mesh);
       }
