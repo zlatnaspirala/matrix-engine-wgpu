@@ -44436,6 +44436,12 @@ var MatrixEngineWGPU = class {
         if (mesh.update) mesh.update(now2);
         if (mesh.isVideo) mesh.updateVideoTexture();
         if (mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
+        if (mesh.effects) {
+          for (const effectName in mesh.effects) {
+            const effect = mesh.effects[effectName];
+            effect.simulate?.(commandEncoder);
+          }
+        }
       }
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
       let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
@@ -58453,6 +58459,783 @@ var loadBVHRawExampleShared = function() {
   window.app = BVHRawExample;
 };
 
+// src/shaders/water-simulation/water-simulation.wgsl.js
+var fullscreenVertShader = `
+struct VertexOutput {
+  @builtin(position) position : vec4f,
+  @location(0) uv : vec2f,
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index) vertexIndex : u32) -> VertexOutput {
+  var pos = array<vec2f, 6>(
+    vec2f(-1.0, -1.0), vec2f(1.0, -1.0), vec2f(-1.0, 1.0),
+    vec2f(-1.0, 1.0), vec2f(1.0, -1.0), vec2f(1.0, 1.0)
+  );
+  var output : VertexOutput;
+  output.position = vec4f(pos[vertexIndex], 0.0, 1.0);
+  output.uv = vec2f((pos[vertexIndex].x + 1.0) * 0.5, (1.0 - pos[vertexIndex].y) * 0.5);
+  return output;
+}
+`;
+var dropFragShader = `
+@group(0) @binding(0) var waterTexture : texture_2d<f32>;
+@group(0) @binding(1) var waterSampler : sampler;
+
+struct DropUniforms {
+  center : vec2f,
+  radius : f32,
+  strength : f32,
+}
+@group(0) @binding(2) var<uniform> u : DropUniforms;
+
+@fragment
+fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
+  var info = textureSample(waterTexture, waterSampler, uv);
+  let drop = max(0.0, 1.0 - length(u.center * 0.5 + 0.5 - uv) / u.radius);
+  let dropVal = 0.5 - cos(drop * 3.14159265) * 0.5;
+  info.r += dropVal * u.strength;
+  return info;
+}
+`;
+var updateFragShader = `
+@group(0) @binding(0) var waterTexture : texture_2d<f32>;
+@group(0) @binding(1) var waterSampler : sampler;
+
+struct UpdateUniforms {
+  delta : vec2f,
+}
+@group(0) @binding(2) var<uniform> u : UpdateUniforms;
+
+@fragment
+fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
+  var info = textureSample(waterTexture, waterSampler, uv);
+
+  let dx = vec2f(u.delta.x, 0.0);
+  let dy = vec2f(0.0, u.delta.y);
+
+  let average = (
+    textureSample(waterTexture, waterSampler, uv - dx).r +
+    textureSample(waterTexture, waterSampler, uv - dy).r +
+    textureSample(waterTexture, waterSampler, uv + dx).r +
+    textureSample(waterTexture, waterSampler, uv + dy).r
+  ) * 0.25;
+
+  info.g += (average - info.r) * 2.0;
+  info.g *= 0.995;
+  info.r += info.g;
+
+  return info;
+}
+`;
+var normalFragShader = `
+@group(0) @binding(0) var waterTexture : texture_2d<f32>;
+@group(0) @binding(1) var waterSampler : sampler;
+
+struct NormalUniforms {
+  delta : vec2f,
+}
+@group(0) @binding(2) var<uniform> u : NormalUniforms;
+
+@fragment
+fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
+  var info = textureSample(waterTexture, waterSampler, uv);
+
+  let val_dx = textureSample(waterTexture, waterSampler, vec2f(uv.x + u.delta.x, uv.y)).r;
+  let val_dy = textureSample(waterTexture, waterSampler, vec2f(uv.x, uv.y + u.delta.y)).r;
+
+  let dx = vec3f(u.delta.x, val_dx - info.r, 0.0);
+  let dy = vec3f(0.0, val_dy - info.r, u.delta.y);
+
+  let normal = normalize(cross(dy, dx));
+  info.b = normal.x;
+  info.a = normal.z;
+
+  return info;
+}
+`;
+var sphereFragShader = `
+@group(0) @binding(0) var waterTexture : texture_2d<f32>;
+@group(0) @binding(1) var waterSampler : sampler;
+
+struct SphereUniforms {
+  oldCenter : vec3f,
+  radius : f32,
+  newCenter : vec3f,
+  padding : f32,
+}
+@group(0) @binding(2) var<uniform> u : SphereUniforms;
+
+fn volumeInSphere(center : vec3f, uv : vec2f, radius : f32) -> f32 {
+  let p = vec3f(uv.x * 2.0 - 1.0, 0.0, uv.y * 2.0 - 1.0);
+  let dist = length(p - center);
+  let t = dist / radius;
+  let dy = exp(-pow(t * 1.5, 6.0));
+  let ymin = min(0.0, center.y - dy);
+  let ymax = min(max(0.0, center.y + dy), ymin + 2.0 * dy);
+  return (ymax - ymin) * 0.1;
+}
+
+@fragment
+fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
+  var info = textureSample(waterTexture, waterSampler, uv);
+  info.r += volumeInSphere(u.oldCenter, uv, u.radius);
+  info.r -= volumeInSphere(u.newCenter, uv, u.radius);
+  return info;
+}
+`;
+var surfaceVertShader = `
+
+// struct CommonUniforms {
+//   viewProjectionMatrix : mat4x4f,
+//   eyePosition : vec3f,
+// }
+
+struct Camera {
+    viewProj : mat4x4<f32>,
+};
+
+@group(0) @binding(0)
+var<uniform> camera : Camera;
+
+struct ModelData {
+    model : mat4x4<f32>,
+    eyePosition : vec4<f32>,
+};
+
+struct CommonUniforms {
+    viewProjectionMatrix : mat4x4f,
+    eyePosition : vec3f,
+}
+
+@binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
+@binding(1) @group(0) var<uniform> modelData : ModelData;
+@binding(3) @group(0) var waterSampler : sampler;
+@binding(4) @group(0) var waterTexture : texture_2d<f32>;
+
+struct VertexOutput {
+  @builtin(position) position : vec4f,
+  @location(0) localPos : vec3f,
+  @location(1) worldPos : vec3f,
+}
+
+@vertex
+fn vs_main(@location(0) position : vec3f) -> VertexOutput {
+  var output : VertexOutput;
+  let uv = position.xz * 0.5 + 0.5;
+  let info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
+  var pos = position;
+  pos.y = info.r;
+  let worldPos = modelData.model * vec4f(pos, 1.0);
+  output.worldPos = worldPos.xyz;
+  output.position = camera.viewProj * worldPos;
+  output.localPos = pos;
+  // var pos = position;
+  // pos.y = info.r;
+  // output.worldPos = pos;
+  // output.position = commonUniforms.viewProjectionMatrix * vec4f(pos, 1.0);
+  return output;
+}
+`;
+var surfaceFragShader = `
+struct CommonUniforms {
+  viewProjectionMatrix : mat4x4f,
+  eyePosition : vec3f,
+}
+struct LightUniforms {
+  direction : vec3f,
+}
+struct WaterUniforms {
+  ior : f32,
+  fresnelMin : f32,
+  causticIntensity : f32,
+  poolHeight : f32,
+}
+
+@binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
+@binding(1) @group(0) var<uniform> light : LightUniforms;
+@binding(2) @group(0) var<uniform> waterUniforms : WaterUniforms;
+@binding(3) @group(0) var waterSampler : sampler;
+@binding(4) @group(0) var waterTexture : texture_2d<f32>;
+@binding(5) @group(0) var floorSampler : sampler;
+@binding(6) @group(0) var floorTexture : texture_2d<f32>;
+@binding(7) @group(0) var causticsTexture : texture_2d<f32>;
+
+const IOR_AIR : f32 = 1.0;
+const ABOVEwaterColor : vec3f = vec3f(0.25, 1.0, 1.25);
+const UNDERwaterColor : vec3f = vec3f(0.4, 0.9, 1.0);
+
+// Cheap analytic sky: horizon -> zenith gradient + sun disc, no cubemap needed.
+fn skyColor(ray : vec3f) -> vec3f {
+  let horizon = vec3f(0.60, 0.75, 0.85);
+  let zenith = vec3f(0.10, 0.30, 0.65);
+  var color = mix(horizon, zenith, clamp(ray.y, 0.0, 1.0));
+  let sunDir = normalize(light.direction);
+  let spec = pow(max(0.0, dot(sunDir, ray)), 2000.0);
+  color += vec3f(spec) * vec3f(10.0, 8.0, 6.0);
+  return color;
+}
+
+fn floorColor(origin : vec3f, ray : vec3f) -> vec3f {
+  let t = (-waterUniforms.poolHeight - origin.y) / ray.y;
+  let hit = origin + ray * t;
+  let uv = hit.xz * 0.5 + 0.5;
+  var color = textureSampleLevel(floorTexture, floorSampler, uv, 0.0).rgb;
+  let caustic = textureSampleLevel(causticsTexture, waterSampler, uv, 0.0);
+  color *= 1.0 + caustic.r * 2.0 * caustic.g;
+  return color;
+}
+
+fn surfaceRayColor(origin : vec3f, ray : vec3f, tint : vec3f) -> vec3f {
+  var color : vec3f;
+  if (ray.y < 0.0) {
+    color = floorColor(origin, ray) * tint;
+  } else {
+    color = skyColor(ray);
+  }
+  return color;
+}
+
+struct FragOut {
+    @location(0) color    : vec4f,
+    @location(1) normal   : vec4f,
+    @location(2) worldPos : vec4f,
+}
+
+@fragment
+fn fs_main(@location(0) localPos : vec3f, @location(1) worldPos : vec3f) -> FragOut {
+
+    // var uv = worldPos.xz * 0.5 + 0.5;
+    var uv = localPos.xz * 0.5 + 0.5;
+    var info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
+
+    for (var i = 0; i < 4; i++) {
+        uv += info.ba * 0.005;
+        info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
+    }
+
+    let ba = vec2f(info.b, info.a);
+    let normal = vec3f(
+        info.b,
+        sqrt(max(0.0, 1.0 - dot(ba, ba))),
+        info.a
+    );
+
+    let incomingRay  = normalize(worldPos - commonUniforms.eyePosition);
+    let reflectedRay = reflect(incomingRay, normal);
+    let refractedRay = refract(
+        incomingRay,
+        normal,
+        IOR_AIR / waterUniforms.ior
+    );
+
+    let fresnel = mix(
+        waterUniforms.fresnelMin,
+        1.0,
+        pow(1.0 - dot(normal, -incomingRay), 3.0)
+    );
+
+    let reflectedColor = surfaceRayColor(
+        worldPos,
+        reflectedRay,
+        ABOVEwaterColor
+    );
+
+    let refractedColor = surfaceRayColor(
+        worldPos,
+        refractedRay,
+        ABOVEwaterColor
+    );
+
+    let finalColor = mix(
+        refractedColor,
+        reflectedColor,
+        fresnel
+    );
+
+    return FragOut(
+        vec4f(finalColor, 1.0),
+        vec4f(normalize(normal), 0.0),
+        vec4f(worldPos, 1.0)
+    );
+}`;
+var causticsVertShader = `
+struct LightUniforms {
+  direction : vec3f,
+}
+struct WaterUniforms {
+  ior : f32,
+  fresnelMin : f32,
+  causticIntensity : f32,
+  poolHeight : f32,
+}
+@binding(0) @group(0) var<uniform> light : LightUniforms;
+@binding(1) @group(0) var<uniform> waterUniforms : WaterUniforms;
+@binding(2) @group(0) var waterSampler : sampler;
+@binding(3) @group(0) var waterTexture : texture_2d<f32>;
+
+struct VertexOutput {
+  @builtin(position) position : vec4f,
+  @location(0) oldPos : vec3f,
+  @location(1) newPos : vec3f,
+  @location(2) ray : vec3f,
+}
+
+fn project(origin : vec3f, ray : vec3f, refractedLight : vec3f) -> vec3f {
+  let tplane = (-waterUniforms.poolHeight - origin.y) / ray.y;
+  return origin + ray * tplane;
+}
+
+@vertex
+fn vs_main(@location(0) position : vec3f) -> VertexOutput {
+  var output : VertexOutput;
+  let uv = position.xz * 0.5 + 0.5;
+
+  let info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
+  let ba = info.ba * 0.5;
+  let normal = vec3f(ba.x, sqrt(max(0.0, 1.0 - dot(ba, ba))), ba.y);
+
+  let IOR_AIR = 1.0;
+  let lightDir = normalize(light.direction);
+
+  let refractedLight = refract(-lightDir, vec3f(0.0, 1.0, 0.0), IOR_AIR / waterUniforms.ior);
+  let ray = refract(-lightDir, normal, IOR_AIR / waterUniforms.ior);
+
+  let pos = vec3f(position.x, 0.0, position.z);
+
+  output.oldPos = project(pos, refractedLight, refractedLight);
+  output.newPos = project(pos + vec3f(0.0, info.r, 0.0), ray, refractedLight);
+  output.ray = ray;
+
+  let projectedPos = 0.75 * (output.newPos.xz - output.newPos.y * refractedLight.xz / refractedLight.y);
+  output.position = vec4f(projectedPos.x, -projectedPos.y, 0.0, 1.0);
+  return output;
+}
+`;
+var causticsFragShader = `
+struct WaterUniforms {
+  ior : f32,
+  fresnelMin : f32,
+  causticIntensity : f32,
+  poolHeight : f32,
+}
+@binding(1) @group(0) var<uniform> waterUniforms : WaterUniforms;
+
+@fragment
+fn fs_main(@location(0) oldPos : vec3f, @location(1) newPos : vec3f, @location(2) ray : vec3f) -> @location(0) vec4f {
+  let oldArea = length(dpdx(oldPos)) * length(dpdy(oldPos));
+  let newArea = length(dpdx(newPos)) * length(dpdy(newPos));
+  let intensity = oldArea / newArea * waterUniforms.causticIntensity;
+  return vec4f(intensity, 1.0, 0.0, 1.0);
+}
+`;
+
+// src/engine/effects/waterSimEffect.js
+var SIM_RES = 256;
+var WaterSimEffect = class {
+  constructor(device2, format, options2 = {}) {
+    this.device = device2;
+    this.format = format;
+    this.enabled = true;
+    this.width = options2.width ?? SIM_RES;
+    this.height = options2.height ?? SIM_RES;
+    this.size = options2.size ?? 2;
+    this.detail = options2.detail ?? 200;
+    this.poolHeight = options2.poolHeight ?? 1;
+    this.ior = options2.ior ?? 1.333;
+    this.fresnelMin = options2.fresnelMin ?? 0.25;
+    this.causticIntensity = options2.causticIntensity ?? 0.3;
+    this.lightDirection = options2.lightDirection ?? [2, 2, -1];
+    this._dropQueue = [];
+    this._sphereStamp = null;
+    this._simFormat = device2.features.has("float32-filterable") ? "rgba32float" : "rgba16float";
+    this._localMatrix = mat4Impl.create();
+    this._finalMatrix = mat4Impl.create();
+    this.data = new Float32Array(20);
+    this._createTextures();
+    this._createSampler();
+    this._createUniformBuffers(options2);
+    this._createSimPipelines();
+    this._createSurfaceMesh();
+    this._createSurfacePipelines();
+    this._createCausticsPipeline();
+  }
+  // -- setup ------------------------------------------------------------
+  updateInstanceData(baseModelMatrix) {
+    mat4Impl.identity(this._localMatrix);
+    mat4Impl.multiply(
+      baseModelMatrix,
+      this._localMatrix,
+      this._finalMatrix
+    );
+    this.device.queue.writeBuffer(
+      this.modelBuffer,
+      0,
+      this._finalMatrix
+    );
+  }
+  _createTextures() {
+    const texDesc = {
+      size: [this.width, this.height],
+      format: this._simFormat,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
+    };
+    this.textureA = this.device.createTexture({ ...texDesc, label: "WaterSim A" });
+    this.textureB = this.device.createTexture({ ...texDesc, label: "WaterSim B" });
+    this._physViews = [this.textureA.createView(), this.textureB.createView()];
+    this._parity = 0;
+    this.causticsTexture = this.device.createTexture({
+      label: "WaterSim Caustics",
+      size: [1024, 1024],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.floorTexture = this.device.createTexture({
+      label: "WaterSim Default Floor",
+      size: [1, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+    this.device.queue.writeTexture(
+      { texture: this.floorTexture },
+      new Uint8Array([90, 95, 100, 255]),
+      { bytesPerRow: 4 },
+      { width: 1, height: 1 }
+    );
+  }
+  _createSampler() {
+    this.sampler = this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "clamp-to-edge",
+      addressModeV: "clamp-to-edge"
+    });
+  }
+  _createUniformBuffers(options2) {
+    this.commonUniformBuffer = this.device.createBuffer({
+      label: "WaterSim Common Uniforms",
+      size: 80,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.lightUniformBuffer = this.device.createBuffer({
+      label: "WaterSim Light Uniforms",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.waterUniformBuffer = this.device.createBuffer({
+      label: "WaterSim Water Uniforms",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._writeLightUniforms();
+    this._writeWaterUniforms();
+    this.floorSampler = options2.floorSampler ?? this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "repeat",
+      addressModeV: "repeat"
+    });
+    if (options2.floorTexture) this.floorTexture = options2.floorTexture;
+  }
+  _writeLightUniforms() {
+    const [x3, y3, z2] = this.lightDirection;
+    const len2 = Math.hypot(x3, y3, z2) || 1;
+    this.device.queue.writeBuffer(
+      this.lightUniformBuffer,
+      0,
+      new Float32Array([x3 / len2, y3 / len2, z2 / len2, 0])
+    );
+  }
+  _writeWaterUniforms() {
+    this.device.queue.writeBuffer(
+      this.waterUniformBuffer,
+      0,
+      new Float32Array([this.ior, this.fresnelMin, this.causticIntensity, this.poolHeight])
+    );
+  }
+  _createSimPipelines() {
+    this.dropPipeline = this._buildSimPipeline("Drop", dropFragShader, 32);
+    this.updatePipeline = this._buildSimPipeline("Update", updateFragShader, 16);
+    this.normalPipeline = this._buildSimPipeline("Normal", normalFragShader, 16);
+    this.spherePipeline = this._buildSimPipeline("Sphere", sphereFragShader, 32);
+  }
+  _buildSimPipeline(label, fragCode, uniformSize) {
+    const module = this.device.createShaderModule({
+      label: label + " Sim Module",
+      code: fullscreenVertShader + fragCode
+    });
+    const pipeline = this.device.createRenderPipeline({
+      label: label + " Sim Pipeline",
+      layout: "auto",
+      vertex: { module, entryPoint: "vs_main" },
+      fragment: { module, entryPoint: "fs_main", targets: [{ format: this._simFormat }] },
+      primitive: { topology: "triangle-list" }
+    });
+    const uniformBuffer = this.device.createBuffer({
+      size: uniformSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const makeBG = (readView) => this.device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: readView },
+        { binding: 1, resource: this.sampler },
+        { binding: 2, resource: { buffer: uniformBuffer } }
+      ]
+    });
+    return {
+      pipeline,
+      uniformBuffer,
+      bindGroups: [makeBG(this._physViews[0]), makeBG(this._physViews[1])]
+    };
+  }
+  _createSurfaceMesh() {
+    const detail = this.detail;
+    const half = this.size * 0.5;
+    const positions = [];
+    const indices = [];
+    for (let z2 = 0; z2 <= detail; z2++) {
+      const t3 = z2 / detail;
+      for (let x3 = 0; x3 <= detail; x3++) {
+        const s2 = x3 / detail;
+        positions.push((2 * s2 - 1) * half, 0, (2 * t3 - 1) * half);
+      }
+    }
+    for (let z2 = 0; z2 < detail; z2++) {
+      for (let x3 = 0; x3 < detail; x3++) {
+        const i2 = x3 + z2 * (detail + 1);
+        indices.push(i2, i2 + 1, i2 + detail + 1);
+        indices.push(i2 + detail + 1, i2 + 1, i2 + detail + 2);
+      }
+    }
+    this.indexCount = indices.length;
+    this.positionBuffer = this.device.createBuffer({
+      label: "WaterSim Surface Vertices",
+      size: positions.length * 4,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true
+    });
+    new Float32Array(this.positionBuffer.getMappedRange()).set(positions);
+    this.positionBuffer.unmap();
+    this.indexBuffer = this.device.createBuffer({
+      label: "WaterSim Surface Indices",
+      size: indices.length * 4,
+      usage: GPUBufferUsage.INDEX,
+      mappedAtCreation: true
+    });
+    new Uint32Array(this.indexBuffer.getMappedRange()).set(indices);
+    this.indexBuffer.unmap();
+  }
+  _createSurfacePipelines() {
+    this.modelBuffer = this.device.createBuffer({
+      label: "WaterSim Model Buffer",
+      size: 96,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.surfaceBindGroupLayout = this.device.createBindGroupLayout({
+      label: "WaterSim Surface BGL",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        { binding: 3, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, sampler: {} },
+        { binding: 4, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+        { binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 7, visibility: GPUShaderStage.FRAGMENT, texture: {} }
+      ]
+    });
+    const layout = this.device.createPipelineLayout({ bindGroupLayouts: [this.surfaceBindGroupLayout] });
+    const vsModule = this.device.createShaderModule({ label: "WaterSim S VS", code: surfaceVertShader });
+    const fsModule = this.device.createShaderModule({ label: "WaterSim S FS", code: surfaceFragShader });
+    const baseDesc = {
+      layout,
+      vertex: {
+        module: vsModule,
+        entryPoint: "vs_main",
+        buffers: [{ arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] }]
+      },
+      fragment: {
+        module: fsModule,
+        entryPoint: "fs_main",
+        targets: [
+          { format: this.format },
+          { format: this.format },
+          { format: this.format }
+        ]
+      },
+      primitive: { topology: "triangle-list" },
+      depthStencil: { depthWriteEnabled: true, depthCompare: "less", format: "depth24plus" }
+    };
+    this.surfacePipelineAbove = this.device.createRenderPipeline({
+      ...baseDesc,
+      label: "WaterSim S Above",
+      primitive: { topology: "triangle-list", cullMode: "back" }
+    });
+    this.surfacePipelineUnder = this.device.createRenderPipeline({
+      ...baseDesc,
+      label: "WaterSim S Under",
+      primitive: { topology: "triangle-list", cullMode: "front" }
+    });
+    const makeBG = (waterView) => this.device.createBindGroup({
+      layout: this.surfaceBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.commonUniformBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } },
+        { binding: 2, resource: { buffer: this.lightUniformBuffer } },
+        { binding: 3, resource: this.sampler },
+        { binding: 4, resource: waterView },
+        { binding: 5, resource: this.floorSampler },
+        { binding: 6, resource: this.floorTexture.createView() },
+        { binding: 7, resource: this.causticsTexture.createView() }
+      ]
+    });
+    this._surfaceBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
+  }
+  _createCausticsPipeline() {
+    const vsModule = this.device.createShaderModule({ label: "WaterSim Caustics VS", code: causticsVertShader });
+    const fsModule = this.device.createShaderModule({ label: "WaterSim Caustics FS", code: causticsFragShader });
+    this.causticsPipeline = this.device.createRenderPipeline({
+      label: "WaterSim Caustics Pipeline",
+      layout: "auto",
+      vertex: {
+        module: vsModule,
+        entryPoint: "vs_main",
+        buffers: [{ arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] }]
+      },
+      fragment: {
+        module: fsModule,
+        entryPoint: "fs_main",
+        targets: [{
+          format: "rgba8unorm",
+          blend: {
+            color: { operation: "add", srcFactor: "one", dstFactor: "one" },
+            alpha: { operation: "add", srcFactor: "one", dstFactor: "one" }
+          }
+        }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    const makeBG = (waterView) => this.device.createBindGroup({
+      layout: this.causticsPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this.lightUniformBuffer } },
+        { binding: 1, resource: { buffer: this.waterUniformBuffer } },
+        { binding: 2, resource: this.sampler },
+        { binding: 3, resource: waterView }
+      ]
+    });
+    this._causticsBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
+  }
+  // -- public API ---------------------------------------------------------
+  /** Queue a ripple; consumed on the next simulate() call. x/z in [-1, 1]. */
+  addDrop(x3, z2, radius = 0.03, strength = 0.01) {
+    this._dropQueue.push({ x: x3, z: z2, radius, strength });
+  }
+  /** Stamp water displacement from a moving sphere; consumed on next simulate(). */
+  stampSphere(oldCenter, newCenter, radius) {
+    this._sphereStamp = { oldCenter, newCenter, radius };
+  }
+  setLightDirection(x3, y3, z2) {
+    this.lightDirection = [x3, y3, z2];
+    this._writeLightUniforms();
+  }
+  updateWaterParameters({ ior, fresnelMin, causticIntensity, poolHeight } = {}) {
+    if (ior !== void 0) this.ior = ior;
+    if (fresnelMin !== void 0) this.fresnelMin = fresnelMin;
+    if (causticIntensity !== void 0) this.causticIntensity = causticIntensity;
+    if (poolHeight !== void 0) this.poolHeight = poolHeight;
+    this._writeWaterUniforms();
+  }
+  /**
+   * Runs all simulation + caustics passes for this frame. Call once per
+   * frame BEFORE world.js opens its main render pass. Pass your own
+   * commandEncoder to fold this into an existing frame submission, or omit
+   * it and the effect will create+submit its own single encoder.
+   */
+  simulate(commandEncoder) {
+    const encoder = commandEncoder ?? this.device.createCommandEncoder({ label: "WaterSim Frame" });
+    for (const drop of this._dropQueue) {
+      this._runSimPass(
+        encoder,
+        this.dropPipeline,
+        new Float32Array([drop.x, drop.z, drop.radius, drop.strength])
+      );
+    }
+    this._dropQueue.length = 0;
+    if (this._sphereStamp) {
+      const { oldCenter, newCenter, radius } = this._sphereStamp;
+      this._runSimPass(encoder, this.spherePipeline, new Float32Array([
+        oldCenter[0],
+        oldCenter[1],
+        oldCenter[2],
+        radius,
+        newCenter[0],
+        newCenter[1],
+        newCenter[2],
+        0
+      ]));
+      this._sphereStamp = null;
+    }
+    const delta = new Float32Array([1 / this.width, 1 / this.height]);
+    this._runSimPass(encoder, this.updatePipeline, delta);
+    this._runSimPass(encoder, this.updatePipeline, delta);
+    this._runSimPass(encoder, this.normalPipeline, delta);
+    this._runCausticsPass(encoder);
+    if (!commandEncoder) this.device.queue.submit([encoder.finish()]);
+  }
+  _runSimPass(encoder, pipelineObj, uniformData) {
+    this.device.queue.writeBuffer(pipelineObj.uniformBuffer, 0, uniformData);
+    const writeView = this._physViews[1 - this._parity];
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [{
+        view: writeView,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    });
+    pass.setPipeline(pipelineObj.pipeline);
+    pass.setBindGroup(0, pipelineObj.bindGroups[this._parity]);
+    pass.draw(6);
+    pass.end();
+    this._parity = 1 - this._parity;
+  }
+  _runCausticsPass(encoder) {
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [{
+        view: this.causticsTexture.createView(),
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    });
+    pass.setPipeline(this.causticsPipeline);
+    pass.setBindGroup(0, this._causticsBindGroups[this._parity]);
+    pass.setVertexBuffer(0, this.positionBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint32");
+    pass.drawIndexed(this.indexCount);
+    pass.end();
+  }
+  render(pass, mesh, viewProjMatrix) {
+    const eye = this._lastEye ?? [0, 5, 5];
+    this.data.set(viewProjMatrix, 0);
+    this.data.set(eye, 16);
+    this.device.queue.writeBuffer(this.commonUniformBuffer, 0, this.data);
+    pass.setPipeline(this.surfacePipelineAbove);
+    pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
+    pass.setVertexBuffer(0, this.positionBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint32");
+    pass.drawIndexed(this.indexCount);
+    pass.setPipeline(this.surfacePipelineUnder);
+    pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
+    pass.drawIndexed(this.indexCount);
+  }
+  setEyePosition(pos2) {
+    this._lastEye = pos2;
+  }
+};
+
 // examples/water-effect.js
 var loadWaterEffects = function() {
   let waterEffect = new MatrixEngineWGPU({
@@ -58462,10 +59245,11 @@ var loadWaterEffects = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: "firstPersonCamera",
+      type: "WASD",
+      // 'firstPersonCamera',
       responseCoef: 1e3
     },
-    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+    clearColor: { r: 0, b: 0, g: 0, a: 1 }
   }, () => {
     waterEffect.addLight();
     downloadMeshes(
@@ -58477,31 +59261,12 @@ var loadWaterEffects = function() {
     addRaycastsAABBListener("canvas1", "click");
     function onGround(m2) {
       waterEffect.addMeshObj({
-        material: { type: "standard", share: true },
+        material: { type: "mirror", share: true },
         position: { x: 0, y: -5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: ["./res/textures/floor1.webp"],
-        //, './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: "floor",
-        mesh: m2.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
-    }
-    async function onLoadObj(m2) {
-      let MYCUBE = waterEffect.addMeshObj({
-        material: { type: "water" },
-        position: { x: 0, y: 4, z: -10 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 1, z: 0 },
-        scale: [3, 5, 1],
         texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
-        name: "cube",
-        mesh: m2.cube,
+        name: "floor",
         envMapParams: {
           baseColorMix: 0.1,
           // CLEAR SKY
@@ -58521,6 +59286,42 @@ var loadWaterEffects = function() {
           usePlanarReflection: false
           // Must be false - WIP
         },
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    async function onLoadObj(m2) {
+      let MAT_WATER = waterEffect.addMeshObj({
+        material: { type: "water" },
+        position: { x: -10, y: 4, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [5, 1, 5],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        useBlend: true,
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      let MAT_EFFECT_WATER = waterEffect.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 1, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [5, 5, 5],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        useBlend: true,
+        mesh: m2.cube,
         raycast: { enabled: true, radius: 1 },
         physics: {
           enabled: false,
@@ -58528,9 +59329,7 @@ var loadWaterEffects = function() {
           geometry: "Cube"
         },
         pointerEffect: {
-          enabled: true,
-          flameEmitter: true,
-          bloodBurst: true
+          enabled: true
         }
       });
       waterEffect.lightContainer[0].setIntensity(15);
@@ -58544,20 +59343,10 @@ var loadWaterEffects = function() {
       waterEffect.lightContainer[0].setPosition(0, 15, -10);
       waterEffect.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(waterEffect.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
-        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
-        MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566,
-          0.21125441598805741,
-          0.4249951687253338,
-          0.4724163587305734,
-          2.381811753816671,
-          3.074841196886901,
-          -2.3797025623904164,
-          -3.4608908819087145
-        ]);
-        MYCUBE.setAmbient(2, 3, 0.5);
+        MAT_EFFECT_WATER.setBlend(1e-3);
+        MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(waterEffect.device, "rgba16float", void 0, app.cameraBuffer);
+        app.MAT_WATER = MAT_WATER;
+        MAT_WATER.updateWaterParams([0, 1, 10], [0, 1, 2], 8, 1, 2, 0.1, 0.5);
         let cam2 = app.getCamera();
         cam2.setYaw(-0.03);
         cam2.setPitch(-0.49);
@@ -58570,10 +59359,7 @@ var loadWaterEffects = function() {
     waterEffect.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.effects.waterEffect.addDrop(0.5, 0.5);
       }
     });
   });

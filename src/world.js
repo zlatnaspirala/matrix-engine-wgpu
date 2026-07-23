@@ -1257,6 +1257,13 @@ export default class MatrixEngineWGPU {
         if(mesh.update) mesh.update(now2);
         if(mesh.isVideo) mesh.updateVideoTexture();
         if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
+
+        if(mesh.effects) {
+          for(const effectName in mesh.effects) {
+            const effect = mesh.effects[effectName];
+            effect.simulate?.(commandEncoder);
+          }
+        }
       }
 
       this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;

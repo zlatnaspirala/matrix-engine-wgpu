@@ -3,6 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
+import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
 
 export var loadWaterEffects = function() {
 
@@ -13,10 +14,10 @@ export var loadWaterEffects = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: 'firstPersonCamera',
+      type: 'WASD',// 'firstPersonCamera',
       responseCoef: 1000
     },
-    clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
+    clearColor: {r: 0, b: 0, g: 0, a: 1}
   }, () => {
 
     waterEffect.addLight();
@@ -29,32 +30,12 @@ export var loadWaterEffects = function() {
 
     function onGround(m) {
       waterEffect.addMeshObj({
-        material: {type: 'standard', share: true},
+        material: {type: 'mirror', share: true},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp'], //, './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'floor',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      })
-    }
-
-    async function onLoadObj(m) {
-      // material: {type: 'mirror', share: true }, share: true if not defined it is false.
-      let MYCUBE = waterEffect.addMeshObj({
-        material: {type: 'water'},
-        position: {x: 0, y: 4, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 1, z: 0},
-        scale: [3, 5, 1],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'cube',
-        mesh: m.cube,
+        name: 'floor',
         envMapParams: {
           baseColorMix: 0.1,                // CLEAR SKY
           mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
@@ -66,6 +47,44 @@ export var loadWaterEffects = function() {
           envLodBias: 1.5,
           usePlanarReflection: false,       // Must be false - WIP
         },
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      })
+    }
+
+    async function onLoadObj(m) {
+      let MAT_WATER = waterEffect.addMeshObj({
+        material: {type: 'water'},
+        position: {x: -10, y: 4, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [5, 1, 5],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'cube',
+        mesh: m.cube,
+        useBlend: true,
+        raycast: {enabled: true, radius: 1},
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      })
+
+      let MAT_EFFECT_WATER = waterEffect.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 1, z: 0},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [5, 5, 5],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'cube',
+        useBlend: true,
+        mesh: m.cube,
         raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,
@@ -74,8 +93,6 @@ export var loadWaterEffects = function() {
         },
         pointerEffect: {
           enabled: true,
-          flameEmitter: true,
-          bloodBurst: true
         }
       })
 
@@ -91,16 +108,22 @@ export var loadWaterEffects = function() {
       waterEffect.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(waterEffect.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
-        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-        MYCUBE.effects.flameEmitter.rotSpeed = 1;
 
-        // Nice fire tourch effect.
-        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-          0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+         MAT_EFFECT_WATER.setBlend(0.001);
+         MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(waterEffect.device, 'rgba16float', undefined, app.cameraBuffer);
+        // // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+        // MAT_WATER.effects.flameEmitter.rotSpeed = 1;
 
-        MYCUBE.setAmbient(2, 3, 0.5);
+        // // Nice fire tourch effect.
+        // MAT_WATER.effects.flameEmitter.recreateVertexDataFromData([
+        //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
+        //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+
+        // MAT_WATER.setAmbient(2, 3, 0.5);
+        app.MAT_WATER = MAT_WATER;
+
+        MAT_WATER.updateWaterParams([0, 1, 10], [0, 1, 2], 8, 1, 2, 0.1, 0.5);
+
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
@@ -115,10 +138,7 @@ export var loadWaterEffects = function() {
     waterEffect.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
-        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
+        e.detail.hitObject.effects.waterEffect.addDrop(0.5,0.5);
       }
     });
 
