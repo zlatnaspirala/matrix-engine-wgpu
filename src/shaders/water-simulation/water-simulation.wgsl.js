@@ -138,30 +138,23 @@ fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
 `;
 
 export const surfaceVertShader = `
-
-// struct CommonUniforms {
-//   viewProjectionMatrix : mat4x4f,
-//   eyePosition : vec3f,
-// }
-
 struct Camera {
-    viewProj : mat4x4<f32>,
+  viewProj : mat4x4<f32>
 };
 
-@group(0) @binding(0)
-var<uniform> camera : Camera;
+@group(0) @binding(0) var<uniform> camera : Camera;
 
 struct ModelData {
-    model : mat4x4<f32>,
-    eyePosition : vec4<f32>,
+  model : mat4x4<f32>,
+  eyePosition : vec4<f32>
 };
 
 struct CommonUniforms {
-    viewProjectionMatrix : mat4x4f,
-    eyePosition : vec3f,
+  viewProjectionMatrix : mat4x4f,
+  eyePosition : vec3f,
 }
 
-@binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
+// @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
 @binding(1) @group(0) var<uniform> modelData : ModelData;
 @binding(3) @group(0) var waterSampler : sampler;
 @binding(4) @group(0) var waterTexture : texture_2d<f32>;
@@ -315,73 +308,103 @@ fn fs_main(@location(0) localPos : vec3f, @location(1) worldPos : vec3f) -> Frag
 }`;
 
 export const causticsVertShader = `
+struct ModelData {
+    model : mat4x4<f32>,
+    eyePosition : vec4<f32>
+};
+
 struct LightUniforms {
-  direction : vec3f,
+    direction : vec3f,
 }
+
 struct WaterUniforms {
-  ior : f32,
-  fresnelMin : f32,
-  causticIntensity : f32,
-  poolHeight : f32,
+    ior : f32,
+    fresnelMin : f32,
+    causticIntensity : f32,
+    poolHeight : f32,
 }
+
 @binding(0) @group(0) var<uniform> light : LightUniforms;
 @binding(1) @group(0) var<uniform> waterUniforms : WaterUniforms;
 @binding(2) @group(0) var waterSampler : sampler;
 @binding(3) @group(0) var waterTexture : texture_2d<f32>;
+@binding(4) @group(0) var<uniform> modelData : ModelData;
 
 struct VertexOutput {
-  @builtin(position) position : vec4f,
-  @location(0) oldPos : vec3f,
-  @location(1) newPos : vec3f,
-  @location(2) ray : vec3f,
+    @builtin(position) position : vec4f,
+    @location(0) oldPos : vec3f,
+    @location(1) newPos : vec3f,
+    @location(2) ray : vec3f,
 }
 
 fn project(origin : vec3f, ray : vec3f, refractedLight : vec3f) -> vec3f {
-  let tplane = (-waterUniforms.poolHeight - origin.y) / ray.y;
-  return origin + ray * tplane;
+    let tplane = (-waterUniforms.poolHeight - origin.y) / ray.y;
+    return origin + ray * tplane;
 }
 
 @vertex
 fn vs_main(@location(0) position : vec3f) -> VertexOutput {
-  var output : VertexOutput;
-  let uv = position.xz * 0.5 + 0.5;
+    var output : VertexOutput;
+    let uv = position.xz * 0.5 + 0.5;
 
-  let info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
-  let ba = info.ba * 0.5;
-  let normal = vec3f(ba.x, sqrt(max(0.0, 1.0 - dot(ba, ba))), ba.y);
+    let info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
+    let ba = info.ba * 0.5;
+    
+    // Transform normal by the model matrix rotation/scale component
+    let localNormal = vec3f(ba.x, sqrt(max(0.0, 1.0 - dot(ba, ba))), ba.y);
+    let normal = normalize((modelData.model * vec4f(localNormal, 0.0)).xyz);
 
-  let IOR_AIR = 1.0;
-  let lightDir = normalize(light.direction);
+    let IOR_AIR = 1.0;
+    let lightDir = normalize(light.direction);
 
-  let refractedLight = refract(-lightDir, vec3f(0.0, 1.0, 0.0), IOR_AIR / waterUniforms.ior);
-  let ray = refract(-lightDir, normal, IOR_AIR / waterUniforms.ior);
+    let refractedLight = refract(-lightDir, vec3f(0.0, 1.0, 0.0), IOR_AIR / waterUniforms.ior);
+    let ray = refract(-lightDir, normal, IOR_AIR / waterUniforms.ior);
 
-  let pos = vec3f(position.x, 0.0, position.z);
+    // Base local position flattened at y = 0
+    let localPos = vec3f(position.x, 0.0, position.z);
+    
+    // Displace vertex height by texture info.r
+    let localPosDisplaced = vec3f(position.x, info.r, position.z);
 
-  output.oldPos = project(pos, refractedLight, refractedLight);
-  output.newPos = project(pos + vec3f(0.0, info.r, 0.0), ray, refractedLight);
-  output.ray = ray;
+    // Transform positions into world space using modelData.model
+    let worldOrigin = (modelData.model * vec4f(localPos, 1.0)).xyz;
+    let worldDisplaced = (modelData.model * vec4f(localPosDisplaced, 1.0)).xyz;
 
-  let projectedPos = 0.75 * (output.newPos.xz - output.newPos.y * refractedLight.xz / refractedLight.y);
-  output.position = vec4f(projectedPos.x, -projectedPos.y, 0.0, 1.0);
-  return output;
+    output.oldPos = project(worldOrigin, refractedLight, refractedLight);
+    output.newPos = project(worldDisplaced, ray, refractedLight);
+    output.ray = ray;
+
+    let projectedPos = 0.75 * (output.newPos.xz - output.newPos.y * refractedLight.xz / refractedLight.y);
+    output.position = vec4f(projectedPos.x, -projectedPos.y, 0.0, 1.0);
+    return output;
 }
 `;
 
 export const causticsFragShader = `
 struct WaterUniforms {
-  ior : f32,
-  fresnelMin : f32,
-  causticIntensity : f32,
-  poolHeight : f32,
+    ior : f32,
+    fresnelMin : f32,
+    causticIntensity : f32,
+    poolHeight : f32,
 }
 @binding(1) @group(0) var<uniform> waterUniforms : WaterUniforms;
 
 @fragment
-fn fs_main(@location(0) oldPos : vec3f, @location(1) newPos : vec3f, @location(2) ray : vec3f) -> @location(0) vec4f {
-  let oldArea = length(dpdx(oldPos)) * length(dpdy(oldPos));
-  let newArea = length(dpdx(newPos)) * length(dpdy(newPos));
-  let intensity = oldArea / newArea * waterUniforms.causticIntensity;
-  return vec4f(intensity, 1.0, 0.0, 1.0);
+fn fs_main(
+    @location(0) oldPos : vec3f, 
+    @location(1) newPos : vec3f, 
+    @location(2) ray : vec3f
+) -> @location(0) vec4f {
+    // Screen-space derivatives track how adjacent fragments spread out,
+    // which determines light compression (caustic intensity concentration).
+    let oldArea = length(dpdx(oldPos)) * length(dpdy(oldPos));
+    let newArea = length(dpdx(newPos)) * length(dpdy(newPos));
+    
+    // Prevent division by zero or extreme numerical instability
+    let safeNewArea = max(newArea, 0.00001);
+    
+    let intensity = (oldArea / safeNewArea) * waterUniforms.causticIntensity;
+    
+    return vec4f(intensity, 1.0, 0.0, 1.0);
 }
 `;

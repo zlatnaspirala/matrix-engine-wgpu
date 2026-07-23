@@ -378,7 +378,8 @@ export class WaterSimEffect {
         {binding: 0, resource: {buffer: this.lightUniformBuffer}},
         {binding: 1, resource: {buffer: this.waterUniformBuffer}},
         {binding: 2, resource: this.sampler},
-        {binding: 3, resource: waterView}
+        {binding: 3, resource: waterView},
+        {binding: 4, resource: this.modelBuffer}
       ]
     });
     this._causticsBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
