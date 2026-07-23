@@ -77,7 +77,7 @@ export var loadWaterEffects = function() {
 
       let MAT_EFFECT_WATER = waterEffect.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 10, y: 1, z: 0},
+        position: {x: 0, y: 1, z: 0},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [5, 5, 5],
