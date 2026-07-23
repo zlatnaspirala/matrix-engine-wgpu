@@ -286,14 +286,15 @@ export class WaterSimEffect {
     this.surfaceBindGroupLayout = this.device.createBindGroupLayout({
       label: 'WaterSim Surface BGL',
       entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
-        {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
-        {binding: 3, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, sampler: {}},
-        {binding: 4, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: {}},
-        {binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
-        {binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: {}},
-        {binding: 7, visibility: GPUShaderStage.FRAGMENT, texture: {}}
+        {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}, // commonUniforms
+        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}, // modelData
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}, // light
+        {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}, // waterUniforms
+        {binding: 4, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, sampler: {}},
+        {binding: 5, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: {}},
+        {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
+        {binding: 7, visibility: GPUShaderStage.FRAGMENT, texture: {}},
+        {binding: 8, visibility: GPUShaderStage.FRAGMENT, texture: {}}
       ]
     });
 
@@ -310,7 +311,14 @@ export class WaterSimEffect {
       },
       fragment: {
         module: fsModule, entryPoint: 'fs_main', targets: [
-          {format: this.format}, {format: this.format}, {format: this.format}
+          {
+            format: this.format, blend: {
+              color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+              alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'}
+            }
+          },
+          {format: this.format}, // normal
+          {format: this.format}  // worldPos
         ]
       },
       primitive: {topology: 'triangle-list'},
@@ -326,21 +334,18 @@ export class WaterSimEffect {
       primitive: {topology: 'triangle-list', cullMode: 'front'}
     });
 
-    // Ping-pong swaps textureA/textureB references each sim pass, but the
-    // underlying GPUTexture objects never change - so both possible bind
-    // groups can be built once up front and selected by parity, instead of
-    // allocating a fresh bind group after every pass (4-6x per frame).
     const makeBG = (waterView) => this.device.createBindGroup({
       layout: this.surfaceBindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.commonUniformBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
         {binding: 2, resource: {buffer: this.lightUniformBuffer}},
-        {binding: 3, resource: this.sampler},
-        {binding: 4, resource: waterView},
-        {binding: 5, resource: this.floorSampler},
-        {binding: 6, resource: this.floorTexture.createView()},
-        {binding: 7, resource: this.causticsTexture.createView()}
+        {binding: 3, resource: {buffer: this.waterUniformBuffer}},
+        {binding: 4, resource: this.sampler},
+        {binding: 5, resource: waterView},
+        {binding: 6, resource: this.floorSampler},
+        {binding: 7, resource: this.floorTexture.createView()},
+        {binding: 8, resource: this.causticsTexture.createView()}
       ]
     });
     this._surfaceBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];

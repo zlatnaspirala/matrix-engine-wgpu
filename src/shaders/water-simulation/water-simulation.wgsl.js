@@ -154,10 +154,10 @@ struct CommonUniforms {
   eyePosition : vec3f,
 }
 
-// @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
+
 @binding(1) @group(0) var<uniform> modelData : ModelData;
-@binding(3) @group(0) var waterSampler : sampler;
-@binding(4) @group(0) var waterTexture : texture_2d<f32>;
+@binding(4) @group(0) var waterSampler : sampler;
+@binding(5) @group(0) var waterTexture : texture_2d<f32>;
 
 struct VertexOutput {
   @builtin(position) position : vec4f,
@@ -189,6 +189,10 @@ struct CommonUniforms {
   viewProjectionMatrix : mat4x4f,
   eyePosition : vec3f,
 }
+struct ModelData {
+  model : mat4x4<f32>,
+  eyePosition : vec4<f32>
+}
 struct LightUniforms {
   direction : vec3f,
 }
@@ -200,13 +204,14 @@ struct WaterUniforms {
 }
 
 @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
-@binding(1) @group(0) var<uniform> light : LightUniforms;
-@binding(2) @group(0) var<uniform> waterUniforms : WaterUniforms;
-@binding(3) @group(0) var waterSampler : sampler;
-@binding(4) @group(0) var waterTexture : texture_2d<f32>;
-@binding(5) @group(0) var floorSampler : sampler;
-@binding(6) @group(0) var floorTexture : texture_2d<f32>;
-@binding(7) @group(0) var causticsTexture : texture_2d<f32>;
+@binding(1) @group(0) var<uniform> modelData : ModelData;
+@binding(2) @group(0) var<uniform> light : LightUniforms;
+@binding(3) @group(0) var<uniform> waterUniforms : WaterUniforms;
+@binding(4) @group(0) var waterSampler : sampler;
+@binding(5) @group(0) var waterTexture : texture_2d<f32>;
+@binding(6) @group(0) var floorSampler : sampler;
+@binding(7) @group(0) var floorTexture : texture_2d<f32>;
+@binding(8) @group(0) var causticsTexture : texture_2d<f32>;
 
 const IOR_AIR : f32 = 1.0;
 const ABOVEwaterColor : vec3f = vec3f(0.25, 1.0, 1.25);
@@ -252,7 +257,6 @@ struct FragOut {
 @fragment
 fn fs_main(@location(0) localPos : vec3f, @location(1) worldPos : vec3f) -> FragOut {
 
-    // var uv = worldPos.xz * 0.5 + 0.5;
     var uv = localPos.xz * 0.5 + 0.5;
     var info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
 

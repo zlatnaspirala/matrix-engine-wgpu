@@ -4,6 +4,7 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
+import {mat4, vec3} from "wgpu-matrix";
 
 export var loadWaterEffects = function() {
 
@@ -59,7 +60,7 @@ export var loadWaterEffects = function() {
     async function onLoadObj(m) {
       let MAT_WATER = waterEffect.addMeshObj({
         material: {type: 'water'},
-        position: {x: -10, y: 4, z: -10},
+        position: {x: -10, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [5, 1, 5],
@@ -77,10 +78,10 @@ export var loadWaterEffects = function() {
 
       let MAT_EFFECT_WATER = waterEffect.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 1, z: 0},
+        position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [5, 5, 5],
+        scale: [5, 0.1, 5],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         useBlend: true,
@@ -94,7 +95,8 @@ export var loadWaterEffects = function() {
         pointerEffect: {
           enabled: true,
         }
-      })
+      });
+      app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
 
       waterEffect.lightContainer[0].setIntensity(15);
       waterEffect.activateBloomEffect();
@@ -109,8 +111,9 @@ export var loadWaterEffects = function() {
 
       setTimeout(() => {
 
-         MAT_EFFECT_WATER.setBlend(0.001);
-         MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(waterEffect.device, 'rgba16float', undefined, app.cameraBuffer);
+        MAT_EFFECT_WATER.setBlend(0.001);
+        MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(waterEffect.device, 'rgba16float', undefined, app.cameraBuffer);
+
         // // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         // MAT_WATER.effects.flameEmitter.rotSpeed = 1;
 
@@ -136,10 +139,16 @@ export var loadWaterEffects = function() {
     }
 
     waterEffect.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected');
-      if(e.detail.hitObject.name.startsWith('cube')) {
-        e.detail.hitObject.effects.waterEffect.addDrop(0.5,0.5);
-      }
+      console.log('ray.hit.event detected', e.detail);
+      const {hitObject, hitPoint} = e.detail;
+      // if(hitObject.name.startsWith('cube')) return; // guessing this should probably be your water mesh's name, not 'cube' — see note below
+
+      // const water = hitObject.effects.waterEffect;
+      const water = app.MAT_EFFECT_WATER.effects.waterEffect;
+      const invModel = mat4.invert(hitObject._modelMatrix); // or baseModelMatrix, whatever the mesh actually carries
+      const local = vec3.transformMat4(hitPoint, invModel);
+      console.log('local', local, 'invModel ok?', !Number.isNaN(local[0]));
+      water.addDrop(local[0], local[2], 0.1, 1);
     });
 
   })

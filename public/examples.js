@@ -58601,10 +58601,10 @@ struct CommonUniforms {
   eyePosition : vec3f,
 }
 
-// @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
+
 @binding(1) @group(0) var<uniform> modelData : ModelData;
-@binding(3) @group(0) var waterSampler : sampler;
-@binding(4) @group(0) var waterTexture : texture_2d<f32>;
+@binding(4) @group(0) var waterSampler : sampler;
+@binding(5) @group(0) var waterTexture : texture_2d<f32>;
 
 struct VertexOutput {
   @builtin(position) position : vec4f,
@@ -58635,6 +58635,10 @@ struct CommonUniforms {
   viewProjectionMatrix : mat4x4f,
   eyePosition : vec3f,
 }
+struct ModelData {
+  model : mat4x4<f32>,
+  eyePosition : vec4<f32>
+}
 struct LightUniforms {
   direction : vec3f,
 }
@@ -58646,13 +58650,14 @@ struct WaterUniforms {
 }
 
 @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
-@binding(1) @group(0) var<uniform> light : LightUniforms;
-@binding(2) @group(0) var<uniform> waterUniforms : WaterUniforms;
-@binding(3) @group(0) var waterSampler : sampler;
-@binding(4) @group(0) var waterTexture : texture_2d<f32>;
-@binding(5) @group(0) var floorSampler : sampler;
-@binding(6) @group(0) var floorTexture : texture_2d<f32>;
-@binding(7) @group(0) var causticsTexture : texture_2d<f32>;
+@binding(1) @group(0) var<uniform> modelData : ModelData;
+@binding(2) @group(0) var<uniform> light : LightUniforms;
+@binding(3) @group(0) var<uniform> waterUniforms : WaterUniforms;
+@binding(4) @group(0) var waterSampler : sampler;
+@binding(5) @group(0) var waterTexture : texture_2d<f32>;
+@binding(6) @group(0) var floorSampler : sampler;
+@binding(7) @group(0) var floorTexture : texture_2d<f32>;
+@binding(8) @group(0) var causticsTexture : texture_2d<f32>;
 
 const IOR_AIR : f32 = 1.0;
 const ABOVEwaterColor : vec3f = vec3f(0.25, 1.0, 1.25);
@@ -58698,7 +58703,6 @@ struct FragOut {
 @fragment
 fn fs_main(@location(0) localPos : vec3f, @location(1) worldPos : vec3f) -> FragOut {
 
-    // var uv = worldPos.xz * 0.5 + 0.5;
     var uv = localPos.xz * 0.5 + 0.5;
     var info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
 
@@ -59059,13 +59063,18 @@ var WaterSimEffect = class {
       label: "WaterSim Surface BGL",
       entries: [
         { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        // commonUniforms
         { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        // modelData
         { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        { binding: 3, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, sampler: {} },
-        { binding: 4, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: {} },
-        { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
-        { binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: {} },
-        { binding: 7, visibility: GPUShaderStage.FRAGMENT, texture: {} }
+        // light
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+        // waterUniforms
+        { binding: 4, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, sampler: {} },
+        { binding: 5, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+        { binding: 7, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+        { binding: 8, visibility: GPUShaderStage.FRAGMENT, texture: {} }
       ]
     });
     const layout = this.device.createPipelineLayout({ bindGroupLayouts: [this.surfaceBindGroupLayout] });
@@ -59082,9 +59091,17 @@ var WaterSimEffect = class {
         module: fsModule,
         entryPoint: "fs_main",
         targets: [
+          {
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
           { format: this.format },
-          { format: this.format },
+          // normal
           { format: this.format }
+          // worldPos
         ]
       },
       primitive: { topology: "triangle-list" },
@@ -59106,11 +59123,12 @@ var WaterSimEffect = class {
         { binding: 0, resource: { buffer: this.commonUniformBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } },
         { binding: 2, resource: { buffer: this.lightUniformBuffer } },
-        { binding: 3, resource: this.sampler },
-        { binding: 4, resource: waterView },
-        { binding: 5, resource: this.floorSampler },
-        { binding: 6, resource: this.floorTexture.createView() },
-        { binding: 7, resource: this.causticsTexture.createView() }
+        { binding: 3, resource: { buffer: this.waterUniformBuffer } },
+        { binding: 4, resource: this.sampler },
+        { binding: 5, resource: waterView },
+        { binding: 6, resource: this.floorSampler },
+        { binding: 7, resource: this.floorTexture.createView() },
+        { binding: 8, resource: this.causticsTexture.createView() }
       ]
     });
     this._surfaceBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
@@ -59321,7 +59339,7 @@ var loadWaterEffects = function() {
     async function onLoadObj(m2) {
       let MAT_WATER = waterEffect.addMeshObj({
         material: { type: "water" },
-        position: { x: -10, y: 4, z: -10 },
+        position: { x: -10, y: 2, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         scale: [5, 1, 5],
@@ -59338,10 +59356,10 @@ var loadWaterEffects = function() {
       });
       let MAT_EFFECT_WATER = waterEffect.addMeshObj({
         material: { type: "standard" },
-        position: { x: 0, y: 1, z: 0 },
+        position: { x: 0, y: 2, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [5, 5, 5],
+        scale: [5, 0.1, 5],
         texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
         name: "cube",
         useBlend: true,
@@ -59356,6 +59374,7 @@ var loadWaterEffects = function() {
           enabled: true
         }
       });
+      app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
       waterEffect.lightContainer[0].setIntensity(15);
       waterEffect.activateBloomEffect();
       waterEffect.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
@@ -59381,10 +59400,13 @@ var loadWaterEffects = function() {
       }, 700);
     }
     waterEffect.canvas.addEventListener("ray.hit.event", (e2) => {
-      console.log("ray.hit.event detected");
-      if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.effects.waterEffect.addDrop(0.5, 0.5);
-      }
+      console.log("ray.hit.event detected", e2.detail);
+      const { hitObject, hitPoint } = e2.detail;
+      const water = app.MAT_EFFECT_WATER.effects.waterEffect;
+      const invModel = mat4Impl.invert(hitObject._modelMatrix);
+      const local2 = vec3Impl.transformMat4(hitPoint, invModel);
+      console.log("local", local2, "invModel ok?", !Number.isNaN(local2[0]));
+      water.addDrop(local2[0], local2[2], 0.1, 1);
     });
   });
   window.app = waterEffect;
