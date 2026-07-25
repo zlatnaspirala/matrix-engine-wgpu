@@ -58527,10 +58527,10 @@ fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
 
 if (abs(info.g) < 0.0001) {  info.g = 0.0;}
 if (abs(info.r) < 0.0001) {  info.r = 0.0;}
-  let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-  let edgeFalloff = smoothstep(0.0, 0.04, edgeDist);
-  info.r *= edgeFalloff;
-  info.g *= edgeFalloff;
+  // let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  // let edgeFalloff = smoothstep(0.0, 0.04, edgeDist);
+  // info.r *= edgeFalloff;
+  // info.g *= edgeFalloff;
   return info;
 }
 `;
@@ -58607,7 +58607,6 @@ struct CommonUniforms {
   eyePosition : vec3f,
 }
 
-
 @binding(1) @group(0) var<uniform> modelData : ModelData;
 @binding(4) @group(0) var waterSampler : sampler;
 @binding(5) @group(0) var waterTexture : texture_2d<f32>;
@@ -58629,13 +58628,8 @@ fn vs_main(@location(0) position : vec3f) -> VertexOutput {
   output.worldPos = worldPos.xyz;
   output.position = camera.viewProj * worldPos;
   output.localPos = pos;
-  // var pos = position;
-  // pos.y = info.r;
-  // output.worldPos = pos;
-  // output.position = commonUniforms.viewProjectionMatrix * vec4f(pos, 1.0);
   return output;
-}
-`;
+}`;
 var surfaceFragShader = `
 struct CommonUniforms {
   viewProjectionMatrix : mat4x4f,
@@ -58654,6 +58648,9 @@ struct WaterUniforms {
   causticIntensity : f32,
   poolHeight : f32,
   halfSize : f32,
+  posX : f32,
+  posY : f32,
+  posZ : f32,
 }
 
 @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
@@ -58684,7 +58681,12 @@ fn skyColor(ray : vec3f) -> vec3f {
 fn floorColor(origin : vec3f, ray : vec3f) -> vec3f {
   let t = (-waterUniforms.poolHeight - origin.y) / ray.y;
   let hit = origin + ray * t;
-  let uv = (hit.xz / waterUniforms.halfSize) * 0.5 + 0.5;  // renormalize world hit back to -1..1
+  
+  // Subtract model position offset stored in water uniforms
+  let modelTranslation = vec2f(waterUniforms.posX, waterUniforms.posZ);
+  let localHitXZ = hit.xz - modelTranslation;
+  
+  let uv = (localHitXZ / waterUniforms.halfSize) * 0.5 + 0.5;  
   var color = textureSampleLevel(floorTexture, floorSampler, uv, 0.0).rgb;
   let caustic = textureSampleLevel(causticsTexture, waterSampler, uv, 0.0);
   color *= 1.0 + caustic.r * 2.0 * caustic.g;
@@ -58717,7 +58719,6 @@ for (var i = 0; i < 4; i++) {
     uv += info.ba * 0.005;
     info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
 }
-// return FragOut(vec4f(info.r * 50.0 + 0.5, info.r * 50.0 + 0.5, info.r * 50.0 + 0.5, 1.0), vec4f(0,1,0,0), vec4f(worldPos,1.0));
 
 let ba = vec2f(info.b, info.a);
 let normal = vec3f(
@@ -58851,7 +58852,7 @@ var WaterSimEffect = class {
     this.height = options2.height ?? SIM_RES;
     this.size = options2.size ?? 10;
     this.detail = options2.detail ?? 200;
-    this.poolHeight = options2.poolHeight ?? 1;
+    this.poolHeight = options2.poolHeight ?? 0.1;
     this.ior = options2.ior ?? 1.333;
     this.fresnelMin = options2.fresnelMin ?? 0.25;
     this.causticIntensity = options2.causticIntensity ?? 0.3;
@@ -58879,10 +58880,30 @@ var WaterSimEffect = class {
     this.indexCount = indexCount;
     this._indexFormat = indexFormat;
   }
+  // updateInstanceData(baseModelMatrix) {
+  // mat4.identity(this._localMatrix);
+  // // mat4.scale(this._localMatrix, [this.size, 1, this.size], this._localMatrix);
+  // // mat4.scale(this._localMatrix, [1, 1, 1], this._localMatrix);
+  // mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
+  // this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
   updateInstanceData(baseModelMatrix) {
     mat4Impl.identity(this._localMatrix);
     mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
+    const posX = this._finalMatrix[12];
+    const posY = this._finalMatrix[13];
+    const posZ = this._finalMatrix[14];
+    this.data2.set([
+      this.ior,
+      this.fresnelMin,
+      this.causticIntensity,
+      this.poolHeight,
+      this.size,
+      posX,
+      posY,
+      posZ
+    ]);
+    this.device.queue.writeBuffer(this.waterUniformBuffer, 0, this.data2);
   }
   _createTextures() {
     const texDesc = {
@@ -59220,7 +59241,7 @@ var WaterSimEffect = class {
     pass.setPipeline(this.causticsPipeline);
     pass.setBindGroup(0, this._causticsBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint32");
+    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? "uint32");
     pass.drawIndexed(this.indexCount);
     pass.end();
   }
@@ -59232,7 +59253,7 @@ var WaterSimEffect = class {
     pass.setPipeline(this.surfacePipelineAbove);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint32");
+    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? "uint32");
     pass.drawIndexed(this.indexCount);
     pass.setPipeline(this.surfacePipelineUnder);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
@@ -59270,13 +59291,14 @@ var loadWaterEffects = function() {
     async function onLoadObj(m2) {
       var glbFile01 = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, waterEffect.device)));
       let MONSTER = waterEffect.addGlbObj({
-        material: { type: "water", shared: false, useTextureFromGlb: true },
+        material: { type: "power", shared: false, useTextureFromGlb: true },
         useScale: true,
         scale: [20, 20, 20],
-        position: { x: 0, y: -7, z: -150 },
+        position: { x: 0, y: -13, z: -20 },
         name: "firstGlb",
         texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
       }, null, glbFile01)[0];
+      MONSTER.playAnimationByName("walk");
       let MAT_EFFECT_WATER = waterEffect.addMeshObj({
         material: { type: "standard" },
         position: { x: 10, y: 0, z: 0 },
@@ -59298,22 +59320,29 @@ var loadWaterEffects = function() {
         }
       });
       app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
-      waterEffect.lightContainer[0].setIntensity(15);
+      app.MONSTER = MONSTER;
+      waterEffect.lightContainer[0].setIntensity(2);
       waterEffect.activateBloomEffect();
-      waterEffect.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-      waterEffect.lightContainer[0].behavior.value_ = -1;
-      waterEffect.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      });
-      waterEffect.lightContainer[0].setPosition(0, 15, -10);
+      waterEffect.lightContainer[0].setPosition(0, 25, -10);
       waterEffect.lightContainer[0].setTarget(0, 0, -10);
+      app.MONSTER.position.thrust = 0.1;
+      let oldCenter = [0, 0, 0];
+      function followMe(currentTime) {
+        const newCenter = [
+          MONSTER.position.x,
+          MONSTER.position.y,
+          MONSTER.position.z
+        ];
+        const radius = 10.5;
+        this.my.stampSphere(oldCenter, newCenter, radius);
+        oldCenter = [...newCenter];
+      }
       setTimeout(() => {
         MAT_EFFECT_WATER.setBlend(1e-3);
         MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(waterEffect.device, "rgba16float", {
-          size: 10
+          size: 50
         }, app.cameraBuffer);
-        MONSTER.updateWaterParams([0, 1, 10], [0, 1, 2], 8, 1, 2, 0.1, 0.5);
+        waterEffect.autoUpdate.push({ update: followMe, my: MAT_EFFECT_WATER.effects.waterEffect });
         let cam2 = app.getCamera();
         cam2.setYaw(-0.03);
         cam2.setPitch(-0.49);
@@ -59330,7 +59359,7 @@ var loadWaterEffects = function() {
       const invModel = mat4Impl.invert(hitObject._modelMatrix);
       const local2 = vec3Impl.transformMat4(hitPoint, invModel);
       console.log("local coords (should be roughly -1..1):", local2);
-      water.addDrop(local2[0], local2[2], 0.03, 0.5);
+      water.stampSphere(local2, local2);
     });
   });
   window.app = waterEffect;

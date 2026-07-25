@@ -37,7 +37,7 @@ export class WaterSimEffect {
     this.height = options.height ?? SIM_RES;
     this.size = options.size ?? 10; // world-space plane size (edge length)
     this.detail = options.detail ?? 200; // grid subdivisions
-    this.poolHeight = options.poolHeight ?? 1.0;
+    this.poolHeight = options.poolHeight ?? 0.10;
 
     this.ior = options.ior ?? 1.333;
     this.fresnelMin = options.fresnelMin ?? 0.25;
@@ -73,13 +73,38 @@ export class WaterSimEffect {
     this._indexFormat = indexFormat;
   }
 
+  // updateInstanceData(baseModelMatrix) {
+  // mat4.identity(this._localMatrix);
+  // // mat4.scale(this._localMatrix, [this.size, 1, this.size], this._localMatrix);
+  // // mat4.scale(this._localMatrix, [1, 1, 1], this._localMatrix);
+  // mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
+  // this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
+
+
   updateInstanceData(baseModelMatrix) {
     mat4.identity(this._localMatrix);
-    // mat4.scale(this._localMatrix, [this.size, 1, this.size], this._localMatrix);
-    // mat4.scale(this._localMatrix, [1, 1, 1], this._localMatrix);
     mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
+
+    // Extract world translation from the 4x4 matrix (column 3: indices 12, 13, 14)
+    const posX = this._finalMatrix[12];
+    const posY = this._finalMatrix[13];
+    const posZ = this._finalMatrix[14];
+
+    // Update water uniforms with current parameters + world position
+    this.data2.set([
+      this.ior,
+      this.fresnelMin,
+      this.causticIntensity,
+      this.poolHeight,
+      this.size,
+      posX,
+      posY,
+      posZ
+    ]);
+    this.device.queue.writeBuffer(this.waterUniformBuffer, 0, this.data2);
   }
+
 
   _createTextures() {
     const texDesc = {
@@ -284,7 +309,7 @@ export class WaterSimEffect {
             }
           },
           {format: this.format},
-          {format: this.format} 
+          {format: this.format}
         ]
       },
       primitive: {topology: 'triangle-list'},
@@ -379,42 +404,6 @@ export class WaterSimEffect {
 
   simulate(commandEncoder) {
     const encoder = commandEncoder ?? this.device.createCommandEncoder({label: 'WaterSim Frame'});
-
-    //     const hadInput = this._dropQueue.length > 0 || this._sphereStamp !== null;
-
-    //     for(const drop of this._dropQueue) {
-    //       this._runSimPass(encoder, this.dropPipeline,
-    //         new Float32Array([drop.x, drop.z, drop.radius, drop.strength]));
-    //     }
-    //     this._dropQueue.length = 0;
-
-    //     if(this._sphereStamp) {
-    //       const {oldCenter, newCenter, radius} = this._sphereStamp;
-    //       this._runSimPass(encoder, this.spherePipeline, new Float32Array([
-    //         oldCenter[0], oldCenter[1], oldCenter[2], radius,
-    //         newCenter[0], newCenter[1], newCenter[2], 0
-    //       ]));
-    //       this._sphereStamp = null;
-    //     }
-
-    //     if(hadInput) this._idleFrames = 0;
-    //     else this._idleFrames++;
-
-    //     if(this._idleFrames < this._idleThreshold) {
-    //   const delta = new Float32Array([1 / this.width, 1 / this.height]);
-    //   this._runSimPass(encoder, this.updatePipeline, delta);
-    //   // Taper: only run the smoothing 2nd pass while there's still meaningfully
-    //   // fresh motion. This makes the last ~100 frames before freeze converge
-    //   // toward "already basically still" instead of "visibly moving, then stopped."
-    //   if(this._idleFrames < this._idleThreshold - 100) {
-    //     this._runSimPass(encoder, this.updatePipeline, delta);
-    //   }
-    //   this._runSimPass(encoder, this.normalPipeline, delta);
-    //   this._runCausticsPass(encoder);
-    // }
-
-
-
     for(const drop of this._dropQueue) {
       this._runSimPass(encoder, this.dropPipeline,
         new Float32Array([drop.x, drop.z, drop.radius, drop.strength]));
@@ -430,7 +419,7 @@ export class WaterSimEffect {
     }
     const delta = new Float32Array([1 / this.width, 1 / this.height]);
     this._runSimPass(encoder, this.updatePipeline, delta);
-    this._runSimPass(encoder, this.updatePipeline, delta); // 2x per frame, smoother waves
+    this._runSimPass(encoder, this.updatePipeline, delta);
     this._runSimPass(encoder, this.normalPipeline, delta);
     this._runCausticsPass(encoder);
 
@@ -465,7 +454,8 @@ export class WaterSimEffect {
     pass.setPipeline(this.causticsPipeline);
     pass.setBindGroup(0, this._causticsBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint32');
+    // pass.setIndexBuffer(this.indexBuffer, 'uint32');
+    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? 'uint32');
     pass.drawIndexed(this.indexCount);
     pass.end();
   }
@@ -478,7 +468,7 @@ export class WaterSimEffect {
     pass.setPipeline(this.surfacePipelineAbove);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, 'uint32');
+    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? 'uint32');
     pass.drawIndexed(this.indexCount);
     pass.setPipeline(this.surfacePipelineUnder);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);

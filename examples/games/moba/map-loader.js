@@ -34,7 +34,7 @@ export class MEMapLoader {
     this.loadNavMesh(navMapPath).then((e) => {
       console.log(`%cnavMap loaded.${e}`, LOG_FUNNY_SMALL);
       this.core.RPG.nav = e;
-      this.loadMainMap(); // <-- FIXED
+      this.loadMainMap();
     });
   }
 

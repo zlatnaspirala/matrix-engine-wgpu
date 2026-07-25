@@ -75,10 +75,10 @@ fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
 
 if (abs(info.g) < 0.0001) {  info.g = 0.0;}
 if (abs(info.r) < 0.0001) {  info.r = 0.0;}
-  let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-  let edgeFalloff = smoothstep(0.0, 0.04, edgeDist);
-  info.r *= edgeFalloff;
-  info.g *= edgeFalloff;
+  // let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  // let edgeFalloff = smoothstep(0.0, 0.04, edgeDist);
+  // info.r *= edgeFalloff;
+  // info.g *= edgeFalloff;
   return info;
 }
 `;
@@ -160,7 +160,6 @@ struct CommonUniforms {
   eyePosition : vec3f,
 }
 
-
 @binding(1) @group(0) var<uniform> modelData : ModelData;
 @binding(4) @group(0) var waterSampler : sampler;
 @binding(5) @group(0) var waterTexture : texture_2d<f32>;
@@ -182,13 +181,8 @@ fn vs_main(@location(0) position : vec3f) -> VertexOutput {
   output.worldPos = worldPos.xyz;
   output.position = camera.viewProj * worldPos;
   output.localPos = pos;
-  // var pos = position;
-  // pos.y = info.r;
-  // output.worldPos = pos;
-  // output.position = commonUniforms.viewProjectionMatrix * vec4f(pos, 1.0);
   return output;
-}
-`;
+}`;
 
 export const surfaceFragShader = `
 struct CommonUniforms {
@@ -208,6 +202,9 @@ struct WaterUniforms {
   causticIntensity : f32,
   poolHeight : f32,
   halfSize : f32,
+  posX : f32,
+  posY : f32,
+  posZ : f32,
 }
 
 @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
@@ -238,7 +235,12 @@ fn skyColor(ray : vec3f) -> vec3f {
 fn floorColor(origin : vec3f, ray : vec3f) -> vec3f {
   let t = (-waterUniforms.poolHeight - origin.y) / ray.y;
   let hit = origin + ray * t;
-  let uv = (hit.xz / waterUniforms.halfSize) * 0.5 + 0.5;  // renormalize world hit back to -1..1
+  
+  // Subtract model position offset stored in water uniforms
+  let modelTranslation = vec2f(waterUniforms.posX, waterUniforms.posZ);
+  let localHitXZ = hit.xz - modelTranslation;
+  
+  let uv = (localHitXZ / waterUniforms.halfSize) * 0.5 + 0.5;  
   var color = textureSampleLevel(floorTexture, floorSampler, uv, 0.0).rgb;
   let caustic = textureSampleLevel(causticsTexture, waterSampler, uv, 0.0);
   color *= 1.0 + caustic.r * 2.0 * caustic.g;
@@ -271,7 +273,6 @@ for (var i = 0; i < 4; i++) {
     uv += info.ba * 0.005;
     info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
 }
-// return FragOut(vec4f(info.r * 50.0 + 0.5, info.r * 50.0 + 0.5, info.r * 50.0 + 0.5, 1.0), vec4f(0,1,0,0), vec4f(worldPos,1.0));
 
 let ba = vec2f(info.b, info.a);
 let normal = vec3f(
