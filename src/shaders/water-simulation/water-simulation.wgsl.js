@@ -70,9 +70,15 @@ fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
   ) * 0.25;
 
   info.g += (average - info.r) * 2.0;
-  info.g *= 0.995;
+  info.g *= 0.98;
   info.r += info.g;
 
+if (abs(info.g) < 0.0001) {  info.g = 0.0;}
+if (abs(info.r) < 0.0001) {  info.r = 0.0;}
+  let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  let edgeFalloff = smoothstep(0.0, 0.04, edgeDist);
+  info.r *= edgeFalloff;
+  info.g *= edgeFalloff;
   return info;
 }
 `;
@@ -201,6 +207,7 @@ struct WaterUniforms {
   fresnelMin : f32,
   causticIntensity : f32,
   poolHeight : f32,
+  halfSize : f32,
 }
 
 @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
@@ -231,7 +238,7 @@ fn skyColor(ray : vec3f) -> vec3f {
 fn floorColor(origin : vec3f, ray : vec3f) -> vec3f {
   let t = (-waterUniforms.poolHeight - origin.y) / ray.y;
   let hit = origin + ray * t;
-  let uv = hit.xz * 0.5 + 0.5;
+  let uv = (hit.xz / waterUniforms.halfSize) * 0.5 + 0.5;  // renormalize world hit back to -1..1
   var color = textureSampleLevel(floorTexture, floorSampler, uv, 0.0).rgb;
   let caustic = textureSampleLevel(causticsTexture, waterSampler, uv, 0.0);
   color *= 1.0 + caustic.r * 2.0 * caustic.g;
@@ -257,82 +264,78 @@ struct FragOut {
 @fragment
 fn fs_main(@location(0) localPos : vec3f, @location(1) worldPos : vec3f) -> FragOut {
 
-    var uv = localPos.xz * 0.5 + 0.5;
-    var info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
+var uv = localPos.xz * 0.5 + 0.5;
+var info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
 
-    for (var i = 0; i < 4; i++) {
-        uv += info.ba * 0.005;
-        info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
-    }
+for (var i = 0; i < 4; i++) {
+    uv += info.ba * 0.005;
+    info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
+}
+// return FragOut(vec4f(info.r * 50.0 + 0.5, info.r * 50.0 + 0.5, info.r * 50.0 + 0.5, 1.0), vec4f(0,1,0,0), vec4f(worldPos,1.0));
 
-    let ba = vec2f(info.b, info.a);
-    let normal = vec3f(
-        info.b,
-        sqrt(max(0.0, 1.0 - dot(ba, ba))),
-        info.a
-    );
+let ba = vec2f(info.b, info.a);
+let normal = vec3f(
+    info.b,
+    sqrt(max(0.0, 1.0 - dot(ba, ba))),
+    info.a
+);
 
-    let incomingRay  = normalize(worldPos - commonUniforms.eyePosition);
-    let reflectedRay = reflect(incomingRay, normal);
-    let refractedRay = refract(
-        incomingRay,
-        normal,
-        IOR_AIR / waterUniforms.ior
-    );
+let incomingRay  = normalize(worldPos - commonUniforms.eyePosition);
+let reflectedRay = reflect(incomingRay, normal);
+let refractedRay = refract(
+  incomingRay,
+  normal,
+  IOR_AIR / waterUniforms.ior
+);
 
-    let fresnel = mix(
-        waterUniforms.fresnelMin,
-        1.0,
-        pow(1.0 - dot(normal, -incomingRay), 3.0)
-    );
+let fresnel = mix(
+  waterUniforms.fresnelMin,
+  1.0,
+  pow(1.0 - dot(normal, -incomingRay), 3.0)
+);
 
-    let reflectedColor = surfaceRayColor(
-        worldPos,
-        reflectedRay,
-        ABOVEwaterColor
-    );
+let reflectedColor = surfaceRayColor(
+  worldPos,
+  reflectedRay,
+  ABOVEwaterColor
+);
 
-    let refractedColor = surfaceRayColor(
-        worldPos,
-        refractedRay,
-        ABOVEwaterColor
-    );
+let refractedColor = surfaceRayColor(
+  worldPos,
+  refractedRay,
+  ABOVEwaterColor
+);
 
-    let finalColor = mix(
-        refractedColor,
-        reflectedColor,
-        fresnel
-    );
+let finalColor = mix(
+  refractedColor,
+  reflectedColor,
+  fresnel
+);
 
-    return FragOut(
-        vec4f(finalColor, 1.0),
-        vec4f(normalize(normal), 0.0),
-        vec4f(worldPos, 1.0)
-    );
+return FragOut(
+  vec4f(finalColor, 1.0),
+  vec4f(normalize(normal), 0.0),
+  vec4f(worldPos, 1.0)
+);
 }`;
 
 export const causticsVertShader = `
-struct ModelData {
-    model : mat4x4<f32>,
-    eyePosition : vec4<f32>
-};
-
 struct LightUniforms {
-    direction : vec3f,
+  direction : vec3f,
 }
 
 struct WaterUniforms {
-    ior : f32,
-    fresnelMin : f32,
-    causticIntensity : f32,
-    poolHeight : f32,
+  ior : f32,
+  fresnelMin : f32,
+  causticIntensity : f32,
+  poolHeight : f32,
+  halfSize : f32,
 }
 
 @binding(0) @group(0) var<uniform> light : LightUniforms;
 @binding(1) @group(0) var<uniform> waterUniforms : WaterUniforms;
 @binding(2) @group(0) var waterSampler : sampler;
 @binding(3) @group(0) var waterTexture : texture_2d<f32>;
-@binding(4) @group(0) var<uniform> modelData : ModelData;
 
 struct VertexOutput {
     @builtin(position) position : vec4f,
@@ -350,34 +353,23 @@ fn project(origin : vec3f, ray : vec3f, refractedLight : vec3f) -> vec3f {
 fn vs_main(@location(0) position : vec3f) -> VertexOutput {
     var output : VertexOutput;
     let uv = position.xz * 0.5 + 0.5;
-
     let info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
-    let ba = info.ba * 0.5;
-    
-    // Transform normal by the model matrix rotation/scale component
-    let localNormal = vec3f(ba.x, sqrt(max(0.0, 1.0 - dot(ba, ba))), ba.y);
-    let normal = normalize((modelData.model * vec4f(localNormal, 0.0)).xyz);
-
+    let ba = vec2f(info.b, info.a);
+    var normal = vec3f(
+        info.b,
+        sqrt(max(0.0, 1.0 - dot(ba, ba))),
+        info.a
+    );
+    normal = normalize(vec3f(normal.x / waterUniforms.halfSize, normal.y, normal.z / waterUniforms.halfSize));
     let IOR_AIR = 1.0;
     let lightDir = normalize(light.direction);
-
     let refractedLight = refract(-lightDir, vec3f(0.0, 1.0, 0.0), IOR_AIR / waterUniforms.ior);
     let ray = refract(-lightDir, normal, IOR_AIR / waterUniforms.ior);
-
-    // Base local position flattened at y = 0
     let localPos = vec3f(position.x, 0.0, position.z);
-    
-    // Displace vertex height by texture info.r
     let localPosDisplaced = vec3f(position.x, info.r, position.z);
-
-    // Transform positions into world space using modelData.model
-    let worldOrigin = (modelData.model * vec4f(localPos, 1.0)).xyz;
-    let worldDisplaced = (modelData.model * vec4f(localPosDisplaced, 1.0)).xyz;
-
-    output.oldPos = project(worldOrigin, refractedLight, refractedLight);
-    output.newPos = project(worldDisplaced, ray, refractedLight);
+    output.oldPos = project(localPos, refractedLight, refractedLight);
+    output.newPos = project(localPosDisplaced, ray, refractedLight);
     output.ray = ray;
-
     let projectedPos = 0.75 * (output.newPos.xz - output.newPos.y * refractedLight.xz / refractedLight.y);
     output.position = vec4f(projectedPos.x, -projectedPos.y, 0.0, 1.0);
     return output;
@@ -390,25 +382,16 @@ struct WaterUniforms {
     fresnelMin : f32,
     causticIntensity : f32,
     poolHeight : f32,
+ 
 }
 @binding(1) @group(0) var<uniform> waterUniforms : WaterUniforms;
 
 @fragment
-fn fs_main(
-    @location(0) oldPos : vec3f, 
-    @location(1) newPos : vec3f, 
-    @location(2) ray : vec3f
-) -> @location(0) vec4f {
-    // Screen-space derivatives track how adjacent fragments spread out,
-    // which determines light compression (caustic intensity concentration).
-    let oldArea = length(dpdx(oldPos)) * length(dpdy(oldPos));
-    let newArea = length(dpdx(newPos)) * length(dpdy(newPos));
-    
-    // Prevent division by zero or extreme numerical instability
-    let safeNewArea = max(newArea, 0.00001);
-    
-    let intensity = (oldArea / safeNewArea) * waterUniforms.causticIntensity;
-    
-    return vec4f(intensity, 1.0, 0.0, 1.0);
+fn fs_main(@location(0) oldPos : vec3f, @location(1) newPos : vec3f, @location(2) ray : vec3f) -> @location(0) vec4f {
+  let oldArea = length(dpdx(oldPos)) * length(dpdy(oldPos));
+  let newArea = length(dpdx(newPos)) * length(dpdy(newPos));
+  let safeNewArea = max(newArea, 0.00001);
+  let intensity = (oldArea / safeNewArea) * waterUniforms.causticIntensity;
+  return vec4f(intensity, 1.0, 0.0, 1.0);
 }
 `;

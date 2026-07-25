@@ -5,6 +5,7 @@ import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
 import {mat4, vec3} from "wgpu-matrix";
+import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 
 export var loadWaterEffects = function() {
 
@@ -25,65 +26,76 @@ export var loadWaterEffects = function() {
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
-    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
+    // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 1, 30]})
 
     addRaycastsAABBListener('canvas1', 'click');
 
     function onGround(m) {
-      waterEffect.addMeshObj({
-        material: {type: 'mirror', share: true},
-        position: {x: 0, y: -5, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'floor',
-        envMapParams: {
-          baseColorMix: 0.1,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.75,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 1.5,          // Gentle rim
-          illuminatePulse: 0.1,             // No pulse (static)
-          fresnelPower: 5,                  // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // Must be false - WIP
-        },
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      })
+      // waterEffect.addMeshObj({
+      //   material: {type: 'mirror', share: true},
+      //   position: {x: 0, y: -5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+      //   name: 'floor',
+      //   envMapParams: {
+      //     baseColorMix: 0.1,                // CLEAR SKY
+      //     mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+      //     reflectivity: 0.75,               // 25% reflection blend
+      //     illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+      //     illuminateStrength: 1.5,          // Gentle rim
+      //     illuminatePulse: 0.1,             // No pulse (static)
+      //     fresnelPower: 5,                  // Medium-sharp edge
+      //     envLodBias: 1.5,
+      //     usePlanarReflection: false,       // Must be false - WIP
+      //   },
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // })
     }
 
     async function onLoadObj(m) {
-      let MAT_WATER = waterEffect.addMeshObj({
-        material: {type: 'water'},
-        position: {x: -10, y: 2, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [5, 1, 5],
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'cube',
-        mesh: m.cube,
-        useBlend: true,
-        raycast: {enabled: true, radius: 1},
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      })
+
+      var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, waterEffect.device)));
+      let MONSTER = waterEffect.addGlbObj({
+        material: {type: 'water', shared: false,  useTextureFromGlb: true},
+        useScale: true,
+        scale: [20, 20, 20],
+        position: {x: 0, y: -7, z: -150},
+        name: 'firstGlb',
+        texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
+      }, null, glbFile01)[0];
+
+      // let MAT_WATER = waterEffect.addMeshObj({
+      //   material: {type: 'water', shared: false},
+      //   position: {x: -30, y: 2, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   scale: [5, 1, 5],
+      //   texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+      //   name: 'cube',
+      //   mesh: m.ball,
+      //   useBlend: true,
+      //   raycast: {enabled: true, radius: 1},
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // })
 
       let MAT_EFFECT_WATER = waterEffect.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 0, y: 2, z: -10},
+        position: {x: 10, y: 0, z: 0},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [5, 0.1, 5],
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'cube',
+        scale: [50, 1, 50],
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'waterEffect',
         useBlend: true,
         mesh: m.cube,
         raycast: {enabled: true, radius: 1},
@@ -112,20 +124,22 @@ export var loadWaterEffects = function() {
       setTimeout(() => {
 
         MAT_EFFECT_WATER.setBlend(0.001);
-        MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(waterEffect.device, 'rgba16float', undefined, app.cameraBuffer);
+        MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(waterEffect.device, 'rgba16float', {
+          size: 10
+        }, app.cameraBuffer);
 
         // // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         // MAT_WATER.effects.flameEmitter.rotSpeed = 1;
-
         // // Nice fire tourch effect.
         // MAT_WATER.effects.flameEmitter.recreateVertexDataFromData([
         //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
         //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
 
         // MAT_WATER.setAmbient(2, 3, 0.5);
-        app.MAT_WATER = MAT_WATER;
+        // app.MAT_WATER = MAT_WATER;
 
-        MAT_WATER.updateWaterParams([0, 1, 10], [0, 1, 2], 8, 1, 2, 0.1, 0.5);
+        MONSTER.updateWaterParams([0, 1, 10], [0, 1, 2], 8, 1, 2, 0.1, 0.5);
+        // MAT_WATER.updateWaterParams([0, 1, 10], [0, 1, 2], 8, 1, 2, 0.1, 0.5);
 
         let cam = app.getCamera();
         cam.setYaw(-0.03);
@@ -147,8 +161,8 @@ export var loadWaterEffects = function() {
       const water = app.MAT_EFFECT_WATER.effects.waterEffect;
       const invModel = mat4.invert(hitObject._modelMatrix); // or baseModelMatrix, whatever the mesh actually carries
       const local = vec3.transformMat4(hitPoint, invModel);
-      console.log('local', local, 'invModel ok?', !Number.isNaN(local[0]));
-      water.addDrop(local[0], local[2], 0.1, 1);
+        console.log('local coords (should be roughly -1..1):', local);
+      water.addDrop(local[0], local[2], 0.03, 0.5);
     });
 
   })

@@ -11,30 +11,7 @@ import {
   causticsFragShader
 } from "../../shaders/water-simulation/water-simulation.wgsl";
 
-
 // WaterSimEffect
-// --------------
-// GPU heightfield water simulation + raytraced-style surface render, ported
-// from jeantimex/webgpu-water (itself a WGSL port of Evan Wallace's WebGL
-// Water) onto the beast's standalone effect interface.
-//
-// Unlike KaleidoscopeEffect (single draw call per frame), this effect needs
-// several off-screen render passes (drop / update / normal / sphere-stamp /
-// caustics) BEFORE the main scene pass begins, because you can't nest or
-// retarget render passes once world.js's main pass is open. So the effect
-// exposes two entry points instead of one:
-//
-//   waterEffect.simulate(commandEncoder)   // call once per frame, BEFORE
-//                                          // world.js begins its main pass
-//   waterEffect.render(pass, mesh, vp)     // call inside mesh.effects loop,
-//                                          // like any other effect
-//
-// All sim passes share ONE commandEncoder/submit per frame (the original
-// demo submits 5x per frame - drop/update x2/normal/caustics - which is
-// exactly the kind of multi-submit stall pattern that shows up as spikes
-// in a Chrome trace). Pass your own frame encoder in if you already have
-// one open for other GPU work, otherwise the effect creates+submits its own.
-//
 // Usage:
 //   const water = new WaterSimEffect(device, format, {
 //     size: 20,            // world-space width/height of the water plane
@@ -48,8 +25,8 @@ import {
 //   water.addDrop(x, z, 0.03, 0.02);
 //   water.stampSphere(oldCenter, newCenter, radius);
 
-const SIM_RES = 256;
-
+// const SIM_RES = 256;
+const SIM_RES = 512;
 export class WaterSimEffect {
   constructor(device, format, options = {}) {
     this.device = device;
@@ -58,7 +35,7 @@ export class WaterSimEffect {
 
     this.width = options.width ?? SIM_RES;
     this.height = options.height ?? SIM_RES;
-    this.size = options.size ?? 2; // world-space plane size (edge length)
+    this.size = options.size ?? 10; // world-space plane size (edge length)
     this.detail = options.detail ?? 200; // grid subdivisions
     this.poolHeight = options.poolHeight ?? 1.0;
 
@@ -75,6 +52,10 @@ export class WaterSimEffect {
     this._localMatrix = mat4.create();
     this._finalMatrix = mat4.create();
     this.data = new Float32Array(20);
+    this.data2 = new Float32Array(8);
+
+    this._idleFrames = 0;
+    this._idleThreshold = 90; // ~1.5s at 60fps before considering it "settled"
 
     this._createTextures();
     this._createSampler();
@@ -85,28 +66,19 @@ export class WaterSimEffect {
     this._createCausticsPipeline();
   }
 
-  // -- setup ------------------------------------------------------------
+  useExternalGeometry(positionBuffer, indexBuffer, indexCount, indexFormat = 'uint32') {
+    this.positionBuffer = positionBuffer;
+    this.indexBuffer = indexBuffer;
+    this.indexCount = indexCount;
+    this._indexFormat = indexFormat;
+  }
 
   updateInstanceData(baseModelMatrix) {
-
     mat4.identity(this._localMatrix);
-
-    // later:
-    // mat4.translate(...)
-    // mat4.rotateY(...)
-    // mat4.scale(...)
-
-    mat4.multiply(
-      baseModelMatrix,
-      this._localMatrix,
-      this._finalMatrix
-    );
-
-    this.device.queue.writeBuffer(
-      this.modelBuffer,
-      0,
-      this._finalMatrix
-    );
+    // mat4.scale(this._localMatrix, [this.size, 1, this.size], this._localMatrix);
+    // mat4.scale(this._localMatrix, [1, 1, 1], this._localMatrix);
+    mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
   }
 
   _createTextures() {
@@ -124,7 +96,7 @@ export class WaterSimEffect {
 
     this.causticsTexture = this.device.createTexture({
       label: 'WaterSim Caustics',
-      size: [1024, 1024],
+      size: [512, 512],
       format: 'rgba8unorm',
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
     });
@@ -155,7 +127,6 @@ export class WaterSimEffect {
   }
 
   _createUniformBuffers(options) {
-    // commonUniforms: viewProjectionMatrix (mat4) + eyePosition (vec3) + pad
     this.commonUniformBuffer = this.device.createBuffer({
       label: 'WaterSim Common Uniforms',
       size: 80,
@@ -168,13 +139,11 @@ export class WaterSimEffect {
     });
     this.waterUniformBuffer = this.device.createBuffer({
       label: 'WaterSim Water Uniforms',
-      size: 16,
+      size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-
     this._writeLightUniforms();
     this._writeWaterUniforms();
-
     this.floorSampler = options.floorSampler ?? this.device.createSampler({
       magFilter: 'linear', minFilter: 'linear',
       addressModeU: 'repeat', addressModeV: 'repeat'
@@ -190,8 +159,8 @@ export class WaterSimEffect {
   }
 
   _writeWaterUniforms() {
-    this.device.queue.writeBuffer(this.waterUniformBuffer, 0,
-      new Float32Array([this.ior, this.fresnelMin, this.causticIntensity, this.poolHeight]));
+    this.data2.set([this.ior, this.fresnelMin, this.causticIntensity, this.poolHeight, this.size, 0, 0, 0]);
+    this.device.queue.writeBuffer(this.waterUniformBuffer, 0, this.data2);
   }
 
   _createSimPipelines() {
@@ -236,15 +205,14 @@ export class WaterSimEffect {
 
   _createSurfaceMesh() {
     const detail = this.detail;
-    const half = this.size * 0.5;
+    // const half = this.size * 0.5;
     const positions = [];
     const indices = [];
-
     for(let z = 0;z <= detail;z++) {
       const t = z / detail;
       for(let x = 0;x <= detail;x++) {
         const s = x / detail;
-        positions.push((2 * s - 1) * half, 0, (2 * t - 1) * half);
+        positions.push(2 * s - 1, 0, 2 * t - 1);
       }
     }
     for(let z = 0;z < detail;z++) {
@@ -254,11 +222,9 @@ export class WaterSimEffect {
         indices.push(i + detail + 1, i + 1, i + detail + 2);
       }
     }
-
     this.indexCount = indices.length;
-
     this.positionBuffer = this.device.createBuffer({
-      label: 'WaterSim Surface Vertices',
+      label: 'WaterSim Surface V',
       size: positions.length * 4,
       usage: GPUBufferUsage.VERTEX,
       mappedAtCreation: true
@@ -267,7 +233,7 @@ export class WaterSimEffect {
     this.positionBuffer.unmap();
 
     this.indexBuffer = this.device.createBuffer({
-      label: 'WaterSim Surface Indices',
+      label: 'WaterSim Surface Indice',
       size: indices.length * 4,
       usage: GPUBufferUsage.INDEX,
       mappedAtCreation: true
@@ -278,7 +244,7 @@ export class WaterSimEffect {
 
   _createSurfacePipelines() {
     this.modelBuffer = this.device.createBuffer({
-      label: "WaterSim Model Buffer",
+      label: "WaterSim Model Buff",
       size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
@@ -286,10 +252,10 @@ export class WaterSimEffect {
     this.surfaceBindGroupLayout = this.device.createBindGroupLayout({
       label: 'WaterSim Surface BGL',
       entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}, // commonUniforms
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}, // modelData
-        {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}, // light
-        {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}, // waterUniforms
+        {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+        {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
         {binding: 4, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, sampler: {}},
         {binding: 5, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: {}},
         {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
@@ -317,8 +283,8 @@ export class WaterSimEffect {
               alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'}
             }
           },
-          {format: this.format}, // normal
-          {format: this.format}  // worldPos
+          {format: this.format},
+          {format: this.format} 
         ]
       },
       primitive: {topology: 'triangle-list'},
@@ -331,6 +297,8 @@ export class WaterSimEffect {
     });
     this.surfacePipelineUnder = this.device.createRenderPipeline({
       ...baseDesc, label: 'WaterSim S Under',
+      // primitive: {topology: 'triangle-list', cullMode: 'front'},
+      depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'},
       primitive: {topology: 'triangle-list', cullMode: 'front'}
     });
 
@@ -356,7 +324,7 @@ export class WaterSimEffect {
     const fsModule = this.device.createShaderModule({label: 'WaterSim Caustics FS', code: causticsFragShader});
 
     this.causticsPipeline = this.device.createRenderPipeline({
-      label: 'WaterSim Caustics Pipeline',
+      label: 'WaterSim Caustics',
       layout: 'auto',
       vertex: {
         module: vsModule,
@@ -376,28 +344,22 @@ export class WaterSimEffect {
       },
       primitive: {topology: 'triangle-list'}
     });
-
     const makeBG = (waterView) => this.device.createBindGroup({
       layout: this.causticsPipeline.getBindGroupLayout(0),
       entries: [
         {binding: 0, resource: {buffer: this.lightUniformBuffer}},
         {binding: 1, resource: {buffer: this.waterUniformBuffer}},
         {binding: 2, resource: this.sampler},
-        {binding: 3, resource: waterView},
-        {binding: 4, resource: this.modelBuffer}
+        {binding: 3, resource: waterView}
       ]
     });
     this._causticsBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
   }
 
-  // -- public API ---------------------------------------------------------
-
-  /** Queue a ripple; consumed on the next simulate() call. x/z in [-1, 1]. */
   addDrop(x, z, radius = 0.03, strength = 0.01) {
     this._dropQueue.push({x, z, radius, strength});
   }
 
-  /** Stamp water displacement from a moving sphere; consumed on next simulate(). */
   stampSphere(oldCenter, newCenter, radius) {
     this._sphereStamp = {oldCenter, newCenter, radius};
   }
@@ -415,21 +377,49 @@ export class WaterSimEffect {
     this._writeWaterUniforms();
   }
 
-  /**
-   * Runs all simulation + caustics passes for this frame. Call once per
-   * frame BEFORE world.js opens its main render pass. Pass your own
-   * commandEncoder to fold this into an existing frame submission, or omit
-   * it and the effect will create+submit its own single encoder.
-   */
   simulate(commandEncoder) {
     const encoder = commandEncoder ?? this.device.createCommandEncoder({label: 'WaterSim Frame'});
+
+    //     const hadInput = this._dropQueue.length > 0 || this._sphereStamp !== null;
+
+    //     for(const drop of this._dropQueue) {
+    //       this._runSimPass(encoder, this.dropPipeline,
+    //         new Float32Array([drop.x, drop.z, drop.radius, drop.strength]));
+    //     }
+    //     this._dropQueue.length = 0;
+
+    //     if(this._sphereStamp) {
+    //       const {oldCenter, newCenter, radius} = this._sphereStamp;
+    //       this._runSimPass(encoder, this.spherePipeline, new Float32Array([
+    //         oldCenter[0], oldCenter[1], oldCenter[2], radius,
+    //         newCenter[0], newCenter[1], newCenter[2], 0
+    //       ]));
+    //       this._sphereStamp = null;
+    //     }
+
+    //     if(hadInput) this._idleFrames = 0;
+    //     else this._idleFrames++;
+
+    //     if(this._idleFrames < this._idleThreshold) {
+    //   const delta = new Float32Array([1 / this.width, 1 / this.height]);
+    //   this._runSimPass(encoder, this.updatePipeline, delta);
+    //   // Taper: only run the smoothing 2nd pass while there's still meaningfully
+    //   // fresh motion. This makes the last ~100 frames before freeze converge
+    //   // toward "already basically still" instead of "visibly moving, then stopped."
+    //   if(this._idleFrames < this._idleThreshold - 100) {
+    //     this._runSimPass(encoder, this.updatePipeline, delta);
+    //   }
+    //   this._runSimPass(encoder, this.normalPipeline, delta);
+    //   this._runCausticsPass(encoder);
+    // }
+
+
 
     for(const drop of this._dropQueue) {
       this._runSimPass(encoder, this.dropPipeline,
         new Float32Array([drop.x, drop.z, drop.radius, drop.strength]));
     }
     this._dropQueue.length = 0;
-
     if(this._sphereStamp) {
       const {oldCenter, newCenter, radius} = this._sphereStamp;
       this._runSimPass(encoder, this.spherePipeline, new Float32Array([
@@ -438,12 +428,10 @@ export class WaterSimEffect {
       ]));
       this._sphereStamp = null;
     }
-
     const delta = new Float32Array([1 / this.width, 1 / this.height]);
     this._runSimPass(encoder, this.updatePipeline, delta);
     this._runSimPass(encoder, this.updatePipeline, delta); // 2x per frame, smoother waves
     this._runSimPass(encoder, this.normalPipeline, delta);
-
     this._runCausticsPass(encoder);
 
     if(!commandEncoder) this.device.queue.submit([encoder.finish()]);
@@ -451,7 +439,6 @@ export class WaterSimEffect {
 
   _runSimPass(encoder, pipelineObj, uniformData) {
     this.device.queue.writeBuffer(pipelineObj.uniformBuffer, 0, uniformData);
-
     const writeView = this._physViews[1 - this._parity];
     const pass = encoder.beginRenderPass({
       colorAttachments: [{
@@ -464,9 +451,6 @@ export class WaterSimEffect {
     pass.setBindGroup(0, pipelineObj.bindGroups[this._parity]);
     pass.draw(6);
     pass.end();
-
-    // Flip which physical texture is "current" - no reference swapping, no
-    // bind group rebuilding, just an index flip.
     this._parity = 1 - this._parity;
   }
 
@@ -498,6 +482,8 @@ export class WaterSimEffect {
     pass.drawIndexed(this.indexCount);
     pass.setPipeline(this.surfacePipelineUnder);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
+    // pass.setVertexBuffer(0, this.positionBuffer);   // <- was missing
+    // pass.setIndexBuffer(this.indexBuffer, 'uint32'); // <- was missing
     pass.drawIndexed(this.indexCount);
   }
   setEyePosition(pos) {this._lastEye = pos}
