@@ -6,6 +6,7 @@ import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
+import {followPath, loadNavMesh} from "../src/engine/buildin/navigation-plane/navigation.js";
 
 export var loadWaterEffects = function() {
 
@@ -24,10 +25,13 @@ export var loadWaterEffects = function() {
 
     waterEffect.addLight();
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
-    downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
+    downloadMeshes({
+      ball: "./res/meshes/blender/sphere.obj",
+      cube: "./res/meshes/blender/cube.obj",
+      land: "./res/meshes/maps-objs/map-1.obj",
+    },
       onLoadObj, {scale: [1, 1, 1]})
     // downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 1, 30]})
-
     addRaycastsAABBListener('canvas1', 'click');
 
     function onGround(m) {
@@ -59,18 +63,37 @@ export var loadWaterEffects = function() {
     }
 
     async function onLoadObj(m) {
-
       var glbFile01 = await fetch("res/meshes/glb/monster.glb").then(res => res.arrayBuffer().then(buf => uploadGLBModel(buf, waterEffect.device)));
       let MONSTER = waterEffect.addGlbObj({
         material: {type: 'power', shared: false, useTextureFromGlb: true},
         useScale: true,
-        scale: [20, 20, 20],
-        position: {x: 0, y: -13, z: -20},
+        scale: [10, 10, 10],
+        position: {x: 0, y: -4, z: -20},
         name: 'firstGlb',
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       }, null, glbFile01)[0];
 
-      MONSTER.playAnimationByName('walk')
+      MONSTER.playAnimationByName('walk');
+
+      loadNavMesh("./res/meshes/nav-mesh/navmesh.json").then((r) => {
+        app.nav = r;
+        app.addMeshObj({
+          position: {x: 0, y: -4, z: -10},
+          rotation: {x: 0, y: 0, z: 0},
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          scale: [100, 1, 100],
+          texturesPaths: ['./res/textures/white-metal2.webp'],
+          name: 'ground',
+          mesh: m.cube,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          },
+          raycast: {enabled: true, radius: 1.5}
+        });
+
+      })
       // let MAT_WATER = waterEffect.addMeshObj({
       //   material: {type: 'water', shared: false},
       //   position: {x: -30, y: 2, z: -10},
@@ -123,43 +146,26 @@ export var loadWaterEffects = function() {
       // })
       waterEffect.lightContainer[0].setPosition(0, 25, -10);
       waterEffect.lightContainer[0].setTarget(0, 0, -10);
-
       app.MONSTER.position.thrust = 0.1
-
-      let oldCenter = [0, 0, 0];
-
-      // Inside your animation/render loop:
-      function followMe(currentTime) {
-        // 1. Get your object's current world position (e.g., from your model matrix)
-        const newCenter = [
-          MONSTER.position.x,
-          MONSTER.position.y,
-          MONSTER.position.z
-        ];
-
-        const radius = 10.5; // Size of the sphere interacting with the water
-        // 2. Stamp the sphere into the water simulation
-        this.my.stampSphere(oldCenter, newCenter, radius);
-
-        // 4. Save current center as old center for the next frame
-        oldCenter = [...newCenter];
+      function followMe() {
+        if(MONSTER.position.inMove === false) return;
+        const newWorld = [MONSTER.position.x, MONSTER.position.y, MONSTER.position.z];
+        const newLocal = vec3.transformMat4(newWorld, mat4.invert(this.my._finalMatrix));
+        if(this.my._oldLocal) {
+          this.my.stampSphere(
+            [this.my._oldLocal[0], 0, this.my._oldLocal[2]],
+            [newLocal[0], 0, newLocal[2]],
+            0.5
+          );
+        }
+        this.my._oldLocal = newLocal;
       }
-
-
       setTimeout(() => {
-
-        
-  
-
         MAT_EFFECT_WATER.setBlend(0.001);
         MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(waterEffect.device, 'rgba16float', {
           size: 50
         }, app.cameraBuffer);
-
-
-        waterEffect.autoUpdate.push({update: followMe, my: MAT_EFFECT_WATER.effects.waterEffect })
-
-
+        waterEffect.autoUpdate.push({update: followMe, my: MAT_EFFECT_WATER.effects.waterEffect})
         // // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         // MAT_WATER.effects.flameEmitter.rotSpeed = 1;
         // // Nice fire tourch effect.
@@ -182,20 +188,27 @@ export var loadWaterEffects = function() {
     }
 
     waterEffect.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected', e.detail);
       const {hitObject, hitPoint} = e.detail;
-      // if(hitObject.name.startsWith('cube')) return; // guessing this should probably be your water mesh's name, not 'cube' — see note below
-
-      // const water = hitObject.effects.waterEffect;
-      const water = app.MAT_EFFECT_WATER.effects.waterEffect;
-      const invModel = mat4.invert(hitObject._modelMatrix); // or baseModelMatrix, whatever the mesh actually carries
-      const local = vec3.transformMat4(hitPoint, invModel);
-      console.log('local coords (should be roughly -1..1):', local);
+      console.log('hitObject hitPoint ?',  app.MONSTER.position.z ); // should be true
+      // const water = app.MAT_EFFECT_WATER.effects.waterEffect;
+      // const invModel = mat4.invert(hitObject._modelMatrix); // or baseModelMatrix, whatever the mesh actually carries
+      // const local = vec3.transformMat4(hitPoint, invModel);
+      // console.log('local coords (should be roughly -1..1):', local);
       // water.addDrop(local[0], local[2], 0.03, 0.5);
 
-      water.stampSphere(local, local)
-      // water.useExternalGeometry(app.MONSTER.vertexBuffer, app.MONSTER.indexBuffer, app.MONSTER.indexCount, 'uint16')
-
+      // add deep 
+      let addY = 0;
+       if ( app.MONSTER.position.z < -10 ) addY=addY - 2.5;
+      const start = [app.MONSTER.position.x, app.MONSTER.position.y + addY, app.MONSTER.position.z];
+      const end = [hitPoint[0], hitPoint[1]+ addY, hitPoint[2]];
+      // app.net.send({
+      //   heroName: app.localHero.name,
+      //   sceneName: hero.name,
+      //   followPath: {start: start, end: end},
+      // })
+      const path = app.nav.findPath(start, end);
+      if(!path || path.length === 0) {console.warn('No valid path found.'); return;}
+      followPath(app.MONSTER, path, app);
     });
 
   })

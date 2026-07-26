@@ -399,7 +399,7 @@ export class WaterSimEffect {
     if(fresnelMin !== undefined) this.fresnelMin = fresnelMin;
     if(causticIntensity !== undefined) this.causticIntensity = causticIntensity;
     if(poolHeight !== undefined) this.poolHeight = poolHeight;
-    this._writeWaterUniforms();
+    // this._writeWaterUniforms();
   }
 
   simulate(commandEncoder) {
@@ -411,6 +411,8 @@ export class WaterSimEffect {
     this._dropQueue.length = 0;
     if(this._sphereStamp) {
       const {oldCenter, newCenter, radius} = this._sphereStamp;
+      // console.log(" test oldCenter ", oldCenter)
+      // console.log(" test newCenter ", newCenter)
       this._runSimPass(encoder, this.spherePipeline, new Float32Array([
         oldCenter[0], oldCenter[1], oldCenter[2], radius,
         newCenter[0], newCenter[1], newCenter[2], 0

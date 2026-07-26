@@ -4,7 +4,7 @@
  * @email zlatnaspirala@gmail.com mart 2024-2026
  * @description npm import/export
  * Sync with version 1.16.2
- * @version 1.16.2
+ * @version 1.17.5
  */
 
 import MatrixEngineWGPU from "./src/world.js";
@@ -33,10 +33,13 @@ import {MatrixStream} from "./src/engine/networking/net.js";
 import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "./src/engine/effects/splat.js";
 import {initializeSpritesForMesh, SpritesPack2D} from "./src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "./src/engine/procedures/InstancedKinematicOperations.js";
+import {followPath, loadNavMesh} from "./src/engine/buildin/navigation-plane/navigation.js";
+// deplace src path in future
 import {MatrixTTS} from "./examples/games/moba/tts.js";
+import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
 
 const about = () => {
-  console.info("npm i matrix-engine-wgpu ver 1.16.2 is ready.")
+  console.info("npm i matrix-engine-wgpu ver 1.17.5 is ready.")
   console.info("--------------------------------------------")
   console.info("List of features: ")
   console.info(" - Loading obj files with uvs.")
@@ -85,6 +88,9 @@ export {
   isMobile,
   ORBIT,
   getOrientation,
+  loadNavMesh,
+  followPath,
+  WaterSimEffect,
   KaleidoscopePresets,
   GaussianSplatScene,
   SplatColorAnimator,

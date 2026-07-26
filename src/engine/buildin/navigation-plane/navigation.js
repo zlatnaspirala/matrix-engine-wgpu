@@ -1,4 +1,4 @@
-import {radToDeg} from "../../../src/engine/utils.js";
+import {radToDeg} from "../../utils";
 
 export default class NavMesh {
   constructor(data, options = {}) {
@@ -350,24 +350,20 @@ export class MinHeap {
 
 const ontargetReachEvent = new CustomEvent('onTargetPositionReach', {detail: {name: 'name', body: null}});
 
+export let MIN_DIST = 0.001;
+export let ROTATION_SPEED = 5;
 export function followPath(character, path, core) {
   if(!path || path.length === 0) return;
-
   let idx = 0;
   const pos = character.position;
   const rot = character.rotation;
-  const MIN_DIST = 0.001;
-  const ROTATION_SPEED = 5; // adjust for smoother/slower rotation
 
-  // --- Smoothly rotate toward a target angle ---
   function smoothRotate(current, target, deltaTime) {
     let diff = target - current;
-    // Normalize angle difference to [-180, 180]
     diff = ((diff + 540) % 360) - 180;
     return current + diff * Math.min(1, deltaTime * ROTATION_SPEED);
   }
 
-  // Recursive movement
   function moveToNext() {
     if(idx >= path.length) {
       ontargetReachEvent.detail.name = character.name;
@@ -380,28 +376,22 @@ export function followPath(character, path, core) {
     const dx = target[0] - pos.x;
     const dz = target[2] - pos.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
-    // --- Skip points that are too close ---
     if(dist < MIN_DIST) {
       idx++;
       moveToNext();
       return;
     }
-    // Use actual delta not atan2 of waypoint — avoids flip when overshooting
     const nx = dx / dist;
     const nz = dz / dist;
     let targetAngleY = (radToDeg(Math.atan2(nx, nz)) + 360) % 360;
-
-    // Only rotate if movement is significant
     if(dist > MIN_DIST * 3) {
       const deltaTime = core?.deltaTime || 0.016;
       rot.y = smoothRotate(rot.y, targetAngleY, deltaTime);
     }
-
     pos.translateByXZ(target[0], target[2]);
     character.position.onTargetPositionReach = () => {idx++; moveToNext();};
 
   }
-  // --- Initialize rotation toward the first valid point ---
   const firstTarget = path.find((p) => {
     const dx = p[0] - pos.x;
     const dz = p[2] - pos.z;
@@ -417,78 +407,16 @@ export function followPath(character, path, core) {
   moveToNext();
 }
 
-export function orientHeroToDirection(objectScene, dir) {
-  const flatDir = [dir[0], 0, dir[2]];
-  const len = Math.hypot(flatDir[0], flatDir[2]);
-  if(len < 0.0001) return;
-  flatDir[0] /= len; flatDir[2] /= len;
-  const angle = Math.atan2(flatDir[0], flatDir[2]);
-  objectScene.rotation.y = angle; // in radians ???
-}
-
-export function resolvePairRepulsion(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
-  // Apos and Bpos are Position instances (with x,z,targetX,targetZ)
-  const dx = Bpos.x - Apos.x;
-  const dz = Bpos.z - Apos.z;
-  const distSq = dx * dx + dz * dz;
-  const minDistSq = minDistance * minDistance;
-  if(distSq < minDistSq && distSq > 1e-8) {
-    const dist = Math.sqrt(distSq);
-    const overlap = minDistance - dist;
-    const nx = dx / dist;
-    const nz = dz / dist;
-    const totalPush = overlap * pushStrength;
-    const pushA = totalPush * 0.5;
-    const pushB = totalPush * 0.5;
-    Apos.x -= nx * pushA;
-    Apos.z -= nz * pushA;
-    Bpos.x += nx * pushB;
-    Bpos.z += nz * pushB;
-    // Apos.targetX = Apos.x;
-    // Apos.targetZ = Apos.z;
-    // Bpos.targetX = Bpos.x;
-    // Bpos.targetZ = Bpos.z;
-
-    return true;
-  }
-  // exact overlap (practically same point) -> small jitter to separate
-  if(distSq <= 1e-8) {
-    const jitter = 0.01;
-    Apos.x += (Math.random() - 0.5) * jitter;
-    Apos.z += (Math.random() - 0.5) * jitter;
-    Apos.targetX = Apos.x; Apos.targetZ = Apos.z;
-    return true;
-  }
-  return false;
-}
-
-export function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30.0, pushStrength = 0.5) {
-  const dx = Bpos.x - Apos.x;
-  const dy = Bpos.y - Apos.y;
-  const dz = Bpos.z - Apos.z;
-  const distSq = dx * dx + dy * dy + dz * dz;
-  const minDistSq = minDistance * minDistance;
-  if(distSq < minDistSq && distSq > 1e-8) {
-    const dist = Math.sqrt(distSq);
-    const overlap = minDistance - dist;
-    const push = overlap * pushStrength * 0.5;
-    const inv = push / dist;
-    Apos.x -= dx * inv; Apos.y -= dy * inv; Apos.z -= dz * inv;
-    Bpos.x += dx * inv; Bpos.y += dy * inv; Bpos.z += dz * inv;
-
-    // keep any in-flight target-based movement in sync with the pushed position
-    if(Apos.targetX !== undefined) {Apos.targetX = Apos.x; Apos.targetZ = Apos.z;}
-    if(Bpos.targetX !== undefined) {Bpos.targetX = Bpos.x; Bpos.targetZ = Bpos.z;}
-
-    return true;
-  }
-  if(distSq <= 1e-8) {
-    const j = 0.01;
-    Apos.x += (Math.random() - .5) * j;
-    Apos.y += (Math.random() - .5) * j;
-    Apos.z += (Math.random() - .5) * j;
-    if(Apos.targetX !== undefined) {Apos.targetX = Apos.x; Apos.targetZ = Apos.z;}
-    return true;
-  }
-  return false;
+export async function loadNavMesh(navMapPath, scale = [10, 1, 10]) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch(navMapPath);
+      const navData = await response.json();
+      const nav = new NavMesh(navData, {scale: scale});
+      resolve(nav);
+    } catch(err) {
+      reject(err);
+      throw err;
+    }
+  })
 }

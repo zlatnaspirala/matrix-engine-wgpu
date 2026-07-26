@@ -2,6 +2,8 @@
 ## CHANGES [Started from feb 2026]
 
 [1.16.xx - 1.17.00]
+ - Water simulation effect (part of effects sub system)
+ - Add navigationMesh and followPath class/func to npm export/import
  - Add support for raw bvh (skeletal) implementation.
  - Added video chat/stream plane follow local player and remote player
    for MOBA template - Used streamPlaying to get video elements for networking.

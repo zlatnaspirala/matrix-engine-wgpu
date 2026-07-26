@@ -59179,7 +59179,6 @@ var WaterSimEffect = class {
     if (fresnelMin !== void 0) this.fresnelMin = fresnelMin;
     if (causticIntensity !== void 0) this.causticIntensity = causticIntensity;
     if (poolHeight !== void 0) this.poolHeight = poolHeight;
-    this._writeWaterUniforms();
   }
   simulate(commandEncoder) {
     const encoder = commandEncoder ?? this.device.createCommandEncoder({ label: "WaterSim Frame" });
@@ -59264,6 +59263,419 @@ var WaterSimEffect = class {
   }
 };
 
+// src/engine/buildin/navigation-plane/navigation.js
+var NavMesh = class {
+  constructor(data, options2 = {}) {
+    const scale4 = options2.scale ?? [1, 1, 1];
+    const sx = scale4[0], sy = scale4[1], sz = scale4[2];
+    this.vertices = data.vertices.map((v2) => [
+      v2[0] * sx,
+      v2[1] * sy,
+      v2[2] * sz
+    ]);
+    this.polygons = data.polygons.map((p2) => ({
+      indices: p2.indices.slice(),
+      neighbors: (p2.neighbors || []).slice()
+    }));
+    this._computeCenters();
+    this._buildEdgeMap();
+  }
+  _computeCenters() {
+    this.centers = this.polygons.map((poly) => {
+      const vs2 = poly.indices.map((i2) => this.vertices[i2]);
+      const cx = (vs2[0][0] + vs2[1][0] + vs2[2][0]) / 3;
+      const cy = (vs2[0][1] + vs2[1][1] + vs2[2][1]) / 3;
+      const cz = (vs2[0][2] + vs2[1][2] + vs2[2][2]) / 3;
+      return [cx, cy, cz];
+    });
+  }
+  _edgeKey(a2, b2) {
+    return a2 < b2 ? `${a2}_${b2}` : `${b2}_${a2}`;
+  }
+  _buildEdgeMap() {
+    this.edgeMap = /* @__PURE__ */ new Map();
+    this.polygons.forEach((poly, pi2) => {
+      const indices = poly.indices;
+      for (let i2 = 0; i2 < indices.length; i2++) {
+        const a2 = indices[i2];
+        const b2 = indices[(i2 + 1) % indices.length];
+        const key = this._edgeKey(a2, b2);
+        if (!this.edgeMap.has(key)) this.edgeMap.set(key, []);
+        this.edgeMap.get(key).push({ poly: pi2, a: a2, b: b2 });
+      }
+    });
+  }
+  _pointInTriXZ(pt2, v0, v1, v2) {
+    const x3 = pt2[0], z2 = pt2[2];
+    const ax = v0[0], az = v0[2];
+    const bx = v1[0], bz = v1[2];
+    const cx = v2[0], cz = v2[2];
+    const v0x = cx - ax, v0z = cz - az;
+    const v1x = bx - ax, v1z = bz - az;
+    const v2x = x3 - ax, v2z = z2 - az;
+    const dot00 = v0x * v0x + v0z * v0z;
+    const dot01 = v0x * v1x + v0z * v1z;
+    const dot02 = v0x * v2x + v0z * v2z;
+    const dot11 = v1x * v1x + v1z * v1z;
+    const dot12 = v1x * v2x + v1z * v2z;
+    const denom = dot00 * dot11 - dot01 * dot01;
+    if (Math.abs(denom) < 1e-9) return false;
+    const u2 = (dot11 * dot02 - dot01 * dot12) / denom;
+    const v3 = (dot00 * dot12 - dot01 * dot02) / denom;
+    return u2 >= -1e-6 && v3 >= -1e-6 && u2 + v3 <= 1 + 1e-6;
+  }
+  findPolygonContainingPoint(point) {
+    for (let i2 = 0; i2 < this.polygons.length; i2++) {
+      const poly = this.polygons[i2];
+      const v0 = this.vertices[poly.indices[0]];
+      const v1 = this.vertices[poly.indices[1]];
+      const v2 = this.vertices[poly.indices[2]];
+      if (this._pointInTriXZ(point, v0, v1, v2)) return i2;
+    }
+    return null;
+  }
+  _findPolyPath(startPoly, endPoly) {
+    if (startPoly === endPoly) return [startPoly];
+    const open = new MinHeap((a2, b2) => a2.f - b2.f);
+    const nodes = new Array(this.polygons.length);
+    for (let i2 = 0; i2 < nodes.length; i2++) nodes[i2] = { g: Infinity, h: 0, f: Infinity, parent: -1, id: i2 };
+    nodes[startPoly].g = 0;
+    nodes[startPoly].h = this._heuristic(startPoly, endPoly);
+    nodes[startPoly].f = nodes[startPoly].h;
+    open.push(nodes[startPoly]);
+    const closed = /* @__PURE__ */ new Set();
+    while (!open.empty()) {
+      const current = open.pop();
+      if (current.id === endPoly) {
+        const path2 = [];
+        let cur = current;
+        while (cur) {
+          path2.push(cur.id);
+          if (cur.parent === -1) break;
+          cur = nodes[cur.parent];
+        }
+        return path2.reverse();
+      }
+      closed.add(current.id);
+      const neighbors = this.polygons[current.id].neighbors || [];
+      for (const nId of neighbors) {
+        if (closed.has(nId)) continue;
+        const tentativeG = current.g + this._edgeCost(current.id, nId);
+        const neigh = nodes[nId];
+        if (tentativeG < neigh.g) {
+          neigh.parent = current.id;
+          neigh.g = tentativeG;
+          neigh.h = this._heuristic(nId, endPoly);
+          neigh.f = neigh.g + neigh.h;
+          open.push(neigh);
+        }
+      }
+    }
+    return [];
+  }
+  _heuristic(aIdx, bIdx) {
+    const a2 = this.centers[aIdx];
+    const b2 = this.centers[bIdx];
+    const dx = a2[0] - b2[0];
+    const dz = a2[2] - b2[2];
+    return Math.sqrt(dx * dx + dz * dz);
+  }
+  _edgeCost(aIdx, bIdx) {
+    const a2 = this.centers[aIdx];
+    const b2 = this.centers[bIdx];
+    const dx = a2[0] - b2[0];
+    const dz = a2[2] - b2[2];
+    const dy = Math.abs(a2[1] - b2[1]);
+    const MAX_STEP_Y = 1.5;
+    const yPenalty = dy > MAX_STEP_Y ? 99999 : dy * 3;
+    return Math.sqrt(dx * dx + dz * dz) + yPenalty;
+  }
+  _buildPortals(polyPath, startPoint, endPoint) {
+    const portals = [];
+    for (let i2 = 0; i2 < polyPath.length - 1; i2++) {
+      const aIdx = polyPath[i2];
+      const bIdx = polyPath[i2 + 1];
+      const pa2 = this.polygons[aIdx];
+      let shared = null;
+      for (let ia2 = 0; ia2 < pa2.indices.length; ia2++) {
+        const a0 = pa2.indices[ia2], a1 = pa2.indices[(ia2 + 1) % pa2.indices.length];
+        const key = this._edgeKey(a0, a1);
+        const entries = this.edgeMap.get(key) || [];
+        for (const e2 of entries) {
+          if (e2.poly === bIdx) {
+            shared = [this.vertices[a0], this.vertices[a1]];
+            break;
+          }
+        }
+        if (shared) break;
+      }
+      if (!shared) {
+        const cA = this.centers[aIdx];
+        const cB = this.centers[bIdx];
+        portals.push({ left: cA.slice(), right: cB.slice() });
+      } else {
+        portals.push({ left: shared[0].slice(), right: shared[1].slice() });
+      }
+    }
+    portals.unshift({ left: startPoint.slice(), right: startPoint.slice() });
+    portals.push({ left: endPoint.slice(), right: endPoint.slice() });
+    return portals;
+  }
+  // Funnel algorithm (returns array of [x,y,z])
+  _stringPull(portals) {
+    const portalLeft = portals.map((p2) => [p2.left[0], p2.left[2]]);
+    const portalRight = portals.map((p2) => [p2.right[0], p2.right[2]]);
+    const points = [];
+    let apexIndex = 0, leftIndex = 0, rightIndex = 0;
+    let apex = portalLeft[0].slice();
+    let left2 = portalLeft[0].slice();
+    let right2 = portalRight[0].slice();
+    points.push([apex[0], apex[1]]);
+    function vecCross(a2, b2) {
+      return a2[0] * b2[1] - a2[1] * b2[0];
+    }
+    function sub3(a2, b2) {
+      return [a2[0] - b2[0], a2[1] - b2[1]];
+    }
+    for (let i2 = 1; i2 < portalLeft.length; i2++) {
+      const pLeft = portalLeft[i2];
+      const pRight = portalRight[i2];
+      const relRight = sub3(pRight, apex);
+      const relRightCur = sub3(right2, apex);
+      if (vecCross(relRightCur, relRight) >= 0) {
+        if (vecCross(sub3(left2, apex), relRight) > 0) {
+          points.push([left2[0], left2[1]]);
+          apex = left2.slice();
+          apexIndex = leftIndex;
+          leftIndex = apexIndex;
+          rightIndex = apexIndex;
+          left2 = apex.slice();
+          right2 = apex.slice();
+          i2 = apexIndex;
+          continue;
+        }
+        right2 = pRight.slice();
+        rightIndex = i2;
+      }
+      const relLeft = sub3(pLeft, apex);
+      const relLeftCur = sub3(left2, apex);
+      if (vecCross(relLeftCur, relLeft) <= 0) {
+        if (vecCross(sub3(right2, apex), relLeft) < 0) {
+          points.push([right2[0], right2[1]]);
+          apex = right2.slice();
+          apexIndex = rightIndex;
+          leftIndex = apexIndex;
+          rightIndex = apexIndex;
+          left2 = apex.slice();
+          right2 = apex.slice();
+          i2 = apexIndex;
+          continue;
+        }
+        left2 = pLeft.slice();
+        leftIndex = i2;
+      }
+    }
+    const lastPortal = portalLeft[portalLeft.length - 1];
+    points.push([lastPortal[0], lastPortal[1]]);
+    const out = points.map((xz) => {
+      const x3 = xz[0], z2 = xz[1];
+      const y3 = this._sampleY(x3, z2);
+      return [x3, y3, z2];
+    });
+    return out;
+  }
+  _sampleY(x3, z2) {
+    let bestD = Infinity, bestY = 0;
+    for (let i2 = 0; i2 < this.vertices.length; i2++) {
+      const v2 = this.vertices[i2];
+      const dx = v2[0] - x3, dz = v2[2] - z2;
+      const d2 = dx * dx + dz * dz;
+      if (d2 < bestD) {
+        bestD = d2;
+        bestY = v2[1];
+      }
+    }
+    return bestY;
+  }
+  _clampToMeshBoundary(point) {
+    let bestDist = Infinity;
+    let bestPoint = null;
+    for (const poly of this.polygons) {
+      const indices = poly.indices;
+      for (let i2 = 0; i2 < indices.length; i2++) {
+        const a2 = this.vertices[indices[i2]];
+        const b2 = this.vertices[indices[(i2 + 1) % indices.length]];
+        const abx = b2[0] - a2[0], abz = b2[2] - a2[2];
+        const apx = point[0] - a2[0], apz = point[2] - a2[2];
+        const t3 = Math.max(0, Math.min(
+          1,
+          (apx * abx + apz * abz) / (abx * abx + abz * abz + 1e-10)
+        ));
+        const cx = a2[0] + t3 * abx;
+        const cz = a2[2] + t3 * abz;
+        const dx = point[0] - cx, dz = point[2] - cz;
+        const d2 = dx * dx + dz * dz;
+        if (d2 < bestDist) {
+          bestDist = d2;
+          bestPoint = [cx, this._sampleY(cx, cz), cz];
+        }
+      }
+    }
+    return bestPoint;
+  }
+  findPath(startPoint, endPoint) {
+    const startPoly = this.findPolygonContainingPoint(startPoint);
+    const endPoly = this.findPolygonContainingPoint(endPoint);
+    if (endPoly === null) {
+      const clamped = this._clampToMeshBoundary(endPoint);
+      if (!clamped) return [];
+      return this.findPath(startPoint, clamped);
+    }
+    if (startPoly === null) return [];
+    const polyPath = this._findPolyPath(startPoly, endPoly);
+    if (polyPath.length === 0) return [];
+    if (polyPath.length === 1) {
+      return [
+        [startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]],
+        [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]]
+      ];
+    }
+    const portals = this._buildPortals(polyPath, startPoint, endPoint);
+    const smooth = this._stringPull(portals);
+    if (smooth.length > 0) {
+      smooth[0] = [startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]];
+      smooth[smooth.length - 1] = [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]];
+    }
+    return smooth;
+  }
+  closestPointOnMesh(point) {
+    let bestD = Infinity, best = null;
+    for (const v2 of this.vertices) {
+      const dx = v2[0] - point[0], dy = v2[1] - point[1], dz = v2[2] - point[2];
+      const d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 < bestD) {
+        bestD = d2;
+        best = v2;
+      }
+    }
+    return best.slice();
+  }
+};
+var MinHeap = class {
+  constructor(cmp) {
+    this.cmp = cmp || ((a2, b2) => a2 - b2);
+    this.items = [];
+  }
+  push(v2) {
+    this.items.push(v2);
+    this._siftUp(this.items.length - 1);
+  }
+  pop() {
+    if (this.items.length === 0) return null;
+    const top = this.items[0];
+    const last = this.items.pop();
+    if (this.items.length > 0) {
+      this.items[0] = last;
+      this._siftDown(0);
+    }
+    return top;
+  }
+  empty() {
+    return this.items.length === 0;
+  }
+  _siftUp(i2) {
+    while (i2 > 0) {
+      const p2 = Math.floor((i2 - 1) / 2);
+      if (this.cmp(this.items[i2], this.items[p2]) < 0) {
+        [this.items[i2], this.items[p2]] = [this.items[p2], this.items[i2]];
+        i2 = p2;
+      } else break;
+    }
+  }
+  _siftDown(i2) {
+    while (true) {
+      const l2 = 2 * i2 + 1, r3 = 2 * i2 + 2;
+      let m2 = i2;
+      if (l2 < this.items.length && this.cmp(this.items[l2], this.items[m2]) < 0) m2 = l2;
+      if (r3 < this.items.length && this.cmp(this.items[r3], this.items[m2]) < 0) m2 = r3;
+      if (m2 !== i2) {
+        [this.items[i2], this.items[m2]] = [this.items[m2], this.items[i2]];
+        i2 = m2;
+      } else break;
+    }
+  }
+};
+var ontargetReachEvent = new CustomEvent("onTargetPositionReach", { detail: { name: "name", body: null } });
+var MIN_DIST = 1e-3;
+var ROTATION_SPEED = 5;
+function followPath(character, path2, core) {
+  if (!path2 || path2.length === 0) return;
+  let idx = 0;
+  const pos2 = character.position;
+  const rot2 = character.rotation;
+  function smoothRotate(current, target, deltaTime) {
+    let diff = target - current;
+    diff = (diff + 540) % 360 - 180;
+    return current + diff * Math.min(1, deltaTime * ROTATION_SPEED);
+  }
+  function moveToNext() {
+    if (idx >= path2.length) {
+      ontargetReachEvent.detail.name = character.name;
+      ontargetReachEvent.detail.body = character;
+      dispatchEvent(ontargetReachEvent);
+      character.position.onTargetPositionReach = () => {
+      };
+      return;
+    }
+    const target = path2[idx];
+    const dx = target[0] - pos2.x;
+    const dz = target[2] - pos2.z;
+    const dist2 = Math.sqrt(dx * dx + dz * dz);
+    if (dist2 < MIN_DIST) {
+      idx++;
+      moveToNext();
+      return;
+    }
+    const nx = dx / dist2;
+    const nz = dz / dist2;
+    let targetAngleY = (radToDeg(Math.atan2(nx, nz)) + 360) % 360;
+    if (dist2 > MIN_DIST * 3) {
+      const deltaTime = core?.deltaTime || 0.016;
+      rot2.y = smoothRotate(rot2.y, targetAngleY, deltaTime);
+    }
+    pos2.translateByXZ(target[0], target[2]);
+    character.position.onTargetPositionReach = () => {
+      idx++;
+      moveToNext();
+    };
+  }
+  const firstTarget = path2.find((p2) => {
+    const dx = p2[0] - pos2.x;
+    const dz = p2[2] - pos2.z;
+    return Math.sqrt(dx * dx + dz * dz) >= MIN_DIST;
+  });
+  if (firstTarget) {
+    const dx = firstTarget[0] - pos2.x;
+    const dz = firstTarget[2] - pos2.z;
+    let initialAngleY = Math.atan2(dx, dz);
+    rot2.y = (radToDeg(initialAngleY) + 360) % 360;
+  }
+  moveToNext();
+}
+async function loadNavMesh(navMapPath, scale4 = [10, 1, 10]) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch(navMapPath);
+      const navData = await response.json();
+      const nav = new NavMesh(navData, { scale: scale4 });
+      resolve(nav);
+    } catch (err) {
+      reject(err);
+      throw err;
+    }
+  });
+}
+
 // examples/water-effect.js
 var loadWaterEffects = function() {
   let waterEffect = new MatrixEngineWGPU({
@@ -59281,7 +59693,11 @@ var loadWaterEffects = function() {
   }, () => {
     waterEffect.addLight();
     downloadMeshes(
-      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
+      {
+        ball: "./res/meshes/blender/sphere.obj",
+        cube: "./res/meshes/blender/cube.obj",
+        land: "./res/meshes/maps-objs/map-1.obj"
+      },
       onLoadObj,
       { scale: [1, 1, 1] }
     );
@@ -59293,12 +59709,30 @@ var loadWaterEffects = function() {
       let MONSTER = waterEffect.addGlbObj({
         material: { type: "power", shared: false, useTextureFromGlb: true },
         useScale: true,
-        scale: [20, 20, 20],
-        position: { x: 0, y: -13, z: -20 },
+        scale: [10, 10, 10],
+        position: { x: 0, y: -4, z: -20 },
         name: "firstGlb",
         texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
       }, null, glbFile01)[0];
       MONSTER.playAnimationByName("walk");
+      loadNavMesh("./res/meshes/nav-mesh/navmesh.json").then((r3) => {
+        app.nav = r3;
+        app.addMeshObj({
+          position: { x: 0, y: -4, z: -10 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          scale: [100, 1, 100],
+          texturesPaths: ["./res/textures/white-metal2.webp"],
+          name: "ground",
+          mesh: m2.cube,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          },
+          raycast: { enabled: true, radius: 1.5 }
+        });
+      });
       let MAT_EFFECT_WATER = waterEffect.addMeshObj({
         material: { type: "standard" },
         position: { x: 10, y: 0, z: 0 },
@@ -59326,16 +59760,18 @@ var loadWaterEffects = function() {
       waterEffect.lightContainer[0].setPosition(0, 25, -10);
       waterEffect.lightContainer[0].setTarget(0, 0, -10);
       app.MONSTER.position.thrust = 0.1;
-      let oldCenter = [0, 0, 0];
-      function followMe(currentTime) {
-        const newCenter = [
-          MONSTER.position.x,
-          MONSTER.position.y,
-          MONSTER.position.z
-        ];
-        const radius = 10.5;
-        this.my.stampSphere(oldCenter, newCenter, radius);
-        oldCenter = [...newCenter];
+      function followMe() {
+        if (MONSTER.position.inMove === false) return;
+        const newWorld = [MONSTER.position.x, MONSTER.position.y, MONSTER.position.z];
+        const newLocal = vec3Impl.transformMat4(newWorld, mat4Impl.invert(this.my._finalMatrix));
+        if (this.my._oldLocal) {
+          this.my.stampSphere(
+            [this.my._oldLocal[0], 0, this.my._oldLocal[2]],
+            [newLocal[0], 0, newLocal[2]],
+            0.5
+          );
+        }
+        this.my._oldLocal = newLocal;
       }
       setTimeout(() => {
         MAT_EFFECT_WATER.setBlend(1e-3);
@@ -59353,13 +59789,18 @@ var loadWaterEffects = function() {
       }, 700);
     }
     waterEffect.canvas.addEventListener("ray.hit.event", (e2) => {
-      console.log("ray.hit.event detected", e2.detail);
       const { hitObject, hitPoint } = e2.detail;
-      const water = app.MAT_EFFECT_WATER.effects.waterEffect;
-      const invModel = mat4Impl.invert(hitObject._modelMatrix);
-      const local2 = vec3Impl.transformMat4(hitPoint, invModel);
-      console.log("local coords (should be roughly -1..1):", local2);
-      water.stampSphere(local2, local2);
+      console.log("hitObject hitPoint ?", app.MONSTER.position.z);
+      let addY = 0;
+      if (app.MONSTER.position.z < -10) addY = addY - 2.5;
+      const start = [app.MONSTER.position.x, app.MONSTER.position.y + addY, app.MONSTER.position.z];
+      const end = [hitPoint[0], hitPoint[1] + addY, hitPoint[2]];
+      const path2 = app.nav.findPath(start, end);
+      if (!path2 || path2.length === 0) {
+        console.warn("No valid path found.");
+        return;
+      }
+      followPath(app.MONSTER, path2, app);
     });
   });
   window.app = waterEffect;
