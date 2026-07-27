@@ -1542,7 +1542,7 @@ export default class MatrixEngineWGPU {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);
-        }, 120);
+        }, 32);
         c++;
       }
       skinnedNodeIndex++;

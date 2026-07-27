@@ -88,9 +88,8 @@ export class Position {
     this.targetZ = parseFloat(z);
   }
 
-  onTargetPositionReach() {
-    // console.log('onTargetPositionReach')
-  }
+  onTargetPositionReach() {}
+  onPositionReach() {}
 
   update() {
     var tx = parseFloat(this.targetX) - parseFloat(this.x),
@@ -141,6 +140,7 @@ export class Position {
         this.z = this.targetZ;
         this.inMove = false;
         this.onTargetPositionReach();
+        this.onPositionReach();
         if(this.netObject != null) {
           if(this.netTolerance__ > this.netTolerance) {
 
