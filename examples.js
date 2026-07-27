@@ -1,12 +1,10 @@
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
- * @version 1.17.3
+ * @version 1.17.5
  * @www maximumroulette.com 2026
  */
-
 import {loadCameraTexture} from "./examples/camera-texture.js";
-// import {fontana} from "./examples/fontana.js";
 import {loadGLBLoader} from "./examples/glb-loader.js";
 import {myLights} from "./examples/my-lights.js";
 import {loadObjFile} from "./examples/load-obj-file.js";
@@ -40,6 +38,7 @@ import {loadMenuBeast} from "./examples/games/my-nui/menu-beast.js";
 import {loadBVHRawExample} from "./examples/bvh-skeletal.js";
 import {loadBVHRawExampleShared} from "./examples/bvh-skeletal-shared-mat.js";
 import {loadWaterEffects} from "./examples/water-effect.js";
+import {loadParticles} from "./examples/particles.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -51,9 +50,7 @@ const switchDemo = (id) => {
   }
 };
 
-const hideMenu = () => {
-  document.getElementById('examples').style.left = "-150px";
-}
+const hideMenu = () => {document.getElementById('examples').style.left = "-150px"}
 
 byId('loadObjFile').addEventListener("click", () => switchDemo('1'));
 byId('physicsPlayground').addEventListener("click", () => switchDemo('2'));
@@ -67,13 +64,9 @@ byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
 byId('maze').addEventListener("click", () => switchDemo('12'));
 byId('flipper-jolt').addEventListener("click", () => switchDemo('13'));
-
-if(isMobile() === true) {
-  byId('flipper-ammo').remove();
-} else {
+if(isMobile() === true) {byId('flipper-ammo').remove()} else {
   byId('flipper-ammo').addEventListener("click", () => switchDemo('14'));
 }
-
 byId('test-jolt').addEventListener("click", () => switchDemo('15'));
 byId('test-cannones').addEventListener("click", () => switchDemo('16'));
 byId('canvas-inline').addEventListener("click", () => switchDemo('17'));
@@ -94,6 +87,7 @@ if(byId('loadMenuBeast')) {byId('loadMenuBeast').addEventListener("click", () =>
 byId('loadBVHSkeletal').addEventListener("click", () => switchDemo('32'));
 byId('loadBVHSkeletalShared').addEventListener("click", () => switchDemo('33'));
 byId('loadWaterEffects').addEventListener("click", () => switchDemo('34'));
+byId('loadParticles').addEventListener("click", () => switchDemo('35'));
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
@@ -168,9 +162,10 @@ if(urlQuery['demo'] === '1') {
   loadBVHRawExampleShared();
 } else if(urlQuery['demo'] === '34') {
   loadWaterEffects();
+} else if(urlQuery['demo'] === '35') {
+  loadParticles();
 } else {
   loadObjFile();
 }
-
 
 setTimeout(() => {hideMenu()}, 2000);

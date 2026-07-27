@@ -5004,11 +5004,11 @@ function divide$1(a2, b2, dst) {
 var div$1 = divide$1;
 function random(scale4 = 1, dst) {
   dst = dst || new VecType$1(3);
-  const angle = Math.random() * 2 * Math.PI;
+  const angle2 = Math.random() * 2 * Math.PI;
   const z2 = Math.random() * 2 - 1;
   const zScale = Math.sqrt(1 - z2 * z2) * scale4;
-  dst[0] = Math.cos(angle) * zScale;
-  dst[1] = Math.sin(angle) * zScale;
+  dst[0] = Math.cos(angle2) * zScale;
+  dst[1] = Math.sin(angle2) * zScale;
   dst[2] = z2 * scale4;
   return dst;
 }
@@ -6226,6 +6226,454 @@ var mat4Impl = /* @__PURE__ */ Object.freeze({
   scale: scale$2,
   uniformScaling,
   uniformScale
+});
+var QuatType = Float32Array;
+function setDefaultType$2(ctor) {
+  const oldType = QuatType;
+  QuatType = ctor;
+  return oldType;
+}
+function create$1(x3, y3, z2, w2) {
+  const dst = new QuatType(4);
+  if (x3 !== void 0) {
+    dst[0] = x3;
+    if (y3 !== void 0) {
+      dst[1] = y3;
+      if (z2 !== void 0) {
+        dst[2] = z2;
+        if (w2 !== void 0) {
+          dst[3] = w2;
+        }
+      }
+    }
+  }
+  return dst;
+}
+var fromValues$1 = create$1;
+function set$1(x3, y3, z2, w2, dst) {
+  dst = dst || new QuatType(4);
+  dst[0] = x3;
+  dst[1] = y3;
+  dst[2] = z2;
+  dst[3] = w2;
+  return dst;
+}
+function fromAxisAngle(axis, angleInRadians, dst) {
+  dst = dst || new QuatType(4);
+  const halfAngle = angleInRadians * 0.5;
+  const s2 = Math.sin(halfAngle);
+  dst[0] = s2 * axis[0];
+  dst[1] = s2 * axis[1];
+  dst[2] = s2 * axis[2];
+  dst[3] = Math.cos(halfAngle);
+  return dst;
+}
+function toAxisAngle(q2, dst) {
+  dst = dst || create$4(4);
+  const angle2 = Math.acos(q2[3]) * 2;
+  const s2 = Math.sin(angle2 * 0.5);
+  if (s2 > EPSILON) {
+    dst[0] = q2[0] / s2;
+    dst[1] = q2[1] / s2;
+    dst[2] = q2[2] / s2;
+  } else {
+    dst[0] = 1;
+    dst[1] = 0;
+    dst[2] = 0;
+  }
+  return { angle: angle2, axis: dst };
+}
+function angle(a2, b2) {
+  const d2 = dot$1(a2, b2);
+  return Math.acos(2 * d2 * d2 - 1);
+}
+function multiply$1(a2, b2, dst) {
+  dst = dst || new QuatType(4);
+  const ax = a2[0];
+  const ay = a2[1];
+  const az = a2[2];
+  const aw = a2[3];
+  const bx = b2[0];
+  const by = b2[1];
+  const bz = b2[2];
+  const bw = b2[3];
+  dst[0] = ax * bw + aw * bx + ay * bz - az * by;
+  dst[1] = ay * bw + aw * by + az * bx - ax * bz;
+  dst[2] = az * bw + aw * bz + ax * by - ay * bx;
+  dst[3] = aw * bw - ax * bx - ay * by - az * bz;
+  return dst;
+}
+var mul$1 = multiply$1;
+function rotateX(q2, angleInRadians, dst) {
+  dst = dst || new QuatType(4);
+  const halfAngle = angleInRadians * 0.5;
+  const qx = q2[0];
+  const qy = q2[1];
+  const qz = q2[2];
+  const qw = q2[3];
+  const bx = Math.sin(halfAngle);
+  const bw = Math.cos(halfAngle);
+  dst[0] = qx * bw + qw * bx;
+  dst[1] = qy * bw + qz * bx;
+  dst[2] = qz * bw - qy * bx;
+  dst[3] = qw * bw - qx * bx;
+  return dst;
+}
+function rotateY(q2, angleInRadians, dst) {
+  dst = dst || new QuatType(4);
+  const halfAngle = angleInRadians * 0.5;
+  const qx = q2[0];
+  const qy = q2[1];
+  const qz = q2[2];
+  const qw = q2[3];
+  const by = Math.sin(halfAngle);
+  const bw = Math.cos(halfAngle);
+  dst[0] = qx * bw - qz * by;
+  dst[1] = qy * bw + qw * by;
+  dst[2] = qz * bw + qx * by;
+  dst[3] = qw * bw - qy * by;
+  return dst;
+}
+function rotateZ(q2, angleInRadians, dst) {
+  dst = dst || new QuatType(4);
+  const halfAngle = angleInRadians * 0.5;
+  const qx = q2[0];
+  const qy = q2[1];
+  const qz = q2[2];
+  const qw = q2[3];
+  const bz = Math.sin(halfAngle);
+  const bw = Math.cos(halfAngle);
+  dst[0] = qx * bw + qy * bz;
+  dst[1] = qy * bw - qx * bz;
+  dst[2] = qz * bw + qw * bz;
+  dst[3] = qw * bw - qz * bz;
+  return dst;
+}
+function slerp(a2, b2, t3, dst) {
+  dst = dst || new QuatType(4);
+  const ax = a2[0];
+  const ay = a2[1];
+  const az = a2[2];
+  const aw = a2[3];
+  let bx = b2[0];
+  let by = b2[1];
+  let bz = b2[2];
+  let bw = b2[3];
+  let cosOmega = ax * bx + ay * by + az * bz + aw * bw;
+  if (cosOmega < 0) {
+    cosOmega = -cosOmega;
+    bx = -bx;
+    by = -by;
+    bz = -bz;
+    bw = -bw;
+  }
+  let scale0;
+  let scale1;
+  if (1 - cosOmega > EPSILON) {
+    const omega = Math.acos(cosOmega);
+    const sinOmega = Math.sin(omega);
+    scale0 = Math.sin((1 - t3) * omega) / sinOmega;
+    scale1 = Math.sin(t3 * omega) / sinOmega;
+  } else {
+    scale0 = 1 - t3;
+    scale1 = t3;
+  }
+  dst[0] = scale0 * ax + scale1 * bx;
+  dst[1] = scale0 * ay + scale1 * by;
+  dst[2] = scale0 * az + scale1 * bz;
+  dst[3] = scale0 * aw + scale1 * bw;
+  return dst;
+}
+function inverse$1(q2, dst) {
+  dst = dst || new QuatType(4);
+  const a0 = q2[0];
+  const a1 = q2[1];
+  const a2 = q2[2];
+  const a3 = q2[3];
+  const dot2 = a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3;
+  const invDot = dot2 ? 1 / dot2 : 0;
+  dst[0] = -a0 * invDot;
+  dst[1] = -a1 * invDot;
+  dst[2] = -a2 * invDot;
+  dst[3] = a3 * invDot;
+  return dst;
+}
+function conjugate(q2, dst) {
+  dst = dst || new QuatType(4);
+  dst[0] = -q2[0];
+  dst[1] = -q2[1];
+  dst[2] = -q2[2];
+  dst[3] = q2[3];
+  return dst;
+}
+function fromMat(m2, dst) {
+  dst = dst || new QuatType(4);
+  const trace = m2[0] + m2[5] + m2[10];
+  if (trace > 0) {
+    const root = Math.sqrt(trace + 1);
+    dst[3] = 0.5 * root;
+    const invRoot = 0.5 / root;
+    dst[0] = (m2[6] - m2[9]) * invRoot;
+    dst[1] = (m2[8] - m2[2]) * invRoot;
+    dst[2] = (m2[1] - m2[4]) * invRoot;
+  } else {
+    let i2 = 0;
+    if (m2[5] > m2[0]) {
+      i2 = 1;
+    }
+    if (m2[10] > m2[i2 * 4 + i2]) {
+      i2 = 2;
+    }
+    const j2 = (i2 + 1) % 3;
+    const k2 = (i2 + 2) % 3;
+    const root = Math.sqrt(m2[i2 * 4 + i2] - m2[j2 * 4 + j2] - m2[k2 * 4 + k2] + 1);
+    dst[i2] = 0.5 * root;
+    const invRoot = 0.5 / root;
+    dst[3] = (m2[j2 * 4 + k2] - m2[k2 * 4 + j2]) * invRoot;
+    dst[j2] = (m2[j2 * 4 + i2] + m2[i2 * 4 + j2]) * invRoot;
+    dst[k2] = (m2[k2 * 4 + i2] + m2[i2 * 4 + k2]) * invRoot;
+  }
+  return dst;
+}
+function fromEuler(xAngleInRadians, yAngleInRadians, zAngleInRadians, order, dst) {
+  dst = dst || new QuatType(4);
+  const xHalfAngle = xAngleInRadians * 0.5;
+  const yHalfAngle = yAngleInRadians * 0.5;
+  const zHalfAngle = zAngleInRadians * 0.5;
+  const sx = Math.sin(xHalfAngle);
+  const cx = Math.cos(xHalfAngle);
+  const sy = Math.sin(yHalfAngle);
+  const cy = Math.cos(yHalfAngle);
+  const sz = Math.sin(zHalfAngle);
+  const cz = Math.cos(zHalfAngle);
+  switch (order) {
+    case "xyz":
+      dst[0] = sx * cy * cz + cx * sy * sz;
+      dst[1] = cx * sy * cz - sx * cy * sz;
+      dst[2] = cx * cy * sz + sx * sy * cz;
+      dst[3] = cx * cy * cz - sx * sy * sz;
+      break;
+    case "xzy":
+      dst[0] = sx * cy * cz - cx * sy * sz;
+      dst[1] = cx * sy * cz - sx * cy * sz;
+      dst[2] = cx * cy * sz + sx * sy * cz;
+      dst[3] = cx * cy * cz + sx * sy * sz;
+      break;
+    case "yxz":
+      dst[0] = sx * cy * cz + cx * sy * sz;
+      dst[1] = cx * sy * cz - sx * cy * sz;
+      dst[2] = cx * cy * sz - sx * sy * cz;
+      dst[3] = cx * cy * cz + sx * sy * sz;
+      break;
+    case "yzx":
+      dst[0] = sx * cy * cz + cx * sy * sz;
+      dst[1] = cx * sy * cz + sx * cy * sz;
+      dst[2] = cx * cy * sz - sx * sy * cz;
+      dst[3] = cx * cy * cz - sx * sy * sz;
+      break;
+    case "zxy":
+      dst[0] = sx * cy * cz - cx * sy * sz;
+      dst[1] = cx * sy * cz + sx * cy * sz;
+      dst[2] = cx * cy * sz + sx * sy * cz;
+      dst[3] = cx * cy * cz - sx * sy * sz;
+      break;
+    case "zyx":
+      dst[0] = sx * cy * cz - cx * sy * sz;
+      dst[1] = cx * sy * cz + sx * cy * sz;
+      dst[2] = cx * cy * sz - sx * sy * cz;
+      dst[3] = cx * cy * cz + sx * sy * sz;
+      break;
+    default:
+      throw new Error(`Unknown rotation order: ${order}`);
+  }
+  return dst;
+}
+function copy$1(q2, dst) {
+  dst = dst || new QuatType(4);
+  dst[0] = q2[0];
+  dst[1] = q2[1];
+  dst[2] = q2[2];
+  dst[3] = q2[3];
+  return dst;
+}
+var clone$1 = copy$1;
+function add$1(a2, b2, dst) {
+  dst = dst || new QuatType(4);
+  dst[0] = a2[0] + b2[0];
+  dst[1] = a2[1] + b2[1];
+  dst[2] = a2[2] + b2[2];
+  dst[3] = a2[3] + b2[3];
+  return dst;
+}
+function subtract$1(a2, b2, dst) {
+  dst = dst || new QuatType(4);
+  dst[0] = a2[0] - b2[0];
+  dst[1] = a2[1] - b2[1];
+  dst[2] = a2[2] - b2[2];
+  dst[3] = a2[3] - b2[3];
+  return dst;
+}
+var sub$1 = subtract$1;
+function mulScalar$1(v2, k2, dst) {
+  dst = dst || new QuatType(4);
+  dst[0] = v2[0] * k2;
+  dst[1] = v2[1] * k2;
+  dst[2] = v2[2] * k2;
+  dst[3] = v2[3] * k2;
+  return dst;
+}
+var scale$1 = mulScalar$1;
+function divScalar$1(v2, k2, dst) {
+  dst = dst || new QuatType(4);
+  dst[0] = v2[0] / k2;
+  dst[1] = v2[1] / k2;
+  dst[2] = v2[2] / k2;
+  dst[3] = v2[3] / k2;
+  return dst;
+}
+function dot$1(a2, b2) {
+  return a2[0] * b2[0] + a2[1] * b2[1] + a2[2] * b2[2] + a2[3] * b2[3];
+}
+function lerp$1(a2, b2, t3, dst) {
+  dst = dst || new QuatType(4);
+  dst[0] = a2[0] + t3 * (b2[0] - a2[0]);
+  dst[1] = a2[1] + t3 * (b2[1] - a2[1]);
+  dst[2] = a2[2] + t3 * (b2[2] - a2[2]);
+  dst[3] = a2[3] + t3 * (b2[3] - a2[3]);
+  return dst;
+}
+function length$1(v2) {
+  const v0 = v2[0];
+  const v1 = v2[1];
+  const v22 = v2[2];
+  const v3 = v2[3];
+  return Math.sqrt(v0 * v0 + v1 * v1 + v22 * v22 + v3 * v3);
+}
+var len$1 = length$1;
+function lengthSq$1(v2) {
+  const v0 = v2[0];
+  const v1 = v2[1];
+  const v22 = v2[2];
+  const v3 = v2[3];
+  return v0 * v0 + v1 * v1 + v22 * v22 + v3 * v3;
+}
+var lenSq$1 = lengthSq$1;
+function normalize$1(v2, dst) {
+  dst = dst || new QuatType(4);
+  const v0 = v2[0];
+  const v1 = v2[1];
+  const v22 = v2[2];
+  const v3 = v2[3];
+  const len2 = Math.sqrt(v0 * v0 + v1 * v1 + v22 * v22 + v3 * v3);
+  if (len2 > 1e-5) {
+    dst[0] = v0 / len2;
+    dst[1] = v1 / len2;
+    dst[2] = v22 / len2;
+    dst[3] = v3 / len2;
+  } else {
+    dst[0] = 0;
+    dst[1] = 0;
+    dst[2] = 0;
+    dst[3] = 0;
+  }
+  return dst;
+}
+function equalsApproximately$1(a2, b2) {
+  return Math.abs(a2[0] - b2[0]) < EPSILON && Math.abs(a2[1] - b2[1]) < EPSILON && Math.abs(a2[2] - b2[2]) < EPSILON && Math.abs(a2[3] - b2[3]) < EPSILON;
+}
+function equals$1(a2, b2) {
+  return a2[0] === b2[0] && a2[1] === b2[1] && a2[2] === b2[2] && a2[3] === b2[3];
+}
+function identity(dst) {
+  dst = dst || new QuatType(4);
+  dst[0] = 0;
+  dst[1] = 0;
+  dst[2] = 0;
+  dst[3] = 1;
+  return dst;
+}
+var tempVec3;
+var xUnitVec3;
+var yUnitVec3;
+function rotationTo(aUnit, bUnit, dst) {
+  dst = dst || new QuatType(4);
+  tempVec3 = tempVec3 || create$4();
+  xUnitVec3 = xUnitVec3 || create$4(1, 0, 0);
+  yUnitVec3 = yUnitVec3 || create$4(0, 1, 0);
+  const dot2 = dot$2(aUnit, bUnit);
+  if (dot2 < -0.999999) {
+    cross(xUnitVec3, aUnit, tempVec3);
+    if (len$2(tempVec3) < 1e-6) {
+      cross(yUnitVec3, aUnit, tempVec3);
+    }
+    normalize$2(tempVec3, tempVec3);
+    fromAxisAngle(tempVec3, Math.PI, dst);
+    return dst;
+  } else if (dot2 > 0.999999) {
+    dst[0] = 0;
+    dst[1] = 0;
+    dst[2] = 0;
+    dst[3] = 1;
+    return dst;
+  } else {
+    cross(aUnit, bUnit, tempVec3);
+    dst[0] = tempVec3[0];
+    dst[1] = tempVec3[1];
+    dst[2] = tempVec3[2];
+    dst[3] = 1 + dot2;
+    return normalize$1(dst, dst);
+  }
+}
+var tempQuat1;
+var tempQuat2;
+function sqlerp(a2, b2, c2, d2, t3, dst) {
+  dst = dst || new QuatType(4);
+  tempQuat1 = tempQuat1 || new QuatType(4);
+  tempQuat2 = tempQuat2 || new QuatType(4);
+  slerp(a2, d2, t3, tempQuat1);
+  slerp(b2, c2, t3, tempQuat2);
+  slerp(tempQuat1, tempQuat2, 2 * t3 * (1 - t3), dst);
+  return dst;
+}
+var quatImpl = /* @__PURE__ */ Object.freeze({
+  __proto__: null,
+  create: create$1,
+  setDefaultType: setDefaultType$2,
+  fromValues: fromValues$1,
+  set: set$1,
+  fromAxisAngle,
+  toAxisAngle,
+  angle,
+  multiply: multiply$1,
+  mul: mul$1,
+  rotateX,
+  rotateY,
+  rotateZ,
+  slerp,
+  inverse: inverse$1,
+  conjugate,
+  fromMat,
+  fromEuler,
+  copy: copy$1,
+  clone: clone$1,
+  add: add$1,
+  subtract: subtract$1,
+  sub: sub$1,
+  mulScalar: mulScalar$1,
+  scale: scale$1,
+  divScalar: divScalar$1,
+  dot: dot$1,
+  lerp: lerp$1,
+  length: length$1,
+  len: len$1,
+  lengthSq: lengthSq$1,
+  lenSq: lenSq$1,
+  normalize: normalize$1,
+  equalsApproximately: equalsApproximately$1,
+  equals: equals$1,
+  identity,
+  rotationTo,
+  sqlerp
 });
 var VecType = Float32Array;
 function setDefaultType$1(ctor) {
@@ -8362,6 +8810,8 @@ var Position = class {
   }
   onTargetPositionReach() {
   }
+  onPositionReach() {
+  }
   update() {
     var tx = parseFloat(this.targetX) - parseFloat(this.x), ty = parseFloat(this.targetY) - parseFloat(this.y), tz = parseFloat(this.targetZ) - parseFloat(this.z), dist2 = Math.sqrt(tx * tx + ty * ty + tz * tz);
     this.velX = tx / dist2 * this.thrust;
@@ -8416,6 +8866,7 @@ var Position = class {
         this.z = this.targetZ;
         this.inMove = false;
         this.onTargetPositionReach();
+        this.onPositionReach();
         if (this.netObject != null) {
           if (this.netTolerance__ > this.netTolerance) {
             if (this.teams.length == 0) {
@@ -14837,8 +15288,8 @@ var GeometryFactory = class _GeometryFactory {
   static crystal(S2 = 1, spikes = 5) {
     const positions = [0, 0, 0], uvs = [0.5, 0.5], indices = [];
     for (let i2 = 0; i2 < spikes; i2++) {
-      const angle = i2 / spikes * Math.PI * 2;
-      const x3 = Math.cos(angle) * S2, y3 = S2, z2 = Math.sin(angle) * S2;
+      const angle2 = i2 / spikes * Math.PI * 2;
+      const x3 = Math.cos(angle2) * S2, y3 = S2, z2 = Math.sin(angle2) * S2;
       positions.push(x3, 0, z2, x3, y3, z2);
       uvs.push(0, 0, 1, 1);
       const idx = 1 + i2 * 2;
@@ -14849,9 +15300,9 @@ var GeometryFactory = class _GeometryFactory {
   static starPrism(S2 = 1, H2 = 1) {
     const top = [], bottom = [], positions = [0, 0, 0], uvs = [0.5, 0.5], indices = [];
     for (let i2 = 0; i2 < 10; i2++) {
-      const angle = i2 / 10 * Math.PI * 2;
+      const angle2 = i2 / 10 * Math.PI * 2;
       const r3 = i2 % 2 === 0 ? S2 : S2 * 0.4;
-      const x3 = Math.cos(angle) * r3, y3 = Math.sin(angle) * r3;
+      const x3 = Math.cos(angle2) * r3, y3 = Math.sin(angle2) * r3;
       top.push([x3, H2 / 2, y3]);
       bottom.push([x3, -H2 / 2, y3]);
       positions.push(x3, H2 / 2, y3);
@@ -15072,9 +15523,9 @@ var GeometryFactory = class _GeometryFactory {
     const uvs = [0.5, 1];
     const indices = [];
     for (let i2 = 0; i2 <= segments; i2++) {
-      const angle = i2 / segments * Math.PI * 2;
-      const x3 = Math.cos(angle) * radius;
-      const z2 = Math.sin(angle) * radius;
+      const angle2 = i2 / segments * Math.PI * 2;
+      const x3 = Math.cos(angle2) * radius;
+      const z2 = Math.sin(angle2) * radius;
       positions.push(x3, 0, z2);
       uvs.push((x3 / radius + 1) / 2, (z2 / radius + 1) / 2);
     }
@@ -15094,9 +15545,9 @@ var GeometryFactory = class _GeometryFactory {
     const positions = [], uvs = [], indices = [];
     const halfH = height / 2;
     for (let i2 = 0; i2 <= segments; i2++) {
-      const angle = i2 / segments * Math.PI * 2;
-      const x3 = Math.cos(angle) * radius;
-      const z2 = Math.sin(angle) * radius;
+      const angle2 = i2 / segments * Math.PI * 2;
+      const x3 = Math.cos(angle2) * radius;
+      const z2 = Math.sin(angle2) * radius;
       positions.push(x3, -halfH, z2, x3, halfH, z2);
       uvs.push(i2 / segments, 0, i2 / segments, 1);
     }
@@ -15575,10 +16026,10 @@ var GeometryFactory = class _GeometryFactory {
     const uvs = [0.5, 0.5];
     const indices = [];
     for (let i2 = 0; i2 < 10; i2++) {
-      const angle = i2 / 10 * Math.PI * 2;
+      const angle2 = i2 / 10 * Math.PI * 2;
       const radius = i2 % 2 === 0 ? outer : inner;
-      const x3 = Math.cos(angle) * radius;
-      const y3 = Math.sin(angle) * radius;
+      const x3 = Math.cos(angle2) * radius;
+      const y3 = Math.sin(angle2) * radius;
       positions.push(x3, y3, 0);
       uvs.push((x3 / outer + 1) / 2, (y3 / outer + 1) / 2);
     }
@@ -15607,9 +16058,9 @@ var GeometryFactory = class _GeometryFactory {
     const uvs = [0.5, 0.5];
     const indices = [];
     for (let i2 = 0; i2 <= segments; i2++) {
-      const angle = i2 / segments * Math.PI * 2;
-      const x3 = Math.cos(angle) * radius;
-      const y3 = Math.sin(angle) * radius;
+      const angle2 = i2 / segments * Math.PI * 2;
+      const x3 = Math.cos(angle2) * radius;
+      const y3 = Math.sin(angle2) * radius;
       positions.push(x3, y3, 0);
       uvs.push((x3 / radius + 1) / 2, (y3 / radius + 1) / 2);
       if (i2 > 0) {
@@ -15809,10 +16260,10 @@ var GeometryFactory = class _GeometryFactory {
     positions.push(0, 0, 0);
     uvs.push(0.5, 0.5);
     for (let i2 = 0; i2 <= segments; i2++) {
-      const angle = i2 / segments * Math.PI * 2;
-      const x3 = Math.cos(angle) * radius;
+      const angle2 = i2 / segments * Math.PI * 2;
+      const x3 = Math.cos(angle2) * radius;
       const y3 = 0;
-      const z2 = Math.sin(angle) * radius;
+      const z2 = Math.sin(angle2) * radius;
       positions.push(x3, y3, z2);
       uvs.push((x3 / radius + 1) / 2, (z2 / radius + 1) / 2);
     }
@@ -15831,9 +16282,9 @@ var GeometryFactory = class _GeometryFactory {
     const uvs = [];
     const indices = [];
     for (let i2 = 0; i2 <= segments; i2++) {
-      const angle = i2 / segments * Math.PI * 2;
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
+      const angle2 = i2 / segments * Math.PI * 2;
+      const cos = Math.cos(angle2);
+      const sin = Math.sin(angle2);
       positions.push(cos * outerRadius, 0, sin * outerRadius);
       uvs.push((cos + 1) / 2, (sin + 1) / 2);
       positions.push(cos * innerRadius, height, sin * innerRadius);
@@ -15857,11 +16308,11 @@ var GeometryFactory = class _GeometryFactory {
   static shatter(S2 = 1, pieces = 8) {
     const offsets = [];
     for (let p2 = 0; p2 < pieces; p2++) {
-      const angle = p2 / pieces * Math.PI * 2;
+      const angle2 = p2 / pieces * Math.PI * 2;
       offsets.push({
-        x: Math.cos(angle) * S2 * 0.6,
+        x: Math.cos(angle2) * S2 * 0.6,
         y: (Math.random() - 0.5) * S2 * 0.4,
-        z: Math.sin(angle) * S2 * 0.6
+        z: Math.sin(angle2) * S2 * 0.6
       });
     }
     return (u2, v2) => {
@@ -15915,11 +16366,11 @@ var GeometryFactory = class _GeometryFactory {
   static splinter(S2 = 1, count = 12) {
     const shards = [];
     for (let i2 = 0; i2 < count; i2++) {
-      const angle = i2 / count * Math.PI * 2;
+      const angle2 = i2 / count * Math.PI * 2;
       const phi = Math.random() * Math.PI;
       shards.push({
-        dirX: Math.sin(phi) * Math.cos(angle),
-        dirY: Math.sin(phi) * Math.sin(angle),
+        dirX: Math.sin(phi) * Math.cos(angle2),
+        dirY: Math.sin(phi) * Math.sin(angle2),
         dirZ: Math.cos(phi),
         length: S2 * (0.5 + Math.random() * 0.5)
       });
@@ -20050,7 +20501,7 @@ function create$22(x3, y3, z2) {
   }
   return dst;
 }
-function subtract$1(a2, b2, dst) {
+function subtract$12(a2, b2, dst) {
   dst = dst || new VecType$12(3);
   dst[0] = a2[0] - b2[0];
   dst[1] = a2[1] - b2[1];
@@ -20066,7 +20517,7 @@ function cross2(a2, b2, dst) {
   dst[2] = t22;
   return dst;
 }
-function normalize$1(v2, dst) {
+function normalize$12(v2, dst) {
   dst = dst || new VecType$12(3);
   const v0 = v2[0];
   const v1 = v2[1];
@@ -20084,12 +20535,12 @@ function normalize$1(v2, dst) {
   return dst;
 }
 var MatType2 = Float32Array;
-function setDefaultType$2(ctor) {
+function setDefaultType$22(ctor) {
   const oldType = MatType2;
   MatType2 = ctor;
   return oldType;
 }
-function create$1(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15) {
+function create$12(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15) {
   const dst = new MatType2(16);
   if (v0 !== void 0) {
     dst[0] = v0;
@@ -20161,7 +20612,7 @@ function negate$12(m2, dst) {
   dst[15] = -m2[15];
   return dst;
 }
-function copy$1(m2, dst) {
+function copy$12(m2, dst) {
   dst = dst || new MatType2(16);
   dst[0] = m2[0];
   dst[1] = m2[1];
@@ -20181,14 +20632,14 @@ function copy$1(m2, dst) {
   dst[15] = m2[15];
   return dst;
 }
-var clone$1 = copy$1;
-function equalsApproximately$1(a2, b2) {
+var clone$12 = copy$12;
+function equalsApproximately$12(a2, b2) {
   return Math.abs(a2[0] - b2[0]) < EPSILON2 && Math.abs(a2[1] - b2[1]) < EPSILON2 && Math.abs(a2[2] - b2[2]) < EPSILON2 && Math.abs(a2[3] - b2[3]) < EPSILON2 && Math.abs(a2[4] - b2[4]) < EPSILON2 && Math.abs(a2[5] - b2[5]) < EPSILON2 && Math.abs(a2[6] - b2[6]) < EPSILON2 && Math.abs(a2[7] - b2[7]) < EPSILON2 && Math.abs(a2[8] - b2[8]) < EPSILON2 && Math.abs(a2[9] - b2[9]) < EPSILON2 && Math.abs(a2[10] - b2[10]) < EPSILON2 && Math.abs(a2[11] - b2[11]) < EPSILON2 && Math.abs(a2[12] - b2[12]) < EPSILON2 && Math.abs(a2[13] - b2[13]) < EPSILON2 && Math.abs(a2[14] - b2[14]) < EPSILON2 && Math.abs(a2[15] - b2[15]) < EPSILON2;
 }
-function equals$1(a2, b2) {
+function equals$12(a2, b2) {
   return a2[0] === b2[0] && a2[1] === b2[1] && a2[2] === b2[2] && a2[3] === b2[3] && a2[4] === b2[4] && a2[5] === b2[5] && a2[6] === b2[6] && a2[7] === b2[7] && a2[8] === b2[8] && a2[9] === b2[9] && a2[10] === b2[10] && a2[11] === b2[11] && a2[12] === b2[12] && a2[13] === b2[13] && a2[14] === b2[14] && a2[15] === b2[15];
 }
-function identity(dst) {
+function identity2(dst) {
   dst = dst || new MatType2(16);
   dst[0] = 1;
   dst[1] = 0;
@@ -20266,7 +20717,7 @@ function transpose2(m2, dst) {
   dst[15] = m33;
   return dst;
 }
-function inverse$1(m2, dst) {
+function inverse$12(m2, dst) {
   dst = dst || new MatType2(16);
   const m00 = m2[0 * 4 + 0];
   const m01 = m2[0 * 4 + 1];
@@ -20366,8 +20817,8 @@ function determinant2(m2) {
   const t3 = tmp5 * m01 + tmp8 * m11 + tmp11 * m21 - (tmp4 * m01 + tmp9 * m11 + tmp10 * m21);
   return m00 * t0 + m10 * t1 + m20 * t22 + m30 * t3;
 }
-var invert$12 = inverse$1;
-function multiply$1(a2, b2, dst) {
+var invert$12 = inverse$12;
+function multiply$12(a2, b2, dst) {
   dst = dst || new MatType2(16);
   const a00 = a2[0];
   const a01 = a2[1];
@@ -20419,9 +20870,9 @@ function multiply$1(a2, b2, dst) {
   dst[15] = a03 * b30 + a13 * b31 + a23 * b32 + a33 * b33;
   return dst;
 }
-var mul$1 = multiply$1;
+var mul$12 = multiply$12;
 function setTranslation2(a2, v2, dst) {
-  dst = dst || identity();
+  dst = dst || identity2();
   if (a2 !== dst) {
     dst[0] = a2[0];
     dst[1] = a2[1];
@@ -20459,7 +20910,7 @@ function getAxis2(m2, axis, dst) {
 }
 function setAxis2(a2, v2, axis, dst) {
   if (dst !== a2) {
-    dst = copy$1(a2, dst);
+    dst = copy$12(a2, dst);
   }
   const off = axis * 4;
   dst[off + 0] = v2[0];
@@ -20556,9 +21007,9 @@ function lookAt2(eye, target, up, dst) {
   xAxis2 = xAxis2 || create$22();
   yAxis2 = yAxis2 || create$22();
   zAxis2 = zAxis2 || create$22();
-  normalize$1(subtract$1(eye, target, zAxis2), zAxis2);
-  normalize$1(cross2(up, zAxis2, xAxis2), xAxis2);
-  normalize$1(cross2(zAxis2, xAxis2, yAxis2), yAxis2);
+  normalize$12(subtract$12(eye, target, zAxis2), zAxis2);
+  normalize$12(cross2(up, zAxis2, xAxis2), xAxis2);
+  normalize$12(cross2(zAxis2, xAxis2, yAxis2), yAxis2);
   dst[0] = xAxis2[0];
   dst[1] = xAxis2[1];
   dst[2] = xAxis2[2];
@@ -20660,7 +21111,7 @@ function rotationX2(angleInRadians, dst) {
   dst[15] = 1;
   return dst;
 }
-function rotateX(m2, angleInRadians, dst) {
+function rotateX2(m2, angleInRadians, dst) {
   dst = dst || new MatType2(16);
   const m10 = m2[4];
   const m11 = m2[5];
@@ -20714,7 +21165,7 @@ function rotationY2(angleInRadians, dst) {
   dst[15] = 1;
   return dst;
 }
-function rotateY(m2, angleInRadians, dst) {
+function rotateY2(m2, angleInRadians, dst) {
   dst = dst || new MatType2(16);
   const m00 = m2[0 * 4 + 0];
   const m01 = m2[0 * 4 + 1];
@@ -20768,7 +21219,7 @@ function rotationZ2(angleInRadians, dst) {
   dst[15] = 1;
   return dst;
 }
-function rotateZ(m2, angleInRadians, dst) {
+function rotateZ2(m2, angleInRadians, dst) {
   dst = dst || new MatType2(16);
   const m00 = m2[0 * 4 + 0];
   const m01 = m2[0 * 4 + 1];
@@ -20911,7 +21362,7 @@ function scaling2(v2, dst) {
   dst[15] = 1;
   return dst;
 }
-function scale$1(m2, v2, dst) {
+function scale$12(m2, v2, dst) {
   dst = dst || new MatType2(16);
   const v0 = v2[0];
   const v1 = v2[1];
@@ -20938,20 +21389,20 @@ function scale$1(m2, v2, dst) {
 }
 var mat4Impl2 = /* @__PURE__ */ Object.freeze({
   __proto__: null,
-  setDefaultType: setDefaultType$2,
-  create: create$1,
+  setDefaultType: setDefaultType$22,
+  create: create$12,
   negate: negate$12,
-  copy: copy$1,
-  clone: clone$1,
-  equalsApproximately: equalsApproximately$1,
-  equals: equals$1,
-  identity,
+  copy: copy$12,
+  clone: clone$12,
+  equalsApproximately: equalsApproximately$12,
+  equals: equals$12,
+  identity: identity2,
   transpose: transpose2,
-  inverse: inverse$1,
+  inverse: inverse$12,
   determinant: determinant2,
   invert: invert$12,
-  multiply: multiply$1,
-  mul: mul$1,
+  multiply: multiply$12,
+  mul: mul$12,
   setTranslation: setTranslation2,
   getTranslation: getTranslation2,
   getAxis: getAxis2,
@@ -20964,17 +21415,17 @@ var mat4Impl2 = /* @__PURE__ */ Object.freeze({
   translation: translation2,
   translate: translate2,
   rotationX: rotationX2,
-  rotateX,
+  rotateX: rotateX2,
   rotationY: rotationY2,
-  rotateY,
+  rotateY: rotateY2,
   rotationZ: rotationZ2,
-  rotateZ,
+  rotateZ: rotateZ2,
   axisRotation: axisRotation2,
   rotation: rotation2,
   axisRotate: axisRotate2,
   rotate: rotate2,
   scaling: scaling2,
-  scale: scale$1
+  scale: scale$12
 });
 
 // node_modules/bvh-loader/module/bvh-loader.js
@@ -21604,7 +22055,7 @@ __export(mat4_exports, {
   getRotation: () => getRotation,
   getScaling: () => getScaling3,
   getTranslation: () => getTranslation3,
-  identity: () => identity2,
+  identity: () => identity3,
   invert: () => invert2,
   lookAt: () => lookAt3,
   mul: () => mul2,
@@ -21619,9 +22070,9 @@ __export(mat4_exports, {
   perspectiveNO: () => perspectiveNO,
   perspectiveZO: () => perspectiveZO,
   rotate: () => rotate3,
-  rotateX: () => rotateX2,
-  rotateY: () => rotateY2,
-  rotateZ: () => rotateZ2,
+  rotateX: () => rotateX3,
+  rotateY: () => rotateY3,
+  rotateZ: () => rotateZ3,
   scale: () => scale3,
   set: () => set2,
   str: () => str,
@@ -21731,7 +22182,7 @@ function set2(out, m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m
   out[15] = m33;
   return out;
 }
-function identity2(out) {
+function identity3(out) {
   out[0] = 1;
   out[1] = 0;
   out[2] = 0;
@@ -22038,7 +22489,7 @@ function rotate3(out, a2, rad, axis) {
   }
   return out;
 }
-function rotateX2(out, a2, rad) {
+function rotateX3(out, a2, rad) {
   var s2 = Math.sin(rad);
   var c2 = Math.cos(rad);
   var a10 = a2[4];
@@ -22069,7 +22520,7 @@ function rotateX2(out, a2, rad) {
   out[11] = a23 * c2 - a13 * s2;
   return out;
 }
-function rotateY2(out, a2, rad) {
+function rotateY3(out, a2, rad) {
   var s2 = Math.sin(rad);
   var c2 = Math.cos(rad);
   var a00 = a2[0];
@@ -22100,7 +22551,7 @@ function rotateY2(out, a2, rad) {
   out[11] = a03 * s2 + a23 * c2;
   return out;
 }
-function rotateZ2(out, a2, rad) {
+function rotateZ3(out, a2, rad) {
   var s2 = Math.sin(rad);
   var c2 = Math.cos(rad);
   var a00 = a2[0];
@@ -22705,7 +23156,7 @@ function lookAt3(out, eye, center, up) {
   var centery = center[1];
   var centerz = center[2];
   if (Math.abs(eyex - centerx) < EPSILON3 && Math.abs(eyey - centery) < EPSILON3 && Math.abs(eyez - centerz) < EPSILON3) {
-    return identity2(out);
+    return identity3(out);
   }
   z0 = eyex - centerx;
   z1 = eyey - centery;
@@ -39846,9 +40297,9 @@ var MeshMorpher = class {
   }
   static pyramid(size2 = 1) {
     return (u2, v2) => {
-      const angle = u2 * Math.PI * 2;
+      const angle2 = u2 * Math.PI * 2;
       const r3 = (1 - v2) * size2;
-      return [r3 * Math.cos(angle), v2 * size2, r3 * Math.sin(angle)];
+      return [r3 * Math.cos(angle2), v2 * size2, r3 * Math.sin(angle2)];
     };
   }
   static supershape(size2 = 1) {
@@ -39892,9 +40343,9 @@ var MeshMorpher = class {
   }
   static circlePlane(radius = 1) {
     return (u2, v2) => {
-      const angle = -u2 * Math.PI * 2;
+      const angle2 = -u2 * Math.PI * 2;
       const r3 = -v2 * radius;
-      return [r3 * Math.cos(angle), 0, r3 * Math.sin(angle)];
+      return [r3 * Math.cos(angle2), 0, r3 * Math.sin(angle2)];
     };
   }
   static icosahedron(radius = 1) {
@@ -40086,11 +40537,11 @@ var MeshMorpher = class {
   static shatter(S2 = 1, pieces = 8) {
     const offsets = [];
     for (let p2 = 0; p2 < pieces; p2++) {
-      const angle = p2 / pieces * Math.PI * 2;
+      const angle2 = p2 / pieces * Math.PI * 2;
       offsets.push({
-        x: Math.cos(angle) * S2 * 0.6,
+        x: Math.cos(angle2) * S2 * 0.6,
         y: (Math.random() - 0.5) * S2 * 0.4,
-        z: Math.sin(angle) * S2 * 0.6
+        z: Math.sin(angle2) * S2 * 0.6
       });
     }
     return (u2, v2) => {
@@ -40144,11 +40595,11 @@ var MeshMorpher = class {
   static splinter(S2 = 1, count = 12) {
     const shards = [];
     for (let i2 = 0; i2 < count; i2++) {
-      const angle = i2 / count * Math.PI * 2;
+      const angle2 = i2 / count * Math.PI * 2;
       const phi = Math.random() * Math.PI;
       shards.push({
-        dirX: Math.sin(phi) * Math.cos(angle),
-        dirY: Math.sin(phi) * Math.sin(angle),
+        dirX: Math.sin(phi) * Math.cos(angle2),
+        dirY: Math.sin(phi) * Math.sin(angle2),
         dirZ: Math.cos(phi),
         length: S2 * (0.5 + Math.random() * 0.5)
       });
@@ -44772,7 +45223,7 @@ var MatrixEngineWGPU = class {
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);
-        }, 120);
+        }, 32);
         c2++;
       }
       skinnedNodeIndex++;
@@ -45798,9 +46249,9 @@ var snakeLightsInstanced = function() {
       const centerZ = monster.instanceTargets[0].position[2];
       const moveTimer = setInterval(() => {
         if (currentIdx <= totalInstances) {
-          let angle = currentIdx / totalInstances * (2 * Math.PI);
-          let newPosX = centerX + radius * Math.cos(angle);
-          let newPosZ = centerZ + radius * Math.sin(angle);
+          let angle2 = currentIdx / totalInstances * (2 * Math.PI);
+          let newPosX = centerX + radius * Math.cos(angle2);
+          let newPosZ = centerZ + radius * Math.sin(angle2);
           monster.instanceTargets[currentIdx].position[0] = newPosX;
           monster.instanceTargets[currentIdx].position[2] = newPosZ;
           console.log(`Positioned ${currentIdx}`);
@@ -50456,9 +50907,9 @@ function createDiagonalFlow(batch, spritesheetName, count = 5, spacing2 = 1.5) {
 function createCircularArray(batch, spritesheetName, count = 16, radius = 10, play2 = false) {
   const sprites = [];
   for (let i2 = 0; i2 < count; i2++) {
-    const angle = i2 / count * Math.PI * 2;
-    const x3 = Math.cos(angle) * radius;
-    const y3 = Math.sin(angle) * radius;
+    const angle2 = i2 / count * Math.PI * 2;
+    const x3 = Math.cos(angle2) * radius;
+    const y3 = Math.sin(angle2) * radius;
     const hue = i2 / count;
     const tint = hslToRgb(hue, 0.8, 0.6);
     const sprite = batch.createSprite(
@@ -50684,10 +51135,10 @@ var InstancedKinematicOperations = class {
       angleOffset += speed;
       time += 0.03;
       for (let i2 = 0; i2 < count; i2++) {
-        const angle = Math.PI * 2 / count * i2 + angleOffset;
+        const angle2 = Math.PI * 2 / count * i2 + angleOffset;
         const t3 = this.targets[i2];
-        t3.position[0] = Math.cos(angle) * radius;
-        t3.position[1] = Math.sin(angle) * radius;
+        t3.position[0] = Math.cos(angle2) * radius;
+        t3.position[1] = Math.sin(angle2) * radius;
         t3.rotation[2] += 0.03;
         this.rainbow(
           t3,
@@ -50711,11 +51162,11 @@ var InstancedKinematicOperations = class {
     this.addInterval(() => {
       time += speed;
       for (let i2 = 0; i2 < count; i2++) {
-        const angle = Math.PI * 2 / count * i2;
-        const r3 = radius * Math.sin(petals * angle + time);
+        const angle2 = Math.PI * 2 / count * i2;
+        const r3 = radius * Math.sin(petals * angle2 + time);
         const t3 = this.targets[i2];
-        t3.position[0] = Math.cos(angle + time) * r3;
-        t3.position[1] = Math.sin(angle + time) * r3;
+        t3.position[0] = Math.cos(angle2 + time) * r3;
+        t3.position[1] = Math.sin(angle2 + time) * r3;
         t3.rotation[0] += 0.01;
         t3.rotation[1] += 0.02;
         t3.rotation[2] += 0.03;
@@ -50779,10 +51230,10 @@ var InstancedKinematicOperations = class {
       time += speed;
       for (let i2 = 0; i2 < count; i2++) {
         const t3 = this.targets[i2];
-        const angle = Math.PI * 2 / count * i2 + time;
+        const angle2 = Math.PI * 2 / count * i2 + time;
         const r3 = radius + Math.sin(time * 6 + i2) * 2;
-        t3.position[0] = Math.cos(angle) * r3;
-        t3.position[1] = Math.sin(angle) * r3;
+        t3.position[0] = Math.cos(angle2) * r3;
+        t3.position[1] = Math.sin(angle2) * r3;
         t3.position[2] = Math.sin(time * 4 + i2) * 4;
         t3.rotation[0] += 0.04;
         t3.rotation[1] += 0.05;
@@ -51057,15 +51508,15 @@ var loadSprite1 = function() {
         let myReel3 = [...MYCUBE3.effects.spriteBatch.sprites.values()];
         const count3 = myReel3.length;
         myReel1.forEach((sprite, index) => {
-          const angle = index / count * Math.PI * 2;
+          const angle2 = index / count * Math.PI * 2;
           sprite.play(index * 0.5);
         });
         myReel2.forEach((sprite, index) => {
-          const angle = index / count * Math.PI * 2;
+          const angle2 = index / count * Math.PI * 2;
           sprite.play(index * 0.5);
         });
         myReel3.forEach((sprite, index) => {
-          const angle = index / count * Math.PI * 2;
+          const angle2 = index / count * Math.PI * 2;
           sprite.play(index * 0.5);
         });
         setTimeout(() => {
@@ -51076,8 +51527,8 @@ var loadSprite1 = function() {
             const baseAngle = index * 20;
             const targetY = baseAngle;
             setTimeout(() => {
-              const angle = index / count * Math.PI * 2;
-              const yDeg = angle * (180 / Math.PI);
+              const angle2 = index / count * Math.PI * 2;
+              const yDeg = angle2 * (180 / Math.PI);
               const FIX = 90;
               sprite.pause();
               sprite.goToFrame(randomIntFromTo(0, 8));
@@ -51094,8 +51545,8 @@ var loadSprite1 = function() {
             const baseAngle = index * 20;
             const targetY = baseAngle;
             setTimeout(() => {
-              const angle = index / count2 * Math.PI * 2;
-              const yDeg = angle * (180 / Math.PI);
+              const angle2 = index / count2 * Math.PI * 2;
+              const yDeg = angle2 * (180 / Math.PI);
               const FIX = 90;
               sprite.pause();
               sprite.goToFrame(randomIntFromTo(0, 8));
@@ -51112,8 +51563,8 @@ var loadSprite1 = function() {
             const baseAngle = index * 20;
             const targetY = baseAngle;
             setTimeout(() => {
-              const angle = index / count3 * Math.PI * 2;
-              const yDeg = angle * (180 / Math.PI);
+              const angle2 = index / count3 * Math.PI * 2;
+              const yDeg = angle2 * (180 / Math.PI);
               const FIX = 90;
               sprite.pause();
               sprite.goToFrame(randomIntFromTo(0, 8));
@@ -51766,9 +52217,9 @@ var loadDrumCannon = function() {
           }
           const t3 = frame / totalFrames;
           const eased = t3 * t3 * (3 - 2 * t3);
-          const angle = targetAngle * eased;
-          const qy = Math.sin(angle * 0.5);
-          const qw = Math.cos(angle * 0.5);
+          const angle2 = targetAngle * eased;
+          const qy = Math.sin(angle2 * 0.5);
+          const qw = Math.cos(angle2 * 0.5);
           app.matrixPhysics.setKinematicRotation(idx, 0, qy, 0, qw);
           frame++;
         }, 1e3 / 60);
@@ -51787,9 +52238,9 @@ var loadDrumCannon = function() {
             const t3 = frame / totalFrames;
             const eased = t3 * t3 * (3 - 2 * t3);
             const r3 = radius * (1 - eased);
-            const angle = t3 * Math.PI * 2 * rotations;
-            const x3 = centerX + Math.cos(angle) * r3;
-            const z2 = centerZ + Math.sin(angle) * r3;
+            const angle2 = t3 * Math.PI * 2 * rotations;
+            const x3 = centerX + Math.cos(angle2) * r3;
+            const z2 = centerZ + Math.sin(angle2) * r3;
             const y3 = startY + (height - startY) * eased;
             app.matrixPhysics.setKinematicTransform(idx, x3, y3, z2);
             frame++;
@@ -59808,6 +60259,806 @@ var loadWaterEffects = function() {
   window.app = waterEffect;
 };
 
+// src/shaders/particles/particles.wgsl.js
+var shredderEffectInstance = `
+struct Camera {
+  viewProj : mat4x4<f32>
+};
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct ModelData {
+  model     : mat4x4<f32>,
+  timeSpeed : vec4<f32>,
+  params    : vec4<f32>, // x: alpha, y: lifeFraction, z/w unused
+  tint      : vec4<f32>  // xyz: color, w: unused
+};
+@group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
+
+struct VSIn {
+  @location(0) position : vec3<f32>,
+  @location(1) normal   : vec3<f32>,
+  @builtin(instance_index) instanceIdx : u32,
+};
+
+struct VSOut {
+  @builtin(position) position : vec4<f32>,
+  @location(0) color   : vec3<f32>,
+  @location(1) alpha   : f32,
+  @location(2) fragNorm: vec3<f32>,
+  @location(3) fragPos : vec3<f32>,
+};
+
+@vertex
+fn vsMain(input : VSIn) -> VSOut {
+  var output : VSOut;
+  let modelData = modelDataArray[input.instanceIdx];
+  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+  output.position = camera.viewProj * worldPos;
+  output.fragPos = worldPos.xyz;
+
+  let normalMat = mat3x3f(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz);
+  output.fragNorm = normalize(normalMat * input.normal);
+
+  output.color = modelData.tint.xyz;
+  output.alpha = modelData.params.x;
+  return output;
+}
+
+struct FragOut {
+  @location(0) color    : vec4f,
+  @location(1) normal   : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
+@fragment
+fn fsMain(input : VSOut) -> FragOut {
+  // simple facing-light shade so shards read as solid tumbling geometry
+  let lightDir = normalize(vec3<f32>(0.4, 0.8, 0.3));
+  let ndotl = max(dot(input.fragNorm, lightDir), 0.15);
+  let shaded = input.color * ndotl * (0.6 + input.alpha * 0.8);
+
+  return FragOut(
+    vec4f(shaded, 1.0),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
+}
+`;
+
+// src/engine/effects/particles.js
+var ACTION_PRESETS = {
+  shredder: {
+    motion: "stream",
+    spawnMode: "continuous",
+    lifeRange: [2, 4],
+    scaleRange: [0.04, 0.12],
+    angularVelRange: [4, 10],
+    gravity: -0.4,
+    drag: 0.2,
+    emitterRadius: 0.25,
+    spread: 1.5,
+    noiseStrength: 1.2,
+    colorRamp: [
+      { t: 0, c: [0.3, 0.1, 1] },
+      { t: 0.4, c: [0.8, 0.2, 1] },
+      { t: 1, c: [1, 0.8, 0.3] }
+    ],
+    alphaRamp: [
+      { t: 0, a: 0 },
+      { t: 0.1, a: 1 },
+      { t: 0.9, a: 1 },
+      { t: 1, a: 0 }
+    ]
+  },
+  orbitMagic: {
+    motion: "orbit",
+    spawnMode: "continuous",
+    lifeRange: [6, 10],
+    scaleRange: [0.05, 0.12],
+    radiusRange: [0.5, 3.5],
+    orbitSpeedRange: [0.5, 3],
+    heightRange: [-1, 1],
+    wobble: 0.35,
+    angularVelRange: [0, 3],
+    colorRamp: [
+      { t: 0, c: [0.2, 0.8, 1] },
+      { t: 1, c: [1, 1, 1] }
+    ],
+    alphaRamp: [
+      { t: 0, a: 1 },
+      { t: 1, a: 1 }
+    ]
+  },
+  vortex: {
+    motion: "vortex",
+    spawnMode: "continuous",
+    lifeRange: [4, 8],
+    scaleRange: [0.04, 0.1],
+    radiusRange: [1.5, 5],
+    spinSpeed: 5,
+    inwardSpeed: 0.5,
+    angularVelRange: [2, 6],
+    colorRamp: [
+      { t: 0, c: [0.3, 0.1, 1] },
+      { t: 1, c: [1, 0.4, 0.2] }
+    ],
+    alphaRamp: [
+      { t: 0, a: 1 },
+      { t: 1, a: 0 }
+    ]
+  },
+  spiral: {
+    motion: "spiral",
+    spawnMode: "continuous",
+    lifeRange: [3, 6],
+    scaleRange: [0.04, 0.1],
+    radiusRange: [0.2, 2.5],
+    orbitSpeedRange: [2, 6],
+    height: 5,
+    expandSpeed: 0.15,
+    angularVelRange: [3, 8],
+    colorRamp: [
+      { t: 0, c: [1, 0.5, 0.2] },
+      { t: 1, c: [1, 1, 0.2] }
+    ],
+    alphaRamp: [
+      { t: 0, a: 1 },
+      { t: 1, a: 0 }
+    ]
+  },
+  birds: {
+    motion: "flock",
+    spawnMode: "continuous",
+    lifeRange: [5, 9],
+    scaleRange: [0.15, 0.28],
+    speedRange: [1.5, 2.5],
+    drag: 0.02,
+    flapFreq: [2, 4],
+    flapAmount: 0.35,
+    turnRate: 1.2,
+    separationRadius: 0.8,
+    cohesionStrength: 0.4,
+    colorRamp: [
+      { t: 0, c: [0.08, 0.08, 0.1] },
+      { t: 1, c: [0.12, 0.1, 0.09] }
+    ],
+    alphaRamp: [
+      { t: 0, a: 1 },
+      { t: 1, a: 0 }
+    ]
+  },
+  bloodSplat: {
+    motion: "burst",
+    spawnMode: "burst",
+    lifeRange: [0.4, 0.9],
+    scaleRange: [0.02, 0.09],
+    gravity: -9.8,
+    drag: 2.2,
+    speedRange: [1.5, 5],
+    spreadAngle: Math.PI * 0.6,
+    angularVelRange: [4, 10],
+    colorRamp: [
+      { t: 0, c: [1, 0.05, 0.05] },
+      { t: 0.4, c: [0.6, 0.02, 0.02] },
+      { t: 1, c: [0.15, 0.02, 0.02] }
+    ],
+    alphaRamp: [
+      { t: 0, a: 1 },
+      { t: 0.7, a: 1 },
+      { t: 1, a: 0 }
+    ]
+  }
+};
+function sampleRamp(ramp, t3) {
+  if (t3 <= ramp[0].t) return ramp[0];
+  for (let i2 = 1; i2 < ramp.length; i2++) {
+    if (t3 <= ramp[i2].t) {
+      const a2 = ramp[i2 - 1], b2 = ramp[i2];
+      const span = b2.t - a2.t || 1;
+      const f2 = (t3 - a2.t) / span;
+      if (a2.c) return { c: lerp3(a2.c, b2.c, f2) };
+      return { a: a2.a + (b2.a - a2.a) * f2 };
+    }
+  }
+  return ramp[ramp.length - 1];
+}
+function lerp3(a2, b2, f2) {
+  return [a2[0] + (b2[0] - a2[0]) * f2, a2[1] + (b2[1] - a2[1]) * f2, a2[2] + (b2[2] - a2[2]) * f2];
+}
+function randomAxis() {
+  let x3 = Math.random() * 2 - 1;
+  let y3 = Math.random() * 2 - 1;
+  let z2 = Math.random() * 2 - 1;
+  const l2 = Math.hypot(x3, y3, z2);
+  return [x3 / l2, y3 / l2, z2 / l2];
+}
+var ParticleActionEmitter = class {
+  constructor(device2, format, maxShards = 800, cameraBuffer) {
+    this.device = device2;
+    this.format = format;
+    this.time = 0;
+    this.enabled = true;
+    this.maxShards = maxShards;
+    this.floatsPerInstance = 28;
+    this.instanceData = new Float32Array(maxShards * this.floatsPerInstance);
+    this.cameraBuffer = cameraBuffer;
+    this._localMatrix = mat4Impl.create();
+    this._finalMatrix = mat4Impl.create();
+    this._rotMatrix = mat4Impl.create();
+    this._q = quatImpl.create();
+    this.shards = [];
+    for (let i2 = 0; i2 < maxShards; i2++) {
+      this.shards.push({
+        pos: [0, 0, 0],
+        vel: [0, 0, 0],
+        axis: [0, 0, 1],
+        angle: 0,
+        angularVel: 0,
+        scale: 0.1,
+        baseScale: 0.1,
+        color: [1, 1, 1],
+        alpha: 0,
+        age: 0,
+        life: 1,
+        radius: randomIntFromTo(1, 20),
+        phase: 0,
+        orbitSpeed: 1,
+        height: 0,
+        target: [0, 0, 0],
+        bank: 0,
+        scaleMod: 1,
+        active: false,
+        seed: Math.random() * 1e3
+      });
+    }
+    this.pathFn = null;
+    this.setAction("shredder");
+    this._initPipeline();
+  }
+  _tetraGeometry() {
+    const a2 = [0, 0.6, 0], b2 = [-0.5, -0.3, 0.35], c2 = [0.5, -0.3, 0.35], d2 = [0, -0.3, -0.5];
+    const faces = [[a2, c2, b2], [a2, b2, d2], [a2, d2, c2], [b2, c2, d2]];
+    const positions = [], normals = [];
+    for (const [p0, p1, p2] of faces) {
+      const e1 = vec3Impl.subtract(p1, p0), e2 = vec3Impl.subtract(p2, p0);
+      const n3 = vec3Impl.normalize(vec3Impl.cross(e1, e2));
+      for (const p3 of [p0, p1, p2]) {
+        positions.push(...p3);
+        normals.push(...n3);
+      }
+    }
+    return { positions: new Float32Array(positions), normals: new Float32Array(normals) };
+  }
+  _initPipeline() {
+    const { positions, normals } = this._tetraGeometry();
+    this.vertexCount = positions.length / 3;
+    this.posBuffer = this.device.createBuffer({ size: positions.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.posBuffer, 0, positions);
+    this.normBuffer = this.device.createBuffer({ size: normals.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.normBuffer, 0, normals);
+    this.modelBuffer = this.device.createBuffer({
+      label: "shredder modelBuffer",
+      size: this.maxShards * this.floatsPerInstance * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      label: "shredder bindGroupLayout",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      label: "shredder bindGroup",
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: shredderEffectInstance });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    this.pipeline = this.device.createRenderPipeline({
+      label: "shredder pipeline",
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 12, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [
+          { format: this.format },
+          // opaque, no blend — solid debris
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
+      },
+      primitive: { topology: "triangle-list", cullMode: "back" },
+      depthStencil: { depthWriteEnabled: true, depthCompare: "less", format: "depth24plus" }
+    });
+  }
+  setAction(name2, overrides = {}) {
+    const preset = ACTION_PRESETS[name2];
+    if (!preset) {
+      console.warn(`Unknown action "${name2}"`);
+      return;
+    }
+    this.action = { ...preset, ...overrides };
+    this.actionName = name2;
+    if (this.action.spawnMode === "continuous") {
+      for (const s2 of this.shards) this._respawn(s2, true);
+    } else {
+      for (const s2 of this.shards) s2.active = false;
+    }
+  }
+  burst(origin, dir = [0, 1, 0], count = this.maxShards) {
+    let spawned = 0;
+    for (const s2 of this.shards) {
+      if (spawned >= count) break;
+      if (s2.active) continue;
+      this._respawn(s2, false, origin, dir);
+      spawned++;
+    }
+  }
+  setPath(fn2) {
+    this.pathFn = fn2;
+  }
+  _respawn(s2, staggerAge, origin = [0, 0, 0], dir = [0, 1, 0]) {
+    const a2 = this.action;
+    s2.life = randomFloatFromTo(a2.lifeRange[0], a2.lifeRange[1]);
+    s2.age = staggerAge ? Math.random() * s2.life : 0;
+    s2.baseScale = randomFloatFromTo(a2.scaleRange[0], a2.scaleRange[1]);
+    s2.angularVel = randomFloatFromTo(a2.angularVelRange[0], a2.angularVelRange[1]) * (Math.random() < 0.5 ? -1 : 1);
+    s2.active = true;
+    s2.axis = randomAxis();
+    switch (a2.motion) {
+      case "burst":
+        const spread = a2.spreadAngle;
+        const speed = randomFloatFromTo(a2.speedRange[0], a2.speedRange[1]);
+        const [dx, dy, dz] = randomConeDir(dir, spread);
+        s2.pos = [...origin];
+        s2.vel = [dx * speed, dy * speed, dz * speed];
+        break;
+      case "flock":
+        s2.pos = [randomFloatFromTo(-3, 3), randomFloatFromTo(1, 3), randomFloatFromTo(-3, 3)];
+        const s22 = randomFloatFromTo(a2.speedRange[0], a2.speedRange[1]);
+        s2.vel = [s22, 0, 0];
+        break;
+      case "orbit":
+        s2.pos = [0, 0, 0];
+        s2.vel = [0, 0, 0];
+        s2.radius = randomFloatFromTo(a2.radiusRange[0], a2.radiusRange[1]);
+        s2.phase = Math.random() * Math.PI * 2;
+        s2.orbitSpeed = randomFloatFromTo(a2.orbitSpeedRange[0], a2.orbitSpeedRange[1]);
+        s2.height = randomFloatFromTo(a2.heightRange[0], a2.heightRange[1]);
+        break;
+      case "spiral":
+        s2.pos = [0, 0, 0];
+        s2.vel = [0, 0, 0];
+        s2.radius = randomFloatFromTo(
+          a2.radiusRange[0],
+          a2.radiusRange[1]
+        );
+        s2.phase = Math.random() * Math.PI * 2;
+        s2.orbitSpeed = randomFloatFromTo(
+          a2.orbitSpeedRange[0],
+          a2.orbitSpeedRange[1]
+        );
+        break;
+      case "vortex":
+        s2.pos = [0, 0, 0];
+        s2.vel = [0, 0, 0];
+        s2.radius = randomFloatFromTo(a2.radiusRange[0], a2.radiusRange[1]);
+        s2.phase = Math.random() * Math.PI * 2;
+        s2.orbitSpeed = randomFloatFromTo(2, 6);
+        break;
+      case "stream":
+        s2.pos = [
+          randomFloatFromTo(-a2.emitterRadius, a2.emitterRadius),
+          randomFloatFromTo(-a2.emitterRadius, a2.emitterRadius),
+          randomFloatFromTo(-a2.emitterRadius, a2.emitterRadius)
+        ];
+        s2.vel = [
+          randomFloatFromTo(-a2.spread, a2.spread),
+          randomFloatFromTo(0, a2.spread),
+          randomFloatFromTo(-a2.spread, a2.spread)
+        ];
+        break;
+      default:
+        s2.pos = [0, 0, 0];
+        s2.vel = [0, 0, 0];
+        break;
+    }
+  }
+  _updateMotion(s2, dt2) {
+    const a2 = this.action;
+    const t3 = s2.age / s2.life;
+    switch (a2.motion) {
+      case "path": {
+        if (!this.pathFn) break;
+        const base = this.pathFn(t3);
+        const jr2 = a2.jitterRadius || 0;
+        s2.pos[0] = base[0] + Math.sin(s2.seed + this.time * 1.7) * jr2;
+        s2.pos[1] = base[1] + Math.cos(s2.seed * 1.3 + this.time * 1.3) * jr2;
+        s2.pos[2] = base[2];
+        break;
+      }
+      case "burst": {
+        s2.vel[1] += a2.gravity * dt2;
+        const dragF = Math.max(0, 1 - a2.drag * dt2);
+        s2.vel[0] *= dragF;
+        s2.vel[1] *= dragF;
+        s2.vel[2] *= dragF;
+        s2.pos[0] += s2.vel[0] * dt2;
+        s2.pos[1] += s2.vel[1] * dt2;
+        s2.pos[2] += s2.vel[2] * dt2;
+        s2.scaleMod = 1 + t3 * 1.5;
+        break;
+      }
+      case "stream": {
+        s2.vel[1] += (a2.gravity || 0) * dt2;
+        const dragF = Math.max(0, 1 - (a2.drag || 0) * dt2);
+        s2.vel[0] *= dragF;
+        s2.vel[1] *= dragF;
+        s2.vel[2] *= dragF;
+        const noise = a2.noiseStrength || 0;
+        s2.vel[0] += Math.sin(this.time * 5 + s2.seed) * noise * dt2;
+        s2.vel[1] += Math.cos(this.time * 4 + s2.seed) * noise * dt2;
+        s2.vel[2] += Math.sin(this.time * 6 + s2.seed) * noise * dt2;
+        s2.pos[0] += s2.vel[0] * dt2;
+        s2.pos[1] += s2.vel[1] * dt2;
+        s2.pos[2] += s2.vel[2] * dt2;
+        break;
+      }
+      case "flock": {
+        let sepX = 0;
+        let sepY = 0;
+        let sepZ = 0;
+        for (const o3 of this.shards) {
+          if (o3 === s2 || !o3.active)
+            continue;
+          const dx = s2.pos[0] - o3.pos[0];
+          const dy = s2.pos[1] - o3.pos[1];
+          const dz = s2.pos[2] - o3.pos[2];
+          const d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 > 0 && d2 < a2.separationRadius * a2.separationRadius) {
+            sepX += dx / d2;
+            sepY += dy / d2;
+            sepZ += dz / d2;
+          }
+        }
+        s2.vel[0] += (sepX - s2.vel[0] * a2.drag) * dt2;
+        s2.vel[1] += (sepY + Math.sin(this.time * a2.flapFreq[0] + s2.seed) * a2.flapAmount - s2.vel[1] * a2.drag) * dt2;
+        s2.vel[2] += (sepZ - s2.vel[2] * a2.drag) * dt2;
+        s2.pos[0] += s2.vel[0] * dt2;
+        s2.pos[1] += s2.vel[1] * dt2;
+        s2.pos[2] += s2.vel[2] * dt2;
+        s2.bank = Math.atan2(s2.vel[2], s2.vel[0]);
+        break;
+      }
+      case "orbit": {
+        const radius = s2.radius ?? 1;
+        const speed = s2.orbitSpeed ?? 1;
+        s2.phase += speed * dt2;
+        s2.pos[0] = Math.cos(s2.phase) * radius;
+        s2.pos[2] = Math.sin(s2.phase) * radius;
+        s2.pos[1] = (s2.height ?? 0) + Math.sin(s2.phase * 2 + s2.seed) * 0.25;
+        break;
+      }
+      case "spiral": {
+        s2.phase += s2.orbitSpeed * dt2;
+        s2.pos[0] = Math.cos(s2.phase) * s2.radius;
+        s2.pos[2] = Math.sin(s2.phase) * s2.radius;
+        s2.pos[1] = t3 * (a2.height || 3);
+        break;
+      }
+      case "vortex": {
+        s2.phase += (a2.spinSpeed ?? 4) * dt2;
+        s2.radius -= (a2.inwardSpeed ?? 0.5) * dt2;
+        if (s2.radius < 0.05)
+          s2.radius = a2.maxRadius || 2;
+        s2.pos[0] = Math.cos(s2.phase) * s2.radius;
+        s2.pos[2] = Math.sin(s2.phase) * s2.radius;
+        break;
+      }
+      case "fountain": {
+        s2.vel[1] += (a2.gravity || -9.81) * dt2;
+        s2.pos[0] += s2.vel[0] * dt2;
+        s2.pos[1] += s2.vel[1] * dt2;
+        s2.pos[2] += s2.vel[2] * dt2;
+        break;
+      }
+      case "wander": {
+        const n3 = a2.noiseStrength || 1;
+        s2.vel[0] += (Math.random() - 0.5) * n3 * dt2;
+        s2.vel[1] += (Math.random() - 0.5) * n3 * dt2;
+        s2.vel[2] += (Math.random() - 0.5) * n3 * dt2;
+        const drag = 1 - (a2.drag || 0.1) * dt2;
+        s2.vel[0] *= drag;
+        s2.vel[1] *= drag;
+        s2.vel[2] *= drag;
+        s2.pos[0] += s2.vel[0] * dt2;
+        s2.pos[1] += s2.vel[1] * dt2;
+        s2.pos[2] += s2.vel[2] * dt2;
+        break;
+      }
+      case "gravity": {
+        const center = a2.center || [0, 0, 0];
+        let dx = center[0] - s2.pos[0];
+        let dy = center[1] - s2.pos[1];
+        let dz = center[2] - s2.pos[2];
+        const len2 = Math.hypot(dx, dy, dz) + 1e-4;
+        dx /= len2;
+        dy /= len2;
+        dz /= len2;
+        const g2 = a2.gravityStrength || 2;
+        s2.vel[0] += dx * g2 * dt2;
+        s2.vel[1] += dy * g2 * dt2;
+        s2.vel[2] += dz * g2 * dt2;
+        s2.pos[0] += s2.vel[0] * dt2;
+        s2.pos[1] += s2.vel[1] * dt2;
+        s2.pos[2] += s2.vel[2] * dt2;
+        break;
+      }
+      case "bounce": {
+        const limit = a2.bounds || 3;
+        s2.pos[0] += s2.vel[0] * dt2;
+        s2.pos[1] += s2.vel[1] * dt2;
+        s2.pos[2] += s2.vel[2] * dt2;
+        if (Math.abs(s2.pos[0]) > limit) s2.vel[0] *= -1;
+        if (Math.abs(s2.pos[1]) > limit) s2.vel[1] *= -1;
+        if (Math.abs(s2.pos[2]) > limit) s2.vel[2] *= -1;
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  updateInstanceData = (baseModelMatrix, dt2 = 0.016) => {
+    const a2 = this.action;
+    const floats = this.floatsPerInstance;
+    for (let i2 = 0; i2 < this.shards.length; i2++) {
+      const s2 = this.shards[i2];
+      const off = i2 * floats;
+      if (!s2.active) {
+        this.instanceData.fill(0, off, off + floats);
+        continue;
+      }
+      s2.age += dt2;
+      if (s2.age >= s2.life) {
+        if (a2.spawnMode === "continuous") this._respawn(s2, false);
+        else {
+          s2.active = false;
+          this.instanceData.fill(0, off, off + floats);
+          continue;
+        }
+      }
+      this._updateMotion(s2, dt2);
+      s2.angle += s2.angularVel * dt2;
+      const t3 = Math.min(s2.age / s2.life, 1);
+      const colorStop = sampleRamp(a2.colorRamp, t3);
+      const alphaStop = sampleRamp(a2.alphaRamp, t3);
+      if (colorStop.c) s2.color = colorStop.c;
+      s2.alpha = alphaStop.a ?? s2.alpha;
+      const finalScale = s2.baseScale * (s2.scaleMod ?? 1) * s2.alpha;
+      quatImpl.fromAxisAngle(s2.axis, s2.angle, this._q);
+      mat4Impl.fromQuat(this._q, this._rotMatrix);
+      mat4Impl.identity(this._localMatrix);
+      mat4Impl.translate(this._localMatrix, s2.pos, this._localMatrix);
+      mat4Impl.multiply(this._localMatrix, this._rotMatrix, this._localMatrix);
+      mat4Impl.scale(this._localMatrix, [finalScale, finalScale, finalScale], this._localMatrix);
+      mat4Impl.identity(this._finalMatrix);
+      mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
+      this.instanceData.set(this._finalMatrix, off);
+      this.instanceData[off + 16] = s2.age;
+      this.instanceData[off + 17] = s2.life;
+      this.instanceData[off + 18] = 0;
+      this.instanceData[off + 19] = 0;
+      this.instanceData[off + 20] = s2.alpha;
+      this.instanceData[off + 21] = t3;
+      this.instanceData[off + 22] = 0;
+      this.instanceData[off + 23] = 0;
+      this.instanceData[off + 24] = s2.color[0];
+      this.instanceData[off + 25] = s2.color[1];
+      this.instanceData[off + 26] = s2.color[2];
+      this.instanceData[off + 27] = 1;
+    }
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData);
+  };
+  render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
+    this._dt = dt2;
+    this.time += dt2;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.posBuffer);
+    pass.setVertexBuffer(1, this.normBuffer);
+    pass.draw(this.vertexCount, this.shards.length);
+  }
+};
+function randomConeDir(dir, spread) {
+  const theta = Math.random() * spread;
+  const phi = Math.random() * Math.PI * 2;
+  const [dx, dy, dz] = dir;
+  let up = Math.abs(dy) < 0.99 ? [0, 1, 0] : [1, 0, 0];
+  const right2 = vec3Impl.normalize(vec3Impl.cross(up, dir));
+  const fwd = vec3Impl.cross(dir, right2);
+  const sinT = Math.sin(theta);
+  return [
+    dx * Math.cos(theta) + (right2[0] * Math.cos(phi) + fwd[0] * Math.sin(phi)) * sinT,
+    dy * Math.cos(theta) + (right2[1] * Math.cos(phi) + fwd[1] * Math.sin(phi)) * sinT,
+    dz * Math.cos(theta) + (right2[2] * Math.cos(phi) + fwd[2] * Math.sin(phi)) * sinT
+  ];
+}
+
+// examples/particles.js
+var loadParticles = function() {
+  let particles = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: { type: "WASD", responseCoef: 1e3 },
+    clearColor: { r: 0, b: 0, g: 0, a: 1 }
+  }, () => {
+    app.matrixSounds.createAudio("music", "res/audios/audionautix-black-fly.mp3", 1);
+    app.matrixSounds.audios.music.loop = true;
+    let bloomRadius = 0.1;
+    let bloomIntesity = 0.1;
+    let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 82, color: "red" } : { left: "5", color: "red" };
+    MobileDOM.addButton("Bloom radius +", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      bloomRadius++;
+    }, () => {
+    }, arg1);
+    let arg2 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 73, color: "red" } : { left: "13", color: "red" };
+    MobileDOM.addButton("Bloom radius -", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      if (bloomRadius - 1 > 0) bloomRadius--;
+    }, () => {
+    }, arg2);
+    let arg3 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 64, color: "red" } : { left: "21", color: "red" };
+    MobileDOM.addButton("Bloom intesity +", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      bloomIntesity = bloomIntesity + 1;
+    }, () => {
+    }, arg3);
+    let arg4 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 55, color: "red" } : { left: "29", color: "red" };
+    MobileDOM.addButton("Bloom intesity -", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      if (bloomIntesity - 1 > 0) bloomIntesity = bloomIntesity - 1;
+    }, () => {
+    }, arg4);
+    let arg5 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 46, color: "#5a48fc" } : { left: "37", color: "#8b7eff" };
+    MobileDOM.addButton("Volumetric", function() {
+      app.activateVolumetricEffect();
+    }, () => {
+    }, arg5);
+    let arg6 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 37, color: "#6655ff" } : { left: "45", color: "#6453ff" };
+    MobileDOM.addButton("HZB", function() {
+      app.activateHZB();
+    }, () => {
+    }, arg6);
+    particles.addLight();
+    downloadMeshes(
+      { cube: "./res/meshes/blender/cube.obj", land: "./res/meshes/maps-objs/map-1.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    addRaycastsAABBListener("canvas1", "click");
+    async function onLoadObj(m2) {
+      var glbFile01 = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, particles.device)));
+      let MONSTER = particles.addGlbObjInctance({
+        material: { type: "power", shared: false, useTextureFromGlb: true },
+        useScale: true,
+        scale: [10, 10, 10],
+        position: { x: 0, y: -4, z: -20 },
+        name: "firstGlb",
+        texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+      }, null, glbFile01);
+      loadNavMesh("./res/meshes/nav-mesh/navmesh.json").then((r3) => {
+        app.nav = r3;
+        app.GROUND = app.addMeshObj({
+          position: { x: 0, y: -4, z: -10 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 0, y: 0, z: 0 },
+          scale: [100, 1, 100],
+          texturesPaths: ["./res/textures/white-metal2.webp"],
+          name: "ground",
+          mesh: m2.cube,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          },
+          raycast: { enabled: true, radius: 1.5 }
+        });
+      });
+      let birds = particles.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [10, 10, 10],
+        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "birds",
+        useBlend: true,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true
+        }
+      });
+      app.birds = birds;
+      app.MONSTER = MONSTER;
+      app.birds.position = app.MONSTER.position;
+      particles.lightContainer[0].setIntensity(10);
+      particles.lightContainer[0].setRange(100);
+      particles.activateBloomEffect();
+      particles.lightContainer[0].setPosition(0, 90, -10);
+      particles.lightContainer[0].setTarget(0, 0, -10);
+      app.MONSTER.position.thrust = 0.2;
+      setTimeout(() => {
+        app.MONSTER.playAnimationByName("idle");
+        app.GROUND.setBlend(0.8);
+        app.birds.setBlend(1e-3);
+        app.matrixSounds.play("music");
+        app.MONSTER.position.onPositionReach = () => {
+          console.log("MONSTER.position.onTargetPositionReach");
+          app.MONSTER.playAnimationByName("idle");
+        };
+        app.MONSTER.updateMaxInstances(4);
+        app.MONSTER.updateInstances(4);
+        app.MONSTER.trailAnimation.delay = 50;
+        app.birds.effects.keeffect = new KaleidoscopeEmitter(app.device, "rgba16float", 30, app.cameraBuffer);
+        app.birds.effects.particles = new ParticleActionEmitter(particles.device, "rgba16float", 200, app.cameraBuffer);
+        app.birds.effects.particles2 = new ParticleActionEmitter(particles.device, "rgba16float", 300, app.cameraBuffer);
+        app.birds.effects.particles3 = new ParticleActionEmitter(particles.device, "rgba16float", 300, app.cameraBuffer);
+        app.birds.effects.particles4 = new ParticleActionEmitter(particles.device, "rgba16float", 200, app.cameraBuffer);
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(12);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 700);
+    }
+    particles.canvas.addEventListener("ray.hit.event", (e2) => {
+      const { hitObject, hitPoint } = e2.detail;
+      app.birds.effects.particles.setAction("birds", { separationRadius: 1.2, angularVelRange: [0, 0] });
+      app.birds.effects.particles2.setAction("orbitMagic", { separationRadius: 1.2, angularVelRange: [0, 0] });
+      app.birds.effects.particles3.setAction("spiral");
+      app.birds.effects.particles4.setAction("bloodSplat", { separationRadius: 1.2 });
+      app.birds.effects.particles4.burst();
+      app.birds.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+      app.birds.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+      const start = [app.MONSTER.position.x, app.MONSTER.position.y, app.MONSTER.position.z];
+      const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
+      app.MONSTER.playAnimationByName("walk");
+      const path2 = app.nav.findPath(start, end);
+      if (!path2 || path2.length === 0) {
+        console.warn("No valid path found.");
+        return;
+      }
+      followPath(app.MONSTER, path2, app);
+    });
+  });
+  window.app = particles;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -59860,6 +61111,7 @@ if (byId2("loadMenuBeast")) {
 byId2("loadBVHSkeletal").addEventListener("click", () => switchDemo("32"));
 byId2("loadBVHSkeletalShared").addEventListener("click", () => switchDemo("33"));
 byId2("loadWaterEffects").addEventListener("click", () => switchDemo("34"));
+byId2("loadParticles").addEventListener("click", () => switchDemo("35"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -59931,6 +61183,8 @@ if (urlQuery["demo"] === "1") {
   loadBVHRawExampleShared();
 } else if (urlQuery["demo"] === "34") {
   loadWaterEffects();
+} else if (urlQuery["demo"] === "35") {
+  loadParticles();
 } else {
   loadObjFile();
 }
