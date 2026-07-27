@@ -59791,10 +59791,12 @@ var loadWaterEffects = function() {
     waterEffect.canvas.addEventListener("ray.hit.event", (e2) => {
       const { hitObject, hitPoint } = e2.detail;
       console.log("hitObject hitPoint ?", app.MONSTER.position.z);
-      let addY = 0;
-      if (app.MONSTER.position.z < -10) addY = addY - 2.5;
-      const start = [app.MONSTER.position.x, app.MONSTER.position.y + addY, app.MONSTER.position.z];
-      const end = [hitPoint[0], hitPoint[1] + addY, hitPoint[2]];
+      const water = app.MAT_EFFECT_WATER.effects.waterEffect;
+      const invModel = mat4Impl.invert(hitObject._modelMatrix);
+      const local2 = vec3Impl.transformMat4(hitPoint, invModel);
+      water.addDrop(local2[0], local2[2], 0.03, 0.5);
+      const start = [app.MONSTER.position.x, app.MONSTER.position.y, app.MONSTER.position.z];
+      const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       const path2 = app.nav.findPath(start, end);
       if (!path2 || path2.length === 0) {
         console.warn("No valid path found.");

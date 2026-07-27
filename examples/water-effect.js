@@ -190,17 +190,14 @@ export var loadWaterEffects = function() {
     waterEffect.canvas.addEventListener("ray.hit.event", (e) => {
       const {hitObject, hitPoint} = e.detail;
       console.log('hitObject hitPoint ?',  app.MONSTER.position.z ); // should be true
-      // const water = app.MAT_EFFECT_WATER.effects.waterEffect;
-      // const invModel = mat4.invert(hitObject._modelMatrix); // or baseModelMatrix, whatever the mesh actually carries
-      // const local = vec3.transformMat4(hitPoint, invModel);
-      // console.log('local coords (should be roughly -1..1):', local);
-      // water.addDrop(local[0], local[2], 0.03, 0.5);
 
-      // add deep 
-      let addY = 0;
-       if ( app.MONSTER.position.z < -10 ) addY=addY - 2.5;
-      const start = [app.MONSTER.position.x, app.MONSTER.position.y + addY, app.MONSTER.position.z];
-      const end = [hitPoint[0], hitPoint[1]+ addY, hitPoint[2]];
+      const water = app.MAT_EFFECT_WATER.effects.waterEffect;
+      const invModel = mat4.invert(hitObject._modelMatrix); // or baseModelMatrix, whatever the mesh actually carries
+      const local = vec3.transformMat4(hitPoint, invModel);
+      water.addDrop(local[0], local[2], 0.03, 0.5);
+
+      const start = [app.MONSTER.position.x, app.MONSTER.position.y, app.MONSTER.position.z];
+      const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       // app.net.send({
       //   heroName: app.localHero.name,
       //   sceneName: hero.name,
