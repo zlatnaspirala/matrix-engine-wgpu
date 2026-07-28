@@ -61102,6 +61102,291 @@ var loadParticles = function() {
   window.app = particles;
 };
 
+// examples/games/my-nui/real-runner.js
+var loadRunner = function() {
+  createNuiContainer(true, false, true);
+  let playerID;
+  let menuBeast = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    // dontUsePhysics: true,
+    useCannon: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      noEvents: true,
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    byId2("nui-commander-container").style.left = "10%";
+    byId2("nui-commander-container").style.top = "40%";
+    var nuiCommander = {};
+    nuiCommander.drawer = new CanvasEngine(interActionController);
+    nuiCommander.drawer.draw();
+    nuiCommander.indicatorsBlocks = indicatorsBlocks;
+    nuiCommander.drawer.elements.push(nuiCommander.indicatorsBlocks);
+    nuiCommander.indicatorsBlocks.text[7] = "zlatnaspirala";
+    const cursor = new NuiCursor({ color: "255, 80, 80" });
+    nuiCommander.drawer.elements.push(cursor);
+    const slider = new NuiSlider("Bloom Intesity", {
+      row: 2,
+      value: 1,
+      onChange: (v2) => {
+        app.bloomPass.setIntensity(v2);
+      }
+    });
+    const sliderBloomRad = new NuiSlider("Bloom Blur", {
+      row: 4,
+      value: 1,
+      onChange: (v2) => {
+        app.bloomPass.setBlurRadius(v2);
+      }
+    });
+    const hideSliderBloom = new NuiButton(
+      "hide",
+      () => {
+        nuiCommander.drawer.removeElement(slider);
+        nuiCommander.drawer.removeElement(sliderBloomRad);
+        nuiCommander.drawer.removeElement(hideSliderBloom);
+        nuiCommander.drawer.elements.push(menu);
+      },
+      { col: 3, row: 0, cols: 2, rows: 1, sensitivity: "low", bgColor: "#121234", textColor: "white" }
+    );
+    const menu = new NuiMenu([
+      { label: "Light red", action: () => {
+        app.lightContainer[0].setColor([100, 1, 0]);
+      } },
+      { label: "Light green", action: () => {
+        app.lightContainer[0].setColor([0, 100, 1]);
+      } },
+      {
+        label: "Volumetric",
+        action: () => {
+          app.activateVolumetricEffect({ density: 0.5, steps: 30, scatterStrength: 2, heightFalloff: 0.2, lightColor: [0, 1.8, 10] });
+        }
+      },
+      {
+        label: "Bloom settings",
+        action: () => {
+          nuiCommander.drawer.removeElement(menu);
+          nuiCommander.drawer.elements.push(slider);
+          nuiCommander.drawer.elements.push(sliderBloomRad);
+          nuiCommander.drawer.elements.push(hideSliderBloom);
+        }
+      }
+    ], {
+      col: 0,
+      cols: 2,
+      startRow: 0,
+      dwellMs: 200,
+      color: "255, 160, 255",
+      accentColor: "255, 80, 120",
+      onSelect: (item, i2) => console.log("selected:", item.label)
+    });
+    nuiCommander.drawer.elements.push(menu);
+    app.nui = nuiCommander;
+    console.info("nui-commander controls attached.");
+    menuBeast.matrixPhysics.speedUpSimulation(4);
+    const cam2 = app.getCamera();
+    const collisionSystem = new CollisionSystem();
+    app.collisionSystem = collisionSystem;
+    menuBeast.addLight();
+    downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    async function onGround(m2) {
+      let ground = menuBeast.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: 0, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      const glbFile = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer()).then((buf) => uploadGLBModel(buf, menuBeast.device));
+      let beast = menuBeast.addGlbObjInctance({
+        material: { type: "standard", useTextureFromGlb: true },
+        useScale: true,
+        scale: [4, 4, 4],
+        position: { x: 0, y: -1, z: -25 },
+        name: "player",
+        physics: {
+          enabled: true,
+          geometry: "Cube",
+          mass: 1,
+          radius: [0.5, 0.5, 0.5],
+          scale: [1.5, 2, 1.5],
+          height: 1,
+          group: 2,
+          mask: -1
+        },
+        texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+      }, null, glbFile);
+      app.beast = beast;
+      if (app.beast && app.beast.position) {
+        collisionSystem.register("player", app.beast.position, 3, "player");
+      }
+    }
+    function createPillar(menuBeast2, m2, x3, y3, z2, name2) {
+      const base = menuBeast2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 10, 1],
+        texturesPaths: ["./res/textures/white-metal2.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      const top = menuBeast2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3 + 6, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1.8, 3, 1.8],
+        texturesPaths: ["./res/textures/matrix1.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      return { base, top };
+    }
+    async function onLoadObj(m2) {
+      const pillar1 = createPillar(menuBeast, m2, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(menuBeast, m2, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(menuBeast, m2, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(menuBeast, m2, 20, 6, 20, "pil4");
+      menuBeast.lightContainer[0].setIntensity(0.7);
+      app.lightContainer[0].setColorB(100);
+      menuBeast.activateBloomEffect();
+      menuBeast.lightContainer[0].setPosition(0, 35, 0);
+      menuBeast.lightContainer[0].setTarget(0, 0, -20);
+      function spawnRunners(menuBeast2, mesh, opts = {}) {
+        const cfg = Object.assign({
+          count: 12,
+          minX: -18,
+          maxX: 18,
+          minY: 0.5,
+          maxY: 4.5,
+          startZ: 60,
+          // spawn in front (+Z)
+          endZ: -40,
+          // when reaching this Z (past player) send back to startZ
+          speedMin: 0.6,
+          speedMax: 1.6,
+          scaleMin: 0.8,
+          scaleMax: 1.8
+        }, opts);
+        const runners = [];
+        function rand(a2, b2) {
+          return a2 + Math.random() * (b2 - a2);
+        }
+        for (let i2 = 0; i2 < cfg.count; i2++) {
+          const x3 = rand(cfg.minX, cfg.maxX);
+          const y3 = rand(cfg.minY, cfg.maxY);
+          const z2 = cfg.startZ + Math.random() * 30;
+          const s2 = rand(cfg.scaleMin, cfg.scaleMax);
+          const obj2 = menuBeast2.addMeshObj({
+            material: { type: "dark", share: true },
+            position: { x: x3, y: y3, z: z2 },
+            rotation: { x: 0, y: 0, z: 0 },
+            rotationSpeed: { x: 0, y: 0, z: 0 },
+            scale: [s2, s2, s2],
+            texturesPaths: ["./res/textures/matrix1.webp"],
+            name: "runner" + i2,
+            mesh,
+            raycast: { enabled: true, radius: 1 },
+            physics: { enabled: false, mass: 0, geometry: "Cube" }
+          });
+          obj2._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
+          obj2._runnerCfg = cfg;
+          runners.push(obj2);
+          const rRadius = Math.max(s2) || s2;
+          try {
+            collisionSystem.register(obj2.name, obj2.position, rRadius, "obstacle");
+          } catch (err) {
+            console.warn("collision register failed", err);
+          }
+        }
+        const updater = {
+          update: function() {
+            for (let i2 = 0; i2 < runners.length; i2++) {
+              const r3 = runners[i2];
+              if (!r3.position) continue;
+              r3.position.z -= r3._runnerSpeed;
+              if (r3.rotation) r3.rotation.y += 0.01 + r3._runnerSpeed * 0.01;
+              if (r3.position.z < r3._runnerCfg.endZ) {
+                r3.position.z = r3._runnerCfg.startZ + Math.random() * 30;
+                r3.position.x = rand(r3._runnerCfg.minX, r3._runnerCfg.maxX);
+                r3.position.y = rand(r3._runnerCfg.minY, r3._runnerCfg.maxY);
+                r3._runnerSpeed = rand(r3._runnerCfg.speedMin, r3._runnerCfg.speedMax);
+                const s2 = rand(r3._runnerCfg.scaleMin, r3._runnerCfg.scaleMax);
+                if (r3.scale) r3.scale = [s2, s2, s2];
+              }
+            }
+          }
+        };
+        app.autoUpdate.push(updater);
+        return { runners, updater };
+      }
+      const runnerSet = spawnRunners(menuBeast, m2.cube, { count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 4.5, startZ: 60, endZ: -40, speedMin: 0.6, speedMax: 1.6 });
+      window.addEventListener("close-distance", (e2) => {
+        try {
+          const detail = e2.detail.data || e2.detail || {};
+          const A2 = detail.A;
+          const B2 = detail.B;
+          if (!A2 || !B2) return;
+          if (A2.group === "player" && B2.group === "obstacle" || B2.group === "player" && A2.group === "obstacle") {
+            const obstacle = A2.group === "obstacle" ? A2 : B2;
+            const obj2 = app.getSceneObjectByName(obstacle.id);
+            console.warn("close-distance obstacle.id ", obstacle.id);
+            if (obj2 && obj2.position && obj2._runnerCfg) {
+              obj2.position.z = obj2._runnerCfg.startZ + Math.random() * 30;
+              obj2.position.x = Math.random() * (obj2._runnerCfg.maxX - obj2._runnerCfg.minX) + obj2._runnerCfg.minX;
+              obj2.position.y = Math.random() * (obj2._runnerCfg.maxY - obj2._runnerCfg.minY) + obj2._runnerCfg.minY;
+            }
+            dispatchEvent(new CustomEvent("player-hit", { detail: { obstacleId: obstacle.id } }));
+          }
+        } catch (err) {
+          console.warn("close-distance handler error", err);
+        }
+      });
+      let controlBeast = {
+        update: function() {
+          const setNewZ = cursor.y * 0.05;
+          const setNewX = (cursor.x - 300) * 0.05;
+          app.matrixPhysics.setBodyTransform(playerID, setNewX, 0, -setNewZ);
+        }
+      };
+      app.autoUpdate.push(controlBeast);
+      setTimeout(() => {
+        playerID = app.matrixPhysics.getBodyByName("player_MutantMesh");
+        console.log("PLAYER ID ", playerID);
+        menuBeast.activateHZB();
+        let cam3 = app.getCamera();
+        cam3.setYaw(-0.03);
+        cam3.setPitch(-0.49);
+        cam3.setZ(0);
+        cam3.setY(7);
+        app.buildRenderBuckets();
+        cam3._dirtyAngle = true;
+      }, 700);
+    }
+  });
+  window.app = menuBeast;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -61155,6 +61440,7 @@ byId2("loadBVHSkeletal").addEventListener("click", () => switchDemo("32"));
 byId2("loadBVHSkeletalShared").addEventListener("click", () => switchDemo("33"));
 byId2("loadWaterEffects").addEventListener("click", () => switchDemo("34"));
 byId2("loadParticles").addEventListener("click", () => switchDemo("35"));
+byId2("loadRunner").addEventListener("click", () => switchDemo("36"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -61228,6 +61514,8 @@ if (urlQuery["demo"] === "1") {
   loadWaterEffects();
 } else if (urlQuery["demo"] === "35") {
   loadParticles();
+} else if (urlQuery["demo"] === "36") {
+  loadRunner();
 } else {
   loadObjFile();
 }

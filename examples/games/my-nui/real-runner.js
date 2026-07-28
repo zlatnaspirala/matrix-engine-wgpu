@@ -15,11 +15,12 @@ import {
 } from "nui-commander";
 import {createNuiContainer} from "../../../src/engine/buildin/adapter-nui-commander.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
-import { CollisionSystem } from "../../../src/engine/collision-sub-system.js";
+import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 
-export var loadMenuBeast = function() {
+export var loadRunner = function() {
 
   createNuiContainer(true, false, true);
+  let playerID;
 
   let menuBeast = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
@@ -43,25 +44,21 @@ export var loadMenuBeast = function() {
     // NUI PART START
     nuiCommander.drawer = new CanvasEngine(interActionController);
     nuiCommander.drawer.draw();
-
     nuiCommander.indicatorsBlocks = indicatorsBlocks;
     nuiCommander.drawer.elements.push(nuiCommander.indicatorsBlocks);
-
-    nuiCommander.indicatorsBlocks.text[7] = '';
+    nuiCommander.indicatorsBlocks.text[7] = 'zlatnaspirala';
 
     const cursor = new NuiCursor({color: "255, 80, 80"});
     nuiCommander.drawer.elements.push(cursor);
 
     const slider = new NuiSlider("Bloom Intesity", {
       row: 2, value: 1, onChange: v => {
-        // console.log('test')
         app.bloomPass.setIntensity(v)
       }
     });
 
     const sliderBloomRad = new NuiSlider("Bloom Blur", {
       row: 4, value: 1, onChange: v => {
-        // console.log('test')
         app.bloomPass.setBlurRadius(v)
       }
     });
@@ -76,25 +73,11 @@ export var loadMenuBeast = function() {
     )
 
     const menu = new NuiMenu([
-      {
-        label: "Light red", action: () => {
-          app.lightContainer[0].setColor([100, 1, 0])
-        }
-      },
-      {
-        label: "Light green", action: () => {
-          app.lightContainer[0].setColor([0, 100, 1])
-        }
-      },
+      {label: "Light red", action: () => {app.lightContainer[0].setColor([100, 1, 0])}},
+      {label: "Light green", action: () => {app.lightContainer[0].setColor([0, 100, 1])}},
       {
         label: "Volumetric", action: () => {
-          app.activateVolumetricEffect({
-            density: 0.5,
-            steps: 30,
-            scatterStrength: 2,
-            heightFalloff: 0.2,
-            lightColor: [0, 1.8, 10]
-          })
+          app.activateVolumetricEffect({density: 0.5, steps: 30, scatterStrength: 2, heightFalloff: 0.2, lightColor: [0, 1.8, 10]})
         }
       },
       {
@@ -105,13 +88,6 @@ export var loadMenuBeast = function() {
           nuiCommander.drawer.elements.push(hideSliderBloom);
         }
       },
-      // {
-      //   label: "Set pos Z", action: () => {
-      //     console.log( "cursor pos : " + cursor.y )
-      //     // app.matrixPhysics.explodeAll([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-      //     //   0, 0, -20, 15.0, 20.0);
-      //   }
-      // },
     ], {
       col: 0,
       cols: 2,
@@ -123,20 +99,16 @@ export var loadMenuBeast = function() {
     });
 
     nuiCommander.drawer.elements.push(menu);
-
     app.nui = nuiCommander;
     console.info("nui-commander controls attached.");
-
     // NUI PART END
 
     menuBeast.matrixPhysics.speedUpSimulation(4);
-    // for now on top level
-    // note : this must go in build in pack.
-    // any way - override is always legal for any cather.
-    const cam = app.getCamera();
 
+    const cam = app.getCamera();
     // collision system for non-physics interactions
     const collisionSystem = new CollisionSystem();
+    app.collisionSystem = collisionSystem;
 
     menuBeast.addLight();
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
@@ -148,7 +120,6 @@ export var loadMenuBeast = function() {
       // MobileDOM.addButton("Enable camera",
       //   function() {        },
       //   () => {}, arg1);
-
       let ground = menuBeast.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: 0, z: -20},
@@ -173,13 +144,13 @@ export var loadMenuBeast = function() {
         useScale: true,
         scale: [4, 4, 4],
         position: {x: 0, y: -1, z: -25},
-        name: 'beast',
+        name: 'player',
         physics: {
           enabled: true,
           geometry: "Cube",
           mass: 1,
           radius: [0.5, 0.5, 0.5],
-          scale: [2, 0.5, 2],
+          scale: [1.5, 2, 1.5],
           height: 1.0,
           group: 2,
           mask: -1,
@@ -190,8 +161,8 @@ export var loadMenuBeast = function() {
       app.beast = beast;
 
       // register player into collision system (use beast.position object)
-      if (app.beast && app.beast.position) {
-        collisionSystem.register('player', app.beast.position, 2.2, 'player');
+      if(app.beast && app.beast.position) {
+        collisionSystem.register('player', app.beast.position, 3, 'player');
       }
     }
 
@@ -268,9 +239,9 @@ export var loadMenuBeast = function() {
 
         const runners = [];
 
-        function rand(a, b) { return a + Math.random() * (b - a); }
+        function rand(a, b) {return a + Math.random() * (b - a);}
 
-        for (let i = 0; i < cfg.count; i++) {
+        for(let i = 0;i < cfg.count;i++) {
           const x = rand(cfg.minX, cfg.maxX);
           const y = rand(cfg.minY, cfg.maxY);
           const z = cfg.startZ + Math.random() * 30; // spread in Z so they don't all align
@@ -298,7 +269,7 @@ export var loadMenuBeast = function() {
           const rRadius = Math.max(s) || s;
           try {
             collisionSystem.register(obj.name, obj.position, rRadius, 'obstacle');
-          } catch (err) {
+          } catch(err) {
             console.warn('collision register failed', err);
           }
         }
@@ -306,28 +277,28 @@ export var loadMenuBeast = function() {
         // Update function called each frame via app.autoUpdate
         const updater = {
           update: function() {
-            for (let i = 0; i < runners.length; i++) {
+            for(let i = 0;i < runners.length;i++) {
               const r = runners[i];
               // move towards negative Z (from +Z to -Z). This direction assumes player is at -Z.
-              if (!r.position) continue; // defensive
+              if(!r.position) continue; // defensive
               r.position.z -= r._runnerSpeed;
 
               // simple rotation so obstacles look lively
-              if (r.rotation) r.rotation.y += 0.01 + r._runnerSpeed * 0.01;
+              if(r.rotation) r.rotation.y += 0.01 + r._runnerSpeed * 0.01;
 
               // if passed beyond endZ, recycle back to startZ with a new random X/Y and speed
-              if (r.position.z < r._runnerCfg.endZ) {
+              if(r.position.z < r._runnerCfg.endZ) {
                 r.position.z = r._runnerCfg.startZ + Math.random() * 30;
                 r.position.x = rand(r._runnerCfg.minX, r._runnerCfg.maxX);
                 r.position.y = rand(r._runnerCfg.minY, r._runnerCfg.maxY);
                 r._runnerSpeed = rand(r._runnerCfg.speedMin, r._runnerCfg.speedMax);
                 const s2 = rand(r._runnerCfg.scaleMin, r._runnerCfg.scaleMax);
-                if (r.scale) r.scale = [s2, s2, s2];
+                if(r.scale) r.scale = [s2, s2, s2];
               }
             }
 
             // update collision system each frame (cheap grid-based)
-            collisionSystem.update();
+            // collisionSystem.update();
           }
         };
 
@@ -340,21 +311,21 @@ export var loadMenuBeast = function() {
       // spawn runners using cube mesh. tune count and ranges as needed.
       const runnerSet = spawnRunners(menuBeast, m.cube, {count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 4.5, startZ: 60, endZ: -40, speedMin: 0.6, speedMax: 1.6});
 
-      // collision event handler: react to dynamic vs dynamic collisions reported by CollisionSystem
       window.addEventListener('close-distance', (e) => {
         try {
           const detail = e.detail.data || e.detail || {};
           const A = detail.A;
           const B = detail.B;
           if(!A || !B) return;
-
           // find player <-> obstacle collisions
-          if ((A.group === 'player' && B.group === 'obstacle') || (B.group === 'player' && A.group === 'obstacle')) {
+          if((A.group === 'player' && B.group === 'obstacle') || (B.group === 'player' && A.group === 'obstacle')) {
             const obstacle = A.group === 'obstacle' ? A : B;
             // recycle obstacle immediately
             // find corresponding scene object
             const obj = app.getSceneObjectByName(obstacle.id);
-            if (obj && obj.position && obj._runnerCfg) {
+            console.warn('close-distance obstacle.id ', obstacle.id);
+
+            if(obj && obj.position && obj._runnerCfg) {
               obj.position.z = obj._runnerCfg.startZ + Math.random() * 30;
               obj.position.x = Math.random() * (obj._runnerCfg.maxX - obj._runnerCfg.minX) + obj._runnerCfg.minX;
               obj.position.y = Math.random() * (obj._runnerCfg.maxY - obj._runnerCfg.minY) + obj._runnerCfg.minY;
@@ -363,22 +334,23 @@ export var loadMenuBeast = function() {
             // dispatch a game event
             dispatchEvent(new CustomEvent('player-hit', {detail: {obstacleId: obstacle.id}}));
           }
-        } catch (err) { console.warn('close-distance handler error', err); }
+        } catch(err) {console.warn('close-distance handler error', err);}
       });
 
       let controlBeast = {
         update: function() {
-            // console.log( "cursor pos : " + cursor.x )
-            // 0 - 480
-            // 0 - 48
-            const setNewZ = cursor.y * 0.05;
-            const setNewX = (cursor.x - 300) * 0.05;
-            app.matrixPhysics.setBodyTransform(2, setNewX , 0, -setNewZ)
+          const setNewZ = cursor.y * 0.05;
+          const setNewX = (cursor.x - 300) * 0.05;
+          app.matrixPhysics.setBodyTransform(playerID, setNewX, 0, -setNewZ)
         }
       }
       app.autoUpdate.push(controlBeast)
 
       setTimeout(() => {
+
+        playerID = app.matrixPhysics.getBodyByName('player_MutantMesh');
+        console.log('PLAYER ID ', playerID)
+
         menuBeast.activateHZB();
         // MYCUBE.effects.circle = new GenGeoTexture2(menuBeast.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
@@ -398,7 +370,6 @@ export var loadMenuBeast = function() {
     //     // e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
     //   }
     // });
-
   })
   window.app = menuBeast;
 }
