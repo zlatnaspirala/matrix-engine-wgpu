@@ -1877,6 +1877,8 @@ export const MobileDOM = {
     const opacity = options.opacity ?? 0.35;
     const image = options.image ?? null;
     const setID = options.id ?? null;
+    const fontSize = options.fontSize ?? `${size * 0.25}px`;
+    const borderRadius = options.borderRadius ?? '50%';
     const btn = document.createElement('div');
     if(setID !== null) {
       btn.id = setID;
@@ -1890,11 +1892,11 @@ export const MobileDOM = {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: `${size * 0.25}px`,
+      fontSize: fontSize,
       color: options.color ?? '#ffffff',
       background: image ? `url('${image}') no-repeat center/contain` : `rgba(255,255,255,${opacity * 0.4})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
-      borderRadius: '50%',
+      borderRadius: borderRadius,
       zIndex: '9999',
       userSelect: 'none',
       cursor: 'pointer',

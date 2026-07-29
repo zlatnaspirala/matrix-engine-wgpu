@@ -1,21 +1,12 @@
 import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
-import {byId, isMobile} from "../../../src/engine/utils.js";
-
-import {
-  indicatorsBlocks,
-  CanvasEngine,
-  interActionController,
-  NuiMsgBox,
-  NuiCursor,
-  NuiMenu,
-  NuiSlider,
-  NuiButton
-} from "nui-commander";
+import {byId, isMobile, randomIntFromTo} from "../../../src/engine/utils.js";
+import {indicatorsBlocks, CanvasEngine, interActionController, NuiCursor, NuiMenu, NuiSlider, NuiButton} from "nui-commander";
 import {createNuiContainer} from "../../../src/engine/buildin/adapter-nui-commander.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
 import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
+import {MobileDOM} from "../../../src/engine/cameras.js";
 
 export var loadRunner = function() {
 
@@ -25,8 +16,8 @@ export var loadRunner = function() {
   let menuBeast = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
-    // dontUsePhysics: true,
-    useCannon: true,
+    dontUsePhysics: true,
+    // useCannon: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
@@ -45,8 +36,8 @@ export var loadRunner = function() {
     nuiCommander.drawer = new CanvasEngine(interActionController);
     nuiCommander.drawer.draw();
     nuiCommander.indicatorsBlocks = indicatorsBlocks;
-    nuiCommander.drawer.elements.push(nuiCommander.indicatorsBlocks);
-    nuiCommander.indicatorsBlocks.text[7] = 'zlatnaspirala';
+    // nuiCommander.drawer.elements.push(nuiCommander.indicatorsBlocks);
+    // nuiCommander.indicatorsBlocks.text[7] = 'zlatnaspirala';
 
     const cursor = new NuiCursor({color: "255, 80, 80"});
     nuiCommander.drawer.elements.push(cursor);
@@ -103,7 +94,7 @@ export var loadRunner = function() {
     console.info("nui-commander controls attached.");
     // NUI PART END
 
-    menuBeast.matrixPhysics.speedUpSimulation(4);
+    // menuBeast.matrixPhysics.speedUpSimulation(4);
 
     const cam = app.getCamera();
     // collision system for non-physics interactions
@@ -116,10 +107,16 @@ export var loadRunner = function() {
     addRaycastsAABBListener('canvas1', 'click');
 
     async function onGround(m) {
-      // let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '5'} : {left: '53'};
-      // MobileDOM.addButton("Enable camera",
-      //   function() {        },
-      //   () => {}, arg1);
+
+      let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '10', bottom: '90', borderRadius: '2%'} : {left: '45', bottom: '90', borderRadius: '2%'};
+      MobileDOM.addButton("Beast runner",
+        function() {},
+        () => {}, arg1);
+
+      let arg2 = isMobile() && getOrientation() === 'portrait' ? {left: '10', bottom: '90'} : {left: '45', bottom: '90'};
+      app.ENERGYBAR = MobileDOM.addProgressBar(arg2);
+
+
       let ground = menuBeast.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: 0, z: -20},
@@ -142,28 +139,27 @@ export var loadRunner = function() {
       let beast = menuBeast.addGlbObjInctance({
         material: {type: 'standard', useTextureFromGlb: true},
         useScale: true,
-        scale: [4, 4, 4],
-        position: {x: 0, y: -1, z: -25},
+        scale: [4, 4.2, 4],
+        position: {x: 0, y: -0.5, z: -25},
         name: 'player',
-        physics: {
-          enabled: true,
-          geometry: "Cube",
-          mass: 1,
-          radius: [0.5, 0.5, 0.5],
-          scale: [1.5, 2, 1.5],
-          height: 1.0,
-          group: 2,
-          mask: -1,
-        },
+        // physics: {
+        //   enabled: false,
+        //   geometry: "Cube",
+        //   mass: 1,
+        //   radius: [1, 1.5, 1],
+        //   scale: [1.5, 1.5, 1.5],
+        //   height: 1.0,
+        //   group: 2,
+        //   mask: -1,
+        // },
         texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
       }, null, glbFile);
 
       app.beast = beast;
-
-      // register player into collision system (use beast.position object)
-      if(app.beast && app.beast.position) {
-        collisionSystem.register('player', app.beast.position, 3, 'player');
-      }
+      app.beast.energy = 100;
+      app.beast.setAmbient(1, 2, 1);
+      collisionSystem.register('player', app.beast.position, 5, 'player');
+      app.beast.playAnimationByName('walk');
     }
 
     function createPillar(menuBeast, m, x, y, z, name) {
@@ -197,6 +193,43 @@ export var loadRunner = function() {
     }
 
     async function onLoadObj(m) {
+
+      function ambientFromColor(color) {return {r: color.r, g: color.g, b: color.b};}
+
+      function randomObstacleColor() {
+        const chooseType = randomIntFromTo(1, 3);
+        let r, b, g;
+        if(chooseType === 1) {
+          r = 80;
+          b = 0.5;
+          g = 0.5;
+        } else if(chooseType === 2) {
+          r = 0.5;
+          b = 80;
+          g = 0.5;
+        } if(chooseType === 3) {
+          r = 0.5;
+          b = 0.5;
+          g = 80;
+        }
+        return {r, g, b};
+      }
+
+      function damageFromColor(color, baseDamage = 15) {
+        if(color.r > color.b && color.r > color.g) {
+          return baseDamage * 1.5;   // RED: more damage
+        }
+        if(color.g > color.r && color.g > color.b) {
+          return -baseDamage * 0.8;  // GREEN: negative damage = heal
+        }
+        return baseDamage * 0.5;     // BLUE: less damage
+      }
+
+      function slowFromColor(color) {
+        return color.g;
+      }
+
+      let hitEvent = new CustomEvent('player-hit', {detail: {obstacleId: 0}});
       // removed automatic wall generator to avoid blocking runners
       // app.physicsBodiesGeneratorWall("standard",
       //   {x: -4.5, y: 1, z: -10}, {x: 0, y: 0, z: 0},
@@ -227,10 +260,10 @@ export var loadRunner = function() {
           count: 12,
           minX: -18,
           maxX: 18,
-          minY: 0.5,
-          maxY: 4.5,
-          startZ: 60,   // spawn in front (+Z)
-          endZ: -40,    // when reaching this Z (past player) send back to startZ
+          minY: 1,
+          maxY: 2,
+          startZ: 60,
+          endZ: -40,  
           speedMin: 0.6,
           speedMax: 1.6,
           scaleMin: 0.8,
@@ -244,11 +277,10 @@ export var loadRunner = function() {
         for(let i = 0;i < cfg.count;i++) {
           const x = rand(cfg.minX, cfg.maxX);
           const y = rand(cfg.minY, cfg.maxY);
-          const z = cfg.startZ + Math.random() * 30; // spread in Z so they don't all align
+          const z = cfg.startZ + Math.random() * 30;
           const s = rand(cfg.scaleMin, cfg.scaleMax);
-
           const obj = menuBeast.addMeshObj({
-            material: {type: 'dark', share: true},
+            material: {type: 'standard', share: false},
             position: {x: x, y: y, z: z},
             rotation: {x: 0, y: 0, z: 0},
             rotationSpeed: {x: 0, y: 0, z: 0},
@@ -259,16 +291,19 @@ export var loadRunner = function() {
             raycast: {enabled: true, radius: 1},
             physics: {enabled: false, mass: 0, geometry: "Cube"}
           });
-
-          // store runner metadata
           obj._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
           obj._runnerCfg = cfg;
+          obj._runnerColor = randomObstacleColor();
+          obj._runnerDamage = damageFromColor(obj._runnerColor);
+          obj._runnerSlow = slowFromColor(obj._runnerColor);
+          const amb = ambientFromColor(obj._runnerColor);
+          // console.log("?>>>>>>>>>>>>>>>>>>>>>>>>>" + amb)
+          obj.setAmbient(amb.r, amb.g, amb.b);
+          //obj.setupMaterialPBR(obj._runnerColor.r , obj._runnerColor.g, obj._runnerColor.b)
           runners.push(obj);
-
-          // register runner in collision system (use visual position object)
           const rRadius = Math.max(s) || s;
           try {
-            collisionSystem.register(obj.name, obj.position, rRadius, 'obstacle');
+            collisionSystem.register(obj.name, obj.position, s * 1.25, 'obstacle');
           } catch(err) {
             console.warn('collision register failed', err);
           }
@@ -280,14 +315,13 @@ export var loadRunner = function() {
             for(let i = 0;i < runners.length;i++) {
               const r = runners[i];
               // move towards negative Z (from +Z to -Z). This direction assumes player is at -Z.
-              if(!r.position) continue; // defensive
+              if(!r.position) continue;
               r.position.z -= r._runnerSpeed;
-
-              // simple rotation so obstacles look lively
               if(r.rotation) r.rotation.y += 0.01 + r._runnerSpeed * 0.01;
-
-              // if passed beyond endZ, recycle back to startZ with a new random X/Y and speed
               if(r.position.z < r._runnerCfg.endZ) {
+                // r._runnerColor = randomObstacleColor();
+                // r._runnerDamage = damageFromColor(r._runnerColor);
+                // r._runnerSlow = slowFromColor(r._runnerColor);
                 r.position.z = r._runnerCfg.startZ + Math.random() * 30;
                 r.position.x = rand(r._runnerCfg.minX, r._runnerCfg.maxX);
                 r.position.y = rand(r._runnerCfg.minY, r._runnerCfg.maxY);
@@ -296,20 +330,23 @@ export var loadRunner = function() {
                 if(r.scale) r.scale = [s2, s2, s2];
               }
             }
-
-            // update collision system each frame (cheap grid-based)
-            // collisionSystem.update();
           }
         };
 
-        // register updater
         app.autoUpdate.push(updater);
-
         return {runners, updater};
       }
 
       // spawn runners using cube mesh. tune count and ranges as needed.
-      const runnerSet = spawnRunners(menuBeast, m.cube, {count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 4.5, startZ: 60, endZ: -40, speedMin: 0.6, speedMax: 1.6});
+      const runnerSet = spawnRunners(menuBeast, m.cube, {count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5});
+
+      addEventListener('player-hit', (e) => {
+        console.log('HIT DAMAGE', e.detail.damage, 'ENERGY LEFT', e.detail.energy)
+        app.ENERGYBAR.setValue(app.beast.energy);
+        const redLevel = 1 + (100 - app.beast.energy) * (99 / 100);
+        app.beast.setAmbient(redLevel, 2, 1);
+
+      })
 
       window.addEventListener('close-distance', (e) => {
         try {
@@ -317,22 +354,37 @@ export var loadRunner = function() {
           const A = detail.A;
           const B = detail.B;
           if(!A || !B) return;
-          // find player <-> obstacle collisions
           if((A.group === 'player' && B.group === 'obstacle') || (B.group === 'player' && A.group === 'obstacle')) {
             const obstacle = A.group === 'obstacle' ? A : B;
-            // recycle obstacle immediately
-            // find corresponding scene object
             const obj = app.getSceneObjectByName(obstacle.id);
-            console.warn('close-distance obstacle.id ', obstacle.id);
+            if(!obj || !obj.position || !obj._runnerCfg) return;
 
-            if(obj && obj.position && obj._runnerCfg) {
-              obj.position.z = obj._runnerCfg.startZ + Math.random() * 30;
-              obj.position.x = Math.random() * (obj._runnerCfg.maxX - obj._runnerCfg.minX) + obj._runnerCfg.minX;
-              obj.position.y = Math.random() * (obj._runnerCfg.maxY - obj._runnerCfg.minY) + obj._runnerCfg.minY;
+            // debounce: ignore repeat hits within a short window
+            const now = performance.now();
+            if(obj._lastHitTime && now - obj._lastHitTime < 250) return;
+            obj._lastHitTime = now;
+
+            const damage = obj._runnerDamage || 10;
+            app.beast.energy = Math.max(0, Math.min(100, app.beast.energy - damage));
+
+            obj.position.z = obj._runnerCfg.startZ + Math.random() * 30;
+            obj.position.x = Math.random() * (obj._runnerCfg.maxX - obj._runnerCfg.minX) + obj._runnerCfg.minX;
+            obj.position.y = Math.random() * (obj._runnerCfg.maxY - obj._runnerCfg.minY) + obj._runnerCfg.minY;
+
+            obj._runnerColor = randomObstacleColor();
+            obj._runnerDamage = damageFromColor(obj._runnerColor);
+            obj._runnerSlow = slowFromColor(obj._runnerColor);
+            const amb = ambientFromColor(obj._runnerColor);
+            obj.setAmbient(amb.r, amb.g, amb.b);
+
+            hitEvent.detail.obstacleId = obstacle.id;
+            hitEvent.detail.damage = damage;
+            hitEvent.detail.energy = app.beast.energy;
+            dispatchEvent(hitEvent);
+
+            if(app.beast.energy <= 0) {
+              dispatchEvent(new CustomEvent('player-dead', {detail: {}}));
             }
-
-            // dispatch a game event
-            dispatchEvent(new CustomEvent('player-hit', {detail: {obstacleId: obstacle.id}}));
           }
         } catch(err) {console.warn('close-distance handler error', err);}
       });
@@ -341,15 +393,16 @@ export var loadRunner = function() {
         update: function() {
           const setNewZ = cursor.y * 0.05;
           const setNewX = (cursor.x - 300) * 0.05;
-          app.matrixPhysics.setBodyTransform(playerID, setNewX, 0, -setNewZ)
+          app.beast.position.setPosition(setNewX, 0, -setNewZ)
+          // app.matrixPhysics.setBodyTransform(playerID, setNewX, 0, -setNewZ)
         }
       }
-      app.autoUpdate.push(controlBeast)
 
       setTimeout(() => {
 
-        playerID = app.matrixPhysics.getBodyByName('player_MutantMesh');
-        console.log('PLAYER ID ', playerID)
+        // playerID = app.matrixPhysics.getBodyByName('player_MutantMesh');
+        // console.log('PLAYER ID ', playerID)
+        app.autoUpdate.push(controlBeast)
 
         menuBeast.activateHZB();
         // MYCUBE.effects.circle = new GenGeoTexture2(menuBeast.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
