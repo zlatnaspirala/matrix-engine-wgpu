@@ -1,0 +1,6 @@
+{
+  "name": "THE BEAST - WGPU Code Creator",
+  "description": "Interactive developer workstation and system prompt configurator for THE BEAST (matrix-engine-wgpu) WebGPU framework.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
