@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
-import {byId, isMobile, randomIntFromTo} from "../../../src/engine/utils.js";
+import {byId, getOrientation, isMobile, randomIntFromTo} from "../../../src/engine/utils.js";
 import {indicatorsBlocks, CanvasEngine, interActionController, NuiCursor, NuiMenu, NuiSlider, NuiButton} from "nui-commander";
 import {createNuiContainer} from "../../../src/engine/buildin/adapter-nui-commander.js";
 import {uploadGLBModel} from "../../../src/engine/loaders/webgpu-gltf.js";
@@ -9,10 +9,8 @@ import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 import {MobileDOM} from "../../../src/engine/cameras.js";
 
 export var loadRunner = function() {
-
   createNuiContainer(true, false, true);
   let playerID;
-
   let menuBeast = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
@@ -29,7 +27,8 @@ export var loadRunner = function() {
   }, () => {
 
     byId('nui-commander-container').style.left = '10%';
-    byId('nui-commander-container').style.top = '40%'
+    byId('nui-commander-container').style.top = 'unset';
+    byId('nui-commander-container').style.bottom = '0';
 
     var nuiCommander = {};
     // NUI PART START
@@ -38,8 +37,7 @@ export var loadRunner = function() {
     nuiCommander.indicatorsBlocks = indicatorsBlocks;
     // nuiCommander.drawer.elements.push(nuiCommander.indicatorsBlocks);
     // nuiCommander.indicatorsBlocks.text[7] = 'zlatnaspirala';
-
-    const cursor = new NuiCursor({color: "255, 80, 80"});
+    const cursor = new NuiCursor({color: "255, 255, 30"});
     nuiCommander.drawer.elements.push(cursor);
 
     const slider = new NuiSlider("Bloom Intesity", {
@@ -64,21 +62,22 @@ export var loadRunner = function() {
     )
 
     const menu = new NuiMenu([
-      {label: "Light red", action: () => {app.lightContainer[0].setColor([100, 1, 0])}},
-      {label: "Light green", action: () => {app.lightContainer[0].setColor([0, 100, 1])}},
+      {label: "Restart", action: () => {location.reload()}},
       {
         label: "Volumetric", action: () => {
           app.activateVolumetricEffect({density: 0.5, steps: 30, scatterStrength: 2, heightFalloff: 0.2, lightColor: [0, 1.8, 10]})
         }
       },
       {
-        label: "Bloom settings", action: () => {
+        label: "Bloom", action: () => {
           nuiCommander.drawer.removeElement(menu);
           nuiCommander.drawer.elements.push(slider);
           nuiCommander.drawer.elements.push(sliderBloomRad);
           nuiCommander.drawer.elements.push(hideSliderBloom);
         }
       },
+      {label: "Red", action: () => {app.lightContainer[0].setColor([30, 1, 0])}},
+      {label: "Gray", action: () => {app.lightContainer[0].setColor([0, 0, 0])}},
     ], {
       col: 0,
       cols: 2,
@@ -94,9 +93,15 @@ export var loadRunner = function() {
     console.info("nui-commander controls attached.");
     // NUI PART END
 
+    app.matrixSounds.createAudio('music', 'res/audios/audionautix-black-fly.mp3', 1);
+    app.matrixSounds.createAudio('damage', 'res/audios/gun/gunshot.mp3', 2);
+    app.matrixSounds.createAudio('scoreClip', 'res/audios/feel.mp3', 2);
+    app.matrixSounds.audios.music.loop = true;
+    app.matrixSounds.audios.music.volume = 0.2;
+
     // menuBeast.matrixPhysics.speedUpSimulation(4);
 
-    const cam = app.getCamera();
+    // const cam = app.getCamera();
     // collision system for non-physics interactions
     const collisionSystem = new CollisionSystem();
     app.collisionSystem = collisionSystem;
@@ -108,18 +113,27 @@ export var loadRunner = function() {
 
     async function onGround(m) {
 
-      let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '10', bottom: '90', borderRadius: '2%'} : {left: '45', bottom: '90', borderRadius: '2%'};
-      MobileDOM.addButton("Beast runner",
+      let arg1 = isMobile() && getOrientation() === 'portrait' ? {width: 200, height: 50, left: '11', bottom: '93', borderRadius: '2%'} :
+        {width: 100, height: 40, left: '46', bottom: '93', borderRadius: '2%'};
+      MobileDOM.addButton("Beast score",
         function() {},
         () => {}, arg1);
 
-      let arg2 = isMobile() && getOrientation() === 'portrait' ? {left: '10', bottom: '90'} : {left: '45', bottom: '90'};
+      let arg3 = isMobile() && getOrientation() === 'portrait' ?
+        {id: "score", width: 165, height: 50, left: '30', bottom: '93', borderRadius: '2%', fontSize: '20px'} :
+        {id: "score", width: 165, height: 40, left: '55', bottom: '93', borderRadius: '2%', fontSize: '20px'};
+      MobileDOM.addButton("0",
+        function() {},
+        () => {}, arg3);
+
+      let arg2 = isMobile() && getOrientation() === 'portrait' ? {width: 200, height: 20, left: '10', bottom: '90'} :
+        {width: 300, height: 20, left: '45', bottom: '90'};
       app.ENERGYBAR = MobileDOM.addProgressBar(arg2);
 
 
       let ground = menuBeast.addMeshObj({
         material: {type: 'standard', share: true},
-        position: {x: 0, y: 0, z: -20},
+        position: {x: 0, y: -0.5, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/white-metal.png'],
@@ -131,6 +145,8 @@ export var loadRunner = function() {
           geometry: "Cube"
         }
       })
+
+      ground.setBlend(0.1)
 
       const glbFile = await fetch("res/meshes/glb/monster.glb")
         .then(res => res.arrayBuffer())
@@ -157,6 +173,7 @@ export var loadRunner = function() {
 
       app.beast = beast;
       app.beast.energy = 100;
+      app.runStartTime = performance.now();
       app.beast.setAmbient(1, 2, 1);
       collisionSystem.register('player', app.beast.position, 5, 'player');
       app.beast.playAnimationByName('walk');
@@ -196,33 +213,33 @@ export var loadRunner = function() {
 
       function ambientFromColor(color) {return {r: color.r, g: color.g, b: color.b};}
 
-      function randomObstacleColor() {
+      function determinateType() {
         const chooseType = randomIntFromTo(1, 3);
         let r, b, g;
         if(chooseType === 1) {
-          r = 80;
+          r = 70;
           b = 0.5;
           g = 0.5;
         } else if(chooseType === 2) {
-          r = 0.5;
-          b = 80;
+          r = 70;
+          b = 0.5;
           g = 0.5;
-        } if(chooseType === 3) {
+        } else if(chooseType === 3) {
           r = 0.5;
           b = 0.5;
-          g = 80;
+          g = 70;
         }
         return {r, g, b};
       }
 
       function damageFromColor(color, baseDamage = 15) {
         if(color.r > color.b && color.r > color.g) {
-          return baseDamage * 1.5;   // RED: more damage
+          return baseDamage * 1.5;
         }
         if(color.g > color.r && color.g > color.b) {
-          return -baseDamage * 0.8;  // GREEN: negative damage = heal
+          return -baseDamage * 0.8;
         }
-        return baseDamage * 0.5;     // BLUE: less damage
+        return baseDamage * 0.5;
       }
 
       function slowFromColor(color) {
@@ -253,8 +270,6 @@ export var loadRunner = function() {
       menuBeast.lightContainer[0].setPosition(0, 35, 0);
       menuBeast.lightContainer[0].setTarget(0, 0, -20);
 
-      // Runner system: obstacles that approach the player from +Z and loop back to +Z
-      // Use collision-sub-system.js for non-physics collisions
       function spawnRunners(menuBeast, mesh, opts = {}) {
         const cfg = Object.assign({
           count: 12,
@@ -263,7 +278,7 @@ export var loadRunner = function() {
           minY: 1,
           maxY: 2,
           startZ: 60,
-          endZ: -40,  
+          endZ: -40,
           speedMin: 0.6,
           speedMax: 1.6,
           scaleMin: 0.8,
@@ -283,7 +298,7 @@ export var loadRunner = function() {
             material: {type: 'standard', share: false},
             position: {x: x, y: y, z: z},
             rotation: {x: 0, y: 0, z: 0},
-            rotationSpeed: {x: 0, y: 0, z: 0},
+            rotationSpeed: {x: 15, y: 0, z: 0},
             scale: [s, s, s],
             texturesPaths: ['./res/textures/matrix1.webp'],
             name: 'runner' + i,
@@ -293,7 +308,7 @@ export var loadRunner = function() {
           });
           obj._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
           obj._runnerCfg = cfg;
-          obj._runnerColor = randomObstacleColor();
+          obj._runnerColor = determinateType();
           obj._runnerDamage = damageFromColor(obj._runnerColor);
           obj._runnerSlow = slowFromColor(obj._runnerColor);
           const amb = ambientFromColor(obj._runnerColor);
@@ -319,7 +334,7 @@ export var loadRunner = function() {
               r.position.z -= r._runnerSpeed;
               if(r.rotation) r.rotation.y += 0.01 + r._runnerSpeed * 0.01;
               if(r.position.z < r._runnerCfg.endZ) {
-                // r._runnerColor = randomObstacleColor();
+                // r._runnerColor = determinateType();
                 // r._runnerDamage = damageFromColor(r._runnerColor);
                 // r._runnerSlow = slowFromColor(r._runnerColor);
                 r.position.z = r._runnerCfg.startZ + Math.random() * 30;
@@ -337,11 +352,13 @@ export var loadRunner = function() {
         return {runners, updater};
       }
 
-      // spawn runners using cube mesh. tune count and ranges as needed.
-      const runnerSet = spawnRunners(menuBeast, m.cube, {count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5});
-
       addEventListener('player-hit', (e) => {
         console.log('HIT DAMAGE', e.detail.damage, 'ENERGY LEFT', e.detail.energy)
+        if(e.detail.damage > 0) {
+          app.matrixSounds.play('damage');
+        } else {
+          app.matrixSounds.play('scoreClip');
+        }
         app.ENERGYBAR.setValue(app.beast.energy);
         const redLevel = 1 + (100 - app.beast.energy) * (99 / 100);
         app.beast.setAmbient(redLevel, 2, 1);
@@ -357,33 +374,35 @@ export var loadRunner = function() {
           if((A.group === 'player' && B.group === 'obstacle') || (B.group === 'player' && A.group === 'obstacle')) {
             const obstacle = A.group === 'obstacle' ? A : B;
             const obj = app.getSceneObjectByName(obstacle.id);
-            if(!obj || !obj.position || !obj._runnerCfg) return;
-
-            // debounce: ignore repeat hits within a short window
+            // if(!obj || !obj.position || !obj._runnerCfg) return;
+            if(!obj._runnerCfg) return;
             const now = performance.now();
             if(obj._lastHitTime && now - obj._lastHitTime < 250) return;
             obj._lastHitTime = now;
-
-            const damage = obj._runnerDamage || 10;
+            const damage = obj._runnerDamage;// || 10;
             app.beast.energy = Math.max(0, Math.min(100, app.beast.energy - damage));
 
             obj.position.z = obj._runnerCfg.startZ + Math.random() * 30;
             obj.position.x = Math.random() * (obj._runnerCfg.maxX - obj._runnerCfg.minX) + obj._runnerCfg.minX;
             obj.position.y = Math.random() * (obj._runnerCfg.maxY - obj._runnerCfg.minY) + obj._runnerCfg.minY;
 
-            obj._runnerColor = randomObstacleColor();
+            obj._runnerColor = determinateType();
             obj._runnerDamage = damageFromColor(obj._runnerColor);
             obj._runnerSlow = slowFromColor(obj._runnerColor);
             const amb = ambientFromColor(obj._runnerColor);
             obj.setAmbient(amb.r, amb.g, amb.b);
-
             hitEvent.detail.obstacleId = obstacle.id;
             hitEvent.detail.damage = damage;
             hitEvent.detail.energy = app.beast.energy;
             dispatchEvent(hitEvent);
-
             if(app.beast.energy <= 0) {
-              dispatchEvent(new CustomEvent('player-dead', {detail: {}}));
+              // dispatchEvent(new CustomEvent('player-dead', {detail: {}}));
+              app.autoUpdate.length = 0;
+              app.beast.playAnimationByName('dead');
+              app.matrixSounds.play('damage')
+              setTimeout(() => {
+                app.beast.animationSpeed = 1000000;
+              }, 1000)
             }
           }
         } catch(err) {console.warn('close-distance handler error', err);}
@@ -391,19 +410,22 @@ export var loadRunner = function() {
 
       let controlBeast = {
         update: function() {
-          const setNewZ = cursor.y * 0.05;
-          const setNewX = (cursor.x - 300) * 0.05;
+          const setNewZ = cursor.y * 0.07;
+          const setNewX = (cursor.x - 300) * 0.2;
           app.beast.position.setPosition(setNewX, 0, -setNewZ)
+          const elapsedSeconds = (performance.now() - app.runStartTime) / 1000;
+          app.score.textContent = Math.floor(elapsedSeconds * 10);
           // app.matrixPhysics.setBodyTransform(playerID, setNewX, 0, -setNewZ)
         }
       }
 
       setTimeout(() => {
 
+        app.matrixSounds.play('music')
+        app.score = byId('score');
+        // console.log(app.score);
         // playerID = app.matrixPhysics.getBodyByName('player_MutantMesh');
         // console.log('PLAYER ID ', playerID)
-        app.autoUpdate.push(controlBeast)
-
         menuBeast.activateHZB();
         // MYCUBE.effects.circle = new GenGeoTexture2(menuBeast.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
@@ -414,6 +436,10 @@ export var loadRunner = function() {
         cam.setY(7);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
+        setTimeout(() => {
+          const runnerSet = spawnRunners(menuBeast, m.cube, {count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5});
+          app.autoUpdate.push(controlBeast)
+        }, 2000)
       }, 700);
     }
 

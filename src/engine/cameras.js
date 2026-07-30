@@ -1874,6 +1874,8 @@ export const MobileDOM = {
     const size = options.size ?? 56;
     const bottom = options.bottom ?? 0;
     const left = options.left ?? 0;
+    const height = options.height ?? size;
+    const width = options.width ?? size;
     const opacity = options.opacity ?? 0.35;
     const image = options.image ?? null;
     const setID = options.id ?? null;
@@ -1887,8 +1889,8 @@ export const MobileDOM = {
       position: 'fixed',
       bottom: `${bottom}%`,
       left: `${left}%`,
-      width: `${size}px`,
-      height: `${size}px`,
+      width: `${width}px`,
+      height: `${height}px`,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -1942,14 +1944,16 @@ export const MobileDOM = {
     const left = options.left ?? 10;
     const opacity = options.opacity ?? 0.35;
     const color = options.color ?? '#4caf50';
+    const height = options.height ?? size;
+    const width = options.width ?? size;
 
     const barWrapper = document.createElement('div');
     Object.assign(barWrapper.style, {
       position: 'fixed',
       bottom: `${bottom}%`,
       left: `${left}%`,
-      width: `${size}px`,
-      height: `${size * 0.04}px`,
+      width: `${width}px`,
+      height: `${height}px`,
       background: `rgba(0,0,0,${opacity})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
       borderRadius: `${size * 0.05}px`,

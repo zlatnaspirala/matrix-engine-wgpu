@@ -8605,6 +8605,8 @@ var MobileDOM = {
     const size2 = options2.size ?? 56;
     const bottom = options2.bottom ?? 0;
     const left2 = options2.left ?? 0;
+    const height = options2.height ?? size2;
+    const width = options2.width ?? size2;
     const opacity = options2.opacity ?? 0.35;
     const image = options2.image ?? null;
     const setID = options2.id ?? null;
@@ -8618,8 +8620,8 @@ var MobileDOM = {
       position: "fixed",
       bottom: `${bottom}%`,
       left: `${left2}%`,
-      width: `${size2}px`,
-      height: `${size2}px`,
+      width: `${width}px`,
+      height: `${height}px`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -8670,13 +8672,15 @@ var MobileDOM = {
     const left2 = options2.left ?? 10;
     const opacity = options2.opacity ?? 0.35;
     const color = options2.color ?? "#4caf50";
+    const height = options2.height ?? size2;
+    const width = options2.width ?? size2;
     const barWrapper = document.createElement("div");
     Object.assign(barWrapper.style, {
       position: "fixed",
       bottom: `${bottom}%`,
       left: `${left2}%`,
-      width: `${size2}px`,
-      height: `${size2 * 0.04}px`,
+      width: `${width}px`,
+      height: `${height}px`,
       background: `rgba(0,0,0,${opacity})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
       borderRadius: `${size2 * 0.05}px`,
@@ -61123,12 +61127,13 @@ var loadRunner = function() {
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
     byId2("nui-commander-container").style.left = "10%";
-    byId2("nui-commander-container").style.top = "40%";
+    byId2("nui-commander-container").style.top = "unset";
+    byId2("nui-commander-container").style.bottom = "0";
     var nuiCommander = {};
     nuiCommander.drawer = new CanvasEngine(interActionController);
     nuiCommander.drawer.draw();
     nuiCommander.indicatorsBlocks = indicatorsBlocks;
-    const cursor = new NuiCursor({ color: "255, 80, 80" });
+    const cursor = new NuiCursor({ color: "255, 255, 30" });
     nuiCommander.drawer.elements.push(cursor);
     const slider = new NuiSlider("Bloom Intesity", {
       row: 2,
@@ -61155,11 +61160,8 @@ var loadRunner = function() {
       { col: 3, row: 0, cols: 2, rows: 1, sensitivity: "low", bgColor: "#121234", textColor: "white" }
     );
     const menu = new NuiMenu([
-      { label: "Light red", action: () => {
-        app.lightContainer[0].setColor([100, 1, 0]);
-      } },
-      { label: "Light green", action: () => {
-        app.lightContainer[0].setColor([0, 100, 1]);
+      { label: "Restart", action: () => {
+        location.reload();
       } },
       {
         label: "Volumetric",
@@ -61168,14 +61170,20 @@ var loadRunner = function() {
         }
       },
       {
-        label: "Bloom settings",
+        label: "Bloom",
         action: () => {
           nuiCommander.drawer.removeElement(menu);
           nuiCommander.drawer.elements.push(slider);
           nuiCommander.drawer.elements.push(sliderBloomRad);
           nuiCommander.drawer.elements.push(hideSliderBloom);
         }
-      }
+      },
+      { label: "Red", action: () => {
+        app.lightContainer[0].setColor([30, 1, 0]);
+      } },
+      { label: "Gray", action: () => {
+        app.lightContainer[0].setColor([0, 0, 0]);
+      } }
     ], {
       col: 0,
       cols: 2,
@@ -61188,7 +61196,11 @@ var loadRunner = function() {
     nuiCommander.drawer.elements.push(menu);
     app.nui = nuiCommander;
     console.info("nui-commander controls attached.");
-    const cam2 = app.getCamera();
+    app.matrixSounds.createAudio("music", "res/audios/audionautix-black-fly.mp3", 1);
+    app.matrixSounds.createAudio("damage", "res/audios/gun/gunshot.mp3", 2);
+    app.matrixSounds.createAudio("scoreClip", "res/audios/feel.mp3", 2);
+    app.matrixSounds.audios.music.loop = true;
+    app.matrixSounds.audios.music.volume = 0.2;
     const collisionSystem = new CollisionSystem();
     app.collisionSystem = collisionSystem;
     menuBeast.addLight();
@@ -61196,20 +61208,29 @@ var loadRunner = function() {
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     async function onGround(m2) {
-      let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "10", bottom: "90", borderRadius: "2%" } : { left: "45", bottom: "90", borderRadius: "2%" };
+      let arg1 = isMobile() && getOrientation2() === "portrait" ? { width: 200, height: 50, left: "11", bottom: "93", borderRadius: "2%" } : { width: 100, height: 40, left: "46", bottom: "93", borderRadius: "2%" };
       MobileDOM.addButton(
-        "Beast runner",
+        "Beast score",
         function() {
         },
         () => {
         },
         arg1
       );
-      let arg2 = isMobile() && getOrientation() === "portrait" ? { left: "10", bottom: "90" } : { left: "45", bottom: "90" };
+      let arg3 = isMobile() && getOrientation2() === "portrait" ? { id: "score", width: 165, height: 50, left: "30", bottom: "93", borderRadius: "2%", fontSize: "20px" } : { id: "score", width: 165, height: 40, left: "55", bottom: "93", borderRadius: "2%", fontSize: "20px" };
+      MobileDOM.addButton(
+        "0",
+        function() {
+        },
+        () => {
+        },
+        arg3
+      );
+      let arg2 = isMobile() && getOrientation2() === "portrait" ? { width: 200, height: 20, left: "10", bottom: "90" } : { width: 300, height: 20, left: "45", bottom: "90" };
       app.ENERGYBAR = MobileDOM.addProgressBar(arg2);
       let ground = menuBeast.addMeshObj({
         material: { type: "standard", share: true },
-        position: { x: 0, y: 0, z: -20 },
+        position: { x: 0, y: -0.5, z: -20 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: ["./res/textures/white-metal.png"],
@@ -61221,6 +61242,7 @@ var loadRunner = function() {
           geometry: "Cube"
         }
       });
+      ground.setBlend(0.1);
       const glbFile = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer()).then((buf) => uploadGLBModel(buf, menuBeast.device));
       let beast = menuBeast.addGlbObjInctance({
         material: { type: "standard", useTextureFromGlb: true },
@@ -61242,6 +61264,7 @@ var loadRunner = function() {
       }, null, glbFile);
       app.beast = beast;
       app.beast.energy = 100;
+      app.runStartTime = performance.now();
       app.beast.setAmbient(1, 2, 1);
       collisionSystem.register("player", app.beast.position, 5, "player");
       app.beast.playAnimationByName("walk");
@@ -61277,22 +61300,21 @@ var loadRunner = function() {
       function ambientFromColor(color) {
         return { r: color.r, g: color.g, b: color.b };
       }
-      function randomObstacleColor() {
+      function determinateType() {
         const chooseType = randomIntFromTo(1, 3);
         let r3, b2, g2;
         if (chooseType === 1) {
-          r3 = 80;
+          r3 = 70;
           b2 = 0.5;
           g2 = 0.5;
         } else if (chooseType === 2) {
-          r3 = 0.5;
-          b2 = 80;
+          r3 = 70;
+          b2 = 0.5;
           g2 = 0.5;
-        }
-        if (chooseType === 3) {
+        } else if (chooseType === 3) {
           r3 = 0.5;
           b2 = 0.5;
-          g2 = 80;
+          g2 = 70;
         }
         return { r: r3, g: g2, b: b2 };
       }
@@ -61345,7 +61367,7 @@ var loadRunner = function() {
             material: { type: "standard", share: false },
             position: { x: x3, y: y3, z: z2 },
             rotation: { x: 0, y: 0, z: 0 },
-            rotationSpeed: { x: 0, y: 0, z: 0 },
+            rotationSpeed: { x: 15, y: 0, z: 0 },
             scale: [s2, s2, s2],
             texturesPaths: ["./res/textures/matrix1.webp"],
             name: "runner" + i2,
@@ -61355,7 +61377,7 @@ var loadRunner = function() {
           });
           obj2._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
           obj2._runnerCfg = cfg;
-          obj2._runnerColor = randomObstacleColor();
+          obj2._runnerColor = determinateType();
           obj2._runnerDamage = damageFromColor(obj2._runnerColor);
           obj2._runnerSlow = slowFromColor(obj2._runnerColor);
           const amb = ambientFromColor(obj2._runnerColor);
@@ -61389,9 +61411,13 @@ var loadRunner = function() {
         app.autoUpdate.push(updater);
         return { runners, updater };
       }
-      const runnerSet = spawnRunners(menuBeast, m2.cube, { count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5 });
       addEventListener("player-hit", (e2) => {
         console.log("HIT DAMAGE", e2.detail.damage, "ENERGY LEFT", e2.detail.energy);
+        if (e2.detail.damage > 0) {
+          app.matrixSounds.play("damage");
+        } else {
+          app.matrixSounds.play("scoreClip");
+        }
         app.ENERGYBAR.setValue(app.beast.energy);
         const redLevel = 1 + (100 - app.beast.energy) * (99 / 100);
         app.beast.setAmbient(redLevel, 2, 1);
@@ -61405,16 +61431,16 @@ var loadRunner = function() {
           if (A2.group === "player" && B2.group === "obstacle" || B2.group === "player" && A2.group === "obstacle") {
             const obstacle = A2.group === "obstacle" ? A2 : B2;
             const obj2 = app.getSceneObjectByName(obstacle.id);
-            if (!obj2 || !obj2.position || !obj2._runnerCfg) return;
+            if (!obj2._runnerCfg) return;
             const now = performance.now();
             if (obj2._lastHitTime && now - obj2._lastHitTime < 250) return;
             obj2._lastHitTime = now;
-            const damage = obj2._runnerDamage || 10;
+            const damage = obj2._runnerDamage;
             app.beast.energy = Math.max(0, Math.min(100, app.beast.energy - damage));
             obj2.position.z = obj2._runnerCfg.startZ + Math.random() * 30;
             obj2.position.x = Math.random() * (obj2._runnerCfg.maxX - obj2._runnerCfg.minX) + obj2._runnerCfg.minX;
             obj2.position.y = Math.random() * (obj2._runnerCfg.maxY - obj2._runnerCfg.minY) + obj2._runnerCfg.minY;
-            obj2._runnerColor = randomObstacleColor();
+            obj2._runnerColor = determinateType();
             obj2._runnerDamage = damageFromColor(obj2._runnerColor);
             obj2._runnerSlow = slowFromColor(obj2._runnerColor);
             const amb = ambientFromColor(obj2._runnerColor);
@@ -61424,7 +61450,12 @@ var loadRunner = function() {
             hitEvent.detail.energy = app.beast.energy;
             dispatchEvent(hitEvent);
             if (app.beast.energy <= 0) {
-              dispatchEvent(new CustomEvent("player-dead", { detail: {} }));
+              app.autoUpdate.length = 0;
+              app.beast.playAnimationByName("dead");
+              app.matrixSounds.play("damage");
+              setTimeout(() => {
+                app.beast.animationSpeed = 1e6;
+              }, 1e3);
             }
           }
         } catch (err) {
@@ -61433,21 +61464,28 @@ var loadRunner = function() {
       });
       let controlBeast = {
         update: function() {
-          const setNewZ = cursor.y * 0.05;
-          const setNewX = (cursor.x - 300) * 0.05;
+          const setNewZ = cursor.y * 0.07;
+          const setNewX = (cursor.x - 300) * 0.2;
           app.beast.position.setPosition(setNewX, 0, -setNewZ);
+          const elapsedSeconds = (performance.now() - app.runStartTime) / 1e3;
+          app.score.textContent = Math.floor(elapsedSeconds * 10);
         }
       };
       setTimeout(() => {
-        app.autoUpdate.push(controlBeast);
+        app.matrixSounds.play("music");
+        app.score = byId2("score");
         menuBeast.activateHZB();
-        let cam3 = app.getCamera();
-        cam3.setYaw(-0.03);
-        cam3.setPitch(-0.49);
-        cam3.setZ(0);
-        cam3.setY(7);
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(7);
         app.buildRenderBuckets();
-        cam3._dirtyAngle = true;
+        cam2._dirtyAngle = true;
+        setTimeout(() => {
+          const runnerSet = spawnRunners(menuBeast, m2.cube, { count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5 });
+          app.autoUpdate.push(controlBeast);
+        }, 2e3);
       }, 700);
     }
   });

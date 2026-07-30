@@ -13,9 +13,7 @@ export class RCSAccount {
   token = null;
 
   constructor(apiDomain) {
-
     this.apiDomain = apiDomain;
-
     this.visitor()
 
     addEventListener('F12', (e) => {
@@ -24,26 +22,24 @@ export class RCSAccount {
       this.visitor(e.detail)
     })
 
-
     this.preventGetLeaderboard = false;
     // this.leaderboardBtn = document.createElement('div')
     // this.leaderboardBtn.id = 'leaderboard';
     // this.leaderboardBtn.innerHTML = `
-		//   <button id="leaderboardBtn" class="btn">Leaderboard</button>
-		// `;
+    //   <button id="leaderboardBtn" class="btn">Leaderboard</button>
+    // `;
     // document.body.appendChild(this.leaderboardBtn);
-
     // this.leaderboardBtn = document.getElementById('leaderboardBtn');
     // this.leaderboardBtn.addEventListener("click", this.getLeaderboard)
   }
 
   createDOM = (hideLoginForm) => {
-    if (typeof hideLoginForm === 'undefined') hideLoginForm = false;
+    if(typeof hideLoginForm === 'undefined') hideLoginForm = false;
     var parent = document.createElement('div');
     this.parent = parent;
     //parent.classList.add('')
     parent.id = 'myAccountLoginForm';
-    if (hideLoginForm == true) parent.style.display = 'none';
+    if(hideLoginForm == true) parent.style.display = 'none';
 
     var logo = document.createElement('img');
     logo.id = 'logologin';
@@ -320,14 +316,14 @@ export class RCSAccount {
     }).then((r) => {
       console.log(r.message);
       mb.show(`${r.message}`)
-      if(r.message == "User logged") {   }
+      if(r.message == "User logged") {}
     }).catch((err) => {
       console.log('[RCS Error]', err)
       return;
     })
   }
 
-    login = async () => {
+  login = async () => {
     let route = this.apiDomain || location.origin;
     byId('loginRCSBtn').disabled = true;
     byId('registerBtn').disabled = true;
@@ -386,7 +382,7 @@ export class RCSAccount {
   getLeaderboard = async (e) => {
     e.preventDefault();
 
-    if (this.preventGetLeaderboard == true) {
+    if(this.preventGetLeaderboard == true) {
       return;
     }
 
