@@ -1,4 +1,4 @@
-import {aiConfig} from "../config.js";
+import {aiConfig} from "./config.js";
 import {Ollama} from "ollama";
 
 export class AiOllama {

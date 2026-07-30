@@ -809,3 +809,5 @@ if(isMobile() == false) {
 })
 window.app = DRUM;
 `;
+
+export const SYSTEM_PROMPT_MULTI = SYSTEM_PROMPT;

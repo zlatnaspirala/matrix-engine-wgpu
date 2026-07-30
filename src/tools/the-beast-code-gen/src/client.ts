@@ -18,29 +18,19 @@ export class MEEditorClient {
       //   // this.ws.send(o);
       // }
       console.log("%c[CODE CREATOR][WS OPEN]", LOG_FUNNY_ARCADE);
-      document.dispatchEvent(new CustomEvent("editorx-ws-ready", {}));
+      document.dispatchEvent(new CustomEvent("code-creator-ready", {}));
     };
 
     this.ws.onmessage=(event) => {
       try {
         const data=JSON.parse(event.data);
         console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
-        if(data.details) {
-          document.dispatchEvent(new CustomEvent('file-detail-data', {
-            detail: data
-          }))
-        } else if(data.refresh=='refresh') {
+        if(data.refresh=='refresh') {
           setTimeout(() => document.dispatchEvent(this.updateSceneEvent), 1000)
         } else {
-          if(data.methodSaves&&data.ok==true) {
-            mb.show("app saved ✅");
-            if(typeof data.graphName==="string") {
-              console.log('Graph saved ✅ test ', data.graphs);
-            }
-          }
           if(data.aiGenGraph&&data.ok==true) {
             mb.show("CODE Creator response project ✅", data.aiGenNodes);
-            document.dispatchEvent(new CustomEvent('on-ai-graph-response', { detail: data.aiGenNodes }));
+            document.dispatchEvent(new CustomEvent('on-ai-response', { detail: data.aiGenNodes }));
           } else {
             mb.show("From code creator:"+data.ok);
           }
