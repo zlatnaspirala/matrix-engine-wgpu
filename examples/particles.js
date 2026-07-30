@@ -4,7 +4,7 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 import {followPath, loadNavMesh} from "../src/engine/buildin/navigation-plane/navigation.js";
 import {ParticleActionEmitter} from "../src/engine/effects/particles.js";
-import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {getOrientation, isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {KaleidoscopeEmitter} from "../src/engine/effects/kaleidoscopeEffectInstance.js";
 import {MobileDOM} from "../src/engine/cameras.js";
 import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
@@ -139,7 +139,7 @@ export var loadParticles = function() {
         name: 'waterEffect',
         useBlend: true,
         mesh: m.cube,
-        isBlend : true,
+        isBlend: true,
         raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,
@@ -185,10 +185,10 @@ export var loadParticles = function() {
         app.autoUpdate.push({update: followMe, my: app.MAT_EFFECT_WATER.effects.waterEffect})
 
         app.birds.effects.keeffect = new KaleidoscopeEmitter(app.device, 'rgba16float', 30, app.cameraBuffer)
-        app.birds.effects.particles = new ParticleActionEmitter(particles.device, 'rgba16float', 200, app.cameraBuffer);
-        app.birds.effects.particles2 = new ParticleActionEmitter(particles.device, 'rgba16float', 300, app.cameraBuffer);
-        app.birds.effects.particles3 = new ParticleActionEmitter(particles.device, 'rgba16float', 300, app.cameraBuffer);
-        app.birds.effects.particles4 = new ParticleActionEmitter(particles.device, 'rgba16float', 200, app.cameraBuffer);
+        app.birds.effects.particles = new ParticleActionEmitter(particles.device, 'rgba16float', isMobile() ? 50 : 200, app.cameraBuffer);
+        app.birds.effects.particles2 = new ParticleActionEmitter(particles.device, 'rgba16float', isMobile() ? 50 : 200, app.cameraBuffer);
+        app.birds.effects.particles3 = new ParticleActionEmitter(particles.device, 'rgba16float', isMobile() ? 50 : 200, app.cameraBuffer);
+        app.birds.effects.particles4 = new ParticleActionEmitter(particles.device, 'rgba16float', isMobile() ? 50 : 200, app.cameraBuffer);
         let cam = app.getCamera();
         cam.setYaw(-0.03); cam.setPitch(-0.49); cam.setZ(0); cam.setY(12);
         app.buildRenderBuckets();

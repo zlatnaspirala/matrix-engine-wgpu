@@ -1,7 +1,9 @@
 
 ## CHANGES [Started from feb 2026]
 
-[1.16.xx - 1.17.00]
+[1.16.xx - 1.17.xx]
+ - Particle effect class added.
+ - updated nui-commander project to have width/height for NUI area div.
  - Water simulation effect (part of effects sub system)
  - Add navigationMesh and followPath class/func to npm export/import
  - Add support for raw bvh (skeletal) implementation.
