@@ -2,6 +2,7 @@ node_modules/
 build/
 dist/
 coverage/
+src/config.js
 .DS_Store
 *.log
 .env*

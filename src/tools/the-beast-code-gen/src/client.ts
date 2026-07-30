@@ -1,0 +1,85 @@
+import { LOG_FUNNY_ARCADE, mb } from "../../../engine/utils";
+
+export class MEEditorClient {
+  ws=null;
+  updateSceneEvent=new CustomEvent('updateSceneContainer', { detail: {} });
+
+  constructor () {
+    this.ws=new WebSocket("ws://localhost:1243");
+    this.ws.onopen=() => {
+      // if(typeOfRun=='created from editor') {
+      //   console.log(`%c <signal> ${name}`, LOG_FUNNY_ARCADE);
+      //   // var o: any={
+      //   //   action: "watch",
+      //   //   name: name,
+      //   //   path: ''
+      //   // };
+      //   // o=JSON.stringify(o);
+      //   // this.ws.send(o);
+      // }
+      console.log("%c[CODE CREATOR][WS OPEN]", LOG_FUNNY_ARCADE);
+      document.dispatchEvent(new CustomEvent("editorx-ws-ready", {}));
+    };
+
+    this.ws.onmessage=(event) => {
+      try {
+        const data=JSON.parse(event.data);
+        console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
+        if(data.details) {
+          document.dispatchEvent(new CustomEvent('file-detail-data', {
+            detail: data
+          }))
+        } else if(data.refresh=='refresh') {
+          setTimeout(() => document.dispatchEvent(this.updateSceneEvent), 1000)
+        } else {
+          if(data.methodSaves&&data.ok==true) {
+            mb.show("app saved ✅");
+            if(typeof data.graphName==="string") {
+              console.log('Graph saved ✅ test ', data.graphs);
+            }
+          }
+          if(data.aiGenGraph&&data.ok==true) {
+            mb.show("CODE Creator response project ✅", data.aiGenNodes);
+            document.dispatchEvent(new CustomEvent('on-ai-graph-response', { detail: data.aiGenNodes }));
+          } else {
+            mb.show("From code creator:"+data.ok);
+          }
+        }
+      } catch(e: any) {
+        console.error("[WS ERROR PARSE]", e);
+      }
+    };
+
+    this.ws.onerror=(err) => {
+      console.error("%c[WS ERROR]", "color: red", err);
+      document.dispatchEvent(new CustomEvent("editor-not-running", { detail: {} }));
+    };
+
+    this.ws.onclose=() => {
+      console.log("%c[WS CLOSED]", "color: gray");
+    }
+    this.attachEvents();
+  }
+
+  attachEvents() {
+    document.addEventListener('aiGenGraphCall', (e: any) => {
+      console.info('%caiGenGraphCall fluxCodexVertex <signal>', LOG_FUNNY_ARCADE);
+      let o: any={
+        action: "aiGenGraphCall",
+        prompt: e.detail
+      };
+      o=JSON.stringify(o);
+      this.ws.send(o);
+    });
+
+    // document.addEventListener('delete-shader-graph', (e: any) => {
+    //   console.info('%cDelete shader-graph <signal>', LOG_FUNNY_ARCADE);
+    //   let o: any = {
+    //     action: "delete-shader-graph",
+    //     name: e.detail
+    //   };
+    //   o = JSON.stringify(o);
+    //   this.ws.send(o);
+    // });
+  }
+}

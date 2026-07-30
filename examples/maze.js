@@ -89,7 +89,7 @@ export var mazeGame = function() {
       }
       // Carve entrance top-left, exit bottom-right
       grid[1][0] = 1;                          // entrance: left wall, row 1
-      grid[mazeSize - 2][mazeSize - 1] = 1;   // exit: right wall, second-to-last row
+      grid[mazeSize - 2][mazeSize - 1] = 1;    // exit: right wall, second-to-last row
       // Instantiate walls (unchanged)
       for(let y = 0;y < mazeSize;y++) {
         for(let x = 0;x < mazeSize;x++) {
