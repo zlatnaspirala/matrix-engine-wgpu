@@ -2,6 +2,13 @@ import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import {defineConfig} from 'vite';
 
+/**
+ * @description
+ * You must change 'publicDir' if you use code-creator out of engine git repo.
+ * This is just path to the standard public folder of engine project.
+ */
+const PUBLIC_DIR =  "../../../public/";
+
 export default defineConfig(() => {
   return {
     plugins: [tailwindcss()],
@@ -10,15 +17,12 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
-    publicDir: "../../../public/",
+    publicDir: PUBLIC_DIR,
     build: {
-      outDir: '../../../public/',
+      outDir: PUBLIC_DIR,
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };

@@ -25,8 +25,8 @@ export class MEEditorClient {
       try {
         const data=JSON.parse(event.data);
         console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
-        if(data.refresh=='refresh') {
-          setTimeout(() => document.dispatchEvent(this.updateSceneEvent), 1000)
+        if(data.listAssets) {
+          document.dispatchEvent(new CustomEvent('list-assets', { detail: data }))
         } else {
           if(data.aiGenGraph&&data.ok==true) {
             console.log("TheBeast Creator ✅:", data.aiGenNodes);
