@@ -151,7 +151,7 @@ async function aiGenGraphCall(msg, ws) {
       msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
         SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
       matrixGroq.aiGenGraphCall(msg.prompt).then((r) => {
-        console.log('GROQ service....>>>>', res_list)
+        console.log('GROQ service....>>>>')
         ws.send(JSON.stringify({
           ok: true,
           aiGenGraph: 'OK',
@@ -184,7 +184,7 @@ async function aiGenGraphCall(msg, ws) {
         SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
         // no free quota at the moment 
       matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
-        console.log('result ollama  ai tool service>', res_list)
+        console.log('result ollama  ai tool service>')
         ws.send(JSON.stringify({
           ok: true,
           aiGenGraph: 'OK',
@@ -193,4 +193,65 @@ async function aiGenGraphCall(msg, ws) {
       })
     }
   });
+}
+
+async function internal_navFolder(data, ws) {
+  return new Promise(async (resolve, reject) => {
+    if(!data.rootFolder) {reject('no root folder'); return;}
+    console.log("🔨 Building resources data ..");
+    const folderTex = path.join(data.rootFolder, data.name);
+    const folderAudios = path.join(data.rootFolder, "audios");
+    const folderVideos = path.join(data.rootFolder, "videos");
+    const folderObjs = path.join(data.rootFolder, "meshes");
+
+    // bad but still good for lazy
+    let listOfPngs2 = await getAllFilenamesFrom(folderObjs, ".png")
+    let listOfwebp2 = await getAllFilenamesFrom(folderObjs, ".webp")
+    let listOfjpeg2 = await getAllFilenamesFrom(folderObjs, ".jpeg")
+
+    let listOfPngs = await getAllFilenamesFrom(folderTex, ".png");
+    let listOfJpgs = await getAllFilenamesFrom(folderTex, ".jpg");
+    let listOfwebp = await getAllFilenamesFrom(folderTex, ".webp");
+    let listOfTexures = [...listOfJpgs, ...listOfPngs, ...listOfwebp, ...listOfPngs2, ...listOfjpeg2, listOfwebp2];
+
+    let listOfObjs = await getAllFilenamesFrom(folderObjs, ".obj")
+    let listOfGlbs = await getAllFilenamesFrom(folderObjs, ".glb")
+    let listOfMp3 = await getAllFilenamesFrom(folderAudios, ".mp3")
+    let listOfMp4 = await getAllFilenamesFrom(folderVideos, ".mp4")
+    ws.send(JSON.stringify({
+      // IMPLEMENT LATER ! on front can be used for texture drop down in fcv graph.
+      listAssetsForGraph: "list-assets",
+      ok: true,
+      rootFolder: path.join(data.rootFolder, data.name),
+      resources: {
+        objs: listOfObjs.map(d => ({name: d.name, relativePath: d.relativePath})),
+        textures: listOfTexures.map(d => ({name: d.name, relativePath: d.relativePath})),
+        glbs: listOfGlbs.map(d => ({name: d.name, relativePath: d.relativePath})),
+        mp3: listOfMp3.map(d => ({name: d.name, relativePath: d.relativePath})),
+        mp4: listOfMp4.map(d => ({name: d.name, relativePath: d.relativePath})),
+      }
+    }));
+    resolve([listOfTexures, listOfObjs, listOfGlbs, listOfMp3, listOfMp4]);
+  })
+}
+
+export async function getAllFilenamesFrom(dirPath, ext) {
+  let results = [];
+  const list = await fs.readdir(dirPath, {withFileTypes: true});
+  for(const dirent of list) {
+    const fullPath = path.join(dirPath, dirent.name);
+    if(dirent.isDirectory()) {
+      const recursiveResults = await getAllFilenamesFrom(fullPath, ext);
+      results = results.concat(recursiveResults);
+    } else {
+      if(path.extname(dirent.name).toLowerCase() === ext.toLowerCase()) {
+        results.push({
+          filename: dirent.name,
+          fullpath: fullPath,
+          relativePath: fullPath.split('public' + path.sep).pop().replace(/\\/g, '/')
+        });
+      }
+    }
+  }
+  return results;
 }

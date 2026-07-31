@@ -29,10 +29,11 @@ export class MEEditorClient {
           setTimeout(() => document.dispatchEvent(this.updateSceneEvent), 1000)
         } else {
           if(data.aiGenGraph&&data.ok==true) {
-            mb.show("CODE Creator response project ✅", data.aiGenNodes);
+            console.log("TheBeast Creator ✅:", data.aiGenNodes);
             document.dispatchEvent(new CustomEvent('on-ai-response', { detail: data.aiGenNodes }));
           } else {
-            mb.show("From code creator:"+data.ok);
+            // mb.show("From code creator:"+data.ok);
+            console.info("no_handler", data);
           }
         }
       } catch(e: any) {

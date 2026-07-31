@@ -917,7 +917,7 @@ async function aiGenGraphCall(msg, ws) {
         SYSTEM_PROMPT_MINI, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
 
       matrixGroq.aiGenGraphCall(msg.prompt).then((r) => {
-        console.log('GROQ service....>>>>', res_list)
+        console.log('GROQ service....>>>>')
         ws.send(JSON.stringify({
           ok: true,
           aiGenGraph: 'OK',
