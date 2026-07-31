@@ -6,6 +6,5 @@ export let tasks = [
   To make it optimised you can use scale.`,
   "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ",
   "Create a nonPhysics Cube and enable raycast, on hit make object translateByZ",
-  "Create start from cubes - use nonphysics cubes.",
   "Create a pyramid of cubes with 4 levels",
 ];

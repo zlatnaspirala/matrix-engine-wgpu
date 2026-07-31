@@ -12,21 +12,42 @@
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: #09090b;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #27272a;
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #f97316;
 }
 
+/* Dark backdrop overlay */
+#assetsModal {
+  background-color: rgba(0, 0, 0, 0.85);
+}
+
+/* Modal box content */
+#assetsModal>div {
+  background-color: #000000 !important;
+  /* Your custom color */
+}
+
 /* Glow animations and tech effects */
 @keyframes pulse-accent {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 0.3; }
+
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .glow-accent {
@@ -39,4 +60,106 @@
 
 .glow-text-cyan {
   text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+}
+
+.file-item {
+  word-break: break-all;
+  background-position-y: 4px;
+  width: 67px;
+  height: 72px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  color: #ddd;
+  /* -webkit-text-stroke-width: 0.5px;
+  -webkit-text-stroke-color: rgb(116 246 255 / 35%); */
+
+  p {
+    color: #000000;
+    font-size: small;
+    /* padding-top: 7px; */
+    background: #6495edbf;
+    width: auto;
+    font-size: x-small;
+  }
+}
+
+.file-item .icon {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 8px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.file-item .label {
+  font-size: 13px;
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.file-item:hover {
+  color: #fff;
+  border-radius: 8px;
+  transition: 0.15s;
+}
+
+.icon {
+  background-image: url("../res/icons/editor/folder.png");
+}
+
+.folder {
+  background-image: url("../res/icons/editor/folder.png") !important;
+
+  p {
+    color: #ffffff;
+    font-size: small;
+    padding-top: 3px;
+  }
+}
+
+.png {
+  background-image: url("../res/icons/editor/image.png");
+}
+
+.png {
+  background-image: url("../res/icons/editor/image.png");
+}
+
+.jpg,
+.jpeg {
+  background-image: url("../res/icons/editor/image.png");
+}
+
+.js {
+  background-image: url("../res/icons/editor/js.png");
+}
+
+.ttf {
+  background-image: url("../res/icons/editor/font.png");
+}
+
+.mp3 {
+  background-image: url("../res/icons/editor/mp3.png");
+}
+
+.glb {
+  background-image: url("../res/icons/editor/glb.png");
+}
+
+.otf,
+.woff,
+.woff2 {
+  background-image: url("../res/icons/editor/font.png");
+}
+
+.file-item .icon {
+  background-image: url("../res/icons/editor/file.png");
+}
+
+.unknown {
+  background-image: url("../res/icons/editor/unknown.png");
 }

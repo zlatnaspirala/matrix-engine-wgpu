@@ -37,6 +37,8 @@ import {followPath, loadNavMesh} from "./src/engine/buildin/navigation-plane/nav
 // deplace src path in future
 import {MatrixTTS} from "./examples/games/moba/tts.js";
 import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
+import {animateRotationY} from "./src/engine/procedures/sceneobjectKinematics.js";
+import {BVHSkeletal} from "./src/engine/loaders/raw-bvh-skeletal.js";
 
 const about = () => {
   console.info("npm i matrix-engine-wgpu ver 1.18.00 is ready.")
@@ -44,6 +46,7 @@ const about = () => {
   console.info("List of features: ")
   console.info(" - Loading obj files with uvs.")
   console.info(" - Loading glb binary file - animations, trail (delay) effects.")
+  console.info(" - Loading bvh - BVHSkeletal.")
   console.info(" - Scene camera use -z front.")
   console.info(" - position, rotation - same like matrix-engine.")
   console.info(" - Physics used Ammo.js build, cannones, matterjs and joltjs.")
@@ -72,6 +75,8 @@ export {
   InstancedKinematicOperations,
   SpritesPack2D,
   mb,
+  BVHSkeletal,
+  animateRotationY,
   initializeSpritesForMesh,
   downloadMeshes,
   rayIntersectsSphere,
