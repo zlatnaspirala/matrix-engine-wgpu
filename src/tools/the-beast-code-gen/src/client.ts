@@ -26,6 +26,7 @@ export class MEEditorClient {
         const data=JSON.parse(event.data);
         console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
         if(data.listAssets) {
+          console.log("%c[EDITOR][WS MESSAGE] list assets", LOG_FUNNY_ARCADE, data);
           document.dispatchEvent(new CustomEvent('list-assets', { detail: data }))
         } else {
           if(data.aiGenGraph&&data.ok==true) {

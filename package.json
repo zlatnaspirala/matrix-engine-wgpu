@@ -4,11 +4,9 @@
   "description": "Cast received for android TV, splat point clouds + color animator and vertex animator, Culling 1.14.0 , HZB Ray 1.12.0 MOBA MOBILE ADAPTATION 1.11.0 Big upgrade 1.9.5 ProceduralMesh Morph - 1.9.1 Env maps, 1.9.0 au gen graph tool backend ollama free service. 1.8.8 [setMaterial, water effect, shaderEditor done, audiosReactive node low, mid, high, beat, curve node and curve editor] 1.8.4[Bloom implemented] [1.8.2]For visual scripting added fetch, getArra and forEach. Networking implemented - based on kurento openvidu server. fix arcball camera,instanced draws added also effect pipeline blend with instancing option.Normalmap added, Fixed shadows casting vs camera/video texture, webGPU powered pwa application. Crazy fast rendering with AmmoJS physics support. Simple raycaster hit object added.",
   "main": "index.js",
   "scripts": {
-    "main-worker": "watchify app-worker.js -p [esmify --noImplicitAny] -o public/app-worker.js",
     "examples": "esbuild examples.js --bundle --outfile=public/examples.js --format=esm --watch",
     "android-tv-cast": "esbuild android-tv-cast.js --bundle --outfile=public/android-tv-cast.js --format=esm --watch",
     "jamb": "watchify ./examples/games/jamb/jamb.js -p [esmify --noImplicitAny] -o public/yacht.js",
-    "landpage": "watchify ./examples/my-lights.js -p [esmify --noImplicitAny] -o public/landpage.js",
     "demo1": "watchify demo1.js -p [esmify --noImplicitAny] -o public/app.js",
     "empty": "watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js",
     "build.jamb": "browserify main.js -p esmify > public/app.js",
@@ -16,6 +14,9 @@
     "moba": "watchify ./examples/games/moba/forestOfHollowBlood.js -p [esmify --noImplicitAny] -o public/moba-game.js",
     "moba-menu": "watchify ./examples/games/moba/start-menu.js -p [esmify --noImplicitAny] -o public/moba-menu.js",
     "build-all": "npm run examples | npm run main | npm run empty",
+    "creator": "npm --prefix src/tools/the-beast-code-gen run dev",
+    "creator-backend": "npm --prefix src/tools/the-beast-code-gen run backend",
+    "landpage": "watchify ./examples/my-lights.js -p [esmify --noImplicitAny] -o public/landpage.js",
     "hosts": "http-server ./public/ -p 3000",
     "editor-landing": "watchify ./src/tools/editor/template/autogen.js -p [esmify --noImplicitAny] -o public/matrix-engine-autogen.js",
     "editorx": "cd src/tools/editor/backend && node matrix-editor.js"

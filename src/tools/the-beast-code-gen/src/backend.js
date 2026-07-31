@@ -1,13 +1,14 @@
 import path from "path";
 import fs from "fs/promises";
 import {WebSocketServer} from "ws";
-import esbuild from "esbuild";
 
 /**
  * @description
  * NodeJS backend for the-beast-code-creator
- * @note 
+ * @note
  * This is node.js script.
+ * Use same port (1243) like visual scripting ai node generato part.
+ * Cant be run in same time.
  */
 
 const ENGINE_PATH = path.resolve("../../../../");
@@ -15,22 +16,15 @@ const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
 const PUBLIC_RES = path.join(PUBLIC_DIR, "res");
 const PROJECTS_DIR = path.join(ENGINE_PATH, "projects");
 
-// import {DEFAULT_GRAPH_JS} from "./graph.js";
-// import {DEFAUL_METHODS} from "./methods.js";
-
 import {AiOllama} from "./ollama.js";
 import {AvailableResources} from "./get-available-resources.js";
-
 import {SYSTEM_PROMPT} from "./prompt.js";
 import {AiGroq} from "./groq/groq.js";
 import {AiAnthropic} from "./ai-anthropic/ai-anthropic.js";
 
-let PROJECT_NAME = "";
-
 await fs.mkdir(PROJECTS_DIR, {recursive: true});
-const watchers = new Map();
-
 const wss = new WebSocketServer({port: 1243});
+
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[93m%s\x1b[0m", "- The Beast Code Creator                  -");
@@ -68,17 +62,17 @@ async function aiGenGraphCall(msg, ws) {
     let res_list_glb = res[2];
     let res_list_mp3 = res[3];
     let res_list_mp4 = res[4];
+
     const listOfTexs = res_list_tex.map(t => t.relativePath).join(", ");
     const listOfObjs = res_list_obj.map(t => t.relativePath).join(", ");
     const listOfGlbs = res_list_glb.map(t => t.relativePath).join(", ");
     const listOfMp3s = res_list_mp3.map(t => t.relativePath).join(", ");
     const listOfMp4s = res_list_mp4.map(t => t.relativePath).join(", ");
-    // console.log('msg.prompt.provider....>>>>', msg.prompt.provider)
+
     if(msg.prompt.provider === 'groq') {
       msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
         SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
       matrixGroq.aiGenGraphCall(msg.prompt).then((r) => {
-        // console.log('GROQ service...')
         ws.send(JSON.stringify({
           ok: true,
           aiGenGraph: 'OK',
@@ -109,7 +103,6 @@ async function aiGenGraphCall(msg, ws) {
     } else {
       msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
         SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
-        // no free quota at the moment 
       matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
         console.log('ollama claude call.')
         ws.send(JSON.stringify({
