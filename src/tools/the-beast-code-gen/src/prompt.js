@@ -12,7 +12,6 @@ Convert a natural language description into a the-beast top level code made ONLY
 NEVER include explanations or comments in output!
 ALWAYS finish job to the end.
 
-
 RULES:
 - Use ONLY code explicitly listed.
 - NEVER invent new functions types.
@@ -22,7 +21,6 @@ RULES:
   It means if you wanna add two cube side by side than use spacing 2 (for example cube1 position.x =-1 and cube2.position.x = 1)
 - Use alsways uniq name for new scene object!
 
-
 RECOMMENDED:
 - If ask "create me house", you dont just use 3 cubes you must buidl whole house with doors , windows , use scale cube.
 
@@ -31,7 +29,6 @@ STRICT RULES (DO NOT VIOLATE):
 
 RESOURCE LIST:
 ____INJECT_RES_MANIFEST____
-
 
 WRAPPER FOR EVERY EXAMPLE:
 import { MatrixEngineWGPU, downloadMeshes, addRaycastsAABBListener, isMobile, randomIntFromTo, GenGeoTexture2 } from "matrix-engine-wgpu";

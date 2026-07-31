@@ -22,6 +22,8 @@ import {AiOllama} from "./ollama.js";
 import {AvailableResources} from "./get-available-resources.js";
 
 import {SYSTEM_PROMPT} from "./prompt.js";
+import {AiGroq} from "./groq/groq.js";
+import {AiAnthropic} from "./ai-anthropic/ai-anthropic.js";
 
 let PROJECT_NAME = "";
 
@@ -31,19 +33,19 @@ const watchers = new Map();
 const wss = new WebSocketServer({port: 1243});
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
-console.log("\x1b[93m%s\x1b[0m", "- TheBeast Code Creator                   -");
+console.log("\x1b[93m%s\x1b[0m", "- The Beast Code Creator                  -");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
-console.log("\x1b[93m%s\x1b[0m", "- MAke task and get code                 -");
+console.log("\x1b[93m%s\x1b[0m", "- Make task and get code/project          -");
 console.log("\x1b[93m%s\x1b[0m", "- StartUp at ./public/matrix-engine.html -");
 console.log("\x1b[93m%s\x1b[0m", "- you go directly to /<PROJECT_NAME>.html-");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
-console.log("\x1b[92m%s\x1b[0m", "- AI_TOOL Ollama            -");
+console.log("\x1b[92m%s\x1b[0m", "- Default ai platform: Ollama             -");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 
 let matrixOllama = new AiOllama();
-// let matrixGroq = new AiGroq();
-// let matrixAiAnthropic = new AiAnthropic();
+let matrixGroq = new AiGroq();
+let matrixAiAnthropic = new AiAnthropic();
 // let matrixGoogleAI = new AiAnthropic();
 
 wss.on("connection", ws => {
