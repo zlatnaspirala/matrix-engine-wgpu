@@ -2,12 +2,12 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.16.0 2026 `The beast`
+📅 Version: 1.18.0 2026 Alias `The beast`
 
 ---
 
 ## Logo
-<img width="200" height="200" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
+<img width="256" height="256" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
 
 
 ---
@@ -45,6 +45,9 @@ Backend editor (works in local env - desktop browsers) support list:
 - ✔️ MediaPipe implemented - dinamic loading (if not in use no loading script or any related to mediapipe)
 - ✔️ Remote render stream emit example (standard engine networking) and special endpoint for "wachers" `tv-10.html`
     Replace webcam stream with canvas capture - on endpoint use webRTC and video tag to preview remote render.
+- ✔️ Code creator AI services agent system(use engine from npm)
+    `npm run creator` for 'http://localhost:3000/' `npm run creator-backend` for backend.
+    create games from simple prompt.
 
 ## Roadmap
 

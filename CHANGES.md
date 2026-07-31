@@ -1,6 +1,14 @@
 
 ## CHANGES [Started from feb 2026]
 
+[1.18.xx]
+  Added code-creator AI driven by not for graphs 
+   it is for code direct.
+   Backend:
+   `npm run creator-backend`
+   Frontend:
+   `npm run creator`
+
 [1.16.xx - 1.17.xx]
  - Particle effect class added.
  - updated nui-commander project to have width/height for NUI area div.

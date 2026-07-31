@@ -312,19 +312,19 @@ iframeHeader.className = 'p-2 bg-slate-950 border-b border-emerald-900/60 flex i
 
 const iframeLabel = document.createElement('span');
 iframeLabel.className = 'text-[10px] text-emerald-600 font-mono shrink-0';
-iframeLabel.innerText = 'IFRAME_SRC:';
+iframeLabel.innerText = 'PREVIEW:';
 
-const iframeUrlInput = document.createElement('input');
-iframeUrlInput.type = 'text';
-iframeUrlInput.placeholder = 'Enter src URL or leave empty for direct AI srcdoc preview...';
-iframeUrlInput.className = 'flex-1 bg-black text-emerald-300 text-[11px] px-2 py-1 rounded border border-emerald-900/60 focus:outline-none focus:border-emerald-400 font-mono';
+// const iframeUrlInput = document.createElement('input');
+// iframeUrlInput.type = 'text';
+// iframeUrlInput.placeholder = 'Enter src URL or leave empty for direct AI srcdoc preview...';
+// iframeUrlInput.className = 'flex-1 bg-black text-emerald-300 text-[11px] px-2 py-1 rounded border border-emerald-900/60 focus:outline-none focus:border-emerald-400 font-mono';
 
 const statusBadge = document.createElement('span');
 statusBadge.className = 'text-[10px] text-cyan-400 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/80 shrink-0';
 statusBadge.innerText = 'SRCDOC: WAITING';
 
 iframeHeader.appendChild(iframeLabel);
-iframeHeader.appendChild(iframeUrlInput);
+// iframeHeader.appendChild(iframeUrlInput);
 iframeHeader.appendChild(statusBadge);
 
 // Iframe Container
@@ -337,18 +337,18 @@ iframe.title = 'AI Output Preview';
 iframe.className = 'w-full h-full border-0 bg-white';
 iframe.src = 'about:blank';
 
-iframeUrlInput.addEventListener('input', () => {
-  if (iframeUrlInput.value.trim()) {
-    iframe.removeAttribute('srcdoc');
-    iframe.src = iframeUrlInput.value.trim();
-    statusBadge.innerText = 'SRC URL MODE';
-    statusBadge.className = 'text-[10px] text-amber-400 font-mono bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/80 shrink-0';
-  } else {
-    iframe.src = 'about:blank';
-    statusBadge.innerText = 'SRCDOC: WAITING';
-    statusBadge.className = 'text-[10px] text-cyan-400 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/80 shrink-0';
-  }
-});
+// iframeUrlInput.addEventListener('input', () => {
+//   if (iframeUrlInput.value.trim()) {
+//     iframe.removeAttribute('srcdoc');
+//     iframe.src = iframeUrlInput.value.trim();
+//     statusBadge.innerText = 'SRC URL MODE';
+//     statusBadge.className = 'text-[10px] text-amber-400 font-mono bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/80 shrink-0';
+//   } else {
+//     iframe.src = 'about:blank';
+//     statusBadge.innerText = 'SRCDOC: WAITING';
+//     statusBadge.className = 'text-[10px] text-cyan-400 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/80 shrink-0';
+//   }
+// });
 
 iframeWrapper.appendChild(iframe);
 

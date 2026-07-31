@@ -11,10 +11,9 @@ import {WebSocketServer} from "ws";
  * Cant be run in same time.
  */
 
-const ENGINE_PATH = path.resolve("../../../../");
+const ENGINE_PATH = path.resolve("../../../");
 const PUBLIC_DIR = path.join(ENGINE_PATH, "public");
 const PUBLIC_RES = path.join(PUBLIC_DIR, "res");
-const PROJECTS_DIR = path.join(ENGINE_PATH, "projects");
 
 import {AiOllama} from "./ollama.js";
 import {AvailableResources} from "./get-available-resources.js";
@@ -22,7 +21,6 @@ import {SYSTEM_PROMPT} from "./prompt.js";
 import {AiGroq} from "./groq/groq.js";
 import {AiAnthropic} from "./ai-anthropic/ai-anthropic.js";
 
-await fs.mkdir(PROJECTS_DIR, {recursive: true});
 const wss = new WebSocketServer({port: 1243});
 
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
@@ -48,12 +46,30 @@ wss.on("connection", ws => {
       msg = JSON.parse(msg);
       if(msg.action === "aiGenGraphCall") {
         aiGenGraphCall(msg, ws);
+      } else if(msg.action === "nav-folder") {
+        console.log("nav-folder [WATCH]");
+        navFolder(msg, ws);
+      } else if(msg.action === "list") {
+        const rel = "";
+        const folder = path.join(PUBLIC_RES, rel);
+        const items = await fs.readdir(folder, {withFileTypes: true});
+        ws.send(JSON.stringify({
+          listAssets: "list-assets",
+          ok: true,
+          rootFolder: PUBLIC_RES,
+          payload: items.map(d => ({
+            name: d.name,
+            isDir: d.isDirectory()
+          }))
+        }));
       }
     } catch(err) {
       ws.send(JSON.stringify({ok: false, error: err.message}));
     }
   });
 });
+
+// G:\web_server\xampp\htdocs\PRIVATE_SERVER\me\meGPU\matrix-engine-wgpu\public
 
 async function aiGenGraphCall(msg, ws) {
   internal_navFolder({rootFolder: PUBLIC_RES, name: "textures"}, ws).then((res) => {
@@ -138,7 +154,7 @@ async function internal_navFolder(data, ws) {
     let listOfMp3 = await getAllFilenamesFrom(folderAudios, ".mp3")
     let listOfMp4 = await getAllFilenamesFrom(folderVideos, ".mp4")
     ws.send(JSON.stringify({
-      listAssetsForGraph: "list-assets",
+      listAssets: "list-assets",
       ok: true,
       rootFolder: path.join(data.rootFolder, data.name),
       resources: {
@@ -172,4 +188,18 @@ export async function getAllFilenamesFrom(dirPath, ext) {
     }
   }
   return results;
+}
+
+async function navFolder(data, ws) {
+  const folder = path.join(data.rootFolder, data.name);
+  const items = await fs.readdir(folder, {withFileTypes: true});
+  ws.send(JSON.stringify({
+    listAssets: "list-assets",
+    ok: true,
+    rootFolder: path.join(data.rootFolder, data.name),
+    payload: items.map(d => ({
+      name: d.name,
+      isDir: d.isDirectory()
+    }))
+  }));
 }

@@ -39,7 +39,7 @@ import {MatrixTTS} from "./examples/games/moba/tts.js";
 import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
 
 const about = () => {
-  console.info("npm i matrix-engine-wgpu ver 1.17.5 is ready.")
+  console.info("npm i matrix-engine-wgpu ver 1.18.00 is ready.")
   console.info("--------------------------------------------")
   console.info("List of features: ")
   console.info(" - Loading obj files with uvs.")

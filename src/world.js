@@ -1,6 +1,6 @@
 import {MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
-import {ArcballCamera, CinematicCamera, FirstPersonCamera, PlaneCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
+import {CinematicCamera, FirstPersonCamera, PlaneCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
 import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader, checkLock, mobileLock, preventZoom, getOrientation} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
@@ -52,18 +52,15 @@ if('serviceWorker' in navigator) {
   if(MEConfig.CACHE === true && location.hostname.indexOf('localhost') == -1) {
     navigator.serviceWorker.register('cache.js').then(registration => {
       if(!navigator.serviceWorker.controller) {
-        // console.log('Installing & caching for the first time');
-        console.log('Installing & caching for the first time');
+        console.log('Installing & caching for the first time...');
         meLoader.create('LOADING');
-        setTimeout(() => {
-          location.reload();
-        }, 3000)
+        setTimeout(() => {location.reload()}, 3000);
         APP_READY = false;
       } else {
         APP_READY = true;
       }
     }).catch((cacheErr) => {
-      console.warn('cacheErr: ', cacheErr);
+      console.warn('cacheErr:', cacheErr);
     });
   }
 } else {
@@ -71,7 +68,7 @@ if('serviceWorker' in navigator) {
 }
 
 export default class MatrixEngineWGPU {
-  // Save class reference
+  // Class reference for visual scripting.
   reference = {
     MEMeshObj,
     MEMeshObjInstances,
@@ -118,7 +115,7 @@ export default class MatrixEngineWGPU {
           type: 'WASD',
           responseCoef: 200
         },
-        clearColor: {r: 0.584, g: 0, b: 0.239, a: 1.0}
+        clearColor: {r: 0, g: 0, b: 0, a: 1.0}
       }
       callback = options;
     }
@@ -146,7 +143,7 @@ export default class MatrixEngineWGPU {
     if(typeof options.alphaMode == 'undefined') {
       options.alphaMode = "no";
     } else if(options.alphaMode != 'opaque' && options.alphaMode != 'premultiplied') {
-      console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied' !!!");
+      console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied'!");
       return;
     }
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
@@ -367,11 +364,9 @@ export default class MatrixEngineWGPU {
         if(APP_READY === false && isMobile() === true &&
           location.hostname.indexOf('192.168.') === -1
         ) {
-          console.log('app is installing cache');
+          // console.log('Installing cache...');
           setTimeout(() => {location.reload();}, 4000)
         } else {
-
-          // Duplikat
           if(MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
             this.applyCanvasSize(this.options.fastRender)
             this.init({canvas, callback});
@@ -390,31 +385,25 @@ export default class MatrixEngineWGPU {
 
           meLoader.create('RUN IN FULL SCREEN');
           this.MEConfig.fsManager.onChange((isFS, target) => {
-            console.log('1 BACK FROM FS', isFS)
-            console.log('window style width : ', innerWidth)
+            // console.log('BACK FROM FS', isFS)
             setTimeout(() => this.applyCanvasSize(this.options.fastRender), 200);
           });
 
           addEventListener("run_mobile_fs", () => {
-            if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-              // console.log('2 FastRender : ', this.options.fastRender)
-              // console.log('window style width : ', innerWidth)
-              // this.applyCanvasSizeMobile(this.options.fastRender)
-            }
+            // if(this.options.fastRender && !isNaN(this.options.fastRender)) {
+            //   // this.applyCanvasSizeMobile(this.options.fastRender)
+            // }
             meLoader.destroy();
-            // Only for mobile - BUG 
+            // Only for mobile - BUG
             if(typeof this.options.lock !== 'undefined') {
               if(this.options.lock != 'landscape' && this.options.lock != 'portrait') {
                 this.options.lock = 'portrait';
               }
               if(checkLock() && isMobile() == true) {
-
                 if(screen.orientation && screen.orientation.lock) screen.orientation.lock(this.options.lock).then(() => {
                   console.log(`%cOrientation locked to ${this.options.lock}`, LOG_FUNNY_ARCADE);
                   setTimeout(() => {
                     this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
-                    console.log('canvas width: ', canvas.width)
-                    console.log('canvas style width : ', canvas.style.width)
                     this.init({canvas, callback});
                   }, 1000)
                 }).catch(function(error) {
@@ -426,21 +415,18 @@ export default class MatrixEngineWGPU {
                 console.log(`%cOrientation locked to ${e}`, LOG_FUNNY_ARCADE);
                 setTimeout(() => {
                   this.applyCanvasSizeMobile(this.options.fastRender, this.options.fastRender);
-                  console.log('canvas width:', canvas.width)
-                  console.log('canvas style width :', canvas.style.width)
                   this.init({canvas, callback});
-                }, 1000)
+                }, 1000);
               }).catch(function(error) {
                 console.error("Orientation lock failed: ", error);
               });
             }
             if(this.mainRenderBundle.length == 0) {
-              console.log('PhysicsReady w')
+              // console.log('PhysicsReady')
               dispatchEvent(new CustomEvent('PhysicsReady', {}));
             }
           });
         }
-
       }, 500);
     } else {
       this.init({canvas, callback});
@@ -549,13 +535,14 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.17.5 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 1.18.00 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
       "Optimised MediaPipe buildin library implemented.\n" +
-      "Creative power with intuitive visual scripting work flow.\n" +
-      "New Features: NUI-Commander, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      "Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
+      "Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
+      "New Features: NUI-Commander Game runner, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
       "2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
       "Mobile support: chrome-android tested. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
