@@ -37,4 +37,11 @@ public/project-c.html
 public/project-c.js
 public/project-c.js.map
 public/res/audios/audionautix-black-fly.mp3
-
+public/res/audios/hyperball_pursuit.mp3
+public/res/audios/rpg/**/*
+public/res/icons/editor/chatgpt-gen-bg.png
+public/res/meshes/glb/textures/mutant-normal.png
+public/res/meshes/obj/modelpack19/**/*
+public/res/meshes/objs-sequence/**/*
+public/res/meshes/ply/**/*
+public/res/videos/my-videos/roulette.mp4
