@@ -4,7 +4,12 @@ import { sprite2dSlotMashine } from "./prompts/2D-world";
 import { Platformer2DPhysics } from "./prompts/2D-world-matter";
 import { DRUMBALLS } from "./prompts/3d-drum-balls";
 import { BVH_SKELETAL_ANIMS } from "./prompts/bvh-skeletal-shared-mat";
+import { CAMERA_EXAMPLE } from "./prompts/camera-texture";
+import { CINEMATIC_CAMERA } from "./prompts/cinematic-camera";
 import { MAZE_EXAMPLE } from "./prompts/maze";
+import { FLIPPER } from "./prompts/flipper-jolt";
+import { canvas2DInline } from "./prompts/canvas-inline";
+import { gaussianSplat } from "./prompts/gaussian-splat";
 
 export const EXAMPLES=[
   { name: 'Maze (no physics, collisionSystem)', code: MAZE_EXAMPLE },
@@ -12,7 +17,12 @@ export const EXAMPLES=[
   { name: '2D Platformer (2d matterJS physics)', code: Platformer2DPhysics },
   { name: 'Slot mashine constructed from 2d sprites animations segments', code: sprite2dSlotMashine },
   { name: 'BVH Skeletal animation - every bone have ray hit handled.', code: BVH_SKELETAL_ANIMS },
-  
+  { name: 'Camera example vs morphMesh', code: CAMERA_EXAMPLE },
+  { name: 'Cinematic camera movement/animation', code: CINEMATIC_CAMERA },
+  { name: 'Flipper game with real physics', code: FLIPPER },
+  { name: 'canvas2D draws inline', code: canvas2DInline },
+  { name: 'Gaussian Splat load', code: gaussianSplat },
+
 ];
 
 export let SELECTION_DOM: HTMLSelectElement[]=[];

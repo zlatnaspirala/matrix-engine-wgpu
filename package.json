@@ -14,6 +14,7 @@
     "moba": "watchify ./examples/games/moba/forestOfHollowBlood.js -p [esmify --noImplicitAny] -o public/moba-game.js",
     "moba-menu": "watchify ./examples/games/moba/start-menu.js -p [esmify --noImplicitAny] -o public/moba-menu.js",
     "build-all": "npm run examples | npm run main | npm run empty",
+    "creator-install": "npm --prefix src/tools/the-beast-code-gen i",
     "creator": "npm --prefix src/tools/the-beast-code-gen run dev",
     "creator-backend": "npm --prefix src/tools/the-beast-code-gen run backend",
     "landpage": "watchify ./examples/my-lights.js -p [esmify --noImplicitAny] -o public/landpage.js",
