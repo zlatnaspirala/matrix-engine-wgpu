@@ -1,10 +1,9 @@
-import MatrixEngineWGPU from "../src/world.js";
-import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
+export const waterEffect = `
+
+import {MatrixEngineWGPU,downloadMeshes,
+addRaycastsAABBListener,WaterSimEffect,
+uploadGLBModel,followPath, loadNavMesh} from "matrix-engine-wgpu";
 import {mat4, vec3} from "wgpu-matrix";
-import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-import {followPath, loadNavMesh} from "../src/engine/buildin/navigation-plane/navigation.js";
 
 let waterEffect = new MatrixEngineWGPU({
   canvasSize: 'fullscreen',
@@ -140,4 +139,4 @@ let waterEffect = new MatrixEngineWGPU({
   });
 
 })
-window.app = waterEffect;
+window.app = waterEffect;`;

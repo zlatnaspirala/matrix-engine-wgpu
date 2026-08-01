@@ -10,6 +10,8 @@ import { MAZE_EXAMPLE } from "./prompts/maze";
 import { FLIPPER } from "./prompts/flipper-jolt";
 import { canvas2DInline } from "./prompts/canvas-inline";
 import { gaussianSplat } from "./prompts/gaussian-splat";
+import { waterEffect } from "./prompts/water-effect";
+import { cannonTest } from "./prompts/physics-test-cannones";
 
 export const EXAMPLES=[
   { name: 'Maze (no physics, collisionSystem)', code: MAZE_EXAMPLE },
@@ -22,7 +24,8 @@ export const EXAMPLES=[
   { name: 'Flipper game with real physics', code: FLIPPER },
   { name: 'canvas2D draws inline', code: canvas2DInline },
   { name: 'Gaussian Splat load', code: gaussianSplat },
-
+  { name: 'Water effect and navigation mesh with character movement.', code : waterEffect},
+  { name : 'cannon example', code : cannonTest},
 ];
 
 export let SELECTION_DOM: HTMLSelectElement[]=[];
