@@ -2,9 +2,8 @@
  * This file created by:
  * @author Nikola Lukic 
  * @email zlatnaspirala@gmail.com mart 2024-2026
- * @description npm import/export
- * Sync with version 1.16.2
- * @version 1.17.5
+ * @description npm import/export sync with
+ * @version 1.18.0
  */
 
 import MatrixEngineWGPU from "./src/world.js";

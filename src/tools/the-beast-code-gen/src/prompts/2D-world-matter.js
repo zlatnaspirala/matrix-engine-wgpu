@@ -54,8 +54,6 @@ let world2D = new MatrixEngineWGPU({
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [43, 1.5, 43]})
     addRaycastsAABBListener('canvas1', 'click');
 
-    
-
     function onGround(m) {
       world2D.addMeshObj({
         material: {type: 'standard', share: true},
@@ -95,8 +93,6 @@ let world2D = new MatrixEngineWGPU({
         physics: {enabled: true, mass: 1, geometry: "Cube"},
         pointerEffect: {enabled: true}
       });
-
-
 
       world2D.addMeshObj({
         material: {type: 'standard'},

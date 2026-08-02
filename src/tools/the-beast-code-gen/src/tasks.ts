@@ -7,4 +7,7 @@ export let tasks = [
   "Set texture for object with name 'FLOOR'. Use file with name 'cube-g1_low.webp' ",
   "Create a nonPhysics Cube and enable raycast, on hit make object translateByZ",
   "Create a pyramid of cubes with 4 levels",
+  `Create maze , use examples code.
+   add floor also player camera Y  must be above floor !`,
+   
 ];

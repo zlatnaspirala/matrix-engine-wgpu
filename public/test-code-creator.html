@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AI Preview</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "matrix-engine-wgpu": "https://esm.sh/matrix-engine-wgpu@1.16.2"
+    }
+  }
+  </script>
+  <style>
+    body { margin: 0; background: #0a0e17; color: #10b981; font-family: monospace; padding: 16px; overflow: auto; }
+    canvas { display: block; max-width: 100%; margin: 0 auto; }
+    pre { background: #111827; padding: 12px; border-radius: 6px; border: 1px solid #1f2937; white-space: pre-wrap; word-break: break-all; }
+  </style>
+  <script>
+    window.addEventListener('error', function(e) {
+      const errBox = document.createElement('pre');
+      errBox.style.color = '#f87171';
+      errBox.innerText = '[EXECUTION ERROR]\n' + (e.error?.stack || e.message);
+      document.body.appendChild(errBox);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      const errBox = document.createElement('pre');
+      errBox.style.color = '#f87171';
+      errBox.innerText = '[UNHANDLED REJECTION]\n' + (e.reason?.stack || e.reason);
+      document.body.appendChild(errBox);
+    });
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+import { MatrixEngineWGPU, downloadMeshes, addRaycastsAABBListener, isMobile, randomIntFromTo, GenGeoTexture2 } from "matrix-engine-wgpu";
+
+let beastApp = new MatrixEngineWGPU({
+  canvasSize: 'fullscreen',
+  fastRender: 0.9,
+  dontUsePhysics: false,
+  MAX_SPOTLIGHTS: 1,
+  MAX_BONES: 0,
+  mainCameraParams: {
+    type: 'firstPersonCamera',
+    responseCoef: 1000
+  },
+  clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
+}, () => {
+
+  beastApp.addLight();
+
+  downloadMeshes({cube: "./res/meshes/blender/cube.obj", sphere: "./res/meshes/blender/sphere.obj"}, onLoadMeshes, {scale: [1, 1, 1]});
+
+  function onLoadMeshes(m) {
+    // FLOOR
+    beastApp.addMeshObj({
+      material: {type: 'standard', share: true},
+      position: {x: 0, y: -5, z: 0},
+      rotation: {x: 0, y: 0, z: 0},
+      scale: [30, 0.5, 30],
+      texturesPaths: ['./res/textures/floor1.webp'],
+      name: 'floor',
+      mesh: m.cube,
+      physics: {enabled: true, mass: 0, geometry: "Cube"}
+    });
+
+    // MAZE WALLS (simple 3x3 grid)
+    const wallPositions = [
+      {x:-4, y:-3, z:0}, {x:-2, y:-3, z:0}, {x:0, y:-3, z:0}, {x:2, y:-3, z:0}, {x:4, y:-3, z:0},
+      {x:-4, y:-3, z:-4}, {x:-4, y:-3, z:-2}, {x:-4, y:-3, z:2}, {x:-4, y:-3, z:4},
+      {x:4, y:-3, z:-4}, {x:4, y:-3, z:-2}, {x:4, y:-3, z:2}, {x:4, y:-3, z:4},
+      {x:-2, y:-3, z:4}, {x:0, y:-3, z:4}, {x:2, y:-3, z:4},
+      {x:-2, y:-3, z:-4}, {x:0, y:-3, z:-4}, {x:2, y:-3, z:-4},
+      // interior walls
+      {x:-2, y:-3, z:-2}, {x:2, y:-3, z:2}
+    ];
+
+    wallPositions.forEach((pos, idx) => {
+      beastApp.addMeshObj({
+        material: {type: 'standard', share: true},
+        position: {x: pos.x, y: pos.y, z: pos.z},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [2, 4, 2],
+        texturesPaths: ['./res/textures/rust.jpg'],
+        name: 'mazeWall' + idx,
+        mesh: m.cube,
+        physics: {enabled: true, mass: 0, geometry: "Cube"}
+      });
+    });
+
+    // BIG ROOM INSIDE MAZE
+    beastApp.addMeshObj({
+      material: {type: 'standard', share: true},
+      position: {x: 0, y: -1, z: 0},
+      rotation: {x: 0, y: 0, z: 0},
+      scale: [10, 5, 10],
+      texturesPaths: ['./res/textures/metal/metal1.webp'],
+      name: 'bigRoom',
+      mesh: m.cube,
+      physics: {enabled: true, mass: 0, geometry: "Cube"}
+    });
+
+    // BVH SKELETAL TEST CASE
+    BVHSkeletal('./res/bvh/mocap.cs.cmu.edu/', 'testAnim', m, ['./res/textures/default.png'], 0.2,
+      {x: 0, y: 0, z: -5}, undefined, false).then(() => {});
+
+    // 2D CANVAS OVERLAY
+    const overlay = document.createElement('canvas');
+    overlay.id = 'canvas2d';
+    overlay.width = 300;
+    overlay.height = 150;
+    overlay.style.position = 'absolute';
+    overlay.style.left = '10px';
+    overlay.style.top = '10px';
+    overlay.style.border = '2px solid #fff';
+    document.body.appendChild(overlay);
+    const ctx = overlay.getContext('2d');
+    ctx.fillStyle = '#222';
+    ctx.fillRect(0, 0, overlay.width, overlay.height);
+    ctx.strokeStyle = '#0f0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(20, 130);
+    ctx.lineTo(150, 20);
+    ctx.lineTo(280, 130);
+    ctx.stroke();
+    ctx.font = '20px sans-serif';
+    ctx.fillStyle = '#ff0';
+    ctx.fillText('2D Overlay', 80, 75);
+  }
+
+  addRaycastsAABBListener('canvas1', 'click');
+
+  beastApp.canvas.addEventListener("ray.hit.event", (e) => {
+    const obj = e.detail.hitObject;
+    if (obj.name.startsWith('mazeWall')) {
+      obj.setAmbient(randomIntFromTo(1,5), randomIntFromTo(1,5), randomIntFromTo(1,5));
+    }
+  });
+
+});
+window.app = beastApp;
+  </script>
+</body>
+</html>

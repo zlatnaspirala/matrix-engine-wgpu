@@ -14,7 +14,7 @@ export class AiOllama {
       host: "https://ollama.com",
       headers: {Authorization: "Bearer " + aiConfig.ollama},
     });
-    console.log('Ollama cloud called...')
+    console.log('Ollama cloud called...', i)
     const response = await ollama.chat({
       model: this.model,
       messages: [

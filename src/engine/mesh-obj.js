@@ -255,7 +255,6 @@ export default class MEMeshObj extends Materials {
     } else {
       // obj files flow
       this.mesh.uvs = this.mesh.textures;
-
       // 🟢 dummy fallback
       const dummyTangents = new Float32Array(this.mesh.vertices.length / 3 * 4);
       for(let i = 0;i < dummyTangents.length;i += 4) {

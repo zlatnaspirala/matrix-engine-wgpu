@@ -206,6 +206,8 @@ runBtn.addEventListener('click', () => {
   const examplesBlock=buildExamplesBlock();
   const fullPrompt=`${systemValue}${examplesBlock}\n\nTask:\n${taskValue}`;
 
+  loadingModal.classList.remove('hidden');
+
   document.dispatchEvent(new CustomEvent('aiGenGraphCall', {
     detail: {
       provider: selectedProvider,
@@ -258,6 +260,31 @@ leftPanel.appendChild(logSection);
 
 const rightPanel=document.createElement('div');
 rightPanel.className='flex-1 bg-black flex flex-col h-full overflow-hidden';
+
+// Helper to format pure JS code from detail
+function extractPureJS(detail: any): string {
+  let code=typeof detail==='string'? detail:JSON.stringify(detail, null, 2);
+
+  // Clean markdown fences
+  code=code.replace(/```html/gi, '').replace(/```javascript/gi, '').replace(/```js/gi, '').replace(/```/g, '').trim();
+
+  // If HTML structure present, extract content from <script> tags
+  if(code.includes('<script')) {
+    const scriptMatches=code.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+    if(scriptMatches&&scriptMatches.length>0) {
+      const scripts=scriptMatches.map(s => s.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '').trim());
+      return scripts.join('\n\n');
+    }
+  }
+
+  // Remove standalone HTML tags if present
+  code=code.replace(/<!DOCTYPE html>/gi, '')
+           .replace(/<html>/gi, '').replace(/<\/html>/gi, '')
+           .replace(/<head>[\s\S]*?<\/head>/gi, '')
+           .replace(/<body>/gi, '').replace(/<\/body>/gi, '').trim();
+
+  return code;
+}
 
 // Helper to format code/detail into iframe HTML srcdoc
 function formatCodeToHTML(detail: any): string {
@@ -338,11 +365,18 @@ const openCodeModalBtn=document.createElement('button');
 openCodeModalBtn.type='button';
 openCodeModalBtn.id='openCodeModalBtn';
 openCodeModalBtn.className='text-[10px] bg-cyan-950 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-900 px-2 py-1 rounded border border-cyan-700/80 hover:border-cyan-400 transition-all cursor-pointer font-mono flex items-center gap-1 shrink-0 ml-auto';
-openCodeModalBtn.innerHTML='<span>💻</span><span>VIEW CODE</span>';
+openCodeModalBtn.innerHTML='<span>💻</span><span>VIEW HTML</span>';
+
+const openJsModalBtn=document.createElement('button');
+openJsModalBtn.type='button';
+openJsModalBtn.id='openJsModalBtn';
+openJsModalBtn.className='text-[10px] bg-amber-950 text-amber-300 hover:text-amber-100 hover:bg-amber-900 px-2 py-1 rounded border border-amber-700/80 hover:border-amber-400 transition-all cursor-pointer font-mono flex items-center gap-1 shrink-0';
+openJsModalBtn.innerHTML='<span>📜</span><span>VIEW JS</span>';
 
 iframeHeader.appendChild(iframeLabel);
 iframeHeader.appendChild(statusBadge);
 iframeHeader.appendChild(openCodeModalBtn);
+iframeHeader.appendChild(openJsModalBtn);
 
 // Iframe Container
 const iframeWrapper=document.createElement('div');
@@ -357,22 +391,80 @@ iframe.src='about:blank';
 
 iframeWrapper.appendChild(iframe);
 
+// =====================================
+// WAITING FOR RESPONSE POPUP MODAL
+// =====================================
+const loadingModal=document.createElement('div');
+loadingModal.id='loadingModal';
+loadingModal.className='fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 animate-in fade-in duration-200';
+
+const loadingModalContent=document.createElement('div');
+loadingModalContent.className='bg-slate-950 border border-emerald-500/70 rounded-xl shadow-[0_0_40px_rgba(16,185,129,0.25)] p-6 max-w-sm w-full flex flex-col items-center justify-center gap-4 text-center font-mono';
+
+const loadingSpinner=document.createElement('div');
+loadingSpinner.className='relative w-12 h-12 flex items-center justify-center';
+loadingSpinner.innerHTML=`
+  <div class="absolute inset-0 border-2 border-emerald-900/60 rounded-full"></div>
+  <div class="absolute inset-0 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+  <span class="text-xs animate-pulse">⚡</span>
+`;
+
+const loadingTextGroup=document.createElement('div');
+loadingTextGroup.className='flex flex-col gap-1';
+loadingTextGroup.innerHTML=`
+  <h3 class="text-xs font-bold text-emerald-300 tracking-wider uppercase animate-pulse">WAITING_FOR_RESPONSE...</h3>
+  <p class="text-[11px] text-emerald-600 leading-relaxed">Synthesizing project code &amp; dispatching AI code generation</p>
+`;
+
+const closeLoadingBtn=document.createElement('button');
+closeLoadingBtn.type='button';
+closeLoadingBtn.className='text-[10px] text-emerald-600 hover:text-emerald-300 border border-emerald-900 hover:border-emerald-500 rounded px-3 py-1 transition-colors cursor-pointer font-mono mt-1';
+closeLoadingBtn.innerText='[CANCEL / CLOSE]';
+closeLoadingBtn.addEventListener('click', () => {
+  loadingModal.classList.add('hidden');
+});
+
+loadingModalContent.appendChild(loadingSpinner);
+loadingModalContent.appendChild(loadingTextGroup);
+loadingModalContent.appendChild(closeLoadingBtn);
+loadingModal.appendChild(loadingModalContent);
+
+loadingModal.addEventListener('click', (e) => {
+  if(e.target===loadingModal) {
+    loadingModal.classList.add('hidden');
+  }
+});
+document.body.appendChild(loadingModal);
+
 // Handle 'on-ai-response' event and load code directly into iframe srcdoc
 document.addEventListener('on-ai-response', (e: Event) => {
+  loadingModal.classList.add('hidden');
   const customEvent=e as CustomEvent<any>;
   console.log('[AI RESPONSE RECEIVED] Loading into iframe.srcdoc:', customEvent.detail);
   if(customEvent.detail!==undefined&&customEvent.detail!==null) {
     const htmlContent=formatCodeToHTML(customEvent.detail);
+    const jsContent=extractPureJS(customEvent.detail);
     iframe.removeAttribute('src');
     iframe.srcdoc=htmlContent;
 
     if(codeTextarea) {
       codeTextarea.value=htmlContent;
     }
+    if(jsTextarea) {
+      jsTextarea.value=jsContent;
+    }
 
     statusBadge.innerText='SRCDOC LOADED ✓';
     statusBadge.className='text-[10px] text-emerald-400 font-mono bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/80 shrink-0 font-bold';
   }
+});
+
+document.addEventListener('on-ai-response-error', () => {
+  loadingModal.classList.add('hidden');
+});
+
+document.addEventListener('editor-not-running', () => {
+  loadingModal.classList.add('hidden');
 });
 
 rightPanel.appendChild(iframeHeader);
@@ -496,6 +588,139 @@ saveAsCodeBtn.addEventListener('click', () => {
 });
 
 // =====================================
+// PURE JAVASCRIPT CODE POPUP MODAL
+// =====================================
+const jsModal=document.createElement('div');
+jsModal.id='jsModal';
+jsModal.className='fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 animate-in fade-in duration-200';
+
+const jsModalContent=document.createElement('div');
+jsModalContent.className='bg-slate-950 border border-amber-500/60 rounded-lg shadow-[0_0_30px_rgba(245,158,11,0.2)] w-full max-w-4xl flex flex-col overflow-hidden max-h-[88vh] font-mono';
+
+const jsModalHeader=document.createElement('div');
+jsModalHeader.className='px-4 py-2.5 bg-black/90 border-b border-amber-900/80 flex items-center justify-between shrink-0';
+
+const jsTitleGroup=document.createElement('div');
+jsTitleGroup.className='flex items-center gap-2 overflow-hidden';
+jsTitleGroup.innerHTML=`
+  <span class="text-amber-400 text-sm">📜</span>
+  <div class="flex flex-col">
+    <h3 class="text-xs font-bold text-amber-300 tracking-wider uppercase">PURE_JAVASCRIPT_EDITOR</h3>
+    <span id="jsModalMeta" class="text-[10px] text-amber-600 truncate">Extract &amp; Simulate JS Code</span>
+  </div>
+`;
+
+const jsHeaderActions=document.createElement('div');
+jsHeaderActions.className='flex items-center gap-2 shrink-0';
+
+const runJsBtn=document.createElement('button');
+runJsBtn.type='button';
+runJsBtn.id='runJsBtn';
+runJsBtn.className='text-emerald-300 hover:text-emerald-100 bg-emerald-950 hover:bg-emerald-900 font-mono text-[11px] px-2.5 py-1 rounded border border-emerald-600 hover:border-emerald-400 transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-sm font-bold';
+runJsBtn.innerHTML='<span>▶</span><span>[RUN IN PREVIEW]</span>';
+
+const copyJsBtn=document.createElement('button');
+copyJsBtn.type='button';
+copyJsBtn.id='copyJsBtn';
+copyJsBtn.className='text-amber-300 hover:text-amber-100 bg-amber-950 hover:bg-amber-900 font-mono text-[11px] px-2.5 py-1 rounded border border-amber-700 hover:border-amber-400 transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-sm';
+copyJsBtn.innerHTML='<span>📋</span><span>[COPY JS]</span>';
+
+const saveAsJsBtn=document.createElement('button');
+saveAsJsBtn.type='button';
+saveAsJsBtn.id='saveAsJsBtn';
+saveAsJsBtn.className='text-amber-300 hover:text-amber-100 bg-amber-950 hover:bg-amber-900 font-mono text-[11px] px-2.5 py-1 rounded border border-amber-700 hover:border-amber-400 transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-sm';
+saveAsJsBtn.innerHTML='<span>💾</span><span>[SAVE AS .JS]</span>';
+
+const closeJsBtn=document.createElement('button');
+closeJsBtn.type='button';
+closeJsBtn.className='text-amber-500 hover:text-amber-300 font-mono text-[11px] px-2 py-1 rounded border border-amber-800 hover:border-amber-500 transition-colors cursor-pointer shrink-0';
+closeJsBtn.innerText='[CLOSE X]';
+closeJsBtn.addEventListener('click', () => {
+  jsModal.classList.add('hidden');
+});
+
+jsHeaderActions.appendChild(runJsBtn);
+jsHeaderActions.appendChild(copyJsBtn);
+jsHeaderActions.appendChild(saveAsJsBtn);
+jsHeaderActions.appendChild(closeJsBtn);
+
+jsModalHeader.appendChild(jsTitleGroup);
+jsModalHeader.appendChild(jsHeaderActions);
+
+const jsModalBody=document.createElement('div');
+jsModalBody.id='jsModalBody';
+jsModalBody.className='p-3 flex-1 min-h-[250px] max-h-[75vh] bg-black flex flex-col';
+
+const jsTextarea=document.createElement('textarea');
+jsTextarea.id='jsResultTextarea';
+jsTextarea.className='w-full flex-1 min-h-[350px] bg-slate-950 text-amber-200 font-mono text-xs p-3 rounded border border-amber-900/60 focus:border-amber-400 focus:outline-none resize-none leading-relaxed overflow-y-auto selection:bg-amber-900 selection:text-white';
+jsTextarea.placeholder='// Pure JavaScript code will appear here... Edit and click [RUN IN PREVIEW] to test in simulator';
+jsTextarea.setAttribute('spellcheck', 'false');
+
+jsModalBody.appendChild(jsTextarea);
+jsModalContent.appendChild(jsModalHeader);
+jsModalContent.appendChild(jsModalBody);
+jsModal.appendChild(jsModalContent);
+
+jsModal.addEventListener('click', (e) => {
+  if(e.target===jsModal) {
+    jsModal.classList.add('hidden');
+  }
+});
+document.body.appendChild(jsModal);
+
+openJsModalBtn.addEventListener('click', () => {
+  jsModal.classList.remove('hidden');
+});
+
+runJsBtn.addEventListener('click', () => {
+  const jsContent=jsTextarea.value;
+  if(!jsContent) return;
+  const htmlContent=formatCodeToHTML(jsContent);
+  iframe.removeAttribute('src');
+  iframe.srcdoc=htmlContent;
+  if(codeTextarea) {
+    codeTextarea.value=htmlContent;
+  }
+  statusBadge.innerText='JS SIMULATED ✓';
+  statusBadge.className='text-[10px] text-amber-400 font-mono bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/80 shrink-0 font-bold';
+
+  const orig=runJsBtn.innerHTML;
+  runJsBtn.innerHTML='<span>✓</span><span>RUNNING!</span>';
+  setTimeout(() => { runJsBtn.innerHTML=orig; }, 1200);
+});
+
+copyJsBtn.addEventListener('click', () => {
+  const content=jsTextarea.value;
+  if(!content) return;
+  navigator.clipboard.writeText(content).then(() => {
+    const orig=copyJsBtn.innerHTML;
+    copyJsBtn.innerHTML='<span>✓</span><span>COPIED!</span>';
+    setTimeout(() => { copyJsBtn.innerHTML=orig; }, 1500);
+  }).catch(() => {
+    jsTextarea.select();
+    document.execCommand('copy');
+    const orig=copyJsBtn.innerHTML;
+    copyJsBtn.innerHTML='<span>✓</span><span>COPIED!</span>';
+    setTimeout(() => { copyJsBtn.innerHTML=orig; }, 1500);
+  });
+});
+
+saveAsJsBtn.addEventListener('click', () => {
+  const content=jsTextarea.value;
+  if(!content) return;
+  const blob=new Blob([content], { type: 'text/javascript;charset=utf-8' });
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='ai_output_script.js';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// =====================================
 // ASSETS POPUP MODAL
 // =====================================
 const assetsModal=document.createElement('div');
@@ -534,6 +759,8 @@ closeAssetsBtn.innerText='[CLOSE X]';
 closeAssetsBtn.addEventListener('click', () => {
   assetsModal.classList.add('hidden');
 });
+
+assetsModal.classList.add('hidden');
 
 headerActions.appendChild(folderBackBtn);
 headerActions.appendChild(closeAssetsBtn);
@@ -639,7 +866,7 @@ document.addEventListener('list-assets', (e: any) => {
         });
       });
     }
-    assetsModal.classList.remove('hidden');
+    // assetsModal.classList.remove('hidden');
   }
 });
 
