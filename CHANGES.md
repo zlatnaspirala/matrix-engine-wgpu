@@ -2,12 +2,15 @@
 ## CHANGES [Started from feb 2026]
 
 [1.18.xx]
-  Added code-creator AI driven by not for graphs 
+  - Added code-creator AI driven by not for graphs 
    it is for code direct.
    Backend:
    `npm run creator-backend`
    Frontend:
    `npm run creator`
+
+  - Fix engine internal defaul dummy links to be public links from 
+   https://unpkg.com/matrix-engine-wgpu@latest/public/
 
 [1.16.xx - 1.17.xx]
  - Particle effect class added.

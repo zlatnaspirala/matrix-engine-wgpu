@@ -1,5 +1,5 @@
 {
-  "name": "beast-npm-starter",
+  "name": "beast-starter",
   "version": "1.0.0",
   "description": "Just test engine from npm service.",
   "main": "index.js",
@@ -16,7 +16,7 @@
   "author": "Nikola Lukic",
   "license": "MIT",
   "dependencies": {
-    "matrix-engine-wgpu": "^1.18.3"
+    "matrix-engine-wgpu": "^1.18.4"
   },
   "devDependencies": {
     "esbuild": "^0.28.1"

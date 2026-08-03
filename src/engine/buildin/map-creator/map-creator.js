@@ -50,10 +50,10 @@ export class MapCreator {
     this.engine = engine;
     this.meshes = m;
     this.collision = collision;
-    this._wallTex = opts.wallTexture || './res/textures/blankgray2.webp';
-    this._floorTex = opts.floorTexture || './res/textures/blankgray2.webp';
-    this._ceilTex = opts.ceilTexture || './res/textures/blankgray2.webp';
-    this._pillarDecorationTex = './res/meshes/obj/modelpack19/hang2/512/hang2.webp';
+    this._wallTex = opts.wallTexture || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/blankgray2.webp';
+    this._floorTex = opts.floorTexture || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/blankgray2.webp';
+    this._ceilTex = opts.ceilTexture || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/blankgray2.webp';
+    this._pillarDecorationTex = opts.pillarDecorationTex || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/obj/modelpack19/hang2/512/hang2.webp';
     this._pDecorationEnabled = opts.pillarDecoration || false;
     this.pillarsFlame = opts.pillarsFlame || false;
     this.shadowsCast = opts.shadowsCast || true;

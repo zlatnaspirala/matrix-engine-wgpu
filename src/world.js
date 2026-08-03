@@ -971,7 +971,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/default.png']}
     if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
@@ -1040,7 +1040,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0};}
     if(typeof o.geometryA === 'undefined') {o.geometryA = {type: 'cube', size: 1}}
     if(typeof o.geometryB === 'undefined') {o.geometryB = o.geometryA}
-    if(typeof o.texturesPaths === 'undefined') o.texturesPaths = ['./res/textures/default.png'];
+    if(typeof o.texturesPaths === 'undefined') o.texturesPaths = ['https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/default.png'];
     if(typeof o.material === 'undefined') o.material = {type: 'standard'};
     if(typeof o.envMapParams === 'undefined') o.envMapParams = null;
     if(typeof o.mainCameraParams === 'undefined') o.mainCameraParams = this.mainCameraParams;
@@ -1363,7 +1363,7 @@ export default class MatrixEngineWGPU {
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/default.png']}
     if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}
@@ -1446,7 +1446,10 @@ export default class MatrixEngineWGPU {
     if(typeof o.position === 'undefined') {o.position = {x: 0, y: 0, z: -4}}
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = ['./res/textures/default.png']}
+
+    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = 
+      ['https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/default.png']}
+
     if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
     if(typeof o.scale === 'undefined') {o.scale = [1, 1, 1];}

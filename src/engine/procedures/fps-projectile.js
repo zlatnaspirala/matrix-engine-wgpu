@@ -42,8 +42,8 @@ export class ProjectileSystem {
     this._speed = opts.projectileSpeed ?? 1;
     this._lifetime = opts.projectileLifetime ?? 4000;
     this._scale = opts.projectileScale ?? 0.25;
-    this._tex = opts.projectileTex ?? './res/textures/shooter/decal.webp';
-    this._decalTex = opts.decalTex ?? './res/textures/shooter/decal.webp';
+    this._tex = opts.projectileTex ?? 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/shooter/decal.webp';
+    this._decalTex = opts.decalTex ?? 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/shooter/decal.webp';
     this._decalSize = opts.decalSize ?? 0.2;
     this._decalLifetime = opts.decalLifetime ?? 2000;
 
