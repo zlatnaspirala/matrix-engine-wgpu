@@ -45,7 +45,7 @@ export class FireballSystem {
     this.FBHitEvent = new CustomEvent('fireball-hit', {
       detail: {target: null, damage: 0}
     });
-    this.loadBallAnim('./res/meshes/glb/ring1.glb');
+    this.loadBallAnim('https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/glb/ring1.glb');
     this.projectiles = [];
   }
 
