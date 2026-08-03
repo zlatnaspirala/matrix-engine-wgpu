@@ -8,6 +8,7 @@ export let tasks = [
   "Create a nonPhysics Cube and enable raycast, on hit make object translateByZ",
   "Create a pyramid of cubes with 4 levels",
   `Create maze , use examples code.
-   add floor also player camera Y  must be above floor !`,
+   add floor pos Y=0
+   player camera pos Y=10 `,
    
 ];

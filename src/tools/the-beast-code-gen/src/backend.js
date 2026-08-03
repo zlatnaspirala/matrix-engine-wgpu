@@ -23,6 +23,7 @@ import {AiAnthropic} from "./ai-anthropic/ai-anthropic.js";
 
 const wss = new WebSocketServer({port: 1243});
 
+const useResourcesListInPrompt = 'no';
 console.log("\x1b[1m\x1b[92m%s\x1b[0m", " Editorx websock running on ws://localhost:1243");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
 console.log("\x1b[93m%s\x1b[0m", "- The Beast Code Creator                  -");
@@ -34,6 +35,8 @@ console.log("\x1b[92m%s\x1b[0m", "- Default ai platform: Ollama             -");
 console.log("\x1b[92m%s\x1b[0m", "- + Groq                                  -");
 console.log("\x1b[92m%s\x1b[0m", "- + Anthropic                             -");
 console.log("\x1b[92m%s\x1b[0m", "------------------------------------------");
+
+console.log("\x1b[92m%s\x1b[0m", `Resources (media) prompt: ${useResourcesListInPrompt}    -`);
 
 let matrixOllama = new AiOllama();
 let matrixGroq = new AiGroq();
@@ -117,8 +120,14 @@ async function aiGenGraphCall(msg, ws) {
         }));
       })
     } else {
-      msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
-        SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+
+      if(useResourcesListInPrompt === 'yes') {
+        msg.prompt.finalSysPrompt = AvailableResources.injectResManifest(
+          SYSTEM_PROMPT, listOfTexs, listOfObjs, listOfGlbs, listOfMp3s, listOfMp4s);
+      } else {
+        msg.prompt.finalSysPrompt = SYSTEM_PROMPT;
+      }
+
       matrixOllama.aiGenGraphCall(msg.prompt).then((r) => {
         console.log('ollama claude call.')
         ws.send(JSON.stringify({

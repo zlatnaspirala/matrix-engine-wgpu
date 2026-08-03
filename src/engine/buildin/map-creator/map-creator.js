@@ -1,8 +1,6 @@
 import {mapParams} from "../../../../examples/games/first-person-shooter/table-params";
-import {pointerEffect} from "../../../shaders/standalone/pointer.effect";
 import {FlameEffect, FlamePresets} from "../../effects/flame";
 import {FlameEmitter} from "../../effects/flame-emmiter";
-import {KaleidoscopeEmitter} from "../../effects/kaleidoscopeEffectInstance";
 import {geometryTypes, isMobile, MeshType, randomIntFromTo} from "../../utils";
 
 /**
@@ -149,7 +147,6 @@ export class MapCreator {
     return obj;
   }
 
-  // PUBLIC PRIMITIVES
   /**
    * Create a box room.
    *

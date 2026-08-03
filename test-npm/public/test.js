@@ -181,19 +181,6 @@ var byId = function(id2) {
 function randomFloatFromTo(min2, max2) {
   return Math.random() * (max2 - min2) + min2;
 }
-function randomIntFromTo(min2, max2) {
-  if (typeof min2 === "object" || typeof max2 === "object") {
-    console.log(
-      "SYS : warning Desciption : Replace object with string , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
-    );
-  } else if (typeof min2 === "undefined" || typeof max2 === "undefined") {
-    console.log(
-      "SYS : warning Desciption : arguments (min, max) cant be undefined , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
-    );
-  } else {
-    return Math.floor(Math.random() * (max2 - min2 + 1) + min2);
-  }
-}
 var urlQuery = (function() {
   var query_string = {};
   var query = window.location.search.substring(1);
@@ -468,114 +455,6 @@ var geoTypesForMorph = Object.freeze({
   tornado: "tornado",
   galaxySpiral: "galaxySpiral"
 });
-var CameraPath = class _CameraPath {
-  constructor(keyframes, options2 = {}) {
-    this.keyframes = keyframes;
-    this.loop = options2.loop ?? false;
-    this.param = options2.parameterization ?? "uniform";
-    this._tension = options2.tension ?? 0.5;
-    if (this.param === "arc") this._buildArcTable();
-  }
-  static _cr(p0, p1, p2, p3, t2, tension = 0.5) {
-    const t22 = t2 * t2, t3 = t22 * t2;
-    return tension * (2 * p1 + (-p0 + p2) * t2 + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t22 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
-  }
-  _indices(i) {
-    const n2 = this.keyframes.length;
-    if (this.loop) {
-      return [(i - 1 + n2) % n2, i % n2, (i + 1) % n2, (i + 2) % n2];
-    }
-    return [
-      Math.max(0, i - 1),
-      Math.max(0, Math.min(n2 - 1, i)),
-      Math.max(0, Math.min(n2 - 1, i + 1)),
-      Math.max(0, Math.min(n2 - 1, i + 2))
-    ];
-  }
-  _interpVec3(field, i, lt) {
-    const [i0, i1, i2, i3] = this._indices(i);
-    const k = this.keyframes, T = this._tension, cr = _CameraPath._cr;
-    return [
-      cr(k[i0][field][0], k[i1][field][0], k[i2][field][0], k[i3][field][0], lt, T),
-      cr(k[i0][field][1], k[i1][field][1], k[i2][field][1], k[i3][field][1], lt, T),
-      cr(k[i0][field][2], k[i1][field][2], k[i2][field][2], k[i3][field][2], lt, T)
-    ];
-  }
-  _interpScalar(field, fallback, i, lt) {
-    const [i0, i1, i2, i3] = this._indices(i);
-    const k = this.keyframes;
-    return _CameraPath._cr(
-      k[i0][field] ?? fallback,
-      k[i1][field] ?? fallback,
-      k[i2][field] ?? fallback,
-      k[i3][field] ?? fallback,
-      lt,
-      this._tension
-    );
-  }
-  _buildArcTable(samples = 200) {
-    const n2 = this.keyframes.length - (this.loop ? 0 : 1);
-    this._arcTable = [{ raw: 0, arc: 0 }];
-    let totalLen = 0;
-    let prev = this._sampleRaw(0);
-    for (let s = 1; s <= samples; s++) {
-      const raw = s / samples;
-      const cur = this._sampleRaw(raw);
-      const dx = cur.position[0] - prev.position[0];
-      const dy = cur.position[1] - prev.position[1];
-      const dz = cur.position[2] - prev.position[2];
-      totalLen += Math.sqrt(dx * dx + dy * dy + dz * dz);
-      this._arcTable.push({ raw, arc: totalLen });
-      prev = cur;
-    }
-    this._totalArcLength = totalLen;
-    this._arcTable.forEach((e) => e.arc /= totalLen);
-  }
-  _arcToRaw(t2) {
-    if (t2 <= 0) return 0;
-    if (t2 >= 1) return 1;
-    const tbl = this._arcTable;
-    let lo = 0, hi = tbl.length - 1;
-    while (lo < hi - 1) {
-      const mid = lo + hi >> 1;
-      if (tbl[mid].arc < t2) lo = mid;
-      else hi = mid;
-    }
-    const span = tbl[hi].arc - tbl[lo].arc;
-    if (span < 1e-9) return tbl[lo].raw;
-    const f = (t2 - tbl[lo].arc) / span;
-    return tbl[lo].raw + f * (tbl[hi].raw - tbl[lo].raw);
-  }
-  _sampleRaw(t2) {
-    const n2 = this.keyframes.length;
-    const segments = this.loop ? n2 : n2 - 1;
-    const clamped = Math.max(0, Math.min(1, t2));
-    const scaled = clamped * segments;
-    const i = Math.min(Math.floor(scaled), segments - 1);
-    const lt = scaled - i;
-    return {
-      position: this._interpVec3("position", i, lt),
-      target: this._interpVec3("target", i, lt),
-      roll: this._interpScalar("roll", 0, i, lt),
-      fov: this._interpScalar("fov", 2 * Math.PI / 5, i, lt)
-    };
-  }
-  sample(t2) {
-    if (this.param === "arc") return this._sampleRaw(this._arcToRaw(t2));
-    if (this.param === "timed") {
-      const times = this.keyframes.map((k) => k.time ?? 0);
-      const total = times[times.length - 1];
-      return this._sampleRaw(total > 0 ? t2 / total : 0);
-    }
-    return this._sampleRaw(t2);
-  }
-  get totalTime() {
-    if (this.param === "timed") {
-      return this.keyframes[this.keyframes.length - 1].time ?? 0;
-    }
-    return 1;
-  }
-};
 
 // node_modules/matrix-engine-wgpu/src/me-config.js
 window.urlQ = urlQuery;
@@ -34335,44 +34214,6 @@ function addRaycastsListener(canvasId = "canvas1", eventName = "click") {
     }
   });
 }
-function addRaycastsAABBListener(canvasId = "canvas1", eventName = "click") {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) {
-    console.warn(`[Raycaster] Canvas with id '${canvasId}' not found.`);
-    return;
-  }
-  canvas.addEventListener(eventName, (event) => {
-    const camera = app.cameras[app.mainCameraParams.type];
-    const { rayOrigin, rayDirection, screen: screen2 } = getRayFromMouse(event, canvas, camera);
-    let closestHit = null;
-    for (const object of app.mainRenderBundle) {
-      if (!object.raycast?.enabled || !object.getModelMatrix) continue;
-      const { boxMin, boxMax } = computeWorldVertsAndAABB(object);
-      const hitAABB = rayIntersectsAABB(rayOrigin, rayDirection, boxMin, boxMax);
-      if (!hitAABB) continue;
-      const hit = hitAABB;
-      if (hit && (!closestHit || hit.t < closestHit.t)) {
-        closestHit = { ...hit, hitObject: object };
-        if (touchCoordinate.stopOnFirstDetectedHit) break;
-      }
-    }
-    if (closestHit) {
-      dispatchRayHitEvent(canvas, {
-        hitObject: closestHit.hitObject,
-        hitPoint: closestHit.hitPoint,
-        hitNormal: closestHit.hitNormal || null,
-        hitDistance: closestHit.t,
-        rayOrigin,
-        rayDirection,
-        screenCoords: screen2,
-        camera,
-        timestamp: performance.now(),
-        button: event.button,
-        eventName
-      });
-    }
-  });
-}
 
 // node_modules/matrix-engine-wgpu/src/engine/procedural-mesh.js
 var ProceduralMeshObj = class extends Materials {
@@ -40279,6 +40120,229 @@ var MatrixEngineWGPU = class {
   };
 };
 
+// node_modules/matrix-engine-wgpu/src/engine/collision-sub-system.js
+function resolvePairRepulsion3D(Apos, Bpos, minDistance = 30, pushStrength = 0.5) {
+  const dx = Bpos.x - Apos.x;
+  const dy = Bpos.y - Apos.y;
+  const dz = Bpos.z - Apos.z;
+  const distSq2 = dx * dx + dy * dy + dz * dz;
+  const minDistSq = minDistance * minDistance;
+  if (distSq2 < minDistSq && distSq2 > 1e-8) {
+    const dist2 = Math.sqrt(distSq2);
+    const overlap = minDistance - dist2;
+    const push = overlap * pushStrength * 0.5;
+    const inv = push / dist2;
+    Apos.x -= dx * inv;
+    Apos.y -= dy * inv;
+    Apos.z -= dz * inv;
+    Bpos.x += dx * inv;
+    Bpos.y += dy * inv;
+    Bpos.z += dz * inv;
+    return true;
+  }
+  if (distSq2 <= 1e-8) {
+    const j = 0.01;
+    Apos.x += (Math.random() - 0.5) * j;
+    Apos.y += (Math.random() - 0.5) * j;
+    Apos.z += (Math.random() - 0.5) * j;
+    return true;
+  }
+  return false;
+}
+var CollisionSystem = class {
+  constructor() {
+    this.entries = [];
+    this.staticEntries = [];
+    this.cameraEntry = null;
+    this.cameraVsStaticDist = 1.5;
+    this.cellSize = 100;
+    this._grid = /* @__PURE__ */ new Map();
+    this._staticGrid = /* @__PURE__ */ new Map();
+    this._event1 = new CustomEvent("close-distance", { detail: { data: "" } });
+    this._eventDetail = {};
+    this._neighbors = [];
+    this._staticNeighbors = [];
+    this._gravityAcc = 0;
+    this._gravityForce = -0.015;
+    this._terminalVelocity = -0.5;
+    this._onGround = false;
+  }
+  applyGravity(camPos, camRadius) {
+    this._gravityAcc += this._gravityForce;
+    if (this._gravityAcc < this._terminalVelocity) {
+      this._gravityAcc = this._terminalVelocity;
+    }
+    camPos[1] += this._gravityAcc;
+    this._onGround = false;
+    const camX = camPos[0];
+    const camY = camPos[1];
+    const camZ = camPos[2];
+    this._getNeighborCells(camX, camY, camZ, this._staticGrid, this._staticNeighbors);
+    for (let i = 0; i < this._staticNeighbors.length; i++) {
+      const entry = this._staticNeighbors[i];
+      const fakePos = { x: camPos[0], y: camPos[1], z: camPos[2] };
+      const prevY = fakePos.y;
+      const hit = this.resolveVsStaticCube(fakePos, camRadius, entry);
+      if (hit) {
+        camPos[0] = fakePos.x;
+        camPos[1] = fakePos.y;
+        camPos[2] = fakePos.z;
+        if (fakePos.y > prevY) {
+          this._gravityAcc = 0;
+          this._onGround = true;
+        }
+      }
+    }
+    app.getCamera()?.forceViewUpdate();
+  }
+  register(id2, positionInstance, radius = 1, group = "default") {
+    this.entries.push({ id: id2, pos: positionInstance, radius, group });
+  }
+  registerStatic(id2, positionInstance, radius = 1, group = "default", halfExtents = null) {
+    const entry = {
+      id: id2,
+      pos: positionInstance,
+      radius,
+      group,
+      // store actual box dimensions if provided, else assume unit cube
+      half: halfExtents ?? { x: radius, y: radius, z: radius }
+    };
+    const h = entry.half;
+    if (!h) {
+      console.warn("entry missing half:", entry.id);
+      return false;
+    }
+    this.staticEntries.push(entry);
+    const key = this._cellKey(positionInstance.x, positionInstance.y ?? 0, positionInstance.z);
+    let cell = this._staticGrid.get(key);
+    if (!cell) {
+      cell = [];
+      this._staticGrid.set(key, cell);
+    }
+    cell.push(entry);
+  }
+  unregister(id2) {
+    this.entries = this.entries.filter((e) => e.id !== id2);
+    if (this.cameraEntry && this.cameraEntry.id === id2) this.cameraEntry = null;
+  }
+  registerCamera(cameraInstance, radius = 1) {
+    this.cameraEntry = { id: "camera", pos: cameraInstance, radius, group: "camera" };
+  }
+  _cellKey(x2, y2, z) {
+    const cx = Math.floor(x2 / this.cellSize);
+    const cy = Math.floor(y2 / this.cellSize);
+    const cz = Math.floor(z / this.cellSize);
+    return `${cx},${cy},${cz}`;
+  }
+  _buildGrid() {
+    const grid = this._grid;
+    grid.clear();
+    for (let i = 0; i < this.entries.length; i++) {
+      const e = this.entries[i];
+      const key = this._cellKey(e.pos.x, e.pos.y, e.pos.z);
+      let cell = grid.get(key);
+      if (!cell) {
+        cell = [];
+        grid.set(key, cell);
+      }
+      cell.push(e);
+    }
+  }
+  _getNeighborCells(x2, y2, z, grid, out) {
+    out.length = 0;
+    const cx = Math.floor(x2 / this.cellSize);
+    const cy = Math.floor(y2 / this.cellSize);
+    const cz = Math.floor(z / this.cellSize);
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dz = -1; dz <= 1; dz++) {
+          const key = `${cx + dx},${cy + dy},${cz + dz}`;
+          const cell = grid.get(key);
+          if (cell) for (let i = 0; i < cell.length; i++) out.push(cell[i]);
+        }
+  }
+  resolveVsStaticCube(entityPos, entityRadius, entry) {
+    const h = entry.half ?? { x: 1, y: 1, z: 1 };
+    const dx = entityPos.x - entry.pos.x;
+    const dy = entityPos.y - entry.pos.y;
+    const dz = entityPos.z - entry.pos.z;
+    const overlapX = entityRadius + h.x - Math.abs(dx);
+    const overlapZ = entityRadius + h.z - Math.abs(dz);
+    if (overlapX <= 0 || overlapZ <= 0) return false;
+    if (entry.group === "floor") {
+      const overlapY = entityRadius + h.y - Math.abs(dy);
+      if (overlapY <= 0) return false;
+      const cubeTop = entry.pos.y + h.y;
+      const entityFeet = entityPos.y - entityRadius;
+      if (entityFeet <= cubeTop) {
+        entityPos.y = cubeTop + entityRadius;
+        return true;
+      }
+      return false;
+    }
+    const camBottom = entityPos.y - entityRadius;
+    const camTop = entityPos.y + entityRadius;
+    const objBottom = entry.pos.y - h.y;
+    const objTop = entry.pos.y + h.y;
+    if (camBottom >= objTop || camTop <= objBottom) return false;
+    const stepHeight = 0.6;
+    if (camBottom >= objTop - stepHeight && camBottom < objTop) {
+      entityPos.y = objTop + entityRadius;
+      return true;
+    }
+    if (overlapX < overlapZ) {
+      entityPos.x += dx < 0 ? -overlapX : overlapX;
+    } else {
+      entityPos.z += dz < 0 ? -overlapZ : overlapZ;
+    }
+    return true;
+  }
+  update() {
+    if (!this.cameraEntry) return;
+    this.applyGravity(this.cameraEntry.pos, this.cameraEntry.radius);
+    const cam2 = this.cameraEntry;
+    this._getNeighborCells(cam2.pos[0], cam2.pos[1], cam2.pos[2], this._staticGrid, this._staticNeighbors);
+    for (let i = 0; i < this._staticNeighbors.length; i++) {
+      const entry = this._staticNeighbors[i];
+      if (entry.group === "floor") continue;
+      const fakePos = { x: cam2.pos[0], y: cam2.pos[1], z: cam2.pos[2] };
+      const hit = this.resolveVsStaticCube(fakePos, cam2.radius, entry);
+      if (hit) {
+        cam2.pos[0] = fakePos.x;
+        cam2.pos[1] = fakePos.y;
+        cam2.pos[2] = fakePos.z;
+      }
+    }
+    this._buildGrid();
+    const n2 = this.entries.length;
+    for (let i = 0; i < n2; i++) {
+      const A = this.entries[i];
+      this._getNeighborCells(A.pos.x, A.pos.y, A.pos.z, this._grid, this._neighbors);
+      for (let j = 0; j < this._neighbors.length; j++) {
+        const B = this._neighbors[j];
+        if (A === B) continue;
+        const minDist = (A.radius + B.radius) * 0.5;
+        if (A.group === B.group) {
+          resolvePairRepulsion3D(A.pos, B.pos, minDist, 1);
+          continue;
+        }
+        if (A.id >= B.id) continue;
+        const dx = A.pos.x - B.pos.x;
+        const dz = A.pos.z - B.pos.z;
+        if (dx * dx + dz * dz > minDist * minDist) continue;
+        const testCollide = resolvePairRepulsion3D(A.pos, B.pos, minDist, 1);
+        if (testCollide) {
+          this._eventDetail.A = A;
+          this._eventDetail.B = B;
+          this._event1.detail.data = this._eventDetail;
+          dispatchEvent(this._event1);
+          return;
+        }
+      }
+    }
+  }
+};
+
 // node_modules/matrix-engine-wgpu/src/engine/networking/matrix-stream.js
 var netConfig = {
   NETWORKING_DOMAIN: "",
@@ -40351,152 +40415,79 @@ window.onbeforeunload = function() {
 };
 
 // index.js
-var cinematicCamera = new MatrixEngineWGPU({
+var beastApp = new MatrixEngineWGPU({
   canvasSize: "fullscreen",
   fastRender: 0.9,
   dontUsePhysics: true,
   MAX_SPOTLIGHTS: 1,
   MAX_BONES: 0,
-  mainCameraParams: {
-    type: "cinematicCamera",
-    responseCoef: 1e3
-  },
-  clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  mainCameraParams: { type: "firstPersonCamera", responseCoef: 1e3 },
+  clearColor: { r: 0, g: 0.122, b: 0.122, a: 1 }
 }, () => {
-  cinematicCamera.addLight();
-  downloadMeshes(
-    { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
-    onLoadObj,
-    { scale: [1, 1, 1] }
-  );
-  downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
-  addRaycastsAABBListener("canvas1", "click");
-  function onGround(m) {
-    cinematicCamera.addMeshObj({
+  beastApp.addLight();
+  beastApp.collisionSystem = new CollisionSystem(beastApp);
+  let floor2;
+  downloadMeshes({ floor: "./res/meshes/blender/cube.obj" }, onLoadFloor, { scale: [1, 1, 1] });
+  downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onLoadWalls, { scale: [1, 1, 1] });
+  function onLoadFloor(m) {
+    floor2 = beastApp.addMeshObj({
       material: { type: "standard", share: true },
-      position: { x: 0, y: -5, z: -10 },
+      position: { x: 0, y: 0, z: -11 },
       rotation: { x: 0, y: 0, z: 0 },
-      rotationSpeed: { x: 0, y: 0, z: 0 },
+      scale: [12, 1, 34],
+      // wide enough for rooms, long enough to span both + tunnel
       texturesPaths: ["./res/textures/floor1.webp"],
-      //, './res/textures/env-maps/sky1_lod_mid.webp'],
       name: "floor",
-      mesh: m.cube,
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      }
+      mesh: m.floor,
+      physics: { enabled: false, mass: 0, geometry: "Cube" }
     });
+    beastApp.collisionSystem.registerStatic(
+      floor2.name,
+      floor2.position,
+      1.1,
+      "floor",
+      { x: 6, y: 0.5, z: 17 }
+      // == scale/2
+    );
   }
-  async function onLoadObj(m) {
-    cinematicCamera.addMeshObj({
+  function addWall(x2, z, orientation, length2, i) {
+    const THICK = 0.4;
+    const HALF_HEIGHT = 1.5;
+    const scale4 = orientation === "x" ? [length2, HALF_HEIGHT * 2, THICK] : [THICK, HALF_HEIGHT * 2, length2];
+    const half = orientation === "x" ? { x: length2 / 2, y: HALF_HEIGHT, z: THICK / 2 } : { x: THICK / 2, y: HALF_HEIGHT, z: length2 / 2 };
+    let wall = beastApp.addMeshObj({
       material: { type: "standard", share: true },
-      position: { x: 0, y: -1, z: -20 },
+      position: { x: x2, y: HALF_HEIGHT, z },
       rotation: { x: 0, y: 0, z: 0 },
-      scale: [100, 100, 100],
-      rotationSpeed: { x: 0, y: 0.1, z: 0 },
-      texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
-      name: "sky",
-      mesh: m.ball,
-      physics: {
-        enabled: false,
-        geometry: "Sphere"
-      }
+      scale: scale4,
+      texturesPaths: ["./res/textures/rust.jpg"],
+      name: `wall_${i}`,
+      mesh: beastApp._mazeCube,
+      physics: { enabled: false, mass: 0, geometry: "Cube" }
     });
-    let MYCUBE = cinematicCamera.addMeshObj({
-      material: { type: "mirror" },
-      position: { x: 0, y: 4, z: -10 },
-      rotation: { x: 0, y: 0, z: 0 },
-      rotationSpeed: { x: 0, y: 0, z: 0 },
-      scale: [3, 5, 1],
-      texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
-      name: "cube",
-      mesh: m.cube,
-      envMapParams: {
-        baseColorMix: 0.1,
-        // CLEAR SKY
-        mirrorTint: [0.9, 0.95, 1],
-        // Slight cool tint
-        reflectivity: 0.75,
-        // 25% reflection blend
-        illuminateColor: [0.3, 0.7, 1],
-        // Soft cyan
-        illuminateStrength: 1.5,
-        // Gentle rim
-        illuminatePulse: 0.1,
-        // No pulse (static)
-        fresnelPower: 5,
-        // Medium-sharp edge
-        envLodBias: 1.5,
-        usePlanarReflection: false
-        // ✅ Env map mode
-      },
-      raycast: { enabled: true, radius: 1 },
-      physics: {
-        enabled: false,
-        mass: 0,
-        geometry: "Cube"
-      },
-      pointerEffect: {
-        enabled: true,
-        flameEmitter: true
-        // flameEffect: true
-      }
-    });
-    cinematicCamera.lightContainer[0].setIntensity(5);
-    cinematicCamera.activateBloomEffect();
-    cinematicCamera.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-    cinematicCamera.lightContainer[0].behavior.value_ = -1;
-    cinematicCamera.lightContainer[0].updater.push((light) => {
-      light.setTargetX(light.behavior.setPath0());
-      light.setPosX(light.behavior.setPath0());
-    });
-    cinematicCamera.lightContainer[0].setPosition(0, 15, -10);
-    cinematicCamera.lightContainer[0].setTarget(0, 0, -10);
-    setTimeout(() => {
-      app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
-      MYCUBE.effects.flameEmitter.rotSpeed = 1;
-      MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-        -2.582509022040566,
-        0.21125441598805741,
-        0.4249951687253338,
-        0.4724163587305734,
-        2.381811753816671,
-        3.074841196886901,
-        -2.3797025623904164,
-        -3.4608908819087145
-      ]);
-      MYCUBE.setAmbient(2, 3, 0.5);
-      let cam2 = app.getCamera();
-      cam2.setYaw(-0.03);
-      cam2.setPitch(-0.49);
-      cam2.setZ(10);
-      cam2.setY(20);
-      console.log("sssssssssssss");
-      const introPath = new CameraPath([
-        { position: [0, 5, 20], target: [0, 0, 0] },
-        { position: [10, 12, 10], target: [0, 1, 0] },
-        { position: [0, 15, -22], target: [0, 0, 0] }
-      ], { parameterization: "arc" });
-      cam2.setPath(introPath).play({
-        speed: 0.3,
-        onEnd: () => console.log("done")
-      });
-      cam2._dirtyAngle = true;
-      app.buildRenderBuckets();
-    }, 1e3);
+    beastApp.collisionSystem.registerStatic(wall.name, wall.position, 1.1, "walls", half);
   }
-  cinematicCamera.canvas.addEventListener("ray.hit.event", (e) => {
-    console.log("ray.hit.event detected");
-    if (e.detail.hitObject.name.startsWith("cube")) {
-      e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-      e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-      e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-      app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
-    }
-  });
+  function onLoadWalls(m) {
+    beastApp._mazeCube = m.cube;
+    let i = 0;
+    addWall(0, -5, "x", 10.4, i++);
+    addWall(-3.6, 5, "x", 3.2, i++);
+    addWall(3.6, 5, "x", 3.2, i++);
+    addWall(-5, 0, "z", 9.6, i++);
+    addWall(5, 0, "z", 9.6, i++);
+    addWall(-1, 11, "z", 12.4, i++);
+    addWall(1, 11, "z", 12.4, i++);
+    addWall(-3.6, 17, "x", 3.2, i++);
+    addWall(3.6, 17, "x", 3.2, i++);
+    addWall(0, 27, "x", 10.4, i++);
+    addWall(-5, 22, "z", 9.6, i++);
+    addWall(5, 22, "z", 9.6, i++);
+    beastApp.cameras.firstPersonCamera.position = new Float32Array([0, 5.8, 3]);
+    beastApp.cameras.firstPersonCamera.movementSpeed = 0.1;
+    beastApp.collisionSystem.registerCamera(beastApp.cameras.firstPersonCamera.position, 1);
+  }
 });
-window.app = cinematicCamera;
+window.app = beastApp;
 /*! Bundled license information:
 
 bvh-loader/module/bvh-loader.js:
