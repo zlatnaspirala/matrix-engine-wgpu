@@ -204,7 +204,12 @@ runBtn.addEventListener('click', () => {
   const systemValue=systemTextarea.value;
   const taskValue=taskTextarea.value;
   const examplesBlock=buildExamplesBlock();
+
   const fullPrompt=`${systemValue}${examplesBlock}\n\nTask:\n${taskValue}`;
+
+  console.log('TEST INPUT systemValue : ', systemValue)
+  console.log('TEST INPUT examplesBlock : ', examplesBlock)
+  console.log('TEST INPUT taskValue : ', taskValue)
 
   loadingModal.classList.remove('hidden');
 
@@ -213,7 +218,7 @@ runBtn.addEventListener('click', () => {
       provider: selectedProvider,
       systemPrompt: systemValue,
       task: taskValue,
-      prompt: fullPrompt   // <-- was inline template before
+      prompt: fullPrompt
     }
   }));
 

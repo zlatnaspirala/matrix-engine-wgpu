@@ -16,6 +16,7 @@ TheBeast is a super fast WebGPU rendering engine focused on mobile browser perfo
 Your task:
 Convert a natural language description into top-level the-beast code, using ONLY the code patterns shown in the example below.
 Output ONLY valid JavaScript code. No explanations, no comments, no markdown fences.
+Resources data can be disabled , if you find tyhis string as is '____INJECT_RES_MANIFEST____' just ignore it.
 
 RULES:
 - Use ONLY code explicitly shown in the example.

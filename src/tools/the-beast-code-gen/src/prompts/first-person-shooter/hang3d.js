@@ -5,9 +5,6 @@ import {
   uploadGLBModel, Player, randomIntFromTo, vecOf
 } from "matrix-engine-wgpu";
 
-// INJECT
-import {byId, isMobile} from "../../../src/engine/utils";
-
 export function setupCanvasFilters(canvasId) {
   let canvas = document.getElementById(canvasId);
   if(canvas == null) {
@@ -163,10 +160,10 @@ export let settingsBox = \`
 
     <img src="res/icons/512.png" style="position:absolute;left:10px;top:5%;width:300px;z-index:-1;"/>
   </div>
-</div>`;
+</div>\`;
 
 export let welcomeBoxHTML =
-  `<span class="fancy-title" data-label="welcomeMsg"></span>
+  \`<span class="fancy-title" data-label="welcomeMsg"></span>
      <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu">zlatnaspirala/matrix-engine-wgpu</a><br><br>
      <div style="display:flex;flex-direction:column;align-items: center;margin:20px;padding: 10px;">
        <span style="width:100%" data-label="choosename"></span>
@@ -285,9 +282,6 @@ export const mapParams = {
     {id: '4', position: {x: -44.79292678833008, y: 2.3, z: -0.29}, radius: 1, type: 'armor', amount: '50', scale : [1,1,1], tex : './res/meshes/obj/armor.webp'},
   ]
 }
-
-
-import {mapParams} from "./table-params";
 
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
@@ -803,7 +797,7 @@ let app = new MatrixEngineWGPU({
       shadowsCast: true,
       pillarDecoration: true,
       pillarsFlame: false
-    });
+    }, mapParams );
     mc.createRoom({
       origin: {x: -0, y: 0.1, z: 20},
       width: 10, depth: 10, height: 4,

@@ -18,8 +18,15 @@ export let tasks=[
   Build all from cubes scale 1,1,1
 
   Make big map with stairs with symetric arhitecture.
-  Add 2 levels by vertical (Y). `,
+  Add 2 levels by vertical (Y). 
+  
+  Set texture for object with name 'FLOOR' - Use file with name 'cube-g1_low.webp' 
+  `,
 
-  `Create FPS game , use full code from example and make some uniq arhitecture of map.`
+  `
+  Create First Person Shooter game
+ - use full code from example and make some uniq arhitecture of map.
+
+  `
 
 ];

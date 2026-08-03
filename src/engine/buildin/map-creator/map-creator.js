@@ -1,4 +1,4 @@
-import {mapParams} from "../../../../examples/games/first-person-shooter/table-params";
+
 import {FlameEffect, FlamePresets} from "../../effects/flame";
 import {FlameEmitter} from "../../effects/flame-emmiter";
 import {geometryTypes, isMobile, MeshType, randomIntFromTo} from "../../utils";
@@ -35,7 +35,18 @@ export class MapCreator {
    * @param {string} [opts.floorTexture]  — path to floor texture
    * @param {string} [opts.ceilTexture]   — path to ceiling texture
    */
-  constructor(engine, m, collision, opts = {}) {
+  constructor(engine, m, collision, opts = {}, mapParams = {
+    zombie: {
+      startUpPositions: {
+        south: [-20, 0.2, 20],
+        p1: [-8.35, 0.2, 4.56],
+        p2: [8.35, 0.2, 4.56],
+        p3: [4.35, 0.2, 4.56],
+        north: [20, 0.2, -20]
+      },
+    },
+    collectItems: []
+  }) {
     this.engine = engine;
     this.meshes = m;
     this.collision = collision;
@@ -47,7 +58,7 @@ export class MapCreator {
     this.pillarsFlame = opts.pillarsFlame || false;
     this.shadowsCast = opts.shadowsCast || true;
     this._uid = 0;
-
+    this.mapParams = mapParams;
     this.addMapItems();
   }
 
@@ -742,7 +753,7 @@ export class MapCreator {
   }
 
   addMapItems() {
-    mapParams.collectItems.forEach((item) => {
+    this.mapParams.collectItems.forEach((item) => {
       if(item.type === 'energy') {
         const meshScale = 2;
         const nName = item.type + item.id;
@@ -819,7 +830,7 @@ export class MapCreator {
   }
 
   respawnMapItem(type, id) {
-    mapParams.collectItems.forEach((item) => {
+    this.mapParams.collectItems.forEach((item) => {
       if(item.type === 'energy' && type === 'energy') {
         const nName = item.type + item.id;
         if(id !== nName) return;
