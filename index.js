@@ -16,7 +16,7 @@ import {
   computeAABB,
   touchCoordinate
 } from "./src/engine/raycast.js";
-import {CameraPath, geoTypesForMorph, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER} from "./src/engine/utils.js";
+import {CameraPath, geoTypesForMorph, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER, vecOf} from "./src/engine/utils.js";
 import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {MeshMorpher} from "./src/engine/procedural-mesh.js";
 import {CollisionSystem} from "./src/engine/collision-sub-system.js";
@@ -33,11 +33,13 @@ import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "./s
 import {initializeSpritesForMesh, SpritesPack2D} from "./src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "./src/engine/procedures/InstancedKinematicOperations.js";
 import {followPath, loadNavMesh} from "./src/engine/buildin/navigation-plane/navigation.js";
-// deplace src path in future
+// Deplace src path in future.
 import {MatrixTTS} from "./examples/games/moba/tts.js";
 import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
 import {animateRotationY} from "./src/engine/procedures/sceneobjectKinematics.js";
 import {BVHSkeletal} from "./src/engine/loaders/raw-bvh-skeletal.js";
+// Top level
+import {Player} from "./src/engine/plugin/player-object/player.js";
 
 const about = () => {
   console.info("npm i matrix-engine-wgpu ver 1.18.00 is ready.")
@@ -74,6 +76,8 @@ export {
   InstancedKinematicOperations,
   SpritesPack2D,
   mb,
+  Player,
+  vecOf,
   BVHSkeletal,
   animateRotationY,
   initializeSpritesForMesh,
