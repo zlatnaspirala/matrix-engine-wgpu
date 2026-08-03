@@ -56791,7 +56791,7 @@ var loadHang3d = function() {
       color: "black",
       size: innerHeight / 10
     });
-    app2.energy = MobileDOM.addProgressBar({ size: innerWidth / 3, bottom: 82.5, left: 33, color: "#00bcd4" });
+    app2.energy = MobileDOM.addProgressBar({ width: innerWidth / 3, height: 30, size: innerWidth / 3, bottom: 82.5, left: 33, color: "#00bcd4" });
     app2.energy.setValue(100);
     MobileDOM.addButton("Kills 0", () => {
     }, void 0, {

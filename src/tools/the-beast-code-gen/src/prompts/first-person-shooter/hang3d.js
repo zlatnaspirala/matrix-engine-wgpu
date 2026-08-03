@@ -691,7 +691,7 @@ let app = new MatrixEngineWGPU({
     size: innerHeight / 10
   })
 
-  app.energy = MobileDOM.addProgressBar({size: innerWidth / 3, bottom: 82.5, left: 33, color: '#00bcd4'});
+  app.energy = MobileDOM.addProgressBar({width: innerWidth / 3, height: 30, size: innerWidth / 3, bottom: 82.5, left: 33, color: '#00bcd4'});
   app.energy.setValue(100);
 
   MobileDOM.addButton("Kills 0", () => {}, undefined, {
