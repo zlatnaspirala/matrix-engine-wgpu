@@ -52,7 +52,7 @@ if('serviceWorker' in navigator) {
   if(MEConfig.CACHE === true && location.hostname.indexOf('localhost') == -1) {
     navigator.serviceWorker.register('cache.js').then(registration => {
       if(!navigator.serviceWorker.controller) {
-        console.log('Installing & caching for the first time...');
+        // console.log('Installing & caching for the first time...');
         meLoader.create('LOADING');
         setTimeout(() => {location.reload()}, 3000);
         APP_READY = false;

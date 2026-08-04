@@ -51,3 +51,4 @@ src\tools\the-beast-code-gen\src\config.js
 ## How It Works
 
 `Code Creator` consumes `matrix-engine-wgpu` from npm at runtime. It also ships as part of the engine's own repo, but the tool itself is fully standalone and independent from the engine's build/runtime — it just targets the engine as its output API.
+
