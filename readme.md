@@ -14,14 +14,23 @@
 
 ## Description
 
-This project is a `stable` but also `work-in-progress` WebGPU engine inspired by the original **matrix-engine** for WebGL.
+This project is a `stable` but also `work-in-progress`. WebGPU engine inspired by the original **matrix-engine** for WebGL.
 It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
 Published on npm as: **`matrix-engine-wgpu`** (not always updated on last - recommended is to use github clone)
+From [1.18.6]ver npm package is much more stable and usable. All examples can be done by npm services not just github clone.
+You can also use (links tested). You can use `RES` like prefix for textures or objects paths. TheBeast is friendly with codepen, worker physics bridge will test host name is it `codepen` to fix loading link if not it will use local resource always.
+```js
+import {MatrixEngineWGPU, downloadMeshes} from "https://esm.sh/matrix-engine-wgpu";
+let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
+```
 
-Backend editor (works in local env - desktop browsers) support list:
+- Backend editorX (VisualScripting) (works in local env - desktop browsers) support list:
+  Chrome, Edge, Opera, Firefox desktop
 
-- Chrome, Edge, Opera, Firefox desktop
+- Code Creator (TheBeast Code generator) is standalone. Can be used public but user must trust page to enter api key.
+Without api key no ai response. Code creator make project from task and test it direct intro same page.
+Code creator dont even needed to build own js bundle, just use it from watcher build on localhost:3000 by default.
 
 ---
 
@@ -191,9 +200,10 @@ From [1.18.6] version:
 
 Build api with:
 ```js
-
+typedoc index.js
 ```
-Live :
+
+Live:
 https://maximumroulette.com/apps/webgpu/api-docs/
 
 
@@ -1237,9 +1247,14 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/2026-loading-performance.png?raw=true" />
 
+### Codepen examples:
 - [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
   → Uses `empty.js` build from:
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
+- [The Beast Cube + Fire effect + onhit changed effect configuration](https://codepen.io/editor/zlatnaspirala/pen/019f2f4b-2ace-7c39-b304-b4028f7e5456)
+- [Zombie Shooter full game on codepen](https://codepen.io/editor/zlatnaspirala/pen/019fc918-e45f-73f4-9987-9a1599ac4a1f)
+
+### CodeSandbox
 - [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
 
 ---

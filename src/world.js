@@ -150,12 +150,22 @@ export default class MatrixEngineWGPU {
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if(typeof options.dontUsePhysics === 'undefined') {
       if(typeof options.useJolt !== 'undefined') {
-        this.matrixPhysics = new PhysicsBridge('./joltjs/matrix-jolt-worker.js');
+        if(location.host.indexOf('codepen') !== -1) {
+          let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
+          this.matrixPhysics = new PhysicsBridge(RES + '/joltjs/matrix-jolt-worker.js');
+        } else {
+          this.matrixPhysics = new PhysicsBridge('./joltjs/matrix-jolt-worker.js');
+        }
         this.matrixPhysics.init({gravity: 10, groundY: -1});
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'JOLT';
       } else if(typeof options.useAmmo !== 'undefined') {
-        this.matrixPhysics = new PhysicsBridge('./ammojs/matrix-ammo-worker.js');
+        if(location.host.indexOf('codepen') !== -1) {
+          let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
+          this.matrixPhysics = new PhysicsBridge(RES + '/ammojs/matrix-ammo-worker.js');
+        } else {
+          this.matrixPhysics = new PhysicsBridge('./ammojs/matrix-ammo-worker.js');
+        }
         const G = options.GRAVITY_Y_AXIS ? options.GRAVITY_Y_AXIS : MEConfig.GRAVITY_Y_AXIS;
         this.matrixPhysics.init({
           gravity: G, groundY: -1,
@@ -165,12 +175,22 @@ export default class MatrixEngineWGPU {
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'AMMO';
       } else if(typeof options.useCannon !== 'undefined') {
-        this.matrixPhysics = new PhysicsBridge('./ammojs/cannon-es-worker.js');
+        if(location.host.indexOf('codepen') !== -1) {
+          let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
+          this.matrixPhysics = new PhysicsBridge(RES + '/ammojs/cannon-es-worker.js');
+        } else {
+          this.matrixPhysics = new PhysicsBridge('./ammojs/cannon-es-worker.js');
+        }
         this.matrixPhysics.init({gravity: 10, groundY: -1});
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'CANNON';
       } else if(typeof options.useMatter !== 'undefined') {
-        this.matrixPhysics = new PhysicsBridge('./matterjs/matterjs.js');
+        if(location.host.indexOf('codepen') !== -1) {
+          let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
+          this.matrixPhysics = new PhysicsBridge(RES + '/matterjs/matterjs.js');
+        } else {
+          this.matrixPhysics = new PhysicsBridge('./matterjs/matterjs.js');
+        }
         this.matrixPhysics.init({gravity: 10, groundY: 0});
         this.matrixPhysics.bodyIndexMap = new Map();
         this.matrixPhysics._PHYSICS_DRIVE = 'MATTERJS';
@@ -1448,8 +1468,10 @@ export default class MatrixEngineWGPU {
     if(typeof o.rotation === 'undefined') {o.rotation = {x: 0, y: 0, z: 0}}
     if(typeof o.rotationSpeed === 'undefined') {o.rotationSpeed = {x: 0, y: 0, z: 0}}
 
-    if(typeof o.texturesPaths === 'undefined') {o.texturesPaths = 
-      ['https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/default.png']}
+    if(typeof o.texturesPaths === 'undefined') {
+      o.texturesPaths =
+        ['https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/default.png']
+    }
 
     if(typeof o.material === 'undefined') {o.material = {type: 'standard'}}
     if(typeof o.mainCameraParams === 'undefined') {o.mainCameraParams = this.mainCameraParams}
