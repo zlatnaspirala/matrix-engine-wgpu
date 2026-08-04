@@ -3,10 +3,21 @@ import {mat4} from 'wgpu-matrix';
 export class PhysicsBridge {
   constructor(workerUrl) {
     this._worker = null;
-    if(workerUrl.indexOf('ammo') != -1 || workerUrl.indexOf('matter')) {
-      this._worker = new Worker(workerUrl);
+    const isModule = workerUrl.indexOf('ammo') === -1 && workerUrl.indexOf('matter') === -1;
+    const needsBlobBridge = new URL(workerUrl, location.href).origin !== location.origin;
+    if(needsBlobBridge) {
+      const blobText = isModule
+        ? `import ${JSON.stringify(workerUrl)};`
+        : `importScripts(${JSON.stringify(workerUrl)});`;
+      const blob = new Blob([blobText], {type: 'application/javascript'});
+      const blobUrl = URL.createObjectURL(blob);
+      this._worker = isModule
+        ? new Worker(blobUrl, {type: 'module'})
+        : new Worker(blobUrl);
     } else {
-      this._worker = new Worker(workerUrl, {type: 'module'});
+      this._worker = isModule
+        ? new Worker(workerUrl, {type: 'module'})
+        : new Worker(workerUrl);
     }
     this._worker.onerror = (e) => {
       console.error('MEWorker error:', e.message, e.filename, e.lineno);

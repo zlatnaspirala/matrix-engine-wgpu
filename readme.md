@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.18.7 2026 Alias `The beast`
+📅 Version: 1.18.8 2026 Alias `The beast`
 
 ---
 

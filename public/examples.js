@@ -42095,10 +42095,15 @@ var nanoPass = function() {
 var PhysicsBridge = class {
   constructor(workerUrl) {
     this._worker = null;
-    if (workerUrl.indexOf("ammo") != -1 || workerUrl.indexOf("matter")) {
-      this._worker = new Worker(workerUrl);
+    const isModule = workerUrl.indexOf("ammo") === -1 && workerUrl.indexOf("matter") === -1;
+    const needsBlobBridge = new URL(workerUrl, location.href).origin !== location.origin;
+    if (needsBlobBridge) {
+      const blobText = isModule ? `import ${JSON.stringify(workerUrl)};` : `importScripts(${JSON.stringify(workerUrl)});`;
+      const blob = new Blob([blobText], { type: "application/javascript" });
+      const blobUrl = URL.createObjectURL(blob);
+      this._worker = isModule ? new Worker(blobUrl, { type: "module" }) : new Worker(blobUrl);
     } else {
-      this._worker = new Worker(workerUrl, { type: "module" });
+      this._worker = isModule ? new Worker(workerUrl, { type: "module" }) : new Worker(workerUrl);
     }
     this._worker.onerror = (e2) => {
       console.error("MEWorker error:", e2.message, e2.filename, e2.lineno);
@@ -44192,7 +44197,7 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.18.7 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 1.18.8 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\nNpm ready, codepen fully supported.\nOptimised MediaPipe buildin library implemented.\nCode Creator - standalone (use engine from npm) ai top level code generator.\nCreative power with intuitive visual scripting work flow and ai graph generetor.\nNew Features: NUI-Commander Game runner, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
