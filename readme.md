@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.18.0 2026 Alias `The beast`
+📅 Version: 1.18.7 2026 Alias `The beast`
 
 ---
 
@@ -18,7 +18,7 @@ This project is a `stable` but also `work-in-progress`. WebGPU engine inspired b
 It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
 Published on npm as: **`matrix-engine-wgpu`** (not always updated on last - recommended is to use github clone)
-From [1.18.6]ver npm package is much more stable and usable. All examples can be done by npm services not just github clone.
+From [1.18.7] ver npm package is much more stable and usable. All examples can be done by npm services not just github clone.
 You can also use (links tested). You can use `RES` like prefix for textures or objects paths. TheBeast is friendly with codepen, worker physics bridge will test host name is it `codepen` to fix loading link if not it will use local resource always.
 ```js
 import {MatrixEngineWGPU, downloadMeshes} from "https://esm.sh/matrix-engine-wgpu";
