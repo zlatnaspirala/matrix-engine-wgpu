@@ -1132,10 +1132,10 @@ Exclude (for example floor/ground) from culling: `floor.ignoreCulling = true;`
 ---
 
 ## About `empty.js`
-
+[Not always updated]
 For a clean startup without extra logic, use engine build `empty.js`.
 This minimal build is ideal for online editors like CodePen or StackOverflow snippets.
-It is the plain text JavaScript ready for exec.
+It is the plain text JavaScript ready for exec on any platform with zero errors.
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/3d-jamb.png?raw=true" />
 
@@ -1253,6 +1253,8 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
   [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
 - [The Beast Cube + Fire effect + onhit changed effect configuration](https://codepen.io/editor/zlatnaspirala/pen/019f2f4b-2ace-7c39-b304-b4028f7e5456)
 - [Zombie Shooter full game on codepen](https://codepen.io/editor/zlatnaspirala/pen/019fc918-e45f-73f4-9987-9a1599ac4a1f)
+- [The Beast Maze + culling + collision non real physics involved](https://codepen.io/editor/zlatnaspirala/pen/019fc979-ef25-7fe4-8bb4-4af074fe5843)
+
 
 ### CodeSandbox
 - [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
