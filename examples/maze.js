@@ -97,7 +97,7 @@ export var mazeGame = function() {
             const wallName = `wall_${x}_${y}`;
             let test = maze.addMeshObj({
               shadowsCast: false,
-              material: {type: 'dark', shared: true},
+              material: {type: 'standard', shared: true},
               position: {
                 x: x * spacing - (mazeSize * spacing) / 2,
                 y: 0,

@@ -16,7 +16,7 @@
   "author": "Nikola Lukic",
   "license": "MIT",
   "dependencies": {
-    "matrix-engine-wgpu": "^1.18.5"
+    "matrix-engine-wgpu": "^1.18.6"
   },
   "devDependencies": {
     "esbuild": "^0.28.1"

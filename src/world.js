@@ -60,7 +60,8 @@ if('serviceWorker' in navigator) {
         APP_READY = true;
       }
     }).catch((cacheErr) => {
-      console.warn('cacheErr:', cacheErr);
+      APP_READY = true;
+      console.warn('cacheErr[APP_READY forced]:', cacheErr);
     });
   }
 } else {
