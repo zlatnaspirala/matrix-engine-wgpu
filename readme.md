@@ -39,7 +39,7 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 - ✔️ Draw loop per pipeline not per mesh (PipelineManager) with share material. Power optimisation.
 - ✔️ Support for 3D objects and scene transformations.
 - ✔️ Ammo.js, cannonES && Jolt Physics libs integration (app<->bridge<->worker).
-  Physics use webworkers by default.
+  Physics use webworkers by default. Fixed crossOrigin worker.
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
 - ✔️ Bloom post processing.
 - ✔️ HZB post processing.
