@@ -495,7 +495,7 @@ export function physicsBodiesChain(
   material = "standard",
   pos = {x: 10, y: 30, z: -6},
   rot = {x: 0, y: 0, z: 0},
-  texturePath = ['./res/textures/slot/reel1-lod0.webp'],
+  texturePath = ['https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/slot/reel1-lod0.webp'],
   name = "chain",
   size = 10,
   raycast = false,
@@ -504,7 +504,7 @@ export function physicsBodiesChain(
   mass = 1
 ) {
   const engine = this;
-  const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
+  const inputCube = {mesh: "https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/blender/cube.obj"};
 
   function handler(m) {
     const RAY = {enabled: !!raycast, radius: 1};
@@ -549,7 +549,7 @@ export function physicsBodiesChain(
   downloadMeshes(inputCube, handler, {scale});
 }
 
-export function generatorWallNONPHYSICS (
+export function generatorWallNONPHYSICS(
   material = "standard",
   pos,
   rot,
@@ -561,15 +561,9 @@ export function generatorWallNONPHYSICS (
   spacing = 2.1,
   delay = 200,
   orientationOfwall = "ByX", spacingY = 3,
-  useMeshPath = "./res/meshes/blender/cube.obj",) {
+  useMeshPath = "https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/blender/cube.obj",) {
   const engine = this;
-  console.log('aaaaaa' , engine)
-  const [width, height] = size
-    .toLowerCase()
-    .split("x")
-    .map(n => parseInt(n, 10));
-
-  console.log('__________________________')
+  const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
   const inputCube = {mesh: useMeshPath};
   function handler(m) {
     let index = 0;

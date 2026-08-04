@@ -11,6 +11,7 @@ import {Zombi} from './zombie.js';
 import {uploadGLBModel} from '../../../src/engine/loaders/webgpu-gltf.js';
 import {Player} from '../../../src/engine/plugin/player-object/player.js';
 import {MatrixTTS} from '../moba/tts.js';
+import {mapParams} from './table-params.js';
 
 /**
  * @description
@@ -69,7 +70,7 @@ export var loadHang3d = function() {
       size: innerHeight / 10
     })
 
-    app.energy = MobileDOM.addProgressBar({size: innerWidth / 3, bottom: 82.5, left: 33, color: '#00bcd4'});
+    app.energy = MobileDOM.addProgressBar({width: innerWidth / 3, height: 30, size: innerWidth / 3, bottom: 82.5, left: 33, color: '#00bcd4'});
     app.energy.setValue(100);
 
     MobileDOM.addButton("Kills 0", () => {}, undefined, {
@@ -181,7 +182,7 @@ export var loadHang3d = function() {
         shadowsCast: true,
         pillarDecoration: true,
         pillarsFlame: false
-      });
+      }, mapParams);
       mc.createRoom({
         origin: {x: -0, y: 0.1, z: 20},
         width: 10, depth: 10, height: 4,

@@ -14,11 +14,11 @@ export class AiOllama {
       host: "https://ollama.com",
       headers: {Authorization: "Bearer " + aiConfig.ollama},
     });
-    console.log('Ollama cloud called...', i)
+    console.log('Ollama cloud called...', i.prompt)
     const response = await ollama.chat({
       model: this.model,
       messages: [
-        {role: "system", content: i.finalSysPrompt},
+        {role: "system", content: i.prompt},
         {role: "user", content: i.task}
       ],
       stream: false,

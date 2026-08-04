@@ -2,11 +2,9 @@ import {uploadGLBModel} from "../loaders/webgpu-gltf";
 
 /**
  * @description
- * This is special agnostic class for 
- * MOBA template.
+ * This is special agnostics class for MOBA template.
  */
 export class FireballSystem {
-
   static CONFIG = {
     speed: 2.3,
     homingStrength: 0.08,
@@ -36,10 +34,9 @@ export class FireballSystem {
         flameEmitter: true,
         circlePlane: false,
         circlePlaneTex: true,
-        circlePlaneTexPath: './res/textures/star1.png',
+        circlePlaneTexPath: 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/star1.png',
       }
     }, null, glbFile01);
-    // console.log('this.fireballMesh', this.fireballMesh)
   }
 
   constructor(parent, core) {
@@ -48,7 +45,7 @@ export class FireballSystem {
     this.FBHitEvent = new CustomEvent('fireball-hit', {
       detail: {target: null, damage: 0}
     });
-    this.loadBallAnim('./res/meshes/glb/ring1.glb');
+    this.loadBallAnim('https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/glb/ring1.glb');
     this.projectiles = [];
   }
 
@@ -121,11 +118,6 @@ export class FireballSystem {
 
   _kill(p) {
     p.mesh.position.setPosition(this.parent.position.x, this.parent.position.y, this.parent.position.z)
-    // p.alive = false;
     // Remove from scene
-    // const idx = app.mainRenderBundle.indexOf(p.mesh);
-    // if(idx !== -1) app.mainRenderBundle.splice(idx, 1);
-    // // Cleanup GPU resources if needed
-    // p.mesh.destroy?.();
   }
 }

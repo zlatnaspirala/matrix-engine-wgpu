@@ -34,10 +34,21 @@ No build step needed — `npm run dev` runs a watcher, so changes apply automati
 If you cloned the full `matrix-engine-wgpu` repo, run these from the **engine root folder**:
 
 ```bash
+npm run creator-install   # First time
+# Or go manually:
+# "cd src/tools/the-beast-code-gen 
+# npm i
+
+# Running
+npm 
 npm run creator          # frontend
 npm run creator-backend  # backend (socket server)
 ```
 
+API Keys:
+src\tools\the-beast-code-gen\src\config.js
+
 ## How It Works
 
 `Code Creator` consumes `matrix-engine-wgpu` from npm at runtime. It also ships as part of the engine's own repo, but the tool itself is fully standalone and independent from the engine's build/runtime — it just targets the engine as its output API.
+

@@ -1,8 +1,6 @@
-import {mapParams} from "../../../../examples/games/first-person-shooter/table-params";
-import {pointerEffect} from "../../../shaders/standalone/pointer.effect";
+
 import {FlameEffect, FlamePresets} from "../../effects/flame";
 import {FlameEmitter} from "../../effects/flame-emmiter";
-import {KaleidoscopeEmitter} from "../../effects/kaleidoscopeEffectInstance";
 import {geometryTypes, isMobile, MeshType, randomIntFromTo} from "../../utils";
 
 /**
@@ -37,19 +35,30 @@ export class MapCreator {
    * @param {string} [opts.floorTexture]  — path to floor texture
    * @param {string} [opts.ceilTexture]   — path to ceiling texture
    */
-  constructor(engine, m, collision, opts = {}) {
+  constructor(engine, m, collision, opts = {}, mapParams = {
+    zombie: {
+      startUpPositions: {
+        south: [-20, 0.2, 20],
+        p1: [-8.35, 0.2, 4.56],
+        p2: [8.35, 0.2, 4.56],
+        p3: [4.35, 0.2, 4.56],
+        north: [20, 0.2, -20]
+      },
+    },
+    collectItems: []
+  }) {
     this.engine = engine;
     this.meshes = m;
     this.collision = collision;
-    this._wallTex = opts.wallTexture || './res/textures/blankgray2.webp';
-    this._floorTex = opts.floorTexture || './res/textures/blankgray2.webp';
-    this._ceilTex = opts.ceilTexture || './res/textures/blankgray2.webp';
-    this._pillarDecorationTex = './res/meshes/obj/modelpack19/hang2/512/hang2.webp';
+    this._wallTex = opts.wallTexture || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/blankgray2.webp';
+    this._floorTex = opts.floorTexture || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/blankgray2.webp';
+    this._ceilTex = opts.ceilTexture || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/blankgray2.webp';
+    this._pillarDecorationTex = opts.pillarDecorationTex || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/obj/modelpack19/hang2/512/hang2.webp';
     this._pDecorationEnabled = opts.pillarDecoration || false;
     this.pillarsFlame = opts.pillarsFlame || false;
     this.shadowsCast = opts.shadowsCast || true;
     this._uid = 0;
-
+    this.mapParams = mapParams;
     this.addMapItems();
   }
 
@@ -149,7 +158,6 @@ export class MapCreator {
     return obj;
   }
 
-  // PUBLIC PRIMITIVES
   /**
    * Create a box room.
    *
@@ -745,7 +753,7 @@ export class MapCreator {
   }
 
   addMapItems() {
-    mapParams.collectItems.forEach((item) => {
+    this.mapParams.collectItems.forEach((item) => {
       if(item.type === 'energy') {
         const meshScale = 2;
         const nName = item.type + item.id;
@@ -822,7 +830,7 @@ export class MapCreator {
   }
 
   respawnMapItem(type, id) {
-    mapParams.collectItems.forEach((item) => {
+    this.mapParams.collectItems.forEach((item) => {
       if(item.type === 'energy' && type === 'energy') {
         const nName = item.type + item.id;
         if(id !== nName) return;

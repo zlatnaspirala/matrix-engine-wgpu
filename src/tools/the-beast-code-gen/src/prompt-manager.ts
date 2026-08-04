@@ -12,6 +12,7 @@ import { canvas2DInline } from "./prompts/canvas-inline";
 import { gaussianSplat } from "./prompts/gaussian-splat";
 import { waterEffect } from "./prompts/water-effect";
 import { cannonTest } from "./prompts/physics-test-cannones";
+import { FPS } from "./prompts/first-person-shooter/hang3d";
 
 export const EXAMPLES=[
   { name: 'Maze (no physics, collisionSystem)', code: MAZE_EXAMPLE },
@@ -26,6 +27,7 @@ export const EXAMPLES=[
   { name: 'Gaussian Splat load', code: gaussianSplat },
   { name: 'Water effect and navigation mesh with character movement.', code : waterEffect},
   { name : 'cannon example', code : cannonTest},
+  { name : 'Shooter game', code : FPS},
 ];
 
 export let SELECTION_DOM: HTMLSelectElement[]=[];

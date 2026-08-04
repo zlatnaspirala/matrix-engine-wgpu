@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="manifest" href="manifest.web" />
+  <title>Test npm - Matrix Engine Powered by webGPU (The Beast). Created by Nikola Lukic zlatnaspirala@gmail.com </title>
+  <meta name="description" content="Draw loop per pipeline not per mesh (PipelineManager) with share material. Power optimisation.
+✔️ Support for 3D objects and scene transformations.
+✔️ Ammo.js, cannonES && Jolt Physics libs integration (app-bridge-worker). Physics use webworkers by default.
+✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs - frontend.
+✔️ Bloom post processing.
+✔️ HZB post processing.
+✔️ Scene Culling feature" />
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link defer rel="stylesheet" href="css/mobile.css" />
+  <link rel="apple-touch-icon" href="res/icons/512.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="256x256" href="res/icons/512.webp" />
+</head>
+
+<body allow="autoplay">
+  <div class="header" style="display: contents;text-align: center;font-size: large;">
+    The Beast (npm service test) <span>+Android Chrome</span> <a style="color:black;font-size: small;" href="https://github.com/zlatnaspirala/matrix-engine-wgpu">Source and Credits github project</a>
+  </div>
+  <div id="matrix-net"></div>
+  <div id="log" class="msg-box animate1">mewgpu</div>
+  <div id="msgBox" class="msg-box animate1" onclick="mb.copy()"></div>
+  <script src="test.js"></script>
+  <script>
+    document.addEventListener('touchstart', function(e) {
+      if(e.touches.length > 1) e.preventDefault()
+    }, {passive: false});
+
+    document.addEventListener('touchmove', function(e) {
+      if(e.touches.length > 1) e.preventDefault()
+    }, {passive: false});
+
+    document.addEventListener('gesturestart', function(e) {
+      e.preventDefault()
+    });
+  </script>
+</body>
+</html>
