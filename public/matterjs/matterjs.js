@@ -1,6 +1,10 @@
-importScripts('matter.min.js');
-const FLOATS_PER_BODY = 8; // [x, y, z, qx, qy, qz, qw, active]
-
+try {
+  importScripts('matter.min.js');
+} catch (e) {
+  importScripts('https://unpkg.com/matrix-engine-wgpu@1.18.8/public/matterjs/matter.min.js');
+}
+// [x, y, z, qx, qy, qz, qw, active]
+const FLOATS_PER_BODY = 8; 
 class MatterPhysicsWorker {
   constructor() {
     this.rigidBodies = [];
