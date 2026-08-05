@@ -1263,6 +1263,8 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 - [The Beast - Procedural destruction demo](https://codepen.io/editor/zlatnaspirala/pen/019fd33f-b64d-76f4-b136-91a5e3afdf76)
 - [The Beast - Flipper JOLJS](https://codepen.io/editor/zlatnaspirala/pen/019fd37a-554a-7fc8-aea8-e345f5e38caf)
 - [The Beast - Drum with balls with continius rounds of 5 numbers (JOLT Bridge)](https://codepen.io/editor/zlatnaspirala/pen/019fd353-5540-79ce-8d7b-12cb2d90a3a8)
+- [The Beast - Splat Color Effects](https://codepen.io/editor/zlatnaspirala/pen/019fd388-de26-71dc-a6f0-481525624b42)
+- [The Beast - Gaussian splat vertex animator](https://codepen.io/editor/zlatnaspirala/pen/019fd3a0-6cd9-756c-bf77-985e2a60741e)
 
 
 ### CodeSandbox
