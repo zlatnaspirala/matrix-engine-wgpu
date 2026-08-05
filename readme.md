@@ -1261,6 +1261,9 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 - [The Beast - Canvas2d inline draws in webGPU scene](https://codepen.io/editor/zlatnaspirala/pen/019fd323-4e24-72bb-9456-399ce2d792ff)
 - [The Beast - Cinematic Camera movement demo](https://codepen.io/editor/zlatnaspirala/pen/019fd339-1abb-7622-adb5-ae2e427cad29)
 - [The Beast - Procedural destruction demo](https://codepen.io/editor/zlatnaspirala/pen/019fd33f-b64d-76f4-b136-91a5e3afdf76)
+- [The Beast - Flipper JOLJS](https://codepen.io/editor/zlatnaspirala/pen/019fd37a-554a-7fc8-aea8-e345f5e38caf)
+- [The Beast - Drum with balls with continius rounds of 5 numbers (JOLT Bridge)](https://codepen.io/editor/zlatnaspirala/pen/019fd353-5540-79ce-8d7b-12cb2d90a3a8)
+
 
 ### CodeSandbox
 - [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)

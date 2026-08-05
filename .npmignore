@@ -43,5 +43,7 @@ public/res/icons/editor/chatgpt-gen-bg.png
 public/res/meshes/glb/textures/mutant-normal.png
 public/res/meshes/obj/modelpack19/**/*
 public/res/meshes/objs-sequence/**/*
-public/res/meshes/ply/**/*
+public/res/meshes/ply/slayzer.ply
+public/res/meshes/ply/test2.ply
+public/res/meshes/ply/test.ply
 public/res/videos/my-videos/roulette.mp4
