@@ -1254,6 +1254,9 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 - [The Beast Cube + Fire effect + onhit changed effect configuration](https://codepen.io/editor/zlatnaspirala/pen/019f2f4b-2ace-7c39-b304-b4028f7e5456)
 - [Zombie Shooter full game on codepen](https://codepen.io/editor/zlatnaspirala/pen/019fc918-e45f-73f4-9987-9a1599ac4a1f)
 - [The Beast Maze + culling + collision non real physics involved](https://codepen.io/editor/zlatnaspirala/pen/019fc979-ef25-7fe4-8bb4-4af074fe5843)
+- [The Beast - Platformer 2D demo](https://codepen.io/editor/zlatnaspirala/pen/019fd2c0-3b88-7562-98dd-195bc4f74e3f)
+- [The Beast - Slot Mashine, initializeSpritesForMesh](https://codepen.io/editor/zlatnaspirala/pen/019fd2fe-77c8-7860-a2b7-ee332ce29d86)
+- [The Beast - BVH Skeletal animations](https://codepen.io/editor/zlatnaspirala/pen/019fd30e-35ba-7c0c-a406-8db158bae5c7)
 
 
 ### CodeSandbox

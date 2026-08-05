@@ -41,6 +41,7 @@ import {BVHSkeletal} from "./src/engine/loaders/raw-bvh-skeletal.js";
 // Top level
 import {Player} from "./src/engine/plugin/player-object/player.js";
 import {MEConfig} from "./src/me-config.js";
+import {mocapCsCmuEdu} from "./public/res/bvh/mocap.cs.cmu.edu/mocap.js";
 
 export {
   MatrixEngineWGPU,
@@ -52,6 +53,7 @@ export {
   SpritesPack2D,
   mb,
   Player,
+  mocapCsCmuEdu,
   byId,
   vecOf,
   BVHSkeletal,
