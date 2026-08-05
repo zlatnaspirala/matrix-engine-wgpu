@@ -16,7 +16,7 @@ import {
   computeAABB,
   touchCoordinate
 } from "./src/engine/raycast.js";
-import {byId, CameraPath, geoTypesForMorph, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER, vecOf} from "./src/engine/utils.js";
+import {byId, CameraPath, geometryTypes, geoTypesForMorph, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER, vecOf} from "./src/engine/utils.js";
 import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {MeshMorpher} from "./src/engine/procedural-mesh.js";
 import {CollisionSystem} from "./src/engine/collision-sub-system.js";
@@ -54,6 +54,7 @@ export {
   mb,
   Player,
   mocapCsCmuEdu,
+  geometryTypes,
   byId,
   vecOf,
   BVHSkeletal,

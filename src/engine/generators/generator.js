@@ -30,13 +30,14 @@ export async function physicsBodiesGenerator(
   scale = [1, 1, 1],
   sum = 20,
   delay = 500,
-  mesh = null,
-  posOffset = {x: 0, y: 0, z: 0}) {
+  useMeshPath = "./res/meshes/blender/cube.obj",
+  posOffset = {x: 0, y: 0, z: 0},
+  useMeshPath2 = "./res/meshes/blender/sphere.obj") {
 
   return new Promise((resolve) => {
     let engine = this;
-    const inputCube = {mesh: "./res/meshes/blender/cube.obj"};
-    const inputSphere = {mesh: "./res/meshes/blender/sphere.obj"};
+    const inputCube = {mesh: useMeshPath};
+    const inputSphere = {mesh: useMeshPath2};
     function handler(m) {
       let ALL = [];
       let RAY = {enabled: (raycast == true ? true : false), radius: 1};

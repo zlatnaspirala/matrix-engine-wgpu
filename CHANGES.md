@@ -8,7 +8,7 @@
    `npm run creator-backend`
    Frontend:
    `npm run creator`
-
+  Fixed worker cross origin problem with running.
   - Fix engine internal defaul dummy links to be public links from 
    https://unpkg.com/matrix-engine-wgpu@latest/public/
 

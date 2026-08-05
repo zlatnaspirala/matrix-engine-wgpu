@@ -1257,7 +1257,10 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 - [The Beast - Platformer 2D demo](https://codepen.io/editor/zlatnaspirala/pen/019fd2c0-3b88-7562-98dd-195bc4f74e3f)
 - [The Beast - Slot Mashine, initializeSpritesForMesh](https://codepen.io/editor/zlatnaspirala/pen/019fd2fe-77c8-7860-a2b7-ee332ce29d86)
 - [The Beast - BVH Skeletal animations](https://codepen.io/editor/zlatnaspirala/pen/019fd30e-35ba-7c0c-a406-8db158bae5c7)
-
+- [The Beats - Camera texture on MorphMesh object example](https://codepen.io/editor/zlatnaspirala/pen/019fd31d-7e1d-7149-b2e4-b82e7dd57197)
+- [The Beast - Canvas2d inline draws in webGPU scene](https://codepen.io/editor/zlatnaspirala/pen/019fd323-4e24-72bb-9456-399ce2d792ff)
+- [The Beast - Cinematic Camera movement demo](https://codepen.io/editor/zlatnaspirala/pen/019fd339-1abb-7622-adb5-ae2e427cad29)
+- [The Beast - Procedural destruction demo](https://codepen.io/editor/zlatnaspirala/pen/019fd33f-b64d-76f4-b136-91a5e3afdf76)
 
 ### CodeSandbox
 - [CodeSandbox Implementation](https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16)
