@@ -40677,11 +40677,11 @@ var MeshMorpher = class {
 
 // src/engine/generators/generator.js
 var local = [];
-async function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2, name2 = "gen1", geometry = "Cube", raycast2 = false, scale4 = [1, 1, 1], sum2 = 20, delay2 = 500, mesh = null, posOffset = { x: 0, y: 0, z: 0 }) {
+async function physicsBodiesGenerator(material = "standard", pos2, rot2, texturePath2, name2 = "gen1", geometry = "Cube", raycast2 = false, scale4 = [1, 1, 1], sum2 = 20, delay2 = 500, useMeshPath = "./res/meshes/blender/cube.obj", posOffset = { x: 0, y: 0, z: 0 }, useMeshPath2 = "./res/meshes/blender/sphere.obj") {
   return new Promise((resolve) => {
     let engine = this;
-    const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
-    const inputSphere = { mesh: "./res/meshes/blender/sphere.obj" };
+    const inputCube = { mesh: useMeshPath };
+    const inputSphere = { mesh: useMeshPath2 };
     function handler(m2) {
       let ALL = [];
       let RAY = { enabled: raycast2 == true ? true : false, radius: 1 };
@@ -43726,8 +43726,22 @@ if ("serviceWorker" in navigator) {
         APP_READY = true;
       }
     }).catch((cacheErr) => {
-      APP_READY = true;
-      console.warn("cacheErr[APP_READY forced]:", cacheErr);
+      console.warn("cacheErr[APP_READY forced public access]:", cacheErr);
+      let RES = "https://unpkg.com/matrix-engine-wgpu@latest/public";
+      navigator.serviceWorker.register(RES + "/cache.js").then((registration) => {
+        if (!navigator.serviceWorker.controller) {
+          meLoader.create("LOADING");
+          setTimeout(() => {
+            location.reload();
+          }, 3e3);
+          APP_READY = false;
+        } else {
+          APP_READY = true;
+        }
+      }).catch((cacheErr2) => {
+        APP_READY = true;
+        console.warn("cacheErr[APP_READY forced]:", cacheErr2);
+      });
     });
   }
 } else {

@@ -2,8 +2,8 @@
 *.blend1
 **/*.blender
 **/*.blend1
-**/*.glb
-# public/res/meshes/glb/*.glb
+#**/*.glb
+public/res/meshes/glb/*.glb
 public/res/meshes/nav-mesh/*.blend
 public/res/meshes/nav-mesh/*.blend1
 public/res/meshes/nav-mesh/*.glb

@@ -1248,9 +1248,6 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/2026-loading-performance.png?raw=true" />
 
 ### Codepen examples:
-- [CodePen Demo](https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011)
-  → Uses `empty.js` build from:
-  [https://maximumroulette.com/apps/megpu/empty.js](https://maximumroulette.com/apps/megpu/empty.js)
 - [The Beast Cube + Fire effect + onhit changed effect configuration](https://codepen.io/editor/zlatnaspirala/pen/019f2f4b-2ace-7c39-b304-b4028f7e5456)
 - [Zombie Shooter full game on codepen](https://codepen.io/editor/zlatnaspirala/pen/019fc918-e45f-73f4-9987-9a1599ac4a1f)
 - [The Beast Maze + culling + collision non real physics involved](https://codepen.io/editor/zlatnaspirala/pen/019fc979-ef25-7fe4-8bb4-4af074fe5843)
@@ -1266,6 +1263,7 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 - [The Beast - Splat Color Effects](https://codepen.io/editor/zlatnaspirala/pen/019fd388-de26-71dc-a6f0-481525624b42)
 - [The Beast - Gaussian splat vertex animator](https://codepen.io/editor/zlatnaspirala/pen/019fd3a0-6cd9-756c-bf77-985e2a60741e)
 - [The Beast - Horizontal Z-buffer](https://codepen.io/editor/zlatnaspirala/pen/019fd635-9e66-7795-93df-3dd7ab08414b)
+- [The Beast - ProceduralMesh - morphTo func](https://codepen.io/editor/zlatnaspirala/pen/019fd663-3e4e-7e1e-802f-e17f22858512)
 
 
 ### CodeSandbox
