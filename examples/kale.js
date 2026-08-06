@@ -2,8 +2,6 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {CameraPath, randomIntFromTo} from "../src/engine/utils.js";
-import {KaleidoscopeEffect, KaleidoscopePresets} from "../src/engine/effects/KaleidoscopeEffect.js";
-import {kaleidoscopeEffectInstance} from "../src/shaders/kale/kale.wgsl.js";
 import {KaleidoscopeEmitter} from "../src/engine/effects/kaleidoscopeEffectInstance.js";
 
 export var loadKale = function() {

@@ -38,6 +38,7 @@ import {MatrixTTS} from "./examples/games/moba/tts.js";
 import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
 import {animateRotationY} from "./src/engine/procedures/sceneobjectKinematics.js";
 import {BVHSkeletal} from "./src/engine/loaders/raw-bvh-skeletal.js";
+import {ParticleActionEmitter} from './src/engine/effects/particles.js'
 // Top level
 import {Player} from "./src/engine/plugin/player-object/player.js";
 import {MEConfig} from "./src/me-config.js";
@@ -55,6 +56,7 @@ export {
   Player,
   mocapCsCmuEdu,
   geometryTypes,
+  ParticleActionEmitter,
   byId,
   vecOf,
   BVHSkeletal,

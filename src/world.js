@@ -59,8 +59,22 @@ if('serviceWorker' in navigator) {
         APP_READY = true;
       }
     }).catch((cacheErr) => {
-      APP_READY = true;
-      console.warn('cacheErr[APP_READY forced]:', cacheErr);
+      // APP_READY = true;
+      console.warn('cacheErr[APP_READY forced public access]:', cacheErr);
+      let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
+      navigator.serviceWorker.register(RES+'/cache.js').then(registration => {
+        if(!navigator.serviceWorker.controller) {
+          // console.log('Installing & caching for the first time...');
+          meLoader.create('LOADING');
+          setTimeout(() => {location.reload()}, 3000);
+          APP_READY = false;
+        } else {
+          APP_READY = true;
+        }
+      }).catch((cacheErr) => {
+        APP_READY = true;
+        console.warn('cacheErr[APP_READY forced]:', cacheErr);
+      });
     });
   }
 } else {
