@@ -73,25 +73,13 @@ export class WaterSimEffect {
     this._indexFormat = indexFormat;
   }
 
-  // updateInstanceData(baseModelMatrix) {
-  // mat4.identity(this._localMatrix);
-  // // mat4.scale(this._localMatrix, [this.size, 1, this.size], this._localMatrix);
-  // // mat4.scale(this._localMatrix, [1, 1, 1], this._localMatrix);
-  // mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
-  // this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
-
-
   updateInstanceData(baseModelMatrix) {
     mat4.identity(this._localMatrix);
     mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
-
-    // Extract world translation from the 4x4 matrix (column 3: indices 12, 13, 14)
     const posX = this._finalMatrix[12];
     const posY = this._finalMatrix[13];
     const posZ = this._finalMatrix[14];
-
-    // Update water uniforms with current parameters + world position
     this.data2.set([
       this.ior,
       this.fresnelMin,
@@ -104,7 +92,6 @@ export class WaterSimEffect {
     ]);
     this.device.queue.writeBuffer(this.waterUniformBuffer, 0, this.data2);
   }
-
 
   _createTextures() {
     const texDesc = {
@@ -411,8 +398,6 @@ export class WaterSimEffect {
     this._dropQueue.length = 0;
     if(this._sphereStamp) {
       const {oldCenter, newCenter, radius} = this._sphereStamp;
-      // console.log(" test oldCenter ", oldCenter)
-      // console.log(" test newCenter ", newCenter)
       this._runSimPass(encoder, this.spherePipeline, new Float32Array([
         oldCenter[0], oldCenter[1], oldCenter[2], radius,
         newCenter[0], newCenter[1], newCenter[2], 0
@@ -456,7 +441,6 @@ export class WaterSimEffect {
     pass.setPipeline(this.causticsPipeline);
     pass.setBindGroup(0, this._causticsBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
-    // pass.setIndexBuffer(this.indexBuffer, 'uint32');
     pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? 'uint32');
     pass.drawIndexed(this.indexCount);
     pass.end();
@@ -474,8 +458,6 @@ export class WaterSimEffect {
     pass.drawIndexed(this.indexCount);
     pass.setPipeline(this.surfacePipelineUnder);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
-    // pass.setVertexBuffer(0, this.positionBuffer);   // <- was missing
-    // pass.setIndexBuffer(this.indexBuffer, 'uint32'); // <- was missing
     pass.drawIndexed(this.indexCount);
   }
   setEyePosition(pos) {this._lastEye = pos}

@@ -13,7 +13,7 @@ export var loadObjFile = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: 'firstPersonCamera',
+      type: 'WASD',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -50,7 +50,7 @@ export var loadObjFile = function() {
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 0.1, z: 0},
+        rotationSpeed: {x: 0, y: 0.01, z: 0},
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'sky',
         mesh: m.ball,
@@ -65,8 +65,8 @@ export var loadObjFile = function() {
         material: {type: 'mirror'},
         position: {x: 0, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 1, z: 0},
-        scale: [3, 5, 1],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [3, 5, 3],
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'cube',
         mesh: m.cube,

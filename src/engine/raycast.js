@@ -293,3 +293,28 @@ export function addRaycastsAABBListener(canvasId = "canvas1", eventName = 'click
     }
   });
 }
+
+export function rayIntersectsSphere2(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const center = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc = vec3.subtract(rayOrigin, center);
+  const a = vec3.dot(rayDirection, rayDirection);
+  const b = 2.0 * vec3.dot(oc, rayDirection);
+  const c = vec3.dot(oc, oc) - sphereRadius * sphereRadius;
+  const discriminant = b * b - 4 * a * c;
+
+  if (discriminant < 0) return null;
+
+  // Try the near intersection point
+  let t = (-b - Math.sqrt(discriminant)) / (2.0 * a);
+
+  // If t < 0, the ray origin is INSIDE the sphere. 
+  // Use the positive exit point (t2) instead so you can click/drag from inside.
+  if (t < 0) {
+    t = (-b + Math.sqrt(discriminant)) / (2.0 * a);
+    if (t < 0) return null; // Both points are behind the camera
+  }
+
+  const hitPoint = vec3.add(rayOrigin, vec3.mulScalar(rayDirection, t));
+  const hitNormal = vec3.normalize(vec3.subtract(hitPoint, center));
+  return { t, hitPoint, hitNormal };
+}

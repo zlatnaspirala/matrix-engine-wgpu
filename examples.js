@@ -1,7 +1,7 @@
 /**
  * @examples
  * MATRIX_ENGINE_WGPU EXAMPLE WORKSPACE
- * @version 1.17.5
+ * @version 1.19.00
  * @www maximumroulette.com 2026
  */
 import {loadCameraTexture} from "./examples/camera-texture.js";
@@ -40,6 +40,7 @@ import {loadBVHRawExampleShared} from "./examples/bvh-skeletal-shared-mat.js";
 import {loadWaterEffects} from "./examples/water-effect.js";
 import {loadParticles} from "./examples/particles.js";
 import {loadRunner} from "./examples/games/my-nui/real-runner.js";
+import {loadCryptoGrid} from "./examples/crypto-grid.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -90,6 +91,7 @@ byId('loadBVHSkeletalShared').addEventListener("click", () => switchDemo('33'));
 byId('loadWaterEffects').addEventListener("click", () => switchDemo('34'));
 byId('loadParticles').addEventListener("click", () => switchDemo('35'));
 byId('loadRunner').addEventListener("click", () => switchDemo('36'));
+byId('loadCryptoGrid').addEventListener("click", () => switchDemo('37'));
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
@@ -168,7 +170,12 @@ if(urlQuery['demo'] === '1') {
   loadParticles();
 } else if(urlQuery['demo'] === '36') {
   loadRunner();
-} else {
+} else if(urlQuery['demo'] === '37') {
+  loadCryptoGrid();
+} else if(urlQuery['demo'] === '38') {
+  //
+} 
+else {
   loadObjFile();
 }
 

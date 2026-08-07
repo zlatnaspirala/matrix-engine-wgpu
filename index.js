@@ -3,7 +3,7 @@
  * @author Nikola Lukic 
  * @email zlatnaspirala@gmail.com mart 2024-2026
  * @description npm import/export sync with
- * @version 1.18.6
+ * @version 1.19.0
  */
 
 import MatrixEngineWGPU from "./src/world.js";
@@ -14,7 +14,8 @@ import {
   getRayFromMouse2, rayIntersectsSphere,
   computeWorldVertsAndAABB, rayIntersectsAABB,
   computeAABB,
-  touchCoordinate
+  touchCoordinate,
+  rayIntersectsSphere2
 } from "./src/engine/raycast.js";
 import {byId, CameraPath, geometryTypes, geoTypesForMorph, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER, vecOf} from "./src/engine/utils.js";
 import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
@@ -43,6 +44,9 @@ import {ParticleActionEmitter} from './src/engine/effects/particles.js'
 import {Player} from "./src/engine/plugin/player-object/player.js";
 import {MEConfig} from "./src/me-config.js";
 import {mocapCsCmuEdu} from "./public/res/bvh/mocap.cs.cmu.edu/mocap.js";
+import {DragRotateController} from "./src/engine/procedures/drag-rotate-object.js";
+import {SeismicPortalAdapter} from "./src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js";
+import {CryptoGridEffect} from "./src/engine/effects/coingecko.js";
 
 export {
   MatrixEngineWGPU,
@@ -57,6 +61,10 @@ export {
   mocapCsCmuEdu,
   geometryTypes,
   ParticleActionEmitter,
+  DragRotateController,
+  SeismicPortalAdapter,
+  CryptoGridEffect,
+  rayIntersectsSphere2,
   byId,
   vecOf,
   BVHSkeletal,

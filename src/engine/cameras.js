@@ -21,6 +21,7 @@ export class WASDCamera {
   _viewScratch = mat4.create();
   _digital = {forward: false, backward: false, left: false, right: false, up: false, down: false};
   _mouseDown = false;
+  _lookDisabled = false; // when true, pointer drag no longer rotates the camera
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = MEConfig.CAM_SPEED;
@@ -115,6 +116,7 @@ export class WASDCamera {
         }
       }, {passive: false});
       canvas.addEventListener('touchmove', e => {
+        if(this._lookDisabled) return; // skip camera rotation while something else owns the drag
         if(e.touches.length > 0) {
           const touch = e.touches[0];
           const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
@@ -144,17 +146,18 @@ export class WASDCamera {
       }, {passive: false});
 
       canvas.addEventListener('pointermove', e => {
-        if(e.pointerType === 'mouse' && this._mouseDown) {
-          if(window.__isDragging === true) {return }
-          const dx = e.movementX * this.MOUSE_SENS;
-          const dy = e.movementY * this.MOUSE_SENS;
-          this.yaw -= dx * this.rotationSpeed;
-          this.pitch -= dy * this.rotationSpeed;
-          this.yaw %= Math.PI * 2;
-          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-          this._dirtyAngle = true;
-        }
-      }, {passive: true});
+          if(e.pointerType === 'mouse' && this._mouseDown) {
+            if(this._lookDisabled) {console.log('[cam] look disabled, skipping'); return }
+            console.log('[cam] rotating, lookDisabled:', this._lookDisabled);
+            const dx = e.movementX * this.MOUSE_SENS;
+            const dy = e.movementY * this.MOUSE_SENS;
+            this.yaw -= dx * this.rotationSpeed;
+            this.pitch -= dy * this.rotationSpeed;
+            this.yaw %= Math.PI * 2;
+            this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+            this._dirtyAngle = true;
+          }
+        }, {passive: true});
 
       canvas.addEventListener('pointerup', e => {
         if(e.pointerType === 'mouse') {
@@ -233,6 +236,7 @@ export class WASDCamera {
     this._dirtyAngle = false;
   }
 
+
   setX = (x) => {this.position[0] = x; this._dirtyAngle = true;}
   setY = (y) => {this.position[1] = y; this._dirtyAngle = true;}
   setZ = (z) => {this.position[2] = z; this._dirtyAngle = true;}
@@ -246,6 +250,11 @@ export class WASDCamera {
 
   setPitch = (p) => {this.pitch = p; this._dirtyAngle = true;}
   setYaw = (y) => {this.yaw = y; this._dirtyAngle = true;}
+
+  // new: clean on/off toggle for camera look, replaces window.__isDragging hack
+  setLookEnabled = (enabled) => {this._lookDisabled = !enabled;}
+  disableLook = () => {this._lookDisabled = true;}
+  enableLook = () => {this._lookDisabled = false;}
 }
 
 export class ArcballCamera {

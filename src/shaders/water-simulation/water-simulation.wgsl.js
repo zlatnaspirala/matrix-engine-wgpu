@@ -396,3 +396,117 @@ fn fs_main(@location(0) oldPos : vec3f, @location(1) newPos : vec3f, @location(2
   return vec4f(intensity, 1.0, 0.0, 1.0);
 }
 `;
+
+// SPhere radius surface variant
+export const updateFragShaderSphere = `
+@group(0) @binding(0) var waterTexture : texture_2d<f32>;
+@group(0) @binding(1) var waterSampler : sampler;
+
+struct UpdateUniforms {
+  delta : vec2f,
+}
+@group(0) @binding(2) var<uniform> u : UpdateUniforms;
+
+@fragment
+fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
+  // Wrap longitude (x) and clamp latitude (y) to avoid pole tearing
+  let wrappedUv = vec2f(fract(uv.x), clamp(uv.y, 0.0, 1.0));
+  var info = textureSample(waterTexture, waterSampler, wrappedUv);
+
+  let dx = vec2f(u.delta.x, 0.0);
+  let dy = vec2f(0.0, u.delta.y);
+
+  // Sample neighbors with horizontal wrapping for longitude
+  let sampleLeft  = textureSample(waterTexture, waterSampler, vec2f(fract(wrappedUv.x - u.delta.x), wrappedUv.y)).r;
+  let sampleRight = textureSample(waterTexture, waterSampler, vec2f(fract(wrappedUv.x + u.delta.x), wrappedUv.y)).r;
+  let sampleUp    = textureSample(waterTexture, waterSampler, vec2f(wrappedUv.x, clamp(wrappedUv.y - u.delta.y, 0.0, 1.0))).r;
+  let sampleDown  = textureSample(waterTexture, waterSampler, vec2f(wrappedUv.x, clamp(wrappedUv.y + u.delta.y, 0.0, 1.0))).r;
+
+  let average = (sampleLeft + sampleRight + sampleUp + sampleDown) * 0.25;
+
+  info.g += (average - info.r) * 2.0;
+  info.g *= 0.98;
+  info.r += info.g;
+
+  if (abs(info.g) < 0.0001) { info.g = 0.0; }
+  if (abs(info.r) < 0.0001) { info.r = 0.0; }
+
+  return info;
+}
+`;
+
+export const normalFragShaderSphere = `
+@group(0) @binding(0) var waterTexture : texture_2d<f32>;
+@group(0) @binding(1) var waterSampler : sampler;
+
+struct NormalUniforms {
+  delta : vec2f,
+}
+@group(0) @binding(2) var<uniform> u : NormalUniforms;
+
+@fragment
+fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
+  let wrappedUv = vec2f(fract(uv.x), clamp(uv.y, 0.0, 1.0));
+  var info = textureSample(waterTexture, waterSampler, wrappedUv);
+
+  let val_dx = textureSample(waterTexture, waterSampler, vec2f(fract(wrappedUv.x + u.delta.x), wrappedUv.y)).r;
+  let val_dy = textureSample(waterTexture, waterSampler, vec2f(wrappedUv.x, clamp(wrappedUv.y + u.delta.y, 0.0, 1.0))).r;
+
+  let dx = vec3f(u.delta.x, val_dx - info.r, 0.0);
+  let dy = vec3f(0.0, val_dy - info.r, u.delta.y);
+
+  let normal = normalize(cross(dy, dx));
+  info.b = normal.x;
+  info.a = normal.z;
+
+  return info;
+}
+`;
+
+export const surfaceVertShaderSphere = `
+struct Camera {
+  viewProj : mat4x4<f32>
+};
+
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct ModelData {
+  model : mat4x4<f32>,
+  eyePosition : vec4<f32>
+};
+
+@binding(1) @group(0) var<uniform> modelData : ModelData;
+@binding(4) @group(0) var waterSampler : sampler;
+@binding(5) @group(0) var waterTexture : texture_2d<f32>;
+
+struct VertexOutput {
+  @builtin(position) position : vec4f,
+  @location(0) localPos : vec3f,
+  @location(1) worldPos : vec3f,
+}
+
+@vertex
+fn vs_main(@location(0) position : vec3f, @location(1) normal : vec3f) -> VertexOutput {
+  var output : VertexOutput;
+  
+  // Calculate spherical UVs (Equirectangular mapping from 3D sphere position)
+  let normPos = normalize(position);
+  let u = atan2(normPos.z, normPos.x) / (2.0 * 3.14159265) + 0.5;
+  let v = asin(normPos.y) / 3.14159265 + 0.5;
+  let uv = vec2f(u, v);
+
+  // Sample water height simulation texture
+  let info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
+  
+  // Displace vertex outward along its normal by water height offset
+  let sphereRadius = length(position);
+  let displacedPos = normPos * (sphereRadius + info.r);
+
+  let worldPos = modelData.model * vec4f(displacedPos, 1.0);
+  output.worldPos = worldPos.xyz;
+  output.position = camera.viewProj * worldPos;
+  output.localPos = displacedPos;
+  
+  return output;
+}
+`;

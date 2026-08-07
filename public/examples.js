@@ -7003,6 +7003,8 @@ var WASDCamera = class _WASDCamera {
   _viewScratch = mat4Impl.create();
   _digital = { forward: false, backward: false, left: false, right: false, up: false, down: false };
   _mouseDown = false;
+  _lookDisabled = false;
+  // when true, pointer drag no longer rotates the camera
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = MEConfig.CAM_SPEED;
@@ -7104,6 +7106,7 @@ var WASDCamera = class _WASDCamera {
         }
       }, { passive: false });
       canvas.addEventListener("touchmove", (e2) => {
+        if (this._lookDisabled) return;
         if (e2.touches.length > 0) {
           const touch = e2.touches[0];
           const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
@@ -7131,9 +7134,11 @@ var WASDCamera = class _WASDCamera {
       }, { passive: false });
       canvas.addEventListener("pointermove", (e2) => {
         if (e2.pointerType === "mouse" && this._mouseDown) {
-          if (window.__isDragging === true) {
+          if (this._lookDisabled) {
+            console.log("[cam] look disabled, skipping");
             return;
           }
+          console.log("[cam] rotating, lookDisabled:", this._lookDisabled);
           const dx = e2.movementX * this.MOUSE_SENS;
           const dy = e2.movementY * this.MOUSE_SENS;
           this.yaw -= dx * this.rotationSpeed;
@@ -7280,6 +7285,16 @@ var WASDCamera = class _WASDCamera {
   setYaw = (y3) => {
     this.yaw = y3;
     this._dirtyAngle = true;
+  };
+  // new: clean on/off toggle for camera look, replaces window.__isDragging hack
+  setLookEnabled = (enabled) => {
+    this._lookDisabled = !enabled;
+  };
+  disableLook = () => {
+    this._lookDisabled = true;
+  };
+  enableLook = () => {
+    this._lookDisabled = false;
   };
 };
 var RPGCamera = class _RPGCamera {
@@ -18109,13 +18124,13 @@ var MEMeshObj = class extends Materials {
       if (typeof o3.primitive === "undefined") {
         this.primitive = {
           topology: "triangle-list",
-          cullMode: "back",
+          cullMode: "none",
           frontFace: "ccw"
         };
       } else {
         this.primitive = {
           topology: o3.primitive.topology ? o3.primitive.topology : "triangle-list",
-          cullMode: o3.primitive.cullMode ? o3.primitive.cullMode : "back",
+          cullMode: o3.primitive.cullMode ? o3.primitive.cullMode : "none",
           frontFace: o3.primitive.frontFace ? o3.primitive.frontFace : "ccw"
         };
       }
@@ -18549,7 +18564,7 @@ var MEMeshObj = class extends Materials {
       fragmentId: isVideo ? "video" : this.material.type,
       type: "mesh",
       topology: this.primitive ? this.primitive.topology : "triangle-list",
-      cullMode: this.primitive ? this.primitive.cullMode : "none",
+      cullMode: this.primitive ? this.primitive.cullMode : "back",
       frontFace: this.primitive ? this.primitive.frontFace : "ccw",
       format: "rgba16float",
       mirror: isMirror ? 1 : 0,
@@ -39174,6 +39189,23 @@ function addRaycastsAABBListener(canvasId = "canvas1", eventName = "click") {
     }
   });
 }
+function rayIntersectsSphere2(rayOrigin, rayDirection, sphereCenter, sphereRadius) {
+  const center = [sphereCenter.x, sphereCenter.y, sphereCenter.z];
+  const oc2 = vec3Impl.subtract(rayOrigin, center);
+  const a2 = vec3Impl.dot(rayDirection, rayDirection);
+  const b2 = 2 * vec3Impl.dot(oc2, rayDirection);
+  const c2 = vec3Impl.dot(oc2, oc2) - sphereRadius * sphereRadius;
+  const discriminant = b2 * b2 - 4 * a2 * c2;
+  if (discriminant < 0) return null;
+  let t3 = (-b2 - Math.sqrt(discriminant)) / (2 * a2);
+  if (t3 < 0) {
+    t3 = (-b2 + Math.sqrt(discriminant)) / (2 * a2);
+    if (t3 < 0) return null;
+  }
+  const hitPoint = vec3Impl.add(rayOrigin, vec3Impl.mulScalar(rayDirection, t3));
+  const hitNormal = vec3Impl.normalize(vec3Impl.subtract(hitPoint, center));
+  return { t: t3, hitPoint, hitNormal };
+}
 
 // src/engine/procedural-mesh.js
 var ProceduralMeshObj = class extends Materials {
@@ -45659,7 +45691,7 @@ var loadObjFile = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: "firstPersonCamera",
+      type: "WASD",
       responseCoef: 1e3
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
@@ -45695,7 +45727,7 @@ var loadObjFile = function() {
         position: { x: 0, y: -1, z: -20 },
         rotation: { x: 0, y: 0, z: 0 },
         scale: [100, 100, 100],
-        rotationSpeed: { x: 0, y: 0.1, z: 0 },
+        rotationSpeed: { x: 0, y: 0.01, z: 0 },
         texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
         name: "sky",
         mesh: m2.ball,
@@ -45708,8 +45740,8 @@ var loadObjFile = function() {
         material: { type: "mirror" },
         position: { x: 0, y: 4, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 1, z: 0 },
-        scale: [3, 5, 1],
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3, 5, 3],
         texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
         name: "cube",
         mesh: m2.cube,
@@ -59375,12 +59407,6 @@ var WaterSimEffect = class {
     this.indexCount = indexCount;
     this._indexFormat = indexFormat;
   }
-  // updateInstanceData(baseModelMatrix) {
-  // mat4.identity(this._localMatrix);
-  // // mat4.scale(this._localMatrix, [this.size, 1, this.size], this._localMatrix);
-  // // mat4.scale(this._localMatrix, [1, 1, 1], this._localMatrix);
-  // mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
-  // this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
   updateInstanceData(baseModelMatrix) {
     mat4Impl.identity(this._localMatrix);
     mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
@@ -61530,6 +61556,667 @@ var loadRunner = function() {
   window.app = menuBeast;
 };
 
+// src/shaders/diagrams/crypto-grid.js
+var cryptoGridShader = `
+struct Camera { viewProj : mat4x4<f32> };
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct GridParams {
+  baseModel: mat4x4<f32>,
+  timeSteps: u32,
+  coinCount: u32,
+  spacing: f32,
+  cubeHeight: f32,
+  time: f32,
+};
+@group(0) @binding(1) var<storage, read> instances: array<vec4<f32>>;
+@group(0) @binding(2) var<uniform> grid: GridParams;
+
+struct VSIn {
+  @location(0) position : vec3<f32>,
+  @location(1) normal   : vec3<f32>,
+  @builtin(instance_index) idx : u32,
+};
+struct VSOut {
+  @builtin(position) position : vec4<f32>,
+  @location(0) color    : vec3<f32>,
+  @location(1) fragNorm : vec3<f32>,
+  @location(2) fragPos  : vec3<f32>,
+  @location(3) localY   : f32,
+};
+
+@vertex
+fn vsMain(input : VSIn) -> VSOut {
+  var out : VSOut;
+  let inst = instances[input.idx];
+  let t = input.idx % grid.timeSteps;
+  let c = input.idx / grid.timeSteps;
+
+  let h = max(inst.a, 0.02) * grid.cubeHeight;
+  let pulse = 1.0 + 0.06 * sin(grid.time * 2.5 + f32(input.idx) * 0.9);
+  let local = vec3<f32>(input.position.x, input.position.y * h * pulse, input.position.z);
+  let offset = vec3<f32>(
+    f32(t) * grid.spacing - f32(grid.timeSteps) * grid.spacing * 0.5,
+    0.0,
+    f32(c) * grid.spacing - f32(grid.coinCount) * grid.spacing * 0.5,
+  );
+
+  let worldPos = grid.baseModel * vec4<f32>(local + offset, 1.0);
+  out.position = camera.viewProj * worldPos;
+  out.fragPos = worldPos.xyz;
+  out.fragNorm = mat3x3f(grid.baseModel[0].xyz, grid.baseModel[1].xyz, grid.baseModel[2].xyz) * input.normal;
+  out.color = inst.rgb;
+  out.localY = input.position.y;
+  return out;
+}
+
+struct FragOut {
+  @location(0) color    : vec4f,
+  @location(1) normal   : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
+@fragment
+fn fsMain(input : VSOut) -> FragOut {
+  let light = normalize(vec3<f32>(0.4, 1.0, 0.3));
+  let ndotl = max(dot(normalize(input.fragNorm), light), 0.25);
+
+  // flame-like gradient: darker base, glowing top, tinted by trend color
+  let glow = mix(input.color * 0.35, input.color * 1.8, smoothstep(0.0, 1.0, input.localY));
+  let shimmer = 1.0 + 0.15 * sin(grid.time * 4.0 + input.fragPos.x * 2.0);
+
+  return FragOut(
+    vec4f(glow * ndotl * shimmer, 1.0),
+    vec4f(input.fragNorm, 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
+}`;
+
+// src/engine/effects/coingecko.js
+var CryptoGridEffect = class {
+  constructor(device2, format, maxInstances = 512, cameraBuffer) {
+    this.device = device2;
+    this.format = format;
+    this.enabled = true;
+    this.maxInstances = maxInstances;
+    this.floatsPerInstance = 4;
+    this.instanceData = new Float32Array(maxInstances * this.floatsPerInstance);
+    this.timeSteps = 0;
+    this.coinCount = 0;
+    this.spacing = 1.2;
+    this.cubeHeight = 4;
+    this.time = 0;
+    this.cameraBuffer = cameraBuffer;
+    this._finalModel = mat4Impl.create();
+    this._initPipeline();
+  }
+  _buildCubeGeometry() {
+    const p2 = [
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      -1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      -1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      -1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      -1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      -1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      -1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      1,
+      1,
+      0,
+      0,
+      0,
+      -1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      -1
+    ];
+    const idx = [];
+    for (let f2 = 0; f2 < 6; f2++) {
+      const o3 = f2 * 4;
+      idx.push(o3, o3 + 1, o3 + 2, o3, o3 + 2, o3 + 3);
+    }
+    return { vertices: new Float32Array(p2), indices: new Uint16Array(idx) };
+  }
+  _initPipeline() {
+    const cube = this._buildCubeGeometry();
+    const posData = new Float32Array(cube.vertices.length / 2);
+    const normData = new Float32Array(cube.vertices.length / 2);
+    for (let i2 = 0, v2 = 0; i2 < cube.vertices.length; i2 += 6, v2 += 3) {
+      posData.set(cube.vertices.subarray(i2, i2 + 3), v2);
+      normData.set(cube.vertices.subarray(i2 + 3, i2 + 6), v2);
+    }
+    this.vertexBuffer = this._upload(posData, GPUBufferUsage.VERTEX);
+    this.normalBuffer = this._upload(normData, GPUBufferUsage.VERTEX);
+    const padded = Math.ceil(cube.indices.byteLength / 4) * 4;
+    this.indexBuffer = this.device.createBuffer({ size: padded, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(this.indexBuffer, 0, cube.indices);
+    this.indexCount = cube.indices.length;
+    this.instanceBuffer = this.device.createBuffer({
+      label: "crypto-grid instanceBuffer",
+      size: this.maxInstances * this.floatsPerInstance * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    this.gridUniformBuffer = this.device.createBuffer({
+      label: "crypto-grid gridUniformBuffer",
+      size: 96,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+        { binding: 2, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.instanceBuffer } },
+        { binding: 2, resource: { buffer: this.gridUniformBuffer } }
+      ]
+    });
+    const shaderModule = this.device.createShaderModule({ code: cryptoGridShader });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 12, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [{ format: this.format }, { format: "rgba16float" }, { format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list", cullMode: "none" },
+      depthStencil: { depthWriteEnabled: true, depthCompare: "less", format: "depth24plus" }
+    });
+  }
+  _upload(data, usage) {
+    const buf = this.device.createBuffer({ size: data.byteLength, usage: usage | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(buf, 0, data);
+    return buf;
+  }
+  updateData(grid) {
+    const { coinCount, timeSteps, coins } = grid;
+    const total = coinCount * timeSteps;
+    if (total > this.maxInstances) {
+      console.warn(`%cCryptoGridEffect: ${total} exceeds maxInstances`, LOG_FUNNY_ARCADE);
+    }
+    coins.forEach((coin, c2) => {
+      const range = Math.max(coin.max - coin.min, 1e-6);
+      for (let t3 = 0; t3 < timeSteps; t3++) {
+        const i2 = c2 * timeSteps + t3;
+        if (i2 >= this.maxInstances) continue;
+        const v2 = coin.samples[t3];
+        const prev = t3 > 0 ? coin.samples[t3 - 1] : v2;
+        const h2 = (v2 - coin.min) / range;
+        const rising = v2 >= prev;
+        const col = rising ? [0.2, 0.9, 0.4] : [0.95, 0.25, 0.2];
+        const o3 = i2 * this.floatsPerInstance;
+        this.instanceData[o3] = col[0];
+        this.instanceData[o3 + 1] = col[1];
+        this.instanceData[o3 + 2] = col[2];
+        this.instanceData[o3 + 3] = h2;
+      }
+    });
+    this.coinCount = coinCount;
+    this.timeSteps = timeSteps;
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData.subarray(0, Math.min(total, this.maxInstances) * this.floatsPerInstance));
+  }
+  // standard per-frame hook, called automatically by engine loop
+  updateInstanceData(baseModelMatrix) {
+    this.time += 0.016;
+    this.device.queue.writeBuffer(this.gridUniformBuffer, 0, baseModelMatrix);
+    this.device.queue.writeBuffer(this.gridUniformBuffer, 64, new Uint32Array([this.timeSteps, this.coinCount]));
+    this.device.queue.writeBuffer(this.gridUniformBuffer, 72, new Float32Array([this.spacing, this.cubeHeight]));
+    this.device.queue.writeBuffer(this.gridUniformBuffer, 80, new Float32Array([this.time]));
+  }
+  render(pass, mesh, viewProjMatrix) {
+    if (this.timeSteps === 0) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.normalBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, Math.min(this.timeSteps * this.coinCount, this.maxInstances));
+  }
+};
+
+// src/engine/buildin/externalDataHandler/externalDataHandler.js
+var ExternalDataHandler = class {
+  constructor() {
+    this.adapters = {};
+    this.series = {};
+    this.listeners = [];
+  }
+  registerAdapter(name2, adapter) {
+    this.adapters[name2] = adapter;
+    adapter.onUpdate = (grid) => {
+      this.series[name2] = grid;
+      this._emit(name2, grid);
+    };
+  }
+  start(name2, intervalMs) {
+    this.adapters[name2].start(intervalMs);
+  }
+  stop(name2) {
+    this.adapters[name2].stop();
+  }
+  onUpdate(cb) {
+    this.listeners.push(cb);
+  }
+  _emit(name2, grid) {
+    for (const cb of this.listeners) cb(name2, grid);
+  }
+};
+
+// src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js
+var SeismicPortalAdapter = class {
+  constructor(historyLen = 64) {
+    this.historyLen = historyLen;
+    this.mags = new Float32Array(historyLen);
+    this.depths = new Float32Array(historyLen);
+    this.onUpdate = null;
+    this.ws = null;
+  }
+  start() {
+    this.ws = new WebSocket("wss://www.seismicportal.eu/standing_order/websocket");
+    this.ws.onopen = () => {
+      console.info("[seismic] connected");
+      this._heartbeat = setInterval(() => {
+        if (this.ws.readyState === WebSocket.OPEN) this.ws.send("ping");
+      }, 15e3);
+    };
+    this.ws.onmessage = (msg) => {
+      try {
+        console.log("[seismic raw]", msg.data);
+        const data = JSON.parse(msg.data);
+        const props = data.data?.properties;
+        if (!props) return;
+        this.mags.copyWithin(0, 1);
+        this.mags[this.historyLen - 1] = props.mag ?? 0;
+        this.depths.copyWithin(0, 1);
+        this.depths[this.historyLen - 1] = props.depth ?? 0;
+        if (this.onUpdate) this.onUpdate(this._buildGrid());
+      } catch (e2) {
+        console.warn("SeismicPortalAdapter parse failed:", e2);
+      }
+    };
+    this.ws.onerror = (e2) => console.warn("SeismicPortalAdapter ws error:", e2);
+    this.ws.onclose = () => console.info("SeismicPortalAdapter ws closed");
+  }
+  stop() {
+    this.ws?.close();
+  }
+  _buildGrid() {
+    let min2 = Infinity, max2 = -Infinity;
+    for (const v2 of this.mags) {
+      min2 = Math.min(min2, v2);
+      max2 = Math.max(max2, v2);
+    }
+    return {
+      coinCount: 1,
+      timeSteps: this.historyLen,
+      coins: [{ id: "global-quakes", min: Math.min(min2, 0), max: Math.max(max2, 6), samples: this.mags }]
+    };
+  }
+};
+
+// src/engine/procedures/drag-rotate-object.js
+var DragRotateController = class {
+  constructor(mesh, canvas, camera, options2 = {}) {
+    this.mesh = mesh;
+    this.canvas = canvas;
+    this.camera = camera;
+    this.sensitivity = options2.sensitivity ?? 5e-3;
+    this.inertia = options2.inertia ?? 0.95;
+    this.minVelocity = options2.minVelocity ?? 1e-4;
+    this.autoRotateSpeed = options2.autoRotateSpeed ?? 0;
+    this._dragging = false;
+    this._lastX = 0;
+    this._velocity = 0;
+    this._onPointerDown = this._onPointerDown.bind(this);
+    this._onPointerMove = this._onPointerMove.bind(this);
+    this._onPointerUp = this._onPointerUp.bind(this);
+    this._attach();
+  }
+  _attach() {
+    this.canvas.addEventListener("pointerdown", this._onPointerDown);
+    window.addEventListener("pointermove", this._onPointerMove);
+    window.addEventListener("pointerup", this._onPointerUp);
+  }
+  _onPointerDown(e2) {
+    const { rayOrigin, rayDirection } = getRayFromMouse(e2, this.canvas, this.camera);
+    let hit = null;
+    if (this.mesh.boundingSphere) {
+      hit = rayIntersectsSphere2(
+        rayOrigin,
+        rayDirection,
+        { x: this.mesh.boundingSphere.center[0], y: this.mesh.boundingSphere.center[1], z: this.mesh.boundingSphere.center[2] },
+        this.mesh.boundingSphere.radius
+        // this.mesh.raycast.radius
+      );
+    } else if (this.mesh.raycast?.radius) {
+      hit = rayIntersectsSphere2(rayOrigin, rayDirection, this.mesh.position, this.mesh.raycast.radius);
+    }
+    this._dragging = !!hit;
+    if (this._dragging) {
+      this.camera.disableLook();
+      this._lastX = e2.clientX;
+      this._velocity = 0;
+    }
+  }
+  _onPointerMove(e2) {
+    if (!this._dragging) return;
+    const dx = e2.clientX - this._lastX;
+    this._lastX = e2.clientX;
+    const delta = dx * this.sensitivity;
+    this.mesh.rotation.y += delta;
+    this._velocity = delta;
+  }
+  _onPointerUp() {
+    this.camera.enableLook();
+    this._dragging = false;
+  }
+  update() {
+    if (this._dragging) return;
+    if (Math.abs(this._velocity) > this.minVelocity) {
+      this.mesh.rotation.y += this._velocity;
+      this._velocity *= this.inertia;
+    } else if (this.autoRotateSpeed !== 0) {
+      this.mesh.rotation.y += this.autoRotateSpeed;
+    }
+  }
+  destroy() {
+    this.canvas.removeEventListener("pointerdown", this._onPointerDown);
+    window.removeEventListener("pointermove", this._onPointerMove);
+    window.removeEventListener("pointerup", this._onPointerUp);
+  }
+};
+
+// examples/crypto-grid.js
+var loadCryptoGrid = function() {
+  let MAT_EFFECT_WATER;
+  let cryptoGrid = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    cryptoGrid.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/earth.obj", cube: "./res/meshes/blender/cube.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    addRaycastsAABBListener("canvas1", "click");
+    async function onLoadObj(m2) {
+      MAT_EFFECT_WATER = cryptoGrid.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 10, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [50, 1, 50],
+        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "waterEffect",
+        useBlend: true,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true
+        }
+      });
+      let EARTH = cryptoGrid.addMeshObj({
+        material: { type: "mirror" },
+        position: { x: 0, y: 20, z: -10 },
+        rotation: { x: 0, y: 0, z: 180 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [10, 10, 10],
+        texturesPaths: ["./res/meshes/blender/earth.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "earth",
+        mesh: m2.ball,
+        envMapParams: {
+          baseColorMix: 0.7,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // ✅ Env map mode
+        },
+        raycast: { enabled: true, radius: 10 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true
+          // flameEffect: true
+        }
+      });
+      cryptoGrid.lightContainer[0].setIntensity(5);
+      const globeDrag = new DragRotateController(EARTH, cryptoGrid.canvas, cryptoGrid.getCamera(), {
+        sensitivity: 0.6,
+        inertia: 0.94,
+        autoRotateSpeed: 0.05
+      });
+      cryptoGrid.autoUpdate.push(
+        globeDrag
+      );
+      cryptoGrid.activateBloomEffect();
+      cryptoGrid.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      cryptoGrid.lightContainer[0].behavior.value_ = -1;
+      cryptoGrid.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
+      cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
+      setTimeout(() => {
+        EARTH.effects.cryptoGrid = new CryptoGridEffect(app.device, "rgba16float", 256, app.cameraBuffer);
+        const dataHandler = new ExternalDataHandler();
+        dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
+        dataHandler.onUpdate((name2, grid) => {
+          if (name2 === "seismic") EARTH.effects.cryptoGrid.updateData(grid);
+        });
+        dataHandler.start("seismic");
+        EARTH.effects.flameEmitter.rotSpeed = 1;
+        EARTH.effects.flameEmitter.recreateVertexDataFromData([
+          -2.582509022040566,
+          0.21125441598805741,
+          0.4249951687253338,
+          0.4724163587305734,
+          2.381811753816671,
+          3.074841196886901,
+          -2.3797025623904164,
+          -3.4608908819087145
+        ]);
+        EARTH.setAmbient(2, 3, 0.5);
+        MAT_EFFECT_WATER.setBlend(1e-3);
+        MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(cryptoGrid.device, "rgba16float", {
+          size: 50
+        }, app.cameraBuffer);
+        app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(45);
+        cam2.setY(50);
+        console.log("sssssssssssss");
+        cam2._dirtyAngle = true;
+        app.buildRenderBuckets();
+        app.mainRenderBundle[0].updateBoundingSphere();
+      }, 500);
+    }
+    cryptoGrid.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cube")) {
+        e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+      }
+    });
+  });
+  window.app = cryptoGrid;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -61584,6 +62271,7 @@ byId2("loadBVHSkeletalShared").addEventListener("click", () => switchDemo("33"))
 byId2("loadWaterEffects").addEventListener("click", () => switchDemo("34"));
 byId2("loadParticles").addEventListener("click", () => switchDemo("35"));
 byId2("loadRunner").addEventListener("click", () => switchDemo("36"));
+byId2("loadCryptoGrid").addEventListener("click", () => switchDemo("37"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -61659,6 +62347,9 @@ if (urlQuery["demo"] === "1") {
   loadParticles();
 } else if (urlQuery["demo"] === "36") {
   loadRunner();
+} else if (urlQuery["demo"] === "37") {
+  loadCryptoGrid();
+} else if (urlQuery["demo"] === "38") {
 } else {
   loadObjFile();
 }

@@ -341,13 +341,13 @@ export default class MEMeshObj extends Materials {
       if(typeof o.primitive === 'undefined') {
         this.primitive = {
           topology: 'triangle-list',
-          cullMode: 'back',
+          cullMode: 'none',
           frontFace: 'ccw'
         }
       } else {
         this.primitive = {
           topology: o.primitive.topology ? o.primitive.topology : 'triangle-list',
-          cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'back',
+          cullMode: o.primitive.cullMode ? o.primitive.cullMode : 'none',
           frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
         }
       }
@@ -774,7 +774,7 @@ export default class MEMeshObj extends Materials {
       fragmentId: isVideo ? 'video' : this.material.type,
       type: "mesh",
       topology: this.primitive ? this.primitive.topology : 'triangle-list',
-      cullMode: this.primitive ? this.primitive.cullMode : 'none',
+      cullMode: this.primitive ? this.primitive.cullMode : 'back',
       frontFace: this.primitive ? this.primitive.frontFace : 'ccw',
       format: 'rgba16float',
       mirror: isMirror ? 1 : 0,
