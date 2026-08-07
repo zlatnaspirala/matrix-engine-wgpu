@@ -59407,6 +59407,12 @@ var WaterSimEffect = class {
     this.indexCount = indexCount;
     this._indexFormat = indexFormat;
   }
+  // updateInstanceData(baseModelMatrix) {
+  // mat4.identity(this._localMatrix);
+  // // mat4.scale(this._localMatrix, [this.size, 1, this.size], this._localMatrix);
+  // // mat4.scale(this._localMatrix, [1, 1, 1], this._localMatrix);
+  // mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
+  // this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
   updateInstanceData(baseModelMatrix) {
     mat4Impl.identity(this._localMatrix);
     mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
