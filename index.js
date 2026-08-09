@@ -3,7 +3,7 @@
  * @author Nikola Lukic 
  * @email zlatnaspirala@gmail.com mart 2024-2026
  * @description npm import/export sync with
- * @version 1.19.0
+ * @version 1.19.1
  */
 
 import MatrixEngineWGPU from "./src/world.js";
@@ -17,7 +17,7 @@ import {
   touchCoordinate,
   rayIntersectsSphere2
 } from "./src/engine/raycast.js";
-import {byId, CameraPath, geometryTypes, geoTypesForMorph, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER, vecOf} from "./src/engine/utils.js";
+import {byId, CameraPath, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER, vecOf} from "./src/engine/utils.js";
 import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {MeshMorpher} from "./src/engine/procedural-mesh.js";
 import {CollisionSystem} from "./src/engine/collision-sub-system.js";
@@ -34,19 +34,19 @@ import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "./s
 import {initializeSpritesForMesh, SpritesPack2D} from "./src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "./src/engine/procedures/InstancedKinematicOperations.js";
 import {followPath, loadNavMesh} from "./src/engine/buildin/navigation-plane/navigation.js";
-// Deplace src path in future.
-import {MatrixTTS} from "./examples/games/moba/tts.js";
-import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
-import {animateRotationY} from "./src/engine/procedures/sceneobjectKinematics.js";
-import {BVHSkeletal} from "./src/engine/loaders/raw-bvh-skeletal.js";
-import {ParticleActionEmitter} from './src/engine/effects/particles.js'
-// Top level
 import {Player} from "./src/engine/plugin/player-object/player.js";
 import {MEConfig} from "./src/me-config.js";
 import {mocapCsCmuEdu} from "./public/res/bvh/mocap.cs.cmu.edu/mocap.js";
 import {DragRotateController} from "./src/engine/procedures/drag-rotate-object.js";
 import {SeismicPortalAdapter} from "./src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js";
 import {CryptoGridEffect} from "./src/engine/effects/coingecko.js";
+import {GeometryFactory, geometryTypes, geoTypesForMorph} from "./src/engine/geometry-factory.js";
+import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
+import {animateRotationY} from "./src/engine/procedures/sceneobjectKinematics.js";
+import {BVHSkeletal} from "./src/engine/loaders/raw-bvh-skeletal.js";
+import {ParticleActionEmitter} from './src/engine/effects/particles.js'
+// Deplace in future.
+import {MatrixTTS} from "./examples/games/moba/tts.js";
 
 export {
   MatrixEngineWGPU,
@@ -56,6 +56,7 @@ export {
   KaleidoscopeEffect,
   InstancedKinematicOperations,
   SpritesPack2D,
+  GeometryFactory,
   mb,
   Player,
   mocapCsCmuEdu,

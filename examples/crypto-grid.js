@@ -1,6 +1,6 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {addRaycastsAABBListener} from "../src/engine/raycast.js";
+import {addRaycastsAABBListener, rayIntersectsSphere2} from "../src/engine/raycast.js";
 import {CameraPath, randomIntFromTo} from "../src/engine/utils.js";
 import {CryptoGridEffect} from "../src/engine/effects/coingecko.js";
 import {ExternalDataHandler} from "../src/engine/buildin/externalDataHandler/externalDataHandler.js";
@@ -8,6 +8,8 @@ import {CoinGeckoAdapter} from "../src/engine/buildin/externalDataHandler/adapte
 import {SeismicPortalAdapter} from "../src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js";
 import {DragRotateController} from "../src/engine/procedures/drag-rotate-object.js";
 import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
+import {mat4, vec3} from "wgpu-matrix";
+import {WaterSimSphereEffect} from "../src/engine/effects/waterSimEffectSphere.js";
 
 export var loadCryptoGrid = function() {
 
@@ -34,13 +36,12 @@ export var loadCryptoGrid = function() {
 
     async function onLoadObj(m) {
 
-
       MAT_EFFECT_WATER = cryptoGrid.addMeshObj({
         material: {type: 'standard'},
-        position: {x: 10, y: 0, z: 0},
+        position: {x: 0, y: 20, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [50, 1, 50],
+        scale: [30, 30, 30],
         texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'waterEffect',
         useBlend: true,
@@ -133,18 +134,18 @@ export var loadCryptoGrid = function() {
         EARTH.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
           0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+
         EARTH.setAmbient(2, 3, 0.5);
 
-
-
         MAT_EFFECT_WATER.setBlend(0.001);
-        MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(cryptoGrid.device, 'rgba16float', {
-          size: 50
+        MAT_EFFECT_WATER.effects.waterEffect = new WaterSimSphereEffect(cryptoGrid.device, 'rgba16float', {
+          isSphere: true,
+          geometryType: 'sphere',
+          detail: 32,
+          size: 50,
         }, app.cameraBuffer);
         // cryptoGrid.autoUpdate.push({update: followMe, my: MAT_EFFECT_WATER.effects.waterEffect})
-        // MAT_EFFECT_WATER.effects.waterEffect
         app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
-
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
@@ -162,15 +163,62 @@ export var loadCryptoGrid = function() {
         // });
         cam._dirtyAngle = true;
         app.buildRenderBuckets();
-
-        // IMPORTANT 
+        // IMPORTANT
         app.mainRenderBundle[0].updateBoundingSphere();
-
       }, 500);
     }
 
+
+    //  cryptoGrid.canvas.addEventListener("pointerdown", (e) => {
+    //   const camera = app.cameras[app.mainCameraParams.type];
+    //   const {rayOrigin, rayDirection} = getRayFromMouse(e, app.canvas, app.getCamera());
+
+    //   const hitObject = app.MAT_EFFECT_WATER;
+    //   const center = {
+    //     x: hitObject.boundingSphere.center[0],
+    //     y: hitObject.boundingSphere.center[1],
+    //     z: hitObject.boundingSphere.center[2]
+    //   };
+    //   const hit = rayIntersectsSphere2(rayOrigin, rayDirection, center, hitObject.boundingSphere.radius);
+    //   if(!hit) return; // true miss — no AABB fallback, no false hits, no edge artifacts
+
+    //   const water = app.MAT_EFFECT_WATER.effects.waterEffect;
+    //   const invModel = mat4.invert(hitObject._modelMatrix);
+    //   const local = vec3.transformMat4(hit.hitPoint, invModel);
+    //   const sphereNormal = vec3.normalize(local);
+
+    //   const u = Math.atan2(sphereNormal[2], sphereNormal[0]) / (2 * Math.PI) + 0.5;
+    //   const v = Math.asin(Math.max(-1, Math.min(1, sphereNormal[1]))) / Math.PI + 0.5;
+
+    //   water.addDrop(u * 2 - 1, v * 2 - 1, 0.03, 0.5);
+    // });
+
+    // cryptoGrid.canvas.addEventListener("ray.hit.event", (e) => {
+    //   const {hitObject, hitPoint} = e.detail;
+    //   const water = app.MAT_EFFECT_WATER.effects.waterEffect;
+
+    //   const invModel = mat4.invert(hitObject._modelMatrix);
+    //   const local = vec3.transformMat4(hitPoint, invModel);
+    //   const sphereNormal = vec3.normalize(local);
+
+    //   const u = Math.atan2(sphereNormal[2], sphereNormal[0]) / (2 * Math.PI) + 0.5; // 0..1
+    //   const v = Math.asin(Math.max(-1, Math.min(1, sphereNormal[1]))) / Math.PI + 0.5; // 0..1
+
+    //   // dropFragShader does `u.center * 0.5 + 0.5` internally to get back to 0..1,
+    //   // so center must be passed in -1..1 — same convention the plane path always used
+    //   water.addDrop(u * 2 - 1, v * 2 - 1, 0.03, 0.5);
+    // });
+
     cryptoGrid.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
+
+      const {hitObject, hitPoint} = e.detail;
+      const water = app.MAT_EFFECT_WATER.effects.waterEffect;
+      const invModel = mat4.invert(hitObject._modelMatrix);
+      const local = vec3.transformMat4(hitPoint, invModel);
+      water.addDrop(local[0], local[2], 0.03, 0.5);
+
+
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));

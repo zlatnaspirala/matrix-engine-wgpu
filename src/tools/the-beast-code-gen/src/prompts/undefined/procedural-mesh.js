@@ -1,8 +1,8 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
-import {geoTypesForMorph} from "../src/engine/utils.js";
 import {MeshMorpher} from "../src/engine/procedural-mesh.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
+import {geoTypesForMorph} from '../src/engine/geometry-factory.js'
 
 export var procMesh = function() {
   let procMesh = new MatrixEngineWGPU({

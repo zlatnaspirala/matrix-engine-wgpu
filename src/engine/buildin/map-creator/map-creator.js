@@ -1,8 +1,8 @@
 
 import {FlameEffect, FlamePresets} from "../../effects/flame";
 import {FlameEmitter} from "../../effects/flame-emmiter";
-import {geometryTypes, isMobile, MeshType, randomIntFromTo} from "../../utils";
-
+import {geometryTypes} from "../../geometry-factory";
+import {isMobile, MeshType, randomIntFromTo} from "../../utils";
 /**
  * MapCreator — Map generator for matrix-engine-wgpu (the beast)
  * @description

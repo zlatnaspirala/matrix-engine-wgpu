@@ -8,7 +8,7 @@ import {
   computeAABB,
   touchCoordinate
 } from "./src/engine/raycast.js";
-import {CameraPath, geoTypesForMorph, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER} from "./src/engine/utils.js";
+import {CameraPath, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER} from "./src/engine/utils.js";
 import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {MeshMorpher} from "./src/engine/procedural-mesh.js";
 import {CollisionSystem} from "./src/engine/collision-sub-system.js";
@@ -24,6 +24,7 @@ import {MatrixStream} from "./src/engine/networking/net.js";
 import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "./src/engine/effects/splat.js";
 import {initializeSpritesForMesh, SpritesPack2D} from "./src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "./src/engine/procedures/InstancedKinematicOperations.js";
+import {geoTypesForMorph} from "./src/engine/geometry-factory.js";
 
 window.MatrixEngineWGPU = MatrixEngineWGPU;
 

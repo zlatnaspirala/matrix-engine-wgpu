@@ -1074,3 +1074,56 @@ export class GeometryFactory {
     }
   }
 }
+
+export function alignTo256(n) {return Math.ceil(n / 256) * 256;}
+
+export const geometryTypes = Object.freeze({
+  "quad": "quad",
+  "cube": "cube",
+  "sphere": "sphere",
+  "pyramid": "pyramid",
+  "star": "star",
+  "circle": "circle",
+  "diamond": "diamond",
+  "rock": "rock",
+  "meteor": "meteor",
+  "thunder": "thunder",
+  "shard": "shard",
+  "circlePlane": "circlePlane",
+  "ring": "ring",
+  "icosahedron": "icosahedron",
+  "torusKnot": "torusKnot",
+  "mobius": "mobius",
+  "crystal": "crystal",
+  "starPrism": "starPrism",
+  "crescent": "crescent",
+  "pyramidFractal": "pyramidFractal",
+});
+
+export const geoTypesForMorph = Object.freeze({
+  cube: "cube",
+  sphere: "sphere",
+  mobius: "mobius",
+  cylinder: "cylinder",
+  plane: "plane",
+  capsule: "capsule",
+  cone: "cone",
+  torus: "torus",
+  wavePlane: "wavePlane",
+  supershape: "supershape",
+  pyramid: "pyramid",
+  diamond: "diamond",
+  icosahedron: "icosahedron",
+  circlePlane: "circlePlane",
+  rock: "rock",
+  star: "star",
+  star3d: "star3d",
+  littleStar: "littleStar",
+  flatStar: "flatStar",
+  klein: "klein",
+  shell: "shell",
+  rippleSphere: "rippleSphere",
+  twistedTorus: "twistedTorus",
+  tornado: "tornado",
+  galaxySpiral: "galaxySpiral"
+});

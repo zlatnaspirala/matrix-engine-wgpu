@@ -1,13 +1,10 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener, addRaycastsListener} from "../src/engine/raycast.js";
-// import {MeshMorpher} from "../src/engine/procedural-mesh.js";
-// import {PVector} from "../src/engine/matrix-class.js";
-import {geometryTypes, isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {KaleidoscopeEmitter} from "../src/engine/effects/kaleidoscopeEffectInstance.js";
-import {kaleidoscopeEffectInstance} from "../src/shaders/kale/kale.wgsl.js";
 import {KaleidoscopeEffect, KaleidoscopePresets} from "../src/engine/effects/KaleidoscopeEffect.js";
-import {physicsBodiesChain} from "../src/engine/generators/generator.js";
+import {geometryTypes} from "../src/engine/geometry-factory.js";
 
 export var loadDrumCannon = function() {
   let DRUM = new MatrixEngineWGPU({

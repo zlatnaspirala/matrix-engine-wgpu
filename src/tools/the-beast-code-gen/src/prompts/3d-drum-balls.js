@@ -2,7 +2,7 @@ export const DRUMBALLS = `
 
 EXAMPLE Drum Balls (with real physics - infinity plays drum 5 numbers round)
 
-import { MatrixEngineWGPU, downloadMeshes, addRaycastsAABBListener, addRaycastsListener, isMobile, randomIntFromTo, KaleidoscopeEmitter, KaleidoscopeEffect, KaleidoscopePresets } from "matrix-engine-wgpu";
+import { MatrixEngineWGPU, downloadMeshes, addRaycastsAABBListener, addRaycastsListener, isMobile, randomIntFromTo, KaleidoscopeEmitter, KaleidoscopeEffect, KaleidoscopePresets , geometryTypes} from "matrix-engine-wgpu";
 
 let DRUM = new MatrixEngineWGPU({
 canvasSize: 'fullscreen',
