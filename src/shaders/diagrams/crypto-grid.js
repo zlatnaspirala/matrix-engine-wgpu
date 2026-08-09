@@ -86,7 +86,7 @@ fn vsMain(input : VSIn) -> VSOut {
 
   let pulse =
     1.0 +
-    0.06 *
+    0.02 *
     sin(
       grid.time * 2.5 +
       f32(input.idx) * 0.9
@@ -122,24 +122,14 @@ fn vsMain(input : VSIn) -> VSOut {
   // anchored at local X = 0.
   
 
-  let newest =
-    grid.timeSteps - 1u;
+  let newest =    grid.timeSteps - 1u;
 
-  let relativeT =
-    f32(t) -
-    f32(newest);
-
-
-  let x =
-    relativeT *
-    grid.spacing;
-
-
-  
+  let relativeT =    f32(t) -    f32(newest);
+  let x =    relativeT *    grid.spacing;
+  // let x = f32(tIdx) * spacing + scrollOffset;
   // COIN / Z POSITION
   //
-  // Keeps multiple coins centered around Z = 0.
-  
+  // Keeps multiple coins centered around Z = 0.  
 
   let z =
     f32(c) *
@@ -149,69 +139,36 @@ fn vsMain(input : VSIn) -> VSOut {
     0.5;
 
 
-  let offset =
-    vec3<f32>(
-      x,
-      0.0,
-      z
-    );
-
-
-  
-  // WORLD POSITION
-  
-
-  let worldPos =
-    grid.baseModel *
-    vec4<f32>(
-      local + offset,
-      1.0
-    );
-
-
-  out.position =
-    camera.viewProj *
-    worldPos;
-
-
-  out.fragPos =
-    worldPos.xyz;
-
-
+  let offset =    vec3<f32>(      x,      0.0,      z    );
+let worldPos =
+  grid.baseModel *
+  vec4<f32>(
+    local + offset,
+    1.0
+  );
+  out.position =    camera.viewProj *    worldPos;
+  out.fragPos =    worldPos.xyz;
   // Normal transformed by model matrix.
-  out.fragNorm =
-    mat3x3f(
+  out.fragNorm =    mat3x3f(
       grid.baseModel[0].xyz,
       grid.baseModel[1].xyz,
       grid.baseModel[2].xyz
     ) *
     input.normal;
 
-
-  out.color =
-    inst.rgb;
-
-
-  out.localY =
-    input.position.y;
-
-
+  out.color =    inst.rgb;
+  out.localY =    input.position.y;
   return out;
 }
 
-
 struct FragOut {
-
   @location(0)
   color : vec4f,
-
   @location(1)
   normal : vec4f,
-
   @location(2)
   worldPos : vec4f,
 };
-
 
 @fragment
 fn fsMain(

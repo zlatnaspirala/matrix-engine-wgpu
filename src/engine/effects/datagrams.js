@@ -3,7 +3,7 @@ import {LOG_FUNNY_ARCADE} from "../utils";
 import {cryptoGridShader} from "../../shaders/diagrams/crypto-grid";
 
 export class ChartsEffect {
-  constructor(device, format, maxInstances = 512, cameraBuffer) {
+  constructor(device, format, maxInstances = 64, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.enabled = true;
@@ -14,23 +14,97 @@ export class ChartsEffect {
     this.coinCount = 0;
     this.spacing = 1.2;
     this.cubeHeight = 4.0;
+    this.smoothedHeights = new Float32Array(this.maxInstances).fill(0);
     this.time = 0;
     this.cameraBuffer = cameraBuffer;
     this._finalModel = mat4.create();
     this._initPipeline();
+    this.labelContainer = this._createLabelContainer();
+  }
+
+  _createLabelContainer() {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:10;';
+    document.body.appendChild(el);
+    this.camera = app.getCamera()
+    return el;
+  }
+
+  updateLabels(coins, baseModelMatrix, viewProjMatrix, canvasWidth, canvasHeight) {
+    const timeSteps = this.timeSteps;
+    const total = coins.length * timeSteps;
+    while(this.labelContainer.children.length < total) {
+      const d = document.createElement('div');
+      d.style.cssText = 'position:absolute;color:#fff;font:10px monospace;transform:translate(-50%,-100%);white-space:nowrap;';
+      this.labelContainer.appendChild(d);
+    }
+    for(let i = total;i < this.labelContainer.children.length;i++) {
+      this.labelContainer.children[i].style.display = 'none';
+    }
+    const newest = timeSteps - 1;
+    coins.forEach((coin, c) => {
+      const range = Math.max(coin.max - coin.min, 1e-6);
+      const z = c * this.spacing - (coins.length - 1) * this.spacing * 0.5; // same as shader
+
+      for(let t = 0;t < timeSteps;t++) {
+        const labelIdx = c * timeSteps + t;
+        const label = this.labelContainer.children[labelIdx];
+
+        const value = coin.samples[t];
+        const h = Math.max((value - coin.min) / range, 0.02) * this.cubeHeight;
+        const x = (t - newest) * this.spacing; // same formula as shader's relativeT * spacing
+
+        const local = [x, h, z, 1];
+        const world = this._mulVec4(baseModelMatrix, local);
+        const clip = this._mulVec4(viewProjMatrix, world);
+
+        if(clip[3] <= 0) {label.style.display = 'none'; continue;}
+
+        const dist = Math.hypot(world[0] - this.camera[0], world[1] - this.camera[1], world[2] - this.camera[2]);
+        if(dist > this.labelMaxDistance) { // add this.labelMaxDistance = 30 in constructor, tune to taste
+          label.style.display = 'none';
+          continue;
+        }
+
+        const ndcX = clip[0] / clip[3];
+        const ndcY = clip[1] / clip[3];
+        const screenX = (ndcX * 0.5 + 0.5) * canvasWidth;
+        const screenY = (1 - (ndcY * 0.5 + 0.5)) * canvasHeight;
+
+        label.style.display = 'block';
+        label.style.left = `${screenX}px`;
+        label.style.top = `${screenY - 6}px`;
+        label.textContent = value.toFixed(coin.id === 'ripple' ? 4 : 2);
+
+        const scale = Math.max(0.3, Math.min(1.0, 8 / dist)); // tune 8 = reference distance
+        label.style.fontSize = `${10 * scale}px`;
+        label.style.left = `${screenX}px`;
+        label.style.top = `${screenY - 6 * scale}px`;
+
+      }
+    });
+  }
+
+  _mulVec4(m, v) {
+    return [
+      m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12] * v[3],
+      m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13] * v[3],
+      m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14] * v[3],
+      m[3] * v[0] + m[7] * v[1] + m[11] * v[2] + m[15] * v[3],
+    ];
   }
 
   _buildCubeGeometry() {
     const p = [
-      0,1,0,0,1,0, 1,1,0,0,1,0, 1,1,1,0,1,0, 0,1,1,0,1,0,
-      0,0,0,0,-1,0, 1,0,0,0,-1,0, 1,0,1,0,-1,0, 0,0,1,0,-1,0,
-      1,0,0,1,0,0, 1,1,0,1,0,0, 1,1,1,1,0,0, 1,0,1,1,0,0,
-      0,0,0,-1,0,0, 0,1,0,-1,0,0, 0,1,1,-1,0,0, 0,0,1,-1,0,0,
-      0,0,1,0,0,1, 1,0,1,0,0,1, 1,1,1,0,0,1, 0,1,1,0,0,1,
-      0,0,0,0,0,-1, 1,0,0,0,0,-1, 1,1,0,0,0,-1, 0,1,0,0,0,-1,
+      -0.5, 1, -0.5, 0, 1, 0, 0.5, 1, -0.5, 0, 1, 0, 0.5, 1, 0.5, 0, 1, 0, -0.5, 1, 0.5, 0, 1, 0,
+      -0.5, 0, -0.5, 0, -1, 0, 0.5, 0, -0.5, 0, -1, 0, 0.5, 0, 0.5, 0, -1, 0, -0.5, 0, 0.5, 0, -1, 0,
+      0.5, 0, -0.5, 1, 0, 0, 0.5, 1, -0.5, 1, 0, 0, 0.5, 1, 0.5, 1, 0, 0, 0.5, 0, 0.5, 1, 0, 0,
+      -0.5, 0, -0.5, -1, 0, 0, -0.5, 1, -0.5, -1, 0, 0, -0.5, 1, 0.5, -1, 0, 0, -0.5, 0, 0.5, -1, 0, 0,
+      -0.5, 0, 0.5, 0, 0, 1, 0.5, 0, 0.5, 0, 0, 1, 0.5, 1, 0.5, 0, 0, 1, -0.5, 1, 0.5, 0, 0, 1,
+      -0.5, 0, -0.5, 0, 0, -1, 0.5, 0, -0.5, 0, 0, -1, 0.5, 1, -0.5, 0, 0, -1, -0.5, 1, -0.5, 0, 0, -1,
     ];
     const idx = [];
-    for (let f = 0; f < 6; f++) { const o = f * 4; idx.push(o, o+1, o+2, o, o+2, o+3); }
+    for(let f = 0;f < 6;f++) {const o = f * 4; idx.push(o, o + 1, o + 2, o, o + 2, o + 3);}
     return {vertices: new Float32Array(p), indices: new Uint16Array(idx)};
   }
 
@@ -38,7 +112,7 @@ export class ChartsEffect {
     const cube = this._buildCubeGeometry();
     const posData = new Float32Array(cube.vertices.length / 2);
     const normData = new Float32Array(cube.vertices.length / 2);
-    for (let i = 0, v = 0; i < cube.vertices.length; i += 6, v += 3) {
+    for(let i = 0, v = 0;i < cube.vertices.length;i += 6, v += 3) {
       posData.set(cube.vertices.subarray(i, i + 3), v);
       normData.set(cube.vertices.subarray(i + 3, i + 6), v);
     }
@@ -104,15 +178,16 @@ export class ChartsEffect {
 
   updateData(grid) {
     const {coinCount, timeSteps, coins} = grid;
+    this.coins = coins;
     const total = coinCount * timeSteps;
-    if (total > this.maxInstances) {
+    if(total > this.maxInstances) {
       console.warn(`%cCryptoGridEffect: ${total} exceeds maxInstances`, LOG_FUNNY_ARCADE);
     }
     coins.forEach((coin, c) => {
       const range = Math.max(coin.max - coin.min, 1e-6);
-      for (let t = 0; t < timeSteps; t++) {
+      for(let t = 0;t < timeSteps;t++) {
         const i = c * timeSteps + t;
-        if (i >= this.maxInstances) continue;
+        if(i >= this.maxInstances) continue;
         const v = coin.samples[t];
         const prev = t > 0 ? coin.samples[t - 1] : v;
         const h = (v - coin.min) / range;
@@ -123,6 +198,11 @@ export class ChartsEffect {
         this.instanceData[o] = col[0];
         this.instanceData[o + 1] = col[1];
         this.instanceData[o + 2] = col[2];
+
+        // const targetH = h; // rename existing `h` calc to targetH
+        // const smoothed = this.smoothedHeights[i] + (targetH - this.smoothedHeights[i]) * 0.25; // 0.25 = ease speed, lower = smoother
+        // this.smoothedHeights[i] = smoothed;
+        // this.instanceData[o + 3] = smoothed; // was: h
         this.instanceData[o + 3] = h;
       }
     });
@@ -131,17 +211,21 @@ export class ChartsEffect {
     this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData.subarray(0, Math.min(total, this.maxInstances) * this.floatsPerInstance));
   }
 
-  // standard per-frame hook, called automatically by engine loop
+  dispose() {
+    this.labelContainer.remove();
+  }
+  // updateInstanceData — normalize scale out of baseModelMatrix, keep position+rotation inherited
   updateInstanceData(baseModelMatrix) {
     this.time += 0.016;
     this.device.queue.writeBuffer(this.gridUniformBuffer, 0, baseModelMatrix);
     this.device.queue.writeBuffer(this.gridUniformBuffer, 64, new Uint32Array([this.timeSteps, this.coinCount]));
     this.device.queue.writeBuffer(this.gridUniformBuffer, 72, new Float32Array([this.spacing, this.cubeHeight]));
     this.device.queue.writeBuffer(this.gridUniformBuffer, 80, new Float32Array([this.time]));
-  }
 
+    this.updateLabels(this.coins, baseModelMatrix, this.camera.VP, app.canvas.width, app.canvas.height);
+  }
   render(pass, mesh, viewProjMatrix) {
-    if (this.timeSteps === 0) return;
+    if(this.timeSteps === 0) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);

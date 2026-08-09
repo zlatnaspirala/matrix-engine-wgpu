@@ -62168,7 +62168,7 @@ fn vsMain(input : VSIn) -> VSOut {
 
   let pulse =
     1.0 +
-    0.06 *
+    0.02 *
     sin(
       grid.time * 2.5 +
       f32(input.idx) * 0.9
@@ -62204,24 +62204,14 @@ fn vsMain(input : VSIn) -> VSOut {
   // anchored at local X = 0.
   
 
-  let newest =
-    grid.timeSteps - 1u;
+  let newest =    grid.timeSteps - 1u;
 
-  let relativeT =
-    f32(t) -
-    f32(newest);
-
-
-  let x =
-    relativeT *
-    grid.spacing;
-
-
-  
+  let relativeT =    f32(t) -    f32(newest);
+  let x =    relativeT *    grid.spacing;
+  // let x = f32(tIdx) * spacing + scrollOffset;
   // COIN / Z POSITION
   //
-  // Keeps multiple coins centered around Z = 0.
-  
+  // Keeps multiple coins centered around Z = 0.  
 
   let z =
     f32(c) *
@@ -62231,69 +62221,36 @@ fn vsMain(input : VSIn) -> VSOut {
     0.5;
 
 
-  let offset =
-    vec3<f32>(
-      x,
-      0.0,
-      z
-    );
-
-
-  
-  // WORLD POSITION
-  
-
-  let worldPos =
-    grid.baseModel *
-    vec4<f32>(
-      local + offset,
-      1.0
-    );
-
-
-  out.position =
-    camera.viewProj *
-    worldPos;
-
-
-  out.fragPos =
-    worldPos.xyz;
-
-
+  let offset =    vec3<f32>(      x,      0.0,      z    );
+let worldPos =
+  grid.baseModel *
+  vec4<f32>(
+    local + offset,
+    1.0
+  );
+  out.position =    camera.viewProj *    worldPos;
+  out.fragPos =    worldPos.xyz;
   // Normal transformed by model matrix.
-  out.fragNorm =
-    mat3x3f(
+  out.fragNorm =    mat3x3f(
       grid.baseModel[0].xyz,
       grid.baseModel[1].xyz,
       grid.baseModel[2].xyz
     ) *
     input.normal;
 
-
-  out.color =
-    inst.rgb;
-
-
-  out.localY =
-    input.position.y;
-
-
+  out.color =    inst.rgb;
+  out.localY =    input.position.y;
   return out;
 }
 
-
 struct FragOut {
-
   @location(0)
   color : vec4f,
-
   @location(1)
   normal : vec4f,
-
   @location(2)
   worldPos : vec4f,
 };
-
 
 @fragment
 fn fsMain(
@@ -62352,7 +62309,7 @@ fn fsMain(
 
 // src/engine/effects/datagrams.js
 var ChartsEffect = class {
-  constructor(device2, format, maxInstances = 512, cameraBuffer) {
+  constructor(device2, format, maxInstances = 64, cameraBuffer) {
     this.device = device2;
     this.format = format;
     this.enabled = true;
@@ -62363,154 +62320,219 @@ var ChartsEffect = class {
     this.coinCount = 0;
     this.spacing = 1.2;
     this.cubeHeight = 4;
+    this.smoothedHeights = new Float32Array(this.maxInstances).fill(0);
     this.time = 0;
     this.cameraBuffer = cameraBuffer;
     this._finalModel = mat4Impl.create();
     this._initPipeline();
+    this.labelContainer = this._createLabelContainer();
+  }
+  _createLabelContainer() {
+    const el2 = document.createElement("div");
+    el2.style.cssText = "position:fixed;top:0;left:0;pointer-events:none;z-index:10;";
+    document.body.appendChild(el2);
+    this.camera = app.getCamera();
+    return el2;
+  }
+  updateLabels(coins, baseModelMatrix, viewProjMatrix, canvasWidth, canvasHeight) {
+    const timeSteps = this.timeSteps;
+    const total = coins.length * timeSteps;
+    while (this.labelContainer.children.length < total) {
+      const d2 = document.createElement("div");
+      d2.style.cssText = "position:absolute;color:#fff;font:10px monospace;transform:translate(-50%,-100%);white-space:nowrap;";
+      this.labelContainer.appendChild(d2);
+    }
+    for (let i2 = total; i2 < this.labelContainer.children.length; i2++) {
+      this.labelContainer.children[i2].style.display = "none";
+    }
+    const newest = timeSteps - 1;
+    coins.forEach((coin, c2) => {
+      const range = Math.max(coin.max - coin.min, 1e-6);
+      const z2 = c2 * this.spacing - (coins.length - 1) * this.spacing * 0.5;
+      for (let t3 = 0; t3 < timeSteps; t3++) {
+        const labelIdx = c2 * timeSteps + t3;
+        const label = this.labelContainer.children[labelIdx];
+        const value = coin.samples[t3];
+        const h2 = Math.max((value - coin.min) / range, 0.02) * this.cubeHeight;
+        const x3 = (t3 - newest) * this.spacing;
+        const local2 = [x3, h2, z2, 1];
+        const world = this._mulVec4(baseModelMatrix, local2);
+        const clip = this._mulVec4(viewProjMatrix, world);
+        if (clip[3] <= 0) {
+          label.style.display = "none";
+          continue;
+        }
+        const dist2 = Math.hypot(world[0] - this.camera[0], world[1] - this.camera[1], world[2] - this.camera[2]);
+        if (dist2 > this.labelMaxDistance) {
+          label.style.display = "none";
+          continue;
+        }
+        const ndcX = clip[0] / clip[3];
+        const ndcY = clip[1] / clip[3];
+        const screenX = (ndcX * 0.5 + 0.5) * canvasWidth;
+        const screenY = (1 - (ndcY * 0.5 + 0.5)) * canvasHeight;
+        label.style.display = "block";
+        label.style.left = `${screenX}px`;
+        label.style.top = `${screenY - 6}px`;
+        label.textContent = value.toFixed(coin.id === "ripple" ? 4 : 2);
+        const scale4 = Math.max(0.3, Math.min(1, 8 / dist2));
+        label.style.fontSize = `${10 * scale4}px`;
+        label.style.left = `${screenX}px`;
+        label.style.top = `${screenY - 6 * scale4}px`;
+      }
+    });
+  }
+  _mulVec4(m2, v2) {
+    return [
+      m2[0] * v2[0] + m2[4] * v2[1] + m2[8] * v2[2] + m2[12] * v2[3],
+      m2[1] * v2[0] + m2[5] * v2[1] + m2[9] * v2[2] + m2[13] * v2[3],
+      m2[2] * v2[0] + m2[6] * v2[1] + m2[10] * v2[2] + m2[14] * v2[3],
+      m2[3] * v2[0] + m2[7] * v2[1] + m2[11] * v2[2] + m2[15] * v2[3]
+    ];
   }
   _buildCubeGeometry() {
     const p2 = [
+      -0.5,
+      1,
+      -0.5,
       0,
       1,
       0,
+      0.5,
+      1,
+      -0.5,
       0,
       1,
       0,
+      0.5,
       1,
-      1,
-      0,
-      0,
-      1,
-      0,
-      1,
-      1,
-      1,
+      0.5,
       0,
       1,
       0,
+      -0.5,
+      1,
+      0.5,
       0,
       1,
-      1,
       0,
-      1,
+      -0.5,
       0,
-      0,
-      0,
-      0,
+      -0.5,
       0,
       -1,
       0,
-      1,
+      0.5,
       0,
-      0,
-      0,
-      -1,
-      0,
-      1,
-      0,
-      1,
+      -0.5,
       0,
       -1,
       0,
+      0.5,
       0,
-      0,
-      1,
-      0,
-      -1,
-      0,
-      1,
-      0,
-      0,
-      1,
-      0,
-      0,
-      1,
-      1,
-      0,
-      1,
-      0,
-      0,
-      1,
-      1,
-      1,
-      1,
-      0,
-      0,
-      1,
-      0,
-      1,
-      1,
-      0,
-      0,
-      0,
-      0,
+      0.5,
       0,
       -1,
       0,
+      -0.5,
       0,
-      0,
-      1,
-      0,
-      -1,
-      0,
-      0,
-      0,
-      1,
-      1,
-      -1,
-      0,
-      0,
-      0,
-      0,
-      1,
-      -1,
-      0,
-      0,
-      0,
-      0,
-      1,
-      0,
-      0,
-      1,
-      1,
-      0,
-      1,
-      0,
-      0,
-      1,
-      1,
-      1,
-      1,
-      0,
-      0,
-      1,
-      0,
-      1,
-      1,
-      0,
-      0,
-      1,
-      0,
-      0,
-      0,
-      0,
-      0,
-      -1,
-      1,
-      0,
-      0,
-      0,
-      0,
-      -1,
-      1,
-      1,
-      0,
-      0,
+      0.5,
       0,
       -1,
       0,
+      0.5,
+      0,
+      -0.5,
       1,
       0,
+      0,
+      0.5,
+      1,
+      -0.5,
+      1,
+      0,
+      0,
+      0.5,
+      1,
+      0.5,
+      1,
+      0,
+      0,
+      0.5,
+      0,
+      0.5,
+      1,
+      0,
+      0,
+      -0.5,
+      0,
+      -0.5,
+      -1,
+      0,
+      0,
+      -0.5,
+      1,
+      -0.5,
+      -1,
+      0,
+      0,
+      -0.5,
+      1,
+      0.5,
+      -1,
+      0,
+      0,
+      -0.5,
+      0,
+      0.5,
+      -1,
+      0,
+      0,
+      -0.5,
+      0,
+      0.5,
+      0,
+      0,
+      1,
+      0.5,
+      0,
+      0.5,
+      0,
+      0,
+      1,
+      0.5,
+      1,
+      0.5,
+      0,
+      0,
+      1,
+      -0.5,
+      1,
+      0.5,
+      0,
+      0,
+      1,
+      -0.5,
+      0,
+      -0.5,
+      0,
+      0,
+      -1,
+      0.5,
+      0,
+      -0.5,
+      0,
+      0,
+      -1,
+      0.5,
+      1,
+      -0.5,
+      0,
+      0,
+      -1,
+      -0.5,
+      1,
+      -0.5,
       0,
       0,
       -1
@@ -62588,6 +62610,7 @@ var ChartsEffect = class {
   }
   updateData(grid) {
     const { coinCount, timeSteps, coins } = grid;
+    this.coins = coins;
     const total = coinCount * timeSteps;
     if (total > this.maxInstances) {
       console.warn(`%cCryptoGridEffect: ${total} exceeds maxInstances`, LOG_FUNNY_ARCADE);
@@ -62613,13 +62636,17 @@ var ChartsEffect = class {
     this.timeSteps = timeSteps;
     this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData.subarray(0, Math.min(total, this.maxInstances) * this.floatsPerInstance));
   }
-  // standard per-frame hook, called automatically by engine loop
+  dispose() {
+    this.labelContainer.remove();
+  }
+  // updateInstanceData — normalize scale out of baseModelMatrix, keep position+rotation inherited
   updateInstanceData(baseModelMatrix) {
     this.time += 0.016;
     this.device.queue.writeBuffer(this.gridUniformBuffer, 0, baseModelMatrix);
     this.device.queue.writeBuffer(this.gridUniformBuffer, 64, new Uint32Array([this.timeSteps, this.coinCount]));
     this.device.queue.writeBuffer(this.gridUniformBuffer, 72, new Float32Array([this.spacing, this.cubeHeight]));
     this.device.queue.writeBuffer(this.gridUniformBuffer, 80, new Float32Array([this.time]));
+    this.updateLabels(this.coins, baseModelMatrix, this.camera.VP, app.canvas.width, app.canvas.height);
   }
   render(pass, mesh, viewProjMatrix) {
     if (this.timeSteps === 0) return;
@@ -63259,6 +63286,112 @@ var loadCryptoGrid = function() {
     );
     addRaycastsAABBListener("canvas1", "click");
     async function onLoadObj(m2) {
+      let EARTH = cryptoGrid.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 20, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [2, 2, 2],
+        texturesPaths: ["./res/meshes/blender/earth.webp"],
+        name: "earth",
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 10 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true
+          // flameEffect: true
+        }
+      });
+      cryptoGrid.lightContainer[0].setIntensity(5);
+      const globeDrag = new DragRotateController(EARTH, cryptoGrid.canvas, cryptoGrid.getCamera(), {
+        sensitivity: 0.6,
+        inertia: 0.94,
+        autoRotateSpeed: 0
+      });
+      cryptoGrid.autoUpdate.push(globeDrag);
+      cryptoGrid.activateBloomEffect();
+      cryptoGrid.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      cryptoGrid.lightContainer[0].behavior.value_ = -1;
+      cryptoGrid.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
+      cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
+      setTimeout(() => {
+        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, "rgba16float", 64, app.cameraBuffer);
+        const dataHandler = new ExternalDataHandler();
+        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 10));
+        dataHandler.onUpdate((name2, grid) => {
+          if (name2 === "coingecko") EARTH.effects.cryptoGrid.updateData(grid);
+        });
+        dataHandler.start("coingecko", 6e4);
+        EARTH.effects.flameEmitter.rotSpeed = 1;
+        EARTH.effects.flameEmitter.recreateVertexDataFromData([
+          -2.582509022040566,
+          0.21125441598805741,
+          0.4249951687253338,
+          0.4724163587305734,
+          2.381811753816671,
+          3.074841196886901,
+          -2.3797025623904164,
+          -3.4608908819087145
+        ]);
+        EARTH.setAmbient(2, 3, 0.5);
+        app.EARTH = EARTH;
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(45);
+        cam2.setY(50);
+        console.log("sssssssssssss");
+        cam2._dirtyAngle = true;
+        app.buildRenderBuckets();
+        app.mainRenderBundle[0].updateBoundingSphere();
+      }, 500);
+    }
+    cryptoGrid.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      const { hitObject, hitPoint } = e2.detail;
+      if (e2.detail.hitObject.name.startsWith("cube")) {
+        e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+      }
+    });
+  });
+  window.app = cryptoGrid;
+};
+
+// examples/earth.js
+var loadEarth = function() {
+  let MAT_EFFECT_WATER;
+  let cryptoGrid = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    cryptoGrid.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/earth.obj", cube: "./res/meshes/blender/cube.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    addRaycastsAABBListener("canvas1", "click");
+    async function onLoadObj(m2) {
       MAT_EFFECT_WATER = cryptoGrid.addMeshObj({
         material: { type: "standard" },
         position: { x: 0, y: 20, z: -10 },
@@ -63350,13 +63483,6 @@ var loadCryptoGrid = function() {
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         cryptoGrid.autoUpdate.push(updater2);
-        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, "rgba16float", 10, app.cameraBuffer);
-        const dataHandler = new ExternalDataHandler();
-        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 64));
-        dataHandler.onUpdate((name2, grid) => {
-          if (name2 === "coingecko") EARTH.effects.cryptoGrid.updateData(grid);
-        });
-        dataHandler.start("coingecko", 1e4);
         EARTH.effects.flameEmitter.rotSpeed = 1;
         EARTH.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566,
@@ -63465,6 +63591,7 @@ byId2("loadWaterEffects").addEventListener("click", () => switchDemo("34"));
 byId2("loadParticles").addEventListener("click", () => switchDemo("35"));
 byId2("loadRunner").addEventListener("click", () => switchDemo("36"));
 byId2("loadCryptoGrid").addEventListener("click", () => switchDemo("37"));
+byId2("loadEarth").addEventListener("click", () => switchDemo("38"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -63543,6 +63670,7 @@ if (urlQuery["demo"] === "1") {
 } else if (urlQuery["demo"] === "37") {
   loadCryptoGrid();
 } else if (urlQuery["demo"] === "38") {
+  loadEarth();
 } else {
   loadObjFile();
 }

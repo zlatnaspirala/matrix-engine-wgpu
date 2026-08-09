@@ -41,6 +41,7 @@ import {loadWaterEffects} from "./examples/water-effect.js";
 import {loadParticles} from "./examples/particles.js";
 import {loadRunner} from "./examples/games/my-nui/real-runner.js";
 import {loadCryptoGrid} from "./examples/crypto-grid.js";
+import {loadEarth} from "./examples/earth.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -92,6 +93,8 @@ byId('loadWaterEffects').addEventListener("click", () => switchDemo('34'));
 byId('loadParticles').addEventListener("click", () => switchDemo('35'));
 byId('loadRunner').addEventListener("click", () => switchDemo('36'));
 byId('loadCryptoGrid').addEventListener("click", () => switchDemo('37'));
+byId('loadEarth').addEventListener("click", () => switchDemo('38'));
+
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
@@ -173,9 +176,8 @@ if(urlQuery['demo'] === '1') {
 } else if(urlQuery['demo'] === '37') {
   loadCryptoGrid();
 } else if(urlQuery['demo'] === '38') {
-  //
-} 
-else {
+  loadEarth();
+} else {
   loadObjFile();
 }
 
