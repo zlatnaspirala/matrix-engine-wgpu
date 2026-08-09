@@ -70,6 +70,25 @@ export class WaterSimSphereEffect {
     this._idleThreshold = 90; // ~1.5s at 60fps before considering it "settled"
 
     this._createTextures();
+
+    // reusable render pass descriptors — avoid object+array+clearValue alloc every pass
+    this._simPassDescs = [
+      {colorAttachments: [{view: this._physViews[0], loadOp: 'clear', storeOp: 'store', clearValue: {r: 0, g: 0, b: 0, a: 0}}]},
+      {colorAttachments: [{view: this._physViews[1], loadOp: 'clear', storeOp: 'store', clearValue: {r: 0, g: 0, b: 0, a: 0}}]}
+    ];
+
+    this._causticsView = this.causticsTexture.createView(); // was being called inline before, cache it
+    this._causticsPassDesc = {
+      colorAttachments: [{view: this._causticsView, loadOp: 'clear', storeOp: 'store', clearValue: {r: 0, g: 0, b: 0, a: 0}}]
+    };
+
+    // reusable uniform scratch buffers — avoid `new Float32Array(...)` per call
+    this._dropUniform = new Float32Array(4);
+    this._sphereUniform = new Float32Array(8);
+    this._deltaUniform = new Float32Array([1 / this.width, 1 / this.height]); // width/height fixed, compute once
+
+    this._defaultEye = [0, 5, 5]; // was `?? [0,5,5]` literal every render() call
+
     this._createSampler();
     this._createUniformBuffers(options);
     this._createSimPipelines();
@@ -427,36 +446,29 @@ export class WaterSimSphereEffect {
   simulate(commandEncoder) {
     const encoder = commandEncoder ?? this.device.createCommandEncoder({label: 'WaterSim Frame'});
     for(const drop of this._dropQueue) {
-      this._runSimPass(encoder, this.dropPipeline,
-        new Float32Array([drop.x, drop.z, drop.radius, drop.strength]));
+      this._dropUniform[0] = drop.x; this._dropUniform[1] = drop.z; this._dropUniform[2] = drop.radius; this._dropUniform[3] = drop.strength;
+      this._runSimPass(encoder, this.dropPipeline, this._dropUniform);
     }
     this._dropQueue.length = 0;
     if(this._sphereStamp) {
       const {oldCenter, newCenter, radius} = this._sphereStamp;
-      this._runSimPass(encoder, this.spherePipeline, new Float32Array([
-        oldCenter[0], oldCenter[1], oldCenter[2], radius,
-        newCenter[0], newCenter[1], newCenter[2], 0
-      ]));
+      const su = this._sphereUniform;
+      su[0] = oldCenter[0]; su[1] = oldCenter[1]; su[2] = oldCenter[2]; su[3] = radius;
+      su[4] = newCenter[0]; su[5] = newCenter[1]; su[6] = newCenter[2]; su[7] = 0;
+      this._runSimPass(encoder, this.spherePipeline, su);
       this._sphereStamp = null;
     }
-    const delta = new Float32Array([1 / this.width, 1 / this.height]);
-    this._runSimPass(encoder, this.updatePipeline, delta);
-    this._runSimPass(encoder, this.updatePipeline, delta);
-    this._runSimPass(encoder, this.normalPipeline, delta);
+    this._runSimPass(encoder, this.updatePipeline, this._deltaUniform);
+    this._runSimPass(encoder, this.updatePipeline, this._deltaUniform);
+    this._runSimPass(encoder, this.normalPipeline, this._deltaUniform);
     this._runCausticsPass(encoder);
     if(!commandEncoder) this.device.queue.submit([encoder.finish()]);
   }
 
   _runSimPass(encoder, pipelineObj, uniformData) {
     this.device.queue.writeBuffer(pipelineObj.uniformBuffer, 0, uniformData);
-    const writeView = this._physViews[1 - this._parity];
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: writeView,
-        loadOp: 'clear', storeOp: 'store',
-        clearValue: {r: 0, g: 0, b: 0, a: 0}
-      }]
-    });
+    // const writeView = this._physViews[1 - this._parity];
+    const pass = encoder.beginRenderPass(this._simPassDescs[1 - this._parity]);
     pass.setPipeline(pipelineObj.pipeline);
     pass.setBindGroup(0, pipelineObj.bindGroups[this._parity]);
     pass.draw(6);
@@ -465,13 +477,7 @@ export class WaterSimSphereEffect {
   }
 
   _runCausticsPass(encoder) {
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: this.causticsTexture.createView(),
-        loadOp: 'clear', storeOp: 'store',
-        clearValue: {r: 0, g: 0, b: 0, a: 0}
-      }]
-    });
+    const pass = encoder.beginRenderPass(this._causticsPassDesc);
     pass.setPipeline(this.causticsPipeline);
     pass.setBindGroup(0, this._causticsBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
@@ -481,7 +487,7 @@ export class WaterSimSphereEffect {
   }
 
   render(pass, mesh, viewProjMatrix) {
-    const eye = this._lastEye ?? [0, 5, 5];
+    const eye = this._lastEye ?? this._defaultEye;
     this.data.set(viewProjMatrix, 0);
     this.data.set(eye, 16);
     this.device.queue.writeBuffer(this.commonUniformBuffer, 0, this.data);

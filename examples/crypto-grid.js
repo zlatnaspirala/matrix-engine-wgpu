@@ -2,7 +2,7 @@ import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener, rayIntersectsSphere2} from "../src/engine/raycast.js";
 import {CameraPath, randomIntFromTo} from "../src/engine/utils.js";
-import {CryptoGridEffect} from "../src/engine/effects/coingecko.js";
+import {ChartsEffect} from "../src/engine/effects/datagrams.js";
 import {ExternalDataHandler} from "../src/engine/buildin/externalDataHandler/externalDataHandler.js";
 import {CoinGeckoAdapter} from "../src/engine/buildin/externalDataHandler/adapters/coingecko/coingecko.js";
 import {SeismicPortalAdapter} from "../src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js";
@@ -115,7 +115,7 @@ export var loadCryptoGrid = function() {
 
       setTimeout(() => {
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-        EARTH.effects.cryptoGrid = new CryptoGridEffect(app.device, 'rgba16float', 256, app.cameraBuffer);
+        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, 'rgba16float', 256, app.cameraBuffer);
         const dataHandler = new ExternalDataHandler();
         // dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 64));
         // dataHandler.onUpdate((name, grid) => {
@@ -211,14 +211,17 @@ export var loadCryptoGrid = function() {
 
     cryptoGrid.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
-
       const {hitObject, hitPoint} = e.detail;
       const water = app.MAT_EFFECT_WATER.effects.waterEffect;
-      const invModel = mat4.invert(hitObject._modelMatrix);
-      const local = vec3.transformMat4(hitPoint, invModel);
-      water.addDrop(local[0], local[2], 0.03, 0.5);
-
-
+      // const invModel = mat4.invert(hitObject._modelMatrix);
+      // const local = vec3.transformMat4(hitPoint, invModel);
+      const invModel = mat4.inverse(hitObject._modelMatrix);
+      const localHit = vec3.transformMat4(hitPoint, invModel);
+      const dir = vec3.normalize(localHit);
+      const u = 0.5 + Math.atan2(dir[2], dir[0]) / (2 * Math.PI);
+      const v = 0.5 - Math.asin(dir[1]) / Math.PI;
+      water.addDrop(u, v, 0.03, 1);
+      // water.addDrop(local[0], local[2], 0.03, 0.5);
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));

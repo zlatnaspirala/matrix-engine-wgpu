@@ -62182,8 +62182,8 @@ fn fsMain(input : VSOut) -> FragOut {
   );
 }`;
 
-// src/engine/effects/coingecko.js
-var CryptoGridEffect = class {
+// src/engine/effects/datagrams.js
+var ChartsEffect = class {
   constructor(device2, format, maxInstances = 512, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -62647,6 +62647,18 @@ var WaterSimSphereEffect = class {
     this._idleFrames = 0;
     this._idleThreshold = 90;
     this._createTextures();
+    this._simPassDescs = [
+      { colorAttachments: [{ view: this._physViews[0], loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }] },
+      { colorAttachments: [{ view: this._physViews[1], loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }] }
+    ];
+    this._causticsView = this.causticsTexture.createView();
+    this._causticsPassDesc = {
+      colorAttachments: [{ view: this._causticsView, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }]
+    };
+    this._dropUniform = new Float32Array(4);
+    this._sphereUniform = new Float32Array(8);
+    this._deltaUniform = new Float32Array([1 / this.width, 1 / this.height]);
+    this._defaultEye = [0, 5, 5];
     this._createSampler();
     this._createUniformBuffers(options2);
     this._createSimPipelines();
@@ -62977,45 +62989,36 @@ var WaterSimSphereEffect = class {
   simulate(commandEncoder) {
     const encoder = commandEncoder ?? this.device.createCommandEncoder({ label: "WaterSim Frame" });
     for (const drop of this._dropQueue) {
-      this._runSimPass(
-        encoder,
-        this.dropPipeline,
-        new Float32Array([drop.x, drop.z, drop.radius, drop.strength])
-      );
+      this._dropUniform[0] = drop.x;
+      this._dropUniform[1] = drop.z;
+      this._dropUniform[2] = drop.radius;
+      this._dropUniform[3] = drop.strength;
+      this._runSimPass(encoder, this.dropPipeline, this._dropUniform);
     }
     this._dropQueue.length = 0;
     if (this._sphereStamp) {
       const { oldCenter, newCenter, radius } = this._sphereStamp;
-      this._runSimPass(encoder, this.spherePipeline, new Float32Array([
-        oldCenter[0],
-        oldCenter[1],
-        oldCenter[2],
-        radius,
-        newCenter[0],
-        newCenter[1],
-        newCenter[2],
-        0
-      ]));
+      const su = this._sphereUniform;
+      su[0] = oldCenter[0];
+      su[1] = oldCenter[1];
+      su[2] = oldCenter[2];
+      su[3] = radius;
+      su[4] = newCenter[0];
+      su[5] = newCenter[1];
+      su[6] = newCenter[2];
+      su[7] = 0;
+      this._runSimPass(encoder, this.spherePipeline, su);
       this._sphereStamp = null;
     }
-    const delta = new Float32Array([1 / this.width, 1 / this.height]);
-    this._runSimPass(encoder, this.updatePipeline, delta);
-    this._runSimPass(encoder, this.updatePipeline, delta);
-    this._runSimPass(encoder, this.normalPipeline, delta);
+    this._runSimPass(encoder, this.updatePipeline, this._deltaUniform);
+    this._runSimPass(encoder, this.updatePipeline, this._deltaUniform);
+    this._runSimPass(encoder, this.normalPipeline, this._deltaUniform);
     this._runCausticsPass(encoder);
     if (!commandEncoder) this.device.queue.submit([encoder.finish()]);
   }
   _runSimPass(encoder, pipelineObj, uniformData) {
     this.device.queue.writeBuffer(pipelineObj.uniformBuffer, 0, uniformData);
-    const writeView = this._physViews[1 - this._parity];
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: writeView,
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: { r: 0, g: 0, b: 0, a: 0 }
-      }]
-    });
+    const pass = encoder.beginRenderPass(this._simPassDescs[1 - this._parity]);
     pass.setPipeline(pipelineObj.pipeline);
     pass.setBindGroup(0, pipelineObj.bindGroups[this._parity]);
     pass.draw(6);
@@ -63023,14 +63026,7 @@ var WaterSimSphereEffect = class {
     this._parity = 1 - this._parity;
   }
   _runCausticsPass(encoder) {
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view: this.causticsTexture.createView(),
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: { r: 0, g: 0, b: 0, a: 0 }
-      }]
-    });
+    const pass = encoder.beginRenderPass(this._causticsPassDesc);
     pass.setPipeline(this.causticsPipeline);
     pass.setBindGroup(0, this._causticsBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
@@ -63039,7 +63035,7 @@ var WaterSimSphereEffect = class {
     pass.end();
   }
   render(pass, mesh, viewProjMatrix) {
-    const eye = this._lastEye ?? [0, 5, 5];
+    const eye = this._lastEye ?? this._defaultEye;
     this.data.set(viewProjMatrix, 0);
     this.data.set(eye, 16);
     this.device.queue.writeBuffer(this.commonUniformBuffer, 0, this.data);
@@ -63159,7 +63155,7 @@ var loadCryptoGrid = function() {
       cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
-        EARTH.effects.cryptoGrid = new CryptoGridEffect(app.device, "rgba16float", 256, app.cameraBuffer);
+        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, "rgba16float", 256, app.cameraBuffer);
         const dataHandler = new ExternalDataHandler();
         dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
         dataHandler.onUpdate((name2, grid) => {
@@ -63201,9 +63197,12 @@ var loadCryptoGrid = function() {
       console.log("ray.hit.event detected");
       const { hitObject, hitPoint } = e2.detail;
       const water = app.MAT_EFFECT_WATER.effects.waterEffect;
-      const invModel = mat4Impl.invert(hitObject._modelMatrix);
-      const local2 = vec3Impl.transformMat4(hitPoint, invModel);
-      water.addDrop(local2[0], local2[2], 0.03, 0.5);
+      const invModel = mat4Impl.inverse(hitObject._modelMatrix);
+      const localHit = vec3Impl.transformMat4(hitPoint, invModel);
+      const dir = vec3Impl.normalize(localHit);
+      const u2 = 0.5 + Math.atan2(dir[2], dir[0]) / (2 * Math.PI);
+      const v2 = 0.5 - Math.asin(dir[1]) / Math.PI;
+      water.addDrop(u2, v2, 0.03, 1);
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));

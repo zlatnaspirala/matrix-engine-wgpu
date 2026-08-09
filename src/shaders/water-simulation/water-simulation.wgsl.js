@@ -486,27 +486,462 @@ struct VertexOutput {
 }
 
 @vertex
-fn vs_main(@location(0) position : vec3f, @location(1) normal : vec3f) -> VertexOutput {
-  var output : VertexOutput;
-  
-  // Calculate spherical UVs (Equirectangular mapping from 3D sphere position)
-  let normPos = normalize(position);
-  let u = atan2(normPos.z, normPos.x) / (2.0 * 3.14159265) + 0.5;
-  let v = asin(normPos.y) / 3.14159265 + 0.5;
-  let uv = vec2f(u, v);
+fn vs_main(
+    @location(0) position : vec3f
+) -> VertexOutput {
 
-  // Sample water height simulation texture
-  let info = textureSampleLevel(waterTexture, waterSampler, uv, 0.0);
-  
-  // Displace vertex outward along its normal by water height offset
-  let sphereRadius = length(position);
-  let displacedPos = normPos * (sphereRadius + info.r);
+    var output : VertexOutput;
 
-  let worldPos = modelData.model * vec4f(displacedPos, 1.0);
-  output.worldPos = worldPos.xyz;
-  output.position = camera.viewProj * worldPos;
-  output.localPos = displacedPos;
-  
-  return output;
+    // Original sphere direction
+    let sphereNormal =
+        normalize(position);
+
+    // Spherical UV
+    let u =
+        atan2(
+            sphereNormal.z,
+            sphereNormal.x
+        ) /
+        (2.0 * 3.14159265) +
+        0.5;
+
+    let v =
+        asin(
+            clamp(
+                sphereNormal.y,
+                -1.0,
+                1.0
+            )
+        ) /
+        3.14159265 +
+        0.5;
+
+    let uv = vec2f(u, v);
+
+    // Water simulation
+    let info =
+        textureSampleLevel(
+            waterTexture,
+            waterSampler,
+            uv,
+            0.0
+        );
+
+    // IMPORTANT:
+    // position is already a unit sphere.
+    // Move it OUTWARD along the sphere normal.
+    let displacedPos =
+        sphereNormal *
+        (1.0 + info.r);
+
+    let worldPos =        modelData.model *        vec4f(displacedPos, 1.0);
+    // let worldPos =  vec4f(displacedPos, 1.0);
+
+    output.worldPos = worldPos.xyz;
+    output.position = camera.viewProj * worldPos;
+    output.localPos = displacedPos;
+    return output;
+}
+`;
+
+export const surfaceFragShaderSphere = `
+struct CommonUniforms {
+  viewProjectionMatrix : mat4x4f,
+  eyePosition : vec3f,
+}
+
+struct ModelData {
+  model : mat4x4<f32>,
+  eyePosition : vec4<f32>
+}
+
+struct LightUniforms {
+  direction : vec3f,
+}
+
+struct WaterUniforms {
+  ior : f32,
+  fresnelMin : f32,
+  causticIntensity : f32,
+  poolHeight : f32,
+  halfSize : f32,
+  posX : f32,
+  posY : f32,
+  posZ : f32,
+}
+
+
+@binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
+@binding(1) @group(0) var<uniform> modelData : ModelData;
+@binding(2) @group(0) var<uniform> light : LightUniforms;
+@binding(3) @group(0) var<uniform> waterUniforms : WaterUniforms;
+@binding(4) @group(0) var waterSampler : sampler;
+@binding(5) @group(0) var waterTexture : texture_2d<f32>;
+@binding(6) @group(0) var floorSampler : sampler;
+@binding(7) @group(0) var floorTexture : texture_2d<f32>;
+@binding(8) @group(0) var causticsTexture : texture_2d<f32>;
+
+const IOR_AIR : f32 = 1.0;
+const ABOVEwaterColor : vec3f = vec3f(0.25, 1.0, 1.25);
+const UNDERwaterColor : vec3f = vec3f(0.4, 0.9, 1.0);
+
+// SKY
+fn skyColor(ray : vec3f) -> vec3f {
+  let horizon = vec3f(
+    0.60,
+    0.75,
+    0.85
+  );
+
+  let zenith = vec3f(
+    0.10,
+    0.30,
+    0.65
+  );
+
+  var color = mix(
+    horizon,
+    zenith,
+    clamp(ray.y, 0.0, 1.0)
+  );
+  let sunDir = normalize(light.direction);
+  let spec = pow(
+    max(0.0, dot(sunDir, ray)),
+    2000.0
+  );
+  color += vec3f(spec) * vec3f(10.0, 8.0, 6.0);
+  return color;
+}
+
+fn floorColor(
+  origin : vec3f,
+  ray : vec3f
+) -> vec3f {
+
+  let t =
+    (-waterUniforms.poolHeight - origin.y) /
+    ray.y;
+
+  let hit =
+    origin + ray * t;
+
+  // Model position
+  let modelTranslation =
+    vec2f(
+      waterUniforms.posX,
+      waterUniforms.posZ
+    );
+
+  let localHitXZ =
+    hit.xz - modelTranslation;
+
+  let uv =
+    (localHitXZ / waterUniforms.halfSize) *
+    0.5 +
+    0.5;
+
+  var color =
+    textureSampleLevel(
+      floorTexture,
+      floorSampler,
+      uv,
+      0.0
+    ).rgb;
+
+  let caustic =
+    textureSampleLevel(
+      causticsTexture,
+      waterSampler,
+      uv,
+      0.0
+    );
+
+  color *=
+    1.0 +
+    caustic.r *
+    2.0 *
+    caustic.g;
+
+  return color;
+}
+
+
+// --------------------------------------------------
+// REFLECTION / REFRACTION RAY COLOR
+// --------------------------------------------------
+
+fn surfaceRayColor(
+  origin : vec3f,
+  ray : vec3f,
+  tint : vec3f
+) -> vec3f {
+
+  var color : vec3f;
+
+  if (ray.y < 0.0) {
+
+    color =
+      floorColor(
+        origin,
+        ray
+      ) * tint;
+
+  } else {
+
+    color =
+      skyColor(ray);
+  }
+
+  return color;
+}
+
+
+// --------------------------------------------------
+// OUTPUT
+// --------------------------------------------------
+
+struct FragOut {
+
+  @location(0) color : vec4f,
+
+  @location(1) normal : vec4f,
+
+  @location(2) worldPos : vec4f,
+}
+
+
+// --------------------------------------------------
+// SPHERE WATER
+// --------------------------------------------------
+
+@fragment
+fn fs_main(
+  @location(0) localPos : vec3f,
+  @location(1) worldPos : vec3f
+) -> FragOut {
+
+
+  // ------------------------------------------------
+  // SPHERE DIRECTION
+  // ------------------------------------------------
+
+  let normPos =
+    normalize(localPos);
+
+
+  // ------------------------------------------------
+  // SPHERICAL UV
+  // ------------------------------------------------
+
+  let u =
+    atan2(
+      normPos.z,
+      normPos.x
+    ) /
+    (2.0 * 3.14159265)
+    + 0.5;
+
+  let v =
+    asin(
+      clamp(
+        normPos.y,
+        -1.0,
+        1.0
+      )
+    ) /
+    3.14159265
+    + 0.5;
+
+  var uv =
+    vec2f(u, v);
+
+
+  // ------------------------------------------------
+  // WATER SIMULATION
+  // ------------------------------------------------
+
+  var info =
+    textureSampleLevel(
+      waterTexture,
+      waterSampler,
+      uv,
+      0.0
+    );
+
+
+  // Small normal-based UV distortion
+  for (var i = 0; i < 4; i++) {
+
+    uv += info.ba * 0.005;
+
+    info =
+      textureSampleLevel(
+        waterTexture,
+        waterSampler,
+        uv,
+        0.0
+      );
+  }
+
+
+  // ------------------------------------------------
+  // SPHERE NORMAL
+  // ------------------------------------------------
+
+  let sphereNormal =
+    normalize(localPos);
+
+
+  // ------------------------------------------------
+  // WATER NORMAL
+  // ------------------------------------------------
+
+  let ba =
+    vec2f(
+      info.b,
+      info.a
+    );
+
+  let waterNormal =
+    normalize(
+      vec3f(
+        info.b,
+        sqrt(
+          max(
+            0.0,
+            1.0 - dot(ba, ba)
+          )
+        ),
+        info.a
+      )
+    );
+
+
+  // ------------------------------------------------
+  // COMBINE SPHERE + WATER NORMAL
+  // ------------------------------------------------
+
+  let normal =
+    normalize(
+      sphereNormal +
+      vec3f(
+        waterNormal.x,
+        waterNormal.y - 1.0,
+        waterNormal.z
+      ) * 0.35
+    );
+
+
+  // ------------------------------------------------
+  // CAMERA RAY
+  // ------------------------------------------------
+
+  let incomingRay =
+    normalize(
+      worldPos -
+      commonUniforms.eyePosition
+    );
+
+
+  // ------------------------------------------------
+  // REFLECTION
+  // ------------------------------------------------
+
+  let reflectedRay =
+    reflect(
+      incomingRay,
+      normal
+    );
+
+
+  // ------------------------------------------------
+  // REFRACTION
+  // ------------------------------------------------
+
+  let refractedRay =
+    refract(
+      incomingRay,
+      normal,
+      IOR_AIR /
+      waterUniforms.ior
+    );
+
+
+  // ------------------------------------------------
+  // FRESNEL
+  // ------------------------------------------------
+
+  let fresnel =
+    mix(
+      waterUniforms.fresnelMin,
+      1.0,
+      pow(
+        1.0 -
+        dot(
+          normal,
+          -incomingRay
+        ),
+        3.0
+      )
+    );
+
+
+  // ------------------------------------------------
+  // REFLECTED COLOR
+  // ------------------------------------------------
+
+  let reflectedColor =
+    surfaceRayColor(
+      worldPos,
+      reflectedRay,
+      ABOVEwaterColor
+    );
+
+
+  // ------------------------------------------------
+  // REFRACTED COLOR
+  // ------------------------------------------------
+
+  let refractedColor =
+    surfaceRayColor(
+      worldPos,
+      refractedRay,
+      ABOVEwaterColor
+    );
+
+
+  // ------------------------------------------------
+  // FINAL
+  // ------------------------------------------------
+
+  let finalColor =
+    mix(
+      refractedColor,
+      reflectedColor,
+      fresnel
+    );
+
+
+  // ------------------------------------------------
+  // OUTPUT
+  // ------------------------------------------------
+
+  return FragOut(
+
+    vec4f(
+      finalColor,
+      1.0
+    ),
+
+    vec4f(
+      normalize(normal),
+      0.0
+    ),
+
+    vec4f(
+      worldPos,
+      1.0
+    )
+  );
 }
 `;

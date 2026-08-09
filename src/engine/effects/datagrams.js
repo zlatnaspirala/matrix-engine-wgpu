@@ -2,7 +2,7 @@ import {mat4} from "wgpu-matrix";
 import {LOG_FUNNY_ARCADE} from "../utils";
 import {cryptoGridShader} from "../../shaders/diagrams/crypto-grid";
 
-export class CryptoGridEffect {
+export class ChartsEffect {
   constructor(device, format, maxInstances = 512, cameraBuffer) {
     this.device = device;
     this.format = format;
