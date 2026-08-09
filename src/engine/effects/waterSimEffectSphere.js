@@ -1,16 +1,8 @@
 import {mat4} from "wgpu-matrix";
 import {
-  fullscreenVertShader,
-  dropFragShader,
-  updateFragShader,
-  normalFragShader,
-  sphereFragShader,
-  causticsVertShader,
-  causticsFragShader,
-  surfaceVertShaderSphere,
-  updateFragShaderSphere,
-  normalFragShaderSphere,
-  surfaceFragShaderSphere
+  fullscreenVertShader, dropFragShader, sphereFragShader,
+  causticsVertShader, causticsFragShader, surfaceVertShaderSphere, updateFragShaderSphere,
+  normalFragShaderSphere, surfaceFragShaderSphere
 } from "../../shaders/water-simulation/water-simulation.wgsl";
 import {GeometryFactory} from "../geometry-factory";
 
@@ -35,60 +27,42 @@ export class WaterSimSphereEffect {
     this.device = device;
     this.format = format;
     this.enabled = true;
-
-    // backward compat: isSphere still works, maps to geometryType 'sphere'
+    this.opacity = options.opacity ?? 0.2;
     this.geometryType = options.geometryType ?? (options.isSphere ? 'sphere' : 'sphere');
     this.geometryOptions = options.geometryOptions ?? {};
-    // project any closed shape onto the unit sphere so the water shader's
-    // normalize(position) spherical-UV math stays valid regardless of source shape
     this.normalizeToUnitSphere = options.normalizeToUnitSphere ?? true;
-
-
     this.isSphere = options.isSphere ?? true;
     this.width = options.width ?? SIM_RES;
     this.height = options.height ?? SIM_RES;
-    this.size = options.size ?? 10; // world-space plane size (edge length)
-    this.detail = options.detail ?? 200; // grid subdivisions
+    this.size = options.size ?? 10;
+    this.detail = options.detail ?? 100;
     this.poolHeight = options.poolHeight ?? 0.10;
-
     this.ior = options.ior ?? 1.333;
     this.fresnelMin = options.fresnelMin ?? 0.25;
     this.causticIntensity = options.causticIntensity ?? 0.3;
     this.lightDirection = options.lightDirection ?? [2.0, 2.0, -1.0];
-
     this._dropQueue = [];
     this._sphereStamp = null;
-
     this._simFormat = device.features.has('float32-filterable') ? 'rgba32float' : 'rgba16float';
-
     this._localMatrix = mat4.create();
     this._finalMatrix = mat4.create();
     this.data = new Float32Array(20);
-    this.data2 = new Float32Array(8);
-
+    this.data2 = new Float32Array(12);
     this._idleFrames = 0;
     this._idleThreshold = 90; // ~1.5s at 60fps before considering it "settled"
-
     this._createTextures();
-
-    // reusable render pass descriptors — avoid object+array+clearValue alloc every pass
     this._simPassDescs = [
       {colorAttachments: [{view: this._physViews[0], loadOp: 'clear', storeOp: 'store', clearValue: {r: 0, g: 0, b: 0, a: 0}}]},
       {colorAttachments: [{view: this._physViews[1], loadOp: 'clear', storeOp: 'store', clearValue: {r: 0, g: 0, b: 0, a: 0}}]}
     ];
-
-    this._causticsView = this.causticsTexture.createView(); // was being called inline before, cache it
+    this._causticsView = this.causticsTexture.createView();
     this._causticsPassDesc = {
       colorAttachments: [{view: this._causticsView, loadOp: 'clear', storeOp: 'store', clearValue: {r: 0, g: 0, b: 0, a: 0}}]
     };
-
-    // reusable uniform scratch buffers — avoid `new Float32Array(...)` per call
     this._dropUniform = new Float32Array(4);
     this._sphereUniform = new Float32Array(8);
     this._deltaUniform = new Float32Array([1 / this.width, 1 / this.height]); // width/height fixed, compute once
-
     this._defaultEye = [0, 5, 5]; // was `?? [0,5,5]` literal every render() call
-
     this._createSampler();
     this._createUniformBuffers(options);
     this._createSimPipelines();
@@ -112,16 +86,7 @@ export class WaterSimSphereEffect {
     const posX = this._finalMatrix[12];
     const posY = this._finalMatrix[13];
     const posZ = this._finalMatrix[14];
-    this.data2.set([
-      this.ior,
-      this.fresnelMin,
-      this.causticIntensity,
-      this.poolHeight,
-      this.size,
-      posX,
-      posY,
-      posZ
-    ]);
+    this.data2.set([this.ior, this.fresnelMin, this.causticIntensity, this.poolHeight, this.size, posX ?? 0, posY ?? 0, posZ ?? 0, this.opacity]);
     this.device.queue.writeBuffer(this.waterUniformBuffer, 0, this.data2);
   }
 
@@ -183,7 +148,7 @@ export class WaterSimSphereEffect {
     });
     this.waterUniformBuffer = this.device.createBuffer({
       label: 'WaterSim Water Uniforms',
-      size: 32,
+      size: 48, // was 32 — now 9 floats + padding
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this._writeLightUniforms();
@@ -404,8 +369,10 @@ export class WaterSimSphereEffect {
         targets: [{
           format: 'rgba8unorm',
           blend: {
-            color: {operation: 'add', srcFactor: 'one', dstFactor: 'one'},
-            alpha: {operation: 'add', srcFactor: 'one', dstFactor: 'one'}
+            // color: {operation: 'add', srcFactor: 'one', dstFactor: 'one'},
+            // alpha: {operation: 'add', srcFactor: 'one', dstFactor: 'one'}
+            color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+            alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'}
           }
         }]
       },
@@ -436,11 +403,11 @@ export class WaterSimSphereEffect {
     this._writeLightUniforms();
   }
 
-  updateWaterParameters({ior, fresnelMin, causticIntensity, poolHeight} = {}) {
-    if(ior !== undefined) this.ior = ior;
-    if(fresnelMin !== undefined) this.fresnelMin = fresnelMin;
-    if(causticIntensity !== undefined) this.causticIntensity = causticIntensity;
-    if(poolHeight !== undefined) this.poolHeight = poolHeight;
+  updateWaterParameters(ior = 0.25, fresnelMin = 0.3, causticIntensity = 0.3, poolHeight = 0.1) {
+    this.ior = ior;
+    this.fresnelMin = fresnelMin;
+    this.causticIntensity = causticIntensity;
+    this.poolHeight = poolHeight;
   }
 
   simulate(commandEncoder) {

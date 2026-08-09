@@ -568,8 +568,8 @@ struct WaterUniforms {
   posX : f32,
   posY : f32,
   posZ : f32,
+  opacity : f32
 }
-
 
 @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
 @binding(1) @group(0) var<uniform> modelData : ModelData;
@@ -587,18 +587,8 @@ const UNDERwaterColor : vec3f = vec3f(0.4, 0.9, 1.0);
 
 // SKY
 fn skyColor(ray : vec3f) -> vec3f {
-  let horizon = vec3f(
-    0.60,
-    0.75,
-    0.85
-  );
-
-  let zenith = vec3f(
-    0.10,
-    0.30,
-    0.65
-  );
-
+  let horizon = vec3f(    0.60,    0.75,    0.85  );
+  let zenith = vec3f(    0.10,    0.30,    0.65  );
   var color = mix(
     horizon,
     zenith,
@@ -920,28 +910,11 @@ fn fs_main(
       reflectedColor,
       fresnel
     );
-
-
-  // ------------------------------------------------
-  // OUTPUT
-  // ------------------------------------------------
-
-  return FragOut(
-
-    vec4f(
-      finalColor,
-      1.0
-    ),
-
-    vec4f(
-      normalize(normal),
-      0.0
-    ),
-
-    vec4f(
-      worldPos,
-      1.0
-    )
-  );
+let alpha = mix(waterUniforms.opacity, 1.0, fresnel * 0.5); // edges stay a bit more opaque
+return FragOut(
+  vec4f(finalColor, alpha),
+  vec4f(normalize(normal), 0.0),
+  vec4f(worldPos, 1.0)
+);
 }
 `;

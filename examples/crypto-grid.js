@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener, rayIntersectsSphere2} from "../src/engine/raycast.js";
-import {CameraPath, randomIntFromTo} from "../src/engine/utils.js";
+import {CameraPath, OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
 import {ChartsEffect} from "../src/engine/effects/datagrams.js";
 import {ExternalDataHandler} from "../src/engine/buildin/externalDataHandler/externalDataHandler.js";
 import {CoinGeckoAdapter} from "../src/engine/buildin/externalDataHandler/adapters/coingecko/coingecko.js";
@@ -98,10 +98,24 @@ export var loadCryptoGrid = function() {
         autoRotateSpeed: 0.05,
       });
 
-      cryptoGrid.autoUpdate.push(
-        globeDrag);
+      cryptoGrid.autoUpdate.push(globeDrag);
 
-      // if(isMobile() == false) {
+      let osc0 = new OSCILLATOR(0, 3, 0.005);
+      let osc1 = new OSCILLATOR(0, 2, 0.01);
+      let osc2 = new OSCILLATOR(0, 2, 0.009);
+      let osc3 = new OSCILLATOR(0, 2, 0.009);
+      let updater2 = {
+        update: () => {
+          osc0.UPDATE();
+          osc1.UPDATE();
+          osc2.UPDATE();
+          osc3.UPDATE();
+          cryptoGrid.MAT_EFFECT_WATER.effects.waterEffect.updateWaterParameters(osc0.value_, osc1.value_, osc2.value_, osc3.value_)
+        }
+      }
+
+      
+
       cryptoGrid.activateBloomEffect();
       cryptoGrid.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       cryptoGrid.lightContainer[0].behavior.value_ = -1;
@@ -111,22 +125,24 @@ export var loadCryptoGrid = function() {
       })
       cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
-      // }
 
       setTimeout(() => {
+
+        cryptoGrid.autoUpdate.push(updater2);
+
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, 'rgba16float', 256, app.cameraBuffer);
+        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, 'rgba16float', 10, app.cameraBuffer);
         const dataHandler = new ExternalDataHandler();
-        // dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 64));
-        // dataHandler.onUpdate((name, grid) => {
-        //   if(name === "coingecko") EARTH.effects.cryptoGrid.updateData(grid);
-        // });
-        // dataHandler.start("coingecko", 30000);
-        dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
+        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 64));
         dataHandler.onUpdate((name, grid) => {
-          if(name === "seismic") EARTH.effects.cryptoGrid.updateData(grid);
+          if(name === "coingecko") EARTH.effects.cryptoGrid.updateData(grid);
         });
-        dataHandler.start("seismic");
+        dataHandler.start("coingecko", 10000);
+        // dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
+        // dataHandler.onUpdate((name, grid) => {
+        //   if(name === "seismic") EARTH.effects.cryptoGrid.updateData(grid);
+        // });
+        // dataHandler.start("seismic");
 
         // EARTH.effects.flameEmitter.setIntensity(100);
         // EARTH.effects.flameEmitter.recreateVertexDataCrazzy(4); 
@@ -146,6 +162,7 @@ export var loadCryptoGrid = function() {
         }, app.cameraBuffer);
         // cryptoGrid.autoUpdate.push({update: followMe, my: MAT_EFFECT_WATER.effects.waterEffect})
         app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
+        app.EARTH = EARTH;
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
@@ -220,7 +237,7 @@ export var loadCryptoGrid = function() {
       const dir = vec3.normalize(localHit);
       const u = 0.5 + Math.atan2(dir[2], dir[0]) / (2 * Math.PI);
       const v = 0.5 - Math.asin(dir[1]) / Math.PI;
-      water.addDrop(u, v, 0.03, 1);
+      water.addDrop(u, v, 0.03, 0.01);
       // water.addDrop(local[0], local[2], 0.03, 0.5);
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);

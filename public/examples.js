@@ -59534,8 +59534,8 @@ struct WaterUniforms {
   posX : f32,
   posY : f32,
   posZ : f32,
+  opacity : f32
 }
-
 
 @binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
 @binding(1) @group(0) var<uniform> modelData : ModelData;
@@ -59553,18 +59553,8 @@ const UNDERwaterColor : vec3f = vec3f(0.4, 0.9, 1.0);
 
 // SKY
 fn skyColor(ray : vec3f) -> vec3f {
-  let horizon = vec3f(
-    0.60,
-    0.75,
-    0.85
-  );
-
-  let zenith = vec3f(
-    0.10,
-    0.30,
-    0.65
-  );
-
+  let horizon = vec3f(    0.60,    0.75,    0.85  );
+  let zenith = vec3f(    0.10,    0.30,    0.65  );
   var color = mix(
     horizon,
     zenith,
@@ -59886,29 +59876,12 @@ fn fs_main(
       reflectedColor,
       fresnel
     );
-
-
-  // ------------------------------------------------
-  // OUTPUT
-  // ------------------------------------------------
-
-  return FragOut(
-
-    vec4f(
-      finalColor,
-      1.0
-    ),
-
-    vec4f(
-      normalize(normal),
-      0.0
-    ),
-
-    vec4f(
-      worldPos,
-      1.0
-    )
-  );
+let alpha = mix(waterUniforms.opacity, 1.0, fresnel * 0.5); // edges stay a bit more opaque
+return FragOut(
+  vec4f(finalColor, alpha),
+  vec4f(normalize(normal), 0.0),
+  vec4f(worldPos, 1.0)
+);
 }
 `;
 
@@ -62108,79 +62081,274 @@ var loadRunner = function() {
 
 // src/shaders/diagrams/crypto-grid.js
 var cryptoGridShader = `
-struct Camera { viewProj : mat4x4<f32> };
-@group(0) @binding(0) var<uniform> camera : Camera;
+struct Camera {
+  viewProj : mat4x4<f32>,
+};
+
+@group(0) @binding(0)
+var<uniform> camera : Camera;
+
 
 struct GridParams {
-  baseModel: mat4x4<f32>,
-  timeSteps: u32,
-  coinCount: u32,
-  spacing: f32,
-  cubeHeight: f32,
-  time: f32,
+  baseModel : mat4x4<f32>,
+
+  timeSteps : u32,
+  coinCount : u32,
+
+  spacing : f32,
+  cubeHeight : f32,
+
+  time : f32,
 };
-@group(0) @binding(1) var<storage, read> instances: array<vec4<f32>>;
-@group(0) @binding(2) var<uniform> grid: GridParams;
+
+@group(0) @binding(1)
+var<storage, read> instances : array<vec4<f32>>;
+
+@group(0) @binding(2)
+var<uniform> grid : GridParams;
+
 
 struct VSIn {
-  @location(0) position : vec3<f32>,
-  @location(1) normal   : vec3<f32>,
-  @builtin(instance_index) idx : u32,
+  @location(0)
+  position : vec3<f32>,
+
+  @location(1)
+  normal : vec3<f32>,
+
+  @builtin(instance_index)
+  idx : u32,
 };
+
+
 struct VSOut {
-  @builtin(position) position : vec4<f32>,
-  @location(0) color    : vec3<f32>,
-  @location(1) fragNorm : vec3<f32>,
-  @location(2) fragPos  : vec3<f32>,
-  @location(3) localY   : f32,
+  @builtin(position)
+  position : vec4<f32>,
+
+  @location(0)
+  color : vec3<f32>,
+
+  @location(1)
+  fragNorm : vec3<f32>,
+
+  @location(2)
+  fragPos : vec3<f32>,
+
+  @location(3)
+  localY : f32,
 };
+
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
+
   var out : VSOut;
-  let inst = instances[input.idx];
-  let t = input.idx % grid.timeSteps;
-  let c = input.idx / grid.timeSteps;
 
-  let h = max(inst.a, 0.02) * grid.cubeHeight;
-  let pulse = 1.0 + 0.06 * sin(grid.time * 2.5 + f32(input.idx) * 0.9);
-  let local = vec3<f32>(input.position.x, input.position.y * h * pulse, input.position.z);
-  let offset = vec3<f32>(
-    f32(t) * grid.spacing - f32(grid.timeSteps) * grid.spacing * 0.5,
-    0.0,
-    f32(c) * grid.spacing - f32(grid.coinCount) * grid.spacing * 0.5,
-  );
+  let inst =
+    instances[input.idx];
 
-  let worldPos = grid.baseModel * vec4<f32>(local + offset, 1.0);
-  out.position = camera.viewProj * worldPos;
-  out.fragPos = worldPos.xyz;
-  out.fragNorm = mat3x3f(grid.baseModel[0].xyz, grid.baseModel[1].xyz, grid.baseModel[2].xyz) * input.normal;
-  out.color = inst.rgb;
-  out.localY = input.position.y;
+  
+  // INSTANCE COORDINATES
+  
+
+  let t =
+    input.idx % grid.timeSteps;
+
+  let c =
+    input.idx / grid.timeSteps;
+
+
+  
+  // HEIGHT
+  
+
+  let h =
+    max(inst.a, 0.02)
+    * grid.cubeHeight;
+
+
+  let pulse =
+    1.0 +
+    0.06 *
+    sin(
+      grid.time * 2.5 +
+      f32(input.idx) * 0.9
+    );
+
+
+  let local =
+    vec3<f32>(
+      input.position.x,
+
+      input.position.y *
+      h *
+      pulse,
+
+      input.position.z
+    );
+
+
+  
+  // SCROLLING CHART
+  //
+  // NEWEST SAMPLE = X 0
+  //
+  // Example with 5 samples:
+  //
+  // t = 0 -> -4 * spacing
+  // t = 1 -> -3 * spacing
+  // t = 2 -> -2 * spacing
+  // t = 3 -> -1 * spacing
+  // t = 4 ->  0
+  //
+  // Therefore the newest candle is ALWAYS
+  // anchored at local X = 0.
+  
+
+  let newest =
+    grid.timeSteps - 1u;
+
+  let relativeT =
+    f32(t) -
+    f32(newest);
+
+
+  let x =
+    relativeT *
+    grid.spacing;
+
+
+  
+  // COIN / Z POSITION
+  //
+  // Keeps multiple coins centered around Z = 0.
+  
+
+  let z =
+    f32(c) *
+    grid.spacing -
+    f32(grid.coinCount - 1u) *
+    grid.spacing *
+    0.5;
+
+
+  let offset =
+    vec3<f32>(
+      x,
+      0.0,
+      z
+    );
+
+
+  
+  // WORLD POSITION
+  
+
+  let worldPos =
+    grid.baseModel *
+    vec4<f32>(
+      local + offset,
+      1.0
+    );
+
+
+  out.position =
+    camera.viewProj *
+    worldPos;
+
+
+  out.fragPos =
+    worldPos.xyz;
+
+
+  // Normal transformed by model matrix.
+  out.fragNorm =
+    mat3x3f(
+      grid.baseModel[0].xyz,
+      grid.baseModel[1].xyz,
+      grid.baseModel[2].xyz
+    ) *
+    input.normal;
+
+
+  out.color =
+    inst.rgb;
+
+
+  out.localY =
+    input.position.y;
+
+
   return out;
 }
 
+
 struct FragOut {
-  @location(0) color    : vec4f,
-  @location(1) normal   : vec4f,
-  @location(2) worldPos : vec4f,
-}
+
+  @location(0)
+  color : vec4f,
+
+  @location(1)
+  normal : vec4f,
+
+  @location(2)
+  worldPos : vec4f,
+};
+
 
 @fragment
-fn fsMain(input : VSOut) -> FragOut {
-  let light = normalize(vec3<f32>(0.4, 1.0, 0.3));
-  let ndotl = max(dot(normalize(input.fragNorm), light), 0.25);
+fn fsMain(
+  input : VSOut
+) -> FragOut {
 
-  // flame-like gradient: darker base, glowing top, tinted by trend color
-  let glow = mix(input.color * 0.35, input.color * 1.8, smoothstep(0.0, 1.0, input.localY));
-  let shimmer = 1.0 + 0.15 * sin(grid.time * 4.0 + input.fragPos.x * 2.0);
+  let light =
+    normalize(
+      vec3<f32>(
+        0.4,
+        1.0,
+        0.3
+      )
+    );
 
-  return FragOut(
-    vec4f(glow * ndotl * shimmer, 1.0),
-    vec4f(input.fragNorm, 0.0),
-    vec4f(input.fragPos, 1.0)
+
+  let ndotl =
+    max(
+      dot(
+        normalize(input.fragNorm),
+        light
+      ),
+      0.25
+    );
+
+
+  
+  // VERTICAL COLOR GRADIENT
+  
+
+  let glow =
+    mix(
+      input.color * 0.35,
+      input.color * 1.8,
+      smoothstep(
+        0.0,
+        1.0,
+        input.localY
+      )
+    );
+  // SHIMMER
+
+  let shimmer =
+    1.0 +
+    0.15 *
+    sin(
+      grid.time * 4.0 +
+      input.fragPos.x * 2.0
+    );
+  return FragOut(    vec4f(      glow * ndotl *      shimmer,      1.0    ),
+    vec4f(      input.fragNorm,      0.0),
+    vec4f(      input.fragPos,      1.0)
   );
-}`;
+}
+`;
 
 // src/engine/effects/datagrams.js
 var ChartsEffect = class {
@@ -62493,55 +62661,75 @@ var ExternalDataHandler = class {
   }
 };
 
-// src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js
-var SeismicPortalAdapter = class {
-  constructor(historyLen = 64) {
+// src/engine/buildin/externalDataHandler/adapters/coingecko/coingecko.js
+var CoinGeckoAdapter = class {
+  constructor(coinIds = ["bitcoin", "ripple"], historyLen = 64) {
+    this.coinIds = coinIds;
     this.historyLen = historyLen;
-    this.mags = new Float32Array(historyLen);
-    this.depths = new Float32Array(historyLen);
+    this.history = {};
+    this.prevPrice = {};
+    this.coinIds.forEach((id2) => {
+      this.history[id2] = new Float32Array(historyLen);
+      this.prevPrice[id2] = 0;
+    });
     this.onUpdate = null;
-    this.ws = null;
+    this._timer = null;
   }
-  start() {
-    this.ws = new WebSocket("wss://www.seismicportal.eu/standing_order/websocket");
-    this.ws.onopen = () => {
-      console.info("[seismic] connected");
-      this._heartbeat = setInterval(() => {
-        if (this.ws.readyState === WebSocket.OPEN) this.ws.send("ping");
-      }, 15e3);
-    };
-    this.ws.onmessage = (msg) => {
-      try {
-        console.log("[seismic raw]", msg.data);
-        const data = JSON.parse(msg.data);
-        const props = data.data?.properties;
-        if (!props) return;
-        this.mags.copyWithin(0, 1);
-        this.mags[this.historyLen - 1] = props.mag ?? 0;
-        this.depths.copyWithin(0, 1);
-        this.depths[this.historyLen - 1] = props.depth ?? 0;
-        if (this.onUpdate) this.onUpdate(this._buildGrid());
-      } catch (e2) {
-        console.warn("SeismicPortalAdapter parse failed:", e2);
-      }
-    };
-    this.ws.onerror = (e2) => console.warn("SeismicPortalAdapter ws error:", e2);
-    this.ws.onclose = () => console.info("SeismicPortalAdapter ws closed");
+  async start(intervalMs = 6e4) {
+    await this._seedHistory();
+    if (this.onUpdate) this.onUpdate(this._buildGrid());
+    this._timer = setInterval(() => this._tick(), intervalMs);
   }
   stop() {
-    this.ws?.close();
+    clearInterval(this._timer);
+  }
+  async _seedHistory() {
+    await Promise.all(this.coinIds.map(async (id2) => {
+      try {
+        const url = `https://api.coingecko.com/api/v3/coins/${id2}/market_chart?vs_currency=usd&days=1`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const prices = data.prices.map((p2) => p2[1]);
+        const buf = this.history[id2];
+        for (let i2 = 0; i2 < this.historyLen; i2++) {
+          const srcIdx = Math.floor(i2 / this.historyLen * prices.length);
+          buf[i2] = prices[srcIdx] ?? prices[prices.length - 1] ?? 0;
+        }
+        this.prevPrice[id2] = buf[this.historyLen - 1];
+      } catch (e2) {
+        console.warn(`CoinGeckoAdapter: seed failed for ${id2}`, e2);
+      }
+    }));
+  }
+  async _tick() {
+    const ids = this.coinIds.join(",");
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      this.coinIds.forEach((id2) => {
+        const price = data[id2]?.usd ?? this.prevPrice[id2];
+        const buf = this.history[id2];
+        buf.copyWithin(0, 1);
+        buf[this.historyLen - 1] = price;
+        this.prevPrice[id2] = price;
+      });
+      if (this.onUpdate) this.onUpdate(this._buildGrid());
+    } catch (e2) {
+      console.warn("CoinGeckoAdapter tick failed:", e2);
+    }
   }
   _buildGrid() {
-    let min2 = Infinity, max2 = -Infinity;
-    for (const v2 of this.mags) {
-      min2 = Math.min(min2, v2);
-      max2 = Math.max(max2, v2);
-    }
-    return {
-      coinCount: 1,
-      timeSteps: this.historyLen,
-      coins: [{ id: "global-quakes", min: Math.min(min2, 0), max: Math.max(max2, 6), samples: this.mags }]
-    };
+    const coins = this.coinIds.map((id2) => {
+      const buf = this.history[id2];
+      let min2 = Infinity, max2 = -Infinity;
+      for (const v2 of buf) {
+        min2 = Math.min(min2, v2);
+        max2 = Math.max(max2, v2);
+      }
+      return { id: id2, min: min2, max: max2, samples: buf };
+    });
+    return { coinCount: this.coinIds.length, timeSteps: this.historyLen, coins };
   }
 };
 
@@ -62624,6 +62812,7 @@ var WaterSimSphereEffect = class {
     this.device = device2;
     this.format = format;
     this.enabled = true;
+    this.opacity = options2.opacity ?? 0.2;
     this.geometryType = options2.geometryType ?? (options2.isSphere ? "sphere" : "sphere");
     this.geometryOptions = options2.geometryOptions ?? {};
     this.normalizeToUnitSphere = options2.normalizeToUnitSphere ?? true;
@@ -62631,7 +62820,7 @@ var WaterSimSphereEffect = class {
     this.width = options2.width ?? SIM_RES2;
     this.height = options2.height ?? SIM_RES2;
     this.size = options2.size ?? 10;
-    this.detail = options2.detail ?? 200;
+    this.detail = options2.detail ?? 100;
     this.poolHeight = options2.poolHeight ?? 0.1;
     this.ior = options2.ior ?? 1.333;
     this.fresnelMin = options2.fresnelMin ?? 0.25;
@@ -62643,7 +62832,7 @@ var WaterSimSphereEffect = class {
     this._localMatrix = mat4Impl.create();
     this._finalMatrix = mat4Impl.create();
     this.data = new Float32Array(20);
-    this.data2 = new Float32Array(8);
+    this.data2 = new Float32Array(12);
     this._idleFrames = 0;
     this._idleThreshold = 90;
     this._createTextures();
@@ -62679,16 +62868,7 @@ var WaterSimSphereEffect = class {
     const posX = this._finalMatrix[12];
     const posY = this._finalMatrix[13];
     const posZ = this._finalMatrix[14];
-    this.data2.set([
-      this.ior,
-      this.fresnelMin,
-      this.causticIntensity,
-      this.poolHeight,
-      this.size,
-      posX,
-      posY,
-      posZ
-    ]);
+    this.data2.set([this.ior, this.fresnelMin, this.causticIntensity, this.poolHeight, this.size, posX ?? 0, posY ?? 0, posZ ?? 0, this.opacity]);
     this.device.queue.writeBuffer(this.waterUniformBuffer, 0, this.data2);
   }
   _createTextures() {
@@ -62741,7 +62921,8 @@ var WaterSimSphereEffect = class {
     });
     this.waterUniformBuffer = this.device.createBuffer({
       label: "WaterSim Water Uniforms",
-      size: 32,
+      size: 48,
+      // was 32 — now 9 floats + padding
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this._writeLightUniforms();
@@ -62952,8 +63133,10 @@ var WaterSimSphereEffect = class {
         targets: [{
           format: "rgba8unorm",
           blend: {
-            color: { operation: "add", srcFactor: "one", dstFactor: "one" },
-            alpha: { operation: "add", srcFactor: "one", dstFactor: "one" }
+            // color: {operation: 'add', srcFactor: 'one', dstFactor: 'one'},
+            // alpha: {operation: 'add', srcFactor: 'one', dstFactor: 'one'}
+            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
           }
         }]
       },
@@ -62980,11 +63163,11 @@ var WaterSimSphereEffect = class {
     this.lightDirection = [x3, y3, z2];
     this._writeLightUniforms();
   }
-  updateWaterParameters({ ior, fresnelMin, causticIntensity, poolHeight } = {}) {
-    if (ior !== void 0) this.ior = ior;
-    if (fresnelMin !== void 0) this.fresnelMin = fresnelMin;
-    if (causticIntensity !== void 0) this.causticIntensity = causticIntensity;
-    if (poolHeight !== void 0) this.poolHeight = poolHeight;
+  updateWaterParameters(ior = 0.25, fresnelMin = 0.3, causticIntensity = 0.3, poolHeight = 0.1) {
+    this.ior = ior;
+    this.fresnelMin = fresnelMin;
+    this.causticIntensity = causticIntensity;
+    this.poolHeight = poolHeight;
   }
   simulate(commandEncoder) {
     const encoder = commandEncoder ?? this.device.createCommandEncoder({ label: "WaterSim Frame" });
@@ -63142,9 +63325,20 @@ var loadCryptoGrid = function() {
         inertia: 0.94,
         autoRotateSpeed: 0.05
       });
-      cryptoGrid.autoUpdate.push(
-        globeDrag
-      );
+      cryptoGrid.autoUpdate.push(globeDrag);
+      let osc0 = new OSCILLATOR(0, 3, 5e-3);
+      let osc1 = new OSCILLATOR(0, 2, 0.01);
+      let osc2 = new OSCILLATOR(0, 2, 9e-3);
+      let osc3 = new OSCILLATOR(0, 2, 9e-3);
+      let updater2 = {
+        update: () => {
+          osc0.UPDATE();
+          osc1.UPDATE();
+          osc2.UPDATE();
+          osc3.UPDATE();
+          cryptoGrid.MAT_EFFECT_WATER.effects.waterEffect.updateWaterParameters(osc0.value_, osc1.value_, osc2.value_, osc3.value_);
+        }
+      };
       cryptoGrid.activateBloomEffect();
       cryptoGrid.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       cryptoGrid.lightContainer[0].behavior.value_ = -1;
@@ -63155,13 +63349,14 @@ var loadCryptoGrid = function() {
       cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
-        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, "rgba16float", 256, app.cameraBuffer);
+        cryptoGrid.autoUpdate.push(updater2);
+        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, "rgba16float", 10, app.cameraBuffer);
         const dataHandler = new ExternalDataHandler();
-        dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
+        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 64));
         dataHandler.onUpdate((name2, grid) => {
-          if (name2 === "seismic") EARTH.effects.cryptoGrid.updateData(grid);
+          if (name2 === "coingecko") EARTH.effects.cryptoGrid.updateData(grid);
         });
-        dataHandler.start("seismic");
+        dataHandler.start("coingecko", 1e4);
         EARTH.effects.flameEmitter.rotSpeed = 1;
         EARTH.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566,
@@ -63182,6 +63377,7 @@ var loadCryptoGrid = function() {
           size: 50
         }, app.cameraBuffer);
         app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
+        app.EARTH = EARTH;
         let cam2 = app.getCamera();
         cam2.setYaw(-0.03);
         cam2.setPitch(-0.49);
@@ -63202,7 +63398,7 @@ var loadCryptoGrid = function() {
       const dir = vec3Impl.normalize(localHit);
       const u2 = 0.5 + Math.atan2(dir[2], dir[0]) / (2 * Math.PI);
       const v2 = 0.5 - Math.asin(dir[1]) / Math.PI;
-      water.addDrop(u2, v2, 0.03, 1);
+      water.addDrop(u2, v2, 0.03, 0.01);
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
