@@ -4,7 +4,7 @@ import {addRaycastsAABBListener, rayIntersectsSphere2} from "../src/engine/rayca
 import {CameraPath, OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
 import {ChartsEffect} from "../src/engine/effects/datagrams.js";
 import {ExternalDataHandler} from "../src/engine/buildin/externalDataHandler/externalDataHandler.js";
-import {CoinGeckoAdapter} from "../src/engine/buildin/externalDataHandler/adapters/coingecko/coingecko.js";
+import {CoinGeckoAdapter, cryptoNames} from "../src/engine/buildin/externalDataHandler/adapters/coingecko/coingecko.js";
 import {SeismicPortalAdapter} from "../src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js";
 import {DragRotateController} from "../src/engine/procedures/drag-rotate-object.js";
 import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
@@ -77,28 +77,18 @@ export var loadCryptoGrid = function() {
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, 'rgba16float', 64, app.cameraBuffer);
+        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1); 5x32  10+150
+        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, 'rgba16float', 512, app.cameraBuffer);
         const dataHandler = new ExternalDataHandler();
-        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 10));
+        //
+        // dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 10));
+        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(cryptoNames, 2));
         dataHandler.onUpdate((name, grid) => {
           if(name === "coingecko") EARTH.effects.cryptoGrid.updateData(grid);
         });
         dataHandler.start("coingecko", 60000);
-        // dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
-        // dataHandler.onUpdate((name, grid) => {
-        //   if(name === "seismic") EARTH.effects.cryptoGrid.updateData(grid);
-        // });
-        // dataHandler.start("seismic");
 
-        // EARTH.effects.flameEmitter.setIntensity(100);
-        // EARTH.effects.flameEmitter.recreateVertexDataCrazzy(4); 
-        EARTH.effects.flameEmitter.rotSpeed = 1;
-        EARTH.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-          0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
         EARTH.setAmbient(2, 3, 0.5);
-
         app.EARTH = EARTH;
         let cam = app.getCamera();
         cam.setYaw(-0.03);

@@ -8,7 +8,8 @@ export class ChartsEffect {
     this.format = format;
     this.enabled = true;
     this.maxInstances = maxInstances;
-    this.floatsPerInstance = 4; // r,g,b,height
+    // r,g,b,height
+    this.floatsPerInstance = 4;
     this.instanceData = new Float32Array(maxInstances * this.floatsPerInstance);
     this.timeSteps = 0;
     this.coinCount = 0;
@@ -17,73 +18,76 @@ export class ChartsEffect {
     this.smoothedHeights = new Float32Array(this.maxInstances).fill(0);
     this.time = 0;
     this.cameraBuffer = cameraBuffer;
+    this.camera = app.getCamera()
     this._finalModel = mat4.create();
     this._initPipeline();
     this.labelContainer = this._createLabelContainer();
+    this.titleContainer = this._createLabelContainer();
+    this.labelMaxDistance = 30; 
   }
 
   _createLabelContainer() {
     const el = document.createElement('div');
     el.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:10;';
     document.body.appendChild(el);
-    this.camera = app.getCamera()
     return el;
   }
 
-  updateLabels(coins, baseModelMatrix, viewProjMatrix, canvasWidth, canvasHeight) {
-    const timeSteps = this.timeSteps;
-    const total = coins.length * timeSteps;
-    while(this.labelContainer.children.length < total) {
-      const d = document.createElement('div');
-      d.style.cssText = 'position:absolute;color:#fff;font:10px monospace;transform:translate(-50%,-100%);white-space:nowrap;';
-      this.labelContainer.appendChild(d);
-    }
-    for(let i = total;i < this.labelContainer.children.length;i++) {
-      this.labelContainer.children[i].style.display = 'none';
-    }
-    const newest = timeSteps - 1;
-    coins.forEach((coin, c) => {
-      const range = Math.max(coin.max - coin.min, 1e-6);
-      const z = c * this.spacing - (coins.length - 1) * this.spacing * 0.5; // same as shader
-
-      for(let t = 0;t < timeSteps;t++) {
-        const labelIdx = c * timeSteps + t;
-        const label = this.labelContainer.children[labelIdx];
-
-        const value = coin.samples[t];
-        const h = Math.max((value - coin.min) / range, 0.02) * this.cubeHeight;
-        const x = (t - newest) * this.spacing; // same formula as shader's relativeT * spacing
-
-        const local = [x, h, z, 1];
-        const world = this._mulVec4(baseModelMatrix, local);
-        const clip = this._mulVec4(viewProjMatrix, world);
-
-        if(clip[3] <= 0) {label.style.display = 'none'; continue;}
-
-        const dist = Math.hypot(world[0] - this.camera[0], world[1] - this.camera[1], world[2] - this.camera[2]);
-        if(dist > this.labelMaxDistance) { // add this.labelMaxDistance = 30 in constructor, tune to taste
-          label.style.display = 'none';
-          continue;
-        }
-
-        const ndcX = clip[0] / clip[3];
-        const ndcY = clip[1] / clip[3];
-        const screenX = (ndcX * 0.5 + 0.5) * canvasWidth;
-        const screenY = (1 - (ndcY * 0.5 + 0.5)) * canvasHeight;
-
-        label.style.display = 'block';
-        label.style.left = `${screenX}px`;
-        label.style.top = `${screenY - 6}px`;
-        label.textContent = value.toFixed(coin.id === 'ripple' ? 4 : 2);
-
-        const scale = Math.max(0.3, Math.min(1.0, 8 / dist)); // tune 8 = reference distance
-        label.style.fontSize = `${10 * scale}px`;
-        label.style.left = `${screenX}px`;
-        label.style.top = `${screenY - 6 * scale}px`;
-
-      }
-    });
+updateLabels(coins, baseModelMatrix, viewProjMatrix, canvasWidth, canvasHeight) {
+  const timeSteps = this.timeSteps;
+  const total = coins.length * timeSteps;
+  while (this.labelContainer.children.length < total) {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:absolute;color:#fff;font:10px monospace;transform:translate(-50%,-100%);white-space:nowrap;';
+    this.labelContainer.appendChild(d);
   }
+  for (let i = total; i < this.labelContainer.children.length; i++) {
+    this.labelContainer.children[i].style.display = 'none';
+  }
+
+  const newest = timeSteps - 1;
+  const results = []; // NEW: collect all label placements first, sort after
+
+  coins.forEach((coin, c) => {
+    const range = Math.max(coin.max - coin.min, 1e-6);
+    const z = c * this.spacing - (coins.length - 1) * this.spacing * 0.5;
+
+    for (let t = 0; t < timeSteps; t++) {
+      const labelIdx = c * timeSteps + t;
+      const label = this.labelContainer.children[labelIdx];
+      const value = coin.samples[t];
+      const h = Math.max((value - coin.min) / range, 0.02) * this.cubeHeight;
+      const x = (t - newest) * this.spacing;
+
+      const local = [x, h, z, 1];
+      const world = this._mulVec4(baseModelMatrix, local);
+      const clip = this._mulVec4(viewProjMatrix, world);
+
+      if (clip[3] <= 0) { label.style.display = 'none'; continue; }
+
+      const dist = Math.hypot(world[0] - this.camera.position[0], world[1] - this.camera.position[1], world[2] - this.camera.position[2]);
+      if (dist > this.labelMaxDistance) { label.style.display = 'none'; continue; }
+
+      const ndcX = clip[0] / clip[3];
+      const ndcY = clip[1] / clip[3];
+      const screenX = (ndcX * 0.5 + 0.5) * canvasWidth;
+      const screenY = (1 - (ndcY * 0.5 + 0.5)) * canvasHeight;
+      const scale = Math.max(0.3, Math.min(1.0, 8 / dist));
+
+      label.style.display = 'block';
+      label.style.left = `${screenX}px`;
+      label.style.top = `${screenY - 6 * scale}px`;
+      label.style.fontSize = `${10 * scale}px`;
+      label.textContent = value.toFixed(coin.id === 'ripple' ? 4 : 2);
+
+      results.push({label, dist}); // NEW
+    }
+  });
+
+  // NEW: farthest first (low z-index), nearest last (high z-index) — nearest always wins overlap
+  results.sort((a, b) => b.dist - a.dist);
+  results.forEach((r, i) => { r.label.style.zIndex = i + 1; });
+}
 
   _mulVec4(m, v) {
     return [
@@ -198,11 +202,6 @@ export class ChartsEffect {
         this.instanceData[o] = col[0];
         this.instanceData[o + 1] = col[1];
         this.instanceData[o + 2] = col[2];
-
-        // const targetH = h; // rename existing `h` calc to targetH
-        // const smoothed = this.smoothedHeights[i] + (targetH - this.smoothedHeights[i]) * 0.25; // 0.25 = ease speed, lower = smoother
-        // this.smoothedHeights[i] = smoothed;
-        // this.instanceData[o + 3] = smoothed; // was: h
         this.instanceData[o + 3] = h;
       }
     });

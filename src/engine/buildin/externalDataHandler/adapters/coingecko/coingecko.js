@@ -69,3 +69,26 @@ export class CoinGeckoAdapter {
     return {coinCount: this.coinIds.length, timeSteps: this.historyLen, coins};
   }
 }
+
+export const cryptoNames = [
+  "bitcoin",       // BTC
+  "ethereum",      // ETH
+  "ripple",        // XRP
+  "binancecoin",   // BNB
+  "solana",        // SOL
+  "cardano",       // ADA
+  "dogecoin",      // DOGE
+  "polkadot",      // DOT
+  "tron",          // TRX
+  "avalanche-2",   // AVAX
+  "chainlink",     // LINK
+  "polygon",       // MATIC (older id: "matic-network")
+  "litecoin",      // LTC
+  "shiba-inu",     // SHIB
+  "uniswap",       // UNI
+  "cosmos",        // ATOM
+  "stellar",       // XLM
+  "monero",        // XMR
+  "ethereum-classic", // ETC
+  "filecoin",      // FIL
+];

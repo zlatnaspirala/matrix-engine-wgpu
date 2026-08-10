@@ -134,6 +134,11 @@ export class WASDCamera {
     }
 
     if(isMobile() === false) {
+
+      canvas.addEventListener('contextmenu', e => {
+        e.preventDefault();
+      });
+
       canvas.addEventListener('pointerdown', e => {
         if(e.pointerType === 'mouse') {
           this._mouseDown = true;
@@ -146,18 +151,18 @@ export class WASDCamera {
       }, {passive: false});
 
       canvas.addEventListener('pointermove', e => {
-          if(e.pointerType === 'mouse' && this._mouseDown) {
-            if(this._lookDisabled) {console.log('[cam] look disabled, skipping'); return }
-            console.log('[cam] rotating, lookDisabled:', this._lookDisabled);
-            const dx = e.movementX * this.MOUSE_SENS;
-            const dy = e.movementY * this.MOUSE_SENS;
-            this.yaw -= dx * this.rotationSpeed;
-            this.pitch -= dy * this.rotationSpeed;
-            this.yaw %= Math.PI * 2;
-            this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-            this._dirtyAngle = true;
-          }
-        }, {passive: true});
+        if(e.pointerType === 'mouse' && this._mouseDown) {
+          if(this._lookDisabled) {console.log('[cam] look disabled, skipping'); return }
+          console.log('[cam] rotating, lookDisabled:', this._lookDisabled);
+          const dx = e.movementX * this.MOUSE_SENS;
+          const dy = e.movementY * this.MOUSE_SENS;
+          this.yaw -= dx * this.rotationSpeed;
+          this.pitch -= dy * this.rotationSpeed;
+          this.yaw %= Math.PI * 2;
+          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+          this._dirtyAngle = true;
+        }
+      }, {passive: true});
 
       canvas.addEventListener('pointerup', e => {
         if(e.pointerType === 'mouse') {

@@ -7074,6 +7074,9 @@ var WASDCamera = class _WASDCamera {
       }, { passive: false });
     }
     if (isMobile() === false) {
+      canvas.addEventListener("contextmenu", (e2) => {
+        e2.preventDefault();
+      });
       canvas.addEventListener("pointerdown", (e2) => {
         if (e2.pointerType === "mouse") {
           this._mouseDown = true;
@@ -62088,158 +62091,65 @@ struct Camera {
 @group(0) @binding(0)
 var<uniform> camera : Camera;
 
-
 struct GridParams {
   baseModel : mat4x4<f32>,
-
   timeSteps : u32,
   coinCount : u32,
-
   spacing : f32,
   cubeHeight : f32,
-
   time : f32,
 };
 
-@group(0) @binding(1)
-var<storage, read> instances : array<vec4<f32>>;
-
-@group(0) @binding(2)
-var<uniform> grid : GridParams;
-
+@group(0) @binding(1) var<storage, read> instances : array<vec4<f32>>;
+@group(0) @binding(2) var<uniform> grid : GridParams;
 
 struct VSIn {
   @location(0)
   position : vec3<f32>,
-
   @location(1)
   normal : vec3<f32>,
-
   @builtin(instance_index)
   idx : u32,
 };
 
-
 struct VSOut {
   @builtin(position)
   position : vec4<f32>,
-
   @location(0)
   color : vec3<f32>,
-
   @location(1)
   fragNorm : vec3<f32>,
-
   @location(2)
   fragPos : vec3<f32>,
-
   @location(3)
   localY : f32,
 };
 
-
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
-
   var out : VSOut;
-
-  let inst =
-    instances[input.idx];
-
-  
-  // INSTANCE COORDINATES
-  
-
-  let t =
-    input.idx % grid.timeSteps;
-
-  let c =
-    input.idx / grid.timeSteps;
-
-
-  
-  // HEIGHT
-  
-
-  let h =
-    max(inst.a, 0.02)
-    * grid.cubeHeight;
-
-
-  let pulse =
-    1.0 +
-    0.02 *
-    sin(
-      grid.time * 2.5 +
-      f32(input.idx) * 0.9
-    );
-
-
-  let local =
-    vec3<f32>(
-      input.position.x,
-
-      input.position.y *
-      h *
-      pulse,
-
-      input.position.z
-    );
-
-
-  
-  // SCROLLING CHART
-  //
-  // NEWEST SAMPLE = X 0
-  //
-  // Example with 5 samples:
-  //
-  // t = 0 -> -4 * spacing
-  // t = 1 -> -3 * spacing
-  // t = 2 -> -2 * spacing
-  // t = 3 -> -1 * spacing
-  // t = 4 ->  0
-  //
-  // Therefore the newest candle is ALWAYS
-  // anchored at local X = 0.
-  
-
-  let newest =    grid.timeSteps - 1u;
-
+  let inst = instances[input.idx];
+  let t = input.idx % grid.timeSteps;
+  let c = input.idx / grid.timeSteps;
+  let h = max(inst.a, 0.02) * grid.cubeHeight;
+  let pulse = 1.0 + 0.02 * sin(grid.time * 2.5 + f32(input.idx) * 0.9);
+  let local = vec3<f32>(input.position.x, input.position.y * h * pulse, input.position.z);
+  let newest = grid.timeSteps - 1u;
   let relativeT =    f32(t) -    f32(newest);
   let x =    relativeT *    grid.spacing;
-  // let x = f32(tIdx) * spacing + scrollOffset;
-  // COIN / Z POSITION
-  //
-  // Keeps multiple coins centered around Z = 0.  
-
-  let z =
-    f32(c) *
-    grid.spacing -
-    f32(grid.coinCount - 1u) *
-    grid.spacing *
-    0.5;
-
-
-  let offset =    vec3<f32>(      x,      0.0,      z    );
-let worldPos =
-  grid.baseModel *
-  vec4<f32>(
-    local + offset,
-    1.0
-  );
+  let z = f32(c) * grid.spacing - f32(grid.coinCount - 1u) * grid.spacing * 0.5;
+  let offset =    vec3<f32>(x, 0.0, z);
+  let worldPos = grid.baseModel * vec4<f32>(local + offset, 1.0);
   out.position =    camera.viewProj *    worldPos;
   out.fragPos =    worldPos.xyz;
   // Normal transformed by model matrix.
-  out.fragNorm =    mat3x3f(
+  out.fragNorm = mat3x3f(
       grid.baseModel[0].xyz,
       grid.baseModel[1].xyz,
       grid.baseModel[2].xyz
-    ) *
-    input.normal;
-
-  out.color =    inst.rgb;
-  out.localY =    input.position.y;
+    ) * input.normal;
+  out.color = inst.rgb;
+  out.localY = input.position.y;
   return out;
 }
 
@@ -62253,57 +62163,16 @@ struct FragOut {
 };
 
 @fragment
-fn fsMain(
-  input : VSOut
-) -> FragOut {
-
-  let light =
-    normalize(
-      vec3<f32>(
-        0.4,
-        1.0,
-        0.3
-      )
-    );
-
-
-  let ndotl =
-    max(
-      dot(
-        normalize(input.fragNorm),
-        light
-      ),
-      0.25
-    );
-
-
-  
-  // VERTICAL COLOR GRADIENT
-  
-
-  let glow =
-    mix(
+fn fsMain(input : VSOut) -> FragOut {
+  let light = normalize(vec3<f32>(0.4, 1.0, 0.3));
+  let ndotl = max(dot(normalize(input.fragNorm), light), 0.25);
+  let glow = mix(
       input.color * 0.35,
       input.color * 1.8,
-      smoothstep(
-        0.0,
-        1.0,
-        input.localY
-      )
+      smoothstep( 0.0, 1.0, input.localY)
     );
-  // SHIMMER
-
-  let shimmer =
-    1.0 +
-    0.15 *
-    sin(
-      grid.time * 4.0 +
-      input.fragPos.x * 2.0
-    );
-  return FragOut(    vec4f(      glow * ndotl *      shimmer,      1.0    ),
-    vec4f(      input.fragNorm,      0.0),
-    vec4f(      input.fragPos,      1.0)
-  );
+  let shimmer = 1.0 + 0.15 * sin(grid.time * 4.0 + input.fragPos.x * 2.0);
+  return FragOut(vec4f(glow * ndotl * shimmer, 1.0), vec4f(input.fragNorm, 0.0), vec4f(input.fragPos, 1.0));
 }
 `;
 
@@ -62323,15 +62192,17 @@ var ChartsEffect = class {
     this.smoothedHeights = new Float32Array(this.maxInstances).fill(0);
     this.time = 0;
     this.cameraBuffer = cameraBuffer;
+    this.camera = app.getCamera();
     this._finalModel = mat4Impl.create();
     this._initPipeline();
     this.labelContainer = this._createLabelContainer();
+    this.titleContainer = this._createLabelContainer();
+    this.labelMaxDistance = 30;
   }
   _createLabelContainer() {
     const el2 = document.createElement("div");
     el2.style.cssText = "position:fixed;top:0;left:0;pointer-events:none;z-index:10;";
     document.body.appendChild(el2);
-    this.camera = app.getCamera();
     return el2;
   }
   updateLabels(coins, baseModelMatrix, viewProjMatrix, canvasWidth, canvasHeight) {
@@ -62346,6 +62217,7 @@ var ChartsEffect = class {
       this.labelContainer.children[i2].style.display = "none";
     }
     const newest = timeSteps - 1;
+    const results = [];
     coins.forEach((coin, c2) => {
       const range = Math.max(coin.max - coin.min, 1e-6);
       const z2 = c2 * this.spacing - (coins.length - 1) * this.spacing * 0.5;
@@ -62362,7 +62234,7 @@ var ChartsEffect = class {
           label.style.display = "none";
           continue;
         }
-        const dist2 = Math.hypot(world[0] - this.camera[0], world[1] - this.camera[1], world[2] - this.camera[2]);
+        const dist2 = Math.hypot(world[0] - this.camera.position[0], world[1] - this.camera.position[1], world[2] - this.camera.position[2]);
         if (dist2 > this.labelMaxDistance) {
           label.style.display = "none";
           continue;
@@ -62371,15 +62243,18 @@ var ChartsEffect = class {
         const ndcY = clip[1] / clip[3];
         const screenX = (ndcX * 0.5 + 0.5) * canvasWidth;
         const screenY = (1 - (ndcY * 0.5 + 0.5)) * canvasHeight;
+        const scale4 = Math.max(0.3, Math.min(1, 8 / dist2));
         label.style.display = "block";
         label.style.left = `${screenX}px`;
-        label.style.top = `${screenY - 6}px`;
-        label.textContent = value.toFixed(coin.id === "ripple" ? 4 : 2);
-        const scale4 = Math.max(0.3, Math.min(1, 8 / dist2));
-        label.style.fontSize = `${10 * scale4}px`;
-        label.style.left = `${screenX}px`;
         label.style.top = `${screenY - 6 * scale4}px`;
+        label.style.fontSize = `${10 * scale4}px`;
+        label.textContent = value.toFixed(coin.id === "ripple" ? 4 : 2);
+        results.push({ label, dist: dist2 });
       }
+    });
+    results.sort((a2, b2) => b2.dist - a2.dist);
+    results.forEach((r3, i2) => {
+      r3.label.style.zIndex = i2 + 1;
     });
   }
   _mulVec4(m2, v2) {
@@ -62759,6 +62634,48 @@ var CoinGeckoAdapter = class {
     return { coinCount: this.coinIds.length, timeSteps: this.historyLen, coins };
   }
 };
+var cryptoNames = [
+  "bitcoin",
+  // BTC
+  "ethereum",
+  // ETH
+  "ripple",
+  // XRP
+  "binancecoin",
+  // BNB
+  "solana",
+  // SOL
+  "cardano",
+  // ADA
+  "dogecoin",
+  // DOGE
+  "polkadot",
+  // DOT
+  "tron",
+  // TRX
+  "avalanche-2",
+  // AVAX
+  "chainlink",
+  // LINK
+  "polygon",
+  // MATIC (older id: "matic-network")
+  "litecoin",
+  // LTC
+  "shiba-inu",
+  // SHIB
+  "uniswap",
+  // UNI
+  "cosmos",
+  // ATOM
+  "stellar",
+  // XLM
+  "monero",
+  // XMR
+  "ethereum-classic",
+  // ETC
+  "filecoin"
+  // FIL
+];
 
 // src/engine/procedures/drag-rotate-object.js
 var DragRotateController = class {
@@ -63324,24 +63241,13 @@ var loadCryptoGrid = function() {
       cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
-        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, "rgba16float", 64, app.cameraBuffer);
+        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, "rgba16float", 512, app.cameraBuffer);
         const dataHandler = new ExternalDataHandler();
-        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 10));
+        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(cryptoNames, 2));
         dataHandler.onUpdate((name2, grid) => {
           if (name2 === "coingecko") EARTH.effects.cryptoGrid.updateData(grid);
         });
         dataHandler.start("coingecko", 6e4);
-        EARTH.effects.flameEmitter.rotSpeed = 1;
-        EARTH.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566,
-          0.21125441598805741,
-          0.4249951687253338,
-          0.4724163587305734,
-          2.381811753816671,
-          3.074841196886901,
-          -2.3797025623904164,
-          -3.4608908819087145
-        ]);
         EARTH.setAmbient(2, 3, 0.5);
         app.EARTH = EARTH;
         let cam2 = app.getCamera();
