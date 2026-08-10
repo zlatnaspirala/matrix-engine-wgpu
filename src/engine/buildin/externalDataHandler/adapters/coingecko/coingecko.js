@@ -26,9 +26,8 @@ export class CoinGeckoAdapter {
         const url = `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=1`;
         const res = await fetch(url);
         const data = await res.json();
-        const prices = data.prices.map(p => p[1]); // [ [ts, price], ... ]
+        const prices = data.prices.map(p => p[1]);
         const buf = this.history[id];
-        // resample to historyLen slots, most recent last
         for (let i = 0; i < this.historyLen; i++) {
           const srcIdx = Math.floor((i / this.historyLen) * prices.length);
           buf[i] = prices[srcIdx] ?? prices[prices.length - 1] ?? 0;

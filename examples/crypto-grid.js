@@ -27,39 +27,29 @@ export var loadCryptoGrid = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
-
     cryptoGrid.addLight();
-    // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/earth.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
     addRaycastsAABBListener('canvas1', 'click');
 
     async function onLoadObj(m) {
-      let EARTH = cryptoGrid.addMeshObj({
-        material: {type: 'standard'},
+      let charts = cryptoGrid.addMeshObj({
+        material: {type: 'standard', share: true},
         position: {x: 0, y: 20, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [2, 2, 2],
-        texturesPaths: ['./res/meshes/blender/earth.webp'],
+        scale: [4, 4, 4],
+        // texturesPaths: ['./res/meshes/blender/earth.webp'],
         name: 'earth',
         mesh: m.cube,
         raycast: {enabled: true, radius: 10},
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-          flameEmitter: true
-          // flameEffect: true
-        }
+        physics: {enabled: false},
+        pointerEffect: {enabled: true, flameEffect: true}
       })
 
       cryptoGrid.lightContainer[0].setIntensity(5);
 
-      const globeDrag = new DragRotateController(EARTH, cryptoGrid.canvas, cryptoGrid.getCamera(), {
+      const globeDrag = new DragRotateController(charts, cryptoGrid.canvas, cryptoGrid.getCamera(), {
         sensitivity: 0.6,
         inertia: 0.94,
         autoRotateSpeed: 0.0,
@@ -77,19 +67,26 @@ export var loadCryptoGrid = function() {
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1); 5x32  10+150
-        EARTH.effects.cryptoGrid = new ChartsEffect(app.device, 'rgba16float', 512, app.cameraBuffer);
+        charts.effects.cryptoGrid = new ChartsEffect(app.device, 'rgba16float', 512, app.cameraBuffer, {
+          iconPreview: true,
+          iconSize: 128,
+          iconScale: 2.0,
+          // [screenX, world/local Y]
+          iconOffset: [0, 0],
+          iconMap: {
+            bitcoin: './res/textures/bitcoin.webp',
+            ripple: './res/textures/xrp.webp'
+          }
+        });
         const dataHandler = new ExternalDataHandler();
-        //
-        // dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 10));
-        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(cryptoNames, 2));
+        dataHandler.registerAdapter("coingecko", new CoinGeckoAdapter(["bitcoin", "ripple"], 10));
         dataHandler.onUpdate((name, grid) => {
-          if(name === "coingecko") EARTH.effects.cryptoGrid.updateData(grid);
+          if(name === "coingecko") charts.effects.cryptoGrid.updateData(grid);
         });
         dataHandler.start("coingecko", 60000);
-
-        EARTH.setAmbient(2, 3, 0.5);
-        app.EARTH = EARTH;
+        charts.setBlend(0.001);
+        app.charts = charts;
+        app.charts.effects.flameEffect.setScale(100)
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
@@ -109,15 +106,13 @@ export var loadCryptoGrid = function() {
         app.buildRenderBuckets();
         // IMPORTANT
         app.mainRenderBundle[0].updateBoundingSphere();
-      }, 500);
+      }, 800);
     }
 
     cryptoGrid.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       const {hitObject, hitPoint} = e.detail;
-      if(e.detail.hitObject.name.startsWith('cube')) {
-        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+      if(e.detail.hitObject.name.startsWith('earth')) {
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
         app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
       }

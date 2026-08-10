@@ -10,11 +10,10 @@ import {DragRotateController} from "../src/engine/procedures/drag-rotate-object.
 import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {WaterSimSphereEffect} from "../src/engine/effects/waterSimEffectSphere.js";
+import {EarthquakeEffect} from "../src/engine/effects/seismic.js";
 
 export var loadEarth = function() {
-
   let MAT_EFFECT_WATER;
-
   let cryptoGrid = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
@@ -35,27 +34,6 @@ export var loadEarth = function() {
     addRaycastsAABBListener('canvas1', 'click');
 
     async function onLoadObj(m) {
-
-      MAT_EFFECT_WATER = cryptoGrid.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 20, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [30, 30, 30],
-        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'waterEffect',
-        useBlend: true,
-        mesh: m.cube,
-        raycast: {enabled: true, radius: 1},
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true,
-        }
-      });
 
       let EARTH = cryptoGrid.addMeshObj({
         material: {type: 'mirror'},
@@ -86,11 +64,32 @@ export var loadEarth = function() {
         pointerEffect: {
           enabled: true,
           flameEmitter: true
-          // flameEffect: true
         }
       })
 
-      cryptoGrid.lightContainer[0].setIntensity(5);
+      
+      MAT_EFFECT_WATER = cryptoGrid.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 20, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [30, 30, 30],
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'waterEffect',
+        useBlend: true,
+        mesh: m.cube,
+        raycast: {enabled: true, radius: 1},
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+        }
+      });
+
+      cryptoGrid.lightContainer[0].setIntensity(6);
 
       const globeDrag = new DragRotateController(EARTH, cryptoGrid.canvas, cryptoGrid.getCamera(), {
         sensitivity: 0.6,
@@ -115,22 +114,25 @@ export var loadEarth = function() {
       }
 
       cryptoGrid.activateBloomEffect();
-      cryptoGrid.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
-      cryptoGrid.lightContainer[0].behavior.value_ = -1;
-      cryptoGrid.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      })
       cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        cryptoGrid.autoUpdate.push(updater2);
-        // dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
-        // dataHandler.onUpdate((name, grid) => {
-        //   if(name === "seismic") EARTH.effects.cryptoGrid.updateData(grid);
-        // });
-        // dataHandler.start("seismic");
+
+        EARTH.effects.earthquake = new EarthquakeEffect(cryptoGrid.device, 'rgba16float', 'rgba16float', {
+          sphereScale: 2//1.8
+        }, cryptoGrid.cameraBuffer);
+
+        // cryptoGrid.autoUpdate.push(updater2);
+        const dataHandler = new ExternalDataHandler();
+        dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
+        dataHandler.onUpdate((name, grid) => {
+          if(name === "seismic") {
+            console.log(grid);
+            EARTH.effects.earthquake.updateData(grid);
+          }
+        });
+        dataHandler.start("seismic");
 
         // EARTH.effects.flameEmitter.setIntensity(100);
         // EARTH.effects.flameEmitter.recreateVertexDataCrazzy(4); 
@@ -142,6 +144,10 @@ export var loadEarth = function() {
         EARTH.setAmbient(2, 3, 0.5);
 
         MAT_EFFECT_WATER.setBlend(0.001);
+
+
+
+
         MAT_EFFECT_WATER.effects.waterEffect = new WaterSimSphereEffect(cryptoGrid.device, 'rgba16float', {
           isSphere: true,
           geometryType: 'sphere',
