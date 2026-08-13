@@ -88,15 +88,12 @@ class MatrixCannon {
 
     this.world = new CANNON.World();
     this.world.gravity.set(0, -this.options.gravity, 0);
-    // 1. Use standard GSSolver for stability
     const solver = new CANNON.GSSolver();
     solver.iterations = iterations;
     solver.tolerance = tolerance;
     this.world.solver = solver;
-    // Softer contacts prevent the "teleporting" / "ghosting" effect
     this.world.defaultContactMaterial.contactEquationStiffness = 1e6;
     this.world.defaultContactMaterial.contactEquationRelaxation = 10;
-    // Broadphase optimization for containers
     this.world.broadphase = new CANNON.SAPBroadphase(this.world);
     this.world.allowSleep = true;
     const groundShape = new CANNON.Box(
@@ -134,7 +131,6 @@ class MatrixCannon {
         });
       }
     });
-    // ets helper - tried hingle control in kinematic manir [wip]
     this.restQuaternion = new CANNON.Quaternion();
     this.restQuaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -15);
     this.restQuaternion2 = new CANNON.Quaternion();
@@ -152,6 +148,7 @@ class MatrixCannon {
       case 'ConvexHull': body = this._addConvexHull(pOptions); break;
       case 'BvhMesh': body = this._addBvhMesh(pOptions); break;
       case 'Chain': body = this._createChain(pOptions); break;
+      case 'Cloth': body = this._addCloth(pOptions); break;
       default: return -1;
     }
     return body ? this.rigidBodies.length - 1 : -1;
@@ -201,10 +198,8 @@ class MatrixCannon {
     const body = new CANNON.Body(bodyOptions);
     if(pOptions.sensor) body.isSensor = true;
     body.position.set(pos.x, pos.y, pos.z);
-    // body.position.set(pos.x, pos.y, pos.z);
     body.quaternion.copy(quat);
     body.isKinematic = isKinematic;
-    // no arg for now
     body.allowSleep = true;
     body.sleepSpeedLimit = 0.1;
     body.sleepTimeLimit = 0.5;
@@ -222,8 +217,6 @@ class MatrixCannon {
   }
 
   _addBox(pOptions) {
-    const s = pOptions.scale || [1, 1, 1];
-    // const hx = s[0] / 2, hy = s[1] / 2, hz = s[2] / 2;
     const shape = new this.CANNON.Box(new this.CANNON.Vec3(
       pOptions.scale[0],
       pOptions.scale[1],
@@ -235,13 +228,9 @@ class MatrixCannon {
     const CANNON = this.CANNON;
     const halfHeight = (pOptions.height || 1) * 0.5;
     const radius = pOptions.radius || 1;
-    // Cannon doesn't have native capsule, use compound body
     const body = new CANNON.Body({mass: pOptions.mass || 1});
-    // Sphere at top
     body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, halfHeight, 0));
-    // Sphere at bottom
     body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, -halfHeight, 0));
-    // Cylinder in middle
     body.addShape(new CANNON.Cylinder(radius, radius, halfHeight * 2, 8), new CANNON.Vec3(0, 0, 0));
     const pos = pOptions.position || {x: 0, y: 0, z: 0};
     body.position.set(pos.x, pos.y, pos.z);
@@ -318,10 +307,88 @@ class MatrixCannon {
     return this._registerBody(body, pOptions);
   }
 
+  _addCloth(pOptions) {
+    const CANNON = this.CANNON;
+    const nx = pOptions.nx || 10;
+    const ny = pOptions.ny || 10;
+    const width = pOptions.width || 5;
+    const height = pOptions.height || 5;
+    const spacingX = width / nx;
+    const spacingY = height / ny;
+    const particleMass = (pOptions.mass || 1) / ((nx + 1) * (ny + 1));
+    const radius = pOptions.radius || 0.05;
+    
+    const particles = [];
+    const pos = pOptions.position || { x: 0, y: 0, z: 0 };
+    const pinTop = pOptions.pinTop !== false;
+
+    for(let y = 0; y <= ny; y++) {
+      for(let x = 0; x <= nx; x++) {
+        const px = pos.x + (x - nx / 2) * spacingX;
+        const py = pos.y + (ny / 2 - y) * spacingY;
+        const pz = pos.z;
+
+        const isPinned = (pinTop && y === 0) || (pOptions.pinnedIndices && pOptions.pinnedIndices.includes(y * (nx + 1) + x));
+        const mass = isPinned ? 0 : particleMass;
+
+        const shape = new CANNON.Sphere(radius);
+        const body = new CANNON.Body({
+          mass: mass,
+          shape: shape,
+          linearDamping: pOptions.linearDamping ?? 0.4,
+          angularDamping: pOptions.angularDamping ?? 0.4
+        });
+
+        body.position.set(px, py, pz);
+        body.collisionFilterGroup = pOptions.group ?? LAYER_MOVING;
+        body.collisionFilterMask = pOptions.mask ?? -1;
+
+        this.world.addBody(body);
+        this._registerBody(body, {
+          name: pOptions.name ? `${pOptions.name}_${x}_${y}` : `cloth_${x}_${y}`,
+          position: { x: px, y: py, z: pz }
+        });
+
+        particles.push(body);
+      }
+    }
+
+    for(let y = 0; y <= ny; y++) {
+      for(let x = 0; x <= nx; x++) {
+        const bodyA = particles[y * (nx + 1) + x];
+
+        if(x < nx) {
+          const bodyB = particles[y * (nx + 1) + (x + 1)];
+          const constraint = new CANNON.DistanceConstraint(bodyA, bodyB, spacingX);
+          this.world.addConstraint(constraint);
+          this.constraints.push(constraint);
+        }
+
+        if(y < ny) {
+          const bodyB = particles[(y + 1) * (nx + 1) + x];
+          const constraint = new CANNON.DistanceConstraint(bodyA, bodyB, spacingY);
+          this.world.addConstraint(constraint);
+          this.constraints.push(constraint);
+        }
+
+        if(pOptions.shear && x < nx && y < ny) {
+          const bodyB = particles[(y + 1) * (nx + 1) + (x + 1)];
+          const dist = Math.sqrt(spacingX * spacingX + spacingY * spacingY);
+          const constraint = new CANNON.DistanceConstraint(bodyA, bodyB, dist);
+          this.world.addConstraint(constraint);
+          this.constraints.push(constraint);
+        }
+      }
+    }
+
+    this.world.broadphase.dirty = true;
+    this.world.broadphase.needsUpdate = true;
+    return particles[0];
+  }
+
   applyImpulse(idx, x, y, z) {
     const b = this.rigidBodies[idx];
     if(b) {
-
       b.applyImpulse(new this.CANNON.Vec3(x, y, z), b.position);
     }
   }
@@ -397,10 +464,7 @@ class MatrixCannon {
   removeRigidBody(idx) {
     const b = this.rigidBodies[idx];
     if(!b) return;
-
     this.world.removeBody(b);
-
-    // cleanup reference
     this.rigidBodies.slice(idx, 1);
   }
 
@@ -413,7 +477,6 @@ class MatrixCannon {
   setGravityScale(idx, scale) {
     const b = this.rigidBodies[idx];
     if(b) {
-      // Cannon doesn't have built-in gravity scale, apply as force
       b.gravityScale = scale;
     }
   }
@@ -477,15 +540,13 @@ class MatrixCannon {
 
   addHingeConstraint(idxA, idxB, opts, msgID) {
     const CANNON = this.CANNON;
-    const bodyA = this.rigidBodies[idxA]; // anchor
-    const bodyB = this.rigidBodies[idxB]; // flipper
+    const bodyA = this.rigidBodies[idxA];
+    const bodyB = this.rigidBodies[idxB];
     if(!bodyA || !bodyB) return;
     bodyA.velocity.set(0, 0, 0);
     bodyA.angularVelocity.set(0, 0, 0);
     bodyA.angularDamping = 0.9;
     bodyA.linearDamping = 0.2;
-    // const pivotA = new CANNON.Vec3(...opts.pivotA); // local to bodyA
-    // const pivotB = new CANNON.Vec3(...opts.pivotB); // local to bodyB
     const constraint = new CANNON.PointToPointConstraint(
       bodyA,
       new CANNON.Vec3(0, 0, 0),
@@ -543,33 +604,28 @@ class MatrixCannon {
 
   getDiceFace(idx, msgID) {
     const body = this.rigidBodies[idx];
-    const q = body.quaternion; // Cannon body's quaternion (x, y, z, w)
+    const q = body.quaternion;
 
-    // Local vectors for the dice faces
     const faces = [
-      {face: 5, v: [0, 1, 0]},  // UP
-      {face: 3, v: [0, -1, 0]}, // DOWN
-      {face: 2, v: [1, 0, 0]},  // RIGHT
-      {face: 6, v: [-1, 0, 0]}, // LEFT
-      {face: 1, v: [0, 0, 1]},  // FRONT
-      {face: 4, v: [0, 0, -1]}  // BACK
+      {face: 5, v: [0, 1, 0]},
+      {face: 3, v: [0, -1, 0]},
+      {face: 2, v: [1, 0, 0]},
+      {face: 6, v: [-1, 0, 0]},
+      {face: 1, v: [0, 0, 1]},
+      {face: 4, v: [0, 0, -1]}
     ];
 
     let maxDot = -Infinity;
     let bestFace = 1;
 
     for(const f of faces) {
-      // Rotate the local vector by the quaternion (Manual math)
-      // This calculates: q * v * q^-1
       const [vx, vy, vz] = f.v;
       const tx = 2 * (q.y * vz - q.z * vy);
       const ty = 2 * (q.z * vx - q.x * vz);
       const tz = 2 * (q.x * vy - q.y * vx);
       const rx = vx + q.w * tx + (q.y * tz - q.z * ty);
       const ry = vy + q.w * ty + (q.z * tx - q.x * tz);
-      const rz = vz + q.w * tz + (q.x * ty - q.y * tx);
 
-      // Dot product with World UP [0, 1, 0] is just the Y component (ry)
       if(ry > maxDot) {
         maxDot = ry;
         bestFace = f.face;
@@ -582,8 +638,6 @@ class MatrixCannon {
       face: bestFace
     });
   }
-
-  speedUpSimulation(v) {this.speedUpSimulation = v}
 
   createChain(ids, size = 0.5, marginSpace = 0.05) {
     const CANNON = this.CANNON;
@@ -604,7 +658,6 @@ class MatrixCannon {
       this.world.addConstraint(c2);
       this.constraints.push(c1, c2);
     }
-    // ids[0] = top anchor (spawned at highest Y), make it static
     const anchor = this.rigidBodies[ids[0]];
     if(anchor) {
       anchor.mass = 0;
@@ -617,111 +670,38 @@ class MatrixCannon {
 
   createBoundedSpace(ids, pos, size) {
     const CANNON = this.CANNON;
-
     const wallGroup = 1 << (this._boundedSpaceCount || 0);
     this._boundedSpaceCount = (this._boundedSpaceCount || 0) + 1;
-
     const wallThickness = 0.6;
 
     const addWall = (sx, sy, sz, px, py, pz) => {
-      const shape = new CANNON.Box(
-        new CANNON.Vec3(sx * 0.5, sy * 0.5, sz * 0.5)
-      );
-
-      const body = new CANNON.Body({
-        mass: 0,
-        shape
-      });
-
-      body.position.set(
-        pos.x + px,
-        pos.y + py,
-        pos.z + pz
-      );
-
+      const shape = new CANNON.Box(new CANNON.Vec3(sx * 0.5, sy * 0.5, sz * 0.5));
+      const body = new CANNON.Body({mass: 0, shape});
+      body.position.set(pos.x + px, pos.y + py, pos.z + pz);
       body.collisionFilterGroup |= wallGroup;
       body.collisionFilterMask |= wallGroup;
-
       this.world.addBody(body);
-
       return body;
     };
 
-    // floor
-    addWall(
-      size.x * 2,
-      wallThickness,
-      size.z * 2,
-      0,
-      -size.y,
-      0
-    );
-
-    // // ceiling
-    // addWall(
-    //   size.x * 2,
-    //   wallThickness,
-    //   size.z * 2,
-    //   0,
-    //   size.y,
-    //   0
-    // );
-
-    // left
-    addWall(
-      wallThickness,
-      size.y * 2,
-      size.z * 2,
-      -size.x,
-      0,
-      0
-    );
-
-    // right
-    addWall(
-      wallThickness,
-      size.y * 2,
-      size.z * 2,
-      size.x,
-      0,
-      0
-    );
-
-    // back
-    addWall(
-      size.x * 2,
-      size.y * 2,
-      wallThickness,
-      0,
-      0,
-      -size.z
-    );
-
-    // front
-    addWall(
-      size.x * 2,
-      size.y * 2,
-      wallThickness,
-      0,
-      0,
-      size.z
-    );
+    addWall(size.x * 2, wallThickness, size.z * 2, 0, -size.y, 0);
+    addWall(wallThickness, size.y * 2, size.z * 2, -size.x, 0, 0);
+    addWall(wallThickness, size.y * 2, size.z * 2, size.x, 0, 0);
+    addWall(size.x * 2, size.y * 2, wallThickness, 0, 0, -size.z);
+    addWall(size.x * 2, size.y * 2, wallThickness, 0, 0, size.z);
 
     ids.forEach(id => {
       const body = this.rigidBodies[id];
       if(!body) return;
-
       body.collisionFilterGroup |= wallGroup;
       body.collisionFilterMask |= wallGroup;
     });
   }
 
-  // TEST
   shake(ids, strength = 5) {
     ids.forEach(id => {
       const body = this.rigidBodies[id];
       if(!body) return;
-
       body.applyImpulse(
         new this.CANNON.Vec3(
           (Math.random() - 0.5) * strength,
@@ -737,15 +717,12 @@ class MatrixCannon {
     ids.forEach(id => {
       const body = this.rigidBodies[id];
       if(!body) return;
-
       const force = new this.CANNON.Vec3(
         (Math.random() - 0.5) * 2,
         Math.random() * 2,
         (Math.random() - 0.5) * 2
       );
-
       body.applyForce(force, body.position);
-
     });
   }
 
@@ -781,9 +758,7 @@ class MatrixCannon {
     }
   }
 
-  // WIP TEST
   createSphereBoundary(ids, center, radius) {
-
     this.world.addEventListener('postStep', () => {
       ids.forEach(id => {
         const body = this.rigidBodies[id];
@@ -808,7 +783,6 @@ class MatrixCannon {
         }
       });
     });
-
   }
 
   step() {
@@ -833,7 +807,6 @@ class MatrixCannon {
       snap[base + 4] = body.quaternion.y;
       snap[base + 5] = body.quaternion.z;
       snap[base + 6] = body.quaternion.w;
-      // --- active flag
       snap[base + 7] = 1;
     }
   }

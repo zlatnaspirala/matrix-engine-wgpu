@@ -48813,6 +48813,21 @@ var testCannonES = function() {
       });
     });
     async function onGround(m2) {
+      app.addMeshObj({
+        position: { x: 0, y: 15, z: -10 },
+        rotation: { x: 0, y: -22, z: 0 },
+        scale: [10, 10, 1],
+        useScale: false,
+        texturesPaths: ["./res/meshes/jamb/text.png"],
+        name: "cloth",
+        mesh: m2.plane,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cloth"
+        },
+        raycast: { enabled: false, radius: 2 }
+      });
       let cam2 = app.getCamera();
       cam2.setYaw(-0.03);
       cam2.setPitch(-0.49);
@@ -59370,523 +59385,6 @@ fn fs_main(@location(0) oldPos : vec3f, @location(1) newPos : vec3f, @location(2
   return vec4f(intensity, 1.0, 0.0, 1.0);
 }
 `;
-var updateFragShaderSphere = `
-@group(0) @binding(0) var waterTexture : texture_2d<f32>;
-@group(0) @binding(1) var waterSampler : sampler;
-
-struct UpdateUniforms {
-  delta : vec2f,
-}
-@group(0) @binding(2) var<uniform> u : UpdateUniforms;
-
-@fragment
-fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
-  // Wrap longitude (x) and clamp latitude (y) to avoid pole tearing
-  let wrappedUv = vec2f(fract(uv.x), clamp(uv.y, 0.0, 1.0));
-  var info = textureSample(waterTexture, waterSampler, wrappedUv);
-
-  let dx = vec2f(u.delta.x, 0.0);
-  let dy = vec2f(0.0, u.delta.y);
-
-  // Sample neighbors with horizontal wrapping for longitude
-  let sampleLeft  = textureSample(waterTexture, waterSampler, vec2f(fract(wrappedUv.x - u.delta.x), wrappedUv.y)).r;
-  let sampleRight = textureSample(waterTexture, waterSampler, vec2f(fract(wrappedUv.x + u.delta.x), wrappedUv.y)).r;
-  let sampleUp    = textureSample(waterTexture, waterSampler, vec2f(wrappedUv.x, clamp(wrappedUv.y - u.delta.y, 0.0, 1.0))).r;
-  let sampleDown  = textureSample(waterTexture, waterSampler, vec2f(wrappedUv.x, clamp(wrappedUv.y + u.delta.y, 0.0, 1.0))).r;
-
-  let average = (sampleLeft + sampleRight + sampleUp + sampleDown) * 0.25;
-
-  info.g += (average - info.r) * 2.0;
-  info.g *= 0.98;
-  info.r += info.g;
-
-  if (abs(info.g) < 0.0001) { info.g = 0.0; }
-  if (abs(info.r) < 0.0001) { info.r = 0.0; }
-
-  return info;
-}
-`;
-var normalFragShaderSphere = `
-@group(0) @binding(0) var waterTexture : texture_2d<f32>;
-@group(0) @binding(1) var waterSampler : sampler;
-
-struct NormalUniforms {
-  delta : vec2f,
-}
-@group(0) @binding(2) var<uniform> u : NormalUniforms;
-
-@fragment
-fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
-  let wrappedUv = vec2f(fract(uv.x), clamp(uv.y, 0.0, 1.0));
-  var info = textureSample(waterTexture, waterSampler, wrappedUv);
-
-  let val_dx = textureSample(waterTexture, waterSampler, vec2f(fract(wrappedUv.x + u.delta.x), wrappedUv.y)).r;
-  let val_dy = textureSample(waterTexture, waterSampler, vec2f(wrappedUv.x, clamp(wrappedUv.y + u.delta.y, 0.0, 1.0))).r;
-
-  let dx = vec3f(u.delta.x, val_dx - info.r, 0.0);
-  let dy = vec3f(0.0, val_dy - info.r, u.delta.y);
-
-  let normal = normalize(cross(dy, dx));
-  info.b = normal.x;
-  info.a = normal.z;
-
-  return info;
-}
-`;
-var surfaceVertShaderSphere = `
-struct Camera {
-  viewProj : mat4x4<f32>
-};
-
-@group(0) @binding(0) var<uniform> camera : Camera;
-
-struct ModelData {
-  model : mat4x4<f32>,
-  eyePosition : vec4<f32>
-};
-
-@binding(1) @group(0) var<uniform> modelData : ModelData;
-@binding(4) @group(0) var waterSampler : sampler;
-@binding(5) @group(0) var waterTexture : texture_2d<f32>;
-
-struct VertexOutput {
-  @builtin(position) position : vec4f,
-  @location(0) localPos : vec3f,
-  @location(1) worldPos : vec3f,
-}
-
-@vertex
-fn vs_main(
-    @location(0) position : vec3f
-) -> VertexOutput {
-
-    var output : VertexOutput;
-
-    // Original sphere direction
-    let sphereNormal =
-        normalize(position);
-
-    // Spherical UV
-    let u =
-        atan2(
-            sphereNormal.z,
-            sphereNormal.x
-        ) /
-        (2.0 * 3.14159265) +
-        0.5;
-
-    let v =
-        asin(
-            clamp(
-                sphereNormal.y,
-                -1.0,
-                1.0
-            )
-        ) /
-        3.14159265 +
-        0.5;
-
-    let uv = vec2f(u, v);
-
-    // Water simulation
-    let info =
-        textureSampleLevel(
-            waterTexture,
-            waterSampler,
-            uv,
-            0.0
-        );
-
-    // IMPORTANT:
-    // position is already a unit sphere.
-    // Move it OUTWARD along the sphere normal.
-    let displacedPos =
-        sphereNormal *
-        (1.0 + info.r);
-
-    let worldPos =        modelData.model *        vec4f(displacedPos, 1.0);
-    // let worldPos =  vec4f(displacedPos, 1.0);
-
-    output.worldPos = worldPos.xyz;
-    output.position = camera.viewProj * worldPos;
-    output.localPos = displacedPos;
-    return output;
-}
-`;
-var surfaceFragShaderSphere = `
-struct CommonUniforms {
-  viewProjectionMatrix : mat4x4f,
-  eyePosition : vec3f,
-}
-
-struct ModelData {
-  model : mat4x4<f32>,
-  eyePosition : vec4<f32>
-}
-
-struct LightUniforms {
-  direction : vec3f,
-}
-
-struct WaterUniforms {
-  ior : f32,
-  fresnelMin : f32,
-  causticIntensity : f32,
-  poolHeight : f32,
-  halfSize : f32,
-  posX : f32,
-  posY : f32,
-  posZ : f32,
-  opacity : f32
-}
-
-@binding(0) @group(0) var<uniform> commonUniforms : CommonUniforms;
-@binding(1) @group(0) var<uniform> modelData : ModelData;
-@binding(2) @group(0) var<uniform> light : LightUniforms;
-@binding(3) @group(0) var<uniform> waterUniforms : WaterUniforms;
-@binding(4) @group(0) var waterSampler : sampler;
-@binding(5) @group(0) var waterTexture : texture_2d<f32>;
-@binding(6) @group(0) var floorSampler : sampler;
-@binding(7) @group(0) var floorTexture : texture_2d<f32>;
-@binding(8) @group(0) var causticsTexture : texture_2d<f32>;
-
-const IOR_AIR : f32 = 1.0;
-const ABOVEwaterColor : vec3f = vec3f(0.25, 1.0, 1.25);
-const UNDERwaterColor : vec3f = vec3f(0.4, 0.9, 1.0);
-
-// SKY
-fn skyColor(ray : vec3f) -> vec3f {
-  let horizon = vec3f(    0.60,    0.75,    0.85  );
-  let zenith = vec3f(    0.10,    0.30,    0.65  );
-  var color = mix(
-    horizon,
-    zenith,
-    clamp(ray.y, 0.0, 1.0)
-  );
-  let sunDir = normalize(light.direction);
-  let spec = pow(
-    max(0.0, dot(sunDir, ray)),
-    2000.0
-  );
-  color += vec3f(spec) * vec3f(10.0, 8.0, 6.0);
-  return color;
-}
-
-fn floorColor(
-  origin : vec3f,
-  ray : vec3f
-) -> vec3f {
-
-  let t =
-    (-waterUniforms.poolHeight - origin.y) /
-    ray.y;
-
-  let hit =
-    origin + ray * t;
-
-  // Model position
-  let modelTranslation =
-    vec2f(
-      waterUniforms.posX,
-      waterUniforms.posZ
-    );
-
-  let localHitXZ =
-    hit.xz - modelTranslation;
-
-  let uv =
-    (localHitXZ / waterUniforms.halfSize) *
-    0.5 +
-    0.5;
-
-  var color =
-    textureSampleLevel(
-      floorTexture,
-      floorSampler,
-      uv,
-      0.0
-    ).rgb;
-
-  let caustic =
-    textureSampleLevel(
-      causticsTexture,
-      waterSampler,
-      uv,
-      0.0
-    );
-
-  color *=
-    1.0 +
-    caustic.r *
-    2.0 *
-    caustic.g;
-
-  return color;
-}
-
-
-// --------------------------------------------------
-// REFLECTION / REFRACTION RAY COLOR
-// --------------------------------------------------
-
-fn surfaceRayColor(
-  origin : vec3f,
-  ray : vec3f,
-  tint : vec3f
-) -> vec3f {
-
-  var color : vec3f;
-
-  if (ray.y < 0.0) {
-
-    color =
-      floorColor(
-        origin,
-        ray
-      ) * tint;
-
-  } else {
-
-    color =
-      skyColor(ray);
-  }
-
-  return color;
-}
-
-
-// --------------------------------------------------
-// OUTPUT
-// --------------------------------------------------
-
-struct FragOut {
-
-  @location(0) color : vec4f,
-
-  @location(1) normal : vec4f,
-
-  @location(2) worldPos : vec4f,
-}
-
-
-// --------------------------------------------------
-// SPHERE WATER
-// --------------------------------------------------
-
-@fragment
-fn fs_main(
-  @location(0) localPos : vec3f,
-  @location(1) worldPos : vec3f
-) -> FragOut {
-
-
-  // ------------------------------------------------
-  // SPHERE DIRECTION
-  // ------------------------------------------------
-
-  let normPos =
-    normalize(localPos);
-
-
-  // ------------------------------------------------
-  // SPHERICAL UV
-  // ------------------------------------------------
-
-  let u =
-    atan2(
-      normPos.z,
-      normPos.x
-    ) /
-    (2.0 * 3.14159265)
-    + 0.5;
-
-  let v =
-    asin(
-      clamp(
-        normPos.y,
-        -1.0,
-        1.0
-      )
-    ) /
-    3.14159265
-    + 0.5;
-
-  var uv =
-    vec2f(u, v);
-
-
-  // ------------------------------------------------
-  // WATER SIMULATION
-  // ------------------------------------------------
-
-  var info =
-    textureSampleLevel(
-      waterTexture,
-      waterSampler,
-      uv,
-      0.0
-    );
-
-
-  // Small normal-based UV distortion
-  for (var i = 0; i < 4; i++) {
-
-    uv += info.ba * 0.005;
-
-    info =
-      textureSampleLevel(
-        waterTexture,
-        waterSampler,
-        uv,
-        0.0
-      );
-  }
-
-
-  // ------------------------------------------------
-  // SPHERE NORMAL
-  // ------------------------------------------------
-
-  let sphereNormal =
-    normalize(localPos);
-
-
-  // ------------------------------------------------
-  // WATER NORMAL
-  // ------------------------------------------------
-
-  let ba =
-    vec2f(
-      info.b,
-      info.a
-    );
-
-  let waterNormal =
-    normalize(
-      vec3f(
-        info.b,
-        sqrt(
-          max(
-            0.0,
-            1.0 - dot(ba, ba)
-          )
-        ),
-        info.a
-      )
-    );
-
-
-  // ------------------------------------------------
-  // COMBINE SPHERE + WATER NORMAL
-  // ------------------------------------------------
-
-  let normal =
-    normalize(
-      sphereNormal +
-      vec3f(
-        waterNormal.x,
-        waterNormal.y - 1.0,
-        waterNormal.z
-      ) * 0.35
-    );
-
-
-  // ------------------------------------------------
-  // CAMERA RAY
-  // ------------------------------------------------
-
-  let incomingRay =
-    normalize(
-      worldPos -
-      commonUniforms.eyePosition
-    );
-
-
-  // ------------------------------------------------
-  // REFLECTION
-  // ------------------------------------------------
-
-  let reflectedRay =
-    reflect(
-      incomingRay,
-      normal
-    );
-
-
-  // ------------------------------------------------
-  // REFRACTION
-  // ------------------------------------------------
-
-  let refractedRay =
-    refract(
-      incomingRay,
-      normal,
-      IOR_AIR /
-      waterUniforms.ior
-    );
-
-
-  // ------------------------------------------------
-  // FRESNEL
-  // ------------------------------------------------
-
-  let fresnel =
-    mix(
-      waterUniforms.fresnelMin,
-      1.0,
-      pow(
-        1.0 -
-        dot(
-          normal,
-          -incomingRay
-        ),
-        3.0
-      )
-    );
-
-
-  // ------------------------------------------------
-  // REFLECTED COLOR
-  // ------------------------------------------------
-
-  let reflectedColor =
-    surfaceRayColor(
-      worldPos,
-      reflectedRay,
-      ABOVEwaterColor
-    );
-
-
-  // ------------------------------------------------
-  // REFRACTED COLOR
-  // ------------------------------------------------
-
-  let refractedColor =
-    surfaceRayColor(
-      worldPos,
-      refractedRay,
-      ABOVEwaterColor
-    );
-
-
-  // ------------------------------------------------
-  // FINAL
-  // ------------------------------------------------
-
-  let finalColor =
-    mix(
-      refractedColor,
-      reflectedColor,
-      fresnel
-    );
-let alpha = mix(waterUniforms.opacity, 1.0, fresnel * 0.5); // edges stay a bit more opaque
-return FragOut(
-  vec4f(finalColor, alpha),
-  vec4f(normalize(normal), 0.0),
-  vec4f(worldPos, 1.0)
-);
-}
-`;
 
 // src/engine/effects/waterSimEffect.js
 var SIM_RES = 512;
@@ -62813,11 +62311,6 @@ var SeismicPortalAdapter = class {
     this.ws = new WebSocket("wss://www.seismicportal.eu/standing_order/websocket");
     this.ws.onopen = () => {
       console.info("[seismic] connected");
-      this._heartbeat = setInterval(() => {
-        if (this.ws.readyState === WebSocket.OPEN) {
-          this.ws.send("ping");
-        }
-      }, 5e3);
     };
     this.ws.onmessage = (msg) => {
       try {
@@ -62940,437 +62433,6 @@ var DragRotateController = class {
   }
 };
 
-// src/engine/effects/waterSimEffectSphere.js
-var SIM_RES2 = 512;
-var WaterSimSphereEffect = class {
-  constructor(device2, format, options2 = {}) {
-    this.device = device2;
-    this.format = format;
-    this.enabled = true;
-    this.opacity = options2.opacity ?? 0.2;
-    this.geometryType = options2.geometryType ?? (options2.isSphere ? "sphere" : "sphere");
-    this.geometryOptions = options2.geometryOptions ?? {};
-    this.normalizeToUnitSphere = options2.normalizeToUnitSphere ?? true;
-    this.isSphere = options2.isSphere ?? true;
-    this.width = options2.width ?? SIM_RES2;
-    this.height = options2.height ?? SIM_RES2;
-    this.size = options2.size ?? 10;
-    this.detail = options2.detail ?? 100;
-    this.poolHeight = options2.poolHeight ?? 0.1;
-    this.ior = options2.ior ?? 1.333;
-    this.fresnelMin = options2.fresnelMin ?? 0.25;
-    this.causticIntensity = options2.causticIntensity ?? 0.3;
-    this.lightDirection = options2.lightDirection ?? [2, 2, -1];
-    this._dropQueue = [];
-    this._sphereStamp = null;
-    this._simFormat = device2.features.has("float32-filterable") ? "rgba32float" : "rgba16float";
-    this._localMatrix = mat4Impl.create();
-    this._finalMatrix = mat4Impl.create();
-    this.data = new Float32Array(20);
-    this.data2 = new Float32Array(12);
-    this._idleFrames = 0;
-    this._idleThreshold = 90;
-    this._createTextures();
-    this._simPassDescs = [
-      { colorAttachments: [{ view: this._physViews[0], loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }] },
-      { colorAttachments: [{ view: this._physViews[1], loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }] }
-    ];
-    this._causticsView = this.causticsTexture.createView();
-    this._causticsPassDesc = {
-      colorAttachments: [{ view: this._causticsView, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }]
-    };
-    this._dropUniform = new Float32Array(4);
-    this._sphereUniform = new Float32Array(8);
-    this._deltaUniform = new Float32Array([1 / this.width, 1 / this.height]);
-    this._defaultEye = [0, 5, 5];
-    this._createSampler();
-    this._createUniformBuffers(options2);
-    this._createSimPipelines();
-    this._createSurfaceMesh();
-    this._createSurfacePipelines();
-    this._createCausticsPipeline();
-  }
-  useExternalGeometry(positionBuffer, indexBuffer, indexCount, indexFormat = "uint32") {
-    this.positionBuffer = positionBuffer;
-    this.indexBuffer = indexBuffer;
-    this.indexCount = indexCount;
-    this._indexFormat = indexFormat;
-  }
-  updateInstanceData(baseModelMatrix) {
-    mat4Impl.identity(this._localMatrix);
-    mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMatrix);
-    const posX = this._finalMatrix[12];
-    const posY = this._finalMatrix[13];
-    const posZ = this._finalMatrix[14];
-    this.data2.set([this.ior, this.fresnelMin, this.causticIntensity, this.poolHeight, this.size, posX ?? 0, posY ?? 0, posZ ?? 0, this.opacity]);
-    this.device.queue.writeBuffer(this.waterUniformBuffer, 0, this.data2);
-  }
-  _createTextures() {
-    const texDesc = {
-      size: [this.width, this.height],
-      format: this._simFormat,
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
-    };
-    this.textureA = this.device.createTexture({ ...texDesc, label: "WaterSim A" });
-    this.textureB = this.device.createTexture({ ...texDesc, label: "WaterSim B" });
-    this._physViews = [this.textureA.createView(), this.textureB.createView()];
-    this._parity = 0;
-    this.causticsTexture = this.device.createTexture({
-      label: "WaterSim Caustics",
-      size: [512, 512],
-      format: "rgba8unorm",
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    this.floorTexture = this.device.createTexture({
-      label: "WaterSim Default Floor",
-      size: [1, 1],
-      format: "rgba8unorm",
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-    });
-    this.device.queue.writeTexture(
-      { texture: this.floorTexture },
-      new Uint8Array([90, 95, 100, 255]),
-      { bytesPerRow: 4 },
-      { width: 1, height: 1 }
-    );
-  }
-  _createSampler() {
-    this.sampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear",
-      addressModeU: "clamp-to-edge",
-      addressModeV: "clamp-to-edge"
-    });
-  }
-  _createUniformBuffers(options2) {
-    this.commonUniformBuffer = this.device.createBuffer({
-      label: "WaterSim Common Uniforms",
-      size: 80,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.lightUniformBuffer = this.device.createBuffer({
-      label: "WaterSim Light Uniforms",
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.waterUniformBuffer = this.device.createBuffer({
-      label: "WaterSim Water Uniforms",
-      size: 48,
-      // was 32 — now 9 floats + padding
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this._writeLightUniforms();
-    this._writeWaterUniforms();
-    this.floorSampler = options2.floorSampler ?? this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear",
-      addressModeU: "repeat",
-      addressModeV: "repeat"
-    });
-    if (options2.floorTexture) this.floorTexture = options2.floorTexture;
-  }
-  _writeLightUniforms() {
-    const [x3, y3, z2] = this.lightDirection;
-    const len2 = Math.hypot(x3, y3, z2) || 1;
-    this.device.queue.writeBuffer(
-      this.lightUniformBuffer,
-      0,
-      new Float32Array([x3 / len2, y3 / len2, z2 / len2, 0])
-    );
-  }
-  _writeWaterUniforms() {
-    this.data2.set([this.ior, this.fresnelMin, this.causticIntensity, this.poolHeight, this.size, 0, 0, 0]);
-    this.device.queue.writeBuffer(this.waterUniformBuffer, 0, this.data2);
-  }
-  _createSimPipelines() {
-    this.dropPipeline = this._buildSimPipeline("Drop", dropFragShader, 32);
-    this.updatePipeline = this._buildSimPipeline("Update", updateFragShaderSphere, 16);
-    this.normalPipeline = this._buildSimPipeline("Normal", normalFragShaderSphere, 16);
-    this.spherePipeline = this._buildSimPipeline("Sphere", sphereFragShader, 32);
-  }
-  _buildSimPipeline(label, fragCode, uniformSize) {
-    const module = this.device.createShaderModule({
-      label: label + " Sim Module",
-      code: fullscreenVertShader + fragCode
-    });
-    const pipeline = this.device.createRenderPipeline({
-      label: label + " Sim Pipeline",
-      layout: "auto",
-      vertex: { module, entryPoint: "vs_main" },
-      fragment: { module, entryPoint: "fs_main", targets: [{ format: this._simFormat }] },
-      primitive: { topology: "triangle-list" }
-    });
-    const uniformBuffer = this.device.createBuffer({
-      size: uniformSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const makeBG = (readView) => this.device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: readView },
-        { binding: 1, resource: this.sampler },
-        { binding: 2, resource: { buffer: uniformBuffer } }
-      ]
-    });
-    return {
-      pipeline,
-      uniformBuffer,
-      bindGroups: [makeBG(this._physViews[0]), makeBG(this._physViews[1])]
-    };
-  }
-  _createSurfaceMesh() {
-    const detail = this.detail;
-    let positions, indices;
-    if (this.geometryType === "plane") {
-      positions = [];
-      indices = [];
-      for (let z2 = 0; z2 <= detail; z2++) {
-        const t3 = z2 / detail;
-        for (let x3 = 0; x3 <= detail; x3++) {
-          const s2 = x3 / detail;
-          positions.push(2 * s2 - 1, 0, 2 * t3 - 1);
-        }
-      }
-      for (let z2 = 0; z2 < detail; z2++) {
-        for (let x3 = 0; x3 < detail; x3++) {
-          const i2 = x3 + z2 * (detail + 1);
-          indices.push(i2, i2 + 1, i2 + detail + 1, i2 + detail + 1, i2 + 1, i2 + detail + 2);
-        }
-      }
-      positions = new Float32Array(positions);
-      indices = new Uint32Array(indices);
-    } else {
-      const geo2 = GeometryFactory.create(this.geometryType, 1, detail, this.geometryOptions);
-      positions = geo2.positions.slice();
-      indices = geo2.indices;
-      if (this.normalizeToUnitSphere) {
-        for (let i2 = 0; i2 < positions.length; i2 += 3) {
-          const x3 = positions[i2], y3 = positions[i2 + 1], z2 = positions[i2 + 2];
-          const len2 = Math.hypot(x3, y3, z2);
-          if (len2 < 1e-6) continue;
-          positions[i2] = x3 / len2;
-          positions[i2 + 1] = y3 / len2;
-          positions[i2 + 2] = z2 / len2;
-        }
-      }
-    }
-    this.indexCount = indices.length;
-    this.positionBuffer = this.device.createBuffer({
-      label: "WaterSim Surface V",
-      size: positions.length * 4,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.positionBuffer.getMappedRange()).set(positions);
-    this.positionBuffer.unmap();
-    const idx32 = indices instanceof Uint32Array ? indices : Uint32Array.from(indices);
-    this._indexFormat = "uint32";
-    this.indexBuffer = this.device.createBuffer({
-      label: "WaterSim Surface Indice",
-      size: idx32.length * 4,
-      usage: GPUBufferUsage.INDEX,
-      mappedAtCreation: true
-    });
-    new Uint32Array(this.indexBuffer.getMappedRange()).set(idx32);
-    this.indexBuffer.unmap();
-  }
-  _createSurfacePipelines() {
-    this.modelBuffer = this.device.createBuffer({
-      label: "WaterSim Model Buff",
-      size: 96,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.surfaceBindGroupLayout = this.device.createBindGroupLayout({
-      label: "WaterSim Surface BGL",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-        { binding: 4, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, sampler: {} },
-        { binding: 5, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: {} },
-        { binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
-        { binding: 7, visibility: GPUShaderStage.FRAGMENT, texture: {} },
-        { binding: 8, visibility: GPUShaderStage.FRAGMENT, texture: {} }
-      ]
-    });
-    const layout = this.device.createPipelineLayout({ bindGroupLayouts: [this.surfaceBindGroupLayout] });
-    const vsModule = this.device.createShaderModule({ label: "WaterSim S VS", code: surfaceVertShaderSphere });
-    const fsModule = this.device.createShaderModule({ label: "WaterSim S FS", code: surfaceFragShaderSphere });
-    const baseDesc = {
-      layout,
-      vertex: {
-        module: vsModule,
-        entryPoint: "vs_main",
-        buffers: [{ arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] }]
-      },
-      fragment: {
-        module: fsModule,
-        entryPoint: "fs_main",
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
-          },
-          { format: this.format },
-          { format: this.format }
-        ]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: true, depthCompare: "less", format: "depth24plus" }
-    };
-    this.surfacePipelineAbove = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: "WaterSim S Above",
-      primitive: { topology: "triangle-list", cullMode: "back" }
-    });
-    this.surfacePipelineUnder = this.device.createRenderPipeline({
-      ...baseDesc,
-      label: "WaterSim S Under",
-      // primitive: {topology: 'triangle-list', cullMode: 'front'},
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" },
-      primitive: { topology: "triangle-list", cullMode: "front" }
-    });
-    const makeBG = (waterView) => this.device.createBindGroup({
-      layout: this.surfaceBindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.commonUniformBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } },
-        { binding: 2, resource: { buffer: this.lightUniformBuffer } },
-        { binding: 3, resource: { buffer: this.waterUniformBuffer } },
-        { binding: 4, resource: this.sampler },
-        { binding: 5, resource: waterView },
-        { binding: 6, resource: this.floorSampler },
-        { binding: 7, resource: this.floorTexture.createView() },
-        { binding: 8, resource: this.causticsTexture.createView() }
-      ]
-    });
-    this._surfaceBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
-  }
-  _createCausticsPipeline() {
-    const vsModule = this.device.createShaderModule({ label: "WaterSim Caustics VS", code: causticsVertShader });
-    const fsModule = this.device.createShaderModule({ label: "WaterSim Caustics FS", code: causticsFragShader });
-    this.causticsPipeline = this.device.createRenderPipeline({
-      label: "WaterSim Caustics",
-      layout: "auto",
-      vertex: {
-        module: vsModule,
-        entryPoint: "vs_main",
-        buffers: [{ arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] }]
-      },
-      fragment: {
-        module: fsModule,
-        entryPoint: "fs_main",
-        targets: [{
-          format: "rgba8unorm",
-          blend: {
-            // color: {operation: 'add', srcFactor: 'one', dstFactor: 'one'},
-            // alpha: {operation: 'add', srcFactor: 'one', dstFactor: 'one'}
-            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-          }
-        }]
-      },
-      primitive: { topology: "triangle-list" }
-    });
-    const makeBG = (waterView) => this.device.createBindGroup({
-      layout: this.causticsPipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: { buffer: this.lightUniformBuffer } },
-        { binding: 1, resource: { buffer: this.waterUniformBuffer } },
-        { binding: 2, resource: this.sampler },
-        { binding: 3, resource: waterView }
-      ]
-    });
-    this._causticsBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
-  }
-  addDrop(x3, z2, radius = 0.03, strength = 0.01) {
-    this._dropQueue.push({ x: x3, z: z2, radius, strength });
-  }
-  stampSphere(oldCenter, newCenter, radius) {
-    this._sphereStamp = { oldCenter, newCenter, radius };
-  }
-  setLightDirection(x3, y3, z2) {
-    this.lightDirection = [x3, y3, z2];
-    this._writeLightUniforms();
-  }
-  updateWaterParameters(ior = 0.25, fresnelMin = 0.3, causticIntensity = 0.3, poolHeight = 0.1) {
-    this.ior = ior;
-    this.fresnelMin = fresnelMin;
-    this.causticIntensity = causticIntensity;
-    this.poolHeight = poolHeight;
-  }
-  simulate(commandEncoder) {
-    const encoder = commandEncoder ?? this.device.createCommandEncoder({ label: "WaterSim Frame" });
-    for (const drop of this._dropQueue) {
-      this._dropUniform[0] = drop.x;
-      this._dropUniform[1] = drop.z;
-      this._dropUniform[2] = drop.radius;
-      this._dropUniform[3] = drop.strength;
-      this._runSimPass(encoder, this.dropPipeline, this._dropUniform);
-    }
-    this._dropQueue.length = 0;
-    if (this._sphereStamp) {
-      const { oldCenter, newCenter, radius } = this._sphereStamp;
-      const su = this._sphereUniform;
-      su[0] = oldCenter[0];
-      su[1] = oldCenter[1];
-      su[2] = oldCenter[2];
-      su[3] = radius;
-      su[4] = newCenter[0];
-      su[5] = newCenter[1];
-      su[6] = newCenter[2];
-      su[7] = 0;
-      this._runSimPass(encoder, this.spherePipeline, su);
-      this._sphereStamp = null;
-    }
-    this._runSimPass(encoder, this.updatePipeline, this._deltaUniform);
-    this._runSimPass(encoder, this.updatePipeline, this._deltaUniform);
-    this._runSimPass(encoder, this.normalPipeline, this._deltaUniform);
-    this._runCausticsPass(encoder);
-    if (!commandEncoder) this.device.queue.submit([encoder.finish()]);
-  }
-  _runSimPass(encoder, pipelineObj, uniformData) {
-    this.device.queue.writeBuffer(pipelineObj.uniformBuffer, 0, uniformData);
-    const pass = encoder.beginRenderPass(this._simPassDescs[1 - this._parity]);
-    pass.setPipeline(pipelineObj.pipeline);
-    pass.setBindGroup(0, pipelineObj.bindGroups[this._parity]);
-    pass.draw(6);
-    pass.end();
-    this._parity = 1 - this._parity;
-  }
-  _runCausticsPass(encoder) {
-    const pass = encoder.beginRenderPass(this._causticsPassDesc);
-    pass.setPipeline(this.causticsPipeline);
-    pass.setBindGroup(0, this._causticsBindGroups[this._parity]);
-    pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? "uint32");
-    pass.drawIndexed(this.indexCount);
-    pass.end();
-  }
-  render(pass, mesh, viewProjMatrix) {
-    const eye = this._lastEye ?? this._defaultEye;
-    this.data.set(viewProjMatrix, 0);
-    this.data.set(eye, 16);
-    this.device.queue.writeBuffer(this.commonUniformBuffer, 0, this.data);
-    pass.setPipeline(this.surfacePipelineAbove);
-    pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
-    pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? "uint32");
-    pass.drawIndexed(this.indexCount);
-    pass.setPipeline(this.surfacePipelineUnder);
-    pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
-    pass.drawIndexed(this.indexCount);
-  }
-  setEyePosition(pos2) {
-    this._lastEye = pos2;
-  }
-};
-
 // examples/crypto-grid.js
 var loadCryptoGrid = function() {
   let MAT_EFFECT_WATER;
@@ -63470,32 +62532,19 @@ var loadCryptoGrid = function() {
 // src/engine/effects/seismic.js
 var EarthquakePresets = {
   default: {
-    // Earthquake location.
     latitude: 44.8,
     longitude: 20.46,
-    // Richter/Mw-like magnitude.
     magnitude: 5,
-    // Animation.
     speed: 0.55,
-    // Number of visible wave fronts.
     waveCount: 4,
-    // Distance between repeating wave fronts.
     waveSpacing: 0.95,
-    // Width of individual wave front.
     waveWidth: 0.075,
-    // Main wave intensity.
     intensity: 2.5,
-    // Epicenter glow.
     epicenterIntensity: 5,
-    // Radius of epicenter glow in radians.
     epicenterRadius: 0.08,
-    // Radius of the whole Earthquake effect.
     sphereScale: 1,
-    // Small surface displacement.
     displacement: 0.012,
-    // Color of waves.
     waveColor: [1, 0.16, 0.025],
-    // Color of epicenter.
     epicenterColor: [1, 0.75, 0.08],
     enabled: true
   }
@@ -63533,8 +62582,16 @@ var EarthquakeEffect = class {
     this._localMatrix = mat4Impl.create();
     this._finalMatrix = mat4Impl.create();
     this._initPipeline();
-    this.setGeometry("sphere", this.sphereScale, config.segments ?? 96);
+    if (config.useParentMesh) {
+      this.insertGeometry(config.useParentMesh);
+    } else {
+      this.setGeometry("sphere", this.sphereScale, config.segments ?? 96);
+    }
     this.currentGeometry = "sphere";
+  }
+  setScale(scale4) {
+    this.sphereScale = scale4;
+    this.setGeometry(this.currentGeometry, this.sphereScale, 96);
   }
   updateData(data = {}) {
     if (data.latitude !== void 0) {
@@ -63588,16 +62645,8 @@ var EarthquakeEffect = class {
     this.enabled = !!enabled;
     return this;
   }
-  setScale(scale4) {
-    this.sphereScale = scale4;
-    this.setGeometry(this.currentGeometry, this.sphereScale, 96);
-  }
   setGeometry(type2, size2 = 1, segments = 96) {
-    const geo2 = GeometryFactory.create(
-      type2,
-      size2,
-      segments
-    );
+    const geo2 = GeometryFactory.create(type2, size2, segments);
     this.currentGeometry = type2;
     this.vertexBuffer = this._uploadVertex(geo2.positions);
     this.uvBuffer = this._uploadVertex(geo2.uvs);
@@ -63613,6 +62662,13 @@ var EarthquakeEffect = class {
     }
     this.indexCount = geo2.indices.length;
     this.indexFormat = geo2.indices instanceof Uint16Array ? "uint16" : "uint32";
+  }
+  insertGeometry(mesh) {
+    this.vertexBuffer = mesh.vertexBuffer;
+    this.uvBuffer = mesh.vertexTexCoordsBuffer;
+    this.indexBuffer = mesh.indexBuffer;
+    this.indexCount = mesh.indexCount;
+    this.indexFormat = "uint16";
   }
   _uploadVertex(data) {
     const buffer = this.device.createBuffer({ size: data.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
@@ -63630,14 +62686,8 @@ var EarthquakeEffect = class {
     this.bindGroup = this.device.createBindGroup({
       layout: bindGroupLayout,
       entries: [
-        {
-          binding: 0,
-          resource: { buffer: this.cameraBuffer }
-        },
-        {
-          binding: 1,
-          resource: { buffer: this.modelBuffer }
-        }
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
     const shaderModule = this.device.createShaderModule({ code: earthquakeEffectShader });
@@ -63649,26 +62699,8 @@ var EarthquakeEffect = class {
         module: shaderModule,
         entryPoint: "vsMain",
         buffers: [
-          {
-            arrayStride: 12,
-            attributes: [
-              {
-                shaderLocation: 0,
-                offset: 0,
-                format: "float32x3"
-              }
-            ]
-          },
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 1,
-                offset: 0,
-                format: "float32x2"
-              }
-            ]
-          }
+          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
         ]
       },
       fragment: {
@@ -63678,16 +62710,18 @@ var EarthquakeEffect = class {
           {
             format: this.colorFormat,
             blend: {
-              color: {
-                srcFactor: "src-alpha",
-                dstFactor: "one",
-                operation: "add"
-              },
-              alpha: {
-                srcFactor: "one",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              }
+              color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one", operation: "add" }
+              // color: {srcFactor: "one", dstFactor: "one", operation: "add"},
+              // alpha: {srcFactor: "one", dstFactor: "one", operation: "add"}
+              // color: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
+              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+              // color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
+              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+              // color: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
+              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+              // color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
+              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
             }
           },
           { format: "rgba16float" },
@@ -63698,15 +62732,6 @@ var EarthquakeEffect = class {
       depthStencil: { depthWriteEnabled: false, depthCompare: "greater", format: "depth24plus" }
     });
   }
-  // UPDATE INSTANCE DATA
-  //   "never"
-  //   "less"
-  //   "equal"
-  //   "less-equal"
-  //   "greater"
-  //   "not-equal"
-  //   "greater-equal"
-  //   "always"
   updateInstanceData(baseModelMatrix) {
     if (!this.enabled) {
       return;
@@ -63717,14 +62742,12 @@ var EarthquakeEffect = class {
     mat4Impl.scale(this._localMatrix, [this.sphereScale, this.sphereScale, this.sphereScale], this._localMatrix);
     mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
     const lat = this.latitude * Math.PI / 180;
-    const lon = this.longitude * Math.PI / 180;
+    const lonOffset = -23 * Math.PI / 180;
+    const lon = this.longitude * Math.PI / 180 + lonOffset;
     const cosLat = Math.cos(lat);
-    const epicenterX = cosLat * Math.sin(lon);
-    const epicenterY = Math.sin(lat);
-    const epicenterZ = cosLat * Math.cos(lon);
-    this._epicenter[0] = epicenterX;
-    this._epicenter[1] = epicenterY;
-    this._epicenter[2] = epicenterZ;
+    this._epicenter[0] = cosLat * Math.sin(lon);
+    this._epicenter[1] = Math.sin(lat);
+    this._epicenter[2] = -cosLat * Math.cos(lon);
     this._epicenter[3] = 0;
     const magnitude = Math.max(0, this.magnitude);
     const magnitudeStrength = Math.min(1, Math.max(0.15, magnitude / 8));
@@ -63756,8 +62779,7 @@ var EarthquakeEffect = class {
     this._uniformData[39] = 1;
     this.device.queue.writeBuffer(this.modelBuffer, 0, this._uniformData);
   }
-  draw(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+  draw(pass, viewProjMatrix) {
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
@@ -63777,26 +62799,13 @@ struct Camera {
   viewProj : mat4x4<f32>,
 };
 
-@group(0) @binding(0)
-var<uniform> camera : Camera;
+@group(0) @binding(0) var<uniform> camera : Camera;
 
 struct ModelData {
   model : mat4x4<f32>,
-  // x = time
-  // y = speed
-  // z = magnitude
-  // w = enabled
   params0 : vec4<f32>,
-  // xyz = earthquake spherical direction
   epicenter : vec4<f32>,
-  // x = waveCount
-  // y = waveSpacing
-  // z = waveWidth
-  // w = intensity
   params1 : vec4<f32>,
-  // x = displacement
-  // y = epicenterRadius
-  // z = epicenterIntensity
   effect : vec4<f32>,
   waveColor : vec4<f32>,
   epicenterColor : vec4<f32>,
@@ -63827,10 +62836,14 @@ struct VSOut {
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
   var output : VSOut;
-  let surfaceDir = normalize(input.position);
+  
+  let correctedPosition = vec3<f32>(input.position.x, input.position.y, input.position.z);
+  let surfaceDir = normalize(correctedPosition);
+  
   let epicenter = normalize(modelData.epicenter.xyz);
-  let cosineAngle = clamp(dot(surfaceDir, epicenter ), -1.0, 1.0);
+  let cosineAngle = clamp(dot(surfaceDir, epicenter), -1.0, 1.0);
   let angularDistance = acos(cosineAngle);
+
   let time = modelData.params0.x;
   let speed = max(modelData.params0.y, 0.001);
   let magnitude = max(modelData.params0.z, 0.0);
@@ -63838,27 +62851,37 @@ fn vsMain(input : VSIn) -> VSOut {
   let spacing = max(modelData.params1.y, 0.001);
   let width = max(modelData.params1.z, 0.001);
   let intensity = modelData.params1.w;
-  let magnitudeFactor = clamp(magnitude / 8.0,0.0,1.0);
+  let magnitudeFactor = clamp(magnitude / 8.0, 0.0, 1.0);
   let travel = time * speed * (0.35 + magnitudeFactor * 0.65);
   let phase = angularDistance - travel;
   let wavePosition = phase / spacing;
-  let distanceToWave = abs(fract(wavePosition + 0.5) - 0.5)*spacing;
+  let distanceToWave = abs(fract(wavePosition + 0.5) - 0.5) * spacing;
   let ring = 1.0 - smoothstep(0.0, width, distanceToWave);
-  let waveLimit = waveCount *    spacing;
+  let waveLimit = waveCount * spacing;
   let waveRange = smoothstep(waveLimit, max(waveLimit - spacing, 0.001), angularDistance);
-  let ringEnergy = ring *    waveRange;
-  let distanceEnergy = 0.35 + 0.65 * (1.0 - smoothstep(0.0,3.14159265, angularDistance));
-  let epicenterRadius = max(modelData.effect.y,0.001);
-  let epicenterMask = 1.0 - smoothstep(0.0, epicenterRadius,angularDistance);
-  let displacement = modelData.effect.x * ringEnergy * distanceEnergy *(0.25 + magnitudeFactor * 0.75);
+
+  let maxEffectRadius = 0.6; // Adjust this value (in radians) to make the wave area smaller or larger
+  let distanceFade = 1.0 - smoothstep(maxEffectRadius * 0.5, maxEffectRadius, angularDistance);
+  let ringEnergy = ring * waveRange * distanceFade;
+  let distanceEnergy = 0.35 + 0.65 * (1.0 - smoothstep(0.0, 3.14159265, angularDistance));
+  let epicenterRadius = max(modelData.effect.y, 0.001);
+  let epicenterMask = 1.0 - smoothstep(0.0, epicenterRadius * 0.9, angularDistance);
+  let displacement = modelData.effect.x * ringEnergy * distanceEnergy * (0.25 + magnitudeFactor * 0.75);
   let displacedPosition = input.position + surfaceDir * displacement;
   let worldPosition = modelData.model * vec4<f32>(displacedPosition, 1.0);
+  
+  let normalMatrix = mat3x3<f32>(
+    modelData.model[0].xyz, 
+    modelData.model[1].xyz, 
+    modelData.model[2].xyz
+  );
+
   output.position = camera.viewProj * worldPosition;
-  let normalMatrix = mat3x3<f32>(modelData.model[0].xyz, modelData.model[1].xyz, modelData.model[2].xyz);
   output.worldNormal = normalize(normalMatrix * surfaceDir);
   output.worldPos = worldPosition.xyz;
   output.uv = input.uv;
   output.waveData = vec4<f32>(angularDistance, ringEnergy, epicenterMask, distanceEnergy);
+  
   return output;
 }
 
@@ -63873,7 +62896,6 @@ struct FragOut {
 
 @fragment
 fn fsMain(input : VSOut) -> FragOut {
-  let angularDistance = input.waveData.x;
   let ring = input.waveData.y;
   let epicenterMask = input.waveData.z;
   let distanceEnergy = input.waveData.w;
@@ -63881,18 +62903,18 @@ fn fsMain(input : VSOut) -> FragOut {
   let epicenterColor = modelData.epicenterColor.xyz;
   let waveEnergy = ring * distanceEnergy * modelData.params1.w;
   let waveContribution = waveColor * waveEnergy;
-  let epicenterEnergy =    epicenterMask *    modelData.effect.z;
-  let epicenterContribution =    epicenterColor * epicenterEnergy;
-  let halo =    smoothstep(      0.0,      1.0,      ring    ) *    0.08 *    distanceEnergy;
-  let finalColor =    waveContribution +    epicenterContribution +    waveColor * halo;
-  let alpha =    clamp(      waveEnergy +      epicenterEnergy +      halo,      0.0,      1.0    );
+  let epicenterEnergy = epicenterMask * modelData.effect.z;
+  let epicenterContribution = epicenterColor * epicenterEnergy;
+  let halo = smoothstep(0.0, 1.0, ring) * 0.08 * distanceEnergy;
+  let finalColor = waveContribution + epicenterContribution + waveColor * halo;
+  let alpha = clamp(waveEnergy + epicenterEnergy + halo, 0.0, 1.0);
+  
   return FragOut(
-    vec4f(finalColor,      alpha    ),
-    vec4f(input.worldNormal,      0.0    ),
-    vec4f(input.worldPos,      1.0    )
+    vec4f(finalColor, alpha),
+    vec4f(input.worldNormal, 0.0),
+    vec4f(input.worldPos, 1.0)
   );
-}
-`;
+}`;
 
 // examples/earth.js
 var loadEarth = function() {
@@ -63918,9 +62940,9 @@ var loadEarth = function() {
     addRaycastsAABBListener("canvas1", "click");
     async function onLoadObj(m2) {
       let EARTH = cryptoGrid.addMeshObj({
-        material: { type: "mirror" },
+        material: { type: "standard" },
         position: { x: 0, y: 20, z: -10 },
-        rotation: { x: 0, y: 0, z: 180 },
+        rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         scale: [10, 10, 10],
         texturesPaths: ["./res/meshes/blender/earth.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
@@ -63956,53 +62978,20 @@ var loadEarth = function() {
           flameEmitter: true
         }
       });
-      MAT_EFFECT_WATER = cryptoGrid.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 0, y: 20, z: -10 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [30, 30, 30],
-        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
-        name: "waterEffect",
-        useBlend: true,
-        mesh: m2.cube,
-        raycast: { enabled: true, radius: 1 },
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true
-        }
-      });
       cryptoGrid.lightContainer[0].setIntensity(6);
       const globeDrag = new DragRotateController(EARTH, cryptoGrid.canvas, cryptoGrid.getCamera(), {
         sensitivity: 0.6,
         inertia: 0.94,
-        autoRotateSpeed: 0.05
+        autoRotateSpeed: 0
       });
       cryptoGrid.autoUpdate.push(globeDrag);
-      let osc0 = new OSCILLATOR(0, 3, 5e-3);
-      let osc1 = new OSCILLATOR(0, 2, 0.01);
-      let osc2 = new OSCILLATOR(0, 2, 9e-3);
-      let osc3 = new OSCILLATOR(0, 2, 9e-3);
-      let updater2 = {
-        update: () => {
-          osc0.UPDATE();
-          osc1.UPDATE();
-          osc2.UPDATE();
-          osc3.UPDATE();
-          cryptoGrid.MAT_EFFECT_WATER.effects.waterEffect.updateWaterParameters(osc0.value_, osc1.value_, osc2.value_, osc3.value_);
-        }
-      };
       cryptoGrid.activateBloomEffect();
       cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         EARTH.effects.earthquake = new EarthquakeEffect(cryptoGrid.device, "rgba16float", "rgba16float", {
-          sphereScale: 2
-          //1.8
+          sphereScale: 0.98,
+          useParentMesh: EARTH
         }, cryptoGrid.cameraBuffer);
         const dataHandler = new ExternalDataHandler();
         dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
@@ -64013,26 +63002,7 @@ var loadEarth = function() {
           }
         });
         dataHandler.start("seismic");
-        EARTH.effects.flameEmitter.rotSpeed = 1;
-        EARTH.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566,
-          0.21125441598805741,
-          0.4249951687253338,
-          0.4724163587305734,
-          2.381811753816671,
-          3.074841196886901,
-          -2.3797025623904164,
-          -3.4608908819087145
-        ]);
         EARTH.setAmbient(2, 3, 0.5);
-        MAT_EFFECT_WATER.setBlend(1e-3);
-        MAT_EFFECT_WATER.effects.waterEffect = new WaterSimSphereEffect(cryptoGrid.device, "rgba16float", {
-          isSphere: true,
-          geometryType: "sphere",
-          detail: 32,
-          size: 50
-        }, app.cameraBuffer);
-        app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
         app.EARTH = EARTH;
         let cam2 = app.getCamera();
         cam2.setYaw(-0.03);
@@ -64048,16 +63018,7 @@ var loadEarth = function() {
     cryptoGrid.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       const { hitObject, hitPoint } = e2.detail;
-      const water = app.MAT_EFFECT_WATER.effects.waterEffect;
-      const invModel = mat4Impl.inverse(hitObject._modelMatrix);
-      const localHit = vec3Impl.transformMat4(hitPoint, invModel);
-      const dir = vec3Impl.normalize(localHit);
-      const u2 = 0.5 + Math.atan2(dir[2], dir[0]) / (2 * Math.PI);
-      const v2 = 0.5 - Math.asin(dir[1]) / Math.PI;
-      water.addDrop(u2, v2, 0.03, 0.01);
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
         e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
         app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }

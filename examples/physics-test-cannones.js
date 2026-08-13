@@ -44,6 +44,7 @@ export var testCannonES = function() {
         ["./res/textures/rust.jpg",],
         'my_set_walls', "5x3", true, [1, 1, 1], 2.05, 1000, "ByZ");
 
+
       let strength = 10;
       physicsPlayground.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('ray.hit.event detected');
@@ -57,6 +58,21 @@ export var testCannonES = function() {
 
     async function onGround(m) {
 
+      app.addMeshObj({
+        position: {x: 0, y: 15, z: -10},
+        rotation: {x: 0, y: -22, z: 0},
+        scale: [10, 10, 1],
+        useScale: false,
+        texturesPaths: ['./res/meshes/jamb/text.png'],
+        name: 'cloth',
+        mesh: m.plane,
+        physics: {
+          mass: 0,
+          enabled: true,
+          geometry: "Cloth"
+        },
+        raycast: {enabled: false, radius: 2},
+      })
       // const myComplexGeometry = physicsPlayground.addMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 8, y: 4, z: -6},

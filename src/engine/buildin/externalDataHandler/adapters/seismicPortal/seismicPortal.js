@@ -9,18 +9,15 @@ export class SeismicPortalAdapter {
     this._heartbeat = null;
   }
 
-
   start() {
-
     this.ws = new WebSocket("wss://www.seismicportal.eu/standing_order/websocket");
-
     this.ws.onopen = () => {
       console.info("[seismic] connected");
-      this._heartbeat = setInterval(() => {
-        if(this.ws.readyState === WebSocket.OPEN) {
-          this.ws.send("ping");
-        }
-      }, 5000);
+      // this._heartbeat = setInterval(() => {
+      //   if(this.ws.readyState === WebSocket.OPEN) {
+      //     this.ws.send("ping");
+      //   }
+      // }, 15000);
     };
 
     this.ws.onmessage = (msg) => {
