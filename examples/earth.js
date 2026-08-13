@@ -28,7 +28,6 @@ export var loadEarth = function() {
   }, () => {
 
     cryptoGrid.addLight();
-    // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/earth.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
     addRaycastsAABBListener('canvas1', 'click');
@@ -67,27 +66,26 @@ export var loadEarth = function() {
         }
       })
 
-      
-      // MAT_EFFECT_WATER = cryptoGrid.addMeshObj({
-      //   material: {type: 'standard'},
-      //   position: {x: 0, y: 20, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   scale: [30, 30, 30],
-      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-      //   name: 'waterEffect',
-      //   useBlend: true,
-      //   mesh: m.cube,
-      //   raycast: {enabled: true, radius: 1},
-      //   physics: {
-      //     enabled: false,
-      //     mass: 0,
-      //     geometry: "Cube"
-      //   },
-      //   pointerEffect: {
-      //     enabled: true,
-      //   }
-      // });
+      MAT_EFFECT_WATER = cryptoGrid.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 20, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [30, 30, 30],
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'waterEffect',
+        useBlend: true,
+        mesh: m.cube,
+        raycast: {enabled: true, radius: 1},
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+        }
+      });
 
       cryptoGrid.lightContainer[0].setIntensity(6);
 
@@ -136,22 +134,22 @@ export var loadEarth = function() {
         dataHandler.start("seismic");
 
         // EARTH.setBlend(1)
-        EARTH.setAmbient(2, 3, 0.5);
-        // MAT_EFFECT_WATER.setBlend(0.001);
-        // MAT_EFFECT_WATER.effects.waterEffect = new WaterSimSphereEffect(cryptoGrid.device, 'rgba16float', {
-        //   isSphere: true,
-        //   geometryType: 'sphere',
-        //   detail: 32,
-        //   size: 50,
-        // }, app.cameraBuffer);
-        // app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
+        EARTH.setAmbient(1, 1, 1);
+        MAT_EFFECT_WATER.setBlend(0.001);
+        MAT_EFFECT_WATER.effects.waterEffect = new WaterSimSphereEffect(cryptoGrid.device, 'rgba16float', {
+          isSphere: true,
+          geometryType: 'sphere',
+          detail: 32,
+          size: 50,
+        }, app.cameraBuffer);
+        app.MAT_EFFECT_WATER = MAT_EFFECT_WATER;
         app.EARTH = EARTH;
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.49);
         cam.setZ(45);
         cam.setY(50);
-        console.log('sssssssssssss')
+
         // const introPath = new CameraPath([
         //   {position: [0, 5, 20], target: [0, 0, 0]},
         //   {position: [10, 12, 10], target: [0, 1, 0]},
@@ -171,15 +169,15 @@ export var loadEarth = function() {
     cryptoGrid.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       const {hitObject, hitPoint} = e.detail;
-      // const water = app.MAT_EFFECT_WATER.effects.waterEffect;
+      const water = app.MAT_EFFECT_WATER.effects.waterEffect;
       // // const invModel = mat4.invert(hitObject._modelMatrix);
       // // const local = vec3.transformMat4(hitPoint, invModel);
-      // const invModel = mat4.inverse(hitObject._modelMatrix);
-      // const localHit = vec3.transformMat4(hitPoint, invModel);
-      // const dir = vec3.normalize(localHit);
-      // const u = 0.5 + Math.atan2(dir[2], dir[0]) / (2 * Math.PI);
-      // const v = 0.5 - Math.asin(dir[1]) / Math.PI;
-      // water.addDrop(u, v, 0.03, 0.01);
+      const invModel = mat4.inverse(hitObject._modelMatrix);
+      const localHit = vec3.transformMat4(hitPoint, invModel);
+      const dir = vec3.normalize(localHit);
+      const u = 0.5 + Math.atan2(dir[2], dir[0]) / (2 * Math.PI);
+      const v = 0.5 - Math.asin(dir[1]) / Math.PI;
+      water.addDrop(u, v, 0.03, 0.01);
       // water.addDrop(local[0], local[2], 0.03, 0.5);
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
