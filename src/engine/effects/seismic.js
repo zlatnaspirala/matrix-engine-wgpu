@@ -6,13 +6,13 @@ export const EarthquakePresets = {
     latitude: 44.8,
     longitude: 20.46,
     magnitude: 5.0,
-    speed: 0.55,
+    speed: 0.3,
     waveCount: 4.0,
-    waveSpacing: 0.95,
-    waveWidth: 0.075,
+    waveSpacing: 0.15,
+    waveWidth: 0.005,
     intensity: 2.5,
     epicenterIntensity: 5.0,
-    epicenterRadius: 0.08,
+    epicenterRadius: 0.01,
     sphereScale: 1.0,
     displacement: 0.012,
     waveColor: [1.0, 0.16, 0.025],
@@ -196,12 +196,10 @@ export class EarthquakeEffect {
     mat4.identity(this._finalMatrix);
     mat4.scale(this._localMatrix, [this.sphereScale, this.sphereScale, this.sphereScale], this._localMatrix);
     mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
-
     const lat = this.latitude * Math.PI / 180.0;
-
-    const lonOffset = -23.0 * Math.PI / 180.0; // Adjust this multiplier (e.g., 3 to 10 degrees) if needed
+    // Adjust this multiplier (e.g., 3 to 10 degrees) if needed
+    const lonOffset = -40.0 * Math.PI / 180.0; 
     const lon = (this.longitude * Math.PI / 180.0) + lonOffset;
-    // const lon = this.longitude * Math.PI / 180.0;
     const cosLat = Math.cos(lat);
 
     this._epicenter[0] = cosLat * Math.sin(lon);
@@ -291,27 +289,23 @@ struct VSOut {
   @location(2)
   worldPos : vec3<f32>,
   @location(3)
-  waveData : vec4<f32>,
+  localDir : vec3<f32>,
 };
 
 @vertex
 fn vsMain(input : VSIn) -> VSOut {
   var output : VSOut;
-  
   let correctedPosition = vec3<f32>(input.position.x, input.position.y, input.position.z);
   let surfaceDir = normalize(correctedPosition);
-  
   let epicenter = normalize(modelData.epicenter.xyz);
   let cosineAngle = clamp(dot(surfaceDir, epicenter), -1.0, 1.0);
   let angularDistance = acos(cosineAngle);
-
   let time = modelData.params0.x;
   let speed = max(modelData.params0.y, 0.001);
   let magnitude = max(modelData.params0.z, 0.0);
   let waveCount = max(modelData.params1.x, 1.0);
   let spacing = max(modelData.params1.y, 0.001);
   let width = max(modelData.params1.z, 0.001);
-  let intensity = modelData.params1.w;
   let magnitudeFactor = clamp(magnitude / 8.0, 0.0, 1.0);
   let travel = time * speed * (0.35 + magnitudeFactor * 0.65);
   let phase = angularDistance - travel;
@@ -320,20 +314,16 @@ fn vsMain(input : VSIn) -> VSOut {
   let ring = 1.0 - smoothstep(0.0, width, distanceToWave);
   let waveLimit = waveCount * spacing;
   let waveRange = smoothstep(waveLimit, max(waveLimit - spacing, 0.001), angularDistance);
-
-  let maxEffectRadius = 0.6; // Adjust this value (in radians) to make the wave area smaller or larger
+  let maxEffectRadius = 0.6;
   let distanceFade = 1.0 - smoothstep(maxEffectRadius * 0.5, maxEffectRadius, angularDistance);
   let ringEnergy = ring * waveRange * distanceFade;
-  let distanceEnergy = 0.35 + 0.65 * (1.0 - smoothstep(0.0, 3.14159265, angularDistance));
-  let epicenterRadius = max(modelData.effect.y, 0.001);
-  let epicenterMask = 1.0 - smoothstep(0.0, epicenterRadius * 0.9, angularDistance);
-  let displacement = modelData.effect.x * ringEnergy * distanceEnergy * (0.25 + magnitudeFactor * 0.75);
+  let displacement = modelData.effect.x * ringEnergy * (0.35 + 0.65 * (1.0 - smoothstep(0.0, 3.14159265, angularDistance))) * (0.25 + magnitudeFactor * 0.75);
   let displacedPosition = input.position + surfaceDir * displacement;
   let worldPosition = modelData.model * vec4<f32>(displacedPosition, 1.0);
-  
+
   let normalMatrix = mat3x3<f32>(
-    modelData.model[0].xyz, 
-    modelData.model[1].xyz, 
+    modelData.model[0].xyz,
+    modelData.model[1].xyz,
     modelData.model[2].xyz
   );
 
@@ -341,8 +331,8 @@ fn vsMain(input : VSIn) -> VSOut {
   output.worldNormal = normalize(normalMatrix * surfaceDir);
   output.worldPos = worldPosition.xyz;
   output.uv = input.uv;
-  output.waveData = vec4<f32>(angularDistance, ringEnergy, epicenterMask, distanceEnergy);
-  
+  output.localDir = surfaceDir;
+
   return output;
 }
 
@@ -357,19 +347,48 @@ struct FragOut {
 
 @fragment
 fn fsMain(input : VSOut) -> FragOut {
-  let ring = input.waveData.y;
-  let epicenterMask = input.waveData.z;
-  let distanceEnergy = input.waveData.w;
+  let surfaceDir = normalize(input.localDir);
+  let epicenter = normalize(modelData.epicenter.xyz);
+  let cosineAngle = clamp(dot(surfaceDir, epicenter), -1.0, 1.0);
+  let angularDistance = acos(cosineAngle);
+
+  let time = modelData.params0.x;
+  let speed = max(modelData.params0.y, 0.001);
+  let magnitude = max(modelData.params0.z, 0.0);
+  let waveCount = max(modelData.params1.x, 1.0);
+  let spacing = max(modelData.params1.y, 0.001);
+  let width = max(modelData.params1.z, 0.001);
+  let magnitudeFactor = clamp(magnitude / 8.0, 0.0, 1.0);
+  let travel = time * speed * (0.35 + magnitudeFactor * 0.65);
+  let phase = angularDistance - travel;
+  let wavePosition = phase / spacing;
+  let distanceToWave = abs(fract(wavePosition + 0.5) - 0.5) * spacing;
+
+  // fwidth-based AA: edge width follows screen-space derivative instead of a fixed angle width
+  let aaWidth = max(fwidth(distanceToWave), 0.0008);
+  let ring = 1.0 - smoothstep(width - aaWidth, width + aaWidth, distanceToWave);
+
+  let waveLimit = waveCount * spacing;
+  let waveRange = smoothstep(waveLimit, max(waveLimit - spacing, 0.001), angularDistance);
+
+  let maxEffectRadius = 0.6;
+  let distanceFade = 1.0 - smoothstep(maxEffectRadius * 0.5, maxEffectRadius, angularDistance);
+  let distanceEnergy = 0.35 + 0.65 * (1.0 - smoothstep(0.0, 3.14159265, angularDistance));
+
+  let epicenterRadius = max(modelData.effect.y, 0.001);
+  let aaEpi = max(fwidth(angularDistance), 0.0008);
+  let epicenterMask = 1.0 - smoothstep(epicenterRadius * 0.9 - aaEpi, epicenterRadius * 0.9 + aaEpi, angularDistance);
+
   let waveColor = modelData.waveColor.xyz;
   let epicenterColor = modelData.epicenterColor.xyz;
-  let waveEnergy = ring * distanceEnergy * modelData.params1.w;
+  let waveEnergy = ring * waveRange * distanceFade * distanceEnergy * modelData.params1.w;
   let waveContribution = waveColor * waveEnergy;
   let epicenterEnergy = epicenterMask * modelData.effect.z;
   let epicenterContribution = epicenterColor * epicenterEnergy;
   let halo = smoothstep(0.0, 1.0, ring) * 0.08 * distanceEnergy;
   let finalColor = waveContribution + epicenterContribution + waveColor * halo;
   let alpha = clamp(waveEnergy + epicenterEnergy + halo, 0.0, 1.0);
-  
+
   return FragOut(
     vec4f(finalColor, alpha),
     vec4f(input.worldNormal, 0.0),
