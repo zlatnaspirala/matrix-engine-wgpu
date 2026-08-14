@@ -4689,7 +4689,7 @@ var MEConfig = {
         this.fsManager.request();
         setTimeout(() => {
           dispatchEvent(new CustomEvent("run_mobile_fs", {}));
-        }, 1);
+        }, 36);
         window.removeEventListener("click", this._fs);
       };
       window.addEventListener("click", this._fs);
@@ -7089,10 +7089,8 @@ var WASDCamera = class _WASDCamera {
       canvas.addEventListener("pointermove", (e2) => {
         if (e2.pointerType === "mouse" && this._mouseDown) {
           if (this._lookDisabled) {
-            console.log("[cam] look disabled, skipping");
             return;
           }
-          console.log("[cam] rotating, lookDisabled:", this._lookDisabled);
           const dx = e2.movementX * this.MOUSE_SENS;
           const dy = e2.movementY * this.MOUSE_SENS;
           this.yaw -= dx * this.rotationSpeed;
@@ -42921,18 +42919,9 @@ var SSRPass = class {
         label: `HZB Build BG ${mip}`,
         layout: this.hzbPipeline.getBindGroupLayout(0),
         entries: [
-          {
-            binding: 0,
-            resource: { buffer }
-          },
-          {
-            binding: 1,
-            resource: this.hzbMipReadViews[mip - 1]
-          },
-          {
-            binding: 2,
-            resource: this.hzbMipWriteViews[mip]
-          }
+          { binding: 0, resource: { buffer } },
+          { binding: 1, resource: this.hzbMipReadViews[mip - 1] },
+          { binding: 2, resource: this.hzbMipWriteViews[mip] }
         ]
       });
       this.hzbMipBuffers.push(buffer);
@@ -42956,19 +42945,13 @@ var SSRPass = class {
     this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, this.data);
   }
   _createPipelines() {
-    const hzbModule = this.device.createShaderModule({
-      label: "HZB build",
-      code: HZB_BUILD_WGSL
-    });
+    const hzbModule = this.device.createShaderModule({ label: "HZB build", code: HZB_BUILD_WGSL });
     this.hzbPipeline = this.device.createComputePipeline({
       label: "HZB build",
       layout: "auto",
       compute: { module: hzbModule, entryPoint: "main" }
     });
-    const blitModule = this.device.createShaderModule({
-      label: "Depth blit",
-      code: DEPTH_BLIT_WGSL
-    });
+    const blitModule = this.device.createShaderModule({ label: "Depth blit", code: DEPTH_BLIT_WGSL });
     this.blitPipeline = this.device.createRenderPipeline({
       label: "Depth blit",
       layout: "auto",
@@ -42985,10 +42968,7 @@ var SSRPass = class {
       minFilter: "linear",
       mipmapFilter: "linear"
     });
-    const ssrModule = this.device.createShaderModule({
-      label: "SSR",
-      code: SSR_PASS_WGSL
-    });
+    const ssrModule = this.device.createShaderModule({ label: "SSR", code: SSR_PASS_WGSL });
     this.bindGroupLayout = this.device.createBindGroupLayout({
       label: "SSR LAYOUT GROUP",
       entries: [
@@ -43046,7 +43026,6 @@ var SSRPass = class {
         loadOp: "clear",
         storeOp: "store",
         clearValue: [1, 0, 0, 1]
-        // Clear with maximum depth standard configuration
       }]
     });
     pass.setPipeline(this.blitPipeline);
@@ -43074,7 +43053,6 @@ var SSRPass = class {
         { binding: 2, resource: sceneTextureView },
         { binding: 3, resource: normalTextureView },
         { binding: 4, resource: this.hzbFullView },
-        // Samples complete structural HZB map cleanly
         { binding: 5, resource: this.pointSampler },
         { binding: 6, resource: worldPosTextureView },
         { binding: 7, resource: this.linearSampler }
@@ -62816,7 +62794,7 @@ var CoinGeckoAdapter = class {
 
 // src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js
 var SeismicPortalAdapter = class {
-  constructor(historyLen = 64) {
+  constructor(historyLen = 10) {
     this.historyLen = historyLen;
     this.mags = new Float32Array(historyLen);
     this.depths = new Float32Array(historyLen);
@@ -62827,11 +62805,11 @@ var SeismicPortalAdapter = class {
   start() {
     this.ws = new WebSocket("wss://www.seismicportal.eu/standing_order/websocket");
     this.ws.onopen = () => {
-      console.info("[seismic] connected");
+      console.info("[seismicportal.eu] connected");
     };
     this.ws.onmessage = (msg) => {
       try {
-        console.log("[seismic raw]", msg.data);
+        console.log("[seismic:data]", msg.data);
         const data = JSON.parse(msg.data);
         const props = data.data?.properties;
         if (!props) {
@@ -62852,6 +62830,51 @@ var SeismicPortalAdapter = class {
           time: props.time ?? null,
           source: props.source_catalog ?? null
         };
+        const container = byId2("last_earthquake");
+        if (container) {
+          container.innerHTML = "";
+          const card = document.createElement("div");
+          card.style.cssText = `
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  `;
+          const title = document.createElement("div");
+          title.textContent = "\u{1F30D} Last Earthquake";
+          title.style.cssText = `
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  `;
+          const fields = [
+            ["Magnitude", `${earthquake.magnitude} ${earthquake.magnitudeType ?? ""}`],
+            ["Location", earthquake.region],
+            ["Latitude", Number(earthquake.latitude).toFixed(4) + "\xB0"],
+            ["Longitude", Number(earthquake.longitude).toFixed(4) + "\xB0"],
+            ["Depth", `${earthquake.depth} km`],
+            ["Time", earthquake.time ?? "-"],
+            ["Source", earthquake.source ?? "-"],
+            ["ID", earthquake.id ?? "-"]
+          ];
+          card.appendChild(title);
+          for (const [label, value] of fields) {
+            const row2 = document.createElement("div");
+            const labelEl = document.createElement("span");
+            labelEl.textContent = `${label}: `;
+            labelEl.style.fontWeight = "bold";
+            const valueEl = document.createElement("span");
+            valueEl.textContent = value;
+            row2.appendChild(labelEl);
+            row2.appendChild(valueEl);
+            card.appendChild(row2);
+          }
+          container.appendChild(card);
+        }
         if (this.onUpdate) {
           this.onUpdate(earthquake);
         }
@@ -62861,11 +62884,7 @@ var SeismicPortalAdapter = class {
     };
     this.ws.onerror = (e2) => console.warn("SeismicPortalAdapter ws error:", e2);
     this.ws.onclose = () => {
-      console.info("SeismicPortalAdapter ws closed");
-      if (this._heartbeat) {
-        clearInterval(this._heartbeat);
-        this._heartbeat = null;
-      }
+      console.info("SeismicPortalAdapter ws closed.");
     };
   }
   stop() {
@@ -62962,10 +62981,14 @@ var WaterSimSphereEffect = class {
     this.geometryOptions = options2.geometryOptions ?? {};
     this.normalizeToUnitSphere = options2.normalizeToUnitSphere ?? true;
     this.isSphere = options2.isSphere ?? true;
+    this.gpuBlend = options2.gpuBlend ?? {
+      color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+      alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+    };
     this.width = options2.width ?? SIM_RES2;
     this.height = options2.height ?? SIM_RES2;
     this.size = options2.size ?? 10;
-    this.detail = options2.detail ?? 100;
+    this.detail = options2.detail ?? 64;
     this.poolHeight = options2.poolHeight ?? 0.1;
     this.ior = options2.ior ?? 1.333;
     this.fresnelMin = options2.fresnelMin ?? 0.25;
@@ -63219,13 +63242,7 @@ var WaterSimSphereEffect = class {
         module: fsModule,
         entryPoint: "fs_main",
         targets: [
-          {
-            format: this.format,
-            blend: {
-              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
-          },
+          { format: this.format, blend: this.gpuBlend },
           { format: this.format },
           { format: this.format }
         ]
@@ -63241,7 +63258,6 @@ var WaterSimSphereEffect = class {
     this.surfacePipelineUnder = this.device.createRenderPipeline({
       ...baseDesc,
       label: "WaterSim S Under",
-      // primitive: {topology: 'triangle-list', cullMode: 'front'},
       depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" },
       primitive: { topology: "triangle-list", cullMode: "front" }
     });
@@ -63278,8 +63294,6 @@ var WaterSimSphereEffect = class {
         targets: [{
           format: "rgba8unorm",
           blend: {
-            // color: {operation: 'add', srcFactor: 'one', dstFactor: 'one'},
-            // alpha: {operation: 'add', srcFactor: 'one', dstFactor: 'one'}
             color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
             alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
           }
@@ -63358,7 +63372,7 @@ var WaterSimSphereEffect = class {
     pass.setPipeline(this.causticsPipeline);
     pass.setBindGroup(0, this._causticsBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? "uint32");
+    pass.setIndexBuffer(this.indexBuffer, this._indexFormat);
     pass.drawIndexed(this.indexCount);
     pass.end();
   }
@@ -63370,7 +63384,7 @@ var WaterSimSphereEffect = class {
     pass.setPipeline(this.surfacePipelineAbove);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? "uint32");
+    pass.setIndexBuffer(this.indexBuffer, this._indexFormat);
     pass.drawIndexed(this.indexCount);
     pass.setPipeline(this.surfacePipelineUnder);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
@@ -63509,6 +63523,10 @@ var EarthquakeEffect = class {
     this.longitude = config.longitude ?? defaults.longitude;
     this.magnitude = config.magnitude ?? defaults.magnitude;
     this.speed = config.speed ?? defaults.speed;
+    this.blend = params.blend ?? {
+      color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+      alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+    };
     this.waveCount = config.waveCount ?? defaults.waveCount;
     this.waveSpacing = config.waveSpacing ?? defaults.waveSpacing;
     this.waveWidth = config.waveWidth ?? defaults.waveWidth;
@@ -63657,20 +63675,7 @@ var EarthquakeEffect = class {
         targets: [
           {
             format: this.colorFormat,
-            blend: {
-              // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one", operation: "add"}
-              // color: {srcFactor: "one", dstFactor: "one", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one", operation: "add"}
-              // color: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-              // color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-              // color: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
+            blend: this.blend
           },
           { format: "rgba16float" },
           { format: "rgba16float" }
@@ -63690,7 +63695,7 @@ var EarthquakeEffect = class {
     mat4Impl.scale(this._localMatrix, [this.sphereScale, this.sphereScale, this.sphereScale], this._localMatrix);
     mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
     const lat = this.latitude * Math.PI / 180;
-    const lonOffset = -40 * Math.PI / 180;
+    const lonOffset = 0;
     const lon = this.longitude * Math.PI / 180 + lonOffset;
     const cosLat = Math.cos(lat);
     this._epicenter[0] = cosLat * Math.sin(lon);
@@ -63885,6 +63890,38 @@ fn fsMain(input : VSOut) -> FragOut {
   );
 }`;
 
+// src/engine/enumarators.js
+var targetBlending = {
+  StandardAlphaBlending: {
+    color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+    alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+  },
+  PremultipliedAlpha: {
+    color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
+    alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+  },
+  Additive: {
+    color: { srcFactor: "one", dstFactor: "one", operation: "add" },
+    alpha: { srcFactor: "one", dstFactor: "one", operation: "add" }
+  },
+  AdditiveSourceAlpha: {
+    color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+    alpha: { srcFactor: "one", dstFactor: "one", operation: "add" }
+  },
+  SoftAdditive: {
+    color: { srcFactor: "one", dstFactor: "one-minus-src-color", operation: "add" },
+    alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+  },
+  Multiply: {
+    color: { srcFactor: "dst-color", dstFactor: "zero", operation: "add" },
+    alpha: { srcFactor: "dst-alpha", dstFactor: "zero", operation: "add" }
+  },
+  Replace: {
+    color: { srcFactor: "one", dstFactor: "zero", operation: "add" },
+    alpha: { srcFactor: "one", dstFactor: "zero", operation: "add" }
+  }
+};
+
 // examples/earth.js
 var loadEarth = function() {
   let MAT_EFFECT_WATER;
@@ -63974,13 +64011,36 @@ var loadEarth = function() {
         autoRotateSpeed: 0
       });
       cryptoGrid.autoUpdate.push(globeDrag);
+      let osc0 = new OSCILLATOR(0, 3, 5e-3);
+      let osc1 = new OSCILLATOR(0, 2, 0.01);
+      let osc2 = new OSCILLATOR(0, 2, 9e-3);
+      let osc3 = new OSCILLATOR(0, 2, 9e-3);
+      let updater2 = {
+        update: () => {
+          osc0.UPDATE();
+          osc1.UPDATE();
+          osc2.UPDATE();
+          osc3.UPDATE();
+          cryptoGrid.MAT_EFFECT_WATER.effects.waterEffect.updateWaterParameters(osc0.value_, osc1.value_, osc2.value_, osc3.value_);
+        }
+      };
+      let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 82 } : { left: "5" };
+      MobileDOM.addButton("Atmosphere", function() {
+        app.autoUpdate.push(updater2);
+      }, () => {
+      }, arg1);
+      let arg2 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 12 } : { left: "63", bottom: 75, width: "400", height: "200", borderRadius: 0, id: "last_earthquake" };
+      MobileDOM.addButton("www.seismicportal.eu", function() {
+      }, () => {
+      }, arg2);
       cryptoGrid.activateBloomEffect();
       cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         EARTH.effects.earthquake = new EarthquakeEffect(cryptoGrid.device, "rgba16float", "rgba16float", {
           sphereScale: 0.98,
-          useParentMesh: EARTH
+          useParentMesh: EARTH,
+          blend: targetBlending.AdditiveSourceAlpha
         }, cryptoGrid.cameraBuffer);
         const dataHandler = new ExternalDataHandler();
         dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
@@ -64028,6 +64088,1023 @@ var loadEarth = function() {
     });
   });
   window.app = cryptoGrid;
+};
+
+// src/engine/effects/camera-depth.js
+var HEIGHT_WORKGROUP_SIZE = 8;
+var COMPUTE_SHADER = (
+  /* wgsl */
+  `
+struct GridParams {
+  cols: u32,
+  rows: u32,
+  heightScale: f32,
+  smoothing: f32, // 0..1 temporal lerp factor
+};
+
+@group(0) @binding(0) var webcamTex: texture_2d<f32>;
+@group(0) @binding(1) var webcamSampler: sampler;
+@group(0) @binding(2) var<storage, read_write> cells: array<vec4<f32>>; // x=height, yzw=color
+@group(0) @binding(3) var<uniform> params: GridParams;
+
+fn luminance(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+@compute @workgroup_size(${HEIGHT_WORKGROUP_SIZE}, ${HEIGHT_WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if (gid.x >= params.cols || gid.y >= params.rows) {
+    return;
+  }
+
+  let uv = vec2<f32>(
+    (f32(gid.x) + 0.5) / f32(params.cols),
+    (f32(gid.y) + 0.5) / f32(params.rows)
+  );
+
+  // webcamTex is a plain sampled texture we refresh via copyExternalImageToTexture
+  // each frame (see _dispatchHeightCompute) -- avoids texture_external's spotty
+  // compute-stage support and single-submit lifetime.
+  let sampleColor = textureSampleLevel(webcamTex, webcamSampler, uv, 0.0);
+  let targetHeight = luminance(sampleColor.rgb) * params.heightScale;
+  let targetF = vec4<f32>(targetHeight, sampleColor.rgb);
+
+  let idx = gid.y * params.cols + gid.x;
+  let prev = cells[idx];
+  cells[idx] = mix(targetF, prev, params.smoothing);
+}
+`
+);
+var RENDER_SHADER = (
+  /* wgsl */
+  `
+struct SceneUniforms {
+  viewProj: mat4x4<f32>,
+  baseModel: mat4x4<f32>,
+};
+
+struct GridLayout {
+  cols: u32,
+  rows: u32,
+  spacing: f32,
+  voxelScale: f32,
+};
+
+@group(0) @binding(0) var<uniform> scene: SceneUniforms;
+@group(0) @binding(1) var<uniform> grid: GridLayout;
+@group(0) @binding(2) var<storage, read> cells: array<vec4<f32>>; // x=height, yzw=color
+
+struct VertexIn {
+  @location(0) position: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+};
+
+struct VertexOut {
+  @builtin(position) clipPos: vec4<f32>,
+  @location(0) worldPos: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+  @location(2) color: vec3<f32>,
+};
+
+@vertex
+fn vs_main(vin: VertexIn, @builtin(instance_index) instanceIdx: u32) -> VertexOut {
+  let col = instanceIdx % grid.cols;
+  let row = instanceIdx / grid.cols;
+
+  let cell = cells[instanceIdx];
+  let h = cell.x;
+
+  // Grid centered on origin in local XZ, height rises along local Y.
+  let halfW = f32(grid.cols) * grid.spacing * 0.5;
+  let halfD = f32(grid.rows) * grid.spacing * 0.5;
+
+  let cellOffset = vec3<f32>(
+    f32(col) * grid.spacing - halfW,
+    0.0,
+    f32(row) * grid.spacing - halfD
+  );
+
+  // Scale the unit cube: XZ footprint fixed, Y stretched to sampled height.
+  let heightClamped = max(h, 0.01);
+  let scaled = vec3<f32>(
+    vin.position.x * grid.voxelScale,
+    vin.position.y * heightClamped,
+    vin.position.z * grid.voxelScale
+  );
+
+  // Sit each voxel on the grid plane (unit cube assumed centered at origin,
+  // extents -0.5..0.5) so it grows upward from y=0 rather than from center.
+  let sitOffset = vec3<f32>(0.0, heightClamped * 0.5, 0.0);
+
+  let localPos = scaled + sitOffset + cellOffset;
+  let worldPos4 = scene.baseModel * vec4<f32>(localPos, 1.0);
+
+  var out: VertexOut;
+  out.clipPos = scene.viewProj * worldPos4;
+  out.worldPos = worldPos4.xyz;
+  // Base model assumed uniformly scaled/no shear for this effect; if that
+  // stops holding true, swap to the inverse-transpose normal matrix.
+  out.normal = normalize((scene.baseModel * vec4<f32>(vin.normal, 0.0)).xyz);
+  out.color = cell.yzw;
+  return out;
+}
+
+struct FragOut {
+  @location(0) color: vec4<f32>,
+  @location(1) normal: vec4<f32>,
+  @location(2) worldPos: vec4<f32>,
+};
+
+@fragment
+fn fs_main(vin: VertexOut) -> FragOut {
+  var out: FragOut;
+  out.color = vec4<f32>(vin.color, 1.0);
+  out.normal = vec4<f32>(vin.normal * 0.5 + 0.5, 1.0);
+  out.worldPos = vec4<f32>(vin.worldPos, 1.0);
+  return out;
+}
+`
+);
+var DepthWebcamVoxelEffect = class {
+  /**
+   * @param {GPUDevice} device
+   * @param {object} opts
+   * @param {number} [opts.cols=64]
+   * @param {number} [opts.rows=48]
+   * @param {number} [opts.spacing=0.08]      grid cell spacing, local units
+   * @param {number} [opts.voxelScale=0.07]   voxel XZ footprint, local units
+   * @param {number} [opts.heightScale=2.0]   max voxel height at luminance=1
+   * @param {number} [opts.smoothing=0.6]     0 = snap to new frame, ~0.6-0.85 = smoothed
+   * @param {GPUTextureFormat} [opts.normalFormat='rgba16float']
+   * @param {GPUTextureFormat} [opts.worldPosFormat='rgba16float']
+   * @param {GPUTextureFormat} [opts.colorFormat='rgba16float']  matches engine's
+   *        3-target G-buffer MRT layout: [color, normal, worldPos]
+   */
+  constructor(device2, opts = {}) {
+    this.device = device2;
+    this.cols = opts.cols ?? 64;
+    this.rows = opts.rows ?? 48;
+    this.spacing = opts.spacing ?? 0.09;
+    this.voxelScale = opts.voxelScale ?? 0.06;
+    this.heightScale = opts.heightScale ?? 2;
+    this.smoothing = opts.smoothing ?? 0.6;
+    this.normalFormat = opts.normalFormat ?? "rgba16float";
+    this.worldPosFormat = opts.worldPosFormat ?? "rgba16float";
+    this.colorFormat = opts.colorFormat ?? "rgba16float";
+    this.instanceCount = this.cols * this.rows;
+    this.video = null;
+    this.videoReady = false;
+    this._stream = null;
+    this._baseModelMatrix = mat4Impl.identity();
+    this._buildStaticResources();
+  }
+  // -------------------- setup --------------------
+  /**
+   * Requests webcam access and starts the video element. Call once before
+   * the first render() (render() will simply skip work until this resolves).
+   * @param {MediaStreamConstraints} [constraints]
+   */
+  async initWebcam(constraints = { video: { width: 640, height: 480 }, audio: false }) {
+    this._stream = await navigator.mediaDevices.getUserMedia(constraints);
+    this.video = document.createElement("video");
+    this.video.muted = true;
+    this.video.playsInline = true;
+    this.video.srcObject = this._stream;
+    await new Promise((resolve) => {
+      this.video.onloadedmetadata = () => resolve();
+    });
+    await this.video.play();
+    this.videoWidth = this.video.videoWidth;
+    this.videoHeight = this.video.videoHeight;
+    this._createWebcamTexture();
+    this.videoReady = true;
+  }
+  _createWebcamTexture() {
+    const device2 = this.device;
+    this.webcamTexture = device2.createTexture({
+      label: "depthWebcamVoxel-webcamTex",
+      size: [this.videoWidth, this.videoHeight],
+      format: "rgba8unorm",
+      // RENDER_ATTACHMENT is required by copyExternalImageToTexture even
+      // though we only ever read from this texture in the compute shader.
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    this.computeBindGroup = device2.createBindGroup({
+      label: "depthWebcamVoxel-computeBG",
+      layout: this.computeBindGroupLayout,
+      entries: [
+        { binding: 0, resource: this.webcamTexture.createView() },
+        { binding: 1, resource: this.webcamSampler },
+        { binding: 2, resource: { buffer: this.heightsBuffer } },
+        { binding: 3, resource: { buffer: this.computeParamsBuffer } }
+      ]
+    });
+  }
+  _buildStaticResources() {
+    const device2 = this.device;
+    this.heightsBuffer = device2.createBuffer({
+      label: "depthWebcamVoxel-heights",
+      size: this.instanceCount * 4 * 4,
+      // vec4<f32> = 16 bytes/cell
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    this.computeParamsBuffer = device2.createBuffer({
+      label: "depthWebcamVoxel-computeParams",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(
+      this.computeParamsBuffer,
+      0,
+      new Uint32Array([this.cols, this.rows])
+    );
+    device2.queue.writeBuffer(
+      this.computeParamsBuffer,
+      8,
+      new Float32Array([this.heightScale, this.smoothing])
+    );
+    this.webcamSampler = device2.createSampler({
+      magFilter: "linear",
+      minFilter: "linear"
+    });
+    this.computeBindGroupLayout = device2.createBindGroupLayout({
+      label: "depthWebcamVoxel-computeBGL",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.COMPUTE, sampler: {} },
+        { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+        { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }
+      ]
+    });
+    this.computePipeline = device2.createComputePipeline({
+      label: "depthWebcamVoxel-computePipeline",
+      layout: device2.createPipelineLayout({
+        bindGroupLayouts: [this.computeBindGroupLayout]
+      }),
+      compute: {
+        module: device2.createShaderModule({ code: COMPUTE_SHADER }),
+        entryPoint: "main"
+      }
+    });
+    this.sceneUniformBuffer = device2.createBuffer({
+      label: "depthWebcamVoxel-sceneUniforms",
+      size: 128,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.gridLayoutBuffer = device2.createBuffer({
+      label: "depthWebcamVoxel-gridLayout",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(
+      this.gridLayoutBuffer,
+      0,
+      new Uint32Array([this.cols, this.rows])
+    );
+    device2.queue.writeBuffer(
+      this.gridLayoutBuffer,
+      8,
+      new Float32Array([this.spacing, this.voxelScale])
+    );
+    this.renderBindGroupLayout = device2.createBindGroupLayout({
+      label: "depthWebcamVoxel-renderBGL",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
+      ]
+    });
+    this.renderBindGroup = device2.createBindGroup({
+      label: "depthWebcamVoxel-renderBG",
+      layout: this.renderBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
+        { binding: 1, resource: { buffer: this.gridLayoutBuffer } },
+        { binding: 2, resource: { buffer: this.heightsBuffer } }
+      ]
+    });
+    this.renderPipeline = device2.createRenderPipeline({
+      label: "depthWebcamVoxel-renderPipeline",
+      layout: device2.createPipelineLayout({
+        bindGroupLayouts: [this.renderBindGroupLayout]
+      }),
+      vertex: {
+        module: device2.createShaderModule({ code: RENDER_SHADER }),
+        entryPoint: "vs_main",
+        buffers: [
+          {
+            arrayStride: 6 * 4,
+            attributes: [
+              { shaderLocation: 0, offset: 0, format: "float32x3" },
+              { shaderLocation: 1, offset: 3 * 4, format: "float32x3" }
+            ]
+          }
+        ]
+      },
+      fragment: {
+        module: device2.createShaderModule({ code: RENDER_SHADER }),
+        entryPoint: "fs_main",
+        targets: [
+          { format: this.colorFormat },
+          { format: this.normalFormat },
+          { format: this.worldPosFormat }
+        ]
+      },
+      primitive: {
+        topology: "triangle-list",
+        cullMode: "back"
+      },
+      depthStencil: {
+        format: "depth24plus",
+        depthWriteEnabled: true,
+        depthCompare: "less"
+      }
+    });
+  }
+  // Per-frame 
+  updateInstanceData(baseModelMatrix) {
+    this._baseModelMatrix = baseModelMatrix;
+    this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, baseModelMatrix);
+  }
+  _dispatchHeightCompute() {
+    if (!this.videoReady) return;
+    try {
+      this.device.queue.copyExternalImageToTexture(
+        { source: this.video, flipY: false },
+        { texture: this.webcamTexture },
+        [this.videoWidth, this.videoHeight]
+      );
+    } catch (e2) {
+      return;
+    }
+    const encoder = this.device.createCommandEncoder({ label: "depthWebcamVoxel-computeEncoder" });
+    const pass = encoder.beginComputePass({ label: "depthWebcamVoxel-heightPass" });
+    pass.setPipeline(this.computePipeline);
+    pass.setBindGroup(0, this.computeBindGroup);
+    pass.dispatchWorkgroups(
+      Math.ceil(this.cols / HEIGHT_WORKGROUP_SIZE),
+      Math.ceil(this.rows / HEIGHT_WORKGROUP_SIZE)
+    );
+    pass.end();
+    this.device.queue.submit([encoder.finish()]);
+  }
+  /**
+   * @param {GPURenderPassEncoder} pass  active G-buffer render pass
+   * @param {{vertexBuffer: GPUBuffer, indexBuffer: GPUBuffer, indexCount: number}} mesh
+   *        unit cube mesh (position+normal interleaved), from GeometryFactory
+   * @param {Float32Array} viewProjMatrix mat4, column-major
+   * @param {number} dt
+   */
+  render(pass, mesh, viewProjMatrix, dt2) {
+    this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, viewProjMatrix);
+    this._dispatchHeightCompute();
+    if (!this.videoReady) return;
+    pass.setPipeline(this.renderPipeline);
+    pass.setBindGroup(0, this.renderBindGroup);
+    pass.setVertexBuffer(0, mesh.vertexBuffer);
+    pass.setIndexBuffer(mesh.indexBuffer, "uint16");
+    pass.drawIndexed(mesh.indexCount, this.instanceCount);
+  }
+  dispose() {
+    if (this._stream) {
+      for (const track of this._stream.getTracks()) track.stop();
+    }
+    this.heightsBuffer?.destroy();
+    this.computeParamsBuffer?.destroy();
+    this.sceneUniformBuffer?.destroy();
+    this.gridLayoutBuffer?.destroy();
+    this.webcamTexture?.destroy();
+  }
+};
+
+// examples/camera-depth.js
+var loadCameraDepth = function() {
+  let cameraDepth = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    cameraDepth.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    addRaycastsAABBListener("canvas1", "click");
+    async function onLoadObj(m2) {
+      cameraDepth.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -1, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [100, 100, 100],
+        rotationSpeed: { x: 0, y: 0.01, z: 0 },
+        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "sky",
+        mesh: m2.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
+      let MYCUBE = cameraDepth.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 4, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [15, 15, 15],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true,
+          bloodBurst: true
+        }
+      });
+      cameraDepth.lightContainer[0].setIntensity(15);
+      cameraDepth.activateBloomEffect();
+      cameraDepth.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      cameraDepth.lightContainer[0].behavior.value_ = -1;
+      cameraDepth.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      cameraDepth.lightContainer[0].setPosition(0, 15, -10);
+      cameraDepth.lightContainer[0].setTarget(0, 0, -10);
+      setTimeout(() => {
+        MYCUBE.effects.depthCamEffect = new DepthWebcamVoxelEffect(cameraDepth.device);
+        MYCUBE.effects.depthCamEffect.initWebcam();
+        MYCUBE.effects.bloodBurst.gravity = 20;
+        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
+        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+          -2.582509022040566,
+          0.21125441598805741,
+          0.4249951687253338,
+          0.4724163587305734,
+          2.381811753816671,
+          3.074841196886901,
+          -2.3797025623904164,
+          -3.4608908819087145
+        ]);
+        MYCUBE.setBlend(0.01);
+        MYCUBE.setAmbient(2, 3, 0.5);
+        app.MYCUBE = MYCUBE;
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(10);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 700);
+    }
+    cameraDepth.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cube")) {
+        e2.detail.hitObject.effects.bloodBurst.spawn([0, 0, 0], null, 60, 2);
+        e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+      }
+    });
+  });
+  window.app = cameraDepth;
+};
+
+// src/engine/effects/reacte-audio.js
+var AudioSplatFieldEffect = class {
+  /**
+   * @param {GPUDevice} device
+   * @param {object} [opts]
+   * @param {number} [opts.pointCount=1000]
+   * @param {Float32Array} [opts.basePositions]  optional external xyz array (pointCount*3).
+   *        If omitted, a procedural point set is generated (sphere shells for
+   *        spectrumShell/beatScatter, resampled into a ribbon for waveformRibbon).
+   * @param {'spectrumShell'|'beatScatter'|'waveformRibbon'} [opts.mode='spectrumShell']
+   * @param {string} [opts.format]  color target format, required only for standalone render()
+   * @param {GPUBuffer} [opts.cameraBuffer]  required only for standalone render()
+   */
+  constructor(device2, opts = {}) {
+    this.device = device2;
+    this.pointCount = opts.pointCount ?? 1e3;
+    this.mode = opts.mode ?? "spectrumShell";
+    this.format = opts.format ?? null;
+    this.cameraBuffer = opts.cameraBuffer ?? null;
+    this._attachedLayer = null;
+    this._basePos = opts.basePositions ? new Float32Array(opts.basePositions) : this._generateBasePositions(this.pointCount);
+    this._posCPU = new Float32Array(this.pointCount * 3);
+    this._posCPU.set(this._basePos);
+    this._colorCPU = new Float32Array(this.pointCount * 4);
+    this._shell = new Uint8Array(this.pointCount);
+    this._dir = new Float32Array(this.pointCount * 3);
+    this._phase = new Float32Array(this.pointCount);
+    this._delay = new Float32Array(this.pointCount);
+    this._ribbonHistSlot = new Float32Array(this.pointCount);
+    for (let i2 = 0; i2 < this.pointCount; i2++) {
+      this._shell[i2] = i2 % 3;
+      this._phase[i2] = Math.random() * Math.PI * 2;
+      this._delay[i2] = Math.random() * 0.15;
+      const bx = this._basePos[i2 * 3], by = this._basePos[i2 * 3 + 1], bz = this._basePos[i2 * 3 + 2];
+      const len2 = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
+      this._dir[i2 * 3] = bx / len2;
+      this._dir[i2 * 3 + 1] = by / len2;
+      this._dir[i2 * 3 + 2] = bz / len2;
+      this._ribbonHistSlot[i2] = i2 / this.pointCount;
+    }
+    this._scatterEnergy = new Float32Array(this.pointCount);
+    this._histLen = 128;
+    this._histLow = new Float32Array(this._histLen);
+    this._histMid = new Float32Array(this._histLen);
+    this._histHigh = new Float32Array(this._histLen);
+    this._histWrite = 0;
+    this.speed = 1;
+    this.scale = 1;
+    this._frameSkip = 1;
+    this._frameCount = 0;
+    this.posBuffer = device2.createBuffer({
+      label: "audio-splat-field-pos",
+      size: this.pointCount * 3 * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
+    this.colorBuffer = device2.createBuffer({
+      label: "audio-splat-field-color",
+      size: this.pointCount * 4 * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this._seedColors();
+    device2.queue.writeBuffer(this.colorBuffer, 0, this._colorCPU);
+    if (this.format && this.cameraBuffer) this._buildStandalonePipeline();
+  }
+  // ─── Setup helpers ─────────────────────────────────────────────────────
+  _generateBasePositions(n3) {
+    const out = new Float32Array(n3 * 3);
+    if (this.mode === "waveformRibbon") {
+      for (let i2 = 0; i2 < n3; i2++) {
+        out[i2 * 3] = (i2 / n3 - 0.5) * 4;
+        out[i2 * 3 + 1] = 0;
+        out[i2 * 3 + 2] = 0;
+      }
+      return out;
+    }
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i2 = 0; i2 < n3; i2++) {
+      const shellIdx = i2 % 3;
+      const radius = 0.4 + shellIdx * 0.35;
+      const yFrac = 1 - i2 / (n3 - 1) * 2;
+      const r3 = Math.sqrt(Math.max(0, 1 - yFrac * yFrac));
+      const theta = golden * i2;
+      out[i2 * 3] = Math.cos(theta) * r3 * radius;
+      out[i2 * 3 + 1] = yFrac * radius;
+      out[i2 * 3 + 2] = Math.sin(theta) * r3 * radius;
+    }
+    return out;
+  }
+  _seedColors() {
+    const palette = [
+      [1, 0.25, 0.2],
+      [0.3, 1, 0.4],
+      [0.25, 0.6, 1]
+    ];
+    for (let i2 = 0; i2 < this.pointCount; i2++) {
+      const [r3, g2, b2] = palette[this._shell[i2]];
+      this._colorCPU[i2 * 4] = r3;
+      this._colorCPU[i2 * 4 + 1] = g2;
+      this._colorCPU[i2 * 4 + 2] = b2;
+      this._colorCPU[i2 * 4 + 3] = 1;
+    }
+  }
+  // ─── Public API ─────────────────────────────────────────────────────────
+  setMode(mode) {
+    this.mode = mode;
+    if (mode === "waveformRibbon") {
+      for (let i2 = 0; i2 < this.pointCount; i2++) {
+        this._basePos[i2 * 3] = (i2 / this.pointCount - 0.5) * 4;
+        this._basePos[i2 * 3 + 1] = 0;
+        this._basePos[i2 * 3 + 2] = 0;
+      }
+      this._posCPU.set(this._basePos);
+    }
+  }
+  setSpeed(s2) {
+    this.speed = s2;
+  }
+  setScale(s2) {
+    this.scale = s2;
+  }
+  setFrameSkip(n3) {
+    this._frameSkip = Math.max(1, n3 | 0);
+  }
+  /** Attach to an existing GaussianSplatLayer — writes into its buffers instead of drawing standalone. */
+  attachTo(splatLayer) {
+    this._attachedLayer = splatLayer;
+    if (splatLayer.attachPositionAnimator) splatLayer.attachPositionAnimator(this);
+  }
+  detach() {
+    if (this._attachedLayer?.detachPositionAnimator) this._attachedLayer.detachPositionAnimator();
+    this._attachedLayer = null;
+  }
+  /**
+   * Call once per frame with the tuple your Audio Reactive Node already produces.
+   * @param {number} low
+   * @param {number} mid
+   * @param {number} high
+   * @param {number} energy
+   * @param {boolean} beat
+   * @param {number} dt      seconds since last frame
+   * @param {number} elapsed total seconds elapsed
+   */
+  updateAudio(low, mid, high, energy, beat, dt2, elapsed) {
+    this._frameCount++;
+    if (this._frameCount % this._frameSkip !== 0) return;
+    const t3 = elapsed * this.speed;
+    switch (this.mode) {
+      case "spectrumShell":
+        this._modeSpectrumShell(low, mid, high, t3);
+        break;
+      case "beatScatter":
+        this._modeBeatScatter(low, mid, high, energy, beat, dt2, t3);
+        break;
+      case "waveformRibbon":
+        this._modeWaveformRibbon(low, mid, high, t3);
+        break;
+      default:
+        this._posCPU.set(this._basePos);
+        break;
+    }
+    this.device.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
+    this.device.queue.writeBuffer(this.colorBuffer, 0, this._colorCPU);
+  }
+  // ─── Modes ─────────────────────────────────────────────────────────────
+  /** Three shells breathe independently on their own band. Calm idle default. */
+  _modeSpectrumShell(low, mid, high, t3) {
+    const p2 = this._posCPU;
+    const b2 = this._basePos;
+    const ph = this._phase;
+    const shell = this._shell;
+    const sc2 = this.scale;
+    const bandVal = [low, mid, high];
+    for (let i2 = 0; i2 < this.pointCount; i2++) {
+      const band = bandVal[shell[i2]] * 0.02;
+      const breathe = 1 + Math.sin(t3 * 1.5 + ph[i2] * 0.2) * 0.05 + band * sc2;
+      p2[i2 * 3] = b2[i2 * 3] * breathe;
+      p2[i2 * 3 + 1] = b2[i2 * 3 + 1] * breathe;
+      p2[i2 * 3 + 2] = b2[i2 * 3 + 2] * breathe;
+      const c2 = this._colorCPU;
+      const boost = Math.min(1, 0.4 + band * sc2 * 2);
+      c2[i2 * 4 + 3] = boost;
+    }
+  }
+  /** Tight core at rest; beat launches a wave of points outward, decaying back in. */
+  _modeBeatScatter(low, mid, high, energy, beat, dt2, t3) {
+    const p2 = this._posCPU;
+    const b2 = this._basePos;
+    const dir = this._dir;
+    const delay2 = this._delay;
+    const se2 = this._scatterEnergy;
+    const sc2 = this.scale;
+    if (beat) {
+      const kick = 0.5 + Math.min(1, energy * 0.05);
+      for (let i2 = 0; i2 < this.pointCount; i2++) {
+        se2[i2] = Math.max(se2[i2], kick);
+      }
+    }
+    const decay = Math.exp(-dt2 * 3);
+    for (let i2 = 0; i2 < this.pointCount; i2++) {
+      se2[i2] *= decay;
+      const push = se2[i2] * sc2;
+      p2[i2 * 3] = b2[i2 * 3] * (1 + push * 3) + dir[i2 * 3] * push * 0.5;
+      p2[i2 * 3 + 1] = b2[i2 * 3 + 1] * (1 + push * 3) + dir[i2 * 3 + 1] * push * 0.5;
+      p2[i2 * 3 + 2] = b2[i2 * 3 + 2] * (1 + push * 3) + dir[i2 * 3 + 2] * push * 0.5;
+      this._colorCPU[i2 * 4 + 3] = Math.min(1, 0.35 + push);
+    }
+  }
+  /** Scrolling oscilloscope trace: y = rolling low/mid/high history, x fixed across the ribbon. */
+  _modeWaveformRibbon(low, mid, high, t3) {
+    this._histLow[this._histWrite] = low;
+    this._histMid[this._histWrite] = mid;
+    this._histHigh[this._histWrite] = high;
+    this._histWrite = (this._histWrite + 1) % this._histLen;
+    const p2 = this._posCPU;
+    const b2 = this._basePos;
+    const shell = this._shell;
+    const sc2 = this.scale;
+    const bands = [this._histLow, this._histMid, this._histHigh];
+    const yOffset = [0.6, 0, -0.6];
+    for (let i2 = 0; i2 < this.pointCount; i2++) {
+      const frac = this._ribbonHistSlot[i2];
+      const sampleIdx = (this._histWrite - Math.floor(frac * this._histLen) + this._histLen * 2) % this._histLen;
+      const band = bands[shell[i2]][sampleIdx] * 0.03 * sc2;
+      p2[i2 * 3] = b2[i2 * 3];
+      p2[i2 * 3 + 1] = yOffset[shell[i2]] + band;
+      p2[i2 * 3 + 2] = 0;
+    }
+  }
+  // ─── Standalone rendering (optional) ────────────────────────────────────
+  _buildStandalonePipeline() {
+    this.modelBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const identity4 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, identity4);
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
+    });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    const shaderModule = this.device.createShaderModule({
+      label: "audio-splat-field-shader",
+      code: `
+struct Camera { mvp: mat4x4<f32> };
+struct Model { matrix: mat4x4<f32> };
+@group(0) @binding(0) var<uniform> camera: Camera;
+@group(0) @binding(1) var<uniform> model: Model;
+
+struct VertexInput {
+  @location(0) position: vec3<f32>,
+  @location(1) color: vec4<f32>,
+};
+struct VertexOutput {
+  @builtin(position) clipPos: vec4<f32>,
+  @location(0) color: vec4<f32>,
+  @location(1) fragNorm: vec3<f32>,
+  @location(2) fragPos: vec3<f32>,
+};
+
+struct FragOut {
+  @location(0) color: vec4<f32>,
+  @location(1) normal: vec4<f32>,
+  @location(2) worldPos: vec4<f32>,
+};
+
+@vertex
+fn vs_main(in: VertexInput) -> VertexOutput {
+  var out: VertexOutput;
+  let worldPos = model.matrix * vec4<f32>(in.position, 1.0);
+  out.clipPos = camera.mvp * worldPos;
+  out.color = in.color;
+  // points have no real surface normal \u2014 face the camera along +Z in view-ish space
+  out.fragNorm = vec3<f32>(0.0, 0.0, 1.0);
+  out.fragPos = worldPos.xyz;
+  return out;
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> FragOut {
+  let finalColor = in.color.rgb;
+  let alpha = in.color.a;
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(in.fragNorm, 0.0),
+    vec4f(in.fragPos, 1.0)
+  );
+}
+`
+    });
+    this.renderPipeline = this.device.createRenderPipeline({
+      label: "audio-splat-field-pipeline",
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vs_main",
+        buffers: [
+          { arrayStride: 12, stepMode: "vertex", attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+          { arrayStride: 16, stepMode: "vertex", attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }] }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fs_main",
+        targets: [{
+          format: this.format,
+          blend: {
+            color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one", operation: "add" }
+          }
+        }]
+      },
+      primitive: { topology: "point-list" }
+    });
+  }
+  /** Only meaningful if constructed with {format, cameraBuffer} and NOT attached to a splat layer. */
+  render(pass, viewProjMatrix, modelMatrix = null) {
+    if (this._attachedLayer || !this.renderPipeline) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    if (modelMatrix) this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
+    pass.setPipeline(this.renderPipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.posBuffer);
+    pass.setVertexBuffer(1, this.colorBuffer);
+    pass.draw(this.pointCount, 1, 0, 0);
+  }
+  destroy() {
+    this.posBuffer?.destroy();
+    this.colorBuffer?.destroy();
+    this.modelBuffer?.destroy();
+  }
+};
+
+// examples/reactive-audio.js
+var loadReactiveAudio = function() {
+  let reactiveAudio = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    reactiveAudio.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    addRaycastsAABBListener("canvas1", "click");
+    async function onLoadObj(m2) {
+      reactiveAudio.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -1, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [100, 100, 100],
+        rotationSpeed: { x: 0, y: 0.01, z: 0 },
+        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "sky",
+        mesh: m2.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
+      let MYCUBE = reactiveAudio.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 4, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [15, 15, 15],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true,
+          bloodBurst: true
+        }
+      });
+      reactiveAudio.lightContainer[0].setIntensity(15);
+      reactiveAudio.activateBloomEffect();
+      reactiveAudio.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      reactiveAudio.lightContainer[0].behavior.value_ = -1;
+      reactiveAudio.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      reactiveAudio.lightContainer[0].setPosition(0, 15, -10);
+      reactiveAudio.lightContainer[0].setTarget(0, 0, -10);
+      setTimeout(() => {
+        app.audioManager.load("./audionautix-black-fly.mp3").then((asset) => {
+          asset.audio.loop = true;
+          reactiveAudio._audio = asset;
+          reactiveAudio._energyHistory = [];
+          reactiveAudio._beatCooldown = 0;
+          reactiveAudio._loading = false;
+          let thresholdBeat = 0.7;
+          const data = reactiveAudio._audio.updateFFT();
+          if (!data) return;
+          let low = 0, mid = 0, high = 0;
+          for (let i2 = 0; i2 < 16; i2++) low += data[i2];
+          for (let i2 = 16; i2 < 64; i2++) mid += data[i2];
+          for (let i2 = 64; i2 < 128; i2++) high += data[i2];
+          low /= 16;
+          mid /= 48;
+          high /= 64;
+          const energy = (low + mid + high) / 3;
+          const hist = reactiveAudio._energyHistory;
+          hist.push(low);
+          if (hist.length > 30) hist.shift();
+          let avg = 0;
+          for (let i2 = 0; i2 < hist.length; i2++) avg += hist[i2];
+          avg /= hist.length;
+          let beat = false;
+          if (low > avg * thresholdBeat && reactiveAudio._beatCooldown <= 0) {
+            beat = true;
+            reactiveAudio._beatCooldown = 10;
+          }
+          if (reactiveAudio._beatCooldown > 0) reactiveAudio._beatCooldown--;
+          reactiveAudio._returnCache = [low, mid, high, energy, beat];
+          console.log("....................");
+        });
+        MYCUBE.effects.audioE = new AudioSplatFieldEffect(app.device, void 0, app.cameraBuffer);
+        MYCUBE.effects.bloodBurst.gravity = 20;
+        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
+        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+          -2.582509022040566,
+          0.21125441598805741,
+          0.4249951687253338,
+          0.4724163587305734,
+          2.381811753816671,
+          3.074841196886901,
+          -2.3797025623904164,
+          -3.4608908819087145
+        ]);
+        MYCUBE.setBlend(0.01);
+        MYCUBE.setAmbient(2, 3, 0.5);
+        app.MYCUBE = MYCUBE;
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(10);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 700);
+    }
+    reactiveAudio.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cube")) {
+        e2.detail.hitObject.effects.bloodBurst.spawn([0, 0, 0], null, 60, 2);
+        e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+      }
+    });
+  });
+  window.app = reactiveAudio;
 };
 
 // examples.js
@@ -64086,6 +65163,8 @@ byId2("loadParticles").addEventListener("click", () => switchDemo("35"));
 byId2("loadRunner").addEventListener("click", () => switchDemo("36"));
 byId2("loadCryptoGrid").addEventListener("click", () => switchDemo("37"));
 byId2("loadEarth").addEventListener("click", () => switchDemo("38"));
+byId2("loadCameraDepth").addEventListener("click", () => switchDemo("39"));
+byId2("loadReactiveAudio").addEventListener("click", () => switchDemo("40"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -64165,6 +65244,10 @@ if (urlQuery["demo"] === "1") {
   loadCryptoGrid();
 } else if (urlQuery["demo"] === "38") {
   loadEarth();
+} else if (urlQuery["demo"] === "39") {
+  loadCameraDepth();
+} else if (urlQuery["demo"] === "40") {
+  loadReactiveAudio();
 } else {
   loadObjFile();
 }

@@ -42,6 +42,8 @@ import {loadParticles} from "./examples/particles.js";
 import {loadRunner} from "./examples/games/my-nui/real-runner.js";
 import {loadCryptoGrid} from "./examples/crypto-grid.js";
 import {loadEarth} from "./examples/earth.js";
+import {loadCameraDepth} from "./examples/camera-depth.js";
+import {loadReactiveAudio} from "./examples/reactive-audio.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -94,6 +96,8 @@ byId('loadParticles').addEventListener("click", () => switchDemo('35'));
 byId('loadRunner').addEventListener("click", () => switchDemo('36'));
 byId('loadCryptoGrid').addEventListener("click", () => switchDemo('37'));
 byId('loadEarth').addEventListener("click", () => switchDemo('38'));
+byId('loadCameraDepth').addEventListener("click", () => switchDemo('39'));
+byId('loadReactiveAudio').addEventListener("click", () => switchDemo('40'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
@@ -177,6 +181,10 @@ if(urlQuery['demo'] === '1') {
   loadCryptoGrid();
 } else if(urlQuery['demo'] === '38') {
   loadEarth();
+} else if(urlQuery['demo'] === '39') {
+  loadCameraDepth();
+} else if(urlQuery['demo'] === '40') {
+  loadReactiveAudio();
 } else {
   loadObjFile();
 }

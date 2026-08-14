@@ -33,6 +33,10 @@ export class EarthquakeEffect {
     this.longitude = config.longitude ?? defaults.longitude;
     this.magnitude = config.magnitude ?? defaults.magnitude;
     this.speed = config.speed ?? defaults.speed;
+    this.blend = params.blend ?? {
+      color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
+      alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+    };
     this.waveCount = config.waveCount ?? defaults.waveCount;
     this.waveSpacing = config.waveSpacing ?? defaults.waveSpacing;
     this.waveWidth = config.waveWidth ?? defaults.waveWidth;
@@ -166,25 +170,7 @@ export class EarthquakeEffect {
         targets: [
           {
             format: this.colorFormat,
-            blend: {
-              // color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one", operation: "add"}
-
-              // color: {srcFactor: "one", dstFactor: "one", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one", operation: "add"}
-
-              // color: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-
-              // color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-
-              // color: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
-              // alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-
-              color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
-              alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-            },
+            blend: this.blend
           },
           {format: "rgba16float"}, {format: "rgba16float"}
         ]
@@ -202,8 +188,9 @@ export class EarthquakeEffect {
     mat4.scale(this._localMatrix, [this.sphereScale, this.sphereScale, this.sphereScale], this._localMatrix);
     mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
     const lat = this.latitude * Math.PI / 180.0;
-    // Adjust this multiplier (e.g., 3 to 10 degrees) if needed
-    const lonOffset = -40.0 * Math.PI / 180.0;
+    // Calibration
+    // const lonOffset = -0.7;
+    const lonOffset = 0;
     const lon = (this.longitude * Math.PI / 180.0) + lonOffset;
     const cosLat = Math.cos(lat);
 

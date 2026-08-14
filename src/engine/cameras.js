@@ -152,8 +152,7 @@ export class WASDCamera {
 
       canvas.addEventListener('pointermove', e => {
         if(e.pointerType === 'mouse' && this._mouseDown) {
-          if(this._lookDisabled) {console.log('[cam] look disabled, skipping'); return }
-          console.log('[cam] rotating, lookDisabled:', this._lookDisabled);
+          if(this._lookDisabled) {return;}
           const dx = e.movementX * this.MOUSE_SENS;
           const dy = e.movementY * this.MOUSE_SENS;
           this.yaw -= dx * this.rotationSpeed;

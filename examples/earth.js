@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener, rayIntersectsSphere2} from "../src/engine/raycast.js";
-import {CameraPath, OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
+import {CameraPath, isMobile, OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
 import {ChartsEffect} from "../src/engine/effects/datagrams.js";
 import {ExternalDataHandler} from "../src/engine/buildin/externalDataHandler/externalDataHandler.js";
 import {CoinGeckoAdapter} from "../src/engine/buildin/externalDataHandler/adapters/coingecko/coingecko.js";
@@ -11,6 +11,8 @@ import {WaterSimEffect} from "../src/engine/effects/waterSimEffect.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {WaterSimSphereEffect} from "../src/engine/effects/waterSimEffectSphere.js";
 import {EarthquakeEffect} from "../src/engine/effects/seismic.js";
+import {targetBlending} from "../src/engine/enumarators.js";
+import {MobileDOM} from "../src/engine/cameras.js";
 
 export var loadEarth = function() {
   let MAT_EFFECT_WATER;
@@ -66,6 +68,8 @@ export var loadEarth = function() {
         }
       })
 
+
+
       MAT_EFFECT_WATER = cryptoGrid.addMeshObj({
         material: {type: 'standard'},
         position: {x: 0, y: 20, z: -10},
@@ -97,32 +101,42 @@ export var loadEarth = function() {
 
       cryptoGrid.autoUpdate.push(globeDrag);
 
-      // let osc0 = new OSCILLATOR(0, 3, 0.005);
-      // let osc1 = new OSCILLATOR(0, 2, 0.01);
-      // let osc2 = new OSCILLATOR(0, 2, 0.009);
-      // let osc3 = new OSCILLATOR(0, 2, 0.009);
-      // let updater2 = {
-      //   update: () => {
-      //     osc0.UPDATE();
-      //     osc1.UPDATE();
-      //     osc2.UPDATE();
-      //     osc3.UPDATE();
-      //     cryptoGrid.MAT_EFFECT_WATER.effects.waterEffect.updateWaterParameters(osc0.value_, osc1.value_, osc2.value_, osc3.value_)
-      //   }
-      // }
+      let osc0 = new OSCILLATOR(0, 3, 0.005);
+      let osc1 = new OSCILLATOR(0, 2, 0.01);
+      let osc2 = new OSCILLATOR(0, 2, 0.009);
+      let osc3 = new OSCILLATOR(0, 2, 0.009);
+      let updater2 = {
+        update: () => {
+          osc0.UPDATE();
+          osc1.UPDATE();
+          osc2.UPDATE();
+          osc3.UPDATE();
+          cryptoGrid.MAT_EFFECT_WATER.effects.waterEffect.updateWaterParameters(osc0.value_, osc1.value_, osc2.value_, osc3.value_)
+        }
+      }
+
+      let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 82} : {left: '5'};
+      MobileDOM.addButton("Atmosphere", function() {
+        app.autoUpdate.push(updater2);
+      }, () => {}, arg1);
+
+      let arg2 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 12} : 
+      {left: '63', bottom: 75, width: "400" , height: '200', borderRadius: 0, id: 'last_earthquake'};
+      MobileDOM.addButton("www.seismicportal.eu", function() {
+        
+      }, () => {}, arg2);
 
       cryptoGrid.activateBloomEffect();
       cryptoGrid.lightContainer[0].setPosition(0, 15, -10);
       cryptoGrid.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-
         EARTH.effects.earthquake = new EarthquakeEffect(cryptoGrid.device, 'rgba16float', 'rgba16float', {
           sphereScale: 0.98,
           useParentMesh: EARTH,
+          blend: targetBlending.AdditiveSourceAlpha
         }, cryptoGrid.cameraBuffer);
 
-        // cryptoGrid.autoUpdate.push(updater2);
         const dataHandler = new ExternalDataHandler();
         dataHandler.registerAdapter("seismic", new SeismicPortalAdapter(64));
         dataHandler.onUpdate((name, grid) => {
@@ -133,7 +147,6 @@ export var loadEarth = function() {
         });
         dataHandler.start("seismic");
 
-        // EARTH.setBlend(1)
         EARTH.setAmbient(1, 1, 1);
         MAT_EFFECT_WATER.setBlend(0.001);
         MAT_EFFECT_WATER.effects.waterEffect = new WaterSimSphereEffect(cryptoGrid.device, 'rgba16float', {

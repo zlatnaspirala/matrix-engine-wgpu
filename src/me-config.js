@@ -102,7 +102,7 @@ export const MEConfig = {
       this.fsManager.request();
       this._fs = () => {
         this.fsManager.request();
-        setTimeout(() => {dispatchEvent(new CustomEvent('run_mobile_fs', {}))}, 1)
+        setTimeout(() => {dispatchEvent(new CustomEvent('run_mobile_fs', {}))}, 36);
         window.removeEventListener('click', this._fs);
       }
       window.addEventListener('click', this._fs);

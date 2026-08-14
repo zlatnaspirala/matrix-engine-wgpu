@@ -6,21 +6,6 @@ import {
 } from "../../shaders/water-simulation/water-simulation.wgsl";
 import {GeometryFactory} from "../geometry-factory";
 
-// WaterSimEffect
-// Usage:
-//   const water = new WaterSimEffect(device, format, {
-//     size: 20,            // world-space width/height of the water plane
-//     poolHeight: 1,        // depth of the floor plane below the surface
-//     floorTexture, floorSampler   // optional; defaults to a flat gray 1x1
-//   });
-//   someMesh.effects = { water };
-//   // per frame, before world's main render pass:
-//   water.simulate(commandEncoder);
-//   // click/drag handlers:
-//   water.addDrop(x, z, 0.03, 0.02);
-//   water.stampSphere(oldCenter, newCenter, radius);
-
-// const SIM_RES = 256;
 const SIM_RES = 512;
 export class WaterSimSphereEffect {
   constructor(device, format, options = {}) {
@@ -32,10 +17,14 @@ export class WaterSimSphereEffect {
     this.geometryOptions = options.geometryOptions ?? {};
     this.normalizeToUnitSphere = options.normalizeToUnitSphere ?? true;
     this.isSphere = options.isSphere ?? true;
+    this.gpuBlend = options.gpuBlend ?? {
+      color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+      alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'}
+    };
     this.width = options.width ?? SIM_RES;
     this.height = options.height ?? SIM_RES;
     this.size = options.size ?? 10;
-    this.detail = options.detail ?? 100;
+    this.detail = options.detail ?? 64;
     this.poolHeight = options.poolHeight ?? 0.10;
     this.ior = options.ior ?? 1.333;
     this.fresnelMin = options.fresnelMin ?? 0.25;
@@ -49,7 +38,7 @@ export class WaterSimSphereEffect {
     this.data = new Float32Array(20);
     this.data2 = new Float32Array(12);
     this._idleFrames = 0;
-    this._idleThreshold = 90; // ~1.5s at 60fps before considering it "settled"
+    this._idleThreshold = 90;
     this._createTextures();
     this._simPassDescs = [
       {colorAttachments: [{view: this._physViews[0], loadOp: 'clear', storeOp: 'store', clearValue: {r: 0, g: 0, b: 0, a: 0}}]},
@@ -61,8 +50,8 @@ export class WaterSimSphereEffect {
     };
     this._dropUniform = new Float32Array(4);
     this._sphereUniform = new Float32Array(8);
-    this._deltaUniform = new Float32Array([1 / this.width, 1 / this.height]); // width/height fixed, compute once
-    this._defaultEye = [0, 5, 5]; // was `?? [0,5,5]` literal every render() call
+    this._deltaUniform = new Float32Array([1 / this.width, 1 / this.height]);
+    this._defaultEye = [0, 5, 5];
     this._createSampler();
     this._createUniformBuffers(options);
     this._createSimPipelines();
@@ -195,8 +184,6 @@ export class WaterSimSphereEffect {
       size: uniformSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    // Two variants (read A / read B) built once - only the uniform buffer's
-    // contents change per call, never the bind group itself.
     const makeBG = (readView) => this.device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
       entries: [
@@ -215,9 +202,7 @@ export class WaterSimSphereEffect {
   _createSurfaceMesh() {
     const detail = this.detail;
     let positions, indices;
-
     if(this.geometryType === 'plane') {
-      // ---- existing plane loop, completely unchanged ----
       positions = [];
       indices = [];
       for(let z = 0;z <= detail;z++) {
@@ -236,9 +221,8 @@ export class WaterSimSphereEffect {
       positions = new Float32Array(positions);
       indices = new Uint32Array(indices);
     } else {
-      // ---- any GeometryFactory type, e.g. 'sphere', 'icosahedron', 'cube', 'crystal'... ----
       const geo = GeometryFactory.create(this.geometryType, 1, detail, this.geometryOptions);
-      positions = geo.positions.slice(); // copy — don't mutate factory's cached data if it caches
+      positions = geo.positions.slice();
       indices = geo.indices;
 
       if(this.normalizeToUnitSphere) {
@@ -309,14 +293,8 @@ export class WaterSimSphereEffect {
       },
       fragment: {
         module: fsModule, entryPoint: 'fs_main', targets: [
-          {
-            format: this.format, blend: {
-              color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
-              alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'}
-            }
-          },
-          {format: this.format},
-          {format: this.format}
+          {format: this.format, blend: this.gpuBlend},
+          {format: this.format}, {format: this.format}
         ]
       },
       primitive: {topology: 'triangle-list'},
@@ -329,7 +307,6 @@ export class WaterSimSphereEffect {
     });
     this.surfacePipelineUnder = this.device.createRenderPipeline({
       ...baseDesc, label: 'WaterSim S Under',
-      // primitive: {topology: 'triangle-list', cullMode: 'front'},
       depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'},
       primitive: {topology: 'triangle-list', cullMode: 'front'}
     });
@@ -354,7 +331,6 @@ export class WaterSimSphereEffect {
   _createCausticsPipeline() {
     const vsModule = this.device.createShaderModule({label: 'WaterSim Caustics VS', code: causticsVertShader});
     const fsModule = this.device.createShaderModule({label: 'WaterSim Caustics FS', code: causticsFragShader});
-
     this.causticsPipeline = this.device.createRenderPipeline({
       label: 'WaterSim Caustics',
       layout: 'auto',
@@ -369,8 +345,6 @@ export class WaterSimSphereEffect {
         targets: [{
           format: 'rgba8unorm',
           blend: {
-            // color: {operation: 'add', srcFactor: 'one', dstFactor: 'one'},
-            // alpha: {operation: 'add', srcFactor: 'one', dstFactor: 'one'}
             color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
             alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'}
           }
@@ -434,7 +408,6 @@ export class WaterSimSphereEffect {
 
   _runSimPass(encoder, pipelineObj, uniformData) {
     this.device.queue.writeBuffer(pipelineObj.uniformBuffer, 0, uniformData);
-    // const writeView = this._physViews[1 - this._parity];
     const pass = encoder.beginRenderPass(this._simPassDescs[1 - this._parity]);
     pass.setPipeline(pipelineObj.pipeline);
     pass.setBindGroup(0, pipelineObj.bindGroups[this._parity]);
@@ -444,13 +417,13 @@ export class WaterSimSphereEffect {
   }
 
   _runCausticsPass(encoder) {
-    const pass = encoder.beginRenderPass(this._causticsPassDesc);
-    pass.setPipeline(this.causticsPipeline);
-    pass.setBindGroup(0, this._causticsBindGroups[this._parity]);
-    pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? 'uint32');
-    pass.drawIndexed(this.indexCount);
-    pass.end();
+    const pass = encoder.beginRenderPass(this._causticsPassDesc)
+    pass.setPipeline(this.causticsPipeline)
+    pass.setBindGroup(0, this._causticsBindGroups[this._parity])
+    pass.setVertexBuffer(0, this.positionBuffer)
+    pass.setIndexBuffer(this.indexBuffer, this._indexFormat)
+    pass.drawIndexed(this.indexCount)
+    pass.end()
   }
 
   render(pass, mesh, viewProjMatrix) {
@@ -461,7 +434,7 @@ export class WaterSimSphereEffect {
     pass.setPipeline(this.surfacePipelineAbove);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);
     pass.setVertexBuffer(0, this.positionBuffer);
-    pass.setIndexBuffer(this.indexBuffer, this._indexFormat ?? 'uint32');
+    pass.setIndexBuffer(this.indexBuffer, this._indexFormat);
     pass.drawIndexed(this.indexCount);
     pass.setPipeline(this.surfacePipelineUnder);
     pass.setBindGroup(0, this._surfaceBindGroups[this._parity]);

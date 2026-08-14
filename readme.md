@@ -2,24 +2,23 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.18.8 2026 Alias `The beast`
+📅 Version: 1.19.0 2026 Alias `The beast`
 
 ---
 
 ## Logo
 <img width="256" height="256" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
 
-
 ---
 
 ## Description
 
-This project is a `stable` but also `work-in-progress`. WebGPU engine inspired by the original **matrix-engine** for WebGL.
+WebGPU engine focus performance but also mimic major engines features inspired by the original **matrix-engine** for WebGL. 
 It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
 Published on npm as: **`matrix-engine-wgpu`** (not always updated on last - recommended is to use github clone)
 From [1.18.7] ver npm package is much more stable and usable. All examples can be done by npm services not just github clone.
-You can also use (links tested). You can use `RES` like prefix for textures or objects paths. TheBeast is friendly with codepen, worker physics bridge will test host name is it `codepen` to fix loading link if not it will use local resource always.
+You can also use (links tested). You can use `RES` like prefix for textures or objects paths. TheBeast is friendly with codepen, worker physics bridge will test host origin name is it exsternal or not to fix loading link if not it will use local resource always.
 ```js
 import {MatrixEngineWGPU, downloadMeshes} from "https://esm.sh/matrix-engine-wgpu";
 let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
@@ -43,6 +42,7 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
 - ✔️ Bloom post processing.
 - ✔️ HZB post processing.
+- ✔️ Volumetric post processing.
 - ✔️ Scene Culling feature (see maze example).
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
 - ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).
@@ -1132,19 +1132,15 @@ Exclude (for example floor/ground) from culling: `floor.ignoreCulling = true;`
 ---
 
 ## About `empty.js`
-[Not always updated]
-For a clean startup without extra logic, use engine build `empty.js`.
-This minimal build is ideal for online editors like CodePen or StackOverflow snippets.
-It is the plain text JavaScript ready for exec on any platform with zero errors.
 
-<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/3d-jamb.png?raw=true" />
+
 
 ---
 
 
 ## Android TV or any other supported device render stream receiver
 
-  Tech:L webRTC (used standard kurento/openvidu matrixStream)
+  Tech: webRTC (used standard kurento/openvidu matrixStream)
   Look for ./public/tv-10.html 
 
   To make or build you own see android native part at:
@@ -1167,13 +1163,11 @@ It is the plain text JavaScript ready for exec on any platform with zero errors.
     });
   ```
 
-
 ## NPM Scripts
 
-
 Editor use esbuild.
-Uses `watchify` to bundle JavaScript. (still good)
-Slow migration to the ESBUILD (note: it strange becouse it is exe file).
+You can use `watchify` to bundle JavaScript. (still good)
++Migration to the ESBUILD (note: it strange becouse it is exe file) but it is popular.
 
 You can setup more games/apps in single bundle or make special end point for specific game/app.
 
@@ -1204,14 +1198,15 @@ You can setup more games/apps in single bundle or make special end point for spe
 All resources and output go into the `./public` folder — everything you need in one place.
 This is static file storage also all builds make outputs here.
  - For adding new endpoint app/demo you only need to create standard html file with js script name.
-  
 
 ---
 
 ## Proof of Concept
 
-🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game.
-   Also MOBA 'Forest of hollow blood'
+🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game,
+   MOBA 'Forest of hollow blood' , flipper , NUI runner etc.
+
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/3d-jamb.png?raw=true" />
 
 ## MOBA game Beta version done
 
