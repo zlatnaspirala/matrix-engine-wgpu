@@ -26,20 +26,20 @@ export var loadReactiveAudio = function() {
     addRaycastsAABBListener('canvas1', 'click');
 
     async function onLoadObj(m) {
-      reactiveAudio.addMeshObj({
-        material: {type: 'standard', share: true},
-        position: {x: 0, y: -1, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 0.01, z: 0},
-        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'sky',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
+      // reactiveAudio.addMeshObj({
+      //   material: {type: 'standard', share: true},
+      //   position: {x: 0, y: -1, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [100, 100, 100],
+      //   rotationSpeed: {x: 0, y: 0.01, z: 0},
+      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+      //   name: 'sky',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
 
       // material: {type: 'mirror', share: true }, share: true if not defined it is false.
       let MYCUBE = reactiveAudio.addMeshObj({
@@ -70,7 +70,7 @@ export var loadReactiveAudio = function() {
         },
         pointerEffect: {
           enabled: true,
-          flameEmitter: true,
+          // flameEmitter: true,
           bloodBurst: true
         }
       })
@@ -88,48 +88,32 @@ export var loadReactiveAudio = function() {
 
       setTimeout(() => {
 
+        let reactiveA = {
+          _audio: null,
+          _loading: true,
+          _energyHistory: [],
+          _beatCooldown: 0,
+          thresholdBeat: 0.7,
+        };
+
         app.audioManager.load('./audionautix-black-fly.mp3').then(asset => {
           asset.audio.loop = true;
-          reactiveAudio._audio = asset;
-          reactiveAudio._energyHistory = [];
-          reactiveAudio._beatCooldown = 0;
-          reactiveAudio._loading = false;
-
-          let thresholdBeat = 0.7
-          const data = reactiveAudio._audio.updateFFT();
-          if(!data) return;
-          let low = 0, mid = 0, high = 0;
-          for(let i = 0;i < 16;i++) low += data[i];
-          for(let i = 16;i < 64;i++) mid += data[i];
-          for(let i = 64;i < 128;i++) high += data[i];
-          low /= 16;
-          mid /= 48;
-          high /= 64;
-          const energy = (low + mid + high) / 3;
-          const hist = reactiveAudio._energyHistory;
-          hist.push(low);
-          if(hist.length > 30) hist.shift();
-          let avg = 0;
-          for(let i = 0;i < hist.length;i++) avg += hist[i];
-          avg /= hist.length;
-          let beat = false;
-          if(low > avg * thresholdBeat && reactiveAudio._beatCooldown <= 0) {
-            beat = true;
-            reactiveAudio._beatCooldown = 10;
-          }
-          if(reactiveAudio._beatCooldown > 0) reactiveAudio._beatCooldown--;
-          reactiveAudio._returnCache = [low, mid, high, energy, beat];
+          reactiveA._audio = asset;
+          reactiveA._loading = false;
+          MYCUBE.effects.audioE = new AudioSplatFieldEffect(app.device, {
+            format: 'rgba16float',
+            cameraBuffer: app.cameraBuffer,
+            reactiveAudio: reactiveA
+          })
           console.log('....................')
         });
 
-        MYCUBE.effects.audioE = new AudioSplatFieldEffect(app.device, undefined, app.cameraBuffer)
-
         MYCUBE.effects.bloodBurst.gravity = 20;
-        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
-        MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-          0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+        // MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        // MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+        //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
+        //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
         MYCUBE.setBlend(0.01)
         MYCUBE.setAmbient(2, 3, 0.5);
         app.MYCUBE = MYCUBE;
@@ -146,9 +130,9 @@ export var loadReactiveAudio = function() {
     reactiveAudio.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
-        e.detail.hitObject.effects.bloodBurst.spawn([0, 0, 0], null, 60, 2.0);
-        e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        // e.detail.hitObject.effects.bloodBurst.spawn([0, 0, 0], null, 60, 2.0);
+        // e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+        // e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
         app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
       }

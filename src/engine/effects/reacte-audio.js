@@ -66,8 +66,9 @@ export class AudioSplatFieldEffect {
     this._phase = new Float32Array(this.pointCount);
     this._delay = new Float32Array(this.pointCount);      // per-point beat response delay
     this._ribbonHistSlot = new Float32Array(this.pointCount); // which history sample this point reads
+    this.reactiveAudio = opts.reactiveAudio ?? null;
 
-    for (let i = 0; i < this.pointCount; i++) {
+    for(let i = 0;i < this.pointCount;i++) {
       this._shell[i] = i % 3;
       this._phase[i] = Math.random() * Math.PI * 2;
       this._delay[i] = Math.random() * 0.15;
@@ -113,16 +114,16 @@ export class AudioSplatFieldEffect {
     this._seedColors();
     device.queue.writeBuffer(this.colorBuffer, 0, this._colorCPU);
 
-    if (this.format && this.cameraBuffer) this._buildStandalonePipeline();
+    if(this.format && this.cameraBuffer) this._buildStandalonePipeline();
   }
 
   // ─── Setup helpers ─────────────────────────────────────────────────────
 
   _generateBasePositions(n) {
     const out = new Float32Array(n * 3);
-    if (this.mode === 'waveformRibbon') {
+    if(this.mode === 'waveformRibbon') {
       // laid out later per-mode anyway, but give sane defaults
-      for (let i = 0; i < n; i++) {
+      for(let i = 0;i < n;i++) {
         out[i * 3] = (i / n - 0.5) * 4.0;
         out[i * 3 + 1] = 0;
         out[i * 3 + 2] = 0;
@@ -131,7 +132,7 @@ export class AudioSplatFieldEffect {
     }
     // Default: 3 nested spherical shells (low/mid/high), fibonacci-sphere distributed
     const golden = Math.PI * (3 - Math.sqrt(5));
-    for (let i = 0; i < n; i++) {
+    for(let i = 0;i < n;i++) {
       const shellIdx = i % 3;               // 0=low(inner),1=mid,2=high(outer)
       const radius = 0.4 + shellIdx * 0.35;
       const yFrac = 1 - (i / (n - 1)) * 2;    // -1..1
@@ -151,7 +152,7 @@ export class AudioSplatFieldEffect {
       [0.3, 1.0, 0.4],
       [0.25, 0.6, 1.0],
     ];
-    for (let i = 0; i < this.pointCount; i++) {
+    for(let i = 0;i < this.pointCount;i++) {
       const [r, g, b] = palette[this._shell[i]];
       this._colorCPU[i * 4] = r;
       this._colorCPU[i * 4 + 1] = g;
@@ -164,9 +165,9 @@ export class AudioSplatFieldEffect {
 
   setMode(mode) {
     this.mode = mode;
-    if (mode === 'waveformRibbon') {
+    if(mode === 'waveformRibbon') {
       // re-lay base positions into a ribbon on mode switch
-      for (let i = 0; i < this.pointCount; i++) {
+      for(let i = 0;i < this.pointCount;i++) {
         this._basePos[i * 3] = (i / this.pointCount - 0.5) * 4.0;
         this._basePos[i * 3 + 1] = 0;
         this._basePos[i * 3 + 2] = 0;
@@ -175,18 +176,18 @@ export class AudioSplatFieldEffect {
     }
   }
 
-  setSpeed(s) { this.speed = s; }
-  setScale(s) { this.scale = s; }
-  setFrameSkip(n) { this._frameSkip = Math.max(1, n | 0); }
+  setSpeed(s) {this.speed = s;}
+  setScale(s) {this.scale = s;}
+  setFrameSkip(n) {this._frameSkip = Math.max(1, n | 0);}
 
   /** Attach to an existing GaussianSplatLayer — writes into its buffers instead of drawing standalone. */
   attachTo(splatLayer) {
     this._attachedLayer = splatLayer;
-    if (splatLayer.attachPositionAnimator) splatLayer.attachPositionAnimator(this);
+    if(splatLayer.attachPositionAnimator) splatLayer.attachPositionAnimator(this);
   }
 
   detach() {
-    if (this._attachedLayer?.detachPositionAnimator) this._attachedLayer.detachPositionAnimator();
+    if(this._attachedLayer?.detachPositionAnimator) this._attachedLayer.detachPositionAnimator();
     this._attachedLayer = null;
   }
 
@@ -202,11 +203,11 @@ export class AudioSplatFieldEffect {
    */
   updateAudio(low, mid, high, energy, beat, dt, elapsed) {
     this._frameCount++;
-    if (this._frameCount % this._frameSkip !== 0) return;
+    if(this._frameCount % this._frameSkip !== 0) return;
 
     const t = elapsed * this.speed;
 
-    switch (this.mode) {
+    switch(this.mode) {
       case 'spectrumShell': this._modeSpectrumShell(low, mid, high, t); break;
       case 'beatScatter': this._modeBeatScatter(low, mid, high, energy, beat, dt, t); break;
       case 'waveformRibbon': this._modeWaveformRibbon(low, mid, high, t); break;
@@ -228,7 +229,7 @@ export class AudioSplatFieldEffect {
     const sc = this.scale;
     const bandVal = [low, mid, high];
 
-    for (let i = 0; i < this.pointCount; i++) {
+    for(let i = 0;i < this.pointCount;i++) {
       const band = bandVal[shell[i]] * 0.02; // FFT bins are raw magnitude, scale down
       const breathe = 1.0 + Math.sin(t * 1.5 + ph[i] * 0.2) * 0.05 + band * sc;
       p[i * 3] = b[i * 3] * breathe;
@@ -250,16 +251,16 @@ export class AudioSplatFieldEffect {
     const se = this._scatterEnergy;
     const sc = this.scale;
 
-    if (beat) {
+    if(beat) {
       const kick = 0.5 + Math.min(1.0, energy * 0.05);
-      for (let i = 0; i < this.pointCount; i++) {
+      for(let i = 0;i < this.pointCount;i++) {
         // stagger the kick slightly per point so the wave visibly travels outward
         se[i] = Math.max(se[i], kick);
       }
     }
 
     const decay = Math.exp(-dt * 3.0);
-    for (let i = 0; i < this.pointCount; i++) {
+    for(let i = 0;i < this.pointCount;i++) {
       // per-point delay = it waits `delay[i]` seconds of decay before erupting fully
       se[i] *= decay;
       const push = se[i] * sc;
@@ -285,7 +286,7 @@ export class AudioSplatFieldEffect {
     const bands = [this._histLow, this._histMid, this._histHigh];
     const yOffset = [0.6, 0.0, -0.6]; // stack low/mid/high as three parallel traces
 
-    for (let i = 0; i < this.pointCount; i++) {
+    for(let i = 0;i < this.pointCount;i++) {
       const frac = this._ribbonHistSlot[i];
       // sample history buffer scrolling backwards from write head
       const sampleIdx = (this._histWrite - Math.floor(frac * this._histLen) + this._histLen * 2) % this._histLen;
@@ -297,7 +298,34 @@ export class AudioSplatFieldEffect {
     }
   }
 
-  // ─── Standalone rendering (optional) ────────────────────────────────────
+  updateInstanceData(dt, elapsed = 0.016) {
+    const ra = this.reactiveAudio;
+    if(ra._loading || !ra._audio || !ra._audio.ready) return;
+    const data = ra._audio.updateFFT();
+    if(!data) return;
+    let low = 0, mid = 0, high = 0;
+    for(let i = 0;i < 16;i++) low += data[i];
+    for(let i = 16;i < 64;i++) mid += data[i];
+    for(let i = 64;i < 128;i++) high += data[i];
+    low /= 16;
+    mid /= 48;
+    high /= 64;
+    const energy = (low + mid + high) / 3;
+    const hist = ra._energyHistory;
+    hist.push(low);
+    if(hist.length > 30) hist.shift();
+    let avg = 0;
+    for(let i = 0;i < hist.length;i++) avg += hist[i];
+    avg /= hist.length;
+    let beat = false;
+    if(low > avg * ra.thresholdBeat && ra._beatCooldown <= 0) {
+      beat = true;
+      ra._beatCooldown = 10;
+    }
+    if(ra._beatCooldown > 0) ra._beatCooldown--;
+    // feed the effect
+    this.updateAudio(low, mid, high, energy, beat, dt, elapsed);
+  }
 
   _buildStandalonePipeline() {
     this.modelBuffer = this.device.createBuffer({
@@ -305,23 +333,23 @@ export class AudioSplatFieldEffect {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     // identity matrix default
-    const identity = new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
+    const identity = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     this.device.queue.writeBuffer(this.modelBuffer, 0, identity);
 
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: 'uniform' } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: 'uniform' } },
+        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
       ]
     });
     this.bindGroup = this.device.createBindGroup({
       layout: bindGroupLayout,
       entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } },
+        {binding: 0, resource: {buffer: this.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
 
     const shaderModule = this.device.createShaderModule({
       label: 'audio-splat-field-shader',
@@ -380,8 +408,8 @@ fn fs_main(in: VertexOutput) -> FragOut {
         module: shaderModule,
         entryPoint: 'vs_main',
         buffers: [
-          { arrayStride: 12, stepMode: 'vertex', attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] },
-          { arrayStride: 16, stepMode: 'vertex', attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x4' }] },
+          {arrayStride: 12, stepMode: 'vertex', attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
+          {arrayStride: 16, stepMode: 'vertex', attributes: [{shaderLocation: 1, offset: 0, format: 'float32x4'}]},
         ]
       },
       fragment: {
@@ -390,20 +418,24 @@ fn fs_main(in: VertexOutput) -> FragOut {
         targets: [{
           format: this.format,
           blend: {
-            color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' },
-            alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+            color: {srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add'},
+            alpha: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
           }
-        }]
+        }, {format: 'rgba16float'}, {format: 'rgba16float'}]
       },
-      primitive: { topology: 'point-list' },
+      primitive: {topology: 'point-list'},
+      depthStencil: {
+        format: 'depth24plus',
+        depthWriteEnabled: false,
+        depthCompare: 'less',
+      },
     });
   }
 
   /** Only meaningful if constructed with {format, cameraBuffer} and NOT attached to a splat layer. */
-  render(pass, viewProjMatrix, modelMatrix = null) {
-    if (this._attachedLayer || !this.renderPipeline) return; // attached mode: layer draws it
+  render(pass, mesh, viewProjMatrix) {
+    if(this._attachedLayer || !this.renderPipeline) return; // attached mode: layer draws it
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    if (modelMatrix) this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
     pass.setPipeline(this.renderPipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.posBuffer);
