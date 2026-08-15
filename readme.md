@@ -1223,6 +1223,7 @@ Features done:
 - Invertory (construct from 2 or 3 new upgraded item)
 - Videochat - stream video follow player character (remote & local 'one on one')
 
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/cam.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game2.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game3.png?raw=true" />
