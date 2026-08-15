@@ -2,7 +2,8 @@
 ## CHANGES [Started from feb 2026]
 
 [1.18.xx - 1.19.xx]
-  - seismicportal.eu services used ofr seismic real time data.  
+  - New effect class AudioSplatFieldEffect.
+  - seismicportal.eu services used for seismic real time data. New effect class().
   - Added DragRotateController (corespond with WASD camera - rotate object on dragging),
   - Added code-creator AI driven by not for graphs 
    it is for code direct.

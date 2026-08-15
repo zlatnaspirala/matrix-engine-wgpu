@@ -1272,14 +1272,12 @@ export default class MatrixEngineWGPU {
         const mesh = this.mainRenderBundle[i];
         mesh.updateInstanceData?.(mesh.modelMatrix);
         if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
-        // if(mesh.position.inMove === true) {mesh.updateModelUniformBuffer(i)}
         mesh.position.update();
         mesh.updateModelUniformBuffer(i);
         if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
         if(mesh.update) mesh.update(now2);
         if(mesh.isVideo) mesh.updateVideoTexture();
         if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
-
         if(mesh.effects) {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
