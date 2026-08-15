@@ -63711,9 +63711,9 @@ var EarthquakeEffect = class {
     mat4Impl.identity(this._finalMatrix);
     mat4Impl.scale(this._localMatrix, [this.sphereScale, this.sphereScale, this.sphereScale], this._localMatrix);
     mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
-    const lonOffset = -0.9;
     const lat = this.latitude * Math.PI / 180;
-    const lon = -this.longitude * Math.PI / 180 - lonOffset;
+    const lonOffset = 90;
+    const lon = -(this.longitude - lonOffset) * Math.PI / 180;
     const cosLat = Math.cos(lat);
     this._epicenter[0] = cosLat * Math.sin(lon);
     this._epicenter[1] = Math.sin(lat);

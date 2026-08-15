@@ -188,10 +188,11 @@ export class EarthquakeEffect {
     mat4.scale(this._localMatrix, [this.sphereScale, this.sphereScale, this.sphereScale], this._localMatrix);
     mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
     // Calibration
-    const lonOffset = -0.9;
+    
     const lat = this.latitude * Math.PI / 180.0;
+    const lonOffset = 90;
     // Negate the longitude to match your horizontally-inverted texture file
-    const lon = -this.longitude * Math.PI / 180.0 -lonOffset;
+    const lon = -(this.longitude-lonOffset) * Math.PI / 180.0;
     const cosLat = Math.cos(lat);
     this._epicenter[0] = cosLat * Math.sin(lon);
     this._epicenter[1] = Math.sin(lat);

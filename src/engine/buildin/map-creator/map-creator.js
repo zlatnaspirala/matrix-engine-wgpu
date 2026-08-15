@@ -54,7 +54,7 @@ export class MapCreator {
     // this._floorTex = opts.floorTexture || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/blankgray2.webp';
     // this._ceilTex = opts.ceilTexture || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/blankgray2.webp';
     // this._pillarDecorationTex = opts.pillarDecorationTex || 'https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/obj/modelpack19/hang2/512/hang2.webp';
-        this._wallTex = opts.wallTexture || './res/textures/blankgray2.webp';
+    this._wallTex = opts.wallTexture || './res/textures/blankgray2.webp';
     this._floorTex = opts.floorTexture || './res/textures/blankgray2.webp';
     this._ceilTex = opts.ceilTexture || './res/textures/blankgray2.webp';
     this._pillarDecorationTex = opts.pillarDecorationTex || './res/meshes/obj/modelpack19/hang2/512/hang2.webp';
