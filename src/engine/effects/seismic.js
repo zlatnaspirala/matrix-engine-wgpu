@@ -187,18 +187,16 @@ export class EarthquakeEffect {
     mat4.identity(this._finalMatrix);
     mat4.scale(this._localMatrix, [this.sphereScale, this.sphereScale, this.sphereScale], this._localMatrix);
     mat4.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
-    const lat = this.latitude * Math.PI / 180.0;
     // Calibration
-    // const lonOffset = -0.7;
-    const lonOffset = 0;
-    const lon = (this.longitude * Math.PI / 180.0) + lonOffset;
+    const lonOffset = -0.9;
+    const lat = this.latitude * Math.PI / 180.0;
+    // Negate the longitude to match your horizontally-inverted texture file
+    const lon = -this.longitude * Math.PI / 180.0 -lonOffset;
     const cosLat = Math.cos(lat);
-
     this._epicenter[0] = cosLat * Math.sin(lon);
     this._epicenter[1] = Math.sin(lat);
-    this._epicenter[2] = -cosLat * Math.cos(lon);
+    this._epicenter[2] = cosLat * Math.cos(lon);
     this._epicenter[3] = 0;
-
     const magnitude = Math.max(0.0, this.magnitude);
     const magnitudeStrength = Math.min(1.0, Math.max(0.15, magnitude / 8.0));
     const effectiveIntensity = this.intensity * (0.35 + magnitudeStrength * 1.65);
@@ -366,11 +364,9 @@ fn fsMain(input : VSOut) -> FragOut {
   let maxEffectRadius = 0.6;
   let distanceFade = 1.0 - smoothstep(maxEffectRadius * 0.5, maxEffectRadius, angularDistance);
   let distanceEnergy = 0.35 + 0.65 * (1.0 - smoothstep(0.0, 3.14159265, angularDistance));
-
   let epicenterRadius = max(modelData.effect.y, 0.001);
   let aaEpi = max(fwidth(angularDistance), 0.0008);
   let epicenterMask = 1.0 - smoothstep(epicenterRadius * 0.9 - aaEpi, epicenterRadius * 0.9 + aaEpi, angularDistance);
-
   let waveColor = modelData.waveColor.xyz;
   let epicenterColor = modelData.epicenterColor.xyz;
   let waveEnergy = ring * waveRange * distanceFade * distanceEnergy * modelData.params1.w;
@@ -380,7 +376,6 @@ fn fsMain(input : VSOut) -> FragOut {
   let halo = smoothstep(0.0, 1.0, ring) * 0.08 * distanceEnergy;
   let finalColor = waveContribution + epicenterContribution + waveColor * halo;
   let alpha = clamp(waveEnergy + epicenterEnergy + halo, 0.0, 1.0);
-
   return FragOut(
     vec4f(finalColor, alpha),
     vec4f(input.worldNormal, 0.0),

@@ -31,6 +31,8 @@
  * Copyright (c) 2026 Nikola Lukić zlatnaspirala@gmail.com
  */
 
+import {isMobile} from "../utils";
+
 export class AudioSplatFieldEffect {
   /**
    * @param {GPUDevice} device
@@ -45,58 +47,46 @@ export class AudioSplatFieldEffect {
    */
   constructor(device, opts = {}) {
     this.device = device;
-    this.pointCount = opts.pointCount ?? 1000;
+    this.pointCount = opts.pointCount ?? isMobile() ? 1200 : 3500;
     this.mode = opts.mode ?? 'spectrumShell';
     this.format = opts.format ?? null;
     this.cameraBuffer = opts.cameraBuffer ?? null;
-
-    this._attachedLayer = null; // set via attachTo()
-
-    this._basePos = opts.basePositions
-      ? new Float32Array(opts.basePositions)
-      : this._generateBasePositions(this.pointCount);
-
+    // set via attachTo()
+    this._attachedLayer = null;
+    this._basePos = opts.basePositions ? new Float32Array(opts.basePositions) : this._generateBasePositions(this.pointCount);
     this._posCPU = new Float32Array(this.pointCount * 3);
     this._posCPU.set(this._basePos);
     this._colorCPU = new Float32Array(this.pointCount * 4);
-
     // Per-point random assignment used across modes
-    this._shell = new Uint8Array(this.pointCount);      // 0=low,1=mid,2=high
-    this._dir = new Float32Array(this.pointCount * 3);   // unit outward dir, for beatScatter
+    this._shell = new Uint8Array(this.pointCount);
+    this._dir = new Float32Array(this.pointCount * 3);
     this._phase = new Float32Array(this.pointCount);
-    this._delay = new Float32Array(this.pointCount);      // per-point beat response delay
-    this._ribbonHistSlot = new Float32Array(this.pointCount); // which history sample this point reads
+    this._delay = new Float32Array(this.pointCount);
+    this._ribbonHistSlot = new Float32Array(this.pointCount);
     this.reactiveAudio = opts.reactiveAudio ?? null;
-
     for(let i = 0;i < this.pointCount;i++) {
       this._shell[i] = i % 3;
       this._phase[i] = Math.random() * Math.PI * 2;
       this._delay[i] = Math.random() * 0.15;
-
       const bx = this._basePos[i * 3], by = this._basePos[i * 3 + 1], bz = this._basePos[i * 3 + 2];
       const len = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
       this._dir[i * 3] = bx / len;
       this._dir[i * 3 + 1] = by / len;
       this._dir[i * 3 + 2] = bz / len;
-
       this._ribbonHistSlot[i] = i / this.pointCount; // 0..1 across ribbon
     }
-
     // beatScatter runtime state: per-point outward energy, decays each frame
     this._scatterEnergy = new Float32Array(this.pointCount);
-
     // waveformRibbon rolling history (small ring buffers per band)
     this._histLen = 128;
     this._histLow = new Float32Array(this._histLen);
     this._histMid = new Float32Array(this._histLen);
     this._histHigh = new Float32Array(this._histLen);
     this._histWrite = 0;
-
     this.speed = 1.0;
     this.scale = 1.0;
     this._frameSkip = 1;
     this._frameCount = 0;
-
     // GPU buffers — always created so this class works standalone even
     // if later attached, and vice versa.
     this.posBuffer = device.createBuffer({

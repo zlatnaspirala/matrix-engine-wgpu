@@ -70,12 +70,11 @@ export var loadReactiveAudio = function() {
         },
         pointerEffect: {
           enabled: true,
-          // flameEmitter: true,
           bloodBurst: true
         }
       })
 
-      reactiveAudio.lightContainer[0].setIntensity(15);
+      reactiveAudio.lightContainer[0].setIntensity(225);
       reactiveAudio.activateBloomEffect();
       reactiveAudio.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       reactiveAudio.lightContainer[0].behavior.value_ = -1;
@@ -83,8 +82,10 @@ export var loadReactiveAudio = function() {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       })
-      reactiveAudio.lightContainer[0].setPosition(0, 15, -10);
+      reactiveAudio.lightContainer[0].setPosition(0, 65, -10);
       reactiveAudio.lightContainer[0].setTarget(0, 0, -10);
+
+      MYCUBE.setBlend(0.01)
 
       setTimeout(() => {
 
@@ -103,6 +104,7 @@ export var loadReactiveAudio = function() {
           MYCUBE.effects.audioE = new AudioSplatFieldEffect(app.device, {
             format: 'rgba16float',
             cameraBuffer: app.cameraBuffer,
+            mode: 'waveformRibbon',
             reactiveAudio: reactiveA
           })
           console.log('....................')
@@ -115,13 +117,17 @@ export var loadReactiveAudio = function() {
         //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
         //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
         MYCUBE.setBlend(0.01)
-        MYCUBE.setAmbient(2, 3, 0.5);
+        MYCUBE.setAmbient(2, 3, 2);
         app.MYCUBE = MYCUBE;
         let cam = app.getCamera();
         cam.setYaw(-0.03);
-        cam.setPitch(-0.49);
-        cam.setZ(0);
-        cam.setY(10);
+        cam.setPitch(0);
+        cam.setZ(1.7);
+        cam.setY(5.7);
+
+        app.bloomPass.setIntensity(1000);
+        app.bloomPass.setBlurRadius(458)
+
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 700);
@@ -134,7 +140,7 @@ export var loadReactiveAudio = function() {
         // e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         // e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
+        // app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
       }
     });
 

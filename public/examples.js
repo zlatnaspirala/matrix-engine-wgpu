@@ -42863,6 +42863,7 @@ var SSRPass = class {
     this.ssrOutputView = this.ssrOutputTexture.createView();
     this.depthBlitBindGroup = null;
     this.data = new Float32Array(40);
+    this._computeHZBMipParams();
     this._createHZB();
     this._createSSRConfig();
     this._createPipelines();
@@ -43033,32 +43034,48 @@ var SSRPass = class {
     pass.draw(3);
     pass.end();
   }
-  _buildHZB(commandEncoder) {
+  _computeHZBMipParams() {
+    this._hzbMipParams = [];
     for (let mip = 1; mip < this.mipCount; mip++) {
       const dstW = Math.max(1, this.width >> mip);
       const dstH = Math.max(1, this.height >> mip);
-      const pass = commandEncoder.beginComputePass({ label: `HZB compute level ${mip}` });
-      pass.setPipeline(this.hzbPipeline);
-      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
-      pass.dispatchWorkgroups(Math.ceil(dstW / 8), Math.ceil(dstH / 8));
-      pass.end();
+      this._hzbMipParams.push({
+        wgX: Math.ceil(dstW / 8),
+        wgY: Math.ceil(dstH / 8)
+      });
     }
   }
+  _buildHZB(commandEncoder) {
+    const pass = commandEncoder.beginComputePass({ label: "HZB build" });
+    pass.setPipeline(this.hzbPipeline);
+    for (let mip = 1; mip < this.mipCount; mip++) {
+      const { wgX, wgY } = this._hzbMipParams[mip - 1];
+      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
+      pass.dispatchWorkgroups(wgX, wgY);
+    }
+    pass.end();
+  }
   _renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView) {
-    const bg = this.device.createBindGroup({
-      layout: this.ssrPipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: { buffer: this._globalSceneUniformBuffer } },
-        { binding: 1, resource: { buffer: this.ssrConfigBuffer } },
-        { binding: 2, resource: sceneTextureView },
-        { binding: 3, resource: normalTextureView },
-        { binding: 4, resource: this.hzbFullView },
-        { binding: 5, resource: this.pointSampler },
-        { binding: 6, resource: worldPosTextureView },
-        { binding: 7, resource: this.linearSampler }
-      ]
-    });
-    const pass = commandEncoder.beginRenderPass({
+    if (this._ssrBGDirty || this._lastSceneView !== sceneTextureView || this._lastNormalView !== normalTextureView || this._lastWorldPosView !== worldPosTextureView) {
+      this._ssrBindGroup = this.device.createBindGroup({
+        layout: this.ssrPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: this._globalSceneUniformBuffer } },
+          { binding: 1, resource: { buffer: this.ssrConfigBuffer } },
+          { binding: 2, resource: sceneTextureView },
+          { binding: 3, resource: normalTextureView },
+          { binding: 4, resource: this.hzbFullView },
+          { binding: 5, resource: this.pointSampler },
+          { binding: 6, resource: worldPosTextureView },
+          { binding: 7, resource: this.linearSampler }
+        ]
+      });
+      this._lastSceneView = sceneTextureView;
+      this._lastNormalView = normalTextureView;
+      this._lastWorldPosView = worldPosTextureView;
+      this._ssrBGDirty = false;
+    }
+    const pass = commandEncoder.beginRenderPass(this._ssrPassDesc ??= {
       label: "SSR Composite Pass",
       colorAttachments: [{
         view: this.ssrOutputView,
@@ -43068,7 +43085,7 @@ var SSRPass = class {
       }]
     });
     pass.setPipeline(this.ssrPipeline);
-    pass.setBindGroup(0, bg);
+    pass.setBindGroup(0, this._ssrBindGroup);
     pass.draw(3);
     pass.end();
   }
@@ -44224,7 +44241,7 @@ var MatrixEngineWGPU = class {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.18.8 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 1.19.xx [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\nNpm ready, codepen fully supported.\nOptimised MediaPipe buildin library implemented.\nCode Creator - standalone (use engine from npm) ai top level code generator.\nCreative power with intuitive visual scripting work flow and ai graph generetor.\nNew Features: NUI-Commander Game runner, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
@@ -63694,13 +63711,13 @@ var EarthquakeEffect = class {
     mat4Impl.identity(this._finalMatrix);
     mat4Impl.scale(this._localMatrix, [this.sphereScale, this.sphereScale, this.sphereScale], this._localMatrix);
     mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
+    const lonOffset = -0.9;
     const lat = this.latitude * Math.PI / 180;
-    const lonOffset = 0;
-    const lon = this.longitude * Math.PI / 180 + lonOffset;
+    const lon = -this.longitude * Math.PI / 180 - lonOffset;
     const cosLat = Math.cos(lat);
     this._epicenter[0] = cosLat * Math.sin(lon);
     this._epicenter[1] = Math.sin(lat);
-    this._epicenter[2] = -cosLat * Math.cos(lon);
+    this._epicenter[2] = cosLat * Math.cos(lon);
     this._epicenter[3] = 0;
     const magnitude = Math.max(0, this.magnitude);
     const magnitudeStrength = Math.min(1, Math.max(0.15, magnitude / 8));
@@ -63868,11 +63885,9 @@ fn fsMain(input : VSOut) -> FragOut {
   let maxEffectRadius = 0.6;
   let distanceFade = 1.0 - smoothstep(maxEffectRadius * 0.5, maxEffectRadius, angularDistance);
   let distanceEnergy = 0.35 + 0.65 * (1.0 - smoothstep(0.0, 3.14159265, angularDistance));
-
   let epicenterRadius = max(modelData.effect.y, 0.001);
   let aaEpi = max(fwidth(angularDistance), 0.0008);
   let epicenterMask = 1.0 - smoothstep(epicenterRadius * 0.9 - aaEpi, epicenterRadius * 0.9 + aaEpi, angularDistance);
-
   let waveColor = modelData.waveColor.xyz;
   let epicenterColor = modelData.epicenterColor.xyz;
   let waveEnergy = ring * waveRange * distanceFade * distanceEnergy * modelData.params1.w;
@@ -63882,7 +63897,6 @@ fn fsMain(input : VSOut) -> FragOut {
   let halo = smoothstep(0.0, 1.0, ring) * 0.08 * distanceEnergy;
   let finalColor = waveContribution + epicenterContribution + waveColor * halo;
   let alpha = clamp(waveEnergy + epicenterEnergy + halo, 0.0, 1.0);
-
   return FragOut(
     vec4f(finalColor, alpha),
     vec4f(input.worldNormal, 0.0),
@@ -64620,7 +64634,7 @@ var AudioSplatFieldEffect = class {
    */
   constructor(device2, opts = {}) {
     this.device = device2;
-    this.pointCount = opts.pointCount ?? 1e3;
+    this.pointCount = opts.pointCount ?? isMobile() ? 1200 : 3500;
     this.mode = opts.mode ?? "spectrumShell";
     this.format = opts.format ?? null;
     this.cameraBuffer = opts.cameraBuffer ?? null;
@@ -65037,11 +65051,10 @@ var loadReactiveAudio = function() {
         },
         pointerEffect: {
           enabled: true,
-          // flameEmitter: true,
           bloodBurst: true
         }
       });
-      reactiveAudio.lightContainer[0].setIntensity(15);
+      reactiveAudio.lightContainer[0].setIntensity(225);
       reactiveAudio.activateBloomEffect();
       reactiveAudio.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       reactiveAudio.lightContainer[0].behavior.value_ = -1;
@@ -65049,8 +65062,9 @@ var loadReactiveAudio = function() {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       });
-      reactiveAudio.lightContainer[0].setPosition(0, 15, -10);
+      reactiveAudio.lightContainer[0].setPosition(0, 65, -10);
       reactiveAudio.lightContainer[0].setTarget(0, 0, -10);
+      MYCUBE.setBlend(0.01);
       setTimeout(() => {
         let reactiveA = {
           _audio: null,
@@ -65066,19 +65080,22 @@ var loadReactiveAudio = function() {
           MYCUBE.effects.audioE = new AudioSplatFieldEffect(app.device, {
             format: "rgba16float",
             cameraBuffer: app.cameraBuffer,
+            mode: "waveformRibbon",
             reactiveAudio: reactiveA
           });
           console.log("....................");
         });
         MYCUBE.effects.bloodBurst.gravity = 20;
         MYCUBE.setBlend(0.01);
-        MYCUBE.setAmbient(2, 3, 0.5);
+        MYCUBE.setAmbient(2, 3, 2);
         app.MYCUBE = MYCUBE;
         let cam2 = app.getCamera();
         cam2.setYaw(-0.03);
-        cam2.setPitch(-0.49);
-        cam2.setZ(0);
-        cam2.setY(10);
+        cam2.setPitch(0);
+        cam2.setZ(1.7);
+        cam2.setY(5.7);
+        app.bloomPass.setIntensity(1e3);
+        app.bloomPass.setBlurRadius(458);
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
       }, 700);
@@ -65087,7 +65104,6 @@ var loadReactiveAudio = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });

@@ -18,6 +18,7 @@ export class SSRPass {
     this.ssrOutputView = this.ssrOutputTexture.createView();
     this.depthBlitBindGroup = null;
     this.data = new Float32Array(40);
+    this._computeHZBMipParams();
     this._createHZB();
     this._createSSRConfig();
     this._createPipelines();
@@ -198,33 +199,57 @@ export class SSRPass {
     pass.end();
   }
 
-  _buildHZB(commandEncoder) {
-    for(let mip = 1;mip < this.mipCount;mip++) {
-      const dstW = Math.max(1, this.width >> mip);
-      const dstH = Math.max(1, this.height >> mip);
-      const pass = commandEncoder.beginComputePass({label: `HZB compute level ${mip}`});
-      pass.setPipeline(this.hzbPipeline);
-      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
-      pass.dispatchWorkgroups(Math.ceil(dstW / 8), Math.ceil(dstH / 8));
-      pass.end();
-    }
+_computeHZBMipParams() {
+  this._hzbMipParams = [];
+  for (let mip = 1; mip < this.mipCount; mip++) {
+    const dstW = Math.max(1, this.width >> mip);
+    const dstH = Math.max(1, this.height >> mip);
+    this._hzbMipParams.push({
+      wgX: Math.ceil(dstW / 8),
+      wgY: Math.ceil(dstH / 8),
+    });
   }
+}
+
+_buildHZB(commandEncoder) {
+  const pass = commandEncoder.beginComputePass({label: 'HZB build'});
+  pass.setPipeline(this.hzbPipeline);
+  for (let mip = 1; mip < this.mipCount; mip++) {
+    const {wgX, wgY} = this._hzbMipParams[mip - 1];
+    pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
+    pass.dispatchWorkgroups(wgX, wgY);
+  }
+  pass.end();
+}
 
   _renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView) {
-    const bg = this.device.createBindGroup({
-      layout: this.ssrPipeline.getBindGroupLayout(0),
-      entries: [
-        {binding: 0, resource: {buffer: this._globalSceneUniformBuffer}},
-        {binding: 1, resource: {buffer: this.ssrConfigBuffer}},
-        {binding: 2, resource: sceneTextureView},
-        {binding: 3, resource: normalTextureView},
-        {binding: 4, resource: this.hzbFullView},
-        {binding: 5, resource: this.pointSampler},
-        {binding: 6, resource: worldPosTextureView},
-        {binding: 7, resource: this.linearSampler},
-      ],
-    });
-    const pass = commandEncoder.beginRenderPass({
+    // Rebuild only if the resolve/aliasing target changed (e.g. resize, ping-pong swap)
+    if(this._ssrBGDirty ||
+      this._lastSceneView !== sceneTextureView ||
+      this._lastNormalView !== normalTextureView ||
+      this._lastWorldPosView !== worldPosTextureView) {
+
+      this._ssrBindGroup = this.device.createBindGroup({
+        layout: this.ssrPipeline.getBindGroupLayout(0),
+        entries: [
+          {binding: 0, resource: {buffer: this._globalSceneUniformBuffer}},
+          {binding: 1, resource: {buffer: this.ssrConfigBuffer}},
+          {binding: 2, resource: sceneTextureView},
+          {binding: 3, resource: normalTextureView},
+          {binding: 4, resource: this.hzbFullView},
+          {binding: 5, resource: this.pointSampler},
+          {binding: 6, resource: worldPosTextureView},
+          {binding: 7, resource: this.linearSampler},
+        ],
+      });
+
+      this._lastSceneView = sceneTextureView;
+      this._lastNormalView = normalTextureView;
+      this._lastWorldPosView = worldPosTextureView;
+      this._ssrBGDirty = false;
+    }
+
+    const pass = commandEncoder.beginRenderPass(this._ssrPassDesc ??= {
       label: 'SSR Composite Pass',
       colorAttachments: [{
         view: this.ssrOutputView,
@@ -234,7 +259,7 @@ export class SSRPass {
       }],
     });
     pass.setPipeline(this.ssrPipeline);
-    pass.setBindGroup(0, bg);
+    pass.setBindGroup(0, this._ssrBindGroup);
     pass.draw(3);
     pass.end();
   }
