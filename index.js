@@ -45,15 +45,23 @@ import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
 import {animateRotationY} from "./src/engine/procedures/sceneobjectKinematics.js";
 import {BVHSkeletal} from "./src/engine/loaders/raw-bvh-skeletal.js";
 import {ParticleActionEmitter} from './src/engine/effects/particles.js'
+import {AudioSplatFieldEffect} from "./src/engine/effects/reacte-audio.js";
 // Deplace in future.
 import {MatrixTTS} from "./examples/games/moba/tts.js";
+import {EarthquakeEffect} from "./src/engine/effects/seismic.js";
+import {ExternalDataHandler} from "./src/engine/buildin/externalDataHandler/externalDataHandler.js";
+import {CoinGeckoAdapter} from "./src/engine/buildin/externalDataHandler/adapters/coingecko/coingecko.js";
 
 export {
   MatrixEngineWGPU,
   MEConfig,
   touchCoordinate,
   addRaycastsListener,
+  ExternalDataHandler,
+  CoinGeckoAdapter,
   KaleidoscopeEffect,
+  AudioSplatFieldEffect,
+  EarthquakeEffect,
   InstancedKinematicOperations,
   SpritesPack2D,
   GeometryFactory,

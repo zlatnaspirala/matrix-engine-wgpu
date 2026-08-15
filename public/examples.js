@@ -8572,8 +8572,8 @@ var MobileDOM = {
     const size2 = options2.size ?? 56;
     const bottom = options2.bottom ?? 0;
     const left2 = options2.left ?? 0;
-    const height2 = options2.height ?? size2;
-    const width2 = options2.width ?? size2;
+    const height = options2.height ?? size2;
+    const width = options2.width ?? size2;
     const opacity = options2.opacity ?? 0.35;
     const image = options2.image ?? null;
     const setID = options2.id ?? null;
@@ -8587,8 +8587,8 @@ var MobileDOM = {
       position: "fixed",
       bottom: `${bottom}%`,
       left: `${left2}%`,
-      width: `${width2}px`,
-      height: `${height2}px`,
+      width: `${width}px`,
+      height: `${height}px`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -8639,15 +8639,15 @@ var MobileDOM = {
     const left2 = options2.left ?? 10;
     const opacity = options2.opacity ?? 0.35;
     const color = options2.color ?? "#4caf50";
-    const height2 = options2.height ?? size2;
-    const width2 = options2.width ?? size2;
+    const height = options2.height ?? size2;
+    const width = options2.width ?? size2;
     const barWrapper = document.createElement("div");
     Object.assign(barWrapper.style, {
       position: "fixed",
       bottom: `${bottom}%`,
       left: `${left2}%`,
-      width: `${width2}px`,
-      height: `${height2}px`,
+      width: `${width}px`,
+      height: `${height}px`,
       background: `rgba(0,0,0,${opacity})`,
       border: `2px solid rgba(255,255,255,${opacity})`,
       borderRadius: `${size2 * 0.05}px`,
@@ -8673,7 +8673,7 @@ var MobileDOM = {
   },
   addSlider(onChange = (v2) => {
   }, options2 = {}) {
-    const width2 = options2.width ?? 200;
+    const width = options2.width ?? 200;
     const bottom = options2.bottom ?? 5;
     const left2 = options2.left ?? 10;
     const opacity = options2.opacity ?? 0.35;
@@ -8688,7 +8688,7 @@ var MobileDOM = {
       position: "fixed",
       bottom: `${bottom}%`,
       left: `${left2}%`,
-      width: `${width2}px`,
+      width: `${width}px`,
       zIndex: "9999",
       accentColor: options2.color ?? "#ffffff",
       cursor: "pointer",
@@ -15239,12 +15239,12 @@ var GeometryFactory = class _GeometryFactory {
     }
     return { positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices) };
   }
-  static mobius(R2 = 1, width2 = 0.3, segments = 64, twists = 1) {
+  static mobius(R2 = 1, width = 0.3, segments = 64, twists = 1) {
     const positions = [], uvs = [], indices = [];
     for (let i2 = 0; i2 <= segments; i2++) {
       const t3 = i2 / segments * Math.PI * 2;
       for (let j2 = -1; j2 <= 1; j2 += 2) {
-        const s2 = j2 * width2 / 2;
+        const s2 = j2 * width / 2;
         const x3 = (R2 + s2 * Math.cos(t3 * twists / 2)) * Math.cos(t3);
         const y3 = (R2 + s2 * Math.cos(t3 * twists / 2)) * Math.sin(t3);
         const z2 = s2 * Math.sin(t3 * twists / 2);
@@ -15491,8 +15491,8 @@ var GeometryFactory = class _GeometryFactory {
       indices: new Uint16Array(indices)
     };
   }
-  static cone(radius = 1, height2 = 2, segments = 32) {
-    const positions = [0, height2, 0];
+  static cone(radius = 1, height = 2, segments = 32) {
+    const positions = [0, height, 0];
     const uvs = [0.5, 1];
     const indices = [];
     for (let i2 = 0; i2 <= segments; i2++) {
@@ -15514,9 +15514,9 @@ var GeometryFactory = class _GeometryFactory {
     }
     return { positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices) };
   }
-  static cylinder(radius = 1, height2 = 2, segments = 32) {
+  static cylinder(radius = 1, height = 2, segments = 32) {
     const positions = [], uvs = [], indices = [];
-    const halfH = height2 / 2;
+    const halfH = height / 2;
     for (let i2 = 0; i2 <= segments; i2++) {
       const angle2 = i2 / segments * Math.PI * 2;
       const x3 = Math.cos(angle2) * radius;
@@ -15538,14 +15538,14 @@ var GeometryFactory = class _GeometryFactory {
     }
     return { positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint16Array(indices) };
   }
-  static capsule(radius = 0.5, height2 = 2, segments = 16) {
+  static capsule(radius = 0.5, height = 2, segments = 16) {
     const positions = [], uvs = [], indices = [];
     for (let y3 = 0; y3 <= segments; y3++) {
       const theta = y3 / segments * Math.PI / 2;
       for (let x3 = 0; x3 <= segments; x3++) {
         const phi = x3 / segments * Math.PI * 2;
         const px = Math.cos(phi) * Math.sin(theta) * radius;
-        const py = Math.cos(theta) * radius + height2 / 2;
+        const py = Math.cos(theta) * radius + height / 2;
         const pz = Math.sin(phi) * Math.sin(theta) * radius;
         positions.push(px, py, pz);
         uvs.push(x3 / segments, y3 / segments);
@@ -15557,7 +15557,7 @@ var GeometryFactory = class _GeometryFactory {
       for (let x3 = 0; x3 <= segments; x3++) {
         const phi = x3 / segments * Math.PI * 2;
         const px = Math.cos(phi) * Math.sin(theta) * radius;
-        const py = -Math.cos(theta) * radius - height2 / 2;
+        const py = -Math.cos(theta) * radius - height / 2;
         const pz = Math.sin(phi) * Math.sin(theta) * radius;
         positions.push(px, py, pz);
         uvs.push(x3 / segments, y3 / segments);
@@ -16249,7 +16249,7 @@ var GeometryFactory = class _GeometryFactory {
       indices: new Uint16Array(indices)
     };
   }
-  static ring(outerRadius = 4, innerRadiusRatio = 0.7, segments = 48, height2 = 0.05) {
+  static ring(outerRadius = 4, innerRadiusRatio = 0.7, segments = 48, height = 0.05) {
     const innerRadius = outerRadius * innerRadiusRatio;
     const positions = [];
     const uvs = [];
@@ -16260,7 +16260,7 @@ var GeometryFactory = class _GeometryFactory {
       const sin = Math.sin(angle2);
       positions.push(cos * outerRadius, 0, sin * outerRadius);
       uvs.push((cos + 1) / 2, (sin + 1) / 2);
-      positions.push(cos * innerRadius, height2, sin * innerRadius);
+      positions.push(cos * innerRadius, height, sin * innerRadius);
       uvs.push((cos * innerRadius / outerRadius + 1) / 2, (sin * innerRadius / outerRadius + 1) / 2);
     }
     for (let i2 = 0; i2 < segments * 2; i2 += 2) {
@@ -16352,7 +16352,7 @@ var GeometryFactory = class _GeometryFactory {
       const shardIndex = Math.floor(u2 * count) % count;
       const shard = shards[shardIndex];
       const uLocal = (u2 * count - Math.floor(u2 * count)) % 1;
-      const width2 = S2 * 0.08;
+      const width = S2 * 0.08;
       const tipX = shard.dirX * shard.length;
       const tipY = shard.dirY * shard.length;
       const tipZ = shard.dirZ * shard.length;
@@ -16360,9 +16360,9 @@ var GeometryFactory = class _GeometryFactory {
       const perpY = shard.dirX;
       const perpZ = 0;
       const taper = v2;
-      const offsetX = perpX * width2 * (1 - taper) * 0.5;
-      const offsetY = perpY * width2 * (1 - taper) * 0.5;
-      const offsetZ = perpZ * width2 * (1 - taper) * 0.5;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
       const x3 = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
       const y3 = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
       const z2 = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
@@ -18412,9 +18412,9 @@ var MEMeshObj = class extends Materials {
           this.vertexAnimParams[22] = speed;
           this.updateVertexAnimBuffer();
         },
-        setOceanParams: (scale4, height2, speed) => {
+        setOceanParams: (scale4, height, speed) => {
           this.vertexAnimParams[24] = scale4;
-          this.vertexAnimParams[25] = height2;
+          this.vertexAnimParams[25] = height;
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
@@ -27496,9 +27496,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.vertexAnimParams[22] = speed;
           this.updateVertexAnimBuffer();
         },
-        setOceanParams: (scale4, height2, speed) => {
+        setOceanParams: (scale4, height, speed) => {
           this.vertexAnimParams[24] = scale4;
-          this.vertexAnimParams[25] = height2;
+          this.vertexAnimParams[25] = height;
           this.vertexAnimParams[26] = speed;
           this.updateVertexAnimBuffer();
         },
@@ -30912,10 +30912,10 @@ async function loadGraph(key, shaderGraph, addNodeUI) {
 
 // src/tools/editor/curve-editor.js
 var CurveEditor = class {
-  constructor({ width: width2 = 651, height: height2 = 300, samples = 128 } = {}) {
+  constructor({ width = 651, height = 300, samples = 128 } = {}) {
     this.curveStore = new CurveStore();
-    this.width = width2;
-    this.height = height2;
+    this.width = width;
+    this.height = height;
     this.samples = samples;
     this.keys = [
       { time: 0, value: 0, inTangent: 0, outTangent: 0 },
@@ -30926,8 +30926,8 @@ var CurveEditor = class {
     this.padLeft = 32;
     this.padBottom = 18;
     this.canvas = document.createElement("canvas");
-    this.canvas.width = width2;
-    this.canvas.height = height2;
+    this.canvas.width = width;
+    this.canvas.height = height;
     this.ctx = this.canvas.getContext("2d");
     this.zeroY = Math.round(this.height * 0.5) + 0.5;
     this.graphHeight = this.height - this.padBottom;
@@ -38666,11 +38666,11 @@ var Editor = class {
 
 // src/engine/postprocessing/bloom.js
 var BloomPass = class {
-  constructor(width2, height2, device2, sceneView, intensity = 1.5) {
+  constructor(width, height, device2, sceneView, intensity = 1.5) {
     this.enabled = false;
     this.device = device2;
-    this.width = width2;
-    this.height = height2;
+    this.width = width;
+    this.height = height;
     this.brightTex = this._createTexture();
     this.blurTexA = this._createTexture();
     this.blurTexB = this._createTexture();
@@ -39692,9 +39692,9 @@ var ProceduralMeshObj = class extends Materials {
         this.vertexAnimParams[22] = speed;
         this.updateVertexAnimBuffer();
       },
-      setOceanParams: (scale4, height2, speed) => {
+      setOceanParams: (scale4, height, speed) => {
         this.vertexAnimParams[24] = scale4;
-        this.vertexAnimParams[25] = height2;
+        this.vertexAnimParams[25] = height;
         this.vertexAnimParams[26] = speed;
         this.updateVertexAnimBuffer();
       },
@@ -40219,10 +40219,10 @@ var MeshMorpher = class {
       return [x3, y3, z2];
     };
   }
-  static cylinder(radius = 1, height2 = 2) {
+  static cylinder(radius = 1, height = 2) {
     return (u2, v2) => {
       const theta = u2 * Math.PI * 2;
-      const h2 = (v2 - 0.5) * height2;
+      const h2 = (v2 - 0.5) * height;
       return [radius * Math.cos(theta), h2, radius * Math.sin(theta)];
     };
   }
@@ -40234,30 +40234,30 @@ var MeshMorpher = class {
       return [r3 * Math.cos(theta), minorRadius * Math.sin(phi), r3 * Math.sin(theta)];
     };
   }
-  static cone(baseRadius = 1, height2 = 1, fromZeroY = true) {
+  static cone(baseRadius = 1, height = 1, fromZeroY = true) {
     if (fromZeroY == true) return (u2, v2) => {
       const theta = u2 * Math.PI * 2;
-      const h2 = v2 * height2;
+      const h2 = v2 * height;
       const r3 = baseRadius * (1 - v2);
       return [r3 * Math.cos(theta), h2, r3 * Math.sin(theta)];
     };
     return (u2, v2) => {
       const theta = u2 * Math.PI * 2;
-      const h2 = v2 * height2 - height2 / 2;
+      const h2 = v2 * height - height / 2;
       const r3 = baseRadius * (1 - v2);
       return [r3 * Math.cos(theta), h2, r3 * Math.sin(theta)];
     };
   }
-  static coneX(baseRadius = 1, height2 = 1, fromZeroX = true) {
+  static coneX(baseRadius = 1, height = 1, fromZeroX = true) {
     if (fromZeroX == true) return (u2, v2) => {
       const theta = u2 * Math.PI * 2;
-      const h2 = v2 * height2;
+      const h2 = v2 * height;
       const r3 = baseRadius * (1 - v2);
       return [h2, r3 * Math.cos(theta), r3 * Math.sin(theta)];
     };
     return (u2, v2) => {
       const theta = u2 * Math.PI * 2;
-      const h2 = v2 * height2 - height2 / 2;
+      const h2 = v2 * height - height / 2;
       const r3 = baseRadius * (1 - v2);
       return [h2, r3 * Math.cos(theta), r3 * Math.sin(theta)];
     };
@@ -40288,8 +40288,8 @@ var MeshMorpher = class {
   //     }
   //   };
   // }
-  static capsule(radius = 1, height2 = 1, fromZeroY = true) {
-    const halfH = height2 / 2;
+  static capsule(radius = 1, height = 1, fromZeroY = true) {
+    const halfH = height / 2;
     const yOffset = fromZeroY ? halfH + radius : 0;
     return (u2, v2) => {
       if (v2 < 0.25) {
@@ -40310,7 +40310,7 @@ var MeshMorpher = class {
         ];
       } else {
         const theta = u2 * Math.PI * 2;
-        const y3 = (v2 - 0.25) / 0.5 * height2 - halfH;
+        const y3 = (v2 - 0.25) / 0.5 * height - halfH;
         return [
           radius * Math.cos(theta),
           y3 + yOffset,
@@ -40322,10 +40322,10 @@ var MeshMorpher = class {
   static plane(size2 = 1) {
     return (u2, v2) => [(u2 - 0.5) * size2, 0, (v2 - 0.5) * size2];
   }
-  static mobius(radius = 1, width2 = 0.5) {
+  static mobius(radius = 1, width = 0.5) {
     return (u2, v2) => {
       const theta = u2 * Math.PI * 2;
-      const t3 = (v2 - 0.5) * width2;
+      const t3 = (v2 - 0.5) * width;
       const halfTheta = theta / 2;
       return [
         (radius + t3 * Math.cos(halfTheta)) * Math.cos(theta),
@@ -40533,10 +40533,10 @@ var MeshMorpher = class {
       ];
     };
   }
-  static tornado(height2 = 2, radius = 1) {
+  static tornado(height = 2, radius = 1) {
     return (u2, v2) => {
       const theta = -u2 * Math.PI * 4;
-      const y3 = (v2 - 0.5) * height2;
+      const y3 = (v2 - 0.5) * height;
       const r3 = Math.pow(v2, 1.5) * radius;
       return [r3 * Math.cos(theta), y3, r3 * Math.sin(theta)];
     };
@@ -40647,7 +40647,7 @@ var MeshMorpher = class {
       const shardIndex = Math.floor(u2 * count) % count;
       const shard = shards[shardIndex];
       const uLocal = (u2 * count - Math.floor(u2 * count)) % 1;
-      const width2 = S2 * 0.08;
+      const width = S2 * 0.08;
       const tipX = shard.dirX * shard.length;
       const tipY = shard.dirY * shard.length;
       const tipZ = shard.dirZ * shard.length;
@@ -40655,9 +40655,9 @@ var MeshMorpher = class {
       const perpY = shard.dirX;
       const perpZ = 0;
       const taper = v2;
-      const offsetX = perpX * width2 * (1 - taper) * 0.5;
-      const offsetY = perpY * width2 * (1 - taper) * 0.5;
-      const offsetZ = perpZ * width2 * (1 - taper) * 0.5;
+      const offsetX = perpX * width * (1 - taper) * 0.5;
+      const offsetY = perpY * width * (1 - taper) * 0.5;
+      const offsetZ = perpZ * width * (1 - taper) * 0.5;
       const x3 = tipX * taper + offsetX * Math.cos(uLocal * Math.PI * 2);
       const y3 = tipY * taper + offsetY * Math.cos(uLocal * Math.PI * 2);
       const z2 = tipZ * taper + offsetZ * Math.cos(uLocal * Math.PI * 2);
@@ -40765,18 +40765,18 @@ async function physicsBodiesGenerator(material = "standard", pos2, rot2, texture
 function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "./res/meshes/blender/cube.obj") {
   return new Promise((resolve, reject) => {
     const engine = this;
-    const [width2, height2] = size2.toLowerCase().split("x").map((n3) => parseInt(n3, 10));
-    console.log(width2);
-    console.log(height2);
+    const [width, height] = size2.toLowerCase().split("x").map((n3) => parseInt(n3, 10));
+    console.log(width);
+    console.log(height);
     const inputCube = { mesh: useMeshPath };
     function handler(m2) {
       let index = 0;
-      const totalCubes = width2 * height2;
+      const totalCubes = width * height;
       const lastIndex = totalCubes - 1;
       const RAY = { enabled: raycast2, radius: 1 };
       const objects = [];
-      for (let y3 = 0; y3 < height2; y3++) {
-        for (let x3 = 0; x3 < width2; x3++) {
+      for (let y3 = 0; y3 < height; y3++) {
+        for (let x3 = 0; x3 < width; x3++) {
           const cubeName = `${name2}_${index}`;
           const currentIndex = index;
           setTimeout(() => {
@@ -40937,12 +40937,12 @@ function physicsBodiesGeneratorDeepPyramid(material = "standard", pos2, rot2, te
     downloadMeshes(inputCube, handler, { scale: scale4 });
   });
 }
-function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, texturePath2, name2 = "towerCube", height2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2) {
+function physicsBodiesGeneratorTower(material = "standard", pos2, rot2, texturePath2, name2 = "towerCube", height = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2) {
   const engine = this;
   const inputCube = { mesh: "./res/meshes/blender/cube.obj" };
   function handler(m2) {
     const RAY = { enabled: !!raycast2, radius: 1 };
-    for (let y3 = 0; y3 < height2; y3++) {
+    for (let y3 = 0; y3 < height; y3++) {
       const cubeName = `${name2}_${y3}`;
       setTimeout(() => {
         engine.addMeshObj({
@@ -41080,13 +41080,13 @@ function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 
 }
 function generatorWallNONPHYSICS(material = "standard", pos2, rot2, texturePath2, name2 = "wallCube", size2 = "10x3", raycast2 = false, scale4 = [1, 1, 1], spacing2 = 2.1, delay2 = 200, orientationOfwall = "ByX", spacingY = 3, useMeshPath = "https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/blender/cube.obj") {
   const engine = this;
-  const [width2, height2] = size2.toLowerCase().split("x").map((n3) => parseInt(n3, 10));
+  const [width, height] = size2.toLowerCase().split("x").map((n3) => parseInt(n3, 10));
   const inputCube = { mesh: useMeshPath };
   function handler(m2) {
     let index = 0;
     const RAY = { enabled: raycast2, radius: 1 };
-    for (let y3 = 0; y3 < height2; y3++) {
-      for (let x3 = 0; x3 < width2; x3++) {
+    for (let y3 = 0; y3 < height; y3++) {
+      for (let x3 = 0; x3 < width; x3++) {
         const cubeName = `${name2}_${index}`;
         setTimeout(() => {
           let __x = 0, __y = 0, __z = 0;
@@ -41194,12 +41194,12 @@ var TextureCache = class {
     const response = await fetch(path2);
     const blob = await response.blob();
     const imageBitmap = await createImageBitmap(blob);
-    const width2 = imageBitmap.width;
-    const height2 = imageBitmap.height;
+    const width = imageBitmap.width;
+    const height = imageBitmap.height;
     const mipLevelCount = 1;
     const texture = this.device.createTexture({
       label: `EnvMap: ${path2}`,
-      size: [width2, height2],
+      size: [width, height],
       format: "rgba16float",
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
       mipLevelCount
@@ -41208,7 +41208,7 @@ var TextureCache = class {
     this.device.queue.copyExternalImageToTexture(
       { source: imageBitmap },
       { texture },
-      [width2, height2]
+      [width, height]
     );
     const sampler = this.device.createSampler({
       label: "EnvMap Sampler",
@@ -41300,12 +41300,12 @@ var MatrixMusicAsset = class {
 
 // src/engine/postprocessing/volumetric.js
 var VolumetricPass = class {
-  constructor(width2, height2, device2, options2 = {}, sceneView) {
+  constructor(width, height, device2, options2 = {}, sceneView) {
     this.enabled = false;
     this.device = device2;
-    this.width = width2;
-    this.height = height2;
-    this.volumetricTex = this._createTexture(width2, height2);
+    this.width = width;
+    this.height = height;
+    this.volumetricTex = this._createTexture(width, height);
     this.volumetricTexView = this.volumetricTex.createView();
     this.sceneView = sceneView;
     this.sampler = device2.createSampler({
@@ -41591,11 +41591,11 @@ var VolumetricPass = class {
     this.compositeOutputTexView = this.compositeOutputTex.createView();
     return this;
   }
-  resize(width2, height2) {
-    this.width = width2;
-    this.height = height2;
-    this.volumetricTex = this._createTexture(width2, height2);
-    this.compositeOutputTex = this._createTexture(width2, height2);
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this.volumetricTex = this._createTexture(width, height);
+    this.compositeOutputTex = this._createTexture(width, height);
     this.volumetricTexView = this.volumetricTex.createView();
     this.compositeOutputTexView = this.compositeOutputTex.createView();
   }
@@ -42847,16 +42847,16 @@ fn fs(in: VertOut) -> @location(0) vec4f {
 
 // src/engine/postprocessing/hzb.js
 var SSRPass = class {
-  constructor(device2, width2, height2, globalSceneUniformBuffer, mainDepthView) {
+  constructor(device2, width, height, globalSceneUniformBuffer, mainDepthView) {
     this.device = device2;
-    this.width = width2;
-    this.height = height2;
-    this.mipCount = Math.floor(Math.log2(Math.max(width2, height2)));
+    this.width = width;
+    this.height = height;
+    this.mipCount = Math.floor(Math.log2(Math.max(width, height)));
     this.enabled = true;
     this._globalSceneUniformBuffer = globalSceneUniformBuffer;
     this.ssrOutputTexture = device2.createTexture({
       label: "SSR out-tex",
-      size: [width2, height2],
+      size: [width, height],
       format: "rgba16float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
@@ -45644,10 +45644,10 @@ var myLights = function() {
       light.orbitAngle = angleOffset;
       light.updater.push((light2) => {
         light2.orbitAngle += ORBIT_SPEED * 0.01;
-        const height2 = 4 + Math.sin(light2.orbitAngle + angleOffset) * 2;
+        const height = 4 + Math.sin(light2.orbitAngle + angleOffset) * 2;
         const x3 = TARGET.x + Math.cos(light2.orbitAngle) * ORBIT_RADIUS;
         const z2 = TARGET.z + Math.sin(light2.orbitAngle) * ORBIT_RADIUS;
-        light2.setPosition(x3, height2, z2);
+        light2.setPosition(x3, height, z2);
         light2.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
@@ -47130,10 +47130,10 @@ var flipperJolt = function() {
       light.orbitAngle = angleOffset;
       light.updater.push((light2) => {
         light2.orbitAngle += ORBIT_SPEED * 0.01;
-        const height2 = 8 + Math.sin(light2.orbitAngle + angleOffset) * 5;
+        const height = 8 + Math.sin(light2.orbitAngle + angleOffset) * 5;
         const x3 = TARGET.x + Math.cos(light2.orbitAngle) * ORBIT_RADIUS;
         const z2 = TARGET.z + Math.sin(light2.orbitAngle) * ORBIT_RADIUS;
-        light2.setPosition(x3, height2, z2);
+        light2.setPosition(x3, height, z2);
         light2.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
@@ -48040,10 +48040,10 @@ var flipperAmmo = function() {
       light.orbitAngle = angleOffset;
       light.updater.push((light2) => {
         light2.orbitAngle += ORBIT_SPEED * 0.01;
-        const height2 = 4 + Math.sin(light2.orbitAngle + angleOffset) * 2;
+        const height = 4 + Math.sin(light2.orbitAngle + angleOffset) * 2;
         const x3 = TARGET.x + Math.cos(light2.orbitAngle) * ORBIT_RADIUS;
         const z2 = TARGET.z + Math.sin(light2.orbitAngle) * ORBIT_RADIUS;
-        light2.setPosition(x3, height2, z2);
+        light2.setPosition(x3, height, z2);
         light2.setTarget(TARGET.x, TARGET.y, TARGET.z);
       });
     }
@@ -52303,14 +52303,14 @@ var loadDrumCannon = function() {
         }, 1e3 / 60);
       };
       DRUM.animateSpiral = (idx, delay2, opts) => {
-        const { radius, height: height2, rotations, centerX, centerZ, startY, duration = 5 } = opts;
+        const { radius, height, rotations, centerX, centerZ, startY, duration = 5 } = opts;
         const totalFrames = Math.round(duration * 60);
         let frame = 0;
         setTimeout(() => {
           const interval = setInterval(() => {
             if (frame >= totalFrames) {
               clearInterval(interval);
-              app.matrixPhysics.setKinematicTransform(idx, centerX, height2, centerZ);
+              app.matrixPhysics.setKinematicTransform(idx, centerX, height, centerZ);
               return;
             }
             const t3 = frame / totalFrames;
@@ -52319,7 +52319,7 @@ var loadDrumCannon = function() {
             const angle2 = t3 * Math.PI * 2 * rotations;
             const x3 = centerX + Math.cos(angle2) * r3;
             const z2 = centerZ + Math.sin(angle2) * r3;
-            const y3 = startY + (height2 - startY) * eased;
+            const y3 = startY + (height - startY) * eased;
             app.matrixPhysics.setKinematicTransform(idx, x3, y3, z2);
             frame++;
           }, 1e3 / 60);
@@ -52436,10 +52436,10 @@ var loadDrumCannon = function() {
         light.orbitAngle = angleOffset;
         light.updater.push((light2) => {
           light2.orbitAngle += ORBIT_SPEED * 0.01;
-          const height2 = 4 + Math.sin(light2.orbitAngle + angleOffset) * 2;
+          const height = 4 + Math.sin(light2.orbitAngle + angleOffset) * 2;
           const x3 = TARGET.x + Math.cos(light2.orbitAngle) * ORBIT_RADIUS;
           const z2 = TARGET.z + Math.sin(light2.orbitAngle) * ORBIT_RADIUS;
-          light2.setPosition(x3, height2, z2);
+          light2.setPosition(x3, height, z2);
           light2.setTarget(TARGET.x, TARGET.y, TARGET.z);
         });
       }
@@ -55049,11 +55049,11 @@ var MapCreator = class {
   _id(prefix) {
     return `${prefix}_${this._uid++}`;
   }
-  _floor(name2, pos2, width2, depth, uvShema = false) {
-    return this._block(name2, pos2, [width2, 0.2, depth], this._floorTex, "standard", true, 0.1, "floor", uvShema);
+  _floor(name2, pos2, width, depth, uvShema = false) {
+    return this._block(name2, pos2, [width, 0.2, depth], this._floorTex, "standard", true, 0.1, "floor", uvShema);
   }
-  _ceil(name2, pos2, width2, depth) {
-    return this._block(name2, pos2, [width2, 0.2, depth], this._ceilTex, "standard", false, 0, "floor");
+  _ceil(name2, pos2, width, depth) {
+    return this._block(name2, pos2, [width, 0.2, depth], this._ceilTex, "standard", false, 0, "floor");
   }
   _block(name2, pos2, scale4, tex, mat2 = "standard", registerCollision = true, collisionRadius = 1, group = "walls", uvShema = false, effects = false) {
     const meshScale = 2;
@@ -55154,9 +55154,9 @@ var MapCreator = class {
   createRoom(opts) {
     const {
       origin,
-      width: width2,
+      width,
       depth,
-      height: height2,
+      height,
       wallThickness = 0.4,
       roof = true,
       floor: floor2 = true,
@@ -55166,14 +55166,14 @@ var MapCreator = class {
     } = opts;
     let { uvShema = false } = opts;
     const { x: x3, y: y3, z: z2 } = origin;
-    const hw = width2 / 2;
+    const hw = width / 2;
     const hd = depth / 2;
-    const wy = y3 + height2 / 2;
+    const wy = y3 + height / 2;
     const t3 = wallThickness;
     const results = { walls: [], doors: [], floor: null, ceil: null };
     const hasDoor = (side) => doors.includes(side);
     const xWallDepth = depth - t3 * 2;
-    const zWallWidth = width2 - t3 * 2;
+    const zWallWidth = width - t3 * 2;
     const corners = [
       { x: x3 + hw - t3 / 2, z: z2 + hd - t3 / 2 },
       { x: x3 + hw - t3 / 2, z: z2 - hd + t3 / 2 },
@@ -55184,7 +55184,7 @@ var MapCreator = class {
       results.walls.push(this._block(
         this._id(`${tag}_corner`),
         { x: c2.x, y: wy, z: c2.z },
-        [t3, height2, t3],
+        [t3, height, t3],
         this._wallTex,
         "standard",
         true,
@@ -55194,40 +55194,40 @@ var MapCreator = class {
     {
       const wx = x3 + hw - t3 / 2;
       if (hasDoor("+x")) {
-        this._dooredWall(tag, wx, wy, z2, "x", xWallDepth, height2, doorWidth, t3, results.walls);
+        this._dooredWall(tag, wx, wy, z2, "x", xWallDepth, height, doorWidth, t3, results.walls);
       } else {
-        results.walls.push(this._block(this._id(`${tag}_wall+x`), { x: wx, y: wy, z: z2 }, [t3, height2, xWallDepth], this._wallTex, "standard", true, t3));
+        results.walls.push(this._block(this._id(`${tag}_wall+x`), { x: wx, y: wy, z: z2 }, [t3, height, xWallDepth], this._wallTex, "standard", true, t3));
       }
     }
     {
       const wx = x3 - hw + t3 / 2;
       if (hasDoor("-x")) {
-        this._dooredWall(tag, wx, wy, z2, "x", xWallDepth, height2, doorWidth, t3, results.walls);
+        this._dooredWall(tag, wx, wy, z2, "x", xWallDepth, height, doorWidth, t3, results.walls);
       } else {
-        results.walls.push(this._block(this._id(`${tag}_wall-x`), { x: wx, y: wy, z: z2 }, [t3, height2, xWallDepth], this._wallTex, "standard", true, t3));
+        results.walls.push(this._block(this._id(`${tag}_wall-x`), { x: wx, y: wy, z: z2 }, [t3, height, xWallDepth], this._wallTex, "standard", true, t3));
       }
     }
     {
       const wz = z2 + hd - t3 / 2;
       if (hasDoor("+z")) {
-        this._dooredWall(tag, x3, wy, wz, "z", zWallWidth, height2, doorWidth, t3, results.walls);
+        this._dooredWall(tag, x3, wy, wz, "z", zWallWidth, height, doorWidth, t3, results.walls);
       } else {
-        results.walls.push(this._block(this._id(`${tag}_wall+z`), { x: x3, y: wy, z: wz }, [zWallWidth, height2, t3], this._wallTex, "standard", true, t3));
+        results.walls.push(this._block(this._id(`${tag}_wall+z`), { x: x3, y: wy, z: wz }, [zWallWidth, height, t3], this._wallTex, "standard", true, t3));
       }
     }
     {
       const wz = z2 - hd + t3 / 2;
       if (hasDoor("-z")) {
-        this._dooredWall(tag, x3, wy, wz, "z", zWallWidth, height2, doorWidth, t3, results.walls);
+        this._dooredWall(tag, x3, wy, wz, "z", zWallWidth, height, doorWidth, t3, results.walls);
       } else {
-        results.walls.push(this._block(this._id(`${tag}_wall-z`), { x: x3, y: wy, z: wz }, [zWallWidth, height2, t3], this._wallTex, "standard", true, t3));
+        results.walls.push(this._block(this._id(`${tag}_wall-z`), { x: x3, y: wy, z: wz }, [zWallWidth, height, t3], this._wallTex, "standard", true, t3));
       }
     }
     if (floor2) {
-      results.floor = this._floor(this._id(`${tag}_floor`), { x: x3, y: y3, z: z2 }, width2, depth, uvShema);
+      results.floor = this._floor(this._id(`${tag}_floor`), { x: x3, y: y3, z: z2 }, width, depth, uvShema);
     }
     if (roof) {
-      results.ceil = this._ceil(this._id(`${tag}_ceil`), { x: x3, y: y3 + height2, z: z2 }, width2, depth, uvShema = false);
+      results.ceil = this._ceil(this._id(`${tag}_ceil`), { x: x3, y: y3 + height, z: z2 }, width, depth, uvShema = false);
     }
     return results;
   }
@@ -55303,7 +55303,7 @@ var MapCreator = class {
    * @returns {{ walls: object[] }}
    */
   createTunnel(opts) {
-    const { from, to: to2, width: width2, height: height2, roof = true, tag = "tunnel" } = opts;
+    const { from, to: to2, width, height, roof = true, tag = "tunnel" } = opts;
     const dx = to2.x - from.x;
     const dz = to2.z - from.z;
     const dy = to2.y - from.y;
@@ -55312,37 +55312,37 @@ var MapCreator = class {
     const cx = (from.x + to2.x) / 2;
     const cy = (from.y + to2.y) / 2;
     const cz = (from.z + to2.z) / 2;
-    const mh = height2 / 2;
-    const hw = width2 / 2;
+    const mh = height / 2;
+    const hw = width / 2;
     const results = { walls: [] };
     if (alongX) {
       const wallY = cy + mh;
-      results.walls.push(this._block(this._id(`${tag}_s1`), { x: cx, y: wallY, z: cz - hw }, [len2, height2, 0.3], this._wallTex));
-      results.walls.push(this._block(this._id(`${tag}_s2`), { x: cx, y: wallY, z: cz + hw }, [len2, height2, 0.3], this._wallTex));
+      results.walls.push(this._block(this._id(`${tag}_s1`), { x: cx, y: wallY, z: cz - hw }, [len2, height, 0.3], this._wallTex));
+      results.walls.push(this._block(this._id(`${tag}_s2`), { x: cx, y: wallY, z: cz + hw }, [len2, height, 0.3], this._wallTex));
       if (roof) {
         results.walls.push(this._ceil(
           this._id(`${tag}_roof`),
-          { x: cx, y: from.y + height2, z: cz },
+          { x: cx, y: from.y + height, z: cz },
           // ← from.y + height, not cy + height
           len2,
-          width2
+          width
         ));
       }
-      results.walls.push(this._floor(this._id(`${tag}_floor`), { x: cx, y: cy, z: cz }, len2, width2));
+      results.walls.push(this._floor(this._id(`${tag}_floor`), { x: cx, y: cy, z: cz }, len2, width));
     } else {
       const wallY = cy + mh;
-      results.walls.push(this._block(this._id(`${tag}_s1`), { x: cx - hw, y: wallY, z: cz }, [0.3, height2, len2], this._wallTex));
-      results.walls.push(this._block(this._id(`${tag}_s2`), { x: cx + hw, y: wallY, z: cz }, [0.3, height2, len2], this._wallTex));
+      results.walls.push(this._block(this._id(`${tag}_s1`), { x: cx - hw, y: wallY, z: cz }, [0.3, height, len2], this._wallTex));
+      results.walls.push(this._block(this._id(`${tag}_s2`), { x: cx + hw, y: wallY, z: cz }, [0.3, height, len2], this._wallTex));
       if (roof) {
         results.walls.push(this._ceil(
           this._id(`${tag}_roof`),
-          { x: cx, y: from.y + height2, z: cz },
+          { x: cx, y: from.y + height, z: cz },
           // ← from.y + height, not cy + height
           len2,
-          width2
+          width
         ));
       }
-      results.walls.push(this._floor(this._id(`${tag}_floor`), { x: cx, y: cy, z: cz }, width2, len2));
+      results.walls.push(this._floor(this._id(`${tag}_floor`), { x: cx, y: cy, z: cz }, width, len2));
     }
     return results;
   }
@@ -55440,7 +55440,7 @@ var MapCreator = class {
   createFightArena(opts) {
     const {
       origin,
-      width: width2,
+      width,
       depth,
       wallHeight = 2,
       pillars = 6,
@@ -55454,7 +55454,7 @@ var MapCreator = class {
     let { uvShema = false } = opts;
     const roomResult = this.createRoom({
       origin,
-      width: width2,
+      width,
       depth,
       height: wallHeight,
       roof,
@@ -55466,12 +55466,12 @@ var MapCreator = class {
     const { x: x3, y: y3, z: z2 } = origin;
     const results = { ...roomResult, pillars: [], covers: [] };
     const pillarsPerSide = Math.round(Math.sqrt(pillars));
-    const marginX = (width2 - 2 * pillarMargin) / (pillarsPerSide - 1);
+    const marginX = (width - 2 * pillarMargin) / (pillarsPerSide - 1);
     const marginZ = (depth - 2 * pillarMargin) / (pillarsPerSide - 1);
     let _MAX = isMobile() === true ? 1 : 5;
     for (let row2 = 0; row2 < pillarsPerSide; row2++) {
       for (let col = 0; col < pillarsPerSide; col++) {
-        const px = x3 - width2 / 2 + pillarMargin + col * marginX;
+        const px = x3 - width / 2 + pillarMargin + col * marginX;
         const pz = z2 - depth / 2 + pillarMargin + row2 * marginZ;
         results.pillars.push(this._block(
           this._id(`${tag}_pillar`),
@@ -55502,7 +55502,7 @@ var MapCreator = class {
     for (let i2 = 0; i2 < covers; i2++) {
       const t3 = (i2 * 0.31 + 0.15) % 1;
       const t22 = (i2 * 0.67 + 0.4) % 1;
-      const cx = x3 + (t3 - 0.5) * (width2 - 4);
+      const cx = x3 + (t3 - 0.5) * (width - 4);
       const cz = z2 + (t22 - 0.5) * (depth - 4);
       results.covers.push(this._block(
         this._id(`${tag}_cover`),
@@ -57856,8 +57856,9 @@ var CanvasEngine = class {
     this.interActionController = interActionController2;
     this.canvasDom = document.createElement("canvas");
     this.canvasDom.id = "drawer";
-    this.canvasDom.width = width ?? 640;
-    this.canvasDom.height = height ?? 480;
+    const { width = 640, height = 480 } = options2;
+    this.canvasDom.width = width;
+    this.canvasDom.height = height;
     this.canvasDom.style.cssText = "position:absolute;z-index:20;left:0;top:0;";
     this.ctx = this.canvasDom.getContext("2d");
     getDom("nui-commander-container").appendChild(this.canvasDom);
@@ -62689,10 +62690,10 @@ var ChartsEffect = class {
     );
     this.device.queue.writeBuffer(this.gridUniformBuffer, 80, this._gridTime);
     const vp = this.camera.VP;
-    const width2 = app.canvas.width;
-    const height2 = app.canvas.height;
-    this.updateLabels(this.coins, baseModelMatrix, vp, width2, height2);
-    this.updateIcons(this.coins, baseModelMatrix, vp, width2, height2);
+    const width = app.canvas.width;
+    const height = app.canvas.height;
+    this.updateLabels(this.coins, baseModelMatrix, vp, width, height);
+    this.updateIcons(this.coins, baseModelMatrix, vp, width, height);
   }
   render(pass, mesh, viewProjMatrix) {
     if (this.timeSteps === 0) return;
@@ -63712,7 +63713,7 @@ var EarthquakeEffect = class {
     mat4Impl.scale(this._localMatrix, [this.sphereScale, this.sphereScale, this.sphereScale], this._localMatrix);
     mat4Impl.multiply(baseModelMatrix, this._localMatrix, this._finalMatrix);
     const lat = this.latitude * Math.PI / 180;
-    const lonOffset = 90;
+    const lonOffset = 75;
     const lon = -(this.longitude - lonOffset) * Math.PI / 180;
     const cosLat = Math.cos(lat);
     this._epicenter[0] = cosLat * Math.sin(lon);

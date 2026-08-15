@@ -2,6 +2,9 @@
 ## CHANGES [Started from feb 2026]
 
 [1.18.xx - 1.19.xx]
+  - ExternalDataHandler (SeismicPortalAdapter 'www.seismicportal.eu' , CoinGeckoAdapter)
+  - AudioSplatFieldEffect (Effect class)
+  - EarthquakeEffect 
   - New effect class AudioSplatFieldEffect.
   - seismicportal.eu services used for seismic real time data. New effect class().
   - Added DragRotateController (corespond with WASD camera - rotate object on dragging),
@@ -13,7 +16,7 @@
    `npm run creator`
   Fixed worker cross origin problem with running.
   - Fix engine internal defaul dummy links to be public links from 
-   https://unpkg.com/matrix-engine-wgpu@latest/public/
+   https://unpkg.com/matrix-engine-wgpu@latest/public/ if needed (cross origin).
 
 [1.16.xx - 1.17.xx]
  - Particle effect class added.
