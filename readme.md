@@ -58,7 +58,7 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
     `npm run creator` for 'http://localhost:3000/' `npm run creator-backend` for backend.
     create games from simple prompt.
 
-## Roadmap
+## Roadmap/sync to external parts
 
 - (Preparing API DOCs)[https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API]
 - 🎯 Test linux OS -> Editor creates and manages files internally.
@@ -596,7 +596,7 @@ setThreshold
 setBlurRadius
 
 Fancy results:
-<img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bloom.png?raw=true" />
+<img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mat.png?raw=true" />
 
 ### Volumetric effect
 
@@ -614,6 +614,8 @@ app.activateVolumetricEffect({
   lightColor: [1.0, 0.88, 0.65],
 });
 ```
+
+<img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/par.png?raw=true" />
 
 ### Object Interaction (Raycasting)
 
@@ -1225,6 +1227,8 @@ Features done:
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game2.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game3.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game4.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/earth.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bvh.png?raw=true" />
 
 Install it on your desktop with one click.
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game5.png?raw=true" />
