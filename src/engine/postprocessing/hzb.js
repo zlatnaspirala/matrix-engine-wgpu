@@ -5,7 +5,6 @@ export class SSRPass {
     this.device = device;
     this.width = width;
     this.height = height;
-    // Cap mip count to prevent texture sizes dropping below 1x1 pixels
     this.mipCount = Math.floor(Math.log2(Math.max(width, height)));
     this.enabled = true;
     this._globalSceneUniformBuffer = globalSceneUniformBuffer;
@@ -100,12 +99,12 @@ export class SSRPass {
   }
 
   updateConfig(invProjMatrix, projMatrix) {
-    this.data.set(invProjMatrix, 0);   // mat4 invProj
-    this.data.set(projMatrix, 16);     // mat4 proj
+    this.data.set(invProjMatrix, 0);
+    this.data.set(projMatrix, 16);
     this.data[32] = this.width;
     this.data[33] = this.height;
-    this.data[34] = this.mipCount - 1; // maxMip
-    this.data[35] = 0.05;              // thickness - matching our structural test recommendations
+    this.data[34] = this.mipCount - 1;
+    this.data[35] = 0.05;
     this.device.queue.writeBuffer(this.ssrConfigBuffer, 0, this.data);
   }
 
@@ -175,11 +174,8 @@ export class SSRPass {
   }
 
   render(commandEncoder, {sceneTextureView, normalTextureView, mainDepthView, mainDepthTexture, worldPosTextureView}) {
-    // 1. Blit hardware depth attachments -> HZB structural mip 0
     this._blitDepth(commandEncoder, mainDepthTexture, mainDepthView);
-    // 2. Safely process downstream mip compute iterations
     this._buildHZB(commandEncoder);
-    // 3. Render final processed SSR output colors
     this._renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView);
   }
 
@@ -199,31 +195,30 @@ export class SSRPass {
     pass.end();
   }
 
-_computeHZBMipParams() {
-  this._hzbMipParams = [];
-  for (let mip = 1; mip < this.mipCount; mip++) {
-    const dstW = Math.max(1, this.width >> mip);
-    const dstH = Math.max(1, this.height >> mip);
-    this._hzbMipParams.push({
-      wgX: Math.ceil(dstW / 8),
-      wgY: Math.ceil(dstH / 8),
-    });
+  _computeHZBMipParams() {
+    this._hzbMipParams = [];
+    for(let mip = 1;mip < this.mipCount;mip++) {
+      const dstW = Math.max(1, this.width >> mip);
+      const dstH = Math.max(1, this.height >> mip);
+      this._hzbMipParams.push({
+        wgX: Math.ceil(dstW / 8),
+        wgY: Math.ceil(dstH / 8),
+      });
+    }
   }
-}
 
-_buildHZB(commandEncoder) {
-  const pass = commandEncoder.beginComputePass({label: 'HZB build'});
-  pass.setPipeline(this.hzbPipeline);
-  for (let mip = 1; mip < this.mipCount; mip++) {
-    const {wgX, wgY} = this._hzbMipParams[mip - 1];
-    pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
-    pass.dispatchWorkgroups(wgX, wgY);
+  _buildHZB(commandEncoder) {
+    const pass = commandEncoder.beginComputePass({label: 'HZB build'});
+    pass.setPipeline(this.hzbPipeline);
+    for(let mip = 1;mip < this.mipCount;mip++) {
+      const {wgX, wgY} = this._hzbMipParams[mip - 1];
+      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
+      pass.dispatchWorkgroups(wgX, wgY);
+    }
+    pass.end();
   }
-  pass.end();
-}
 
   _renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView) {
-    // Rebuild only if the resolve/aliasing target changed (e.g. resize, ping-pong swap)
     if(this._ssrBGDirty ||
       this._lastSceneView !== sceneTextureView ||
       this._lastNormalView !== normalTextureView ||
@@ -248,7 +243,6 @@ _buildHZB(commandEncoder) {
       this._lastWorldPosView = worldPosTextureView;
       this._ssrBGDirty = false;
     }
-
     const pass = commandEncoder.beginRenderPass(this._ssrPassDesc ??= {
       label: 'SSR Composite Pass',
       colorAttachments: [{
@@ -275,15 +269,12 @@ export function patchMainRenderPassDesc(device, width, height, existingDesc) {
       GPUTextureUsage.TEXTURE_BINDING,
   });
   const normalTextureView = normalTexture.createView();
-
-  // Add to your existing mainRenderPassDesc
   existingDesc.colorAttachments[1] = {
     view: normalTextureView,
     loadOp: 'clear',
     storeOp: 'store',
     clearValue: [0, 0, 0, 0],
   };
-
   const linearDepthTexture = device.createTexture({
     label: 'Linear depth',
     size: [width, height],
