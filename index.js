@@ -39,7 +39,7 @@ import {MEConfig} from "./src/me-config.js";
 import {mocapCsCmuEdu} from "./public/res/bvh/mocap.cs.cmu.edu/mocap.js";
 import {DragRotateController} from "./src/engine/procedures/drag-rotate-object.js";
 import {SeismicPortalAdapter} from "./src/engine/buildin/externalDataHandler/adapters/seismicPortal/seismicPortal.js";
-import {ChartsEffect} from "./src/engine/effects/coingecko.js";
+import {ChartsEffect} from "./src/engine/effects/datagrams.js";
 import {GeometryFactory, geometryTypes, geoTypesForMorph} from "./src/engine/geometry-factory.js";
 import {WaterSimEffect} from "./src/engine/effects/waterSimEffect.js";
 import {animateRotationY} from "./src/engine/procedures/sceneobjectKinematics.js";
