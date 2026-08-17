@@ -549,6 +549,11 @@ export default class MatrixEngineWGPU {
     this.device = await this.adapter.requestDevice({requiredFeatures});
     this.gpuCapabilities.enabled = new Set(this.device.features);
 
+    if(this.gpuCapabilities.isEnabled('texture-compression-bc')) {
+      console.log('BC texture compression available');
+    }
+    MEConfig.gpuCapabilities = this.gpuCapabilities;
+
     if(this.options.alphaMode == "no") {
       this.context = canvas.getContext('webgpu');
     } else if(this.options.alphaMode == "opaque") {

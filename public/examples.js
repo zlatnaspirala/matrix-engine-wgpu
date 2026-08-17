@@ -13165,7 +13165,7 @@ var Materials = class {
   async loadTex0(texturesPaths) {
     return new Promise(async (resolve) => {
       const path2 = texturesPaths[0];
-      const { texture, sampler } = await this.textureCache.get(path2, this.getFormat());
+      const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), false, MEConfig.gpuCapabilities.isEnabled("texture-compression-bc"));
       this.texture0 = texture;
       this.sampler = sampler;
       resolve(this);
@@ -41152,24 +41152,86 @@ function generatorWallNONPHYSICS(material = "standard", pos2, rot2, texturePath2
 }
 
 // src/engine/core-cache.js
+var BC_INFO = {
+  BC1: { wgpu: "bc1-rgba-unorm", block: 8 },
+  BC3: { wgpu: "bc3-rgba-unorm", block: 16 },
+  BC4: { wgpu: "bc4-r-unorm", block: 8 },
+  BC5: { wgpu: "bc5-rg-unorm", block: 16 },
+  BC7: { wgpu: "bc7-rgba-unorm", block: 16 }
+};
+var DXGI_TO_BC = { 71: "BC1", 72: "BC1", 77: "BC3", 78: "BC3", 80: "BC4", 83: "BC5", 98: "BC7", 99: "BC7" };
 var TextureCache = class {
   constructor(device2) {
     this.device = device2;
     this.cache = /* @__PURE__ */ new Map();
   }
-  async get(path2, format, isEnvMap = false) {
-    if (this.cache.has(path2)) {
-      return this.cache.get(path2);
+  async get(path2, format, isEnvMap = false, useBC = false) {
+    const key = useBC ? `bc:${path2}` : path2;
+    if (this.cache.has(key)) {
+      return this.cache.get(key);
     }
     let promise;
     if (isEnvMap == true) {
       promise = this.#loadEnvMap(path2, format);
-      this.cache.set(path2, promise);
+    } else if (useBC == true) {
+      promise = this.#loadBC(path2);
     } else {
       promise = this.#load(path2, format);
-      this.cache.set(path2, promise);
     }
+    this.cache.set(key, promise);
     return promise;
+  }
+  async #loadBC(path2) {
+    const ddsPath = path2.replace(/\.(png|jpe?g)$/i, ".dds");
+    const buf = await (await fetch(ddsPath)).arrayBuffer();
+    const dv = new DataView(buf);
+    if (dv.getUint32(0, true) !== 542327876) throw new Error("not a DDS: " + ddsPath);
+    const height = dv.getUint32(12, true);
+    const width = dv.getUint32(16, true);
+    const mipCount = Math.max(1, dv.getUint32(28, true));
+    const fourCC = String.fromCharCode(dv.getUint8(84), dv.getUint8(85), dv.getUint8(86), dv.getUint8(87));
+    let dataOffset = 128;
+    let bcType;
+    if (fourCC === "DX10") {
+      bcType = DXGI_TO_BC[dv.getUint32(128, true)];
+      dataOffset = 148;
+    } else {
+      bcType = { DXT1: "BC1", DXT5: "BC3" }[fourCC];
+    }
+    if (!bcType) throw new Error("unsupported DDS format in " + ddsPath);
+    const { wgpu: format, block: blockBytes } = BC_INFO[bcType];
+    const texture = this.device.createTexture({
+      label: `BC: ${ddsPath}`,
+      size: [width, height, 1],
+      format,
+      mipLevelCount: mipCount,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+    let offset = dataOffset;
+    for (let mip = 0; mip < mipCount; mip++) {
+      const mipW = Math.max(1, width >> mip);
+      const mipH = Math.max(1, height >> mip);
+      const blocksPerRow = Math.max(1, Math.ceil(mipW / 4));
+      const blockRows = Math.max(1, Math.ceil(mipH / 4));
+      const bytesPerRow = blocksPerRow * blockBytes;
+      const mipBytes = bytesPerRow * blockRows;
+      this.device.queue.writeTexture(
+        { texture, mipLevel: mip },
+        new Uint8Array(buf, offset, mipBytes),
+        { bytesPerRow, rowsPerImage: blockRows },
+        { width: mipW, height: mipH, depthOrArrayLayers: 1 }
+      );
+      offset += mipBytes;
+    }
+    const sampler = this.device.createSampler({
+      magFilter: "linear",
+      minFilter: "linear",
+      mipmapFilter: mipCount > 1 ? "linear" : void 0,
+      addressModeU: "repeat",
+      addressModeV: "repeat",
+      addressModeW: "repeat"
+    });
+    return { texture, sampler };
   }
   async loadEnvMap(path2) {
     const envKey = `env:${path2}`;
@@ -44325,6 +44387,10 @@ var MatrixEngineWGPU = class {
     }
     this.device = await this.adapter.requestDevice({ requiredFeatures });
     this.gpuCapabilities.enabled = new Set(this.device.features);
+    if (this.gpuCapabilities.isEnabled("texture-compression-bc")) {
+      console.log("BC texture compression available");
+    }
+    MEConfig.gpuCapabilities = this.gpuCapabilities;
     if (this.options.alphaMode == "no") {
       this.context = canvas.getContext("webgpu");
     } else if (this.options.alphaMode == "opaque") {
@@ -50388,7 +50454,7 @@ var loadKinematicCollision = function() {
         cam2.setYaw(-0);
         cam2.setPitch(-0.29);
         cam2.setZ(25);
-        cam2.setY(5);
+        cam2.setY(8);
         collision.getCamera().setPosition(0, 3, 10);
         collision.collisionSystem.registerCamera(collision.getCamera().position, 2);
         cam2._dirtyAngle = true;
@@ -65237,25 +65303,30 @@ var snakeLightsInstancedMAX = function() {
     },
     clearColor: { r: 0.01, b: 0.01, g: 0.01, a: 1 }
   }, async () => {
-    const LIGHT_HEIGHT = 25;
+    addRaycastsAABBListener("canvas1", "click");
+    const LIGHT_HEIGHT = 35;
     const CENTER = { x: 0, z: -10 };
     app2.addLight();
     const light = app2.lightContainer[0];
-    light.setIntensity(18);
+    light.setIntensity(30);
     light.setPosition(CENTER.x, LIGHT_HEIGHT, CENTER.z);
     light.setTarget(CENTER.x, 0, CENTER.z);
-    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m2) => {
-      app2.addMeshObj({
-        material: { type: "standard" },
-        position: { x: CENTER.x, y: -5, z: CENTER.z },
-        texturesPaths: ["./res/textures/floor1.webp"],
-        name: "floor",
-        mesh: m2.cube,
-        scale: [1, 0.5, 1],
-        physics: { enabled: false },
-        shadowsCast: false
-      });
-    }, { scale: [20, 0.5, 20] });
+    loadNavMesh("./res/meshes/nav-mesh/navmesh.json").then((r3) => {
+      app2.nav = r3;
+      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m2) => {
+        app2.addMeshObj({
+          material: { type: "standard" },
+          position: { x: CENTER.x, y: -5, z: CENTER.z },
+          texturesPaths: ["./res/textures/floor1.webp"],
+          name: "ground",
+          mesh: m2.cube,
+          scale: [1, 0.5, 1],
+          physics: { enabled: false },
+          shadowsCast: false,
+          raycast: { enabled: true, radius: 1.5 }
+        });
+      }, { scale: [80, 0.7, 80] });
+    });
     const glbFile = await fetch("res/meshes/glb/monster.glb").then((r3) => r3.arrayBuffer()).then((buf) => uploadGLBModel(buf, app2.device));
     app2.addGlbObjInctance({
       material: { type: "standard", useTextureFromGlb: true },
@@ -65266,16 +65337,35 @@ var snakeLightsInstancedMAX = function() {
       texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
     }, null, glbFile);
     app2.activateBloomEffect();
-    app2.bloomPass.setBlurRadius(1.5);
+    app2.bloomPass.setBlurRadius(1.6);
     let monster = null;
     setTimeout(() => {
       monster = app2.getSceneObjectByName("monster_MutantMesh");
       monster.sharedBones = false;
       monster.updateMaxInstances(150);
       monster.updateInstances(150);
+      monster.position.thrust = 0.2;
+      app2.monster = monster;
       app2.cameras.WASD.setYaw(0);
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
+      app2.monster.playAnimationByIndex(3);
+      app2.monster.position.onPositionReach = () => {
+        app2.monster.playAnimationByIndex(3);
+      };
+      app2.canvas.addEventListener("ray.hit.event", (e2) => {
+        console.log("hitObject hitPoint ?", app2.monster.position.z);
+        const { hitObject, hitPoint } = e2.detail;
+        const start = [app2.monster.position.x, app2.monster.position.y, app2.monster.position.z];
+        const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
+        const path2 = app2.nav.findPath(start, end);
+        if (!path2 || path2.length === 0) {
+          console.warn("No valid path found.");
+          return;
+        }
+        app2.monster.playAnimationByIndex(4);
+        followPath(app2.monster, path2, app2);
+      });
       let currentIdx = 1;
       const totalInstances = monster.instanceTargets.length - 1;
       let radius = 32;
