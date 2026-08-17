@@ -14,8 +14,21 @@
 import {FullScreenManagerElement, isMobile, LOG_FUNNY_ARCADE, urlQuery} from "./engine/utils.js";
 window.urlQ = urlQuery;
 
-export const MEConfig = {
+export const gpuSettings = {
+    features: {
+        'shader-f16': true,
+        'float32-filterable': true,
+        'float32-blendable': false,
+        'texture-compression-astc': true,
+        'texture-compression-etc2': true,
+        'bgra8unorm-storage': false,
+        'subgroups': true,
+        'clip-distances': false,
+        'dual-source-blending': false,
+    }
+};
 
+export const MEConfig = {
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() == true ? 256.0 : 512.0,
   MAX_BONES: isMobile() == true ? 70 : 100,

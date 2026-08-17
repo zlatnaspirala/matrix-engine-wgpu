@@ -1,7 +1,27 @@
 
 ## CHANGES [Started from feb 2026]
 
-[1.18.xx - 1.19.xx]
+[1.19.2] 
+ - GPUCapabilities
+
+ ```
+ const gpuSettings = {
+    features: {
+        'shader-f16': true,
+        'float32-filterable': true,
+        'float32-blendable': false,
+        'texture-compression-astc': true,
+        'texture-compression-etc2': true,
+        'bgra8unorm-storage': false,
+        'subgroups': true,
+        'clip-distances': false,
+        'dual-source-blending': false,
+    }
+};
+ ```
+
+
+[1.18.xx - 1.19.00]
   - ExternalDataHandler (SeismicPortalAdapter 'www.seismicportal.eu' , CoinGeckoAdapter)
   - AudioSplatFieldEffect (Effect class)
   - EarthquakeEffect 

@@ -58,6 +58,16 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
     `npm run creator` for 'http://localhost:3000/' `npm run creator-backend` for backend.
     create games from simple prompt.
 
+
+## Supported browsers for final build:
+ - Windows Chrome ✔️
+ - Windows Firefox ✔️
+ - MACOS   Chrome (151 tested) ✔️ (golden gate)
+ - MAXOS   Firefox ✔️             (golden gate)
+ - MACOS   Opera (arm64) ✔️       (golden gate)
+ - MACOS   Edge ✔️                (golden gate)
+
+
 ## Roadmap/sync to external parts
 
 - (Preparing API DOCs)[https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API]

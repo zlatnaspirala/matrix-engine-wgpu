@@ -67,7 +67,7 @@ export var testCannonES = function() {
         name: 'cloth',
         mesh: m.plane,
         physics: {
-          mass: 0,
+          mass: 1,
           enabled: true,
           geometry: "Cloth"
         },

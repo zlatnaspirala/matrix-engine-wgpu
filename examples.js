@@ -44,6 +44,7 @@ import {loadCryptoGrid} from "./examples/crypto-grid.js";
 import {loadEarth} from "./examples/earth.js";
 import {loadCameraDepth} from "./examples/camera-depth.js";
 import {loadReactiveAudio} from "./examples/reactive-audio.js";
+import {snakeLightsInstancedMAX} from "./examples/max-instanced-13y-gpu-card.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -98,6 +99,7 @@ byId('loadCryptoGrid').addEventListener("click", () => switchDemo('37'));
 byId('loadEarth').addEventListener("click", () => switchDemo('38'));
 byId('loadCameraDepth').addEventListener("click", () => switchDemo('39'));
 byId('loadReactiveAudio').addEventListener("click", () => switchDemo('40'));
+byId('InstancedMAX').addEventListener("click", () => switchDemo('41'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
@@ -185,7 +187,10 @@ if(urlQuery['demo'] === '1') {
   loadCameraDepth();
 } else if(urlQuery['demo'] === '40') {
   loadReactiveAudio();
-} else {
+} else if(urlQuery['demo'] === '41') {
+  snakeLightsInstancedMAX();
+}
+else {
   loadObjFile();
 }
 

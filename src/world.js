@@ -1,4 +1,4 @@
-import {MEConfig} from "./me-config.js";
+import {gpuSettings, MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {CinematicCamera, FirstPersonCamera, PlaneCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
@@ -33,6 +33,7 @@ import {mobile1} from "./engine/overrides/mobile-1.js";
 import {SSRPass} from "./engine/postprocessing/hzb.js";
 import {KaleidoscopeEffect} from "./engine/effects/KaleidoscopeEffect.js";
 import {CulledRenderPass} from "./engine/culling/culling.js";
+import {GPU_FEATURES, GPUCapabilities} from "./engine/GPUCapabilities.js";
 /**
  * @description
  * Main engine root class.
@@ -62,7 +63,7 @@ if('serviceWorker' in navigator) {
       // APP_READY = true;
       console.warn('cacheErr[APP_READY forced public access]:', cacheErr);
       let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
-      navigator.serviceWorker.register(RES+'/cache.js').then(registration => {
+      navigator.serviceWorker.register(RES + '/cache.js').then(registration => {
         if(!navigator.serviceWorker.controller) {
           // console.log('Installing & caching for the first time...');
           meLoader.create('LOADING');
@@ -532,9 +533,21 @@ export default class MatrixEngineWGPU {
 
   init = async ({canvas, callback}) => {
     this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice({
-      extensions: ["ray_tracing"]
-    });
+    this.gpuCapabilities = new GPUCapabilities(this.adapter);
+    const requiredFeatures = [];
+    for(const feature of GPU_FEATURES.GROUP_1) {
+      if(this.adapter.features.has(feature)) {
+        console.log('GPU Feature enabled:', feature);
+        requiredFeatures.push(feature);
+      }
+    }
+    for(const feature of GPU_FEATURES.GROUP_2) {
+      if(gpuSettings.features[feature] === true && this.adapter.features.has(feature)) {
+        requiredFeatures.push(feature);
+      }
+    }
+    this.device = await this.adapter.requestDevice({requiredFeatures});
+    this.gpuCapabilities.enabled = new Set(this.device.features);
 
     if(this.options.alphaMode == "no") {
       this.context = canvas.getContext('webgpu');

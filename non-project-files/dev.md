@@ -1,8 +1,35 @@
 
 
+sasmsung s25 ultra 
+chrome WORK
+
+
+SAFARI desktop- 
+Unhandled Promise Rejection: TypeError: undefined is not an object (evaluating 'this.texture0.createView')
+
+
+
+chrome IOS
+landpage.js:60750 Unhandled Promise Rejection: TypeError: undefined is not an object (evaluating 'navigator.gpu.requestAdapter')
+
+
+
+ios iphone 17 (26.6)
+navigator.gpu os defined in chrome
+navigator.gpu            in safari    
+
+
+
+
+
+
+
+
+
+
+
 IGNOE ROF NPM !!
 18 notice 1.9MB public/matrix-engine-autogen.js
-
 
 
 LIST ALL FILENAMES 

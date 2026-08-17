@@ -4606,6 +4606,19 @@ var CameraPath = class _CameraPath {
 
 // src/me-config.js
 window.urlQ = urlQuery;
+var gpuSettings = {
+  features: {
+    "shader-f16": true,
+    "float32-filterable": true,
+    "float32-blendable": false,
+    "texture-compression-astc": true,
+    "texture-compression-etc2": true,
+    "bgra8unorm-storage": false,
+    "subgroups": true,
+    "clip-distances": false,
+    "dual-source-blending": false
+  }
+};
 var MEConfig = {
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() == true ? 256 : 512,
@@ -42203,8 +42216,21 @@ var PhysicsBridge = class {
   }
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
-    this._send("addBody", { pOptions }).then((idx) => {
-      this._bodyIndexMap.set(idx, MEObject);
+    this._send("addBody", { pOptions }).then((result2) => {
+      console.log("ssssssssssssss", pOptions);
+      if (result2 && typeof result2 === "object" && result2.count > 1) {
+        if (!this._clothMap) this._clothMap = /* @__PURE__ */ new Map();
+        this._clothMap.set(result2.idx, {
+          mesh: MEObject,
+          startIndex: result2.idx,
+          nx: result2.nx,
+          ny: result2.ny,
+          count: result2.count
+        });
+      } else {
+        const idx = typeof result2 === "object" ? result2.idx : result2;
+        this._bodyIndexMap.set(idx, MEObject);
+      }
     });
   }
   setKinematicTransformDeplaced() {
@@ -42418,8 +42444,15 @@ var PhysicsBridge = class {
     switch (data.cmd) {
       case "ready":
       case "bodyAdded":
-        this._pending.get(data.id)?.(data.idx);
-        this._pending.delete(data.id);
+        const resolveFn = this._pending.get(data.id);
+        if (resolveFn) {
+          if (data.count && data.count > 1) {
+            resolveFn({ idx: data.idx, count: data.count, nx: data.nx, ny: data.ny });
+          } else {
+            resolveFn(data.idx);
+          }
+          this._pending.delete(data.id);
+        }
         break;
       case "snapshot":
         this._snapshot = data.snap;
@@ -43738,6 +43771,74 @@ var CulledRenderPass = class {
   }
 };
 
+// src/engine/GPUCapabilities.js
+var GPU_FEATURES = {
+  // Automatically enabled by engine
+  GROUP_1: [
+    "timestamp-query",
+    "indirect-first-instance",
+    "texture-compression-bc",
+    "depth32float-stencil8"
+  ],
+  // User can enable these
+  GROUP_2: [
+    "shader-f16",
+    "float32-filterable",
+    "float32-blendable",
+    "texture-compression-astc",
+    "texture-compression-etc2",
+    "bgra8unorm-storage",
+    "subgroups",
+    "clip-distances",
+    "dual-source-blending"
+  ],
+  // Experimental / future
+  GROUP_3: [
+    "pipeline-statistics-query",
+    "depth-clamping",
+    "multi-planar-formats"
+  ]
+};
+var GPUCapabilities = class {
+  constructor(adapter) {
+    this.adapter = adapter;
+    this.supported = new Set(adapter.features);
+    this.group1 = /* @__PURE__ */ new Set();
+    this.group2 = /* @__PURE__ */ new Set();
+    this.group3 = /* @__PURE__ */ new Set();
+    this.enabled = /* @__PURE__ */ new Set();
+    console.log("GPU features:", this.supported);
+  }
+  supports(feature) {
+    return this.supported.has(feature);
+  }
+  addGroup1(feature) {
+    if (this.supports(feature)) {
+      this.group1.add(feature);
+    }
+  }
+  addGroup2(feature) {
+    if (this.supports(feature)) {
+      this.group2.add(feature);
+    }
+  }
+  addGroup3(feature) {
+    if (this.supports(feature)) {
+      this.group3.add(feature);
+    }
+  }
+  enable(feature) {
+    if (!this.supports(feature)) {
+      return false;
+    }
+    this.enabled.add(feature);
+    return true;
+  }
+  isEnabled(feature) {
+    return this.enabled.has(feature);
+  }
+};
+
 // src/world.js
 var APP_READY = false;
 if (MEConfig.CACHE !== true && location.hostname != "localhost") {
@@ -44209,9 +44310,21 @@ var MatrixEngineWGPU = class {
   }
   init = async ({ canvas, callback }) => {
     this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice({
-      extensions: ["ray_tracing"]
-    });
+    this.gpuCapabilities = new GPUCapabilities(this.adapter);
+    const requiredFeatures = [];
+    for (const feature of GPU_FEATURES.GROUP_1) {
+      if (this.adapter.features.has(feature)) {
+        console.log("GPU Feature enabled:", feature);
+        requiredFeatures.push(feature);
+      }
+    }
+    for (const feature of GPU_FEATURES.GROUP_2) {
+      if (gpuSettings.features[feature] === true && this.adapter.features.has(feature)) {
+        requiredFeatures.push(feature);
+      }
+    }
+    this.device = await this.adapter.requestDevice({ requiredFeatures });
+    this.gpuCapabilities.enabled = new Set(this.device.features);
     if (this.options.alphaMode == "no") {
       this.context = canvas.getContext("webgpu");
     } else if (this.options.alphaMode == "opaque") {
@@ -48817,7 +48930,7 @@ var testCannonES = function() {
         name: "cloth",
         mesh: m2.plane,
         physics: {
-          mass: 0,
+          mass: 1,
           enabled: true,
           geometry: "Cloth"
         },
@@ -65111,6 +65224,102 @@ var loadReactiveAudio = function() {
   window.app = reactiveAudio;
 };
 
+// examples/max-instanced-13y-gpu-card.js
+var snakeLightsInstancedMAX = function() {
+  let app2 = new MatrixEngineWGPU({
+    fastRender: 0.9,
+    canvasSize: "fullscreen",
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0.01, b: 0.01, g: 0.01, a: 1 }
+  }, async () => {
+    const LIGHT_HEIGHT = 25;
+    const CENTER = { x: 0, z: -10 };
+    app2.addLight();
+    const light = app2.lightContainer[0];
+    light.setIntensity(18);
+    light.setPosition(CENTER.x, LIGHT_HEIGHT, CENTER.z);
+    light.setTarget(CENTER.x, 0, CENTER.z);
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m2) => {
+      app2.addMeshObj({
+        material: { type: "standard" },
+        position: { x: CENTER.x, y: -5, z: CENTER.z },
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "floor",
+        mesh: m2.cube,
+        scale: [1, 0.5, 1],
+        physics: { enabled: false },
+        shadowsCast: false
+      });
+    }, { scale: [20, 0.5, 20] });
+    const glbFile = await fetch("res/meshes/glb/monster.glb").then((r3) => r3.arrayBuffer()).then((buf) => uploadGLBModel(buf, app2.device));
+    app2.addGlbObjInctance({
+      material: { type: "standard", useTextureFromGlb: true },
+      useScale: true,
+      scale: [5, 5, 5],
+      position: { x: CENTER.x, y: -4, z: CENTER.z },
+      name: "monster",
+      texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+    }, null, glbFile);
+    app2.activateBloomEffect();
+    app2.bloomPass.setBlurRadius(1.5);
+    let monster = null;
+    setTimeout(() => {
+      monster = app2.getSceneObjectByName("monster_MutantMesh");
+      monster.sharedBones = false;
+      monster.updateMaxInstances(150);
+      monster.updateInstances(150);
+      app2.cameras.WASD.setYaw(0);
+      app2.cameras.WASD.setPitch(-0.55);
+      app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
+      let currentIdx = 1;
+      const totalInstances = monster.instanceTargets.length - 1;
+      let radius = 32;
+      let deltaRadius = new OSCILLATOR(0, 32, 8);
+      const centerX = monster.instanceTargets[0].position[0];
+      const centerZ = monster.instanceTargets[0].position[2];
+      const moveTimer = {
+        update: () => {
+          if (currentIdx <= totalInstances) {
+            let angle2 = currentIdx / totalInstances * (2 * Math.PI);
+            let newPosX = centerX + (radius + deltaRadius.UPDATE()) * Math.cos(angle2);
+            let newPosZ = centerZ + (radius + deltaRadius.UPDATE()) * Math.sin(angle2);
+            monster.instanceTargets[currentIdx].position[0] = newPosX;
+            monster.instanceTargets[currentIdx].position[2] = newPosZ;
+            console.log(`Positioned ${currentIdx}`);
+            currentIdx++;
+          } else {
+            startScaleWave();
+          }
+        }
+      };
+      app2.autoUpdate.push(moveTimer);
+      function startScaleWave() {
+        let scaleIdx = 1;
+        let scaleCharacters = {
+          update: () => {
+            let prevIdx = scaleIdx === 1 ? totalInstances : scaleIdx - 1;
+            monster.instanceTargets[prevIdx].scale = [1, 1, 1];
+            monster.instanceTargets[prevIdx].color[0] = 0.5;
+            monster.instanceTargets[prevIdx].color[1] = 0.5;
+            monster.instanceTargets[prevIdx].color[2] = 0.5;
+            monster.instanceTargets[scaleIdx].scale = [2, 2, 2];
+            monster.instanceTargets[scaleIdx].color[randomIntFromTo(0, 2)] = randomIntFromTo(2, 20);
+            scaleIdx++;
+            if (scaleIdx > totalInstances) scaleIdx = 1;
+          }
+        };
+        app2.autoUpdate.push(scaleCharacters);
+      }
+    }, 1e3);
+  });
+  window.app = app2;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -65169,6 +65378,7 @@ byId2("loadCryptoGrid").addEventListener("click", () => switchDemo("37"));
 byId2("loadEarth").addEventListener("click", () => switchDemo("38"));
 byId2("loadCameraDepth").addEventListener("click", () => switchDemo("39"));
 byId2("loadReactiveAudio").addEventListener("click", () => switchDemo("40"));
+byId2("InstancedMAX").addEventListener("click", () => switchDemo("41"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -65252,6 +65462,8 @@ if (urlQuery["demo"] === "1") {
   loadCameraDepth();
 } else if (urlQuery["demo"] === "40") {
   loadReactiveAudio();
+} else if (urlQuery["demo"] === "41") {
+  snakeLightsInstancedMAX();
 } else {
   loadObjFile();
 }

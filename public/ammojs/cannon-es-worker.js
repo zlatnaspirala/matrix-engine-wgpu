@@ -317,13 +317,16 @@ class MatrixCannon {
     const spacingY = height / ny;
     const particleMass = (pOptions.mass || 1) / ((nx + 1) * (ny + 1));
     const radius = pOptions.radius || 0.05;
-    
+
     const particles = [];
-    const pos = pOptions.position || { x: 0, y: 0, z: 0 };
+    const pos = pOptions.position || {x: 0, y: 0, z: 0};
     const pinTop = pOptions.pinTop !== false;
 
-    for(let y = 0; y <= ny; y++) {
-      for(let x = 0; x <= nx; x++) {
+    // Record the starting index for this cloth block
+    const startIndex = this.rigidBodies.length;
+
+    for(let y = 0;y <= ny;y++) {
+      for(let x = 0;x <= nx;x++) {
         const px = pos.x + (x - nx / 2) * spacingX;
         const py = pos.y + (ny / 2 - y) * spacingY;
         const pz = pos.z;
@@ -346,15 +349,16 @@ class MatrixCannon {
         this.world.addBody(body);
         this._registerBody(body, {
           name: pOptions.name ? `${pOptions.name}_${x}_${y}` : `cloth_${x}_${y}`,
-          position: { x: px, y: py, z: pz }
+          position: {x: px, y: py, z: pz}
         });
 
         particles.push(body);
       }
     }
 
-    for(let y = 0; y <= ny; y++) {
-      for(let x = 0; x <= nx; x++) {
+    // Constraints setup (same as before)...
+    for(let y = 0;y <= ny;y++) {
+      for(let x = 0;x <= nx;x++) {
         const bodyA = particles[y * (nx + 1) + x];
 
         if(x < nx) {
@@ -383,7 +387,12 @@ class MatrixCannon {
 
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
-    return particles[0];
+
+    // Store metadata on the instance so we can easily reference it later if needed
+    if(!this.cloths) this.cloths = [];
+    this.cloths.push({startIndex, nx, ny, count: particles.length});
+
+    return startIndex;
   }
 
   applyImpulse(idx, x, y, z) {
@@ -824,7 +833,17 @@ self.onmessage = async ({data}) => {
     }
     case 'addBody': {
       const idx = cannon.addBody(data.pOptions);
-      self.postMessage({cmd: 'bodyAdded', id, idx, sab: cannon._sab});
+      console.log('worker', cannon.cloths)
+      const clothMeta = cannon.cloths?.find(c => c.startIndex === idx);
+      self.postMessage({
+        cmd: 'bodyAdded',
+        id,
+        idx,
+        count: clothMeta ? clothMeta.count : 1,
+        nx: clothMeta ? clothMeta.nx : undefined,
+        ny: clothMeta ? clothMeta.ny : undefined,
+        sab: cannon._sab
+      });
       break;
     }
     case 'step': {

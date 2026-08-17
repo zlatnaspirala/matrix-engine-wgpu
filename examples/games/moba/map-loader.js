@@ -296,7 +296,7 @@ export class MEMapLoader {
 
     this.collectionOfTree1.forEach((partOftree) => {
 
-      // partOftree.sharedBones = true;
+      partOftree.sharedBones = true; // not tested
       partOftree.setAmbient(randomIntFromTo(5, 15), randomIntFromTo(5, 15), randomIntFromTo(5, 15));
 
       const treesPerCluster = 9;

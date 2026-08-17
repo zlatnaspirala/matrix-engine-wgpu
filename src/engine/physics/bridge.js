@@ -82,10 +82,29 @@ export class PhysicsBridge {
   }
 
   _doAddPhysics(MEObject, pOptions) {
-
     MEObject.isKinematic = pOptions.state === 4;
-    this._send('addBody', {pOptions}).then(idx => {
-      this._bodyIndexMap.set(idx, MEObject);
+
+    this._send('addBody', {pOptions}).then(result => {
+      
+      console.log('ssssssssssssss', pOptions)
+      // Check if the result is a cloth descriptor object (has a count > 1)
+      if(result && typeof result === 'object' && result.count > 1) {
+        if(!this._clothMap) this._clothMap = new Map();
+
+        
+        // Store the cloth metadata and reference to the mesh object
+        this._clothMap.set(result.idx, {
+          mesh: MEObject,
+          startIndex: result.idx,
+          nx: result.nx,
+          ny: result.ny,
+          count: result.count
+        });
+      } else {
+        // Regular single rigid body index
+        const idx = typeof result === 'object' ? result.idx : result;
+        this._bodyIndexMap.set(idx, MEObject);
+      }
     });
   }
 
@@ -342,8 +361,15 @@ export class PhysicsBridge {
     switch(data.cmd) {
       case 'ready':
       case 'bodyAdded':
-        this._pending.get(data.id)?.(data.idx);
-        this._pending.delete(data.id);
+        const resolveFn = this._pending.get(data.id);
+        if(resolveFn) {
+          if(data.count && data.count > 1) {
+            resolveFn({idx: data.idx, count: data.count, nx: data.nx, ny: data.ny});
+          } else {
+            resolveFn(data.idx);
+          }
+          this._pending.delete(data.id);
+        }
         break;
       case 'snapshot':
         this._snapshot = data.snap;
