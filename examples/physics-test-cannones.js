@@ -24,14 +24,14 @@ export var testCannonES = function() {
     addEventListener('PhysicsReady', () => {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
-        plane: "./res/meshes/blender/plane.obj",
+        plane: "./res/meshes/blender/plane-sub10.obj",
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]})
 
       physicsPlayground.matrixPhysics.speedUpSimulation(2);
 
-      physicsPlayground.physicsBodiesChain();
+      // physicsPlayground.physicsBodiesChain();
 
       // physicsPlayground.physicsBodiesGeneratorDeepPyramid(
       //   "standard", {x: 0, y: 1, z: -20}, {x: 0, y: 0, z: 0},
@@ -39,10 +39,10 @@ export var testCannonES = function() {
       // );
 
       // Buildin options
-      app.physicsBodiesGeneratorWall("standard",
-        {x: -4.5, y: 1, z: -10}, {x: 0, y: 0, z: 0},
-        ["./res/textures/rust.jpg",],
-        'my_set_walls', "5x3", true, [1, 1, 1], 2.05, 1000, "ByZ");
+      // app.physicsBodiesGeneratorWall("standard",
+      //   {x: -4.5, y: 1, z: -10}, {x: 0, y: 0, z: 0},
+      //   ["./res/textures/rust.jpg",],
+      //   'my_set_walls', "5x3", true, [1, 1, 1], 2.05, 1000, "ByZ");
 
 
       let strength = 10;
@@ -59,9 +59,9 @@ export var testCannonES = function() {
     async function onGround(m) {
 
       app.addMeshObj({
-        position: {x: 0, y: 15, z: -10},
-        rotation: {x: 0, y: -22, z: 0},
-        scale: [10, 10, 1],
+        position: {x: 0, y: 6, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [1, 1, 1],
         useScale: false,
         texturesPaths: ['./res/meshes/jamb/text.png'],
         name: 'cloth',

@@ -4611,13 +4611,40 @@ var gpuSettings = {
     "shader-f16": true,
     "float32-filterable": true,
     "float32-blendable": false,
-    "texture-compression-astc": true,
-    "texture-compression-etc2": true,
+    "texture-compression-astc": false,
+    "texture-compression-etc2": false,
     "bgra8unorm-storage": false,
     "subgroups": true,
     "clip-distances": false,
     "dual-source-blending": false
   }
+};
+var GPU_FEATURES = {
+  // Automatically enabled by engine
+  GROUP_1: [
+    "indirect-first-instance",
+    "depth32float-stencil8"
+  ],
+  // User can enable these
+  GROUP_2: [
+    "texture-compression-bc",
+    "shader-f16",
+    "float32-filterable",
+    "float32-blendable",
+    "texture-compression-astc",
+    "texture-compression-etc2",
+    "bgra8unorm-storage",
+    "subgroups",
+    "clip-distances",
+    "dual-source-blending"
+  ],
+  // Experimental / future
+  GROUP_3: [
+    "pipeline-statistics-query",
+    "depth-clamping",
+    "multi-planar-formats",
+    "timestamp-query"
+  ]
 };
 var MEConfig = {
   fsManager: new FullScreenManagerElement(),
@@ -27808,6 +27835,18 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
       mesh.indexCount = indexCount;
     }
   }
+  setupIndirectRendering() {
+    if (!app.gpuCapabilities.isEnabled("indirect-first-instance")) {
+      return false;
+    }
+    this.useIndirectDraw = true;
+    this.indirectDrawIndex = null;
+    return true;
+  }
+  registerIndirectDraw(drawIndex) {
+    this.indirectDrawIndex = drawIndex;
+  }
+  ////////////////////////////////////
   drawElements = (pass) => {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -41182,7 +41221,7 @@ var TextureCache = class {
     return promise;
   }
   async #loadBC(path2) {
-    const ddsPath = path2.replace(/\.(png|jpe?g)$/i, ".dds");
+    const ddsPath = path2.replace(/\.[^./]+$/, ".dds");
     const buf = await (await fetch(ddsPath)).arrayBuffer();
     const dv = new DataView(buf);
     if (dv.getUint32(0, true) !== 542327876) throw new Error("not a DDS: " + ddsPath);
@@ -42278,20 +42317,23 @@ var PhysicsBridge = class {
   }
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
-    this._send("addBody", { pOptions }).then((result2) => {
-      console.log("ssssssssssssss", pOptions);
-      if (result2 && typeof result2 === "object" && result2.count > 1) {
+    this._send("addBody", { pOptions }).then((startIndex) => {
+      console.log("ssssssssssssss cloth startIndex:", startIndex);
+      if (pOptions.geometry === "Cloth") {
+        const nx = pOptions.nx || 15;
+        const ny = pOptions.ny || 23;
+        const count = (nx + 1) * (ny + 1);
         if (!this._clothMap) this._clothMap = /* @__PURE__ */ new Map();
-        this._clothMap.set(result2.idx, {
+        this._clothMap.set(startIndex, {
           mesh: MEObject,
-          startIndex: result2.idx,
-          nx: result2.nx,
-          ny: result2.ny,
-          count: result2.count
+          startIndex,
+          nx,
+          ny,
+          count
         });
+        console.log("Cloth registered successfully:", { startIndex, nx, ny, count });
       } else {
-        const idx = typeof result2 === "object" ? result2.idx : result2;
-        this._bodyIndexMap.set(idx, MEObject);
+        this._bodyIndexMap.set(startIndex, MEObject);
       }
     });
   }
@@ -42466,6 +42508,28 @@ var PhysicsBridge = class {
   createSphereBoundary(idxs, pos2 = { x: 0, y: 0, z: 0 }, radius = 20) {
     this._worker.postMessage({ cmd: "createSphereBoundary", idxs, pos: pos2, radius });
   }
+  // _syncToObjects() {
+  //   const snap = this._snapshot;
+  //   if(!snap) return;
+  //   const STRIDE = 8;
+  //   for(const [idx, meObj] of this._bodyIndexMap) {
+  //     // if(!meObj.modelMatrix || meObj.isKinematic=== true) continue;
+  //     if(!meObj.modelMatrix) continue;
+  //     const b = idx * STRIDE;
+  //     const pos = snap.subarray(b, b + 3);
+  //     const quat = snap.subarray(b + 3, b + 7);
+  //     mat4.fromQuat(quat, meObj.modelMatrix);
+  //     meObj.modelMatrix[12] = pos[0];
+  //     meObj.modelMatrix[13] = pos[1];
+  //     meObj.modelMatrix[14] = pos[2];
+  //     mat4.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
+  //     meObj.modelMatrix[15] = 1;
+  //     meObj.position.inMove = true;
+  //     meObj.position.x = pos[0];
+  //     meObj.position.y = pos[1];
+  //     meObj.position.z = pos[2];
+  //   }
+  // }
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
@@ -42485,6 +42549,38 @@ var PhysicsBridge = class {
       meObj.position.x = pos2[0];
       meObj.position.y = pos2[1];
       meObj.position.z = pos2[2];
+    }
+    if (this._clothMap) {
+      console.log("Syncing cloths, map size:", this._clothMap.size);
+      for (const [startIndex, cloth] of this._clothMap) {
+        const mesh = cloth.mesh;
+        if (!mesh || !mesh.mesh.vertices) continue;
+        const positions = mesh.mesh.vertices;
+        if (!positions) continue;
+        const nx = cloth.nx;
+        const ny = cloth.ny;
+        let vertexIndex = 0;
+        for (let y3 = 0; y3 <= ny; y3++) {
+          for (let x3 = 0; x3 <= nx; x3++) {
+            const bodyIndex = startIndex + (y3 * (nx + 1) + x3);
+            const b2 = bodyIndex * STRIDE;
+            const px = snap[b2 + 0];
+            const py = snap[b2 + 1];
+            const pz = snap[b2 + 2];
+            if (vertexIndex === 0) {
+              console.log("Particle 0 position:", px.toFixed(2), py.toFixed(2), pz.toFixed(2));
+            }
+            if (positions.setXYZ) {
+              positions.setXYZ(vertexIndex, px, py, pz);
+            } else {
+              positions[vertexIndex * 3 + 0] = px;
+              positions[vertexIndex * 3 + 1] = py;
+              positions[vertexIndex * 3 + 2] = pz;
+            }
+            vertexIndex++;
+          }
+        }
+      }
     }
   }
   _send(cmd, extra = {}) {
@@ -43834,33 +43930,6 @@ var CulledRenderPass = class {
 };
 
 // src/engine/GPUCapabilities.js
-var GPU_FEATURES = {
-  // Automatically enabled by engine
-  GROUP_1: [
-    "timestamp-query",
-    "indirect-first-instance",
-    "texture-compression-bc",
-    "depth32float-stencil8"
-  ],
-  // User can enable these
-  GROUP_2: [
-    "shader-f16",
-    "float32-filterable",
-    "float32-blendable",
-    "texture-compression-astc",
-    "texture-compression-etc2",
-    "bgra8unorm-storage",
-    "subgroups",
-    "clip-distances",
-    "dual-source-blending"
-  ],
-  // Experimental / future
-  GROUP_3: [
-    "pipeline-statistics-query",
-    "depth-clamping",
-    "multi-planar-formats"
-  ]
-};
 var GPUCapabilities = class {
   constructor(adapter) {
     this.adapter = adapter;
@@ -43898,6 +43967,210 @@ var GPUCapabilities = class {
   }
   isEnabled(feature) {
     return this.enabled.has(feature);
+  }
+};
+
+// src/engine/indirect-core.js
+var GPUIndirectBuffer = class {
+  constructor(device2, maxDraws = 256) {
+    this.device = device2;
+    this.maxDraws = maxDraws;
+    this.drawCount = 0;
+    this.buffer = device2.createBuffer({
+      size: maxDraws * 20,
+      // 5 uint32 × 4 bytes
+      usage: GPUBufferUsage.INDIRECT | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    this.data = new Uint32Array(this.buffer.getMappedRange());
+    this.buffer.unmap();
+  }
+  // CPU write (for now, before GPU compute)
+  writeDrawCall(drawIndex, indexCount, instanceCount, firstIndex = 0, baseVertex = 0, firstInstance = 0) {
+    if (drawIndex >= this.maxDraws) return;
+    const offset = drawIndex * 5;
+    this.data[offset + 0] = indexCount;
+    this.data[offset + 1] = instanceCount;
+    this.data[offset + 2] = firstIndex;
+    this.data[offset + 3] = baseVertex;
+    this.data[offset + 4] = firstInstance;
+  }
+  flush(queue) {
+    queue.writeBuffer(this.buffer, 0, this.data);
+  }
+  getBuffer() {
+    return this.buffer;
+  }
+};
+var ComputeCullingSystem = class {
+  constructor(device2, gpuCapabilities, maxInstances = 4096) {
+    this.device = device2;
+    this.gpuCapabilities = gpuCapabilities;
+    this.maxInstances = maxInstances;
+    this.instanceBuffer = device2.createBuffer({
+      size: maxInstances * 32,
+      // vec3 pos + f32 radius + padding
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    this.instanceData = new Float32Array(this.instanceBuffer.getMappedRange());
+    this.instanceBuffer.unmap();
+    this.indirectBuffer = device2.createBuffer({
+      size: maxInstances * 20,
+      // 5 uint32 per draw
+      usage: GPUBufferUsage.INDIRECT | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    this.counterBuffer = device2.createBuffer({
+      size: 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+    });
+    this.cullingParams = device2.createBuffer({
+      size: 144,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.createPipeline();
+  }
+  createPipeline() {
+    const code = this.getComputeShaderCode();
+    const module = this.device.createShaderModule({ code });
+    this.bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "uniform" }
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "read-only-storage" }
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "storage" }
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "storage" }
+        }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      layout: this.bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cullingParams } },
+        { binding: 1, resource: { buffer: this.instanceBuffer } },
+        { binding: 2, resource: { buffer: this.indirectBuffer } },
+        { binding: 3, resource: { buffer: this.counterBuffer } }
+      ]
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [this.bindGroupLayout]
+    });
+    this.pipeline = this.device.createComputePipeline({
+      layout: pipelineLayout,
+      compute: { module, entryPoint: "main" }
+    });
+  }
+  getComputeShaderCode() {
+    return `
+struct CullingParams {
+  viewMatrix: mat4x4f,
+  projMatrix: mat4x4f,
+  cameraPos: vec3f,
+  maxDistance: f32,
+}
+
+struct Instance {
+  position: vec3f,
+  radius: f32,
+}
+
+struct IndirectDraw {
+  indexCount: u32,
+  instanceCount: u32,
+  firstIndex: u32,
+  baseVertex: u32,
+  firstInstance: u32,
+}
+
+@group(0) @binding(0) var<uniform> params: CullingParams;
+@group(0) @binding(1) var<storage, read> instances: array<Instance>;
+@group(0) @binding(2) var<storage, read_write> indirectDraws: array<IndirectDraw>;
+@group(0) @binding(3) var<storage, read_write> drawCounter: atomic<u32>;
+
+fn isInFrustum(pos: vec3f) -> bool {
+  let viewPos = (params.viewMatrix * vec4f(pos, 1.0)).xyz;
+  let projPos = params.projMatrix * vec4f(viewPos, 1.0);
+  let ndc = projPos.xyz / projPos.w;
+  return all(ndc.xyz >= vec3f(-1.0)) && all(ndc.xyz <= vec3f(1.0));
+}
+
+fn isInDistance(pos: vec3f) -> bool {
+  let dist = distance(pos, params.cameraPos);
+  return dist < params.maxDistance;
+}
+
+@compute @workgroup_size(256)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+  let idx = gid.x;
+  if (idx >= arrayLength(&instances)) { return; }
+  
+  let inst = instances[idx];
+  
+  // Frustum + distance culling
+  let inFrustum = isInFrustum(inst.position);
+  let inDistance = isInDistance(inst.position);
+  
+  if (inFrustum && inDistance) {
+    // Atomic append: get next slot
+    let drawIdx = atomicAdd(&drawCounter, 1u);
+    
+    if (drawIdx < arrayLength(&indirectDraws)) {
+      indirectDraws[drawIdx] = IndirectDraw(
+        36u,           // indexCount (example: triangle mesh)
+        1u,            // instanceCount (1 per indirect call)
+        0u,            // firstIndex
+        0u,            // baseVertex
+        u32(idx)       // firstInstance \u2014 tells vertex shader which instance
+      );
+    }
+  }
+}
+    `;
+  }
+  // Called once per frame BEFORE render
+  execute(commandEncoder, viewMatrix, projMatrix, cameraPos, maxDist = 1e3) {
+    const paramData = new Float32Array(36);
+    for (let i2 = 0; i2 < 16; i2++) paramData[i2] = viewMatrix[i2];
+    for (let i2 = 0; i2 < 16; i2++) paramData[16 + i2] = projMatrix[i2];
+    paramData[32] = cameraPos[0];
+    paramData[33] = cameraPos[1];
+    paramData[34] = cameraPos[2];
+    paramData[35] = maxDist;
+    this.device.queue.writeBuffer(this.cullingParams, 0, paramData);
+    this.device.queue.writeBuffer(this.counterBuffer, 0, new Uint32Array([0]));
+    const pass = commandEncoder.beginComputePass();
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    const workgroups = Math.ceil(this.maxInstances / 256);
+    pass.dispatchWorkgroups(workgroups);
+    pass.end();
+  }
+  updateInstance(index, position, radius) {
+    const offset = index * 8;
+    this.instanceData[offset + 0] = position[0];
+    this.instanceData[offset + 1] = position[1];
+    this.instanceData[offset + 2] = position[2];
+    this.instanceData[offset + 3] = radius;
+  }
+  flushInstances() {
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
+  }
+  getIndirectBuffer() {
+    return this.indirectBuffer;
   }
 };
 
@@ -44437,6 +44710,10 @@ var MatrixEngineWGPU = class {
   };
   createGlobalStuff(callback) {
     this.startTime = performance.now() / 1e3;
+    this.indirectBuffer = new GPUIndirectBuffer(this.device, 4096);
+    this.indirectMeshes = [];
+    this.indirectDrawCalls = [];
+    this.computeCulling = new ComputeCullingSystem(this.device, this.gpuCapabilities, 4096);
     addEventListener("update-pipeine-buckets", () => {
       this.buildRenderBuckets(this.mainRenderBundle);
       this.getCamera()._dirtyAngle = true;
@@ -45076,13 +45353,36 @@ var MatrixEngineWGPU = class {
     const now2 = performance.now();
     this.now = now2 * 1e-3;
     this.lastFrameMS = this.now;
+    const camera = this.getCamera();
     this.autoUpdate.forEach((_2) => _2.update(this.now));
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
       this.updateLights();
-      const camera = this.getCamera();
+      for (let i2 = 0; i2 < this.indirectMeshes.length; i2++) {
+        const mesh = this.indirectMeshes[i2];
+        for (let j2 = 0; j2 < mesh.instanceCount; j2++) {
+          const worldPos = mesh.getInstanceWorldPos(j2);
+          const radius = mesh.boundingSphere?.radius || 1;
+          this.computeCulling.updateInstance(
+            mesh.globalInstanceIndex + j2,
+            // global index across all meshes
+            worldPos,
+            radius
+          );
+        }
+      }
+      this.computeCulling.flushInstances();
+      this.computeCulling.execute(
+        commandEncoder,
+        camera.view,
+        camera.projectionMatrix,
+        camera.position,
+        1e3
+        // max distance
+      );
+      const indirectBuffer = this.computeCulling.getIndirectBuffer();
       this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if (camera._dirtyAngle || camera._dirty) {
@@ -45161,6 +45461,26 @@ var MatrixEngineWGPU = class {
           if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
           if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
           mesh.drawElements(pass, this.lightContainer);
+        }
+      }
+      if (this.indirectDrawCalls.length > 0) {
+        const pipelineMap = /* @__PURE__ */ new Map();
+        for (const drawCall of this.indirectDrawCalls) {
+          if (!pipelineMap.has(drawCall.pipeline)) {
+            pipelineMap.set(drawCall.pipeline, []);
+          }
+          pipelineMap.get(drawCall.pipeline).push(drawCall);
+        }
+        for (const [pipeline, drawCalls] of pipelineMap) {
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, this.sceneBindGroup);
+          for (const drawCall of drawCalls) {
+            pass.setVertexBuffer(0, drawCall.vertexBuffer);
+            pass.setIndexBuffer(drawCall.indexBuffer, "uint32");
+            pass.setBindGroup(1, drawCall.materialBindGroup);
+            pass.setBindGroup(2, drawCall.modelBindGroup);
+            pass.drawIndexedIndirect(indirectBuffer.getBuffer(), drawCall.indirectOffset);
+          }
         }
       }
       for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
@@ -45463,6 +45783,8 @@ var MatrixEngineWGPU = class {
         }
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
+          bvhPlayer.setupIndirectRendering();
+          this.indirectMeshes.push(bvhPlayer);
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);
         }, 32);
@@ -48956,25 +49278,11 @@ var testCannonES = function() {
     addEventListener("PhysicsReady", () => {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
-        plane: "./res/meshes/blender/plane.obj",
+        plane: "./res/meshes/blender/plane-sub10.obj",
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, { scale: [1, 1, 1] });
       physicsPlayground2.matrixPhysics.speedUpSimulation(2);
-      physicsPlayground2.physicsBodiesChain();
-      app.physicsBodiesGeneratorWall(
-        "standard",
-        { x: -4.5, y: 1, z: -10 },
-        { x: 0, y: 0, z: 0 },
-        ["./res/textures/rust.jpg"],
-        "my_set_walls",
-        "5x3",
-        true,
-        [1, 1, 1],
-        2.05,
-        1e3,
-        "ByZ"
-      );
       let strength = 10;
       physicsPlayground2.canvas.addEventListener("ray.hit.event", (e2) => {
         console.log("ray.hit.event detected");
@@ -48988,9 +49296,9 @@ var testCannonES = function() {
     });
     async function onGround(m2) {
       app.addMeshObj({
-        position: { x: 0, y: 15, z: -10 },
-        rotation: { x: 0, y: -22, z: 0 },
-        scale: [10, 10, 1],
+        position: { x: 0, y: 6, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [1, 1, 1],
         useScale: false,
         texturesPaths: ["./res/meshes/jamb/text.png"],
         name: "cloth",

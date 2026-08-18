@@ -1,4 +1,4 @@
-import {gpuSettings, MEConfig} from "./me-config.js";
+import {GPU_FEATURES, gpuSettings, MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {CinematicCamera, FirstPersonCamera, PlaneCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
@@ -33,7 +33,9 @@ import {mobile1} from "./engine/overrides/mobile-1.js";
 import {SSRPass} from "./engine/postprocessing/hzb.js";
 import {KaleidoscopeEffect} from "./engine/effects/KaleidoscopeEffect.js";
 import {CulledRenderPass} from "./engine/culling/culling.js";
-import {GPU_FEATURES, GPUCapabilities} from "./engine/GPUCapabilities.js";
+import {GPUCapabilities} from "./engine/GPUCapabilities.js";
+import {ComputeCullingSystem, GPUIndirectBuffer} from "./engine/indirect-core.js";
+
 /**
  * @description
  * Main engine root class.
@@ -616,6 +618,14 @@ export default class MatrixEngineWGPU {
 
   createGlobalStuff(callback) {
     this.startTime = performance.now() / 1000;
+
+    this.indirectBuffer = new GPUIndirectBuffer(this.device, 4096);
+    // Array of {mesh, meshIndex, indexCount, ...}
+    this.indirectMeshes = [];
+    this.indirectDrawCalls = [];
+    this.computeCulling = new ComputeCullingSystem(this.device, this.gpuCapabilities, 4096);
+
+
     addEventListener('update-pipeine-buckets', () => {
       this.buildRenderBuckets(this.mainRenderBundle);
       this.getCamera()._dirtyAngle = true;
@@ -1242,13 +1252,42 @@ export default class MatrixEngineWGPU {
     const now2 = performance.now();
     this.now = now2 * 0.001;
     this.lastFrameMS = this.now;
+    const camera = this.getCamera();
     this.autoUpdate.forEach((_) => _.update(this.now))
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
       this.updateLights();
-      const camera = this.getCamera();
+
+      // Prepare instance data for compute shader
+      for(let i = 0;i < this.indirectMeshes.length;i++) {
+        const mesh = this.indirectMeshes[i];
+        for(let j = 0;j < mesh.instanceCount;j++) {
+          const worldPos = mesh.getInstanceWorldPos(j); // extract from instanceBuffer
+          const radius = mesh.boundingSphere?.radius || 1.0;
+          this.computeCulling.updateInstance(
+            mesh.globalInstanceIndex + j,  // global index across all meshes
+            worldPos,
+            radius
+          );
+        }
+      }
+      this.computeCulling.flushInstances();
+
+      // Run compute culling
+      this.computeCulling.execute(
+        commandEncoder,
+        camera.view,
+        camera.projectionMatrix,
+        camera.position,
+        1000.0 // max distance
+      );
+
+      // Now render with results from compute shader
+      const indirectBuffer = this.computeCulling.getIndirectBuffer();
+      ////////////////////////////
+
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if(camera._dirtyAngle || camera._dirty) {
@@ -1340,6 +1379,39 @@ export default class MatrixEngineWGPU {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
+
+      // test
+      // ============ INDIRECT DRAW OVERRIDE ============
+      // Then in render pass:
+      // In frameSinglePass, render pass block:
+      // In frameSinglePass, render pass block:
+
+      if(this.indirectDrawCalls.length > 0) {
+        // Organize by pipeline (like your opaque buckets)
+        const pipelineMap = new Map();
+
+        for(const drawCall of this.indirectDrawCalls) {
+          if(!pipelineMap.has(drawCall.pipeline)) {
+            pipelineMap.set(drawCall.pipeline, []);
+          }
+          pipelineMap.get(drawCall.pipeline).push(drawCall);
+        }
+
+        // Execute per pipeline (exact same pattern as opaque)
+        for(const [pipeline, drawCalls] of pipelineMap) {
+          pass.setPipeline(pipeline); // **Your existing pipeline**
+          pass.setBindGroup(0, this.sceneBindGroup);
+
+          for(const drawCall of drawCalls) {
+            pass.setVertexBuffer(0, drawCall.vertexBuffer);
+            pass.setIndexBuffer(drawCall.indexBuffer, 'uint32');
+            pass.setBindGroup(1, drawCall.materialBindGroup);
+            pass.setBindGroup(2, drawCall.modelBindGroup);
+            pass.drawIndexedIndirect(indirectBuffer.getBuffer(), drawCall.indirectOffset);
+          }
+        }
+      }
+      // ============ END INDIRECT ============
 
       for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
@@ -1583,6 +1655,10 @@ export default class MatrixEngineWGPU {
         // Soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
+          // test 
+          bvhPlayer.setupIndirectRendering();
+          this.indirectMeshes.push(bvhPlayer);
+
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);
         }, 32);

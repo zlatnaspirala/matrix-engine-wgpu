@@ -1,31 +1,9 @@
-export const GPU_FEATURES = {
-  // Automatically enabled by engine
-  GROUP_1: [
-    'timestamp-query',
-    'indirect-first-instance',
-    'texture-compression-bc',
-    'depth32float-stencil8',
-  ],
-  // User can enable these
-  GROUP_2: [
-    'shader-f16',
-    'float32-filterable',
-    'float32-blendable',
-    'texture-compression-astc',
-    'texture-compression-etc2',
-    'bgra8unorm-storage',
-    'subgroups',
-    'clip-distances',
-    'dual-source-blending',
-  ],
-  // Experimental / future
-  GROUP_3: [
-    'pipeline-statistics-query',
-    'depth-clamping',
-    'multi-planar-formats',
-  ],
-};
 
+/**
+ * @description
+ * The Beast 2.0.0
+ * Indirect draws feature.
+ */
 export class GPUCapabilities {
 
   constructor(adapter) {

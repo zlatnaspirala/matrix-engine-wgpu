@@ -6,6 +6,7 @@ public/res/meshes/glb/maria_arhive/*.blend
 public/res/meshes/glb/maria_arhive/*.blend1
 public/res/meshes/env/arc-kula12.blend
 *.blend1
+**/*.dds
 public/res/meshes/glb/warrok.blend11
 public/res/meshes/glb/DEVELOP-COPY.blend11
 public/res/meshes/glb/DEVELOP-COPY.blend11
@@ -16,3 +17,4 @@ src/tools/editor/ai-generators/bridge2/config.js
 src/tools/editor/ai-generators/config.js
 src/tools/editor/backend/config.js
 src/tools/the-beast-code-gen/src/config.js
+public/res/textures/bitcoin.dds

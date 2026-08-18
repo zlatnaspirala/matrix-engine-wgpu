@@ -37432,12 +37432,32 @@ var PhysicsBridge = class {
     }
     this._doAddPhysics(MEObject, pOptions);
   }
+  // _doAddPhysics(MEObject, pOptions) {
+  //   MEObject.isKinematic = pOptions.state === 4;
+  //   this._send("addBody", { pOptions }).then((idx) => {
+  //     this._bodyIndexMap.set(idx, MEObject);
+  //   });
+  // }
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
-    this._send("addBody", { pOptions }).then((idx) => {
-      this._bodyIndexMap.set(idx, MEObject);
+    this._send('addBody', { pOptions }).then(result => {
+      if (result && typeof result === 'object' && result.count > 1) {
+        if (!this._clothMap) this._clothMap = new Map();
+        // Store the cloth metadata and reference to the mesh object
+        this._clothMap.set(result.idx, {
+          mesh: MEObject,
+          startIndex: result.idx,
+          nx: result.nx,
+          ny: result.ny,
+          count: result.count
+        });
+      } else {
+        const idx = typeof result === 'object' ? result.idx : result;
+        this._bodyIndexMap.set(idx, MEObject);
+      }
     });
   }
+
   setKinematicTransformDeplaced() {
     let count = 0;
     const idxArr = this._kinematicIdx;

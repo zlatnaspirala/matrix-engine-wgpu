@@ -517,8 +517,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         }
         this.instanceCount = newCount;
         this.rebuildInstanceSkeletons();
-
-
         const boneBufferSize = this.maxInstances * this.MAX_BONES * 64;
         this.bonesBuffer = device.createBuffer({
           label: 'bonesBuffer',
@@ -526,14 +524,12 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           usage: GPUBufferUsage.STORAGE |
             GPUBufferUsage.COPY_DST,
         });
-
         this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
         this.instanceBuffer = device.createBuffer({
           label: 'instanceBuffer in bvh mesh [instanced]',
           size: this.instanceData.byteLength,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
-
         this.modelBindGroup = this.device.createBindGroup({
           label: 'modelBindGroup[instanced]',
           layout: this.uniformBufferBindGroupLayoutInstanced,
@@ -544,7 +540,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
             {binding: 3, resource: {buffer: this.uvScaleBuffer}}
           ],
         });
-
         let m = this.getModelMatrix(this.position, this.useScale);
         this.updateInstanceData(m);
         dispatchEvent(this.buildPipelineBucketsEvent);
@@ -772,7 +767,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         ],
       });
 
-      if (typeof this.effects === 'undefined') this.effects = {};
+      if(typeof this.effects === 'undefined') this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         pf = 'rgba16float';
@@ -1030,6 +1025,21 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       mesh.indexCount = indexCount;
     }
   }
+
+  setupIndirectRendering() {
+    if(!app.gpuCapabilities.isEnabled('indirect-first-instance')) {
+      return false;
+    }
+    this.useIndirectDraw = true;
+    this.indirectDrawIndex = null;
+    return true;
+  }
+
+  registerIndirectDraw(drawIndex) {
+    this.indirectDrawIndex = drawIndex;
+  }
+
+  ////////////////////////////////////
 
   drawElements = (pass) => {
     pass.setVertexBuffer(0, this.vertexBuffer);

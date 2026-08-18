@@ -15,17 +15,45 @@ import {FullScreenManagerElement, isMobile, LOG_FUNNY_ARCADE, urlQuery} from "./
 window.urlQ = urlQuery;
 
 export const gpuSettings = {
-    features: {
-        'shader-f16': true,
-        'float32-filterable': true,
-        'float32-blendable': false,
-        'texture-compression-astc': true,
-        'texture-compression-etc2': true,
-        'bgra8unorm-storage': false,
-        'subgroups': true,
-        'clip-distances': false,
-        'dual-source-blending': false,
-    }
+  features: {
+    'shader-f16': true,
+    'float32-filterable': true,
+    'float32-blendable': false,
+    'texture-compression-astc': false,
+    'texture-compression-etc2': false,
+    'bgra8unorm-storage': false,
+    'subgroups': true,
+    'clip-distances': false,
+    'dual-source-blending': false,
+  }
+};
+
+export const GPU_FEATURES = {
+  // Automatically enabled by engine
+  GROUP_1: [
+    'indirect-first-instance',
+    'depth32float-stencil8',
+  ],
+  // User can enable these
+  GROUP_2: [
+    'texture-compression-bc',
+    'shader-f16',
+    'float32-filterable',
+    'float32-blendable',
+    'texture-compression-astc',
+    'texture-compression-etc2',
+    'bgra8unorm-storage',
+    'subgroups',
+    'clip-distances',
+    'dual-source-blending',
+  ],
+  // Experimental / future
+  GROUP_3: [
+    'pipeline-statistics-query',
+    'depth-clamping',
+    'multi-planar-formats',
+    'timestamp-query',
+  ],
 };
 
 export const MEConfig = {
@@ -94,7 +122,7 @@ export const MEConfig = {
     }
     console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
 
-        if(urlQ['CAM_SPEED']) {
+    if(urlQ['CAM_SPEED']) {
       this.CAM_SPEED = parseInt(urlQ['CAM_SPEED']);
     }
     if(options.CAM_SPEED) {

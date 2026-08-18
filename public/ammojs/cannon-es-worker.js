@@ -390,6 +390,7 @@ class MatrixCannon {
 
     // Store metadata on the instance so we can easily reference it later if needed
     if(!this.cloths) this.cloths = [];
+    console.log('worker cloths: ', this.cloths)
     this.cloths.push({startIndex, nx, ny, count: particles.length});
 
     return startIndex;
@@ -833,7 +834,7 @@ self.onmessage = async ({data}) => {
     }
     case 'addBody': {
       const idx = cannon.addBody(data.pOptions);
-      console.log('worker', cannon.cloths)
+      if (cannon.cloths) console.log('worker', cannon.cloths)
       const clothMeta = cannon.cloths?.find(c => c.startIndex === idx);
       self.postMessage({
         cmd: 'bodyAdded',

@@ -30,7 +30,8 @@ export class TextureCache {
   }
 
   async #loadBC(path) {
-    const ddsPath = path.replace(/\.(png|jpe?g)$/i, '.dds');
+    // const ddsPath = path.replace(/\.(png|jpe|webp?g)$/i, '.dds');
+    const ddsPath = path.replace(/\.[^./]+$/, '.dds');
     const buf = await (await fetch(ddsPath)).arrayBuffer();
     const dv = new DataView(buf);
     if(dv.getUint32(0, true) !== 0x20534444) throw new Error('not a DDS: ' + ddsPath);
