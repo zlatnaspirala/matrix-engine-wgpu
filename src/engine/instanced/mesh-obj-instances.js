@@ -63,6 +63,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     this.instanceCount = 1;
     this.floatsPerInstance = 16 + 4;
 
+    if(o.physics.geometry !== 'Cloth') {
+      this.dummyClothBuffer = o.dummyClothBuffer;
+    }
+
     if(typeof o.material.useTextureFromGlb === 'undefined' || typeof o.material.useTextureFromGlb !== "boolean") {
       o.material.useTextureFromGlb = false;
     }
@@ -537,7 +541,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
             {binding: 0, resource: {buffer: this.instanceBuffer, }},
             {binding: 1, resource: {buffer: this.bonesBuffer}},
             {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-            {binding: 3, resource: {buffer: this.uvScaleBuffer}}
+            {binding: 3, resource: {buffer: this.uvScaleBuffer}},
+            {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }}
           ],
         });
         let m = this.getModelMatrix(this.position, this.useScale);
@@ -609,8 +614,24 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
+      console.log('______', o)
+      this.o_ = o;
+
+      if(this.o_.physics.geometry === 'Cloth') {
+        const maxClothParticles = 384;
+        this.clothBuffer = this.device.createBuffer({
+          label: "Cloth Physics Storage Buffer",
+          size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
+      } else {
+        this.clothBuffer = this.dummyClothBuffer;
+      }
+
+
       this.vertexAnim = {
         active: false,
+        clothBuffer: this.clothBuffer,
         enableWave: () => {
           this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
@@ -748,16 +769,33 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
       // Default = no scale
       this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
 
+
+      const entries = [
+        {binding: 0, resource: {buffer: this.instanceBuffer, }},
+        {binding: 1, resource: {buffer: this.bonesBuffer}},
+        {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+        {binding: 3, resource: {buffer: this.uvScaleBuffer}},
+        {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }}
+      ];
+
+      // Attach cloth buffer dynamically if active
+      console.log('CONSTRUCT VERTEX ANIM')
       this.modelBindGroup = this.device.createBindGroup({
-        label: 'modelBindGroup[instanced]',
+        label: 'modelBindGroup in mesh with cloth',
         layout: this.uniformBufferBindGroupLayoutInstanced,
-        entries: [
-          {binding: 0, resource: {buffer: this.instanceBuffer, }},
-          {binding: 1, resource: {buffer: this.bonesBuffer}},
-          {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-          {binding: 3, resource: {buffer: this.uvScaleBuffer}}
-        ],
+        entries: entries,
       });
+
+      // this.modelBindGroup = this.device.createBindGroup({
+      //   label: 'modelBindGroup[instanced]',
+      //   layout: this.uniformBufferBindGroupLayoutInstanced,
+      //   entries: [
+      //     {binding: 0, resource: {buffer: this.instanceBuffer, }},
+      //     {binding: 1, resource: {buffer: this.bonesBuffer}},
+      //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+      //     {binding: 3, resource: {buffer: this.uvScaleBuffer}}
+      //   ],
+      // });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
         label: 'mainPassBindGroupLayout mesh [instaced]',
@@ -1026,21 +1064,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     }
   }
 
-  setupIndirectRendering() {
-    if(!app.gpuCapabilities.isEnabled('indirect-first-instance')) {
-      return false;
-    }
-    this.useIndirectDraw = true;
-    this.indirectDrawIndex = null;
-    return true;
-  }
-
-  registerIndirectDraw(drawIndex) {
-    this.indirectDrawIndex = drawIndex;
-  }
-
-  ////////////////////////////////////
-
   drawElements = (pass) => {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
@@ -1050,6 +1073,21 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
     if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount, this.instanceCount, 0, 0, 0);
+  }
+
+  drawElementsIndirect = (pass, indirectBuffer, indirectOffset, lightContainer) => {
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    if(this.mesh.tangentsBuffer) pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+
+    // const forcedCount = new Uint32Array([10]); // e.g., 10 instances
+    //  this.device.queue.writeBuffer(indirectBuffer, indirectOffset + 4, forcedCount);
+
+    pass.drawIndexedIndirect(indirectBuffer, indirectOffset);
   }
 
   drawVideoElements = (pass) => {

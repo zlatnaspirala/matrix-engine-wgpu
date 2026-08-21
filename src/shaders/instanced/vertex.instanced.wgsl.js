@@ -53,6 +53,7 @@ struct VertexAnimParams {
 @group(2) @binding(1) var<storage, read> bones : Bones;
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 @group(2) @binding(3) var<uniform> uvScale: vec2f;
+@group(2) @binding(4) var<storage, read> clothBuffer:array<vec4f>;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;
@@ -60,6 +61,7 @@ const ANIM_PULSE: u32 = 4u;
 const ANIM_TWIST: u32 = 8u;
 const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
+const ANIM_CLOTH: u32 = 128u;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -170,14 +172,10 @@ fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
   return p;
 }
 
-fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
-  let flags = u32(vertexAnim.flags);
+fn applyVertexAnimation(pos: vec3f, normal: vec3f, flags: u32) -> SkinResult {
   var animatedPos = applyAllEffects(pos, normal, flags);
-
-  // Intensity blend
   animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
 
-  // Normal recalc via finite differences — sample from ORIGINAL pos
   var animatedNorm = normal;
   if (flags != 0u) {
     let offset = 0.005;
@@ -198,13 +196,36 @@ fn main(
   @location(2) uv       : vec2f,
   @location(3) joints   : vec4<u32>,
   @location(4) weights  : vec4<f32>,
-  @builtin(instance_index) instId: u32
-) -> VertexOutput {
+  @builtin(instance_index) instId: u32,
+  @builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
+  
   let inst = instances[instId];
+  let flags = u32(vertexAnim.flags);
   var output : VertexOutput;
-  let skinned  = skinVertex(vec4(position, 1.0), normal, joints, weights, instId);
-  let animated = applyVertexAnimation(skinned.position.xyz, skinned.normal);
-  let worldPos = inst.model * animated.position;
+
+  // Determine base position (from cloth buffer or input)
+  var basePosition = position;
+  if ((flags & ANIM_CLOTH) != 0u) {
+    basePosition = clothBuffer[vertexIndex].xyz;
+  }
+
+  // Skin the vertex
+  let skinned = skinVertex(vec4(basePosition, 1.0), normal, joints, weights, instId);
+  
+  var finalPos  = skinned.position.xyz;
+  var finalNorm = skinned.normal;
+
+  // Apply vertex animation if any effects are enabled (excluding cloth flag)
+  if ((flags & ~ANIM_CLOTH) != 0u && vertexAnim.globalIntensity > 0.0) {
+    let animated = applyVertexAnimation(finalPos, finalNorm, flags & ~ANIM_CLOTH);
+    finalPos  = animated.position.xyz;
+    finalNorm = animated.normal;
+  }
+
+  // Transform to world space
+   let worldPos = inst.model * vec4f(finalPos, 1.0);
+  // let worldPos = vec4f(finalPos, 1.0);
+
   let normalMatrix = mat3x3f(
     inst.model[0].xyz,
     inst.model[1].xyz,
@@ -214,8 +235,10 @@ fn main(
   output.Position  = scene.cameraViewProjMatrix * worldPos;
   output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm  = normalize(normalMatrix * animated.normal);
-  output.uv        = uv;
+  output.fragNorm  = normalize(normalMatrix * finalNorm);
+  output.uv        = uv * uvScale;
   output.colorMult = inst.colorMult;
   return output;
-}`;
+}
+ 
+`;

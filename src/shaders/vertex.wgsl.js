@@ -1,29 +1,20 @@
 import {MEConfig} from "../me-config";
 
 export let vertexWGSL = () => `const MAX_BONES = ${MEConfig.MAX_BONES}u;
-
 struct Scene {
   lightViewProjMatrix: mat4x4f,
   cameraViewProjMatrix: mat4x4f,
 }
 
-struct Model {
-  modelMatrix: mat4x4f,
-}
-
-struct Bones {
-  boneMatrices : array<mat4x4f, MAX_BONES>
-}
-
-struct SkinResult {
-  position : vec4f,
-  normal   : vec3f,
-};
+struct Model { modelMatrix: mat4x4f }
+struct Bones { boneMatrices: array<mat4x4f, MAX_BONES> }
+struct SkinResult { position : vec4f, normal   : vec3f };
 
 @group(0) @binding(0) var<uniform> scene : Scene;
 @group(2) @binding(0) var<uniform> model : Model;
 @group(2) @binding(1) var<uniform> bones : Bones;
 @group(2) @binding(3) var<uniform> uvScale: vec2f;
+@group(2) @binding(4) var<storage, read> clothBuffer:array<vec4f>;
 
 struct VertexOutput {
   @location(0) shadowPos: vec4f,
@@ -53,50 +44,35 @@ fn skinVertex(pos: vec4f, nrm: vec3f, joints: vec4<u32>, weights: vec4f) -> Skin
     return SkinResult(skinnedPos, skinnedNorm);
 }
 
-// Add to your uniform structs at the top
 struct VertexAnimParams {
   time: f32,
   flags: f32,
   globalIntensity: f32,
   _pad0: f32,
-  
-  // Wave [4-7]
   waveSpeed: f32,
   waveAmplitude: f32,
   waveFrequency: f32,
   _pad1: f32,
-  
-  // Wind [8-11]
   windSpeed: f32,
   windStrength: f32,
   windHeightInfluence: f32,
   windTurbulence: f32,
-  
-  // Pulse [12-15]
   pulseSpeed: f32,
   pulseAmount: f32,
   pulseCenterX: f32,
   pulseCenterY: f32,
-  
-  // Twist [16-19]
   twistSpeed: f32,
   twistAmount: f32,
   _pad2: f32,
   _pad3: f32,
-  
-  // Noise [20-23]
   noiseScale: f32,
   noiseStrength: f32,
   noiseSpeed: f32,
   _pad4: f32,
-  
-  // Ocean [24-27]
   oceanWaveScale: f32,
   oceanWaveHeight: f32,
   oceanWaveSpeed: f32,
   _pad5: f32,
-  
-  // Displacement [28-31]
   displacementStrength: f32,
   displacementSpeed: f32,
   _pad6: f32,
@@ -112,7 +88,8 @@ const ANIM_TWIST: u32 = 8u;
 const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
 
-// Basic wave function - good starting point
+const ANIM_CLOTH: u32 = 128u;
+
 fn applyWave(pos: vec3f) -> vec3f {
   let wave = sin(pos.x * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed) * 
              cos(pos.z * vertexAnim.waveFrequency + vertexAnim.time * vertexAnim.waveSpeed);
@@ -121,15 +98,11 @@ fn applyWave(pos: vec3f) -> vec3f {
 
 fn applyWind(pos: vec3f, normal: vec3f) -> vec3f {
   let heightFactor = max(0.0, pos.y) * vertexAnim.windHeightInfluence;
-  
   let windDir = vec2f(
     sin(vertexAnim.time * vertexAnim.windSpeed),
     cos(vertexAnim.time * vertexAnim.windSpeed * 0.7)
   ) * vertexAnim.windStrength;
-  
-  let turbulence = noise(vec2f(pos.x, pos.z) * 0.5 + vertexAnim.time * 0.3) 
-                   * vertexAnim.windTurbulence;
-  
+  let turbulence = noise(vec2f(pos.x, pos.z) * 0.5 + vertexAnim.time * 0.3) * vertexAnim.windTurbulence;
   return vec3f(
     pos.x + windDir.x * heightFactor * (1.0 + turbulence),
     pos.y,
@@ -140,17 +113,14 @@ fn applyWind(pos: vec3f, normal: vec3f) -> vec3f {
 fn applyPulse(pos: vec3f) -> vec3f {
   let pulse = sin(vertexAnim.time * vertexAnim.pulseSpeed) * vertexAnim.pulseAmount;
   let scale = 1.0 + pulse;
-  
   let center = vec3f(vertexAnim.pulseCenterX, 0.0, vertexAnim.pulseCenterY);
   return center + (pos - center) * scale;
 }
 
 fn applyTwist(pos: vec3f) -> vec3f {
   let angle = pos.y * vertexAnim.twistAmount * sin(vertexAnim.time * vertexAnim.twistSpeed);
-  
   let cosA = cos(angle);
   let sinA = sin(angle);
-  
   return vec3f(
     pos.x * cosA - pos.z * sinA,
     pos.y,
@@ -158,7 +128,6 @@ fn applyTwist(pos: vec3f) -> vec3f {
   );
 }
 
-// Simple noise function (you can replace with texture sampling later)
 fn hash(p: vec2f) -> f32 {
   var p3 = fract(vec3f(p.x, p.y, p.x) * 0.13);
   p3 += dot(p3, vec3f(p3.y, p3.z, p3.x) + 3.333);
@@ -177,8 +146,7 @@ fn noise(p: vec2f) -> f32 {
 }
 
 fn applyNoiseDisplacement(pos: vec3f) -> vec3f {
-  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale 
-                      + vertexAnim.time * vertexAnim.noiseSpeed);
+  let noiseVal = noise(vec2f(pos.x, pos.z) * vertexAnim.noiseScale + vertexAnim.time * vertexAnim.noiseSpeed);
   let displacement = (noiseVal - 0.5) * vertexAnim.noiseStrength;
   return vec3f(pos.x, pos.y + displacement, pos.z);
 }
@@ -186,11 +154,9 @@ fn applyNoiseDisplacement(pos: vec3f) -> vec3f {
 fn applyOcean(pos: vec3f) -> vec3f {
   let t = vertexAnim.time * vertexAnim.oceanWaveSpeed;
   let scale = vertexAnim.oceanWaveScale;
-  
   let wave1 = sin(dot(pos.xz, vec2f(1.0, 0.0)) * scale + t) * vertexAnim.oceanWaveHeight;
   let wave2 = sin(dot(pos.xz, vec2f(0.7, 0.7)) * scale * 1.2 + t * 1.3) * vertexAnim.oceanWaveHeight * 0.7;
   let wave3 = sin(dot(pos.xz, vec2f(0.0, 1.0)) * scale * 0.8 + t * 0.9) * vertexAnim.oceanWaveHeight * 0.5;
-  
   return vec3f(pos.x, pos.y + wave1 + wave2 + wave3, pos.z);
 }
 
@@ -208,11 +174,8 @@ fn applyAllEffects(pos: vec3f, normal: vec3f, flags: u32) -> vec3f {
 fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
   let flags = u32(vertexAnim.flags);
   var animatedPos = applyAllEffects(pos, normal, flags);
-
-  // Intensity blend
   animatedPos = mix(pos, animatedPos, vertexAnim.globalIntensity);
 
-  // Normal recalc via finite differences — sample from ORIGINAL pos
   var animatedNorm = normal;
   if (flags != 0u) {
     let offset = 0.005;
@@ -228,6 +191,7 @@ fn applyVertexAnimation(pos: vec3f, normal: vec3f) -> SkinResult {
 
 @vertex
 fn main(
+  @builtin(vertex_index) vertexIndex: u32,
   @location(0) position: vec3f,
   @location(1) normal: vec3f,
   @location(2) uv: vec2f,
@@ -236,20 +200,24 @@ fn main(
 ) -> VertexOutput {
   var output : VertexOutput;
 
-  // 1. Skin first
-  let skinned = skinVertex(vec4(position, 1.0), normal, joints, weights);
+  var basePosition = position;
+  let flags = u32(vertexAnim.flags);
 
-  // 2. Animate once, conditionally
+  // If cloth simulation is active via flags, read position directly from the cloth storage buffer!
+  if ((flags & ANIM_CLOTH) != 0u) {
+    basePosition = clothBuffer[vertexIndex].xyz;
+  }
+
+  let skinned = skinVertex(vec4(basePosition, 1.0), normal, joints, weights);
   var finalPos  = skinned.position.xyz;
   var finalNorm = skinned.normal;
 
-  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
+  if ((flags & ~ANIM_CLOTH) != 0u && vertexAnim.globalIntensity > 0.0) {
     let animated = applyVertexAnimation(finalPos, finalNorm);
     finalPos  = animated.position.xyz;
     finalNorm = animated.normal;
   }
 
-  // 3. World-space transform
   let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   let normalMatrix = mat3x3f(
     model.modelMatrix[0].xyz,

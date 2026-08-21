@@ -1,6 +1,11 @@
 import {mat4} from "wgpu-matrix";
 import {LOG_WARN} from "../utils";
 
+/**
+ * @description
+ * CPU Culling still present and default.
+ */
+
 export let cullingPass = function() {
   const now2 = performance.now();
   this.now = now2 * 0.001;

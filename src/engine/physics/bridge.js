@@ -85,18 +85,15 @@ export class PhysicsBridge {
     MEObject.isKinematic = pOptions.state === 4;
 
     this._send('addBody', {pOptions}).then((startIndex) => {
-      console.log("ssssssssssssss cloth startIndex:", startIndex);
-
       // Check if this specific body option was a Cloth
       if(pOptions.geometry === 'Cloth') {
-        //       nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
+        console.log("addBody cloth startIndex:", startIndex);
+        // nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
         // ny: 23, // Must match your OBJ's height subdivisions + 1
         const nx = pOptions.nx || 15;
         const ny = pOptions.ny || 23;
         const count = (nx + 1) * (ny + 1);
-
         if(!this._clothMap) this._clothMap = new Map();
-
         this._clothMap.set(startIndex, {
           mesh: MEObject,
           startIndex: startIndex,
@@ -104,7 +101,6 @@ export class PhysicsBridge {
           ny: ny,
           count: count
         });
-
         console.log("Cloth registered successfully:", {startIndex, nx, ny, count});
       } else {
         // Regular rigid body
@@ -366,44 +362,26 @@ export class PhysicsBridge {
       meObj.position.z = pos[2];
     }
 
-    // 2. Sync Cloth Meshes using the same snapshot array
+    // 2. Sync Cloth bodies (if any exist in snapshot)
     if(this._clothMap) {
-      console.log("Syncing cloths, map size:", this._clothMap.size);
-      for(const [startIndex, cloth] of this._clothMap) {
-        const mesh = cloth.mesh;
-        if(!mesh || !mesh.mesh.vertices) continue;
-        const positions = mesh.mesh.vertices;
-        if(!positions) continue;
-        const nx = cloth.nx;
-        const ny = cloth.ny;
-        let vertexIndex = 0;
-        for(let y = 0;y <= ny;y++) {
-          for(let x = 0;x <= nx;x++) {
-            const bodyIndex = startIndex + (y * (nx + 1) + x);
-            const b = bodyIndex * STRIDE;
-            const px = snap[b + 0];
-            const py = snap[b + 1];
-            const pz = snap[b + 2];
-
-            if(vertexIndex === 0) {
-              console.log("Particle 0 position:", px.toFixed(2), py.toFixed(2), pz.toFixed(2));
-            }
-
-            if(positions.setXYZ) {
-              positions.setXYZ(vertexIndex, px, py, pz);
-            } else {
-              positions[vertexIndex * 3 + 0] = px;
-              positions[vertexIndex * 3 + 1] = py;
-              positions[vertexIndex * 3 + 2] = pz;
-            }
-            vertexIndex++;
-          }
+      for(const [startIndex, clothData] of this._clothMap) {
+        const meObj = clothData.mesh;
+        const count = clothData.count;
+        // Assuming cloth vertex positions start after rigid bodies in the snapshot, 
+        // or positioned at startIndex according to your worker's layout:
+        const clothSnapOffset = startIndex * STRIDE; // Adjust offset based on how your worker packs snapshots
+        const vertexBytesCount = count * 3 * Float32Array.BYTES_PER_ELEMENT;
+        // Extract vertex data from snapshot and write to cloth vertex/storage buffer
+        if(meObj && meObj.vertexAnim && meObj.vertexAnim.clothBuffer && app.device) {
+          // If your worker sends cloth vertex positions in the snapshot:
+          const vertexSubarray = snap.subarray(clothSnapOffset, clothSnapOffset + (count * 3));
+          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, vertexSubarray);
         }
-        // mesh.geometry.attributes.position.needsUpdate = true;
-
       }
     }
+
   }
+
 
   _send(cmd, extra = {}) {
     const id = this._msgId++;

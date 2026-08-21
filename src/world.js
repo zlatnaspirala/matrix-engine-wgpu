@@ -34,7 +34,8 @@ import {SSRPass} from "./engine/postprocessing/hzb.js";
 import {KaleidoscopeEffect} from "./engine/effects/KaleidoscopeEffect.js";
 import {CulledRenderPass} from "./engine/culling/culling.js";
 import {GPUCapabilities} from "./engine/GPUCapabilities.js";
-import {ComputeCullingSystem, GPUIndirectBuffer} from "./engine/indirect-core.js";
+import {ComputeCullingSystem, IndirectRenderingManager} from "./engine/indirect-core.js";
+import {GPUIndirectDraws} from "./engine/overrides/GPUCulling.js";
 
 /**
  * @description
@@ -212,6 +213,7 @@ export default class MatrixEngineWGPU {
         this.matrixPhysics._PHYSICS_DRIVE = 'MATTERJS';
       }
     }
+    this.options = options;
     // cache
     this._sceneData = new Float32Array(48);
     this._viewScratch = new Float32Array(16);
@@ -257,6 +259,8 @@ export default class MatrixEngineWGPU {
         const arg = {range: options.cullingRange ? options.cullingRange : 500};
         this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
+      } else if(options.render == 'GPUInstancedDraw') {
+        this.overrideRender = GPUIndirectDraws.bind(this);
       }
     }
     window.addEventListener('keydown', e => {
@@ -287,8 +291,6 @@ export default class MatrixEngineWGPU {
         this.editor.editorHud.sceneContainer.style.display = 'flex';
       }
     };
-
-    this.options = options;
 
     this.mainCameraParams = options.mainCameraParams;
     const target = this.options.appendTo || document.body;
@@ -492,6 +494,13 @@ export default class MatrixEngineWGPU {
         {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
       ]
     });
+
+    this.dummyClothBuffer = this.device.createBuffer({
+      label: "Dummy Cloth Fallback Buffer",
+      size: 16,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout[mesh]',
       entries: [
@@ -499,8 +508,10 @@ export default class MatrixEngineWGPU {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ],
     });
+
     // GLB INSTANCED
     this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout in mesh [instanced]',
@@ -509,6 +520,7 @@ export default class MatrixEngineWGPU {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ],
     });
   }
@@ -589,7 +601,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.19.xx [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
@@ -618,14 +630,10 @@ export default class MatrixEngineWGPU {
 
   createGlobalStuff(callback) {
     this.startTime = performance.now() / 1000;
-
-    this.indirectBuffer = new GPUIndirectBuffer(this.device, 4096);
-    // Array of {mesh, meshIndex, indexCount, ...}
-    this.indirectMeshes = [];
-    this.indirectDrawCalls = [];
-    this.computeCulling = new ComputeCullingSystem(this.device, this.gpuCapabilities, 4096);
-
-
+    if(this.options.render == 'GPUInstancedDraw') {
+      this.indirectManager = new IndirectRenderingManager();
+      this.computeCulling = new ComputeCullingSystem(this.device, this.gpuCapabilities, 4096);
+    }
     addEventListener('update-pipeine-buckets', () => {
       this.buildRenderBuckets(this.mainRenderBundle);
       this.getCamera()._dirtyAngle = true;
@@ -999,7 +1007,47 @@ export default class MatrixEngineWGPU {
       }
       bucket.push(mesh);
     }
-    this.buildLightShadowBuckets()
+    this.buildLightShadowBuckets();
+    if(this.indirectManager) {
+      this.rebuildIndirectBuffer()
+    }
+  }
+  rebuildIndirectBuffer() {
+    setTimeout(() => {
+      let cumulativeInstanceIndex = 0; // Track running total
+
+      for(let i = 0;i < this.indirectManager.indirectMeshes.length;i++) {
+        const mesh = this.indirectManager.indirectMeshes[i];
+        const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+
+        const instanceCount = mesh.instanceCount || 1;
+        const indexCount = mesh.indexCount || 36;
+
+        // ASSIGN sequentially, don't let mesh.globalInstanceIndex decide
+        mesh.globalInstanceIndex = cumulativeInstanceIndex;
+
+        console.log(
+          mesh.name,
+          "-> meshIndex:", meshIndex,
+          "indexCount:", indexCount,
+          "instanceCount:", instanceCount,
+          "globalInstanceIndex:", mesh.globalInstanceIndex,
+          `(occupies slots ${cumulativeInstanceIndex}–${cumulativeInstanceIndex + instanceCount - 1})`
+        );
+
+        this.computeCulling.setMeshDrawCommand(
+          meshIndex,
+          indexCount,
+          instanceCount,
+          mesh.globalInstanceIndex
+        );
+
+        // Move offset for next mesh
+        cumulativeInstanceIndex += instanceCount;
+      }
+
+      this.computeCulling.flushIndirectBuffer();
+    }, 100);
   }
 
   buildLightShadowBuckets() {
@@ -1079,11 +1127,17 @@ export default class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
+    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+      console.log('INJECT this.dummyClothBuffer GLOBAL GROUP')
+      o.dummyClothBuffer = this.dummyClothBuffer;
+    }
+
     let myMesh1 = new MEMeshObj(
       this.canvas, this.device, this.context, o, this.inputHandler, AM,
       null, null, null,
       this.cameraBuffer);
     myMesh1.clearColor = clearColor;
+
     if(o.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
       this.matrixPhysics.addPhysics(myMesh1, o.physics);
@@ -1091,6 +1145,7 @@ export default class MatrixEngineWGPU {
       myMesh1.itIsPhysicsBody = false;
     }
     this.mainRenderBundle.push(myMesh1);
+    if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh1);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
     return myMesh1;
@@ -1144,6 +1199,12 @@ export default class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
+
+    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+      console.log('INJECT this.dummyClothBuffer GLOBAL GROUP')
+      o.dummyClothBuffer = this.dummyClothBuffer;
+    }
+
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM, this.cameraBuffer);
     myMesh.clearColor = clearColor;
     if(o.physics.enabled === true) {
@@ -1153,6 +1214,7 @@ export default class MatrixEngineWGPU {
       myMesh.itIsPhysicsBody = false;
     }
     this.mainRenderBundle.push(myMesh);
+    if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
     return myMesh;
@@ -1251,43 +1313,13 @@ export default class MatrixEngineWGPU {
   frameSinglePass = () => {
     const now2 = performance.now();
     this.now = now2 * 0.001;
-    this.lastFrameMS = this.now;
     const camera = this.getCamera();
-    this.autoUpdate.forEach((_) => _.update(this.now))
+    this.autoUpdate.forEach((_) => _.update(this.now));
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
       this.updateLights();
-
-      // Prepare instance data for compute shader
-      for(let i = 0;i < this.indirectMeshes.length;i++) {
-        const mesh = this.indirectMeshes[i];
-        for(let j = 0;j < mesh.instanceCount;j++) {
-          const worldPos = mesh.getInstanceWorldPos(j); // extract from instanceBuffer
-          const radius = mesh.boundingSphere?.radius || 1.0;
-          this.computeCulling.updateInstance(
-            mesh.globalInstanceIndex + j,  // global index across all meshes
-            worldPos,
-            radius
-          );
-        }
-      }
-      this.computeCulling.flushInstances();
-
-      // Run compute culling
-      this.computeCulling.execute(
-        commandEncoder,
-        camera.view,
-        camera.projectionMatrix,
-        camera.position,
-        1000.0 // max distance
-      );
-
-      // Now render with results from compute shader
-      const indirectBuffer = this.computeCulling.getIndirectBuffer();
-      ////////////////////////////
-
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if(camera._dirtyAngle || camera._dirty) {
@@ -1323,7 +1355,6 @@ export default class MatrixEngineWGPU {
         }
         p.end();
       }
-
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
@@ -1379,39 +1410,6 @@ export default class MatrixEngineWGPU {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-
-      // test
-      // ============ INDIRECT DRAW OVERRIDE ============
-      // Then in render pass:
-      // In frameSinglePass, render pass block:
-      // In frameSinglePass, render pass block:
-
-      if(this.indirectDrawCalls.length > 0) {
-        // Organize by pipeline (like your opaque buckets)
-        const pipelineMap = new Map();
-
-        for(const drawCall of this.indirectDrawCalls) {
-          if(!pipelineMap.has(drawCall.pipeline)) {
-            pipelineMap.set(drawCall.pipeline, []);
-          }
-          pipelineMap.get(drawCall.pipeline).push(drawCall);
-        }
-
-        // Execute per pipeline (exact same pattern as opaque)
-        for(const [pipeline, drawCalls] of pipelineMap) {
-          pass.setPipeline(pipeline); // **Your existing pipeline**
-          pass.setBindGroup(0, this.sceneBindGroup);
-
-          for(const drawCall of drawCalls) {
-            pass.setVertexBuffer(0, drawCall.vertexBuffer);
-            pass.setIndexBuffer(drawCall.indexBuffer, 'uint32');
-            pass.setBindGroup(1, drawCall.materialBindGroup);
-            pass.setBindGroup(2, drawCall.modelBindGroup);
-            pass.drawIndexedIndirect(indirectBuffer.getBuffer(), drawCall.indirectOffset);
-          }
-        }
-      }
-      // ============ END INDIRECT ============
 
       for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
@@ -1523,6 +1521,12 @@ export default class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     let r = [];
     o.textureCache = this.textureCache;
+
+    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+      console.log('INJECT this.dummyClothBuffer GLOBAL GROUP')
+      o.dummyClothBuffer = this.dummyClothBuffer;
+    }
+
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -1549,10 +1553,14 @@ export default class MatrixEngineWGPU {
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }
+
+
+
         // Soft
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
         this.sortRenderBundle();
+        if(this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         setTimeout(() => {document.dispatchEvent(this.usEvent)}, 50);
         c++;
       }
@@ -1617,6 +1625,12 @@ export default class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     let results = [];
     let skinnedNodeIndex = 0;
+
+    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+      console.log('INJECT this.dummyClothBuffer GLOBAL GROUP')
+      o.dummyClothBuffer = this.dummyClothBuffer;
+    }
+
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
       for(const primitive of skinnedNode.mesh.primitives) {
@@ -1655,10 +1669,7 @@ export default class MatrixEngineWGPU {
         // Soft
         setTimeout(() => {
           this.mainRenderBundle.push(bvhPlayer);
-          // test 
-          bvhPlayer.setupIndirectRendering();
-          this.indirectMeshes.push(bvhPlayer);
-
+          if(this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);
         }, 32);

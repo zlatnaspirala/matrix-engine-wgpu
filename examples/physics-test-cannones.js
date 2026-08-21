@@ -58,7 +58,7 @@ export var testCannonES = function() {
 
     async function onGround(m) {
 
-      app.addMeshObj({
+      let FLAG = app.addMeshObj({
         position: {x: 0, y: 6, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         scale: [1, 1, 1],
@@ -73,6 +73,10 @@ export var testCannonES = function() {
         },
         raycast: {enabled: false, radius: 2},
       })
+
+      setTimeout(() => {
+       FLAG.vertexAnim.enableCloth()
+      }, 500)
       // const myComplexGeometry = physicsPlayground.addMeshObj({
       //   material: {type: 'standard'},
       //   position: {x: 8, y: 4, z: -6},

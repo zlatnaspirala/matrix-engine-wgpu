@@ -68,6 +68,10 @@ export default class MEMeshObj extends Materials {
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
+    if(o.physics.geometry !== 'Cloth') {
+      console.log('dummyClothBuffer', o.dummyClothBuffer)
+      this.dummyClothBuffer = o.dummyClothBuffer;
+    }
     this.useScale = o.useScale || false;
     this.uvScaleBuffer = this.device.createBuffer({
       size: 8,
@@ -354,17 +358,18 @@ export default class MEMeshObj extends Materials {
 
     }
 
-    this.runProgram = () => {
+    this.runProgram = (o) => {
       return new Promise(async (resolve) => {
         this.shadowDepthTextureSize = 512;
         this.modelViewProjectionMatrix = mat4.create();
         this.loadTex0(this.texturesPaths).then(() => {
-          resolve()
+          resolve(o)
         })
       })
     }
 
-    this.runProgram().then(() => {
+    console.log('>>>>>>>>>>>>>>', o.physics)
+    this.runProgram(o).then((o_) => {
       this.context.configure({
         device: this.device,
         format: this.presentationFormat,
@@ -437,7 +442,7 @@ export default class MEMeshObj extends Materials {
         },
         // joint indices
         {
-          arrayStride: 4 * 4, // vec4<u32> = 4 * 4 bytes
+          arrayStride: 4 * 4,
           attributes: [{format: 'uint32x4', offset: 0, shaderLocation: 3}]
         },
         // weights
@@ -446,18 +451,17 @@ export default class MEMeshObj extends Materials {
 
       if(this.mesh.tangentsBuffer) {
         this.vertexBuffers.push({
-          arrayStride: 4 * 4, // vec4<f32> = 16 bytes
+          arrayStride: 4 * 4,
           attributes: [
             {shaderLocation: 5, format: "float32x4", offset: 0}
           ]
         });
       }
-      // Note: The frontFace and cullMode values have no effect on the 
-      // 'triangle-list'   // standard meshes
+      // 'triangle-list'  // standard meshes
       // 'triangle-strip' // terrain, strips
       // 'line-list'      // wireframe (manual index gen)
       // 'line-strip'     // outlines
-      // 'point-list'     // particles
+      // 'point-list'     
       this.topology = 'triangle-list';
       this.setTopology = (t, cullMode = 'none', frontFace = 'ccw') => {
         const isStrip =
@@ -488,7 +492,6 @@ export default class MEMeshObj extends Materials {
           {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}}
         ]
       });
-
       this.modelUniformBuffer = this.device.createBuffer({size: 4 * 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, });
 
       function alignTo256(n) {return Math.ceil(n / 256) * 256;}
@@ -515,8 +518,34 @@ export default class MEMeshObj extends Materials {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
+      if(o_.physics.geometry === 'Cloth') {
+        const maxClothParticles = 384; // your vertex count or particle count
+        this.clothBuffer = this.device.createBuffer({
+          label: "Cloth Physics Storage Buffer",
+          size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT, // e.g., vec4 per particle (x, y, z, pad)
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
+      } else {
+        this.clothBuffer = this.dummyClothBuffer;
+      }
+
+      console.log('CONSTRUCT VERTEX ANIM  this.clothBuffer111, ', this.clothBuffer)
       this.vertexAnim = {
         active: false,
+        clothBuffer: this.clothBuffer,
+        enableCloth: (startIndex = 0) => {
+          this.vertexAnim.active = true;
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH; // Ensure you have a CLOTH flag in your literals
+          this.vertexAnimParams[28] = startIndex; // Store offset if needed in vertexAnimParams
+          this.updateVertexAnimBuffer();
+          // this.updateModelBindGroup(); // Re-create/update bind group with the new buffer
+        },
+        disableCloth: () => {
+          this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnim.clothBuffer = null;
+          this.updateVertexAnimBuffer();
+          // this.updateModelBindGroup();
+        },
         enableWave: () => {
           this.vertexAnim.active = true;
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
@@ -644,15 +673,18 @@ export default class MEMeshObj extends Materials {
         this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
       }
 
+      const entries = [
+        {binding: 0, resource: {buffer: this.modelUniformBuffer}},
+        {binding: 1, resource: {buffer: this.bonesBuffer}},
+        {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+        {binding: 3, resource: {buffer: this.uvScaleBuffer}},
+        {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }}
+      ];
+
       this.modelBindGroup = this.device.createBindGroup({
-        label: 'modelBindGroup in mesh',
+        label: 'modelBindGroup in mesh with cloth',
         layout: this.uniformBufferBindGroupLayout,
-        entries: [
-          {binding: 0, resource: {buffer: this.modelUniformBuffer}},
-          {binding: 1, resource: {buffer: this.bonesBuffer}},
-          {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-          {binding: 3, resource: {buffer: this.uvScaleBuffer}}
-        ],
+        entries: entries,
       });
 
       this.mainPassBindGroupLayout = this.device.createBindGroupLayout({
@@ -663,7 +695,7 @@ export default class MEMeshObj extends Materials {
         ],
       });
 
-      if (typeof this.effects === 'undefined') this.effects = {};
+      if(typeof this.effects === 'undefined') this.effects = {};
       if(this.pointerEffect && this.pointerEffect.enabled === true) {
         let pf = navigator.gpu.getPreferredCanvasFormat();
         if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
@@ -963,6 +995,22 @@ export default class MEMeshObj extends Materials {
     pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
+  }
+
+  drawElementsIndirect = (pass, indirectBuffer, indirectOffset, lightContainer) => {
+    // 1. All your 6 vertex streams & index buffer
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.vertexNormalsBuffer);
+    pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
+    pass.setVertexBuffer(3, this.mesh.jointsBuffer);
+    pass.setVertexBuffer(4, this.mesh.weightsBuffer);
+    pass.setVertexBuffer(5, this.mesh.tangentsBuffer);
+    pass.setBindGroup(1, this.materialBindGroup);
+    pass.setBindGroup(2, this.modelBindGroup);
+    if(this.material.type === "mirror") pass.setBindGroup(3, this.mirrorBindGroup);
+    if(this.material.type === "water") pass.setBindGroup(3, this.waterBindGroup);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexedIndirect(indirectBuffer, indirectOffset);
   }
 
   drawElementsNoWaterMirror = (pass) => {
