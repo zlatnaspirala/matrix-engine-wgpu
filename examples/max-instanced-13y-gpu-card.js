@@ -7,8 +7,9 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var snakeLightsInstancedMAX = function() {
   let app = new MatrixEngineWGPU({
-    fastRender: 0.9,
+    fastRender: 0.7,
     canvasSize: 'fullscreen',
+    render: 'GPUIndirectDraw',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
@@ -18,11 +19,12 @@ export var snakeLightsInstancedMAX = function() {
     clearColor: {r: 0.01, b: 0.01, g: 0.01, a: 1}
   }, async () => {
     addRaycastsAABBListener('canvas1', 'click');
-    const LIGHT_HEIGHT = 35;
+    app.activateHZB()
+    const LIGHT_HEIGHT = 65;
     const CENTER = {x: 0, z: -10};
     app.addLight();
     const light = app.lightContainer[0];
-    light.setIntensity(30);
+    light.setIntensity(130);
     light.setPosition(CENTER.x, LIGHT_HEIGHT, CENTER.z);
     light.setTarget(CENTER.x, 0, CENTER.z);
 
@@ -35,12 +37,25 @@ export var snakeLightsInstancedMAX = function() {
           texturesPaths: ['./res/textures/floor1.webp'],
           name: 'ground',
           mesh: m.cube,
-          scale: [1, 0.5, 1],
+          scale: [100, 1, 100],
           physics: {enabled: false},
           shadowsCast: false,
           raycast: {enabled: true, radius: 1.5}
         });
-      }, {scale: [80, 0.7, 80]});
+
+        app.addMeshObj({
+          material: {type: 'standard'},
+          position: {x: CENTER.x + 100, y: 4, z: CENTER.z},
+          texturesPaths: ['./res/textures/floor1.webp'],
+          name: 'wall1',
+          mesh: m.cube,
+          scale: [2, 20, 100],
+          physics: {enabled: false},
+          shadowsCast: false,
+          raycast: {enabled: true, radius: 1.5}
+        });
+
+      }, {scale: [1, 1, 1]});
 
     })
 
@@ -64,8 +79,11 @@ export var snakeLightsInstancedMAX = function() {
     setTimeout(() => {
       monster = app.getSceneObjectByName('monster_MutantMesh');
       monster.sharedBones = false;
-      monster.updateMaxInstances(150);
-      monster.updateInstances(150);
+      monster.updateMaxInstances(100);
+      monster.updateInstances(100);
+
+      app.lightContainer[0].setRange(200)
+
       monster.position.thrust = 0.2
       app.monster = monster;
       // monster.trailAnimation.delay = 15;
@@ -77,9 +95,9 @@ export var snakeLightsInstancedMAX = function() {
       app.monster.playAnimationByIndex(3);
 
       app.monster.position.onPositionReach = () => {
-             app.monster.playAnimationByIndex(3)
+        app.monster.playAnimationByIndex(3)
       }
- 
+
 
       app.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('hitObject hitPoint ?', app.monster.position.z); // should be true
@@ -106,23 +124,6 @@ export var snakeLightsInstancedMAX = function() {
       const centerX = monster.instanceTargets[0].position[0];
       const centerZ = monster.instanceTargets[0].position[2];
 
-      // const moveTimer = setInterval(() => {
-      //   // --- PHASE 1: POSITIONING ---
-      //   if(currentIdx <= totalInstances) {
-      //     let angle = (currentIdx / totalInstances) * (2 * Math.PI);
-      //     let newPosX = centerX + radius * Math.cos(angle);
-      //     let newPosZ = centerZ + radius * Math.sin(angle);
-      //     monster.instanceTargets[currentIdx].position[0] = newPosX;
-      //     monster.instanceTargets[currentIdx].position[2] = newPosZ;
-      //     console.log(`Positioned ${currentIdx}`);
-      //     currentIdx++;
-      //   } else {
-      //     clearInterval(moveTimer);
-      //     console.log("Circle complete! Starting scale wave...");
-      //     startScaleWave();
-      //   }
-      // }, 500);
-
       const moveTimer = {
         update: () => {
           // --- PHASE 1: POSITIONING ---
@@ -145,20 +146,7 @@ export var snakeLightsInstancedMAX = function() {
       app.autoUpdate.push(moveTimer)
 
       function startScaleWave() {
-
         let scaleIdx = 1;
-        // setInterval(() => {
-        //   let prevIdx = scaleIdx === 1 ? totalInstances : scaleIdx - 1;
-        //   monster.instanceTargets[prevIdx].scale = [1, 1, 1];
-        //   monster.instanceTargets[prevIdx].color[0] = 0.5;
-        //   monster.instanceTargets[prevIdx].color[1] = 0.5;
-        //   monster.instanceTargets[prevIdx].color[2] = 0.5;
-        //   monster.instanceTargets[scaleIdx].scale = [2, 2, 2];
-        //   monster.instanceTargets[scaleIdx].color[randomIntFromTo(0, 2)] = randomIntFromTo(2, 20);
-        //   scaleIdx++;
-        //   if(scaleIdx > totalInstances) scaleIdx = 1;
-        // }, 750);
-
         let scaleCharacters = {
           update: () => {
             let prevIdx = scaleIdx === 1 ? totalInstances : scaleIdx - 1;
@@ -173,8 +161,6 @@ export var snakeLightsInstancedMAX = function() {
           }
         }
         app.autoUpdate.push(scaleCharacters)
-
-
       }
     }, 1000);
   });

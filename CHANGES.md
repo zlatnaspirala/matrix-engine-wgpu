@@ -3,7 +3,7 @@
 [2.0.0]
 
 - GPU Culling with indirect draws options.
-  Activation with main program arg `render: 'GPUInstancedDraw'`
+  Activation with main program arg `render: 'GPUIndirectDraw'`
   It is implemented in core with main render override solution.
   
 - BC TEX COMPRESSION option (not default)

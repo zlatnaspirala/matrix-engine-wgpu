@@ -724,6 +724,15 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
       this.device.queue.writeBuffer(this.uvScaleBuffer, 0, new Float32Array([1.0, 1.0]));
+
+      // const meshOffsetBuffer = device.createBuffer({
+      //   label: 'INSTANCEOffsetBuffer',
+      //   size: 4,
+      //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      // });
+      // console.log('this.globalInstanceIndex', this.globalInstanceIndex)
+      // device.queue.writeBuffer(meshOffsetBuffer, 0, new Uint32Array([1]));
+
       const entries = [
         {binding: 0, resource: {buffer: this.instanceBuffer, }},
         {binding: 1, resource: {buffer: this.bonesBuffer}},
@@ -732,7 +741,7 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }}
       ];
       this.modelBindGroup = this.device.createBindGroup({
-        label: 'modelBindGroup-mesh-cloth',
+        label: 'modelBindGroup[instanced][init]',
         layout: this.uniformBufferBindGroupLayoutInstanced,
         entries: entries,
       });

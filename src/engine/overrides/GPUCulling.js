@@ -1,4 +1,4 @@
-import {vec3} from "wgpu-matrix";
+import {mat4, vec3} from "wgpu-matrix";
 import {LOG_WARN} from "../utils";
 
 export async function GPUIndirectDraws() {
@@ -9,49 +9,9 @@ export async function GPUIndirectDraws() {
   requestAnimationFrame(this.frame);
   try {
     let commandEncoder = this.device.createCommandEncoder();
-    // 1. UPDATE CULLING DATA
-    for(let i = 0;i < this.indirectManager.indirectMeshes.length;i++) {
-      const mesh = this.indirectManager.indirectMeshes[i];
-
-      const meshIndex =
-        this.indirectManager.meshToIndexMap.get(mesh.name) ??
-        mesh.indirectDrawIndex;
-
-      if(mesh.instanceData) {
-        for(let j = 0;j < mesh.instanceCount;j++) {
-          const globalIdx = mesh.globalInstanceIndex + j;
-          const strideOffset = j * mesh.floatsPerInstance;
-
-          const worldPos = vec3.fromValues(
-            mesh.instanceData[strideOffset + 12],
-            mesh.instanceData[strideOffset + 13],
-            mesh.instanceData[strideOffset + 14]
-          );
-
-          const radius = mesh.boundingSphere?.radius || 1.0;
-          this.computeCulling.updateInstance(globalIdx, worldPos, radius, meshIndex);
-        }
-      } else {
-        const worldPos = mesh.modelMatrix.slice(12, 15);
-        const radius = mesh.boundingSphere?.radius || 1.0;
-        this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, radius, meshIndex);
-      }
-    }
-
-    this.computeCulling.flushIndirectBuffer();
-    this.computeCulling.flushInstances();
-    await this.computeCulling.execute(
-      commandEncoder,
-      camera.view,
-      camera.projectionMatrix,
-      camera.position,
-      1000.0
-    );
-
     // PHYSICS&LIGHTS
     if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
     this.updateLights();
-
     // SHADOWS
     this._sceneData[44] = (performance.now() - this.startTime) / 1000;
     this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
@@ -91,7 +51,7 @@ export async function GPUIndirectDraws() {
       p.end();
     }
 
-    // ============ 4. MAIN RENDER ============
+    //PER MESH
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];
@@ -109,7 +69,36 @@ export async function GPUIndirectDraws() {
           effect.simulate?.(commandEncoder);
         }
       }
+
+      // const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+      // if(mesh.instanceData) {
+      //   for(let j = 0;j < mesh.instanceCount;j++) {
+      //     const globalIdx = mesh.globalInstanceIndex + j;
+      //     const strideOffset = j * mesh.floatsPerInstance;
+      //     const worldPos = vec3.fromValues(
+      //       mesh.instanceData[strideOffset + 12],
+      //       mesh.instanceData[strideOffset + 13],
+      //       mesh.instanceData[strideOffset + 14]
+      //     );
+      //     const radius = mesh.boundingSphere?.radius || 1.0;
+      //     this.computeCulling.updateInstance(globalIdx, worldPos, radius, meshIndex);
+      //   }
+      // } else {
+      //   const worldPos = mesh.modelMatrix.slice(12, 15);
+      //   const radius = mesh.boundingSphere?.radius || 1.0;
+      //   this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, radius, meshIndex);
+      // }
     }
+
+    // this.computeCulling.flushIndirectBuffer();
+    // this.computeCulling.flushInstances();
+    // await this.computeCulling.execute(
+    //   commandEncoder,
+    //   camera.view,
+    //   camera.projectionMatrix,
+    //   camera.position,
+    //   10.0
+    // );
 
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);

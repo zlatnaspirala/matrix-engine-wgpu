@@ -258,7 +258,7 @@ export default class MatrixEngineWGPU {
         const arg = {range: options.cullingRange ? options.cullingRange : 500};
         this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
-      } else if(options.render == 'GPUInstancedDraw') {
+      } else if(options.render == 'GPUIndirectDraw') {
         this.overrideRender = GPUIndirectDraws.bind(this);
       }
     }
@@ -614,7 +614,7 @@ export default class MatrixEngineWGPU {
 
   createGlobalStuff(callback) {
     this.startTime = performance.now() / 1000;
-    if(this.options.render == 'GPUInstancedDraw') {
+    if(this.options.render == 'GPUIndirectDraw') {
       this.indirectManager = new IndirectRenderingManager();
       this.computeCulling = new ComputeCullingSystem(this.device, this.gpuCapabilities, 4096);
     }
@@ -1106,8 +1106,8 @@ export default class MatrixEngineWGPU {
     } else {
       myMesh1.itIsPhysicsBody = false;
     }
-    this.mainRenderBundle.push(myMesh1);
     if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh1);
+    this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
     return myMesh1;
@@ -1174,8 +1174,8 @@ export default class MatrixEngineWGPU {
     } else {
       myMesh.itIsPhysicsBody = false;
     }
-    this.mainRenderBundle.push(myMesh);
     if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh);
+    this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
     return myMesh;
@@ -1513,14 +1513,11 @@ export default class MatrixEngineWGPU {
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }
-
-
-
         // Soft
+        if(this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
         this.sortRenderBundle();
-        if(this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         setTimeout(() => {document.dispatchEvent(this.usEvent)}, 50);
         c++;
       }
@@ -1627,8 +1624,10 @@ export default class MatrixEngineWGPU {
         }
         // Soft
         setTimeout(() => {
+          if(this.indirectManager) {
+           bvhPlayer.indirectDrawIndex = this.indirectManager.registerIndirectDraw(bvhPlayer);
+          }
           this.mainRenderBundle.push(bvhPlayer);
-          if(this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);
         }, 32);

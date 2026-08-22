@@ -218,12 +218,11 @@ export class IndirectRenderingManager {
     this.meshToIndexMap = new Map();
   }
   // Register a mesh when it's created or added to the scene
-  registerIndirectDraw(mesh) {
+  registerIndirectDraw(mesh, sceneIndex) {
     const drawIndex = this.drawCallMap.size;
     if(!mesh.instanceCount) mesh.instanceCount = 1;
     // Track global instance index for compute culling
     mesh.globalInstanceIndex = this.getTotalInstanceCount();
-    mesh.indirectDrawIndex = drawIndex;
     this.meshToIndexMap.set(mesh.name, drawIndex);
     this.indirectMeshes.push(mesh);
     this.drawCallMap.set(drawIndex, {

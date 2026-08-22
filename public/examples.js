@@ -27600,7 +27600,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         { binding: 4, resource: { buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size } }
       ];
       this.modelBindGroup = this.device.createBindGroup({
-        label: "modelBindGroup-mesh-cloth",
+        label: "modelBindGroup[instanced][init]",
         layout: this.uniformBufferBindGroupLayoutInstanced,
         entries
       });
@@ -44214,11 +44214,10 @@ var IndirectRenderingManager = class {
     this.meshToIndexMap = /* @__PURE__ */ new Map();
   }
   // Register a mesh when it's created or added to the scene
-  registerIndirectDraw(mesh) {
+  registerIndirectDraw(mesh, sceneIndex) {
     const drawIndex = this.drawCallMap.size;
     if (!mesh.instanceCount) mesh.instanceCount = 1;
     mesh.globalInstanceIndex = this.getTotalInstanceCount();
-    mesh.indirectDrawIndex = drawIndex;
     this.meshToIndexMap.set(mesh.name, drawIndex);
     this.indirectMeshes.push(mesh);
     this.drawCallMap.set(drawIndex, {
@@ -44246,36 +44245,6 @@ async function GPUIndirectDraws() {
   requestAnimationFrame(this.frame);
   try {
     let commandEncoder = this.device.createCommandEncoder();
-    for (let i2 = 0; i2 < this.indirectManager.indirectMeshes.length; i2++) {
-      const mesh = this.indirectManager.indirectMeshes[i2];
-      const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
-      if (mesh.instanceData) {
-        for (let j2 = 0; j2 < mesh.instanceCount; j2++) {
-          const globalIdx = mesh.globalInstanceIndex + j2;
-          const strideOffset = j2 * mesh.floatsPerInstance;
-          const worldPos = vec3Impl.fromValues(
-            mesh.instanceData[strideOffset + 12],
-            mesh.instanceData[strideOffset + 13],
-            mesh.instanceData[strideOffset + 14]
-          );
-          const radius = mesh.boundingSphere?.radius || 1;
-          this.computeCulling.updateInstance(globalIdx, worldPos, radius, meshIndex);
-        }
-      } else {
-        const worldPos = mesh.modelMatrix.slice(12, 15);
-        const radius = mesh.boundingSphere?.radius || 1;
-        this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, radius, meshIndex);
-      }
-    }
-    this.computeCulling.flushIndirectBuffer();
-    this.computeCulling.flushInstances();
-    await this.computeCulling.execute(
-      commandEncoder,
-      camera.view,
-      camera.projectionMatrix,
-      camera.position,
-      1e3
-    );
     if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
     this.updateLights();
     this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
@@ -44376,7 +44345,7 @@ async function GPUIndirectDraws() {
     }
     pass.end();
     if (this.ssrPass.enabled === true) {
-      mat4.invert(camera.VP, this._invViewProj);
+      mat4Impl.invert(camera.VP, this._invViewProj);
       this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
       this.ssrPass.render(commandEncoder, {
         sceneTextureView: this.sceneTextureView,
@@ -44387,7 +44356,7 @@ async function GPUIndirectDraws() {
       });
     }
     if (this.volumetricPass.enabled === true) {
-      if (this.ssrPass.enabled === false) mat4.invert(camera.VP, this._invViewProj);
+      if (this.ssrPass.enabled === false) mat4Impl.invert(camera.VP, this._invViewProj);
       this._volumetricUniforms.invViewProjectionMatrix = this._invViewProj;
       for (let i2 = 0; i2 < this.lightContainer.length; i2++) {
         const light = this.lightContainer[i2];
@@ -44639,7 +44608,7 @@ var MatrixEngineWGPU = class {
         const arg = { range: options2.cullingRange ? options2.cullingRange : 500 };
         this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
-      } else if (options2.render == "GPUInstancedDraw") {
+      } else if (options2.render == "GPUIndirectDraw") {
         this.overrideRender = GPUIndirectDraws.bind(this);
       }
     }
@@ -44958,7 +44927,7 @@ var MatrixEngineWGPU = class {
   };
   createGlobalStuff(callback) {
     this.startTime = performance.now() / 1e3;
-    if (this.options.render == "GPUInstancedDraw") {
+    if (this.options.render == "GPUIndirectDraw") {
       this.indirectManager = new IndirectRenderingManager();
       this.computeCulling = new ComputeCullingSystem(this.device, this.gpuCapabilities, 4096);
     }
@@ -45452,8 +45421,8 @@ var MatrixEngineWGPU = class {
     } else {
       myMesh1.itIsPhysicsBody = false;
     }
-    this.mainRenderBundle.push(myMesh1);
     if (this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh1);
+    this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if (typeof this.editor !== "undefined") this.editor.editorHud.updateSceneContainer();
     return myMesh1;
@@ -45528,8 +45497,8 @@ var MatrixEngineWGPU = class {
     } else {
       myMesh.itIsPhysicsBody = false;
     }
-    this.mainRenderBundle.push(myMesh);
     if (this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh);
+    this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
     if (typeof this.editor !== "undefined") this.editor.editorHud.updateSceneContainer();
     return myMesh;
@@ -45882,10 +45851,10 @@ var MatrixEngineWGPU = class {
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }
+        if (this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         this.mainRenderBundle.push(bvhPlayer);
         r3.push(bvhPlayer);
         this.sortRenderBundle();
-        if (this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         setTimeout(() => {
           document.dispatchEvent(this.usEvent);
         }, 50);
@@ -46019,8 +45988,10 @@ var MatrixEngineWGPU = class {
           bvhPlayer.itIsPhysicsBody = false;
         }
         setTimeout(() => {
+          if (this.indirectManager) {
+            bvhPlayer.indirectDrawIndex = this.indirectManager.registerIndirectDraw(bvhPlayer);
+          }
           this.mainRenderBundle.push(bvhPlayer);
-          if (this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);
         }, 32);
@@ -46996,7 +46967,7 @@ var snakeLightsInstanced = function() {
   let app2 = new MatrixEngineWGPU({
     fastRender: 0.9,
     canvasSize: "fullscreen",
-    //    render: 'GPUInstancedDraw',
+    // render: 'GPUIndirectDraw',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
@@ -65841,8 +65812,9 @@ var loadReactiveAudio = function() {
 // examples/max-instanced-13y-gpu-card.js
 var snakeLightsInstancedMAX = function() {
   let app2 = new MatrixEngineWGPU({
-    fastRender: 0.9,
+    fastRender: 0.7,
     canvasSize: "fullscreen",
+    render: "GPUIndirectDraw",
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
@@ -65852,11 +65824,12 @@ var snakeLightsInstancedMAX = function() {
     clearColor: { r: 0.01, b: 0.01, g: 0.01, a: 1 }
   }, async () => {
     addRaycastsAABBListener("canvas1", "click");
-    const LIGHT_HEIGHT = 35;
+    app2.activateHZB();
+    const LIGHT_HEIGHT = 65;
     const CENTER = { x: 0, z: -10 };
     app2.addLight();
     const light = app2.lightContainer[0];
-    light.setIntensity(30);
+    light.setIntensity(130);
     light.setPosition(CENTER.x, LIGHT_HEIGHT, CENTER.z);
     light.setTarget(CENTER.x, 0, CENTER.z);
     loadNavMesh("./res/meshes/nav-mesh/navmesh.json").then((r3) => {
@@ -65868,12 +65841,23 @@ var snakeLightsInstancedMAX = function() {
           texturesPaths: ["./res/textures/floor1.webp"],
           name: "ground",
           mesh: m2.cube,
-          scale: [1, 0.5, 1],
+          scale: [100, 1, 100],
           physics: { enabled: false },
           shadowsCast: false,
           raycast: { enabled: true, radius: 1.5 }
         });
-      }, { scale: [80, 0.7, 80] });
+        app2.addMeshObj({
+          material: { type: "standard" },
+          position: { x: CENTER.x + 100, y: 4, z: CENTER.z },
+          texturesPaths: ["./res/textures/floor1.webp"],
+          name: "wall1",
+          mesh: m2.cube,
+          scale: [2, 20, 100],
+          physics: { enabled: false },
+          shadowsCast: false,
+          raycast: { enabled: true, radius: 1.5 }
+        });
+      }, { scale: [1, 1, 1] });
     });
     const glbFile = await fetch("res/meshes/glb/monster.glb").then((r3) => r3.arrayBuffer()).then((buf) => uploadGLBModel(buf, app2.device));
     app2.addGlbObjInctance({
@@ -65890,8 +65874,9 @@ var snakeLightsInstancedMAX = function() {
     setTimeout(() => {
       monster = app2.getSceneObjectByName("monster_MutantMesh");
       monster.sharedBones = false;
-      monster.updateMaxInstances(150);
-      monster.updateInstances(150);
+      monster.updateMaxInstances(100);
+      monster.updateInstances(100);
+      app2.lightContainer[0].setRange(200);
       monster.position.thrust = 0.2;
       app2.monster = monster;
       app2.cameras.WASD.setYaw(0);
