@@ -43,8 +43,8 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 - ✔️ Bloom post processing.
 - ✔️ HZB post processing.
 - ✔️ Volumetric post processing.
-- ✔️ GPU Features: `texture-compression-bc`.
-- ✔️ Scene Culling feature (see maze example).
+- ✔️ GPU Features: `texture-compression-bc` - (Not active by default).
+- ✔️ Scene Culling feature (see maze example for CPU Culling).
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
 - ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).
 - ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader).

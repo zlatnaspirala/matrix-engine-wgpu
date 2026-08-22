@@ -1,98 +1,111 @@
-
 ## CHANGES [Started from feb 2026]
 
-[1.19.2] 
- - GPUCapabilities
+[2.0.0]
 
- ```
- const gpuSettings = {
-    features: {
-        'shader-f16': true,
-        'float32-filterable': true,
-        'float32-blendable': false,
-        'texture-compression-astc': true,
-        'texture-compression-etc2': true,
-        'bgra8unorm-storage': false,
-        'subgroups': true,
-        'clip-distances': false,
-        'dual-source-blending': false,
-    }
+- GPU Culling with indirect draws options.
+  Activation with main program arg `render: 'GPUInstancedDraw'`
+  It is implemented in core with main render override solution.
+  
+- BC TEX COMPRESSION option (not default)
+  call
+  ```js
+  "webp-to-dds": "npm run webp-to-dds0 && npm run webp-to-dds1",
+  "webp-to-dds0": "cd public/res/textures/ && for %f in (*.webp) do magick \"%f\" \"%~nf.dds\"",
+  "webp-to-dds1": "cd public/res/textures/env-maps/ && for %f in (*.webp) do magick \"%f\" \"%~nf.dds\""
+  ```
+
+- GPUCapabilities
+
+```
+const gpuSettings = {
+   features: {
+       'shader-f16': true,
+       'float32-filterable': true,
+       'float32-blendable': false,
+       'texture-compression-astc': true,
+       'texture-compression-etc2': true,
+       'bgra8unorm-storage': false,
+       'subgroups': true,
+       'clip-distances': false,
+       'dual-source-blending': false,
+   }
 };
- ```
-
+```
 
 [1.18.xx - 1.19.00]
-  - ExternalDataHandler (SeismicPortalAdapter 'www.seismicportal.eu' , CoinGeckoAdapter)
-  - AudioSplatFieldEffect (Effect class)
-  - EarthquakeEffect 
-  - New effect class AudioSplatFieldEffect.
-  - seismicportal.eu services used for seismic real time data. New effect class().
-  - Added DragRotateController (corespond with WASD camera - rotate object on dragging),
-  - Added code-creator AI driven by not for graphs 
-   it is for code direct.
-   Backend:
-   `npm run creator-backend`
-   Frontend:
-   `npm run creator`
+
+- ExternalDataHandler (SeismicPortalAdapter 'www.seismicportal.eu' , CoinGeckoAdapter)
+- AudioSplatFieldEffect (Effect class)
+- EarthquakeEffect
+- New effect class AudioSplatFieldEffect.
+- seismicportal.eu services used for seismic real time data. New effect class().
+- Added DragRotateController (corespond with WASD camera - rotate object on dragging),
+- Added code-creator AI driven by not for graphs
+  it is for code direct.
+  Backend:
+  `npm run creator-backend`
+  Frontend:
+  `npm run creator`
   Fixed worker cross origin problem with running.
-  - Fix engine internal defaul dummy links to be public links from 
-   https://unpkg.com/matrix-engine-wgpu@latest/public/ if needed (cross origin).
+- Fix engine internal defaul dummy links to be public links from
+  https://unpkg.com/matrix-engine-wgpu@latest/public/ if needed (cross origin).
 
 [1.16.xx - 1.17.xx]
- - Particle effect class added.
- - updated nui-commander project to have width/height for NUI area div.
- - Water simulation effect (part of effects sub system)
- - Add navigationMesh and followPath class/func to npm export/import
- - Add support for raw bvh (skeletal) implementation.
- - Added video chat/stream plane follow local player and remote player
-   for MOBA template - Used streamPlaying to get video elements for networking.
- - Added nui-commander (from npm) and used in demo=31 
- - Added physics enabled for glb and glb instanced class.
- - Adding to the matterjs switch kinematic dinamic obj type - improve platforme template.
- - Adding new feature for app graph editor part - remove links on double click or right click, also hover effect.
- - Added plugin 'player object' now only fot FPShooter prototypes
- - Added zombie area (Hang3d series)
- - removeKeyboard for FirstPerson Camera
- - Splat class + animator for colors also vertex positions.
- - Visual scripting improvments in general + ai tool part.
- - MediaPipe implemented (hand model)
- - Test webRTC canvas capture to android TV  main instance for recceiver android-tv-cast.js/html
- - Added First person shooter example (hang3d series - the-beast-hang3d)
- - Base Position class changes, added `translateByXYZ`
- - Micro optimisation : define CulledRenderPass only if culling activated from begin.
- - Adding MatrixTTS to export/import npm services
- - Make npm services sync with 1.16.2
- - FORCE_FULL_SCREEN Only if (urlQ['fs']) - no more || isMobile()
+
+- Particle effect class added.
+- updated nui-commander project to have width/height for NUI area div.
+- Water simulation effect (part of effects sub system)
+- Add navigationMesh and followPath class/func to npm export/import
+- Add support for raw bvh (skeletal) implementation.
+- Added video chat/stream plane follow local player and remote player
+  for MOBA template - Used streamPlaying to get video elements for networking.
+- Added nui-commander (from npm) and used in demo=31
+- Added physics enabled for glb and glb instanced class.
+- Adding to the matterjs switch kinematic dinamic obj type - improve platforme template.
+- Adding new feature for app graph editor part - remove links on double click or right click, also hover effect.
+- Added plugin 'player object' now only fot FPShooter prototypes
+- Added zombie area (Hang3d series)
+- removeKeyboard for FirstPerson Camera
+- Splat class + animator for colors also vertex positions.
+- Visual scripting improvments in general + ai tool part.
+- MediaPipe implemented (hand model)
+- Test webRTC canvas capture to android TV main instance for recceiver android-tv-cast.js/html
+- Added First person shooter example (hang3d series - the-beast-hang3d)
+- Base Position class changes, added `translateByXYZ`
+- Micro optimisation : define CulledRenderPass only if culling activated from begin.
+- Adding MatrixTTS to export/import npm services
+- Make npm services sync with 1.16.2
+- FORCE_FULL_SCREEN Only if (urlQ['fs']) - no more || isMobile()
 
 [1.15.xx]
- - Added `npm install @google/generative-ai` like new ai tool provider.
- - Added `npm install @anthropic-ai/sdk` like new ai tool provider.
- - Graph part synced - improvment for ai tool - gen graphs
- - Jamb (yacht) game synced with last ver of core + mobile supported.
- - JOLT worker improved for OnContactRemoved and OnContactPersisted (detect) override fn's.
- - geo effects fixed for moba prepare
- - added Sprite2DPAck class
- - no default physics any more must be
-   useAmmo, useJolt, useCannon or useMatter
- - Improved volumetric and light - range param
- - PlaneCamera added - with zoom , support for mobile 
- 
+
+- Added `npm install @google/generative-ai` like new ai tool provider.
+- Added `npm install @anthropic-ai/sdk` like new ai tool provider.
+- Graph part synced - improvment for ai tool - gen graphs
+- Jamb (yacht) game synced with last ver of core + mobile supported.
+- JOLT worker improved for OnContactRemoved and OnContactPersisted (detect) override fn's.
+- geo effects fixed for moba prepare
+- added Sprite2DPAck class
+- no default physics any more must be
+  useAmmo, useJolt, useCannon or useMatter
+- Improved volumetric and light - range param
+- PlaneCamera added - with zoom , support for mobile
 
 [1.14.0]
- - Added HZB postproccesing effect
- - Light micro optimisations
- - canvas.requestPointerLock for FPS camera
- - Culling scene system not active by default - activate with arg `render: 'culling'`
 
+- Added HZB postproccesing effect
+- Light micro optimisations
+- canvas.requestPointerLock for FPS camera
+- Culling scene system not active by default - activate with arg `render: 'culling'`
 
 [1.12.0]
- - CinematicCamera
- 
+
+- CinematicCamera
 
 [1.11.3]
- - Choose physics lib from editor (Create new project procedure)
- - Gizmo fixed for z axis
 
+- Choose physics lib from editor (Create new project procedure)
+- Gizmo fixed for z axis
 
 [1.11.2]
 Added support for Volumetric Effects post-processing on all light types.
