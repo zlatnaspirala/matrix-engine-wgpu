@@ -505,7 +505,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
             {binding: 1, resource: {buffer: this.bonesBuffer}},
             {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
             {binding: 3, resource: {buffer: this.uvScaleBuffer}},
-            {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }}
+            {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }},
+            {binding: 5, resource: {buffer: app.computeCulling.getVisibilityBuffer()}}
           ],
         });
         let m = this.getModelMatrix(this.position, this.useScale);
@@ -729,7 +730,8 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         {binding: 1, resource: {buffer: this.bonesBuffer}},
         {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
         {binding: 3, resource: {buffer: this.uvScaleBuffer}},
-        {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }}
+        {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }},
+        {binding: 5, resource: {buffer: app.computeCulling.getVisibilityBuffer()}}
       ];
       this.modelBindGroup = this.device.createBindGroup({
         label: 'modelBindGroup-mesh-cloth',

@@ -18534,10 +18534,12 @@ var MEMeshObj = class extends Materials {
           mat4Impl.rotateX(modelMatrix2, this.rotation.getRotX(), modelMatrix2);
           mat4Impl.rotateY(modelMatrix2, this.rotation.getRotY(), modelMatrix2);
           mat4Impl.rotateZ(modelMatrix2, this.rotation.getRotZ(), modelMatrix2);
-          this._scaleVec[0] = this.scale[0];
-          this._scaleVec[1] = this.scale[1];
-          this._scaleVec[2] = this.scale[2];
-          mat4Impl.scale(modelMatrix2, this._scaleVec, modelMatrix2);
+          if (useScale == true) {
+            this._scaleVec[0] = this.scale[0];
+            this._scaleVec[1] = this.scale[1];
+            this._scaleVec[2] = this.scale[2];
+            mat4Impl.scale(modelMatrix2, this._scaleVec, modelMatrix2);
+          }
           this.modelMatrix = modelMatrix2;
           return this.modelMatrix;
         }
@@ -20310,7 +20312,8 @@ var SpotLight = class {
         { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
+        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
+        { binding: 5, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
       ]
     });
     this.modelBindGroupLayoutMorph = this.device.createBindGroupLayout({
@@ -25619,6 +25622,7 @@ struct VertexAnimParams {
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 @group(2) @binding(3) var<uniform> uvScale: vec2f;
 @group(2) @binding(4) var<storage, read> clothBuffer:array<vec4f>;
+@group(2) @binding(5) var<storage, read> visibleIndices : array<u32>;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;
@@ -25761,10 +25765,13 @@ fn main(
   @location(2) uv       : vec2f,
   @location(3) joints   : vec4<u32>,
   @location(4) weights  : vec4<f32>,
-  @builtin(instance_index) instId: u32,
+  @builtin(instance_index) drawInstanceIdx: u32,
   @builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
   
+  let instId = visibleIndices[drawInstanceIdx];
   let inst = instances[instId];
+
+  // let inst = instances[instId];
   let flags = u32(vertexAnim.flags);
   var output : VertexOutput;
 
@@ -27351,7 +27358,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
             { binding: 1, resource: { buffer: this.bonesBuffer } },
             { binding: 2, resource: { buffer: this.vertexAnimBuffer } },
             { binding: 3, resource: { buffer: this.uvScaleBuffer } },
-            { binding: 4, resource: { buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size } }
+            { binding: 4, resource: { buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size } },
+            { binding: 5, resource: { buffer: app.computeCulling.getVisibilityBuffer() } }
           ]
         });
         let m2 = this.getModelMatrix(this.position, this.useScale);
@@ -27597,7 +27605,8 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         { binding: 1, resource: { buffer: this.bonesBuffer } },
         { binding: 2, resource: { buffer: this.vertexAnimBuffer } },
         { binding: 3, resource: { buffer: this.uvScaleBuffer } },
-        { binding: 4, resource: { buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size } }
+        { binding: 4, resource: { buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size } },
+        { binding: 5, resource: { buffer: app.computeCulling.getVisibilityBuffer() } }
       ];
       this.modelBindGroup = this.device.createBindGroup({
         label: "modelBindGroup-mesh-cloth",
@@ -44111,7 +44120,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (isInFrustum(position, 1.0) && isInDistance(position)) {
       let visIdx = atomicAdd(&visibleCounter, 1u);
       if (visIdx < arrayLength(&visibleIndices)) {
-          visibleIndices[visIdx] = idx;
+          visibleIndices[visIdx-1] = idx;
       }
       let meshIdx = instanceMeshMap[idx];
       atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
@@ -44196,6 +44205,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   }
   flushInstances() {
     this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
+    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData);
   }
   getIndirectBuffer() {
     return this.indirectBuffer;
@@ -44246,36 +44256,6 @@ async function GPUIndirectDraws() {
   requestAnimationFrame(this.frame);
   try {
     let commandEncoder = this.device.createCommandEncoder();
-    for (let i2 = 0; i2 < this.indirectManager.indirectMeshes.length; i2++) {
-      const mesh = this.indirectManager.indirectMeshes[i2];
-      const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
-      if (mesh.instanceData) {
-        for (let j2 = 0; j2 < mesh.instanceCount; j2++) {
-          const globalIdx = mesh.globalInstanceIndex + j2;
-          const strideOffset = j2 * mesh.floatsPerInstance;
-          const worldPos = vec3Impl.fromValues(
-            mesh.instanceData[strideOffset + 12],
-            mesh.instanceData[strideOffset + 13],
-            mesh.instanceData[strideOffset + 14]
-          );
-          const radius = mesh.boundingSphere?.radius || 1;
-          this.computeCulling.updateInstance(globalIdx, worldPos, radius, meshIndex);
-        }
-      } else {
-        const worldPos = mesh.modelMatrix.slice(12, 15);
-        const radius = mesh.boundingSphere?.radius || 1;
-        this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, radius, meshIndex);
-      }
-    }
-    this.computeCulling.flushIndirectBuffer();
-    this.computeCulling.flushInstances();
-    await this.computeCulling.execute(
-      commandEncoder,
-      camera.view,
-      camera.projectionMatrix,
-      camera.position,
-      1e3
-    );
     if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
     this.updateLights();
     this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
@@ -44330,7 +44310,32 @@ async function GPUIndirectDraws() {
           effect.simulate?.(commandEncoder);
         }
       }
+      const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+      if (mesh.instanceData) {
+        for (let j2 = 0; j2 < mesh.instanceCount; j2++) {
+          const globalIdx = mesh.globalInstanceIndex + j2;
+          const strideOffset = j2 * mesh.floatsPerInstance;
+          const worldPos = vec3Impl.fromValues(
+            mesh.instanceData[strideOffset + 12],
+            mesh.instanceData[strideOffset + 13],
+            mesh.instanceData[strideOffset + 14]
+          );
+          this.computeCulling.updateInstance(globalIdx, worldPos, null, meshIndex);
+        }
+      } else {
+        const worldPos = mesh.modelMatrix.slice(12, 15) || mesh.worldLocation();
+        this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, null, meshIndex);
+      }
     }
+    this.computeCulling.flushInstances();
+    this.computeCulling.flushIndirectBuffer();
+    this.computeCulling.execute(
+      commandEncoder,
+      camera.view,
+      camera.projectionMatrix,
+      camera.position,
+      this.GPUCullingRad
+    );
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -44417,8 +44422,6 @@ async function GPUIndirectDraws() {
     pass.end();
     this.device.queue.submit([commandEncoder.finish()]);
     if (this.collisionSystem) this.collisionSystem.update();
-    this.graphUpdate(this.now);
-    this.blendQueue.length = 0;
   } catch (err) {
     if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
   }
@@ -44532,6 +44535,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
+    this.GPUCullingRad = 200;
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
@@ -44874,7 +44878,8 @@ var MatrixEngineWGPU = class {
         { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
+        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
+        { binding: 5, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
       ]
     });
   }
@@ -45324,8 +45329,9 @@ var MatrixEngineWGPU = class {
         const instanceCount = mesh.instanceCount || 1;
         const indexCount = mesh.indexCount || 36;
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
+        console.log("rebuildIndirectBuffer : mesh.indexCount :" + indexCount + " , mesh.instanceCount : " + instanceCount + " ,  mesh.globalInstanceIndex : " + mesh.globalInstanceIndex);
         this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
-        cumulativeInstanceIndex += instanceCount;
+        cumulativeInstanceIndex += 1;
       }
       this.computeCulling.flushIndirectBuffer();
     }, 100);
@@ -46161,6 +46167,7 @@ function loadGLBLoader() {
     fastRender: 0.9,
     canvasSize: "fullscreen",
     dontUsePhysics: true,
+    render: "GPUInstancedDraw",
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: "cinematicCamera",
@@ -46996,7 +47003,7 @@ var snakeLightsInstanced = function() {
   let app2 = new MatrixEngineWGPU({
     fastRender: 0.9,
     canvasSize: "fullscreen",
-    //    render: 'GPUInstancedDraw',
+    render: "GPUInstancedDraw",
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
@@ -47038,8 +47045,6 @@ var snakeLightsInstanced = function() {
     let monster = null;
     setTimeout(() => {
       monster = app2.getSceneObjectByName("monster_MutantMesh");
-      monster.updateMaxInstances(10);
-      monster.updateInstances(10);
       app2.cameras.WASD.setYaw(0);
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);

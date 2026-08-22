@@ -73,8 +73,8 @@ export class ComputeCullingSystem {
     //  console.log("Indirect buffer content:", this.indirectData);
   }
 
-getComputeShaderCode() {
-  return `
+  getComputeShaderCode() {
+    return `
 struct CullingParams {
   viewMatrix: mat4x4f,
   projMatrix: mat4x4f,
@@ -119,7 +119,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (isInFrustum(position, 1.0) && isInDistance(position)) {
       let visIdx = atomicAdd(&visibleCounter, 1u);
       if (visIdx < arrayLength(&visibleIndices)) {
-          visibleIndices[visIdx] = idx;
+          visibleIndices[visIdx-1] = idx;
       }
       let meshIdx = instanceMeshMap[idx];
       atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
@@ -129,7 +129,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   workgroupBarrier();
   storageBarrier();
 }`;
-}
+  }
 
   createPipeline() {
     const code = this.getComputeShaderCode();
@@ -202,8 +202,11 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   }
 
   flushInstances() {
+    //   for (let i = 0; i < this.maxDrawCalls; i++) {
+    //   this.indirectData[i * 5 + 1] = 0; // Index 1 of every 5-element draw command is instanceCount
+    // }
     this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
-    // this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData);
+    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData);
   }
 
   getIndirectBuffer() {return this.indirectBuffer;}

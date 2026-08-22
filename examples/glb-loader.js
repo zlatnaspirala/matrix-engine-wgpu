@@ -15,6 +15,7 @@ export function loadGLBLoader() {
     fastRender: 0.9,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
+    render: 'GPUInstancedDraw',
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
       type: 'cinematicCamera',

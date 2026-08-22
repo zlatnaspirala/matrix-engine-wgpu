@@ -149,6 +149,8 @@ export default class MatrixEngineWGPU {
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
 
+    this.GPUCullingRad = 200;
+
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
@@ -511,7 +513,8 @@ export default class MatrixEngineWGPU {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}},
+        {binding: 5, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}}
       ],
     });
   }
@@ -1006,8 +1009,10 @@ export default class MatrixEngineWGPU {
         const instanceCount = mesh.instanceCount || 1;
         const indexCount = mesh.indexCount || 36;
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
+        console.log('rebuildIndirectBuffer : mesh.indexCount :' + indexCount + " , mesh.instanceCount : " + instanceCount + " ,  mesh.globalInstanceIndex : " + mesh.globalInstanceIndex);
         this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
-        cumulativeInstanceIndex += instanceCount;
+        // cumulativeInstanceIndex += instanceCount;
+        cumulativeInstanceIndex += 1;
       }
       this.computeCulling.flushIndirectBuffer();
     }, 100);

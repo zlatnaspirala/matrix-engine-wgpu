@@ -54,6 +54,7 @@ struct VertexAnimParams {
 @group(2) @binding(2) var<uniform> vertexAnim : VertexAnimParams;
 @group(2) @binding(3) var<uniform> uvScale: vec2f;
 @group(2) @binding(4) var<storage, read> clothBuffer:array<vec4f>;
+@group(2) @binding(5) var<storage, read> visibleIndices : array<u32>;
 
 const ANIM_WAVE: u32  = 1u;
 const ANIM_WIND: u32  = 2u;
@@ -196,10 +197,13 @@ fn main(
   @location(2) uv       : vec2f,
   @location(3) joints   : vec4<u32>,
   @location(4) weights  : vec4<f32>,
-  @builtin(instance_index) instId: u32,
+  @builtin(instance_index) drawInstanceIdx: u32,
   @builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
   
+  let instId = visibleIndices[drawInstanceIdx];
   let inst = instances[instId];
+
+  // let inst = instances[instId];
   let flags = u32(vertexAnim.flags);
   var output : VertexOutput;
 

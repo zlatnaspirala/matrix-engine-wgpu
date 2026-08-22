@@ -736,12 +736,12 @@ export default class MEMeshObj extends Materials {
           mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
-          // if(useScale == true) {
+          if(useScale == true) {
             this._scaleVec[0] = this.scale[0];
             this._scaleVec[1] = this.scale[1];
             this._scaleVec[2] = this.scale[2];
             mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
-          // }
+          }
           this.modelMatrix = modelMatrix;
           return this.modelMatrix;
         }

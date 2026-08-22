@@ -7,7 +7,7 @@ export var snakeLightsInstanced = function() {
   let app = new MatrixEngineWGPU({
     fastRender: 0.9,
     canvasSize: 'fullscreen',
-    //    render: 'GPUInstancedDraw',
+    render: 'GPUInstancedDraw',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
@@ -56,8 +56,9 @@ export var snakeLightsInstanced = function() {
 
     setTimeout(() => {
       monster = app.getSceneObjectByName('monster_MutantMesh');
-      monster.updateMaxInstances(10);
-      monster.updateInstances(10);
+
+      // monster.updateMaxInstances(5);
+      // monster.updateInstances(2);
       // monster.trailAnimation.delay = 15;
       app.cameras.WASD.setYaw(0);
       app.cameras.WASD.setPitch(-0.55);
