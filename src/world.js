@@ -1091,7 +1091,6 @@ export default class MatrixEngineWGPU {
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
     if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
-      console.log('INJECT this.dummyClothBuffer GLOBAL GROUP')
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
@@ -1164,7 +1163,6 @@ export default class MatrixEngineWGPU {
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
     if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
-      console.log('INJECT this.dummyClothBuffer GLOBAL GROUP')
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
@@ -1486,7 +1484,6 @@ export default class MatrixEngineWGPU {
     o.textureCache = this.textureCache;
 
     if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
-      console.log('INJECT this.dummyClothBuffer GLOBAL GROUP')
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 
@@ -1590,7 +1587,6 @@ export default class MatrixEngineWGPU {
     let skinnedNodeIndex = 0;
 
     if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
-      console.log('INJECT this.dummyClothBuffer GLOBAL GROUP')
       o.dummyClothBuffer = this.dummyClothBuffer;
     }
 

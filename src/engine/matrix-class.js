@@ -243,6 +243,9 @@ export class Rotation {
     this.angle = 0;
     this.axis = {x: 0, y: 0, z: 0};
     // not in use good for exstend logic
+    this._cachedRotY = 0;
+    this._cachedRadX = 0;
+    this._cachedRotZ = 0;
     this.matrixRotation = null;
   }
 
@@ -302,28 +305,12 @@ export class Rotation {
   }
 
   getRotX = () => {
-    // if(this.rotationSpeed.x == 0) {
-    //   if(this.netx != this.x && this.emitX) {
-    //     app.net.send({
-    //       remoteName: this.remoteName,
-    //       sceneName: this.emitX,
-    //       netRotX: this.x
-    //     })
-    //   }
-    //   this.netx = this.x;
-    //   return degToRad(this.x);
-    // } else {
-    //   this.x = this.x + this.rotationSpeed.x * 0.001;
-    //   return degToRad(this.x);
-    // }
-
-    // console.log(this.rotationSpeed.x)
-    if(this.rotationSpeed.x == 0) {
-      if(this.netx != this.x && this.emitX) {
+    if(this.rotationSpeed.x === 0) {
+      if(this.netx !== this.x && this.emitX) {
         app.net.send({remoteName: this.remoteName, sceneName: this.emitX, netRotX: this.x})
       }
       this.netx = this.x;
-      if(this._cachedRadX === undefined || this._lastX !== this.x) {
+      if(this._lastX !== this.x) {
         this._cachedRadX = degToRad(this.x);
         this._lastX = this.x;
       }
@@ -337,45 +324,12 @@ export class Rotation {
   }
 
   getRotY = () => {
-    // if(this.rotationSpeed.y == 0) {
-    //   if(this.nety != this.y && this.emitY) {
-    //     // ---------------------------------------
-    //     if(this.teams.length == 0) {
-    //       app.net.send({
-    //         toRemote: this.toRemote,
-    //         remoteName: this.remoteName,
-    //         sceneName: this.emitY,
-    //         netRotY: this.y
-    //       });
-    //       this.nety = this.y;
-    //     } else {
-    //       if(this.teams[0].length > 0) app.net.send({
-    //         toRemote: this.teams[0],
-    //         sceneName: this.emitY,
-    //         netRotY: this.y
-    //       });
-    //       if(this.teams[1].length > 0) app.net.send({
-    //         toRemote: this.teams[1],
-    //         remoteName: this.remoteName,
-    //         sceneName: this.emitY,
-    //         netRotY: this.y
-    //       });
-    //       this.nety = this.y;
-    //     }
-    //   }
-    //   return degToRad(this.y);
-    // } else {
-    //   this.y = this.y + this.rotationSpeed.y * 0.001;
-    //   return degToRad(this.y);
-    // }
-
-    if(this.rotationSpeed.y == 0) {
-      if(this.nety != this.y && this.emitY) {
+    if(this.rotationSpeed.y === 0) {
+      if(this.nety !== this.y && this.emitY) {
         // net send code unchanged...
-
-        if(this.nety != this.y && this.emitY) {
-          // ---------------------------------------
+        if(this.nety !== this.y && this.emitY) {
           if(this.teams.length == 0) {
+            // alloc !
             app.net.send({
               toRemote: this.toRemote,
               remoteName: this.remoteName,
@@ -398,10 +352,9 @@ export class Rotation {
             this.nety = this.y;
           }
         }
-
         this.nety = this.y;
       }
-      if(this._cachedRotY === undefined || this._lastY !== this.y) {
+      if(this._lastY !== this.y) {
         this._cachedRotY = degToRad(this.y);
         this._lastY = this.y;
       }
@@ -415,8 +368,8 @@ export class Rotation {
   }
 
   getRotZ = () => {
-    if(this.rotationSpeed.z == 0) {
-      if(this.netz != this.z && this.emitZ) {
+    if(this.rotationSpeed.z === 0) {
+      if(this.netz !== this.z && this.emitZ) {
         app.net.send({
           remoteName: this.remoteName,
           sceneName: this.emitZ,
@@ -424,7 +377,7 @@ export class Rotation {
         });
         this.netz = this.z;
       }
-      if(this._cachedRotZ === undefined || this._lastZ !== this.z) {
+      if(this._lastZ !== this.z) {
         this._cachedRotZ = degToRad(this.z);
         this._lastZ = this.z;
       }
@@ -444,7 +397,6 @@ export function pairRepulsion(Apos, Bpos, minDistance = 0.5, pushStrength = 1.0)
   const dz = Apos[2] - Bpos.z;
   const distSq = dx * dx + dz * dz;
   const minDistSq = minDistance * minDistance;
-
   if(distSq < minDistSq && distSq > 1e-8) {
     const dist = Math.sqrt(distSq);
     const overlap = minDistance - dist;

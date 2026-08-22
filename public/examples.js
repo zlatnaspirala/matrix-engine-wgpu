@@ -8973,6 +8973,9 @@ var Rotation = class {
     this.rotationSpeed = { x: 0, y: 0, z: 0 };
     this.angle = 0;
     this.axis = { x: 0, y: 0, z: 0 };
+    this._cachedRotY = 0;
+    this._cachedRadX = 0;
+    this._cachedRotZ = 0;
     this.matrixRotation = null;
   }
   setRotate = (x3, y3, z2) => {
@@ -9014,12 +9017,12 @@ var Rotation = class {
     return Math.cos(radToDeg(this.axis.y) / 2);
   };
   getRotX = () => {
-    if (this.rotationSpeed.x == 0) {
-      if (this.netx != this.x && this.emitX) {
+    if (this.rotationSpeed.x === 0) {
+      if (this.netx !== this.x && this.emitX) {
         app.net.send({ remoteName: this.remoteName, sceneName: this.emitX, netRotX: this.x });
       }
       this.netx = this.x;
-      if (this._cachedRadX === void 0 || this._lastX !== this.x) {
+      if (this._lastX !== this.x) {
         this._cachedRadX = degToRad(this.x);
         this._lastX = this.x;
       }
@@ -9032,9 +9035,9 @@ var Rotation = class {
     }
   };
   getRotY = () => {
-    if (this.rotationSpeed.y == 0) {
-      if (this.nety != this.y && this.emitY) {
-        if (this.nety != this.y && this.emitY) {
+    if (this.rotationSpeed.y === 0) {
+      if (this.nety !== this.y && this.emitY) {
+        if (this.nety !== this.y && this.emitY) {
           if (this.teams.length == 0) {
             app.net.send({
               toRemote: this.toRemote,
@@ -9060,7 +9063,7 @@ var Rotation = class {
         }
         this.nety = this.y;
       }
-      if (this._cachedRotY === void 0 || this._lastY !== this.y) {
+      if (this._lastY !== this.y) {
         this._cachedRotY = degToRad(this.y);
         this._lastY = this.y;
       }
@@ -9073,8 +9076,8 @@ var Rotation = class {
     }
   };
   getRotZ = () => {
-    if (this.rotationSpeed.z == 0) {
-      if (this.netz != this.z && this.emitZ) {
+    if (this.rotationSpeed.z === 0) {
+      if (this.netz !== this.z && this.emitZ) {
         app.net.send({
           remoteName: this.remoteName,
           sceneName: this.emitZ,
@@ -9082,7 +9085,7 @@ var Rotation = class {
         });
         this.netz = this.z;
       }
-      if (this._cachedRotZ === void 0 || this._lastZ !== this.z) {
+      if (this._lastZ !== this.z) {
         this._cachedRotZ = degToRad(this.z);
         this._lastZ = this.z;
       }
@@ -17905,7 +17908,6 @@ var MEMeshObj = class extends Materials {
     this.materialBGL = o3.materialBGL;
     this.uniformBufferBindGroupLayout = o3.uniformBufferBindGroupLayout;
     if (o3.physics.geometry !== "Cloth") {
-      console.log("dummyClothBuffer", o3.dummyClothBuffer);
       this.dummyClothBuffer = o3.dummyClothBuffer;
     }
     this.useScale = o3.useScale || false;
@@ -18159,7 +18161,6 @@ var MEMeshObj = class extends Materials {
         });
       });
     };
-    console.log(">>>>>>>>>>>>>>", o3.physics);
     this.runProgram(o3).then((o_) => {
       this.context.configure({
         device: this.device,
@@ -18330,7 +18331,6 @@ var MEMeshObj = class extends Materials {
       } else {
         this.clothBuffer = this.dummyClothBuffer;
       }
-      console.log("CONSTRUCT VERTEX ANIM  this.clothBuffer111, ", this.clothBuffer);
       this.vertexAnim = {
         active: false,
         clothBuffer: this.clothBuffer,
@@ -18534,18 +18534,12 @@ var MEMeshObj = class extends Materials {
           mat4Impl.rotateX(modelMatrix2, this.rotation.getRotX(), modelMatrix2);
           mat4Impl.rotateY(modelMatrix2, this.rotation.getRotY(), modelMatrix2);
           mat4Impl.rotateZ(modelMatrix2, this.rotation.getRotZ(), modelMatrix2);
-          if (useScale == true) {
-            this._scaleVec[0] = this.scale[0];
-            this._scaleVec[1] = this.scale[1];
-            this._scaleVec[2] = this.scale[2];
-            mat4Impl.scale(modelMatrix2, this._scaleVec, modelMatrix2);
-          }
+          this._scaleVec[0] = this.scale[0];
+          this._scaleVec[1] = this.scale[1];
+          this._scaleVec[2] = this.scale[2];
+          mat4Impl.scale(modelMatrix2, this._scaleVec, modelMatrix2);
           this.modelMatrix = modelMatrix2;
           return this.modelMatrix;
-        }
-        if (!this.modelMatrix) {
-          let modelMatrix2 = mat4Impl.identity(this._modelMatrix);
-          this.modelMatrix = modelMatrix2;
         }
         return this.modelMatrix;
       };
@@ -20328,8 +20322,9 @@ var SpotLight = class {
         // bones
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         // vertexAnim
-        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         // morphBlend
+        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
       ]
     });
     this.shadowPipeline = this.device.createRenderPipeline({
@@ -39647,22 +39642,10 @@ var ProceduralMeshObj = class extends Materials {
         // bones
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         // vertexAnim
-        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         // morphBlend
+        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
       ]
-    });
-    const entries = [
-      { binding: 0, resource: { buffer: this.modelUniformBuffer } },
-      { binding: 1, resource: { buffer: this.bonesBuffer } },
-      { binding: 2, resource: { buffer: this.vertexAnimBuffer } },
-      { binding: 3, resource: { buffer: this.uvScaleBuffer } },
-      { binding: 4, resource: { buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size } }
-    ];
-    console.log("CONSTRUCT VERTEX ANIM");
-    this.modelBindGroup = this.device.createBindGroup({
-      label: "modelBindGroup in mesh with cloth",
-      layout: this.uniformBufferBindGroupLayout,
-      entries
     });
     this.shadowBindGroupLayout = this.device.createBindGroupLayout({
       entries: [
@@ -39808,6 +39791,22 @@ var ProceduralMeshObj = class extends Materials {
         return this.vertexAnimParams[2];
       }
     };
+    this.uvScaleBuffer = this.device.createBuffer({
+      size: 8,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const entries = [
+      { binding: 0, resource: { buffer: this.modelUniformBuffer } },
+      { binding: 1, resource: { buffer: this.bonesBuffer } },
+      { binding: 2, resource: { buffer: this.vertexAnimBuffer } },
+      { binding: 3, resource: { buffer: this.morphBlendBuffer } },
+      { binding: 4, resource: { buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size } }
+    ];
+    this.modelBindGroup = this.device.createBindGroup({
+      label: "modelBindGroup mesh",
+      layout: this.uniformBufferBindGroupLayout,
+      entries
+    });
     this.updateVertexAnimBuffer = () => {
       this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
     };
@@ -40877,8 +40876,6 @@ function physicsBodiesGeneratorWall(material = "standard", pos2, rot2, texturePa
   return new Promise((resolve, reject) => {
     const engine = this;
     const [width, height] = size2.toLowerCase().split("x").map((n3) => parseInt(n3, 10));
-    console.log(width);
-    console.log(height);
     const inputCube = { mesh: useMeshPath };
     function handler(m2) {
       let index = 0;
@@ -45434,7 +45431,6 @@ var MatrixEngineWGPU = class {
     o3.materialBGL = this.materialBGL;
     o3.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
-      console.log("INJECT this.dummyClothBuffer GLOBAL GROUP");
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     let myMesh1 = new MEMeshObj(
@@ -45522,7 +45518,6 @@ var MatrixEngineWGPU = class {
     o3.materialBGL = this.materialBGL;
     o3.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
     if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
-      console.log("INJECT this.dummyClothBuffer GLOBAL GROUP");
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o3, this.inputHandler, AM, this.cameraBuffer);
@@ -45859,7 +45854,6 @@ var MatrixEngineWGPU = class {
     let r3 = [];
     o3.textureCache = this.textureCache;
     if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
-      console.log("INJECT this.dummyClothBuffer GLOBAL GROUP");
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     let skinnedNodeIndex = 0;
@@ -45989,7 +45983,6 @@ var MatrixEngineWGPU = class {
     let results = [];
     let skinnedNodeIndex = 0;
     if (o3.physics.enabled !== true || o3.physics.geometry !== "Cloth") {
-      console.log("INJECT this.dummyClothBuffer GLOBAL GROUP");
       o3.dummyClothBuffer = this.dummyClothBuffer;
     }
     for (const skinnedNode of glbFile.skinnedMeshNodes) {
@@ -46167,7 +46160,6 @@ function loadGLBLoader() {
   let TEST_ANIM = new MatrixEngineWGPU({
     fastRender: 0.9,
     canvasSize: "fullscreen",
-    render: "GPUInstancedDraw",
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {
@@ -46189,6 +46181,31 @@ function loadGLBLoader() {
       ], { parameterization: "arc" });
       cam2.setPath(bankTurn).play({ speed: 0.25 });
     }, 1e3);
+    var glbFile01 = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, TEST_ANIM.device)));
+    TEST_ANIM.addGlbObj({
+      material: { type: "standard", useTextureFromGlb: true },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: { x: 0, y: -4, z: -70 },
+      name: "firstGlb",
+      texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+    }, null, glbFile01);
+    TEST_ANIM.addGlbObj({
+      material: { type: "power", useTextureFromGlb: true },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: { x: -30, y: -4, z: -70 },
+      name: "firstGlb",
+      texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+    }, null, glbFile01);
+    TEST_ANIM.addGlbObj({
+      material: { type: "pong", useTextureFromGlb: true },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: { x: 30, y: -4, z: -70 },
+      name: "firstGlb",
+      texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+    }, null, glbFile01);
     var glbFile11 = await fetch("./res/meshes/glb/woman1.glb").then((res) => res.arrayBuffer().then((buf) => uploadGLBModel(buf, TEST_ANIM.device)));
     TEST_ANIM.addGlbObjInctance({
       material: { type: "mirror", useTextureFromGlb: true },
@@ -46215,6 +46232,22 @@ function loadGLBLoader() {
       position: { x: 0, y: -4, z: -20 },
       name: "woman1",
       texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp", "./res/textures/env-maps/sky1.webp"]
+    }, null, glbFile11);
+    TEST_ANIM.addGlbObj({
+      material: { type: "power", useTextureFromGlb: true },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: { x: -30, y: -4, z: -20 },
+      name: "woman1",
+      texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+    }, null, glbFile11);
+    TEST_ANIM.addGlbObj({
+      material: { type: "pong", useTextureFromGlb: true },
+      useScale: true,
+      scale: [20, 20, 20],
+      position: { x: 30, y: -4, z: -20 },
+      name: "woman1",
+      texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
     }, null, glbFile11);
     function onGround(m2) {
       TEST_ANIM.addLight();

@@ -393,35 +393,9 @@ export default class ProceduralMeshObj extends Materials {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // bones
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // vertexAnim
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // morphBlend
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ]
     });
-
-
-    const entries = [
-      {binding: 0, resource: {buffer: this.modelUniformBuffer}},
-      {binding: 1, resource: {buffer: this.bonesBuffer}},
-      {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-      {binding: 3, resource: {buffer: this.uvScaleBuffer}},
-      {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }}
-    ];
-
-    // Attach cloth buffer dynamically if active
-    console.log('CONSTRUCT VERTEX ANIM')
-    this.modelBindGroup = this.device.createBindGroup({
-      label: 'modelBindGroup in mesh with cloth',
-      layout: this.uniformBufferBindGroupLayout,
-      entries: entries,
-    });
-
-    // this.modelBindGroup = this.device.createBindGroup({
-    //   layout: this.uniformBufferBindGroupLayout,
-    //   entries: [
-    //     {binding: 0, resource: {buffer: this.modelUniformBuffer}},
-    //     {binding: 1, resource: {buffer: this.bonesBuffer}},
-    //     {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-    //     {binding: 3, resource: {buffer: this.morphBlendBuffer}},
-    //   ]
-    // });
 
     // Shadow bind group now includes morphBlend for correct lighting
     this.shadowBindGroupLayout = this.device.createBindGroupLayout({
@@ -562,6 +536,25 @@ export default class ProceduralMeshObj extends Materials {
       },
       getIntensity: () => {return this.vertexAnimParams[2]}
     };
+
+    this.uvScaleBuffer = this.device.createBuffer({
+      size: 8,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    const entries = [
+      {binding: 0, resource: {buffer: this.modelUniformBuffer}},
+      {binding: 1, resource: {buffer: this.bonesBuffer}},
+      {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+      {binding: 3, resource: {buffer: this.morphBlendBuffer}},
+      {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }}
+    ];
+
+    this.modelBindGroup = this.device.createBindGroup({
+      label: 'modelBindGroup mesh',
+      layout: this.uniformBufferBindGroupLayout,
+      entries: entries,
+    });
 
     this.updateVertexAnimBuffer = () => {
       this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);

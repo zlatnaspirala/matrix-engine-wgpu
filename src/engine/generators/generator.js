@@ -115,13 +115,7 @@ export function physicsBodiesGeneratorWall(
   useMeshPath = "./res/meshes/blender/cube.obj",) {
   return new Promise((resolve, reject) => {
     const engine = this;
-    const [width, height] = size
-      .toLowerCase()
-      .split("x")
-      .map(n => parseInt(n, 10));
-
-    console.log(width)
-    console.log(height)
+    const [width, height] = size.toLowerCase().split("x").map(n => parseInt(n, 10));
     const inputCube = {mesh: useMeshPath};
 
     function handler(m) {
@@ -135,7 +129,6 @@ export function physicsBodiesGeneratorWall(
           const cubeName = `${name}_${index}`;
           const currentIndex = index;
           setTimeout(() => {
-
             let __x = 0, __y = 0, __z = 0;
             if(orientationOfwall === 'ByX') {
               __x = x * spacing;

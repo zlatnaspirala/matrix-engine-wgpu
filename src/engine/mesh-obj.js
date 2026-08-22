@@ -69,7 +69,6 @@ export default class MEMeshObj extends Materials {
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
     if(o.physics.geometry !== 'Cloth') {
-      console.log('dummyClothBuffer', o.dummyClothBuffer)
       this.dummyClothBuffer = o.dummyClothBuffer;
     }
     this.useScale = o.useScale || false;
@@ -368,7 +367,7 @@ export default class MEMeshObj extends Materials {
       })
     }
 
-    console.log('>>>>>>>>>>>>>>', o.physics)
+    // console.log('o.physics', o.physics)
     this.runProgram(o).then((o_) => {
       this.context.configure({
         device: this.device,
@@ -529,7 +528,7 @@ export default class MEMeshObj extends Materials {
         this.clothBuffer = this.dummyClothBuffer;
       }
 
-      console.log('CONSTRUCT VERTEX ANIM  this.clothBuffer111, ', this.clothBuffer)
+      // console.log('CONSTRUCT VERTEX ANIM  this.clothBuffer111, ', this.clothBuffer)
       this.vertexAnim = {
         active: false,
         clothBuffer: this.clothBuffer,
@@ -538,7 +537,6 @@ export default class MEMeshObj extends Materials {
           this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH; // Ensure you have a CLOTH flag in your literals
           this.vertexAnimParams[28] = startIndex; // Store offset if needed in vertexAnimParams
           this.updateVertexAnimBuffer();
-          // this.updateModelBindGroup(); // Re-create/update bind group with the new buffer
         },
         disableCloth: () => {
           this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
@@ -738,19 +736,19 @@ export default class MEMeshObj extends Materials {
           mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
-          if(useScale == true) {
+          // if(useScale == true) {
             this._scaleVec[0] = this.scale[0];
             this._scaleVec[1] = this.scale[1];
             this._scaleVec[2] = this.scale[2];
             mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
-          }
+          // }
           this.modelMatrix = modelMatrix;
           return this.modelMatrix;
         }
-        if(!this.modelMatrix) {
-          let modelMatrix = mat4.identity(this._modelMatrix);
-          this.modelMatrix = modelMatrix;
-        }
+        // if(!this.modelMatrix) {
+        //   let modelMatrix = mat4.identity(this._modelMatrix);
+        //   this.modelMatrix = modelMatrix;
+        // }
         return this.modelMatrix;
       };
 
