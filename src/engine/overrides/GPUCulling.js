@@ -5,12 +5,10 @@ export async function GPUIndirectDraws() {
   const now2 = performance.now();
   this.now = now2 * 0.001;
   const camera = this.getCamera();
-
   this.autoUpdate.forEach((_) => _.update(this.now));
   requestAnimationFrame(this.frame);
   try {
     let commandEncoder = this.device.createCommandEncoder();
-
     // 1. UPDATE CULLING DATA
     for(let i = 0;i < this.indirectManager.indirectMeshes.length;i++) {
       const mesh = this.indirectManager.indirectMeshes[i];
@@ -39,22 +37,6 @@ export async function GPUIndirectDraws() {
         this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, radius, meshIndex);
       }
     }
-
-
-    // // Inside your main render/update loop, before running compute culling:
-    // for(const [meshName, drawIndex] of this.indirectManager.meshToIndexMap.entries()) {
-    //   const offset = drawIndex * 5;
-    //   // Reset instanceCount to 0; keep indexCount, firstIndex, etc. intact!
-    //   this.computeCulling.indirectData[offset + 1] = 0;
-    // }
-
-    // console.log("Mesh map data sent to GPU:", this.computeCulling.instanceMeshData);
-    // Push the reset 0-instance counts to the GPU buffer
-    // this.computeCulling.flushIndirectBuffer();
-
-// for (let i = 0; i < this.maxDrawCalls; i++) {
-//   this.indirectData[i * 5 + 1] = 0; 
-// }
 
     this.computeCulling.flushIndirectBuffer();
     this.computeCulling.flushInstances();
@@ -223,8 +205,9 @@ export async function GPUIndirectDraws() {
     pass.end();
 
     // ============ 6. SINGLE SUBMIT ============
+    console.time('Encoder');
     this.device.queue.submit([commandEncoder.finish()]);
-
+    console.timeEnd('Encoder');
     if(this.collisionSystem) this.collisionSystem.update();
     this.graphUpdate(this.now);
     this.blendQueue.length = 0;

@@ -1,9 +1,8 @@
 /**
  * @description
  * Matrix Engine WGPU
- * GPU based culling
+ * GPU based culling with combination with indirect draws.
  */
-
 export class ComputeCullingSystem {
   constructor(device, gpuCapabilities, maxInstances = 4096) {
     this.device = device;
@@ -116,15 +115,17 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   if (idx >= arrayLength(&instances)) { return; }
   let inst = instances[idx];
   let position = inst.model[3].xyz;
-  if (isInFrustum(position, 1.0) &&
-      isInDistance(position)) {
-      let visIdx = atomicAdd(&visibleCounter, 1u);
-      if (visIdx < arrayLength(&visibleIndices)) {
-          visibleIndices[visIdx] = idx;
-      }
-      let meshIdx = instanceMeshMap[idx];
-      atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
+  if (isInFrustum(position, 1.0) && isInDistance(position)) {
+    let visIdx = atomicAdd(&visibleCounter, 1u);
+    if (visIdx < arrayLength(&visibleIndices)) {
+        visibleIndices[visIdx] = idx;
+    }
+    let meshIdx = instanceMeshMap[idx];
+    atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
   }
+
+  workgroupBarrier();
+  storageBarrier();
 }`;
   }
 
@@ -214,10 +215,8 @@ export class IndirectRenderingManager {
     this.drawCallMap = new Map();
     this.meshToIndexMap = new Map();
   }
-
   // Register a mesh when it's created or added to the scene
   registerIndirectDraw(mesh) {
-    console.log('REGISTER ___', mesh.name);
     const drawIndex = this.drawCallMap.size;
     if(!mesh.instanceCount) mesh.instanceCount = 1;
     // Track global instance index for compute culling
