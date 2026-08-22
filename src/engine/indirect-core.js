@@ -91,11 +91,11 @@ struct DrawCommand {
 }
 
 @group(0) @binding(0) var<uniform> params: CullingParams;
-@group(0) @binding(1) var<storage, read> instances: array<Instance>;
+@group(0) @binding(1) var<storage, read_write> instances: array<Instance>;
 @group(0) @binding(2) var<storage, read_write> visibleIndices: array<u32>;
 @group(0) @binding(3) var<storage, read_write> visibleCounter: atomic<u32>;
 @group(0) @binding(4) var<storage, read_write> indirectCommands: array<DrawCommand>;
-@group(0) @binding(5) var<storage, read> instanceMeshMap: array<u32>;
+@group(0) @binding(5) var<storage, read_write> instanceMeshMap: array<u32>;
 
 fn isInFrustum(pos: vec3f, radius: f32) -> bool {
   let viewPos = (params.viewMatrix * vec4f(pos, 1.0)).xyz;
@@ -119,8 +119,13 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (isInFrustum(position, 1.0) && isInDistance(position)) {
       let visIdx = atomicAdd(&visibleCounter, 1u);
       if (visIdx < arrayLength(&visibleIndices)) {
-          visibleIndices[visIdx-1] = idx;
+          visibleIndices[visIdx] = idx;
       }
+
+      if (idx < arrayLength(&indirectCommands)) {
+        indirectCommands[idx].instanceCount = 0u;
+      }
+    
       let meshIdx = instanceMeshMap[idx];
       atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
     }

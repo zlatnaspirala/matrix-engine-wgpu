@@ -25770,8 +25770,7 @@ fn main(
   
   let instId = visibleIndices[drawInstanceIdx];
   let inst = instances[instId];
-
-  // let inst = instances[instId];
+ 
   let flags = u32(vertexAnim.flags);
   var output : VertexOutput;
 
@@ -44092,11 +44091,11 @@ struct DrawCommand {
 }
 
 @group(0) @binding(0) var<uniform> params: CullingParams;
-@group(0) @binding(1) var<storage, read> instances: array<Instance>;
+@group(0) @binding(1) var<storage, read_write> instances: array<Instance>;
 @group(0) @binding(2) var<storage, read_write> visibleIndices: array<u32>;
 @group(0) @binding(3) var<storage, read_write> visibleCounter: atomic<u32>;
 @group(0) @binding(4) var<storage, read_write> indirectCommands: array<DrawCommand>;
-@group(0) @binding(5) var<storage, read> instanceMeshMap: array<u32>;
+@group(0) @binding(5) var<storage, read_write> instanceMeshMap: array<u32>;
 
 fn isInFrustum(pos: vec3f, radius: f32) -> bool {
   let viewPos = (params.viewMatrix * vec4f(pos, 1.0)).xyz;
@@ -44120,8 +44119,13 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (isInFrustum(position, 1.0) && isInDistance(position)) {
       let visIdx = atomicAdd(&visibleCounter, 1u);
       if (visIdx < arrayLength(&visibleIndices)) {
-          visibleIndices[visIdx-1] = idx;
+          visibleIndices[visIdx] = idx;
       }
+
+      if (idx < arrayLength(&indirectCommands)) {
+        indirectCommands[idx].instanceCount = 0u;
+      }
+    
       let meshIdx = instanceMeshMap[idx];
       atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
     }
@@ -44321,10 +44325,14 @@ async function GPUIndirectDraws() {
             mesh.instanceData[strideOffset + 14]
           );
           this.computeCulling.updateInstance(globalIdx, worldPos, null, meshIndex);
+          if (mesh.instanceData) {
+            console.log(`${mesh.name}: globalIdx= ${globalIdx} , mesh.globalInstanceIndex=${mesh.globalInstanceIndex},   instances=${mesh.instanceCount}`);
+          }
         }
       } else {
         const worldPos = mesh.modelMatrix.slice(12, 15) || mesh.worldLocation();
         this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, null, meshIndex);
+        console.log(`SIMPLE MESH ${mesh.name}: , mesh.globalInstanceIndex=${mesh.globalInstanceIndex},   instances=${mesh.instanceCount}`);
       }
     }
     this.computeCulling.flushInstances();
@@ -45334,7 +45342,7 @@ var MatrixEngineWGPU = class {
         cumulativeInstanceIndex += 1;
       }
       this.computeCulling.flushIndirectBuffer();
-    }, 100);
+    }, 150);
   }
   buildLightShadowBuckets() {
     this.shadowBuckets.default.length = 0;
@@ -47045,6 +47053,8 @@ var snakeLightsInstanced = function() {
     let monster = null;
     setTimeout(() => {
       monster = app2.getSceneObjectByName("monster_MutantMesh");
+      monster.updateMaxInstances(5);
+      monster.updateInstances(5);
       app2.cameras.WASD.setYaw(0);
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);

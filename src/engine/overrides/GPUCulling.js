@@ -9,10 +9,6 @@ export async function GPUIndirectDraws() {
   requestAnimationFrame(this.frame);
   try {
     let commandEncoder = this.device.createCommandEncoder();
-    // UPDATE CULLING
-    // for(let i = 0;i < this.indirectManager.indirectMeshes.length;i++) {
-    //   const mesh = this.indirectManager.indirectMeshes[i];
-    // }
 
     // PHYSICS&LIGHTS
     if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
@@ -92,18 +88,26 @@ export async function GPUIndirectDraws() {
           );
           // const radius = mesh.boundingSphere?.radius || 1.0;
           this.computeCulling.updateInstance(globalIdx, worldPos, null, meshIndex);
+
+          if(mesh.instanceData) {
+          console.log(`${mesh.name}: globalIdx= ${globalIdx} , mesh.globalInstanceIndex=${mesh.globalInstanceIndex},   instances=${mesh.instanceCount}`);
         }
+        }
+
+        
+
       } else {
         const worldPos = mesh.modelMatrix.slice(12, 15) || mesh.worldLocation();
         // const radius = mesh.boundingSphere?.radius || 1.0;
         this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, null, meshIndex);
+         console.log(`SIMPLE MESH ${mesh.name}: , mesh.globalInstanceIndex=${mesh.globalInstanceIndex},   instances=${mesh.instanceCount}`);
       }
 
     }
 
     this.computeCulling.flushInstances();
     this.computeCulling.flushIndirectBuffer();
-    
+
     this.computeCulling.execute(
       commandEncoder,
       camera.view,
@@ -113,7 +117,8 @@ export async function GPUIndirectDraws() {
     );
 
     // console.log("Culling executed for max instances:", this.computeCulling.maxInstances);
-    
+
+
 
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);

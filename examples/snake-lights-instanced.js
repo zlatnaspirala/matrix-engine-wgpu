@@ -57,8 +57,8 @@ export var snakeLightsInstanced = function() {
     setTimeout(() => {
       monster = app.getSceneObjectByName('monster_MutantMesh');
 
-      // monster.updateMaxInstances(5);
-      // monster.updateInstances(2);
+      monster.updateMaxInstances(5);
+      monster.updateInstances(5);
       // monster.trailAnimation.delay = 15;
       app.cameras.WASD.setYaw(0);
       app.cameras.WASD.setPitch(-0.55);

@@ -1015,7 +1015,7 @@ export default class MatrixEngineWGPU {
         cumulativeInstanceIndex += 1;
       }
       this.computeCulling.flushIndirectBuffer();
-    }, 100);
+    }, 150);
   }
 
   buildLightShadowBuckets() {

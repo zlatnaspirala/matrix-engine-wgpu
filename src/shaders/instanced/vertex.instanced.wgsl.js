@@ -202,8 +202,7 @@ fn main(
   
   let instId = visibleIndices[drawInstanceIdx];
   let inst = instances[instId];
-
-  // let inst = instances[instId];
+ 
   let flags = u32(vertexAnim.flags);
   var output : VertexOutput;
 
