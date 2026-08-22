@@ -63,7 +63,6 @@ if('serviceWorker' in navigator) {
         APP_READY = true;
       }
     }).catch((cacheErr) => {
-      // APP_READY = true;
       console.warn('cacheErr[APP_READY forced public access]:', cacheErr);
       let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
       navigator.serviceWorker.register(RES + '/cache.js').then(registration => {
@@ -158,8 +157,8 @@ export default class MatrixEngineWGPU {
     this.now = 0;
     this.logLoopError = this.MEConfig.logLoopError;
 
-    if(typeof options.alphaMode == 'undefined') {
-      options.alphaMode = "no";
+    if(typeof options.alphaMode === 'undefined') {
+      options.alphaMode = "premultiplied";
     } else if(options.alphaMode != 'opaque' && options.alphaMode != 'premultiplied') {
       console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied'!");
       return;
@@ -299,7 +298,7 @@ export default class MatrixEngineWGPU {
     this.canvas = canvas;
     if(this.options.canvasSize == 'fullscreen') {
       if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-        console.log('FastRender : ', this.options.fastRender)
+        // console.log('FastRender : ', this.options.fastRender)
         this.applyCanvasSize(this.options.fastRender)
       } else if(isMobile() == true) {
         canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
@@ -313,7 +312,6 @@ export default class MatrixEngineWGPU {
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
       }
     } else {
-      console.log('Apply custom W H');
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
@@ -381,18 +379,16 @@ export default class MatrixEngineWGPU {
     if(this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
       if(byId('msgBox')) byId('msgBox').style.left = '30%';
       if(MEConfig.LOAD_AFTER_CLICK_MOBILE == false && MEConfig.CACHE === false) {
-        console.log('GOT DIRECT WHAT EVER')
+        // console.log('GOT DIRECT WHAT EVER')
         this.applyCanvasSize(this.options.fastRender)
         this.init({canvas, callback});
         this.MEConfig.fsManager.onChange((isFS, target) => {
-          console.log('GOT to FS', isFS)
           if(isFS == false) {
             setTimeout(() => this.applyCanvasSize(this.options.fastRender), 100);
           }
         })
         addEventListener("run_mobile_fs", () => {
           if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-            console.log('got to first in fs : ', this.options.fastRender)
             this.applyCanvasSizeMobile(this.options.fastRender)
           }
         })
@@ -403,7 +399,7 @@ export default class MatrixEngineWGPU {
         if(APP_READY === false && isMobile() === true &&
           location.hostname.indexOf('192.168.') === -1
         ) {
-          // console.log('Installing cache...');
+          // RELOAD
           setTimeout(() => {location.reload();}, 4000)
         } else {
           if(MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
@@ -429,9 +425,6 @@ export default class MatrixEngineWGPU {
           });
 
           addEventListener("run_mobile_fs", () => {
-            // if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-            //   // this.applyCanvasSizeMobile(this.options.fastRender)
-            // }
             meLoader.destroy();
             // Only for mobile - BUG
             if(typeof this.options.lock !== 'undefined') {
@@ -461,12 +454,11 @@ export default class MatrixEngineWGPU {
               });
             }
             if(this.mainRenderBundle.length == 0) {
-              // console.log('PhysicsReady')
               dispatchEvent(new CustomEvent('PhysicsReady', {}));
             }
           });
         }
-      }, 500);
+      }, 400);
     } else {
       this.init({canvas, callback});
     }
@@ -496,7 +488,7 @@ export default class MatrixEngineWGPU {
     });
 
     this.dummyClothBuffer = this.device.createBuffer({
-      label: "Dummy Cloth Fallback Buffer",
+      label: "Dummy Cloth",
       size: 16,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
@@ -511,10 +503,9 @@ export default class MatrixEngineWGPU {
         {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ],
     });
-
     // GLB INSTANCED
     this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-      label: 'uniformBufferBindGroupLayout in mesh [instanced]',
+      label: 'uniformBufferBindGroupLayout [instanced]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
@@ -551,7 +542,7 @@ export default class MatrixEngineWGPU {
     const requiredFeatures = [];
     for(const feature of GPU_FEATURES.GROUP_1) {
       if(this.adapter.features.has(feature)) {
-        console.log('GPU Feature enabled:', feature);
+        console.log(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
         requiredFeatures.push(feature);
       }
     }
@@ -564,23 +555,16 @@ export default class MatrixEngineWGPU {
     this.gpuCapabilities.enabled = new Set(this.device.features);
 
     if(this.gpuCapabilities.isEnabled('texture-compression-bc')) {
-      console.log('BC texture compression available');
+      console.info(`%cBC texture compression available.`, LOG_FUNNY_ARCADE);
     }
     MEConfig.gpuCapabilities = this.gpuCapabilities;
 
-    if(this.options.alphaMode == "no") {
-      this.context = canvas.getContext('webgpu');
-    } else if(this.options.alphaMode == "opaque") {
-      this.context = canvas.getContext('webgpu', {alphaMode: 'opaque'});
-    } else {
-      this.context = canvas.getContext('webgpu', {alphaMode: 'premultiplied'});
-    }
-
+    this.context = canvas.getContext('webgpu');
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.context.configure({
       device: this.device,
       format: presentationFormat,
-      alphaMode: 'premultiplied',
+      alphaMode: this.options.alphaMode,
     });
 
     this.globalAmbient = vec3.create(1.0, 1.0, 1.0);
@@ -605,11 +589,11 @@ export default class MatrixEngineWGPU {
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
-      "Npm ready, codepen fully supported.\n" +
+      "Npm ready, codepen fully supported (physics worker).\n" +
       "Optimised MediaPipe buildin library implemented.\n" +
       "Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
       "Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
-      "New Features: NUI-Commander Game runner, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      "New Features: NUI-Commander Game runner, Mediapipe, Culling render mode CPU + GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
       "2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
       "Mobile support: chrome-android tested. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
@@ -1012,40 +996,19 @@ export default class MatrixEngineWGPU {
       this.rebuildIndirectBuffer()
     }
   }
+
   rebuildIndirectBuffer() {
     setTimeout(() => {
-      let cumulativeInstanceIndex = 0; // Track running total
-
+      let cumulativeInstanceIndex = 0;
       for(let i = 0;i < this.indirectManager.indirectMeshes.length;i++) {
         const mesh = this.indirectManager.indirectMeshes[i];
         const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
-
         const instanceCount = mesh.instanceCount || 1;
         const indexCount = mesh.indexCount || 36;
-
-        // ASSIGN sequentially, don't let mesh.globalInstanceIndex decide
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
-
-        console.log(
-          mesh.name,
-          "-> meshIndex:", meshIndex,
-          "indexCount:", indexCount,
-          "instanceCount:", instanceCount,
-          "globalInstanceIndex:", mesh.globalInstanceIndex,
-          `(occupies slots ${cumulativeInstanceIndex}–${cumulativeInstanceIndex + instanceCount - 1})`
-        );
-
-        this.computeCulling.setMeshDrawCommand(
-          meshIndex,
-          indexCount,
-          instanceCount,
-          mesh.globalInstanceIndex
-        );
-
-        // Move offset for next mesh
+        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
         cumulativeInstanceIndex += instanceCount;
       }
-
       this.computeCulling.flushIndirectBuffer();
     }, 100);
   }

@@ -1043,10 +1043,8 @@ export default class MEMeshObj extends Materials {
     renderPass.setVertexBuffer(2, mesh.vertexTexCoordsBuffer);
     renderPass.setVertexBuffer(3, this.mesh.jointsBuffer);
     renderPass.setVertexBuffer(4, this.mesh.weightsBuffer);
-    // renderPass.setVertexBuffer(5, this.mesh.tangentsBuffer);
     renderPass.setIndexBuffer(mesh.indexBuffer, 'uint16');
     renderPass.drawIndexed(mesh.indexCount);
-    // if(this.objAnim.playing == true) {
     if(this.objAnim.animations[this.objAnim.animations.active].speedCounter >= this.objAnim.animations[this.objAnim.animations.active].speed) {
       this.objAnim.currentAni++;
       this.objAnim.animations[this.objAnim.animations.active].speedCounter = 0;
@@ -1056,7 +1054,6 @@ export default class MEMeshObj extends Materials {
     if(this.objAnim.currentAni >= this.objAnim.animations[this.objAnim.animations.active].to) {
       this.objAnim.currentAni = this.objAnim.animations[this.objAnim.animations.active].from;
     }
-    // }
   }
 
   drawShadows = (shadowPass) => {

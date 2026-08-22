@@ -60,7 +60,7 @@ export let zeroPass = function() {
       for(const mesh of meshes) {
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        mesh.drawElements(pass, this.lightContainer);
+        mesh.drawElements(pass);
       }
     }
     for(const [pipeline, meshes] of this.transparentBuckets) {
@@ -77,7 +77,7 @@ export let zeroPass = function() {
       for(const mesh of meshes) {
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
-        mesh.drawElements(pass, this.lightContainer);
+        mesh.drawElements(pass);
       }
     }
     pass.end();

@@ -34,11 +34,28 @@ export async function GPUIndirectDraws() {
           this.computeCulling.updateInstance(globalIdx, worldPos, radius, meshIndex);
         }
       } else {
-        const worldPos = mesh.position || mesh.modelMatrix.slice(12, 15);
+        const worldPos = mesh.modelMatrix.slice(12, 15);
         const radius = mesh.boundingSphere?.radius || 1.0;
         this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, radius, meshIndex);
       }
     }
+
+
+    // // Inside your main render/update loop, before running compute culling:
+    // for(const [meshName, drawIndex] of this.indirectManager.meshToIndexMap.entries()) {
+    //   const offset = drawIndex * 5;
+    //   // Reset instanceCount to 0; keep indexCount, firstIndex, etc. intact!
+    //   this.computeCulling.indirectData[offset + 1] = 0;
+    // }
+
+    // console.log("Mesh map data sent to GPU:", this.computeCulling.instanceMeshData);
+    // Push the reset 0-instance counts to the GPU buffer
+    // this.computeCulling.flushIndirectBuffer();
+
+// for (let i = 0; i < this.maxDrawCalls; i++) {
+//   this.indirectData[i * 5 + 1] = 0; 
+// }
+
     this.computeCulling.flushIndirectBuffer();
     this.computeCulling.flushInstances();
     await this.computeCulling.execute(

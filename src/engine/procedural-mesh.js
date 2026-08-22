@@ -850,7 +850,7 @@ export default class ProceduralMeshObj extends Materials {
     this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
 
-  drawElements(pass, lightContainer) {
+  drawElements(pass) {
     pass.setVertexBuffer(0, this.vertexBufferA);
     pass.setVertexBuffer(1, this.normalBufferA);
     pass.setVertexBuffer(2, this.uvBuffer);
@@ -860,7 +860,7 @@ export default class ProceduralMeshObj extends Materials {
     pass.drawIndexed(this.indexCount);
   }
 
-  drawElementsIndirect = (pass, indirectBuffer, indirectOffset, lightContainer) => {
+  drawElementsIndirect = (pass, indirectBuffer, indirectOffset) => {
     pass.setVertexBuffer(0, this.vertexBufferA);
     pass.setVertexBuffer(1, this.normalBufferA);
     pass.setVertexBuffer(2, this.uvBuffer);

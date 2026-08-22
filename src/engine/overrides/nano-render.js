@@ -31,7 +31,7 @@ export let nanoPass = function() {
       pass.setBindGroup(1, meshes[0].materialBindGroup);
       for(const mesh of meshes) {
         pass.setBindGroup(2, mesh.modelBindGroup);
-        mesh.drawElements(pass, this.lightContainer);
+        mesh.drawElements(pass);
       }
     }
     pass.end();
