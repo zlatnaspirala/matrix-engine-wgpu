@@ -73,8 +73,8 @@ export class ComputeCullingSystem {
     //  console.log("Indirect buffer content:", this.indirectData);
   }
 
-  getComputeShaderCode() {
-    return `
+getComputeShaderCode() {
+  return `
 struct CullingParams {
   viewMatrix: mat4x4f,
   projMatrix: mat4x4f,
@@ -109,25 +109,27 @@ fn isInDistance(pos: vec3f) -> bool {
   return dist < params.maxDistance;
 }
 
-@compute @workgroup_size(256)
+@compute @workgroup_size(128)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
   let idx = gid.x;
-  if (idx >= arrayLength(&instances)) { return; }
-  let inst = instances[idx];
-  let position = inst.model[3].xyz;
-  if (isInFrustum(position, 1.0) && isInDistance(position)) {
-    let visIdx = atomicAdd(&visibleCounter, 1u);
-    if (visIdx < arrayLength(&visibleIndices)) {
-        visibleIndices[visIdx] = idx;
+  let isValid = idx < arrayLength(&instances);
+  if (isValid) {
+    let inst = instances[idx];
+    let position = inst.model[3].xyz;
+    if (isInFrustum(position, 1.0) && isInDistance(position)) {
+      let visIdx = atomicAdd(&visibleCounter, 1u);
+      if (visIdx < arrayLength(&visibleIndices)) {
+          visibleIndices[visIdx] = idx;
+      }
+      let meshIdx = instanceMeshMap[idx];
+      atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
     }
-    let meshIdx = instanceMeshMap[idx];
-    atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
   }
 
   workgroupBarrier();
   storageBarrier();
 }`;
-  }
+}
 
   createPipeline() {
     const code = this.getComputeShaderCode();
@@ -178,7 +180,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     const pass = commandEncoder.beginComputePass();
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
-    pass.dispatchWorkgroups(Math.ceil(this.maxInstances / 256));
+    pass.dispatchWorkgroups(Math.ceil(this.maxInstances / 128));
     pass.end();
   }
 
