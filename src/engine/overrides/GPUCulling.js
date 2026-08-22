@@ -205,9 +205,9 @@ export async function GPUIndirectDraws() {
     pass.end();
 
     // ============ 6. SINGLE SUBMIT ============
-    console.time('Encoder');
+    // console.time('Encoder');
     this.device.queue.submit([commandEncoder.finish()]);
-    console.timeEnd('Encoder');
+    // console.timeEnd('Encoder');
     if(this.collisionSystem) this.collisionSystem.update();
     this.graphUpdate(this.now);
     this.blendQueue.length = 0;

@@ -44199,7 +44199,6 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   }
   flushInstances() {
     this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
-    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData);
   }
   getIndirectBuffer() {
     return this.indirectBuffer;
@@ -44419,9 +44418,7 @@ async function GPUIndirectDraws() {
     pass.setBindGroup(0, this._activeBindGroup);
     pass.draw(6);
     pass.end();
-    console.time("Encoder");
     this.device.queue.submit([commandEncoder.finish()]);
-    console.timeEnd("Encoder");
     if (this.collisionSystem) this.collisionSystem.update();
     this.graphUpdate(this.now);
     this.blendQueue.length = 0;
@@ -46966,6 +46963,7 @@ var snakeLightsInstanced = function() {
   let app2 = new MatrixEngineWGPU({
     fastRender: 0.9,
     canvasSize: "fullscreen",
+    //    render: 'GPUInstancedDraw',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {

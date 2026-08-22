@@ -203,7 +203,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
   flushInstances() {
     this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
-    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData);
+    // this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData);
   }
 
   getIndirectBuffer() {return this.indirectBuffer;}
