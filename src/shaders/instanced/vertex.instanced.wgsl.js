@@ -198,17 +198,14 @@ fn main(
   @location(4) weights  : vec4<f32>,
   @builtin(instance_index) instId: u32,
   @builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
-  
   let inst = instances[instId];
   let flags = u32(vertexAnim.flags);
   var output : VertexOutput;
-
   // Determine base position (from cloth buffer or input)
   var basePosition = position;
   if ((flags & ANIM_CLOTH) != 0u) {
     basePosition = clothBuffer[vertexIndex].xyz;
   }
-
   // Skin the vertex
   let skinned = skinVertex(vec4(basePosition, 1.0), normal, joints, weights, instId);
   

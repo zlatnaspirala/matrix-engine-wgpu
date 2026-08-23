@@ -50,7 +50,6 @@ export async function GPUIndirectDraws() {
       }
       p.end();
     }
-
     //PER MESH
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
@@ -69,6 +68,8 @@ export async function GPUIndirectDraws() {
           effect.simulate?.(commandEncoder);
         }
       }
+
+      this.computeCulling.setMeshDrawCommand(i, mesh.indexCount, mesh.instanceCount);
 
       // const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
       // if(mesh.instanceData) {
@@ -90,8 +91,8 @@ export async function GPUIndirectDraws() {
       // }
     }
 
-    // this.computeCulling.flushIndirectBuffer();
-    // this.computeCulling.flushInstances();
+    this.computeCulling.flushIndirectBuffer();
+    this.computeCulling.flushInstances();
     // await this.computeCulling.execute(
     //   commandEncoder,
     //   camera.view,
@@ -99,11 +100,9 @@ export async function GPUIndirectDraws() {
     //   camera.position,
     //   10.0
     // );
-
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
-
     const indirectBuffer = this.computeCulling.getIndirectBuffer();
 
     for(const [pipeline, meshes] of this.opaqueBuckets) {
@@ -149,7 +148,7 @@ export async function GPUIndirectDraws() {
     }
     pass.end();
 
-    // ============ 5. POST PROCESSING ============
+    // POST PROCESSING
     if(this.ssrPass.enabled === true) {
       mat4.invert(camera.VP, this._invViewProj);
       this.ssrPass.updateConfig(this._invViewProj, camera.projectionMatrix);
@@ -192,14 +191,10 @@ export async function GPUIndirectDraws() {
     pass.setBindGroup(0, this._activeBindGroup);
     pass.draw(6);
     pass.end();
-
-    // ============ 6. SINGLE SUBMIT ============
-    // console.time('Encoder');
     this.device.queue.submit([commandEncoder.finish()]);
-    // console.timeEnd('Encoder');
     if(this.collisionSystem) this.collisionSystem.update();
-    this.graphUpdate(this.now);
-    this.blendQueue.length = 0;
+    // this.graphUpdate(this.now);
+    // this.blendQueue.length = 0;
   } catch(err) {
     if(this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
   }

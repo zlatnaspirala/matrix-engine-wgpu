@@ -1,13 +1,13 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-import {OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
+import {isMobile, OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
 import {followPath, loadNavMesh} from "../src/engine/buildin/navigation-plane/navigation.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 
 export var snakeLightsInstancedMAX = function() {
   let app = new MatrixEngineWGPU({
-    fastRender: 0.7,
+    fastRender: 0.8,
     canvasSize: 'fullscreen',
     render: 'GPUIndirectDraw',
     dontUsePhysics: true,
@@ -20,18 +20,18 @@ export var snakeLightsInstancedMAX = function() {
   }, async () => {
     addRaycastsAABBListener('canvas1', 'click');
     app.activateHZB()
-    const LIGHT_HEIGHT = 65;
+    const LIGHT_HEIGHT = 100;
     const CENTER = {x: 0, z: -10};
     app.addLight();
     const light = app.lightContainer[0];
-    light.setIntensity(130);
+    light.setIntensity(160);
     light.setPosition(CENTER.x, LIGHT_HEIGHT, CENTER.z);
     light.setTarget(CENTER.x, 0, CENTER.z);
 
     loadNavMesh("./res/meshes/nav-mesh/navmesh.json").then((r) => {
       app.nav = r;
       downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => {
-        app.addMeshObj({
+        const GROUND = app.addMeshObj({
           material: {type: 'standard'},
           position: {x: CENTER.x, y: -5, z: CENTER.z},
           texturesPaths: ['./res/textures/floor1.webp'],
@@ -43,20 +43,24 @@ export var snakeLightsInstancedMAX = function() {
           raycast: {enabled: true, radius: 1.5}
         });
 
-        app.addMeshObj({
+        GROUND.setUVScale(8, 8);
+        GROUND.setupMaterialPBR([200, 10, 1], 0, 0, 1, [210, 0, 10])
+
+        // app.mainRenderBundle[0].setMixEffectMode('mix')
+        const CUBEMAP = app.addMeshObj({
           material: {type: 'standard'},
-          position: {x: CENTER.x + 100, y: 4, z: CENTER.z},
+          position: {x: CENTER.x, y: 50, z: CENTER.z},
           texturesPaths: ['./res/textures/floor1.webp'],
           name: 'wall1',
           mesh: m.cube,
-          scale: [2, 20, 100],
+          scale: [100, 100, 100],
           physics: {enabled: false},
           shadowsCast: false,
           raycast: {enabled: true, radius: 1.5}
         });
-
+        CUBEMAP.setUVScale(8, 8);
+        CUBEMAP.setupMaterialPBR([200, 10, 1], 0, 0, 1, [210, 0, 10])
       }, {scale: [1, 1, 1]});
-
     })
 
     const glbFile = await fetch("res/meshes/glb/monster.glb")
@@ -66,7 +70,7 @@ export var snakeLightsInstancedMAX = function() {
     app.addGlbObjInctance({
       material: {type: 'standard', useTextureFromGlb: true},
       useScale: true,
-      scale: [5, 5, 5],
+      scale: [6, 6, 6],
       position: {x: CENTER.x, y: -4, z: CENTER.z},
       name: 'monster',
       texturesPaths: ['./res/meshes/glb/textures/mutant_origin.webp'],
@@ -79,8 +83,8 @@ export var snakeLightsInstancedMAX = function() {
     setTimeout(() => {
       monster = app.getSceneObjectByName('monster_MutantMesh');
       monster.sharedBones = false;
-      monster.updateMaxInstances(100);
-      monster.updateInstances(100);
+      monster.updateMaxInstances(isMobile() === true ? 50 : 100);
+      monster.updateInstances(isMobile() === true ? 50 : 100);
 
       app.lightContainer[0].setRange(200)
 
@@ -91,13 +95,19 @@ export var snakeLightsInstancedMAX = function() {
       app.cameras.WASD.setPitch(-0.55);
       app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
 
+      app.activateVolumetricEffect({
+        density: 15,
+        steps: 128,
+        scatterStrength: 0.3,
+        heightFalloff: 0.5,
+        lightColor: [250, 20, 6]
+      })
 
       app.monster.playAnimationByIndex(3);
 
       app.monster.position.onPositionReach = () => {
         app.monster.playAnimationByIndex(3)
       }
-
 
       app.canvas.addEventListener("ray.hit.event", (e) => {
         console.log('hitObject hitPoint ?', app.monster.position.z); // should be true

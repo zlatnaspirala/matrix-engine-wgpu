@@ -25763,17 +25763,14 @@ fn main(
   @location(4) weights  : vec4<f32>,
   @builtin(instance_index) instId: u32,
   @builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
-  
   let inst = instances[instId];
   let flags = u32(vertexAnim.flags);
   var output : VertexOutput;
-
   // Determine base position (from cloth buffer or input)
   var basePosition = position;
   if ((flags & ANIM_CLOTH) != 0u) {
     basePosition = clothBuffer[vertexIndex].xyz;
   }
-
   // Skin the vertex
   let skinned = skinVertex(vec4(basePosition, 1.0), normal, joints, weights, instId);
   
@@ -44299,7 +44296,10 @@ async function GPUIndirectDraws() {
           effect.simulate?.(commandEncoder);
         }
       }
+      this.computeCulling.setMeshDrawCommand(i2, mesh.indexCount, mesh.instanceCount);
     }
+    this.computeCulling.flushIndirectBuffer();
+    this.computeCulling.flushInstances();
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -44386,8 +44386,6 @@ async function GPUIndirectDraws() {
     pass.end();
     this.device.queue.submit([commandEncoder.finish()]);
     if (this.collisionSystem) this.collisionSystem.update();
-    this.graphUpdate(this.now);
-    this.blendQueue.length = 0;
   } catch (err) {
     if (this.logLoopError) console.log(`%cLoop(warn): ${err} Info: ${err.stack}`, LOG_WARN);
   }
@@ -65812,7 +65810,7 @@ var loadReactiveAudio = function() {
 // examples/max-instanced-13y-gpu-card.js
 var snakeLightsInstancedMAX = function() {
   let app2 = new MatrixEngineWGPU({
-    fastRender: 0.7,
+    fastRender: 0.8,
     canvasSize: "fullscreen",
     render: "GPUIndirectDraw",
     dontUsePhysics: true,
@@ -65825,17 +65823,17 @@ var snakeLightsInstancedMAX = function() {
   }, async () => {
     addRaycastsAABBListener("canvas1", "click");
     app2.activateHZB();
-    const LIGHT_HEIGHT = 65;
+    const LIGHT_HEIGHT = 100;
     const CENTER = { x: 0, z: -10 };
     app2.addLight();
     const light = app2.lightContainer[0];
-    light.setIntensity(130);
+    light.setIntensity(160);
     light.setPosition(CENTER.x, LIGHT_HEIGHT, CENTER.z);
     light.setTarget(CENTER.x, 0, CENTER.z);
     loadNavMesh("./res/meshes/nav-mesh/navmesh.json").then((r3) => {
       app2.nav = r3;
       downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m2) => {
-        app2.addMeshObj({
+        const GROUND = app2.addMeshObj({
           material: { type: "standard" },
           position: { x: CENTER.x, y: -5, z: CENTER.z },
           texturesPaths: ["./res/textures/floor1.webp"],
@@ -65846,24 +65844,28 @@ var snakeLightsInstancedMAX = function() {
           shadowsCast: false,
           raycast: { enabled: true, radius: 1.5 }
         });
-        app2.addMeshObj({
+        GROUND.setUVScale(8, 8);
+        GROUND.setupMaterialPBR([200, 10, 1], 0, 0, 1, [210, 0, 10]);
+        const CUBEMAP = app2.addMeshObj({
           material: { type: "standard" },
-          position: { x: CENTER.x + 100, y: 4, z: CENTER.z },
+          position: { x: CENTER.x, y: 50, z: CENTER.z },
           texturesPaths: ["./res/textures/floor1.webp"],
           name: "wall1",
           mesh: m2.cube,
-          scale: [2, 20, 100],
+          scale: [100, 100, 100],
           physics: { enabled: false },
           shadowsCast: false,
           raycast: { enabled: true, radius: 1.5 }
         });
+        CUBEMAP.setUVScale(8, 8);
+        CUBEMAP.setupMaterialPBR([200, 10, 1], 0, 0, 1, [210, 0, 10]);
       }, { scale: [1, 1, 1] });
     });
     const glbFile = await fetch("res/meshes/glb/monster.glb").then((r3) => r3.arrayBuffer()).then((buf) => uploadGLBModel(buf, app2.device));
     app2.addGlbObjInctance({
       material: { type: "standard", useTextureFromGlb: true },
       useScale: true,
-      scale: [5, 5, 5],
+      scale: [6, 6, 6],
       position: { x: CENTER.x, y: -4, z: CENTER.z },
       name: "monster",
       texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
@@ -65874,14 +65876,21 @@ var snakeLightsInstancedMAX = function() {
     setTimeout(() => {
       monster = app2.getSceneObjectByName("monster_MutantMesh");
       monster.sharedBones = false;
-      monster.updateMaxInstances(100);
-      monster.updateInstances(100);
+      monster.updateMaxInstances(isMobile() === true ? 50 : 100);
+      monster.updateInstances(isMobile() === true ? 50 : 100);
       app2.lightContainer[0].setRange(200);
       monster.position.thrust = 0.2;
       app2.monster = monster;
       app2.cameras.WASD.setYaw(0);
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
+      app2.activateVolumetricEffect({
+        density: 15,
+        steps: 128,
+        scatterStrength: 0.3,
+        heightFalloff: 0.5,
+        lightColor: [250, 20, 6]
+      });
       app2.monster.playAnimationByIndex(3);
       app2.monster.position.onPositionReach = () => {
         app2.monster.playAnimationByIndex(3);
