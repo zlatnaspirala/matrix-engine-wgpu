@@ -65872,6 +65872,32 @@ var snakeLightsInstancedMAX = function() {
     }, null, glbFile);
     app2.activateBloomEffect();
     app2.bloomPass.setBlurRadius(1.6);
+    let bloomRadius = 0.1;
+    let bloomIntesity = 0.1;
+    let arg1 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 82, color: "red" } : { left: "5", color: "red" };
+    MobileDOM.addButton("Bloom radius +", function() {
+      app2.bloomPass.setBlurRadius(bloomRadius);
+      bloomRadius++;
+    }, () => {
+    }, arg1);
+    let arg2 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 73, color: "red" } : { left: "13", color: "red" };
+    MobileDOM.addButton("Bloom radius -", function() {
+      app2.bloomPass.setBlurRadius(bloomRadius);
+      if (bloomRadius - 1 > 0) bloomRadius--;
+    }, () => {
+    }, arg2);
+    let arg3 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 64, color: "red" } : { left: "21", color: "red" };
+    MobileDOM.addButton("Bloom intesity +", function() {
+      app2.bloomPass.setIntensity(bloomIntesity);
+      bloomIntesity = bloomIntesity + 0.5;
+    }, () => {
+    }, arg3);
+    let arg4 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 55, color: "red" } : { left: "29", color: "red" };
+    MobileDOM.addButton("Bloom intesity -", function() {
+      app2.bloomPass.setIntensity(bloomIntesity);
+      if (bloomIntesity - 0.5 > 0) bloomIntesity = bloomIntesity - 0.5;
+    }, () => {
+    }, arg4);
     let monster = null;
     setTimeout(() => {
       monster = app2.getSceneObjectByName("monster_MutantMesh");
@@ -65885,7 +65911,7 @@ var snakeLightsInstancedMAX = function() {
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
       app2.activateVolumetricEffect({
-        density: 15,
+        density: 20,
         steps: 128,
         scatterStrength: 0.3,
         heightFalloff: 0.5,

@@ -1,9 +1,10 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-import {isMobile, OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
+import {getOrientation, isMobile, OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
 import {followPath, loadNavMesh} from "../src/engine/buildin/navigation-plane/navigation.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
+import {MobileDOM} from "../src/engine/cameras.js";
 
 export var snakeLightsInstancedMAX = function() {
   let app = new MatrixEngineWGPU({
@@ -78,6 +79,30 @@ export var snakeLightsInstancedMAX = function() {
 
     app.activateBloomEffect();
     app.bloomPass.setBlurRadius(1.6);
+
+    let bloomRadius = 0.1;
+    let bloomIntesity = 0.1;
+    let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 82, color: 'red'} : {left: '5', color: 'red'};
+    MobileDOM.addButton("Bloom radius +", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      bloomRadius++;
+    }, () => {}, arg1);
+    let arg2 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 73, color: 'red'} : {left: '13', color: 'red'};
+    MobileDOM.addButton("Bloom radius -", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      if((bloomRadius - 1 > 0)) bloomRadius--;
+    }, () => {}, arg2);
+    let arg3 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 64, color: 'red'} : {left: '21', color: 'red'};
+    MobileDOM.addButton("Bloom intesity +", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      bloomIntesity = bloomIntesity + 0.5;
+    }, () => {}, arg3);
+    let arg4 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 55, color: 'red'} : {left: '29', color: 'red'};
+    MobileDOM.addButton("Bloom intesity -", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      if((bloomIntesity - 0.5 > 0)) bloomIntesity = bloomIntesity - 0.5;
+    }, () => {}, arg4);
+
     let monster = null;
 
     setTimeout(() => {
@@ -95,8 +120,9 @@ export var snakeLightsInstancedMAX = function() {
       app.cameras.WASD.setPitch(-0.55);
       app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
 
+
       app.activateVolumetricEffect({
-        density: 15,
+        density: 20,
         steps: 128,
         scatterStrength: 0.3,
         heightFalloff: 0.5,
