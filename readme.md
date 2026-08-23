@@ -63,7 +63,7 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
  - MACOS   Opera (arm64) ✔️       (golden gate)
  - MACOS   Edge ✔️                (golden gate)
 
-<video src="https://github.com/zlatnaspirala/matrix-engine-wgpu/raw/refs/heads/main/non-project-files/indirect-draw-webgpu-the-beast-engine.mp4" width="100%"></video>
+<video src="https://github.com/user-attachments/assets/8ef7fcd2-c54e-404e-902d-4743f7609c5b" width="100%"></video>
 
 
 [![Video](https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files//indirect-draws.png)](https://www.youtube.com/watch?v=gE6FjwxMGyo)
