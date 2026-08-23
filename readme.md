@@ -18,14 +18,9 @@ It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle
 
 Published on npm as: **`matrix-engine-wgpu`** (not always updated on last - recommended is to use github clone)
 From [1.18.7] ver npm package is much more stable and usable. All examples can be done by npm services not just github clone.
-You can also use (links tested). You can use `RES` like prefix for textures or objects paths. TheBeast is friendly with codepen, worker physics bridge will test host origin name is it exsternal or not to fix loading link if not it will use local resource always.
-```js
-import {MatrixEngineWGPU, downloadMeshes} from "https://esm.sh/matrix-engine-wgpu";
-let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
-```
+You can also use public provides like `unpkg.com` etc. You can use `PREFIX` for textures or objects paths. The-Beast is friendly with codepen, worker physics bridge will test host origin name is it exsternal or not to fix loading link if not it will use local resource always. See [codepen examples](https://codepen.io/editor/zlatnaspirala/pen/019fc918-e45f-73f4-9987-9a1599ac4a1f).
 
-- Backend editorX (VisualScripting) (works in local env - desktop browsers) support list:
-  Chrome, Edge, Opera, Firefox desktop
+- Backend editorX (App level+Shader VisualScripting) (works in local env - desktop browsers) support list: Chrome, Edge, Opera, Firefox desktop.
 
 - Code Creator (TheBeast Code generator) is standalone. Can be used public but user must trust page to enter api key.
 Without api key no ai response. Code creator make project from task and test it direct intro same page.
@@ -69,6 +64,8 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
  - MACOS   Edge ✔️                (golden gate)
 
 <video src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/indirect-draw-webgpu-the-beast-engine.mp4" width="100%"></video>
+
+[![Video](https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files//indirect-draws.png)](https://www.youtube.com/watch?v=VIDEO_ID)
 
 ## Roadmap/sync to external parts
 
