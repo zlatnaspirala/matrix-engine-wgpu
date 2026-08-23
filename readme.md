@@ -43,7 +43,8 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 - ✔️ Bloom post processing.
 - ✔️ HZB post processing.
 - ✔️ Volumetric post processing.
-- ✔️ Scene Culling feature (see maze example).
+- ✔️ GPU Features: `texture-compression-bc` - (Not active by default).
+- ✔️ Scene Culling feature (see maze example for CPU Culling).
 - 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
 - ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).
 - ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader).
@@ -57,6 +58,16 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 - ✔️ Code creator AI services agent system(use engine from npm)
     `npm run creator` for 'http://localhost:3000/' `npm run creator-backend` for backend.
     create games from simple prompt.
+
+
+## Supported browsers for final build:
+ - Windows Chrome ✔️
+ - Windows Firefox ✔️
+ - MACOS   Chrome (151 tested) ✔️ (golden gate)
+ - MAXOS   Firefox ✔️             (golden gate)
+ - MACOS   Opera (arm64) ✔️       (golden gate)
+ - MACOS   Edge ✔️                (golden gate)
+
 
 ## Roadmap/sync to external parts
 

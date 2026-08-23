@@ -1,4 +1,4 @@
-import {MEConfig} from "./me-config.js";
+import {GPU_FEATURES, gpuSettings, MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {CinematicCamera, FirstPersonCamera, PlaneCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
@@ -33,6 +33,10 @@ import {mobile1} from "./engine/overrides/mobile-1.js";
 import {SSRPass} from "./engine/postprocessing/hzb.js";
 import {KaleidoscopeEffect} from "./engine/effects/KaleidoscopeEffect.js";
 import {CulledRenderPass} from "./engine/culling/culling.js";
+import {GPUCapabilities} from "./engine/GPUCapabilities.js";
+import {ComputeCullingSystem, IndirectRenderingManager} from "./engine/indirect-core.js";
+import {GPUIndirectDraws} from "./engine/overrides/GPUCulling.js";
+
 /**
  * @description
  * Main engine root class.
@@ -59,10 +63,9 @@ if('serviceWorker' in navigator) {
         APP_READY = true;
       }
     }).catch((cacheErr) => {
-      // APP_READY = true;
       console.warn('cacheErr[APP_READY forced public access]:', cacheErr);
       let RES = 'https://unpkg.com/matrix-engine-wgpu@latest/public';
-      navigator.serviceWorker.register(RES+'/cache.js').then(registration => {
+      navigator.serviceWorker.register(RES + '/cache.js').then(registration => {
         if(!navigator.serviceWorker.controller) {
           // console.log('Installing & caching for the first time...');
           meLoader.create('LOADING');
@@ -154,8 +157,8 @@ export default class MatrixEngineWGPU {
     this.now = 0;
     this.logLoopError = this.MEConfig.logLoopError;
 
-    if(typeof options.alphaMode == 'undefined') {
-      options.alphaMode = "no";
+    if(typeof options.alphaMode === 'undefined') {
+      options.alphaMode = "premultiplied";
     } else if(options.alphaMode != 'opaque' && options.alphaMode != 'premultiplied') {
       console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied'!");
       return;
@@ -209,6 +212,7 @@ export default class MatrixEngineWGPU {
         this.matrixPhysics._PHYSICS_DRIVE = 'MATTERJS';
       }
     }
+    this.options = options;
     // cache
     this._sceneData = new Float32Array(48);
     this._viewScratch = new Float32Array(16);
@@ -254,6 +258,8 @@ export default class MatrixEngineWGPU {
         const arg = {range: options.cullingRange ? options.cullingRange : 500};
         this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
+      } else if(options.render == 'GPUIndirectDraw') {
+        this.overrideRender = GPUIndirectDraws.bind(this);
       }
     }
     window.addEventListener('keydown', e => {
@@ -285,8 +291,6 @@ export default class MatrixEngineWGPU {
       }
     };
 
-    this.options = options;
-
     this.mainCameraParams = options.mainCameraParams;
     const target = this.options.appendTo || document.body;
     var canvas = document.createElement('canvas');
@@ -294,7 +298,7 @@ export default class MatrixEngineWGPU {
     this.canvas = canvas;
     if(this.options.canvasSize == 'fullscreen') {
       if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-        console.log('FastRender : ', this.options.fastRender)
+        // console.log('FastRender : ', this.options.fastRender)
         this.applyCanvasSize(this.options.fastRender)
       } else if(isMobile() == true) {
         canvas.width = isMobile() == false ? window.innerWidth : screen.availWidth;
@@ -308,7 +312,6 @@ export default class MatrixEngineWGPU {
         canvas.height = isMobile() == false ? window.innerHeight : window.innerHeight;
       }
     } else {
-      console.log('Apply custom W H');
       canvas.width = this.options.canvasSize.w;
       canvas.height = this.options.canvasSize.h;
     }
@@ -376,18 +379,16 @@ export default class MatrixEngineWGPU {
     if(this.options.fastRender && !isNaN(this.options.fastRender) && isMobile()) {
       if(byId('msgBox')) byId('msgBox').style.left = '30%';
       if(MEConfig.LOAD_AFTER_CLICK_MOBILE == false && MEConfig.CACHE === false) {
-        console.log('GOT DIRECT WHAT EVER')
+        // console.log('GOT DIRECT WHAT EVER')
         this.applyCanvasSize(this.options.fastRender)
         this.init({canvas, callback});
         this.MEConfig.fsManager.onChange((isFS, target) => {
-          console.log('GOT to FS', isFS)
           if(isFS == false) {
             setTimeout(() => this.applyCanvasSize(this.options.fastRender), 100);
           }
         })
         addEventListener("run_mobile_fs", () => {
           if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-            console.log('got to first in fs : ', this.options.fastRender)
             this.applyCanvasSizeMobile(this.options.fastRender)
           }
         })
@@ -398,7 +399,7 @@ export default class MatrixEngineWGPU {
         if(APP_READY === false && isMobile() === true &&
           location.hostname.indexOf('192.168.') === -1
         ) {
-          // console.log('Installing cache...');
+          // RELOAD
           setTimeout(() => {location.reload();}, 4000)
         } else {
           if(MEConfig.LOAD_AFTER_CLICK_MOBILE == false) {
@@ -424,9 +425,6 @@ export default class MatrixEngineWGPU {
           });
 
           addEventListener("run_mobile_fs", () => {
-            // if(this.options.fastRender && !isNaN(this.options.fastRender)) {
-            //   // this.applyCanvasSizeMobile(this.options.fastRender)
-            // }
             meLoader.destroy();
             // Only for mobile - BUG
             if(typeof this.options.lock !== 'undefined') {
@@ -456,12 +454,11 @@ export default class MatrixEngineWGPU {
               });
             }
             if(this.mainRenderBundle.length == 0) {
-              // console.log('PhysicsReady')
               dispatchEvent(new CustomEvent('PhysicsReady', {}));
             }
           });
         }
-      }, 500);
+      }, 400);
     } else {
       this.init({canvas, callback});
     }
@@ -489,6 +486,13 @@ export default class MatrixEngineWGPU {
         {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
       ]
     });
+
+    this.dummyClothBuffer = this.device.createBuffer({
+      label: "Dummy Cloth",
+      size: 16,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout[mesh]',
       entries: [
@@ -496,16 +500,18 @@ export default class MatrixEngineWGPU {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ],
     });
     // GLB INSTANCED
     this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
-      label: 'uniformBufferBindGroupLayout in mesh [instanced]',
+      label: 'uniformBufferBindGroupLayout [instanced]',
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ],
     });
   }
@@ -532,23 +538,33 @@ export default class MatrixEngineWGPU {
 
   init = async ({canvas, callback}) => {
     this.adapter = await navigator.gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice({
-      extensions: ["ray_tracing"]
-    });
-
-    if(this.options.alphaMode == "no") {
-      this.context = canvas.getContext('webgpu');
-    } else if(this.options.alphaMode == "opaque") {
-      this.context = canvas.getContext('webgpu', {alphaMode: 'opaque'});
-    } else {
-      this.context = canvas.getContext('webgpu', {alphaMode: 'premultiplied'});
+    this.gpuCapabilities = new GPUCapabilities(this.adapter);
+    const requiredFeatures = [];
+    for(const feature of GPU_FEATURES.GROUP_1) {
+      if(this.adapter.features.has(feature)) {
+        console.log(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
+        requiredFeatures.push(feature);
+      }
     }
+    for(const feature of GPU_FEATURES.GROUP_2) {
+      if(gpuSettings.features[feature] === true && this.adapter.features.has(feature)) {
+        requiredFeatures.push(feature);
+      }
+    }
+    this.device = await this.adapter.requestDevice({requiredFeatures});
+    this.gpuCapabilities.enabled = new Set(this.device.features);
 
+    if(this.gpuCapabilities.isEnabled('texture-compression-bc')) {
+      console.info(`%cBC texture compression available.`, LOG_FUNNY_ARCADE);
+    }
+    MEConfig.gpuCapabilities = this.gpuCapabilities;
+
+    this.context = canvas.getContext('webgpu');
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     this.context.configure({
       device: this.device,
       format: presentationFormat,
-      alphaMode: 'premultiplied',
+      alphaMode: this.options.alphaMode,
     });
 
     this.globalAmbient = vec3.create(1.0, 1.0, 1.0);
@@ -569,15 +585,15 @@ export default class MatrixEngineWGPU {
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 1.19.xx [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open...\n" +
-      "Npm ready, codepen fully supported.\n" +
+      "Npm ready, codepen fully supported (physics worker).\n" +
       "Optimised MediaPipe buildin library implemented.\n" +
       "Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
       "Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
-      "New Features: NUI-Commander Game runner, Mediapipe, Culling render mode, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      "New Features: NUI-Commander Game runner, Mediapipe, Culling render mode CPU + GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
       "2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
       "Mobile support: chrome-android tested. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
     console.log(
@@ -598,6 +614,10 @@ export default class MatrixEngineWGPU {
 
   createGlobalStuff(callback) {
     this.startTime = performance.now() / 1000;
+    if(this.options.render == 'GPUIndirectDraw') {
+      this.indirectManager = new IndirectRenderingManager();
+      this.computeCulling = new ComputeCullingSystem(this.device, this.gpuCapabilities, 4096);
+    }
     addEventListener('update-pipeine-buckets', () => {
       this.buildRenderBuckets(this.mainRenderBundle);
       this.getCamera()._dirtyAngle = true;
@@ -971,7 +991,26 @@ export default class MatrixEngineWGPU {
       }
       bucket.push(mesh);
     }
-    this.buildLightShadowBuckets()
+    this.buildLightShadowBuckets();
+    if(this.indirectManager) {
+      this.rebuildIndirectBuffer()
+    }
+  }
+
+  rebuildIndirectBuffer() {
+    setTimeout(() => {
+      let cumulativeInstanceIndex = 0;
+      for(let i = 0;i < this.indirectManager.indirectMeshes.length;i++) {
+        const mesh = this.indirectManager.indirectMeshes[i];
+        const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+        const instanceCount = mesh.instanceCount || 1;
+        const indexCount = mesh.indexCount || 36;
+        mesh.globalInstanceIndex = cumulativeInstanceIndex;
+        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
+        cumulativeInstanceIndex += instanceCount;
+      }
+      this.computeCulling.flushIndirectBuffer();
+    }, 100);
   }
 
   buildLightShadowBuckets() {
@@ -1051,17 +1090,23 @@ export default class MatrixEngineWGPU {
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
 
+    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+      o.dummyClothBuffer = this.dummyClothBuffer;
+    }
+
     let myMesh1 = new MEMeshObj(
       this.canvas, this.device, this.context, o, this.inputHandler, AM,
       null, null, null,
       this.cameraBuffer);
     myMesh1.clearColor = clearColor;
+
     if(o.physics.enabled == true) {
       myMesh1.itIsPhysicsBody = true;
       this.matrixPhysics.addPhysics(myMesh1, o.physics);
     } else {
       myMesh1.itIsPhysicsBody = false;
     }
+    if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh1);
     this.mainRenderBundle.push(myMesh1);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
@@ -1116,6 +1161,11 @@ export default class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     o.materialBGL = this.materialBGL;
     o.uniformBufferBindGroupLayout = this.uniformBufferBindGroupLayout;
+
+    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+      o.dummyClothBuffer = this.dummyClothBuffer;
+    }
+
     let myMesh = new ProceduralMeshObj(this.canvas, this.device, this.context, o, this.inputHandler, AM, this.cameraBuffer);
     myMesh.clearColor = clearColor;
     if(o.physics.enabled === true) {
@@ -1124,6 +1174,7 @@ export default class MatrixEngineWGPU {
     } else {
       myMesh.itIsPhysicsBody = false;
     }
+    if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh);
     this.mainRenderBundle.push(myMesh);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
@@ -1223,14 +1274,13 @@ export default class MatrixEngineWGPU {
   frameSinglePass = () => {
     const now2 = performance.now();
     this.now = now2 * 0.001;
-    this.lastFrameMS = this.now;
-    this.autoUpdate.forEach((_) => _.update(this.now))
+    const camera = this.getCamera();
+    this.autoUpdate.forEach((_) => _.update(this.now));
     requestAnimationFrame(this.frame);
     try {
       let commandEncoder = this.device.createCommandEncoder();
       if(this.matrixPhysics) this.matrixPhysics.updatePhysics();
       this.updateLights();
-      const camera = this.getCamera();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if(camera._dirtyAngle || camera._dirty) {
@@ -1266,7 +1316,6 @@ export default class MatrixEngineWGPU {
         }
         p.end();
       }
-
       const len = this.mainRenderBundle.length;
       for(let i = 0;i < len;i++) {
         const mesh = this.mainRenderBundle[i];
@@ -1433,6 +1482,11 @@ export default class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     let r = [];
     o.textureCache = this.textureCache;
+
+    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+      o.dummyClothBuffer = this.dummyClothBuffer;
+    }
+
     let skinnedNodeIndex = 0;
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
@@ -1460,6 +1514,7 @@ export default class MatrixEngineWGPU {
           bvhPlayer.itIsPhysicsBody = false;
         }
         // Soft
+        if(this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
         this.sortRenderBundle();
@@ -1527,6 +1582,11 @@ export default class MatrixEngineWGPU {
     o.sceneBGL = this.sceneBGL;
     let results = [];
     let skinnedNodeIndex = 0;
+
+    if(o.physics.enabled !== true || o.physics.geometry !== 'Cloth') {
+      o.dummyClothBuffer = this.dummyClothBuffer;
+    }
+
     for(const skinnedNode of glbFile.skinnedMeshNodes) {
       let c = 0;
       for(const primitive of skinnedNode.mesh.primitives) {
@@ -1564,6 +1624,9 @@ export default class MatrixEngineWGPU {
         }
         // Soft
         setTimeout(() => {
+          if(this.indirectManager) {
+           bvhPlayer.indirectDrawIndex = this.indirectManager.registerIndirectDraw(bvhPlayer);
+          }
           this.mainRenderBundle.push(bvhPlayer);
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);

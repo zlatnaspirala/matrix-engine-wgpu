@@ -18,7 +18,7 @@ import {colorbWGSL} from "../shaders/minimalist/color-b.wgsl";
 import {fountainBasinFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
 import {MaterialBindGroupCache} from "./pipelineManager";
 import {fragmentDarkWGSL} from "../shaders/fragment.dark.wgsl";
-
+import {MEConfig} from "../me-config";
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -34,7 +34,6 @@ export default class Materials {
     this.glb = glb;
     this.material = material;
     if(typeof isVideo !== 'undefined') {
-      // console.log("WHAT IS isvideo ??", this.isVideo)
       this.isVideo = true;
     } else {this.isVideo = false}
     this.videoIsReady = 'NONE';
@@ -67,7 +66,7 @@ export default class Materials {
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
     // Upload a single pixel
-    const pixel = new Uint8Array([255, 255, 255, 255]); // white RGBA
+    const pixel = new Uint8Array([255, 255, 255, 255]);
     this.device.queue.writeTexture(
       {texture: mrDummyTex},
       pixel,
@@ -135,9 +134,6 @@ export default class Materials {
         minFilter: 'linear',
       });
     }
-
-    // remove later
-    // remove later
     this.materialVideoBGL = this.device.createBindGroupLayout({
       label: 'MaterialVideoBGL[mesh]',
       entries: [
@@ -146,7 +142,6 @@ export default class Materials {
         {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
       ]
     });
-
     if(this.material.type == 'water') {
       this.createBufferForWater();
     }
@@ -283,7 +278,7 @@ export default class Materials {
     return texture;
   }
 
-  setBlend = (alpha, r=1 , g=1 , b=1) => {
+  setBlend = (alpha, r = 1, g = 1, b = 1) => {
     this.material.useBlend = true;
     this.setupMaterialPBR([r, g, b, alpha]);
     if(app) app.buildLightShadowBuckets();
@@ -489,7 +484,7 @@ export default class Materials {
   async loadTex0(texturesPaths) {
     return new Promise(async (resolve) => {
       const path = texturesPaths[0];
-      const {texture, sampler} = await this.textureCache.get(path, this.getFormat());
+      const {texture, sampler} = await this.textureCache.get(path, this.getFormat(), false, MEConfig.gpuCapabilities.isEnabled('texture-compression-bc'));
       this.texture0 = texture;
       this.sampler = sampler;
       resolve(this);
@@ -606,7 +601,7 @@ export default class Materials {
       canvas.width = arg.width || 256;
       canvas.height = arg.height || 256;
 
-      canvas.style.width = (arg.width || 256)+ 'px';
+      canvas.style.width = (arg.width || 256) + 'px';
       canvas.style.height = (arg.height || 256) + 'px';
 
       canvas.style.position = 'absolute';
@@ -652,7 +647,7 @@ export default class Materials {
 
       this.updateVideoTexture();
       this.createMaterialBindGroupVideo();
-      setTimeout(() => this.setupPipeline() , 200)
+      setTimeout(() => this.setupPipeline(), 200)
       // little strange
       // this.isVideo = false;
       // this.video = document.createElement('video');
@@ -673,14 +668,14 @@ export default class Materials {
         setTimeout(() => {
 
           try {
-          this.updateVideoTexture();
-          this.createMaterialBindGroupVideo();
-          this.setupPipeline();
-          resolve();
+            this.updateVideoTexture();
+            this.createMaterialBindGroupVideo();
+            this.setupPipeline();
+            resolve();
           } catch(err) {
             return;
           }
-          
+
           // Very interest
           const ci1 = document.getElementById('ci1')
           if(ci1) {

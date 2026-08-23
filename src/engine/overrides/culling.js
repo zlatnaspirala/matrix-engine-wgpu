@@ -1,6 +1,11 @@
 import {mat4} from "wgpu-matrix";
 import {LOG_WARN} from "../utils";
 
+/**
+ * @description
+ * CPU Culling still present and default.
+ */
+
 export let cullingPass = function() {
   const now2 = performance.now();
   this.now = now2 * 0.001;
@@ -76,7 +81,7 @@ export let cullingPass = function() {
         pass.setBindGroup(2, mesh.modelBindGroup);
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
-        mesh.drawElements(pass, this.lightContainer);
+        mesh.drawElements(pass);
       }
     }
     for(const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
@@ -86,7 +91,7 @@ export let cullingPass = function() {
         pass.setBindGroup(2, mesh.modelBindGroup);
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
-        mesh.drawElements(pass, this.lightContainer);
+        mesh.drawElements(pass);
       }
     }
     for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
@@ -202,7 +207,7 @@ export let noShadowPass = function() {
         pass.setBindGroup(2, mesh.modelBindGroup);
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
-        mesh.drawElements(pass, this.lightContainer);
+        mesh.drawElements(pass);
       }
     }
     for(const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
@@ -212,7 +217,7 @@ export let noShadowPass = function() {
         pass.setBindGroup(2, mesh.modelBindGroup);
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
-        mesh.drawElements(pass, this.lightContainer);
+        mesh.drawElements(pass);
       }
     }
     for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {

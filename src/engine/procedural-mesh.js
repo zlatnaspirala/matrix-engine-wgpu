@@ -30,6 +30,7 @@ export default class ProceduralMeshObj extends Materials {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, cameraBuffer) {
     super(device, o.material, null, o.textureCache);
     this.name = o.name || genName(3);
+    this.o_ = o;
     this.done = false;
     this.canvas = canvas;
     this.device = device;
@@ -55,6 +56,11 @@ export default class ProceduralMeshObj extends Materials {
     this.sceneBGL = o.sceneBGL;
     this.materialBGL = o.materialBGL;
     this.uniformBufferBindGroupLayout = o.uniformBufferBindGroupLayout;
+
+    if(o.physics.geometry !== 'Cloth') {
+      this.dummyClothBuffer = o.dummyClothBuffer;
+    }
+    this._o = o;
 
     if(o.meshA && o.meshB) {
       // Use your existing mesh objects directly
@@ -335,7 +341,7 @@ export default class ProceduralMeshObj extends Materials {
   }
 
   _setupUniforms() {
-    if (typeof this.effects === 'undefined') this.effects = {};
+    if(typeof this.effects === 'undefined') this.effects = {};
     if(this.pointerEffect && this.pointerEffect.enabled === true) {
       let pf = navigator.gpu.getPreferredCanvasFormat();
       if(typeof this.pointerEffect.pointer !== 'undefined' && this.pointerEffect.pointer == true) {
@@ -387,16 +393,7 @@ export default class ProceduralMeshObj extends Materials {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // bones
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // vertexAnim
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // morphBlend
-      ]
-    });
-
-    this.modelBindGroup = this.device.createBindGroup({
-      layout: this.uniformBufferBindGroupLayout,
-      entries: [
-        {binding: 0, resource: {buffer: this.modelUniformBuffer}},
-        {binding: 1, resource: {buffer: this.bonesBuffer}},
-        {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
-        {binding: 3, resource: {buffer: this.morphBlendBuffer}},
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ]
     });
 
@@ -410,8 +407,20 @@ export default class ProceduralMeshObj extends Materials {
       ]
     });
 
+    if(this.o_.physics.geometry === 'Cloth') {
+      const maxClothParticles = 384;
+      this.clothBuffer = this.device.createBuffer({
+        label: "Cloth Physics Storage Buffer",
+        size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      });
+    } else {
+      this.clothBuffer = this.dummyClothBuffer;
+    }
+
     this.vertexAnim = {
       active: false,
+      clothBuffer: this.clothBuffer,
       enableWave: () => {
         this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
@@ -527,6 +536,25 @@ export default class ProceduralMeshObj extends Materials {
       },
       getIntensity: () => {return this.vertexAnimParams[2]}
     };
+
+    this.uvScaleBuffer = this.device.createBuffer({
+      size: 8,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    const entries = [
+      {binding: 0, resource: {buffer: this.modelUniformBuffer}},
+      {binding: 1, resource: {buffer: this.bonesBuffer}},
+      {binding: 2, resource: {buffer: this.vertexAnimBuffer}},
+      {binding: 3, resource: {buffer: this.morphBlendBuffer}},
+      {binding: 4, resource: {buffer: this.vertexAnim.clothBuffer, offset: 0, size: this.vertexAnim.clothBuffer.size, }}
+    ];
+
+    this.modelBindGroup = this.device.createBindGroup({
+      label: 'modelBindGroup mesh',
+      layout: this.uniformBufferBindGroupLayout,
+      entries: entries,
+    });
 
     this.updateVertexAnimBuffer = () => {
       this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
@@ -815,7 +843,7 @@ export default class ProceduralMeshObj extends Materials {
     this.device.queue.writeBuffer(this.vertexAnimBuffer, 0, this.vertexAnimParams);
   }
 
-  drawElements(pass, lightContainer) {
+  drawElements(pass) {
     pass.setVertexBuffer(0, this.vertexBufferA);
     pass.setVertexBuffer(1, this.normalBufferA);
     pass.setVertexBuffer(2, this.uvBuffer);
@@ -823,6 +851,16 @@ export default class ProceduralMeshObj extends Materials {
     pass.setVertexBuffer(4, this.normalBufferB);
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount);
+  }
+
+  drawElementsIndirect = (pass, indirectBuffer, indirectOffset) => {
+    pass.setVertexBuffer(0, this.vertexBufferA);
+    pass.setVertexBuffer(1, this.normalBufferA);
+    pass.setVertexBuffer(2, this.uvBuffer);
+    pass.setVertexBuffer(3, this.vertexBufferB);
+    pass.setVertexBuffer(4, this.normalBufferB);
+    pass.setIndexBuffer(this.indexBuffer, 'uint16');
+    pass.drawIndexedIndirect(indirectBuffer, indirectOffset);
   }
 
   drawShadows(shadowPass) {

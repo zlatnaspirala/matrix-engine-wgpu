@@ -7,6 +7,7 @@ export var snakeLightsInstanced = function() {
   let app = new MatrixEngineWGPU({
     fastRender: 0.9,
     canvasSize: 'fullscreen',
+    // render: 'GPUIndirectDraw',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     mainCameraParams: {

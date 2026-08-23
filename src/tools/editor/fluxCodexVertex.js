@@ -4151,7 +4151,6 @@ LIST OF INTEREST OBJECT:
         n._returnCache = value;
         // Update visual label if exists
         if(n.displayEl) {
-          // console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', type)
           if(type === "object") {
             n.displayEl.textContent =
               value !== undefined ? JSON.stringify(value) : "{}";
@@ -5493,7 +5492,6 @@ LIST OF INTEREST OBJECT:
 
   init() {
     const saved = localStorage.getItem(this.SAVE_KEY);
-    // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", app.graph)
     if(saved || app.graph) {
       try {
         let data;

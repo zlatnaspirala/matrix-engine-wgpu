@@ -221,6 +221,7 @@ export class SpotLight {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ]
     });
 
@@ -231,6 +232,7 @@ export class SpotLight {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ],
     });
 
@@ -240,7 +242,8 @@ export class SpotLight {
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // model
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // bones
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // vertexAnim
-        {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}  // morphBlend
+        {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}, // morphBlend
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
       ]
     });
 

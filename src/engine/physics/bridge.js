@@ -82,10 +82,30 @@ export class PhysicsBridge {
   }
 
   _doAddPhysics(MEObject, pOptions) {
-
     MEObject.isKinematic = pOptions.state === 4;
-    this._send('addBody', {pOptions}).then(idx => {
-      this._bodyIndexMap.set(idx, MEObject);
+
+    this._send('addBody', {pOptions}).then((startIndex) => {
+      // Check if this specific body option was a Cloth
+      if(pOptions.geometry === 'Cloth') {
+        console.log("addBody cloth startIndex:", startIndex);
+        // nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
+        // ny: 23, // Must match your OBJ's height subdivisions + 1
+        const nx = pOptions.nx || 15;
+        const ny = pOptions.ny || 23;
+        const count = (nx + 1) * (ny + 1);
+        if(!this._clothMap) this._clothMap = new Map();
+        this._clothMap.set(startIndex, {
+          mesh: MEObject,
+          startIndex: startIndex,
+          nx: nx,
+          ny: ny,
+          count: count
+        });
+        console.log("Cloth registered successfully:", {startIndex, nx, ny, count});
+      } else {
+        // Regular rigid body
+        this._bodyIndexMap.set(startIndex, MEObject);
+      }
     });
   }
 
@@ -297,12 +317,35 @@ export class PhysicsBridge {
     this._worker.postMessage({cmd: 'createSphereBoundary', idxs, pos, radius});
   }
 
+  // _syncToObjects() {
+  //   const snap = this._snapshot;
+  //   if(!snap) return;
+  //   const STRIDE = 8;
+  //   for(const [idx, meObj] of this._bodyIndexMap) {
+  //     // if(!meObj.modelMatrix || meObj.isKinematic=== true) continue;
+  //     if(!meObj.modelMatrix) continue;
+  //     const b = idx * STRIDE;
+  //     const pos = snap.subarray(b, b + 3);
+  //     const quat = snap.subarray(b + 3, b + 7);
+  //     mat4.fromQuat(quat, meObj.modelMatrix);
+  //     meObj.modelMatrix[12] = pos[0];
+  //     meObj.modelMatrix[13] = pos[1];
+  //     meObj.modelMatrix[14] = pos[2];
+  //     mat4.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
+  //     meObj.modelMatrix[15] = 1;
+  //     meObj.position.inMove = true;
+  //     meObj.position.x = pos[0];
+  //     meObj.position.y = pos[1];
+  //     meObj.position.z = pos[2];
+  //   }
+  // }
   _syncToObjects() {
     const snap = this._snapshot;
     if(!snap) return;
     const STRIDE = 8;
+
+    // 1. Sync standard rigid bodies
     for(const [idx, meObj] of this._bodyIndexMap) {
-      // if(!meObj.modelMatrix || meObj.isKinematic=== true) continue;
       if(!meObj.modelMatrix) continue;
       const b = idx * STRIDE;
       const pos = snap.subarray(b, b + 3);
@@ -318,7 +361,27 @@ export class PhysicsBridge {
       meObj.position.y = pos[1];
       meObj.position.z = pos[2];
     }
+
+    // 2. Sync Cloth bodies (if any exist in snapshot)
+    if(this._clothMap) {
+      for(const [startIndex, clothData] of this._clothMap) {
+        const meObj = clothData.mesh;
+        const count = clothData.count;
+        // Assuming cloth vertex positions start after rigid bodies in the snapshot, 
+        // or positioned at startIndex according to your worker's layout:
+        const clothSnapOffset = startIndex * STRIDE; // Adjust offset based on how your worker packs snapshots
+        const vertexBytesCount = count * 3 * Float32Array.BYTES_PER_ELEMENT;
+        // Extract vertex data from snapshot and write to cloth vertex/storage buffer
+        if(meObj && meObj.vertexAnim && meObj.vertexAnim.clothBuffer && app.device) {
+          // If your worker sends cloth vertex positions in the snapshot:
+          const vertexSubarray = snap.subarray(clothSnapOffset, clothSnapOffset + (count * 3));
+          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, vertexSubarray);
+        }
+      }
+    }
+
   }
+
 
   _send(cmd, extra = {}) {
     const id = this._msgId++;
@@ -342,8 +405,15 @@ export class PhysicsBridge {
     switch(data.cmd) {
       case 'ready':
       case 'bodyAdded':
-        this._pending.get(data.id)?.(data.idx);
-        this._pending.delete(data.id);
+        const resolveFn = this._pending.get(data.id);
+        if(resolveFn) {
+          if(data.count && data.count > 1) {
+            resolveFn({idx: data.idx, count: data.count, nx: data.nx, ny: data.ny});
+          } else {
+            resolveFn(data.idx);
+          }
+          this._pending.delete(data.id);
+        }
         break;
       case 'snapshot':
         this._snapshot = data.snap;

@@ -218,7 +218,7 @@ export var loadKinematicCollision = function() {
         cam.setYaw(-0.0);
         cam.setPitch(-0.29);
         cam.setZ(25);
-        cam.setY(5);
+        cam.setY(8);
 
         collision.getCamera().setPosition(0, 3, 10);
         collision.collisionSystem.registerCamera(collision.getCamera().position, 2.0);
