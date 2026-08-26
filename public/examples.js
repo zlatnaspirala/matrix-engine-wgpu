@@ -19847,6 +19847,7 @@ struct VertexAnimParams {
 @group(2) @binding(0) var<uniform> model: Model;
 @group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
 @group(2) @binding(3) var<uniform> morphBlend: f32;
+@group(2) @binding(4) var<storage, read> clothBuffer: array<vec4f>;   // \u2190 added
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -19854,6 +19855,7 @@ const ANIM_PULSE: u32 = 4u;
 const ANIM_TWIST: u32 = 8u;
 const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
+const ANIM_CLOTH: u32 = 128u;                                         // \u2190 added
 
 struct VertexInput {
   @location(0) position:  vec3f,   // posA
@@ -19887,7 +19889,6 @@ fn noise(p: vec2f) -> f32 {
   );
 }
 
-// Vertex animation (position only, normals ignored)
 fn applyVertexAnimation(pos: vec3f) -> vec3f {
   var p = pos;
   let flags = u32(vertexAnim.flags);
@@ -19934,16 +19935,42 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 }
 
 @vertex
-fn main(input: VertexInput) -> VertexOutput {
+fn main(
+  @builtin(vertex_index) vertexIndex: u32,   // \u2190 needed for cloth
+  input: VertexInput
+) -> VertexOutput {
   var output: VertexOutput;
 
+  let flags = u32(vertexAnim.flags);
+
+  var pos: vec3f;
+  var norm: vec3f;
+
+  // ---------- CLOTH PATH ----------
+  if ((flags & ANIM_CLOTH) != 0u) {
+    // Cloth positions are already in world space
+    pos  = clothBuffer[vertexIndex].xyz;
+    norm = vec3f(0.0, 0.0, 1.0);           // simple normal for now
+
+    // IMPORTANT: do NOT multiply by model.modelMatrix
+    let worldPos = vec4f(pos, 1.0);
+
+    output.Position  = scene.cameraViewProjMatrix * worldPos;
+    output.fragPos   = worldPos.xyz;
+    output.shadowPos = scene.lightViewProjMatrix * worldPos;
+    output.fragNorm  = norm;
+    output.uv        = input.uv;
+    return output;
+  }
+
+  // ---------- NORMAL MORPH + VERTEX ANIM PATH ----------
   let blendedPosition = mix(input.position, input.positionB, morphBlend);
   let blendedNormal   = normalize(mix(input.normal, input.normalB, morphBlend));
 
-  var pos = blendedPosition;
+  pos = blendedPosition;
 
-  if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
-      pos = applyVertexAnimation(pos);
+  if (flags != 0u && vertexAnim.globalIntensity > 0.0) {
+    pos = applyVertexAnimation(pos);
   }
 
   let worldPos = model.modelMatrix * vec4f(pos, 1.0);
@@ -19957,7 +19984,7 @@ fn main(input: VertexInput) -> VertexOutput {
   output.Position  = scene.cameraViewProjMatrix * worldPos;
   output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
-  output.fragNorm  = normalize(normalMatrix * blendedNormal);  // no minus!
+  output.fragNorm  = normalize(normalMatrix * blendedNormal);
   output.uv        = input.uv;
 
   return output;
@@ -39674,6 +39701,17 @@ var ProceduralMeshObj = class extends Materials {
     this.vertexAnim = {
       active: false,
       clothBuffer: this.clothBuffer,
+      enableCloth: (startIndex = 0) => {
+        this.vertexAnim.active = true;
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH;
+        this.vertexAnimParams[28] = startIndex;
+        this.updateVertexAnimBuffer();
+      },
+      disableCloth: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+        this.vertexAnim.clothBuffer = null;
+        this.updateVertexAnimBuffer();
+      },
       enableWave: () => {
         this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
@@ -49597,21 +49635,20 @@ var testCannonES = function() {
       });
     });
     async function onGround(m2) {
-      let FLAG = app.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 0, y: 2, z: -10 },
+      app.addProceduralMeshObj({
+        position: { x: 0, y: 5, z: 0 },
         rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
         scale: [1, 1, 1],
-        // useScale: false,
-        // texturesPaths: ['./res/meshes/jamb/text.png'],
-        name: "cloth",
-        mesh: m2.plane,
+        name: "test",
+        meshA: MeshMorpher.clothPlane(5, 5, 10, 10),
+        meshB: MeshMorpher.clothPlane(),
         physics: {
-          mass: 0,
           enabled: true,
           geometry: "Cloth"
         },
-        raycast: { enabled: false, radius: 2 }
+        raycast: { enabled: true, radius: 2 }
       });
       setTimeout(() => {
       }, 500);

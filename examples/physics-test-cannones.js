@@ -58,38 +58,38 @@ export var testCannonES = function() {
 
     async function onGround(m) {
 
-      let FLAG = app.addMeshObj({
-        material: {type: 'standard'},
-        position: {x: 0, y: 2, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [1, 1, 1],
-        // useScale: false,
-        // texturesPaths: ['./res/meshes/jamb/text.png'],
-        name: 'cloth',
-        mesh: m.plane,
-        physics: {
-          mass: 0,
-          enabled: true,
-          geometry: "Cloth"
-        },
-        raycast: {enabled: false, radius: 2},
-      })
-
-      // app.addProceduralMeshObj({
+      // let FLAG = app.addMeshObj({
+      //   material: {type: 'standard'},
       //   position: {x: 0, y: 2, z: -10},
       //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
-      //   scale: [6, 6, 6],
-      //   name: 'test',
-      //   meshA: MeshMorpher.clothPlane(5, 5, 10, 10),
-      //   meshB: MeshMorpher.clothPlane(),
+      //   scale: [1, 1, 1],
+      //   // useScale: false,
+      //   // texturesPaths: ['./res/meshes/jamb/text.png'],
+      //   name: 'cloth',
+      //   mesh: m.plane,
       //   physics: {
+      //     mass: 0,
       //     enabled: true,
       //     geometry: "Cloth"
       //   },
-      //   raycast: {enabled: true, radius: 2}
+      //   raycast: {enabled: false, radius: 2},
       // })
+
+      app.addProceduralMeshObj({
+        position: {x: 0, y: 5, z: 0},
+        rotation: {x: 0, y: 0, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
+        scale: [1, 1, 1],
+        name: 'test',
+        meshA: MeshMorpher.clothPlane(5, 5, 10, 10),
+        meshB: MeshMorpher.clothPlane(),
+        physics: {
+          enabled: true,
+          geometry: "Cloth"
+        },
+        raycast: {enabled: true, radius: 2}
+      })
 
       setTimeout(() => {
         //  FLAG.vertexAnim.enableCloth(1)

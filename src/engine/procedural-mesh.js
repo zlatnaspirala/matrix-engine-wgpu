@@ -421,6 +421,18 @@ export default class ProceduralMeshObj extends Materials {
     this.vertexAnim = {
       active: false,
       clothBuffer: this.clothBuffer,
+      enableCloth: (startIndex = 0) => {
+        this.vertexAnim.active = true;
+        this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH; // Ensure you have a CLOTH flag in your literals
+        this.vertexAnimParams[28] = startIndex; // Store offset if needed in vertexAnimParams
+        this.updateVertexAnimBuffer();
+      },
+      disableCloth: () => {
+        this.vertexAnimParams[1] &= ~VERTEX_ANIM_FLAGS.CLOTH;
+        this.vertexAnim.clothBuffer = null;
+        this.updateVertexAnimBuffer();
+        // this.updateModelBindGroup();
+      },
       enableWave: () => {
         this.vertexAnim.active = true;
         this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.WAVE;
@@ -1150,14 +1162,14 @@ export class MeshMorpher {
     };
   }
 
-static clothPlane(width = 5, height = 5) {
-  return (u, v) => {
-    const x = (u - 0.5) * width;
-    const y = (0.5 - v) * height;   // v = 0 → top row (pinned)
-    const z = 0;
-    return [x, y, z];
-  };
-}
+  static clothPlane(width = 5, height = 5) {
+    return (u, v) => {
+      const x = (u - 0.5) * width;
+      const y = (0.5 - v) * height;   // v = 0 → top row (pinned)
+      const z = 0;
+      return [x, y, z];
+    };
+  }
 
   static cylinder(radius = 1, height = 2) {
     return (u, v) => {
