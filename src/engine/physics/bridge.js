@@ -48,6 +48,7 @@ export class PhysicsBridge {
     this._kinematicPos = new Float32Array(1024 * 3);
     this._kinematicCount = 0;
     this.c = 0;
+    this._clothMap = new Map();
   }
 
   getBodyByName(name) {
@@ -81,34 +82,83 @@ export class PhysicsBridge {
     this._doAddPhysics(MEObject, pOptions);
   }
 
+  // _doAddPhysics(MEObject, pOptions) {
+  //   MEObject.isKinematic = pOptions.state === 4;
+
+  //   this._send('addBody', {pOptions}).then((startIndex) => {
+  //     // Check if this specific body option was a Cloth
+  //     if(pOptions.geometry === 'Cloth') {
+  //       console.log("addBody cloth startIndex:", startIndex);
+  //       // nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
+  //       // ny: 23, // Must match your OBJ's height subdivisions + 1
+  //       const nx = pOptions.nx || 15;
+  //       const ny = pOptions.ny || 23;
+  //       const count = (nx + 1) * (ny + 1);
+  //       if(!this._clothMap) this._clothMap = new Map();
+  //       this._clothMap.set(startIndex, {
+  //         mesh: MEObject,
+  //         startIndex: startIndex,
+  //         nx: nx,
+  //         ny: ny,
+  //         count: count
+  //       });
+  //       console.log("Cloth registered successfully:", {startIndex, nx, ny, count});
+  //     } else {
+  //       // Regular rigid body
+  //       this._bodyIndexMap.set(startIndex, MEObject);
+  //     }
+  //   });
+  // }
+
   _doAddPhysics(MEObject, pOptions) {
+
     MEObject.isKinematic = pOptions.state === 4;
 
-    this._send('addBody', {pOptions}).then((startIndex) => {
-      // Check if this specific body option was a Cloth
+    this._send('addBody', {pOptions}).then((response) => {
+
+      const startIndex =
+        typeof response === 'object'
+          ? response.idx
+          : response;
+
       if(pOptions.geometry === 'Cloth') {
-        console.log("addBody cloth startIndex:", startIndex);
-        // nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
-        // ny: 23, // Must match your OBJ's height subdivisions + 1
-        const nx = pOptions.nx || 15;
-        const ny = pOptions.ny || 23;
-        const count = (nx + 1) * (ny + 1);
-        if(!this._clothMap) this._clothMap = new Map();
+
+        const nx =
+          response?.nx ??
+          pOptions.nx ??
+          10;
+
+        const ny =
+          response?.ny ??
+          pOptions.ny ??
+          10;
+
+        const count =
+          response?.count ??
+          ((nx + 1) * (ny + 1));
+
         this._clothMap.set(startIndex, {
           mesh: MEObject,
-          startIndex: startIndex,
-          nx: nx,
-          ny: ny,
-          count: count
+          startIndex,
+          nx,
+          ny,
+          count
         });
-        console.log("Cloth registered successfully:", {startIndex, nx, ny, count});
-      } else {
-        // Regular rigid body
-        this._bodyIndexMap.set(startIndex, MEObject);
+
+        console.log(
+          '[CLOTH REGISTERED]',
+          startIndex,
+          nx,
+          ny,
+          count
+        );
+
+        return;
       }
+
+      this._bodyIndexMap.set(startIndex, MEObject);
     });
   }
-
   setKinematicTransformDeplaced() {
     let count = 0;
     const idxArr = this._kinematicIdx;
@@ -362,20 +412,24 @@ export class PhysicsBridge {
       meObj.position.z = pos[2];
     }
 
-    // 2. Sync Cloth bodies (if any exist in snapshot)
     if(this._clothMap) {
       for(const [startIndex, clothData] of this._clothMap) {
         const meObj = clothData.mesh;
         const count = clothData.count;
-        // Assuming cloth vertex positions start after rigid bodies in the snapshot, 
-        // or positioned at startIndex according to your worker's layout:
-        const clothSnapOffset = startIndex * STRIDE; // Adjust offset based on how your worker packs snapshots
-        const vertexBytesCount = count * 3 * Float32Array.BYTES_PER_ELEMENT;
-        // Extract vertex data from snapshot and write to cloth vertex/storage buffer
-        if(meObj && meObj.vertexAnim && meObj.vertexAnim.clothBuffer && app.device) {
-          // If your worker sends cloth vertex positions in the snapshot:
-          const vertexSubarray = snap.subarray(clothSnapOffset, clothSnapOffset + (count * 3));
-          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, vertexSubarray);
+
+        if(meObj?.vertexAnim?.clothBuffer && app.device) {
+          const clothPositions = new Float32Array(count * 4);
+
+          for(let i = 0;i < count;i++) {
+            const base = (startIndex + i) * STRIDE;
+            clothPositions[i * 4 + 0] = snap[base + 0]; // x
+            clothPositions[i * 4 + 1] = snap[base + 1]; // y
+            clothPositions[i * 4 + 2] = snap[base + 2]; // z
+            clothPositions[i * 4 + 3] = 0.0;
+            if (i === 50) console.log(i + '=i   WRITE cloth[50]:', clothPositions[50 * 4 + 0], clothPositions[50 * 4 + 1], clothPositions[50 * 4 + 2]);
+          }
+
+          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, clothPositions);
         }
       }
     }
@@ -417,6 +471,38 @@ export class PhysicsBridge {
         break;
       case 'snapshot':
         this._snapshot = data.snap;
+
+        if(data.clothPackets) {
+          for(const packet of data.clothPackets) {
+            const clothMeta = this._clothMap.get(packet.startIndex);
+
+            if(
+              clothMeta &&
+              clothMeta.mesh &&
+              clothMeta.mesh.vertexAnim?.clothBuffer &&
+              app.device
+            ) {
+              const count = clothMeta.count;
+              const src = packet.positions;          // Float32Array of length count*3
+
+              // Convert xyz → vec4 (shader expects array<vec4f>)
+              const clothPositions = new Float32Array(count * 4);
+              for(let i = 0;i < count;i++) {
+                clothPositions[i * 4 + 0] = src[i * 3 + 0]; // x
+                clothPositions[i * 4 + 1] = src[i * 3 + 1]; // y
+                clothPositions[i * 4 + 2] = src[i * 3 + 2]; // z
+                clothPositions[i * 4 + 3] = 0.0;             // padding
+              }
+
+              app.device.queue.writeBuffer(
+                clothMeta.mesh.vertexAnim.clothBuffer,
+                0,
+                clothPositions
+              );
+            }
+          }
+        }
+
         this._syncToObjects();
         break;
       case 'collision':

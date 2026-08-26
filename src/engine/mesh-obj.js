@@ -525,6 +525,7 @@ export default class MEMeshObj extends Materials {
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
       } else {
+        console.log('dummyClothBuffer IN use!!! ', this.clothBuffer , " FO R :" , this.name)
         this.clothBuffer = this.dummyClothBuffer;
       }
 

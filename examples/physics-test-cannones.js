@@ -59,23 +59,40 @@ export var testCannonES = function() {
     async function onGround(m) {
 
       let FLAG = app.addMeshObj({
-        position: {x: 0, y: 6, z: -10},
+        material: {type: 'standard'},
+        position: {x: 0, y: 2, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         scale: [1, 1, 1],
-        useScale: false,
-        texturesPaths: ['./res/meshes/jamb/text.png'],
+        // useScale: false,
+        // texturesPaths: ['./res/meshes/jamb/text.png'],
         name: 'cloth',
         mesh: m.plane,
         physics: {
-          mass: 1,
+          mass: 0,
           enabled: true,
           geometry: "Cloth"
         },
         raycast: {enabled: false, radius: 2},
       })
 
+      // app.addProceduralMeshObj({
+      //   position: {x: 0, y: 2, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
+      //   scale: [6, 6, 6],
+      //   name: 'test',
+      //   meshA: MeshMorpher.clothPlane(5, 5, 10, 10),
+      //   meshB: MeshMorpher.clothPlane(),
+      //   physics: {
+      //     enabled: true,
+      //     geometry: "Cloth"
+      //   },
+      //   raycast: {enabled: true, radius: 2}
+      // })
+
       setTimeout(() => {
-       FLAG.vertexAnim.enableCloth()
+        //  FLAG.vertexAnim.enableCloth(1)
       }, 500)
       // const myComplexGeometry = physicsPlayground.addMeshObj({
       //   material: {type: 'standard'},

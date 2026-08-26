@@ -228,7 +228,11 @@ fn main(
   output.Position  = scene.cameraViewProjMatrix * worldPos;
   output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
+
+  // test
+  // output.fragNorm = vec3f(0.0, 1.0, 0.0);
   output.fragNorm  = normalize(normalMatrix * finalNorm);
+  
   output.uv        = uv * uvScale;
   return output;
 }`;

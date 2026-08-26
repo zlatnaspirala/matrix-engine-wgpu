@@ -50,6 +50,7 @@ class MatrixCannon {
     this._useSAB = false;
     this._sab = null;
     this.bodyMap = new Map();
+    this.clothDataPackets = [];
   }
 
   _allocBuffer(bodyCount) {
@@ -390,9 +391,8 @@ class MatrixCannon {
 
     // Store metadata on the instance so we can easily reference it later if needed
     if(!this.cloths) this.cloths = [];
-    console.log('worker cloths: ', this.cloths)
     this.cloths.push({startIndex, nx, ny, count: particles.length});
-
+    console.log('worker cloths: ', this.cloths)
     return startIndex;
   }
 
@@ -819,6 +819,23 @@ class MatrixCannon {
       snap[base + 6] = body.quaternion.w;
       snap[base + 7] = 1;
     }
+
+    this.clothDataPackets.length = 0;
+    if(this.cloths) {
+      for(const cloth of this.cloths) {
+        const positions = new Float32Array(cloth.count * 3);
+        for(let i = 0;i < cloth.count;i++) {
+          const body = this.rigidBodies[cloth.startIndex + i];
+          positions[i * 3 + 0] = body.position.x;
+          positions[i * 3 + 1] = body.position.y;
+          positions[i * 3 + 2] = body.position.z;
+        }
+        // console.log("clothDataPackets pos[0]:", positions[0], positions[1], positions[2]);
+        // console.log("cloth.startIndex:", cloth.startIndex);
+
+        this.clothDataPackets.push({startIndex: cloth.startIndex, positions});
+      }
+    }
   }
 }
 
@@ -834,24 +851,26 @@ self.onmessage = async ({data}) => {
     }
     case 'addBody': {
       const idx = cannon.addBody(data.pOptions);
-      if (cannon.cloths) console.log('worker', cannon.cloths)
-      const clothMeta = cannon.cloths?.find(c => c.startIndex === idx);
+      const clothMeta = cannon.cloths?.find(c =>
+        c.startIndex === idx ||
+        (c.startIndex <= idx && idx < c.startIndex + c.count));
+
       self.postMessage({
         cmd: 'bodyAdded',
-        id,
-        idx,
+        id: data.id,
+        idx: clothMeta ? clothMeta.startIndex : idx,
         count: clothMeta ? clothMeta.count : 1,
         nx: clothMeta ? clothMeta.nx : undefined,
-        ny: clothMeta ? clothMeta.ny : undefined,
-        sab: cannon._sab
+        ny: clothMeta ? clothMeta.ny : undefined
       });
+
       break;
     }
     case 'step': {
       cannon.step();
       if(!cannon._useSAB && cannon._snapshot) {
         const copy = cannon._snapshot.slice();
-        self.postMessage({cmd: 'snapshot', snap: copy}, [copy.buffer]);
+        self.postMessage({cmd: 'snapshot', snap: copy, clothPackets: cannon.clothDataPackets}, [copy.buffer]);
       }
       break;
     }

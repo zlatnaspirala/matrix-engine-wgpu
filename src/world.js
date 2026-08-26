@@ -149,6 +149,8 @@ export default class MatrixEngineWGPU {
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
 
+    this.GPUCullingRad = 200;
+
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
@@ -258,7 +260,7 @@ export default class MatrixEngineWGPU {
         const arg = {range: options.cullingRange ? options.cullingRange : 500};
         this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
-      } else if(options.render == 'GPUIndirectDraw') {
+      } else if(options.render == 'GPUInstancedDraw') {
         this.overrideRender = GPUIndirectDraws.bind(this);
       }
     }
@@ -511,7 +513,8 @@ export default class MatrixEngineWGPU {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}},
+        // {binding: 5, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}}
       ],
     });
   }
@@ -614,7 +617,7 @@ export default class MatrixEngineWGPU {
 
   createGlobalStuff(callback) {
     this.startTime = performance.now() / 1000;
-    if(this.options.render == 'GPUIndirectDraw') {
+    if(this.options.render == 'GPUInstancedDraw') {
       this.indirectManager = new IndirectRenderingManager();
       this.computeCulling = new ComputeCullingSystem(this.device, this.gpuCapabilities, 4096);
     }
@@ -691,6 +694,7 @@ export default class MatrixEngineWGPU {
     };
 
     this.volumetricPass = {enabled: false};
+    this.volumetricPass2 = {enabled: false};
 
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -1006,11 +1010,13 @@ export default class MatrixEngineWGPU {
         const instanceCount = mesh.instanceCount || 1;
         const indexCount = mesh.indexCount || 36;
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
+        console.log('rebuildIndirectBuffer : mesh.indexCount :' + indexCount + " , mesh.instanceCount : " + instanceCount + " ,  mesh.globalInstanceIndex : " + mesh.globalInstanceIndex);
         this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
-        cumulativeInstanceIndex += instanceCount;
+        // cumulativeInstanceIndex += instanceCount;
+        cumulativeInstanceIndex += 1;
       }
       this.computeCulling.flushIndirectBuffer();
-    }, 100);
+    }, 150);
   }
 
   buildLightShadowBuckets() {
@@ -1106,8 +1112,8 @@ export default class MatrixEngineWGPU {
     } else {
       myMesh1.itIsPhysicsBody = false;
     }
-    if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh1);
     this.mainRenderBundle.push(myMesh1);
+    if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh1);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
     return myMesh1;
@@ -1174,8 +1180,8 @@ export default class MatrixEngineWGPU {
     } else {
       myMesh.itIsPhysicsBody = false;
     }
-    if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh);
     this.mainRenderBundle.push(myMesh);
+    if(this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh);
     this.sortRenderBundle();
     if(typeof this.editor !== 'undefined') this.editor.editorHud.updateSceneContainer();
     return myMesh;
@@ -1513,11 +1519,14 @@ export default class MatrixEngineWGPU {
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }
+
+
+
         // Soft
-        if(this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
         this.sortRenderBundle();
+        if(this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         setTimeout(() => {document.dispatchEvent(this.usEvent)}, 50);
         c++;
       }
@@ -1624,10 +1633,8 @@ export default class MatrixEngineWGPU {
         }
         // Soft
         setTimeout(() => {
-          if(this.indirectManager) {
-           bvhPlayer.indirectDrawIndex = this.indirectManager.registerIndirectDraw(bvhPlayer);
-          }
           this.mainRenderBundle.push(bvhPlayer);
+          if(this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);
         }, 32);
@@ -1693,6 +1700,25 @@ export default class MatrixEngineWGPU {
     } else {p = arg}
     if(this.volumetricPass.enabled != true) {
       this.volumetricPass = new VolumetricPass(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView).init();
+      this.volumetricPass.enabled = true;
+      this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
+    }
+  }
+
+  TEST_activateVolumetricEffect = (arg) => {
+    if(this.bloomPass.enabled != true) {console.warn(`%cTheBeast: You must enable bloom before volumetric.`); return;}
+    let p;
+    if(typeof arg === 'undefined') {
+      p = {
+        density: 0.03,
+        steps: 32,
+        scatterStrength: 1.2,
+        heightFalloff: 0.08,
+        lightColor: [1.0, 0.88, 0.65],
+      }
+    } else {p = arg}
+    if(this.volumetricPass.enabled != true) {
+      this.volumetricPass = new Volum(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView).init();
       this.volumetricPass.enabled = true;
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }

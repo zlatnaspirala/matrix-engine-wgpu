@@ -9335,7 +9335,11 @@ fn main(
   output.Position  = scene.cameraViewProjMatrix * worldPos;
   output.fragPos   = worldPos.xyz;
   output.shadowPos = scene.lightViewProjMatrix * worldPos;
+
+  // test
+  // output.fragNorm = vec3f(0.0, 1.0, 0.0);
   output.fragNorm  = normalize(normalMatrix * finalNorm);
+  
   output.uv        = uv * uvScale;
   return output;
 }`;
@@ -18329,6 +18333,7 @@ var MEMeshObj = class extends Materials {
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
       } else {
+        console.log("dummyClothBuffer IN use!!! ", this.clothBuffer, " FO R :", this.name);
         this.clothBuffer = this.dummyClothBuffer;
       }
       this.vertexAnim = {
@@ -40129,7 +40134,6 @@ var MeshMorpher = class {
   //   )
   //
   // Returns a shape descriptor { func, flat } — works everywhere createMatchedPair does.
-  // ─────────────────────────────────────────────────────────────────────────────
   static compose(...parts) {
     const n3 = parts.length;
     const normalised = parts.map((p2) => {
@@ -40323,6 +40327,14 @@ var MeshMorpher = class {
         y3 = (lerpY - 0.5) * size2;
         z2 = sz;
       }
+      return [x3, y3, z2];
+    };
+  }
+  static clothPlane(width = 5, height = 5) {
+    return (u2, v2) => {
+      const x3 = (u2 - 0.5) * width;
+      const y3 = (0.5 - v2) * height;
+      const z2 = 0;
       return [x3, y3, z2];
     };
   }
@@ -42337,6 +42349,7 @@ var PhysicsBridge = class {
     this._kinematicPos = new Float32Array(1024 * 3);
     this._kinematicCount = 0;
     this.c = 0;
+    this._clothMap = /* @__PURE__ */ new Map();
   }
   getBodyByName(name2) {
     for (const [idx, meObj] of this._bodyIndexMap) if (meObj.name === name2) return idx;
@@ -42368,15 +42381,40 @@ var PhysicsBridge = class {
     }
     this._doAddPhysics(MEObject, pOptions);
   }
+  // _doAddPhysics(MEObject, pOptions) {
+  //   MEObject.isKinematic = pOptions.state === 4;
+  //   this._send('addBody', {pOptions}).then((startIndex) => {
+  //     // Check if this specific body option was a Cloth
+  //     if(pOptions.geometry === 'Cloth') {
+  //       console.log("addBody cloth startIndex:", startIndex);
+  //       // nx: 15, // Must match your OBJ's width subdivisions + 1 (or match total vertex math)
+  //       // ny: 23, // Must match your OBJ's height subdivisions + 1
+  //       const nx = pOptions.nx || 15;
+  //       const ny = pOptions.ny || 23;
+  //       const count = (nx + 1) * (ny + 1);
+  //       if(!this._clothMap) this._clothMap = new Map();
+  //       this._clothMap.set(startIndex, {
+  //         mesh: MEObject,
+  //         startIndex: startIndex,
+  //         nx: nx,
+  //         ny: ny,
+  //         count: count
+  //       });
+  //       console.log("Cloth registered successfully:", {startIndex, nx, ny, count});
+  //     } else {
+  //       // Regular rigid body
+  //       this._bodyIndexMap.set(startIndex, MEObject);
+  //     }
+  //   });
+  // }
   _doAddPhysics(MEObject, pOptions) {
     MEObject.isKinematic = pOptions.state === 4;
-    this._send("addBody", { pOptions }).then((startIndex) => {
+    this._send("addBody", { pOptions }).then((response) => {
+      const startIndex = typeof response === "object" ? response.idx : response;
       if (pOptions.geometry === "Cloth") {
-        console.log("addBody cloth startIndex:", startIndex);
-        const nx = pOptions.nx || 15;
-        const ny = pOptions.ny || 23;
-        const count = (nx + 1) * (ny + 1);
-        if (!this._clothMap) this._clothMap = /* @__PURE__ */ new Map();
+        const nx = response?.nx ?? pOptions.nx ?? 10;
+        const ny = response?.ny ?? pOptions.ny ?? 10;
+        const count = response?.count ?? (nx + 1) * (ny + 1);
         this._clothMap.set(startIndex, {
           mesh: MEObject,
           startIndex,
@@ -42384,10 +42422,16 @@ var PhysicsBridge = class {
           ny,
           count
         });
-        console.log("Cloth registered successfully:", { startIndex, nx, ny, count });
-      } else {
-        this._bodyIndexMap.set(startIndex, MEObject);
+        console.log(
+          "[CLOTH REGISTERED]",
+          startIndex,
+          nx,
+          ny,
+          count
+        );
+        return;
       }
+      this._bodyIndexMap.set(startIndex, MEObject);
     });
   }
   setKinematicTransformDeplaced() {
@@ -42607,11 +42651,17 @@ var PhysicsBridge = class {
       for (const [startIndex, clothData] of this._clothMap) {
         const meObj = clothData.mesh;
         const count = clothData.count;
-        const clothSnapOffset = startIndex * STRIDE;
-        const vertexBytesCount = count * 3 * Float32Array.BYTES_PER_ELEMENT;
-        if (meObj && meObj.vertexAnim && meObj.vertexAnim.clothBuffer && app.device) {
-          const vertexSubarray = snap.subarray(clothSnapOffset, clothSnapOffset + count * 3);
-          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, vertexSubarray);
+        if (meObj?.vertexAnim?.clothBuffer && app.device) {
+          const clothPositions = new Float32Array(count * 4);
+          for (let i2 = 0; i2 < count; i2++) {
+            const base = (startIndex + i2) * STRIDE;
+            clothPositions[i2 * 4 + 0] = snap[base + 0];
+            clothPositions[i2 * 4 + 1] = snap[base + 1];
+            clothPositions[i2 * 4 + 2] = snap[base + 2];
+            clothPositions[i2 * 4 + 3] = 0;
+            if (i2 === 50) console.log(i2 + "=i   WRITE cloth[50]:", clothPositions[50 * 4 + 0], clothPositions[50 * 4 + 1], clothPositions[50 * 4 + 2]);
+          }
+          app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, clothPositions);
         }
       }
     }
@@ -42647,6 +42697,27 @@ var PhysicsBridge = class {
         break;
       case "snapshot":
         this._snapshot = data.snap;
+        if (data.clothPackets) {
+          for (const packet of data.clothPackets) {
+            const clothMeta = this._clothMap.get(packet.startIndex);
+            if (clothMeta && clothMeta.mesh && clothMeta.mesh.vertexAnim?.clothBuffer && app.device) {
+              const count = clothMeta.count;
+              const src = packet.positions;
+              const clothPositions = new Float32Array(count * 4);
+              for (let i2 = 0; i2 < count; i2++) {
+                clothPositions[i2 * 4 + 0] = src[i2 * 3 + 0];
+                clothPositions[i2 * 4 + 1] = src[i2 * 3 + 1];
+                clothPositions[i2 * 4 + 2] = src[i2 * 3 + 2];
+                clothPositions[i2 * 4 + 3] = 0;
+              }
+              app.device.queue.writeBuffer(
+                clothMeta.mesh.vertexAnim.clothBuffer,
+                0,
+                clothPositions
+              );
+            }
+          }
+        }
         this._syncToObjects();
         break;
       case "collision":
@@ -44499,6 +44570,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
+    this.GPUCullingRad = 200;
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
@@ -44606,7 +44678,7 @@ var MatrixEngineWGPU = class {
         const arg = { range: options2.cullingRange ? options2.cullingRange : 500 };
         this.culledRenderPass = new CulledRenderPass(arg.range);
         this.overrideRender = cullingPass.bind(this);
-      } else if (options2.render == "GPUIndirectDraw") {
+      } else if (options2.render == "GPUInstancedDraw") {
         this.overrideRender = GPUIndirectDraws.bind(this);
       }
     }
@@ -44842,6 +44914,7 @@ var MatrixEngineWGPU = class {
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
+        // {binding: 5, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}}
       ]
     });
   }
@@ -44925,7 +44998,7 @@ var MatrixEngineWGPU = class {
   };
   createGlobalStuff(callback) {
     this.startTime = performance.now() / 1e3;
-    if (this.options.render == "GPUIndirectDraw") {
+    if (this.options.render == "GPUInstancedDraw") {
       this.indirectManager = new IndirectRenderingManager();
       this.computeCulling = new ComputeCullingSystem(this.device, this.gpuCapabilities, 4096);
     }
@@ -45000,6 +45073,7 @@ var MatrixEngineWGPU = class {
       enabled: false
     };
     this.volumetricPass = { enabled: false };
+    this.volumetricPass2 = { enabled: false };
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "rgba16float",
@@ -45291,11 +45365,12 @@ var MatrixEngineWGPU = class {
         const instanceCount = mesh.instanceCount || 1;
         const indexCount = mesh.indexCount || 36;
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
+        console.log("rebuildIndirectBuffer : mesh.indexCount :" + indexCount + " , mesh.instanceCount : " + instanceCount + " ,  mesh.globalInstanceIndex : " + mesh.globalInstanceIndex);
         this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
-        cumulativeInstanceIndex += instanceCount;
+        cumulativeInstanceIndex += 1;
       }
       this.computeCulling.flushIndirectBuffer();
-    }, 100);
+    }, 150);
   }
   buildLightShadowBuckets() {
     this.shadowBuckets.default.length = 0;
@@ -45419,8 +45494,8 @@ var MatrixEngineWGPU = class {
     } else {
       myMesh1.itIsPhysicsBody = false;
     }
-    if (this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh1);
     this.mainRenderBundle.push(myMesh1);
+    if (this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh1);
     this.sortRenderBundle();
     if (typeof this.editor !== "undefined") this.editor.editorHud.updateSceneContainer();
     return myMesh1;
@@ -45495,8 +45570,8 @@ var MatrixEngineWGPU = class {
     } else {
       myMesh.itIsPhysicsBody = false;
     }
-    if (this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh);
     this.mainRenderBundle.push(myMesh);
+    if (this.indirectManager) this.indirectManager.registerIndirectDraw(myMesh);
     this.sortRenderBundle();
     if (typeof this.editor !== "undefined") this.editor.editorHud.updateSceneContainer();
     return myMesh;
@@ -45849,10 +45924,10 @@ var MatrixEngineWGPU = class {
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }
-        if (this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         this.mainRenderBundle.push(bvhPlayer);
         r3.push(bvhPlayer);
         this.sortRenderBundle();
+        if (this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
         setTimeout(() => {
           document.dispatchEvent(this.usEvent);
         }, 50);
@@ -45986,10 +46061,8 @@ var MatrixEngineWGPU = class {
           bvhPlayer.itIsPhysicsBody = false;
         }
         setTimeout(() => {
-          if (this.indirectManager) {
-            bvhPlayer.indirectDrawIndex = this.indirectManager.registerIndirectDraw(bvhPlayer);
-          }
           this.mainRenderBundle.push(bvhPlayer);
+          if (this.indirectManager) this.indirectManager.registerIndirectDraw(bvhPlayer);
           this.sortRenderBundle();
           document.dispatchEvent(this.usEvent);
         }, 32);
@@ -46058,6 +46131,29 @@ var MatrixEngineWGPU = class {
     }
     if (this.volumetricPass.enabled != true) {
       this.volumetricPass = new VolumetricPass(this.canvas.width, this.canvas.height, this.device, p2, this.sceneTextureView).init();
+      this.volumetricPass.enabled = true;
+      this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
+    }
+  };
+  TEST_activateVolumetricEffect = (arg) => {
+    if (this.bloomPass.enabled != true) {
+      console.warn(`%cTheBeast: You must enable bloom before volumetric.`);
+      return;
+    }
+    let p2;
+    if (typeof arg === "undefined") {
+      p2 = {
+        density: 0.03,
+        steps: 32,
+        scatterStrength: 1.2,
+        heightFalloff: 0.08,
+        lightColor: [1, 0.88, 0.65]
+      };
+    } else {
+      p2 = arg;
+    }
+    if (this.volumetricPass.enabled != true) {
+      this.volumetricPass = new Volum(this.canvas.width, this.canvas.height, this.device, p2, this.sceneTextureView).init();
       this.volumetricPass.enabled = true;
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
@@ -49502,22 +49598,22 @@ var testCannonES = function() {
     });
     async function onGround(m2) {
       let FLAG = app.addMeshObj({
-        position: { x: 0, y: 6, z: -10 },
+        material: { type: "standard" },
+        position: { x: 0, y: 2, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         scale: [1, 1, 1],
-        useScale: false,
-        texturesPaths: ["./res/meshes/jamb/text.png"],
+        // useScale: false,
+        // texturesPaths: ['./res/meshes/jamb/text.png'],
         name: "cloth",
         mesh: m2.plane,
         physics: {
-          mass: 1,
+          mass: 0,
           enabled: true,
           geometry: "Cloth"
         },
         raycast: { enabled: false, radius: 2 }
       });
       setTimeout(() => {
-        FLAG.vertexAnim.enableCloth();
       }, 500);
       let cam2 = app.getCamera();
       cam2.setYaw(-0.03);

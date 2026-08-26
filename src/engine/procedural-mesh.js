@@ -933,7 +933,6 @@ export class MeshMorpher {
   //   )
   //
   // Returns a shape descriptor { func, flat } — works everywhere createMatchedPair does.
-  // ─────────────────────────────────────────────────────────────────────────────
   static compose(...parts) {
     const n = parts.length;
 
@@ -1150,6 +1149,15 @@ export class MeshMorpher {
       return [x, y, z];
     };
   }
+
+static clothPlane(width = 5, height = 5) {
+  return (u, v) => {
+    const x = (u - 0.5) * width;
+    const y = (0.5 - v) * height;   // v = 0 → top row (pinned)
+    const z = 0;
+    return [x, y, z];
+  };
+}
 
   static cylinder(radius = 1, height = 2) {
     return (u, v) => {
