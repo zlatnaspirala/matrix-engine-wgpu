@@ -125,8 +125,8 @@ export var loadReactiveAudio = function() {
         cam.setZ(1.7);
         cam.setY(5.7);
 
-        app.bloomPass.setIntensity(1000);
-        app.bloomPass.setBlurRadius(458)
+        app.bloomPass.setIntensity(10);
+        app.bloomPass.setBlurRadius(2)
 
         app.buildRenderBuckets();
         cam._dirtyAngle = true;

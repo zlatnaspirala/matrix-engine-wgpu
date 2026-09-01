@@ -71,8 +71,6 @@ export class Player {
     this.energy = 0;
     app.energy.setValue(0);
     if(this.isDead) return;
-    console.log('....is dead')
-
     this.isDead = true;
     this.lives = Math.max(0, this.lives - 1);
     for(const t of tiers) {
@@ -83,6 +81,7 @@ export class Player {
         MobileDOM.addButton(`GAME OVER ${t.text} YOUR SCORE ${this.kills} kills.`, () => {
           location.reload()
         }, undefined, {
+          fontSize: 12,
           size: isMobile() === true ? 200 : 240,
           bottom: 40,
           left: isMobile() === true ? 30 : 45,

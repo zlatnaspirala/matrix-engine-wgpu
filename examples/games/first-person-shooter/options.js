@@ -200,7 +200,7 @@ export class hang3dUI {
       top: `2%`,
       right: `5%`,
       // width: '140px',
-      // height: `80px`,
+      fontSize: `11px`,
       background: `rgba(0,0,0,1)`,
       border: `2px solid rgba(255,255,255,1)`,
       borderRadius: `10px`,

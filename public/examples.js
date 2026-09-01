@@ -18214,23 +18214,11 @@ var MEMeshObj = class extends Materials {
         attributes: [{ format: "float32x4", offset: 0, shaderLocation: 4 }]
       };
       this.vertexBuffers = [
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-        },
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
-        },
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-          attributes: [{ shaderLocation: 2, offset: 0, format: "float32x2" }]
-        },
+        { arrayStride: Float32Array.BYTES_PER_ELEMENT * 3, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+        { arrayStride: Float32Array.BYTES_PER_ELEMENT * 3, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] },
+        { arrayStride: Float32Array.BYTES_PER_ELEMENT * 2, attributes: [{ shaderLocation: 2, offset: 0, format: "float32x2" }] },
         // joint indices
-        {
-          arrayStride: 4 * 4,
-          attributes: [{ format: "uint32x4", offset: 0, shaderLocation: 3 }]
-        },
+        { arrayStride: 4 * 4, attributes: [{ format: "uint32x4", offset: 0, shaderLocation: 3 }] },
         // weights
         glbInfo
       ];
@@ -18327,13 +18315,11 @@ var MEMeshObj = class extends Materials {
       if (o_.physics.geometry === "Cloth") {
         const maxClothParticles = 384;
         this.clothBuffer = this.device.createBuffer({
-          label: "Cloth Physics Storage Buffer",
+          label: "ClothPhysicsStorage",
           size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
-          // e.g., vec4 per particle (x, y, z, pad)
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
       } else {
-        console.log("dummyClothBuffer IN use!!! ", this.clothBuffer, " FO R :", this.name);
         this.clothBuffer = this.dummyClothBuffer;
       }
       this.vertexAnim = {
@@ -19811,32 +19797,32 @@ struct VertexAnimParams {
   flags: f32,
   globalIntensity: f32,
   _pad0: f32,
-  
+
   waveSpeed: f32,
   waveAmplitude: f32,
   waveFrequency: f32,
   _pad1: f32,
-  
+
   windSpeed: f32,
   windStrength: f32,
   windHeightInfluence: f32,
   windTurbulence: f32,
-  
+
   pulseSpeed: f32,
   pulseAmount: f32,
   pulseCenterX: f32,
   pulseCenterY: f32,
-  
+
   twistSpeed: f32,
   twistAmount: f32,
   _pad2: f32,
   _pad3: f32,
-  
+
   noiseScale: f32,
   noiseStrength: f32,
   noiseSpeed: f32,
   _pad4: f32,
-  
+
   oceanWaveScale: f32,
   oceanWaveHeight: f32,
   oceanWaveSpeed: f32,
@@ -19847,7 +19833,7 @@ struct VertexAnimParams {
 @group(2) @binding(0) var<uniform> model: Model;
 @group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
 @group(2) @binding(3) var<uniform> morphBlend: f32;
-@group(2) @binding(4) var<storage, read> clothBuffer: array<vec4f>;   // \u2190 added
+@group(2) @binding(4) var<storage, read> clothBuffer: array<vec4f>;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -19855,14 +19841,14 @@ const ANIM_PULSE: u32 = 4u;
 const ANIM_TWIST: u32 = 8u;
 const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
-const ANIM_CLOTH: u32 = 128u;                                         // \u2190 added
+const ANIM_CLOTH: u32 = 128u;
 
 struct VertexInput {
-  @location(0) position:  vec3f,   // posA
-  @location(1) normal:    vec3f,   // normalA
+  @location(0) position:  vec3f,
+  @location(1) normal:    vec3f,
   @location(2) uv:        vec2f,
-  @location(6) positionB: vec3f,   // posB
-  @location(7) normalB:   vec3f,   // normalB
+  @location(6) positionB: vec3f,
+  @location(7) normalB:   vec3f,
 };
 
 struct VertexOutput {
@@ -19935,35 +19921,34 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 }
 
 @vertex
-fn main(
-  @builtin(vertex_index) vertexIndex: u32,   // \u2190 needed for cloth
-  input: VertexInput
-) -> VertexOutput {
+fn main(@builtin(vertex_index) vertexIndex: u32, input: VertexInput) -> VertexOutput {
   var output: VertexOutput;
-
   let flags = u32(vertexAnim.flags);
-
   var pos: vec3f;
   var norm: vec3f;
 
-  // ---------- CLOTH PATH ----------
+  // CLOTH PATH
   if ((flags & ANIM_CLOTH) != 0u) {
-    // Cloth positions are already in world space
     pos  = clothBuffer[vertexIndex].xyz;
-    norm = vec3f(0.0, 0.0, 1.0);           // simple normal for now
-
+    let normalMatrix = mat3x3f(
+      model.modelMatrix[0].xyz,
+      model.modelMatrix[1].xyz,
+      model.modelMatrix[2].xyz
+    );
+    let blendedNormal   = normalize(mix(input.normal, input.normalB, morphBlend));
     // IMPORTANT: do NOT multiply by model.modelMatrix
     let worldPos = vec4f(pos, 1.0);
 
     output.Position  = scene.cameraViewProjMatrix * worldPos;
     output.fragPos   = worldPos.xyz;
     output.shadowPos = scene.lightViewProjMatrix * worldPos;
-    output.fragNorm  = norm;
+    // output.fragNorm  = norm;
+    output.fragNorm  = normalize(normalMatrix*blendedNormal);
     output.uv        = input.uv;
     return output;
   }
 
-  // ---------- NORMAL MORPH + VERTEX ANIM PATH ----------
+  // NORMAL MORPH + VERTEX ANIM PATH
   let blendedPosition = mix(input.position, input.positionB, morphBlend);
   let blendedNormal   = normalize(mix(input.normal, input.normalB, morphBlend));
 
@@ -20133,14 +20118,12 @@ fn applyOcean(pos: vec3f) -> vec3f {
 fn applyVertexAnimation(pos: vec3f) -> vec3f {
   var p = pos;
   let flags = u32(vertexAnim.flags);
-  
   if ((flags & ANIM_WAVE) != 0u) { p = applyWave(p); }
   if ((flags & ANIM_WIND) != 0u) { p = applyWind(p); }
   if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
   if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
   if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
   if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
-
   return mix(pos, p, vertexAnim.globalIntensity);
 }
 
@@ -20148,14 +20131,11 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 fn main(input: VertexInput) -> @builtin(position) vec4f {
   // 1. Morph positions
   let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
-  // let blendedPosition = input.positionA;
-  
   // 2. Apply the same vertex animations
   var finalPos = blendedPosition;
   if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
     finalPos = applyVertexAnimation(finalPos);
   }
-
   // 3. Transform to world space and light clip space
   let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   return scene.lightViewProjMatrix * worldPos;
@@ -39386,7 +39366,7 @@ var ProceduralMeshObj = class extends Materials {
     this.rotation.rotationSpeed.y = o3.rotationSpeed?.y || 0;
     this.rotation.rotationSpeed.z = o3.rotationSpeed?.z || 0;
     this.scale = o3.scale || [1, 1, 1];
-    this.useScale = o3.useScale || false;
+    this.useScale = o3.useScale || true;
     this.time = 0;
     this.deltaTimeAdapter = 1;
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -39401,7 +39381,7 @@ var ProceduralMeshObj = class extends Materials {
     if (typeof o3.primitive === "undefined") {
       this.primitive = {
         topology: "triangle-list",
-        cullMode: "back",
+        cullMode: "none",
         frontFace: "ccw"
       };
     } else {
@@ -40062,12 +40042,10 @@ var ProceduralMeshObj = class extends Materials {
       mat4Impl.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
       mat4Impl.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       mat4Impl.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
-      if (useScale == true) {
-        this._scaleVec[0] = this.scale[0];
-        this._scaleVec[1] = this.scale[1];
-        this._scaleVec[2] = this.scale[2];
-        mat4Impl.scale(modelMatrix, this._scaleVec, modelMatrix);
-      }
+      this._scaleVec[0] = this.scale[0];
+      this._scaleVec[1] = this.scale[1];
+      this._scaleVec[2] = this.scale[2];
+      mat4Impl.scale(modelMatrix, this._scaleVec, modelMatrix);
       this.modelMatrix = modelMatrix;
       return this.modelMatrix;
     }
@@ -40368,7 +40346,7 @@ var MeshMorpher = class {
       return [x3, y3, z2];
     };
   }
-  static clothPlane(width = 5, height = 5) {
+  static clothPlane(width = 5, height = 5, nx = 10, ny = 10) {
     return (u2, v2) => {
       const x3 = (u2 - 0.5) * width;
       const y3 = (0.5 - v2) * height;
@@ -41191,9 +41169,9 @@ function addProceduralOBJ(material = "standard", pos2, rot2, rotationSpeed2 = { 
     resolve(o3);
   });
 }
-function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 }, rot2 = { x: 0, y: 0, z: 0 }, texturePath2 = ["https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/slot/reel1-lod0.webp"], name2 = "chain", size2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 1, mass = 1) {
+function physicsBodiesChain(material = "standard", pos2 = { x: 10, y: 30, z: -6 }, rot2 = { x: 0, y: 0, z: 0 }, texturePath2 = ["https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/slot/reel1-lod0.webp"], name2 = "chain", size2 = 10, raycast2 = false, scale4 = [1, 1, 1], spacing2 = 1.2, mass = 1, meshPath = "https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/blender/cube.obj") {
   const engine = this;
-  const inputCube = { mesh: "https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/blender/cube.obj" };
+  const inputCube = { mesh: meshPath };
   function handler(m2) {
     const RAY = { enabled: !!raycast2, radius: 1 };
     for (let y3 = 0; y3 < size2; y3++) {
@@ -42639,32 +42617,9 @@ var PhysicsBridge = class {
   setKinematicInterpolate(idx, targetX, targetY, targetZ = 0, lerpFactor) {
     this._worker.postMessage({ cmd: "setKinematicInterpolate", idx, targetX, targetY, targetZ, lerpFactor });
   }
-  //---
   createSphereBoundary(idxs, pos2 = { x: 0, y: 0, z: 0 }, radius = 20) {
     this._worker.postMessage({ cmd: "createSphereBoundary", idxs, pos: pos2, radius });
   }
-  // _syncToObjects() {
-  //   const snap = this._snapshot;
-  //   if(!snap) return;
-  //   const STRIDE = 8;
-  //   for(const [idx, meObj] of this._bodyIndexMap) {
-  //     // if(!meObj.modelMatrix || meObj.isKinematic=== true) continue;
-  //     if(!meObj.modelMatrix) continue;
-  //     const b = idx * STRIDE;
-  //     const pos = snap.subarray(b, b + 3);
-  //     const quat = snap.subarray(b + 3, b + 7);
-  //     mat4.fromQuat(quat, meObj.modelMatrix);
-  //     meObj.modelMatrix[12] = pos[0];
-  //     meObj.modelMatrix[13] = pos[1];
-  //     meObj.modelMatrix[14] = pos[2];
-  //     mat4.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
-  //     meObj.modelMatrix[15] = 1;
-  //     meObj.position.inMove = true;
-  //     meObj.position.x = pos[0];
-  //     meObj.position.y = pos[1];
-  //     meObj.position.z = pos[2];
-  //   }
-  // }
   _syncToObjects() {
     const snap = this._snapshot;
     if (!snap) return;
@@ -42689,7 +42644,7 @@ var PhysicsBridge = class {
       for (const [startIndex, clothData] of this._clothMap) {
         const meObj = clothData.mesh;
         const count = clothData.count;
-        if (meObj?.vertexAnim?.clothBuffer && app.device) {
+        try {
           const clothPositions = new Float32Array(count * 4);
           for (let i2 = 0; i2 < count; i2++) {
             const base = (startIndex + i2) * STRIDE;
@@ -42697,9 +42652,9 @@ var PhysicsBridge = class {
             clothPositions[i2 * 4 + 1] = snap[base + 1];
             clothPositions[i2 * 4 + 2] = snap[base + 2];
             clothPositions[i2 * 4 + 3] = 0;
-            if (i2 === 50) console.log(i2 + "=i   WRITE cloth[50]:", clothPositions[50 * 4 + 0], clothPositions[50 * 4 + 1], clothPositions[50 * 4 + 2]);
           }
           app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, clothPositions);
+        } catch (err) {
         }
       }
     }
@@ -42738,7 +42693,7 @@ var PhysicsBridge = class {
         if (data.clothPackets) {
           for (const packet of data.clothPackets) {
             const clothMeta = this._clothMap.get(packet.startIndex);
-            if (clothMeta && clothMeta.mesh && clothMeta.mesh.vertexAnim?.clothBuffer && app.device) {
+            if (clothMeta && clothMeta.mesh && clothMeta.mesh.vertexAnim?.clothBuffer) {
               const count = clothMeta.count;
               const src = packet.positions;
               const clothPositions = new Float32Array(count * 4);
@@ -42748,11 +42703,7 @@ var PhysicsBridge = class {
                 clothPositions[i2 * 4 + 2] = src[i2 * 3 + 2];
                 clothPositions[i2 * 4 + 3] = 0;
               }
-              app.device.queue.writeBuffer(
-                clothMeta.mesh.vertexAnim.clothBuffer,
-                0,
-                clothPositions
-              );
+              app.device.queue.writeBuffer(clothMeta.mesh.vertexAnim.clothBuffer, 0, clothPositions);
             }
           }
         }
@@ -49613,6 +49564,7 @@ var testCannonES = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
+    let PLANE;
     physicsPlayground2.addLight();
     addRaycastsListener();
     addEventListener("PhysicsReady", () => {
@@ -49623,6 +49575,80 @@ var testCannonES = function() {
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, { scale: [1, 1, 1] });
       physicsPlayground2.matrixPhysics.speedUpSimulation(2);
+      physicsPlayground2.physicsBodiesChain(
+        void 0,
+        { x: -6, y: 20, z: -10 },
+        void 0,
+        "./res/meshes/obj/modelpack19/hang2/512/hang2.webp",
+        "hang2",
+        5,
+        true,
+        void 0,
+        void 0,
+        void 0,
+        "./res/meshes/obj/modelpack19/hang2/hang2.obj"
+      );
+      physicsPlayground2.physicsBodiesChain(
+        void 0,
+        { x: 6, y: 20, z: -10 },
+        void 0,
+        "./res/meshes/obj/modelpack19/hang2/512/hang2.webp",
+        "hang22",
+        5,
+        true,
+        void 0,
+        void 0,
+        void 0,
+        "./res/meshes/obj/modelpack19/hang2/hang2.obj"
+      );
+      physicsPlayground2.physicsBodiesGeneratorDeepPyramid(
+        "standard",
+        { x: 0, y: 1, z: -20 },
+        { x: 0, y: 0, z: 0 },
+        "./res/textures/gold-1.webp",
+        "pyr",
+        2,
+        true,
+        [1, 1, 1],
+        2,
+        400
+      );
+      const W2 = 8;
+      const H2 = 8;
+      const NX = 10;
+      const NY = 10;
+      PLANE = app.addProceduralMeshObj({
+        position: { x: 0, y: 15, z: -10 },
+        scale: [1, 1, 1],
+        name: "test",
+        resolutionU: NX,
+        resolutionV: NY,
+        texturesPaths: ["./res/meshes/obj/modelpack19/hand-logo.webp"],
+        meshA: MeshMorpher.clothPlane(W2, H2),
+        meshB: MeshMorpher.clothPlane(W2, H2),
+        physics: {
+          enabled: true,
+          geometry: "Cloth",
+          nx: NX,
+          ny: NY,
+          width: W2,
+          height: H2,
+          pinTop: true
+        }
+      });
+      app.physicsBodiesGeneratorWall(
+        "standard",
+        { x: -4.5, y: 1, z: -10 },
+        { x: 0, y: 0, z: 0 },
+        ["./res/textures/rust.jpg"],
+        "my_set_walls",
+        "5x3",
+        true,
+        [1, 1, 1],
+        2.05,
+        1e3,
+        "ByZ"
+      );
       let strength = 10;
       physicsPlayground2.canvas.addEventListener("ray.hit.event", (e2) => {
         console.log("ray.hit.event detected");
@@ -49632,25 +49658,24 @@ var testCannonES = function() {
           e2.detail.rayDirection[1] * strength,
           e2.detail.rayDirection[2] * strength
         ));
+        applyWindToCloth();
       });
+      function applyWindToCloth(startIndex = 1, count = 121, nx = 10) {
+        for (let i2 = 0; i2 < count; i2++) {
+          const row2 = Math.floor(i2 / (nx + 1));
+          if (row2 === 0) continue;
+          app.matrixPhysics.applyImpulse(startIndex + i2, {
+            x: Math.sin(performance.now() * 1e-3) * 0.01,
+            y: 0.01,
+            z: 0.01
+          });
+        }
+      }
     });
     async function onGround(m2) {
-      app.addProceduralMeshObj({
-        position: { x: 0, y: 5, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
-        scale: [1, 1, 1],
-        name: "test",
-        meshA: MeshMorpher.clothPlane(5, 5, 10, 10),
-        meshB: MeshMorpher.clothPlane(),
-        physics: {
-          enabled: true,
-          geometry: "Cloth"
-        },
-        raycast: { enabled: true, radius: 2 }
-      });
       setTimeout(() => {
+        PLANE.vertexAnim.enableCloth(1);
+        app.activateHZB();
       }, 500);
       let cam2 = app.getCamera();
       cam2.setYaw(-0.03);
@@ -49659,19 +49684,57 @@ var testCannonES = function() {
       cam2.setY(3.76);
       cam2._dirtyAngle = true;
       physicsPlayground2.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 15, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 111, z: 0 },
+        scale: [5, 5, 5],
+        texturesPaths: ["./res/meshes/obj/modelpack19/hand-logo.webp"],
+        name: "ball1",
+        mesh: m2.ball,
+        physics: {
+          enabled: true,
+          geometry: "Sphere",
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      physicsPlayground2.addMeshObj({
         position: { x: 0, y: -0.5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         scale: [25, 0.1, 25],
-        // chatgpt-gen-bg-inv
         texturesPaths: ["res/icons/editor/chatgpt-gen-bg-inv.webp"],
         name: "ground",
         mesh: m2.plane,
         physics: { enabled: false }
       });
-      if (isMobile() == false) app.activateBloomEffect();
-      physicsPlayground2.lightContainer[0].setPosY(14);
-      physicsPlayground2.lightContainer[0].setIntensity(24);
+      physicsPlayground2.addProceduralMeshObj({
+        material: { type: "standard" },
+        position: { x: 1, y: 3, z: -7 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [1, 1, 1],
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1_low.webp"],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_cone`,
+        physics: {
+          enabled: true,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      app.activateBloomEffect();
+      app.activateVolumetricEffect();
+      physicsPlayground2.lightContainer[0].setPosY(65);
+      physicsPlayground2.lightContainer[0].setIntensity(100);
     }
   });
   window.app = physicsPlayground2;
@@ -53634,8 +53697,8 @@ fn fs_main(in: VertexOutput) -> FragOut {
   return out;
 }`;
   }
-  attachPositionAnimator(animator) {
-    this.positionAnimator = animator;
+  attachPositionAnimator(animator2) {
+    this.positionAnimator = animator2;
   }
   detachPositionAnimator() {
     this.positionAnimator = null;
@@ -54274,7 +54337,7 @@ var loadGaussianSplat = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
-    let animator;
+    let animator2;
     gaussianSplat.addLight();
     downloadMeshes(
       {
@@ -54291,9 +54354,9 @@ var loadGaussianSplat = function() {
     function setRandomMode() {
       const randomIndex = Math.floor(Math.random() * modes.length);
       const selectedMode = modes[randomIndex];
-      animator.setMode(selectedMode);
-      animator.setScale(randomFloatFromTo(0.2, 10));
-      animator.setSpeed(randomFloatFromTo(0.2, 4));
+      animator2.setMode(selectedMode);
+      animator2.setScale(randomFloatFromTo(0.2, 10));
+      animator2.setSpeed(randomFloatFromTo(0.2, 4));
       console.log(`Mode set to: ${selectedMode}`);
     }
     function onGround(m2) {
@@ -54327,18 +54390,18 @@ var loadGaussianSplat = function() {
         MYCUBE.setBlend(1e-3);
         MYCUBE.effects.splat = new GaussianSplatScene(gaussianSplat.device, "rgba16float", gaussianSplat.cameraBuffer);
         const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/test2.ply", 12, "point-list");
-        animator = new SplatColorAnimator(
+        animator2 = new SplatColorAnimator(
           app.device,
           layer.positions,
           layer.vertexCount,
           layer.colorBuffer
         );
-        animator.setMode("pulse");
-        animator.setScale(0.8);
-        animator.setSpeed(0.8);
-        layer.colorBuffer = animator.colorBuffer;
-        app.autoUpdate.push(animator);
-        window.animator = animator;
+        animator2.setMode("pulse");
+        animator2.setScale(0.8);
+        animator2.setSpeed(0.8);
+        layer.colorBuffer = animator2.colorBuffer;
+        app.autoUpdate.push(animator2);
+        window.animator = animator2;
         MYCUBE.effects.flameEmitter.setIntensity(100);
         MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(4);
         MYCUBE.effects.flameEmitter.instanceTargets.forEach((e2) => {
@@ -54387,7 +54450,7 @@ var loadGaussianSplatVertAnim = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
-    let animator, positionAnimator;
+    let animator2, positionAnimator;
     gaussianSplat.addLight();
     downloadMeshes({
       ball: "./res/meshes/blender/sphere.obj",
@@ -54449,17 +54512,17 @@ var loadGaussianSplatVertAnim = function() {
           if (guard === false) {
             MYCUBE.effects.splat = new GaussianSplatScene(gaussianSplat.device, "rgba16float", gaussianSplat.cameraBuffer);
             const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast.ply", 6, "point-list");
-            animator = new SplatColorAnimator(
+            animator2 = new SplatColorAnimator(
               app.device,
               layer.positions,
               layer.vertexCount,
               layer.colorBuffer
             );
-            animator.setMode("pulse");
-            animator.setScale(0.8);
-            animator.setSpeed(0.8);
-            layer.colorBuffer = animator.colorBuffer;
-            app.autoUpdate.push(animator);
+            animator2.setMode("pulse");
+            animator2.setScale(0.8);
+            animator2.setSpeed(0.8);
+            layer.colorBuffer = animator2.colorBuffer;
+            app.autoUpdate.push(animator2);
             positionAnimator = new SplatPositionAnimator(
               app.device,
               MYCUBE.effects.splat.splatLayers[0].positions,
@@ -54618,13 +54681,15 @@ var loadGaussianSplatVertAnim = function() {
 
 // src/engine/buildin/nui-pipe.js
 var PipeCommander = class {
-  constructor(autostart = true, videoElementId, canvasElementId) {
+  constructor(autostart = true, videoElementId, canvasElementId, opts = {}) {
     this.autostart = autostart;
     this.handLandmarker = void 0;
     this.runningMode = "IMAGE";
     this.webcamRunning = false;
     this.lastVideoTime = -1;
     this.results = void 0;
+    this.mode = opts.mode ?? "hand";
+    this.enableVisual = opts.enableVisual ?? true;
     if (videoElementId) {
       this.video = document.getElementById(videoElementId);
     }
@@ -54645,44 +54710,61 @@ var PipeCommander = class {
       this.video.muted = true;
       document.body.appendChild(this.video);
     }
-    if (canvasElementId) {
-      this.canvasElement = document.getElementById(canvasElementId);
-    }
-    if (!this.canvasElement) {
-      this.canvasElement = document.createElement("canvas");
-      this.canvasElement.id = "auto-canvas";
-      Object.assign(this.canvasElement.style, {
-        position: "absolute",
-        bottom: "2.5%",
-        left: "2.5%",
-        width: "95%",
-        height: "95%",
-        zIndex: "10000",
-        pointerEvents: "none"
-      });
-      document.body.appendChild(this.canvasElement);
-    }
-    this.canvasCtx = this.canvasElement.getContext("2d");
+    this.canvasElement = null;
+    this.canvasCtx = null;
     this.drawingUtils = null;
+    if (this.enableVisual) {
+      if (canvasElementId) {
+        this.canvasElement = document.getElementById(canvasElementId);
+      }
+      if (!this.canvasElement) {
+        this.canvasElement = document.createElement("canvas");
+        this.canvasElement.id = "auto-canvas";
+        Object.assign(this.canvasElement.style, {
+          position: "absolute",
+          bottom: "2.5%",
+          left: "2.5%",
+          width: "95%",
+          height: "95%",
+          zIndex: "10000",
+          pointerEvents: "none"
+        });
+        document.body.appendChild(this.canvasElement);
+      }
+      this.canvasCtx = this.canvasElement.getContext("2d");
+    }
     this.ready = this.init();
   }
   async init() {
     const visionModule = await Promise.resolve().then(() => (init_vision_bundle(), vision_bundle_exports));
-    const { HandLandmarker, FilesetResolver, DrawingUtils } = visionModule;
+    const { HandLandmarker, FaceLandmarker, FilesetResolver, DrawingUtils } = visionModule;
     this.HandLandmarker = HandLandmarker;
+    this.FaceLandmarker = FaceLandmarker;
     const vision = await FilesetResolver.forVisionTasks("./mediapipe/wasm");
-    this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: (
-          // "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
-          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
-        ),
-        delegate: "GPU"
-      },
-      runningMode: this.runningMode,
-      numHands: 1
-    });
-    this.drawingUtils = new DrawingUtils(this.canvasCtx);
+    if (this.mode === "face") {
+      this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+          delegate: "GPU"
+        },
+        runningMode: this.runningMode,
+        numFaces: 1,
+        outputFaceBlendshapes: false,
+        outputFacialTransformationMatrixes: false
+      });
+    } else {
+      this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+          delegate: "GPU"
+        },
+        runningMode: this.runningMode,
+        numHands: 1
+      });
+    }
+    if (this.enableVisual && this.canvasCtx) {
+      this.drawingUtils = new DrawingUtils(this.canvasCtx);
+    }
     if (this.autostart === true) this.enableWebcam();
   }
   async enableWebcam() {
@@ -54692,50 +54774,91 @@ var PipeCommander = class {
     await this.video.play();
     const w2 = this.video.videoWidth;
     const h2 = this.video.videoHeight;
-    this.canvasElement.width = w2;
-    this.canvasElement.height = h2;
+    if (this.enableVisual && this.canvasElement) {
+      this.canvasElement.width = w2;
+      this.canvasElement.height = h2;
+      this.canvasElement.style.aspectRatio = `${w2}/${h2}`;
+    }
     this.video.width = w2;
     this.video.height = h2;
     this.video.style.aspectRatio = `${w2}/${h2}`;
-    this.canvasElement.style.aspectRatio = `${w2}/${h2}`;
     this.webcamRunning = true;
     this.predictWebcam();
   }
   async predictWebcam() {
     if (this.runningMode === "IMAGE") {
       this.runningMode = "VIDEO";
-      await this.handLandmarker.setOptions({ runningMode: "VIDEO" });
+      const landmarker = this.mode === "face" ? this.faceLandmarker : this.handLandmarker;
+      await landmarker.setOptions({ runningMode: "VIDEO" });
     }
     const startTimeMs = performance.now();
     if (this.lastVideoTime !== this.video.currentTime) {
       this.lastVideoTime = this.video.currentTime;
-      this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs);
+      if (this.mode === "face") {
+        this.results = this.faceLandmarker.detectForVideo(this.video, startTimeMs, {
+          imageSize: {
+            width: this.video.videoWidth || 640,
+            height: this.video.videoHeight || 480
+          }
+        });
+      } else {
+        this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs, {
+          imageSize: {
+            width: this.video.videoWidth || 640,
+            height: this.video.videoHeight || 480
+          }
+        });
+      }
       this.onResults(this.results);
     }
-    this.canvasCtx.save();
-    this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
-    if (this.results?.landmarks) {
-      for (const landmarks of this.results.landmarks) {
-        this.drawingUtils.drawConnectors(landmarks, this.HandLandmarker.HAND_CONNECTIONS, {
-          color: "#00202e",
-          lineWidth: 5
-        });
-        this.drawingUtils.drawLandmarks(landmarks, { color: "#3d002f", lineWidth: 2 });
+    if (this.enableVisual && this.canvasCtx) {
+      this.canvasCtx.save();
+      this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+      if (this.results?.landmarks && this.drawingUtils) {
+        if (this.mode === "face") {
+          for (const landmarks of this.results.landmarks) {
+            this.drawingUtils.drawConnectors(
+              landmarks,
+              this.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+              { color: "#C0C0C070", lineWidth: 1 }
+            );
+            this.drawingUtils.drawConnectors(
+              landmarks,
+              this.FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+              { color: "#FF3030" }
+            );
+            this.drawingUtils.drawConnectors(
+              landmarks,
+              this.FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+              { color: "#30FF30" }
+            );
+            this.drawingUtils.drawConnectors(
+              landmarks,
+              this.FaceLandmarker.FACE_LANDMARKS_LIPS,
+              { color: "#E0E0E0" }
+            );
+          }
+        } else {
+          for (const landmarks of this.results.landmarks) {
+            this.drawingUtils.drawConnectors(
+              landmarks,
+              this.HandLandmarker.HAND_CONNECTIONS,
+              { color: "#00202e", lineWidth: 5 }
+            );
+            this.drawingUtils.drawLandmarks(
+              landmarks,
+              { color: "#3d002f", lineWidth: 2 }
+            );
+          }
+        }
       }
+      this.canvasCtx.restore();
     }
-    this.canvasCtx.restore();
     if (this.webcamRunning) {
       window.requestAnimationFrame(() => this.predictWebcam());
     }
   }
-  // Override
   onResults(results) {
-    if (!results?.landmarks) return;
-    for (let i2 = 0; i2 < results.landmarks.length; i2++) {
-      const hand = results.landmarks[i2];
-      const handedness = results.handednesses[i2]?.[0]?.categoryName ?? "Unknown";
-      console.log(`Hand ${i2} (${handedness}) wrist:`, hand[0]);
-    }
   }
   disableWebcam() {
     this.webcamRunning = false;
@@ -57129,7 +57252,7 @@ var hang3dUI = class {
       top: `2%`,
       right: `5%`,
       // width: '140px',
-      // height: `80px`,
+      fontSize: `11px`,
       background: `rgba(0,0,0,1)`,
       border: `2px solid rgba(255,255,255,1)`,
       borderRadius: `10px`,
@@ -57613,7 +57736,6 @@ var Player = class {
     this.energy = 0;
     app.energy.setValue(0);
     if (this.isDead) return;
-    console.log("....is dead");
     this.isDead = true;
     this.lives = Math.max(0, this.lives - 1);
     for (const t3 of tiers) {
@@ -57624,6 +57746,7 @@ var Player = class {
         MobileDOM.addButton(`GAME OVER ${t3.text} YOUR SCORE ${this.kills} kills.`, () => {
           location.reload();
         }, void 0, {
+          fontSize: 12,
           size: isMobile() === true ? 200 : 240,
           bottom: 40,
           left: isMobile() === true ? 30 : 45,
@@ -65924,8 +66047,8 @@ var loadReactiveAudio = function() {
         cam2.setPitch(0);
         cam2.setZ(1.7);
         cam2.setY(5.7);
-        app.bloomPass.setIntensity(1e3);
-        app.bloomPass.setBlurRadius(458);
+        app.bloomPass.setIntensity(10);
+        app.bloomPass.setBlurRadius(2);
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
       }, 700);
@@ -66111,6 +66234,878 @@ var snakeLightsInstancedMAX = function() {
   window.app = app2;
 };
 
+// src/engine/effects/splat-mediapipe.js
+var SplatHandEffect = class {
+  /**
+   * Follows FlameEmitter interface:
+   * - updateInstanceData(baseModelMatrix) called automatically
+   * - render(pass, mesh, viewProjMatrix, dt) called automatically
+   * - NO autoUpdate involvement
+   *
+   * @param {GPUDevice} device
+   * @param {string} format
+   * @param {GPUBuffer} cameraBuffer
+   * @param {GaussianSplatLayer} splatLayer  — the live splat layer to drive
+   * @param {object} opts
+   * @param {number} opts.scale          world-space scale for hand (default 3.0)
+   * @param {number} opts.clusterRadius  spread around each joint (default 0.08)
+   * @param {number[]} opts.origin       world offset [x,y,z] (default [0,1.2,0])
+   * @param {boolean} opts.mirrorX      flip X (webcam mirror) (default true)
+   */
+  constructor(device2, format, cameraBuffer, splatLayer, opts = {}) {
+    this.device = device2;
+    this.format = format;
+    this.cameraBuffer = cameraBuffer;
+    this.splatLayer = splatLayer;
+    this.enabled = true;
+    this.time = 0;
+    this.scale = opts.scale ?? 3;
+    this.clusterRadius = opts.clusterRadius ?? 1;
+    this.origin = opts.origin ?? [0, 1.2, 0];
+    this.mirrorX = opts.mirrorX ?? true;
+    this._landmarks = null;
+    const n3 = splatLayer.vertexCount;
+    this._posCPU = new Float32Array(n3 * 3);
+    this._colorCPU = new Float32Array(n3 * 4);
+    this._jointRadius = new Float32Array([
+      0.025,
+      // 0  WRIST       — wider, it's the palm anchor
+      0.012,
+      // 1  THUMB_CMC
+      0.01,
+      // 2  THUMB_MCP
+      8e-3,
+      // 3  THUMB_IP
+      7e-3,
+      // 4  THUMB_TIP   — tight fingertip
+      0.012,
+      // 5  INDEX_MCP
+      8e-3,
+      // 6  INDEX_PIP
+      7e-3,
+      // 7  INDEX_DIP
+      6e-3,
+      // 8  INDEX_TIP
+      0.012,
+      // 9  MIDDLE_MCP
+      8e-3,
+      // 10 MIDDLE_PIP
+      7e-3,
+      // 11 MIDDLE_DIP
+      6e-3,
+      // 12 MIDDLE_TIP
+      0.01,
+      // 13 RING_MCP
+      7e-3,
+      // 14 RING_PIP
+      6e-3,
+      // 15 RING_DIP
+      5e-3,
+      // 16 RING_TIP
+      0.01,
+      // 17 PINKY_MCP
+      7e-3,
+      // 18 PINKY_PIP
+      6e-3,
+      // 19 PINKY_DIP
+      5e-3
+      // 20 PINKY_TIP
+    ]);
+    this._clusterIdx = new Uint8Array(n3);
+    this._offsetX = new Float32Array(n3);
+    this._offsetY = new Float32Array(n3);
+    this._offsetZ = new Float32Array(n3);
+    this._precompute(n3);
+    this._jointColors = [
+      [1, 0.8, 0.2],
+      // 0  wrist        — gold
+      [1, 0.5, 0.1],
+      // 1  thumb CMC
+      [1, 0.4, 0.1],
+      // 2  thumb MCP
+      [1, 0.3, 0.1],
+      // 3  thumb IP
+      [1, 0.1, 0.1],
+      // 4  thumb tip    — red
+      [0.4, 1, 0.3],
+      // 5  index MCP
+      [0.3, 0.9, 0.3],
+      // 6  index PIP
+      [0.2, 0.8, 0.2],
+      // 7  index DIP
+      [0.1, 1, 0.1],
+      // 8  index tip    — bright green
+      [0.3, 0.5, 1],
+      // 9  middle MCP
+      [0.2, 0.4, 1],
+      // 10 middle PIP
+      [0.2, 0.3, 0.9],
+      // 11 middle DIP
+      [0.1, 0.2, 1],
+      // 12 middle tip   — blue
+      [1, 0.3, 1],
+      // 13 ring MCP
+      [0.9, 0.2, 0.9],
+      // 14 ring PIP
+      [0.8, 0.2, 0.8],
+      // 15 ring DIP
+      [1, 0.1, 1],
+      // 16 ring tip     — pink
+      [0.2, 1, 1],
+      // 17 pinky MCP
+      [0.2, 0.9, 0.9],
+      // 18 pinky PIP
+      [0.1, 0.8, 0.8],
+      // 19 pinky DIP
+      [0, 1, 1]
+      // 20 pinky tip    — cyan
+    ];
+    this._posCPU.fill(0);
+    device2.queue.writeBuffer(splatLayer.positionAnimator.posBuffer, 0, this._posCPU);
+  }
+  // ── Cluster setup ──────────────────────────────────────────────────────────
+  // _precompute(n) {
+  //   // Weight distribution: fingertips heavier, wrist medium
+  //   const weights = new Float32Array(21).fill(1.0);
+  //   [4, 8, 12, 16, 20].forEach(i => weights[i] = 1.8); // fingertips
+  //   weights[0] = 1.5;                                    // wrist
+  //   let total = 0;
+  //   for (let i = 0; i < 21; i++) total += weights[i];
+  //   const cdf = new Float32Array(21);
+  //   let run = 0;
+  //   for (let i = 0; i < 21; i++) { run += weights[i] / total; cdf[i] = run; }
+  //   cdf[20] = 1.0;
+  //   for (let p = 0; p < n; p++) {
+  //     const r = Math.random();
+  //     let ci = 0;
+  //     while (ci < 20 && cdf[ci] < r) ci++;
+  //     this._clusterIdx[p] = ci;
+  //     // Uniform random point inside unit sphere
+  //     let ox, oy, oz;
+  //     do {
+  //       ox = (Math.random() - 0.5) * 2;
+  //       oy = (Math.random() - 0.5) * 2;
+  //       oz = (Math.random() - 0.5) * 2;
+  //     } while (ox * ox + oy * oy + oz * oz > 1.0);
+  //     this._offsetX[p] = ox;
+  //     this._offsetY[p] = oy;
+  //     this._offsetZ[p] = oz;
+  //   }
+  // }
+  _precompute(n3) {
+    const weights = new Float32Array([
+      2,
+      // 0  WRIST              — anchor, heaviest
+      0.6,
+      // 1  THUMB_CMC
+      0.6,
+      // 2  THUMB_MCP
+      0.8,
+      // 3  THUMB_IP
+      1.2,
+      // 4  THUMB_TIP
+      0.8,
+      // 5  INDEX_MCP          — knuckle
+      0.6,
+      // 6  INDEX_PIP
+      0.6,
+      // 7  INDEX_DIP
+      1.2,
+      // 8  INDEX_TIP
+      0.8,
+      // 9  MIDDLE_MCP
+      0.6,
+      // 10 MIDDLE_PIP
+      0.6,
+      // 11 MIDDLE_DIP
+      1.2,
+      // 12 MIDDLE_TIP
+      0.7,
+      // 13 RING_MCP
+      0.5,
+      // 14 RING_PIP
+      0.5,
+      // 15 RING_DIP
+      1,
+      // 16 RING_TIP
+      0.7,
+      // 17 PINKY_MCP
+      0.5,
+      // 18 PINKY_PIP
+      0.5,
+      // 19 PINKY_DIP
+      1
+      // 20 PINKY_TIP
+    ]);
+    let total = 0;
+    for (let i2 = 0; i2 < 21; i2++) total += weights[i2];
+    const cdf = new Float32Array(21);
+    let run = 0;
+    for (let i2 = 0; i2 < 21; i2++) {
+      run += weights[i2] / total;
+      cdf[i2] = run;
+    }
+    cdf[20] = 1;
+    for (let p2 = 0; p2 < n3; p2++) {
+      const r3 = Math.random();
+      let ci2 = 0;
+      while (ci2 < 20 && cdf[ci2] < r3) ci2++;
+      this._clusterIdx[p2] = ci2;
+      let ox, oy, oz;
+      do {
+        ox = (Math.random() - 0.5) * 2;
+        oy = (Math.random() - 0.5) * 2;
+        oz = (Math.random() - 0.5) * 2;
+      } while (ox * ox + oy * oy + oz * oz > 1);
+      this._offsetX[p2] = ox;
+      this._offsetY[p2] = oy;
+      this._offsetZ[p2] = oz;
+    }
+  }
+  // ── Public API ─────────────────────────────────────────────────────────────
+  /**
+   * Feed raw MediaPipe results directly.
+   * Call from your PipeCommander.onResults() override.
+   */
+  setHandData(results) {
+    if (!results?.landmarks?.length) {
+      this._landmarks = null;
+      return;
+    }
+    this._landmarks = results.worldLandmarks?.[0] ?? results.landmarks[0];
+  }
+  /**
+   * Feed already-resolved hand from PipeGestureResolver.resolve()
+   */
+  setHandFromResolver(hands) {
+    if (!hands?.length) {
+      this._landmarks = null;
+      return;
+    }
+    this._landmarks = hands[0].worldLandmarks;
+  }
+  setScale(s2) {
+    this.scale = s2;
+  }
+  setClusterRadius(r3) {
+    this.clusterRadius = r3;
+  }
+  setOrigin(x3, y3, z2) {
+    this.origin = [x3, y3, z2];
+  }
+  // ── Effect interface (called automatically by main loop) ───────────────────
+  updateInstanceData(baseModelMatrix) {
+    if (!this.enabled) return;
+    this.time += 0.016;
+    if (!this._landmarks) {
+      this._posCPU.fill(0);
+      this.device.queue.writeBuffer(
+        this.splatLayer.positionAnimator.posBuffer,
+        0,
+        this._posCPU
+      );
+      return;
+    }
+    const lm = this._landmarks;
+    const sc2 = this.scale;
+    const cr2 = this.clusterRadius;
+    const ox = this.origin[0];
+    const oy = this.origin[1];
+    const oz = this.origin[2];
+    const mx = this.mirrorX ? -1 : 1;
+    const n3 = this.splatLayer.vertexCount;
+    const p2 = this._posCPU;
+    const breathe = Math.sin(this.time * 2.5) * 0.015;
+    for (let i2 = 0; i2 < n3; i2++) {
+      const ci2 = this._clusterIdx[i2];
+      const joint = lm[ci2];
+      const jx = joint.x * mx * sc2 + ox;
+      const jy = -joint.y * sc2 + oy;
+      const jz = -joint.z * sc2 + oz;
+      const r3 = this._jointRadius[ci2] * sc2 * this.clusterRadius + breathe;
+      p2[i2 * 3] = jx + this._offsetX[i2] * r3;
+      p2[i2 * 3 + 1] = jy + this._offsetY[i2] * r3;
+      p2[i2 * 3 + 2] = jz + this._offsetZ[i2] * r3;
+    }
+    this.device.queue.writeBuffer(
+      this.splatLayer.positionAnimator.posBuffer,
+      0,
+      p2
+    );
+    this._updateColors();
+  }
+  render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
+    this.time += dt2;
+  }
+  _updateColors() {
+    const c2 = this._colorCPU;
+    const n3 = this.splatLayer.vertexCount;
+    const pulse = Math.sin(this.time * 3) * 0.15 + 0.85;
+    for (let i2 = 0; i2 < n3; i2++) {
+      const ci2 = this._clusterIdx[i2];
+      const [r3, g2, b2] = this._jointColors[ci2];
+      const isTip = ci2 === 4 || ci2 === 8 || ci2 === 12 || ci2 === 16 || ci2 === 20;
+      const bright = isTip ? pulse * 1.4 : pulse * 0.9;
+      c2[i2 * 4] = r3 * bright;
+      c2[i2 * 4 + 1] = g2 * bright;
+      c2[i2 * 4 + 2] = b2 * bright;
+      c2[i2 * 4 + 3] = 1;
+    }
+    this.device.queue.writeBuffer(this.splatLayer.colorBuffer, 0, c2);
+  }
+};
+
+// examples/games/nui/hand-beast-render.js
+var loadHandBeast = function() {
+  let loadHand2 = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    // dontUsePhysics: true,
+    useCannon: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      // noEvents: true,
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    let MYCUBE;
+    const pipe = new PipeGestureResolver();
+    const nui = new PipeCommander(true, null, null, { enableVisual: false });
+    loadHand2.matrixPhysics.speedUpSimulation(2);
+    const cam2 = app.getCamera();
+    loadHand2.addLight();
+    downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    async function onGround(m2) {
+      loadHand2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: 0, y: -1, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    function createPillar(loadHand3, m2, x3, y3, z2, name2) {
+      const base = loadHand3.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 10, 1],
+        texturesPaths: ["./res/textures/white-metal2.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      const top = loadHand3.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3 + 6, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1.8, 3, 1.8],
+        texturesPaths: ["./res/textures/matrix1.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      return { base, top };
+    }
+    async function onLoadObj(m2) {
+      MYCUBE = loadHand2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: 0, y: 5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "MYCUBE",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: { enabled: true }
+      });
+      const pillar1 = createPillar(loadHand2, m2, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(loadHand2, m2, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(loadHand2, m2, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(loadHand2, m2, 20, 6, 20, "pil4");
+      loadHand2.lightContainer[0].setIntensity(0.7);
+      app.lightContainer[0].setColorB(100);
+      loadHand2.activateBloomEffect();
+      loadHand2.lightContainer[0].setPosition(0, 35, 0);
+      loadHand2.lightContainer[0].setTarget(0, 0, -20);
+      setTimeout(async () => {
+        MYCUBE.effects.splat = new GaussianSplatScene(loadHand2.device, "rgba16float", loadHand2.cameraBuffer);
+        const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast.ply", 6, "point-list");
+        animator = new SplatColorAnimator(
+          loadHand2.device,
+          layer.positions,
+          layer.vertexCount,
+          layer.colorBuffer
+        );
+        animator.setMode("pulse");
+        animator.setScale(0.8);
+        animator.setSpeed(0.8);
+        layer.colorBuffer = animator.colorBuffer;
+        loadHand2.autoUpdate.push(animator);
+        let positionAnimator = new SplatPositionAnimator(
+          loadHand2.device,
+          MYCUBE.effects.splat.splatLayers[0].positions,
+          MYCUBE.effects.splat.splatLayers[0].vertexCount
+        );
+        MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
+        loadHand2.autoUpdate.push(positionAnimator);
+        positionAnimator.setMode("hold");
+        const handEffect = new SplatHandEffect(
+          loadHand2.device,
+          "rgba16float",
+          loadHand2.cameraBuffer,
+          MYCUBE.effects.splat.splatLayers[0],
+          { scale: 3, clusterRadius: 0.08, origin: [0, 1.2, 0] }
+        );
+        MYCUBE.effects.handSplat = handEffect;
+        nui.onResults = (results) => {
+          console.log("hands detected:", results?.landmarks?.length ?? 0);
+          MYCUBE.effects.handSplat.setHandData(results);
+        };
+        loadHand2.activateHZB();
+        let cam3 = app.getCamera();
+        cam3.setYaw(-0.03);
+        cam3.setPitch(-0.49);
+        cam3.setZ(0);
+        cam3.setY(7);
+        app.buildRenderBuckets();
+        cam3._dirtyAngle = true;
+      }, 700);
+    }
+    loadHand2.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cube")) {
+      }
+    });
+  });
+  window.app = loadHand2;
+};
+
+// src/engine/effects/splatFace.js
+var SplatFaceEffect = class {
+  /**
+   * @param {GPUDevice} device
+   * @param {string} format
+   * @param {GPUBuffer} cameraBuffer
+   * @param {GaussianSplatLayer} splatLayer
+   * @param {object} opts
+   * @param {number} opts.scale          world-space scale (default 2.5)
+   * @param {number} opts.clusterRadius  global radius multiplier (default 1.0)
+   * @param {number[]} opts.origin       world offset [x,y,z] (default [0,1.6,0])
+   * @param {boolean} opts.mirrorX      flip X for webcam (default true)
+   */
+  constructor(device2, format, cameraBuffer, splatLayer, opts = {}) {
+    this.device = device2;
+    this.format = format;
+    this.cameraBuffer = cameraBuffer;
+    this.splatLayer = splatLayer;
+    this.enabled = true;
+    this.time = 0;
+    this.scale = opts.scale ?? 2.5;
+    this.clusterRadius = opts.clusterRadius ?? 1;
+    this.origin = opts.origin ?? [0, 1.6, 0];
+    this.mirrorX = opts.mirrorX ?? true;
+    this._landmarks = null;
+    const n3 = splatLayer.vertexCount;
+    this._posCPU = new Float32Array(n3 * 3);
+    this._colorCPU = new Float32Array(n3 * 4);
+    this._clusterIdx = new Uint16Array(n3);
+    this._offsetX = new Float32Array(n3);
+    this._offsetY = new Float32Array(n3);
+    this._offsetZ = new Float32Array(n3);
+    this._jointRadius = this._buildRadiusMap();
+    this._landmarkColors = this._buildColorMap();
+    this._precompute(n3);
+    this._posCPU.fill(0);
+    device2.queue.writeBuffer(splatLayer.positionAnimator.posBuffer, 0, this._posCPU);
+  }
+  // ── Radius map — key facial landmarks get wider clusters ──────────────────
+  _buildRadiusMap() {
+    const r3 = new Float32Array(478).fill(5e-3);
+    for (let i2 = 0; i2 <= 16; i2++) r3[i2] = 0.01;
+    for (let i2 = 17; i2 <= 26; i2++) r3[i2] = 7e-3;
+    for (let i2 = 27; i2 <= 35; i2++) r3[i2] = 7e-3;
+    for (let i2 = 36; i2 <= 47; i2++) r3[i2] = 5e-3;
+    for (let i2 = 48; i2 <= 59; i2++) r3[i2] = 8e-3;
+    for (let i2 = 60; i2 <= 67; i2++) r3[i2] = 6e-3;
+    r3[1] = 0.01;
+    r3[4] = 0.01;
+    r3[152] = 0.012;
+    r3[234] = 0.012;
+    r3[454] = 0.012;
+    r3[33] = 8e-3;
+    r3[133] = 8e-3;
+    r3[362] = 8e-3;
+    r3[263] = 8e-3;
+    r3[61] = 9e-3;
+    r3[291] = 9e-3;
+    r3[10] = 0.012;
+    return r3;
+  }
+  _buildColorMap() {
+    const colors = new Float32Array(478 * 3);
+    const setRange = (from, to2, r3, g2, b2) => {
+      for (let i2 = from; i2 <= to2; i2++) {
+        colors[i2 * 3] = r3;
+        colors[i2 * 3 + 1] = g2;
+        colors[i2 * 3 + 2] = b2;
+      }
+    };
+    setRange(0, 477, 0.9, 0.7, 0.5);
+    setRange(0, 16, 1, 0.8, 0.2);
+    setRange(17, 21, 0.2, 1, 1);
+    setRange(22, 26, 0.2, 1, 1);
+    setRange(27, 30, 0.4, 0.6, 1);
+    setRange(31, 35, 0.3, 0.5, 1);
+    setRange(36, 41, 0.2, 1, 0.3);
+    setRange(42, 47, 0.2, 1, 0.3);
+    setRange(48, 59, 1, 0.2, 0.4);
+    setRange(60, 67, 1, 0.1, 0.2);
+    [1, 4, 10, 33, 61, 133, 152, 234, 263, 291, 362, 454].forEach((i2) => {
+      colors[i2 * 3] = 1;
+      colors[i2 * 3 + 1] = 1;
+      colors[i2 * 3 + 2] = 1;
+    });
+    return colors;
+  }
+  // ── Cluster assignment ────────────────────────────────────────────────────
+  _buildWeights() {
+    const w2 = new Float32Array(478).fill(0.8);
+    for (let i2 = 0; i2 <= 16; i2++) w2[i2] = 1.5;
+    for (let i2 = 17; i2 <= 26; i2++) w2[i2] = 1.2;
+    for (let i2 = 27; i2 <= 35; i2++) w2[i2] = 1.2;
+    for (let i2 = 36; i2 <= 47; i2++) w2[i2] = 1.8;
+    for (let i2 = 48; i2 <= 67; i2++) w2[i2] = 2;
+    [1, 4, 10, 33, 61, 133, 152, 234, 263, 291, 362, 454].forEach((i2) => {
+      w2[i2] = 2.5;
+    });
+    return w2;
+  }
+  _precompute(n3) {
+    const weights = this._buildWeights();
+    const TOTAL_LM = 478;
+    let total = 0;
+    for (let i2 = 0; i2 < TOTAL_LM; i2++) total += weights[i2];
+    const cdf = new Float32Array(TOTAL_LM);
+    let run = 0;
+    for (let i2 = 0; i2 < TOTAL_LM; i2++) {
+      run += weights[i2] / total;
+      cdf[i2] = run;
+    }
+    cdf[TOTAL_LM - 1] = 1;
+    for (let p2 = 0; p2 < n3; p2++) {
+      const r3 = Math.random();
+      let lo2 = 0, hi2 = TOTAL_LM - 1;
+      while (lo2 < hi2) {
+        const mid = lo2 + hi2 >>> 1;
+        if (cdf[mid] < r3) lo2 = mid + 1;
+        else hi2 = mid;
+      }
+      this._clusterIdx[p2] = lo2;
+      let ox, oy, oz;
+      do {
+        ox = (Math.random() - 0.5) * 2;
+        oy = (Math.random() - 0.5) * 2;
+        oz = (Math.random() - 0.5) * 2;
+      } while (ox * ox + oy * oy + oz * oz > 1);
+      this._offsetX[p2] = ox;
+      this._offsetY[p2] = oy;
+      this._offsetZ[p2] = oz;
+    }
+  }
+  // ── Public API ────────────────────────────────────────────────────────────
+  /**
+   * Feed raw FaceLandmarker results directly.
+   * Call from PipeCommander.onResults()
+   */
+  setFaceData(results) {
+    if (!results?.faceLandmarks?.length) {
+      this._landmarks = null;
+      return;
+    }
+    this._landmarks = results.faceLandmarks[0];
+  }
+  setScale(s2) {
+    this.scale = s2;
+  }
+  setClusterRadius(r3) {
+    this.clusterRadius = r3;
+  }
+  setOrigin(x3, y3, z2) {
+    this.origin = [x3, y3, z2];
+  }
+  // ── Effect interface ──────────────────────────────────────────────────────
+  updateInstanceData(baseModelMatrix) {
+    if (!this.enabled) return;
+    if (!this._landmarks) {
+      this._posCPU.fill(0);
+      this.device.queue.writeBuffer(
+        this.splatLayer.positionAnimator.posBuffer,
+        0,
+        this._posCPU
+      );
+      return;
+    }
+    const lm = this._landmarks;
+    const sc2 = this.scale;
+    const ox = this.origin[0];
+    const oy = this.origin[1];
+    const oz = this.origin[2];
+    const mx = this.mirrorX ? -1 : 1;
+    const n3 = this.splatLayer.vertexCount;
+    const p2 = this._posCPU;
+    const breathe = Math.sin(this.time * 2) * 3e-3;
+    for (let i2 = 0; i2 < n3; i2++) {
+      const ci2 = this._clusterIdx[i2];
+      const joint = lm[ci2];
+      const jx = (joint.x - 0.5) * mx * sc2 + ox;
+      const jy = -(joint.y - 0.5) * sc2 + oy;
+      const jz = -joint.z * sc2 + oz;
+      const r3 = this._jointRadius[ci2] * sc2 * this.clusterRadius + breathe;
+      p2[i2 * 3] = jx + this._offsetX[i2] * r3;
+      p2[i2 * 3 + 1] = jy + this._offsetY[i2] * r3;
+      p2[i2 * 3 + 2] = jz + this._offsetZ[i2] * r3;
+    }
+    this.device.queue.writeBuffer(
+      this.splatLayer.positionAnimator.posBuffer,
+      0,
+      p2
+    );
+    this._updateColors();
+  }
+  render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
+    this.time += dt2;
+  }
+  _updateColors() {
+    const c2 = this._colorCPU;
+    const n3 = this.splatLayer.vertexCount;
+    const lipPulse = Math.sin(this.time * 4) * 0.2 + 0.9;
+    const eyePulse = Math.sin(this.time * 2.5) * 0.15 + 0.9;
+    const basePulse = Math.sin(this.time * 1.5) * 0.1 + 0.9;
+    for (let i2 = 0; i2 < n3; i2++) {
+      const ci2 = this._clusterIdx[i2];
+      const r3 = this._landmarkColors[ci2 * 3];
+      const g2 = this._landmarkColors[ci2 * 3 + 1];
+      const b2 = this._landmarkColors[ci2 * 3 + 2];
+      let bright;
+      if (ci2 >= 48 && ci2 <= 67) bright = lipPulse;
+      else if (ci2 >= 36 && ci2 <= 47) bright = eyePulse;
+      else bright = basePulse;
+      c2[i2 * 4] = r3 * bright;
+      c2[i2 * 4 + 1] = g2 * bright;
+      c2[i2 * 4 + 2] = b2 * bright;
+      c2[i2 * 4 + 3] = 1;
+    }
+    this.device.queue.writeBuffer(this.splatLayer.colorBuffer, 0, c2);
+  }
+  destroy() {
+  }
+};
+
+// examples/games/nui/face-beast-render.js
+var loadFaceBeast = function() {
+  let loadFace = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    useCannon: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      // noEvents: true,
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    let MYCUBE, animator2;
+    const pipe = new PipeGestureResolver();
+    const nui = new PipeCommander(true, null, null, {
+      enableVisual: false,
+      mode: "face"
+    });
+    loadFace.addLight();
+    downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    async function onGround(m2) {
+      loadFace.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: 0, y: -1, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    function createPillar(loadFace2, m2, x3, y3, z2, name2) {
+      const base = loadFace2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 10, 1],
+        texturesPaths: ["./res/textures/white-metal2.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      const top = loadFace2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3 + 6, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1.8, 3, 1.8],
+        texturesPaths: ["./res/textures/matrix1.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      return { base, top };
+    }
+    async function onLoadObj(m2) {
+      MYCUBE = loadFace.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: 0, y: 5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "MYCUBE",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: { enabled: true }
+      });
+      const pillar1 = createPillar(loadFace, m2, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(loadFace, m2, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(loadFace, m2, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(loadFace, m2, 20, 6, 20, "pil4");
+      loadFace.lightContainer[0].setIntensity(0.7);
+      app.lightContainer[0].setColorB(100);
+      loadFace.activateBloomEffect();
+      loadFace.lightContainer[0].setPosition(0, 35, 0);
+      loadFace.lightContainer[0].setTarget(0, 0, -20);
+      setTimeout(async () => {
+        const msdfTextureImageData = await fetch("./res/textures/default.png").then((r3) => r3.arrayBuffer()).then((buf) => new Uint8Array(buf));
+        const msdfTexture = loadFace.device.createTexture({
+          size: { width: 2048, height: 2048 },
+          // adjust to your atlas size
+          format: "rgba8unorm",
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+          mipLevelCount: 1
+        });
+        loadFace.device.queue.copyExternalImageToTexture(
+          { source: await createImageBitmap(new Blob([msdfTextureImageData], { type: "image/png" })) },
+          { texture: msdfTexture },
+          { width: 2048, height: 2048 }
+        );
+        const sampler = loadFace.device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear",
+          mipmapFilter: "linear",
+          addressModeU: "repeat",
+          addressModeV: "repeat"
+        });
+        MYCUBE.effects.gpuText = new MSDFTextEffect(
+          loadFace.device,
+          "rgba16float",
+          // format for your render targets
+          msdfTexture,
+          // GPUTexture object (not string!)
+          sampler,
+          // GPUSampler object (not string!)
+          loadFace.cameraBuffer
+        );
+        MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
+        const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast.ply", 6, "point-list");
+        animator2 = new SplatColorAnimator(
+          loadFace.device,
+          layer.positions,
+          layer.vertexCount,
+          layer.colorBuffer
+        );
+        animator2.setMode("pulse");
+        animator2.setScale(0.8);
+        animator2.setSpeed(0.8);
+        layer.colorBuffer = animator2.colorBuffer;
+        loadFace.autoUpdate.push(animator2);
+        loadFace.animator = animator2;
+        let positionAnimator = new SplatPositionAnimator(
+          loadFace.device,
+          MYCUBE.effects.splat.splatLayers[0].positions,
+          MYCUBE.effects.splat.splatLayers[0].vertexCount
+        );
+        MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
+        loadFace.autoUpdate.push(positionAnimator);
+        positionAnimator.setMode("hold");
+        const faceEffect = new SplatFaceEffect(
+          loadFace.device,
+          "rgba16float",
+          loadFace.cameraBuffer,
+          MYCUBE.effects.splat.splatLayers[0],
+          {
+            scale: 4.5,
+            clusterRadius: 1,
+            origin: [0, 1.6, 0],
+            mirrorX: true
+          }
+        );
+        MYCUBE.effects.faceEffect = faceEffect;
+        nui.onResults = (results) => {
+          console.log("face detected:", results?.landmarks?.length ?? 0);
+          MYCUBE.effects.faceEffect.setFaceData(results);
+        };
+        loadFace.activateHZB();
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(7);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 700);
+    }
+    loadFace.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      nui.onResults = (results) => {
+      };
+      MYCUBE.effects.splat.splatLayers[0].positionAnimator.setMode("dust");
+    });
+  });
+  window.app = loadFace;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -66170,6 +67165,8 @@ byId2("loadEarth").addEventListener("click", () => switchDemo("38"));
 byId2("loadCameraDepth").addEventListener("click", () => switchDemo("39"));
 byId2("loadReactiveAudio").addEventListener("click", () => switchDemo("40"));
 byId2("InstancedMAX").addEventListener("click", () => switchDemo("41"));
+byId2("loadHandBeast").addEventListener("click", () => switchDemo("42"));
+byId2("loadFaceBeast").addEventListener("click", () => switchDemo("43"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -66255,6 +67252,10 @@ if (urlQuery["demo"] === "1") {
   loadReactiveAudio();
 } else if (urlQuery["demo"] === "41") {
   snakeLightsInstancedMAX();
+} else if (urlQuery["demo"] === "42") {
+  loadHandBeast();
+} else if (urlQuery["demo"] === "43") {
+  loadFaceBeast();
 } else {
   loadObjFile();
 }

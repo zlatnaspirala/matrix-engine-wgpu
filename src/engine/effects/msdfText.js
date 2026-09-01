@@ -1,5 +1,6 @@
 import {mat4} from "wgpu-matrix";
 
+
 export class MSDFTextEffect {
   constructor(device, format, msdfTexture, sampler, cameraBuffer) {
     this.device = device;

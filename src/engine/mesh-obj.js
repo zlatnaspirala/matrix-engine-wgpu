@@ -1,7 +1,7 @@
-import {mat4, vec3} from 'wgpu-matrix';
+import {mat4} from 'wgpu-matrix';
 import {Position, Rotation} from "./matrix-class";
 import {vertexWGSL} from '../shaders/vertex.wgsl';
-import {degToRad, genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, MeshType} from './utils';
+import {genName, LOG_FUNNY_ARCADE, LOG_FUNNY_SMALL, MeshType} from './utils';
 import Materials from './materials';
 import {fragmentVideoWGSL} from '../shaders/fragment.video.wgsl';
 import {vertexWGSL_NM} from '../shaders/vertex.wgsl.normalmap';
@@ -11,7 +11,7 @@ import {DestructionEffect} from './effects/destruction';
 import {FlameEffect} from './effects/flame';
 import {FlameEmitter} from './effects/flame-emmiter';
 import {VERTEX_ANIM_FLAGS} from './literals';
-import {createGroundTexture} from './procedures/procedural-textures';
+// import {createGroundTexture} from './procedures/procedural-textures';
 import {MEConfig} from '../me-config';
 import {PointerEffect} from './effects/pointerEffect';
 import {buildPipelineKey, PipelineManager} from './pipelineManager';
@@ -354,7 +354,6 @@ export default class MEMeshObj extends Materials {
           frontFace: o.primitive.frontFace ? o.primitive.frontFace : 'ccw'
         }
       }
-
     }
 
     this.runProgram = (o) => {
@@ -367,7 +366,6 @@ export default class MEMeshObj extends Materials {
       })
     }
 
-    // console.log('o.physics', o.physics)
     this.runProgram(o).then((o_) => {
       this.context.configure({
         device: this.device,
@@ -375,7 +373,6 @@ export default class MEMeshObj extends Materials {
         alphaMode: 'premultiplied',
       });
 
-      // Create the model vertex buffer.
       this.vertexBuffer = this.device.createBuffer({
         size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.VERTEX,
@@ -386,7 +383,6 @@ export default class MEMeshObj extends Materials {
         this.vertexBuffer.unmap();
       }
 
-      // Create the model vertex buffer.
       this.vertexNormalsBuffer = this.device.createBuffer({
         size: this.mesh.vertexNormals.length * Float32Array.BYTES_PER_ELEMENT,
         usage: GPUBufferUsage.VERTEX,
@@ -407,17 +403,14 @@ export default class MEMeshObj extends Materials {
         this.vertexTexCoordsBuffer.unmap();
       }
 
-      // Create the model index buffer.
       this.indexCount = this.mesh.indices.length;
       const indexCount = this.mesh.indices.length;
       const size = Math.ceil(indexCount * Uint16Array.BYTES_PER_ELEMENT / 4) * 4;
-
       this.indexBuffer = this.device.createBuffer({
         size,
         usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
-
       new Uint16Array(this.indexBuffer.getMappedRange()).set(this.mesh.indices);
       this.indexBuffer.unmap();
       this.indexCount = indexCount;
@@ -427,23 +420,11 @@ export default class MEMeshObj extends Materials {
       }
 
       this.vertexBuffers = [
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [{shaderLocation: 0, offset: 0, format: "float32x3", }],
-        },
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-          attributes: [{shaderLocation: 1, offset: 0, format: "float32x3", },],
-        },
-        {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-          attributes: [{shaderLocation: 2, offset: 0, format: "float32x2", },],
-        },
+        {arrayStride: Float32Array.BYTES_PER_ELEMENT * 3, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3", }], },
+        {arrayStride: Float32Array.BYTES_PER_ELEMENT * 3, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3", },], },
+        {arrayStride: Float32Array.BYTES_PER_ELEMENT * 2, attributes: [{shaderLocation: 2, offset: 0, format: "float32x2", },], },
         // joint indices
-        {
-          arrayStride: 4 * 4,
-          attributes: [{format: 'uint32x4', offset: 0, shaderLocation: 3}]
-        },
+        {arrayStride: 4 * 4, attributes: [{format: 'uint32x4', offset: 0, shaderLocation: 3}]},
         // weights
         glbInfo,
       ];
@@ -456,11 +437,7 @@ export default class MEMeshObj extends Materials {
           ]
         });
       }
-      // 'triangle-list'  // standard meshes
-      // 'triangle-strip' // terrain, strips
-      // 'line-list'      // wireframe (manual index gen)
-      // 'line-strip'     // outlines
-      // 'point-list'     
+
       this.topology = 'triangle-list';
       this.setTopology = (t, cullMode = 'none', frontFace = 'ccw') => {
         const isStrip =
@@ -518,25 +495,23 @@ export default class MEMeshObj extends Materials {
       });
 
       if(o_.physics.geometry === 'Cloth') {
-        const maxClothParticles = 384; // your vertex count or particle count
+        const maxClothParticles = 384;
         this.clothBuffer = this.device.createBuffer({
-          label: "Cloth Physics Storage Buffer",
-          size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT, // e.g., vec4 per particle (x, y, z, pad)
+          label: "ClothPhysicsStorage",
+          size: maxClothParticles * 4 * Float32Array.BYTES_PER_ELEMENT,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
       } else {
-        console.log('dummyClothBuffer IN use!!! ', this.clothBuffer , " FO R :" , this.name)
         this.clothBuffer = this.dummyClothBuffer;
       }
 
-      // console.log('CONSTRUCT VERTEX ANIM  this.clothBuffer111, ', this.clothBuffer)
       this.vertexAnim = {
         active: false,
         clothBuffer: this.clothBuffer,
         enableCloth: (startIndex = 0) => {
           this.vertexAnim.active = true;
-          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH; // Ensure you have a CLOTH flag in your literals
-          this.vertexAnimParams[28] = startIndex; // Store offset if needed in vertexAnimParams
+          this.vertexAnimParams[1] |= VERTEX_ANIM_FLAGS.CLOTH;
+          this.vertexAnimParams[28] = startIndex;
           this.updateVertexAnimBuffer();
         },
         disableCloth: () => {
@@ -738,10 +713,10 @@ export default class MEMeshObj extends Materials {
           mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
           mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
           // if(useScale == true) {
-            this._scaleVec[0] = this.scale[0];
-            this._scaleVec[1] = this.scale[1];
-            this._scaleVec[2] = this.scale[2];
-            mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+          this._scaleVec[0] = this.scale[0];
+          this._scaleVec[1] = this.scale[1];
+          this._scaleVec[2] = this.scale[2];
+          mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
           // }
           this.modelMatrix = modelMatrix;
           return this.modelMatrix;

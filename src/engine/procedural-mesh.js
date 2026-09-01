@@ -107,7 +107,7 @@ export default class ProceduralMeshObj extends Materials {
     this.rotation.rotationSpeed.y = o.rotationSpeed?.y || 0;
     this.rotation.rotationSpeed.z = o.rotationSpeed?.z || 0;
     this.scale = o.scale || [1, 1, 1];
-    this.useScale = o.useScale || false;
+    this.useScale = o.useScale || true;
     this.time = 0;
     this.deltaTimeAdapter = 1;
     this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -125,7 +125,7 @@ export default class ProceduralMeshObj extends Materials {
     if(typeof o.primitive === 'undefined') {
       this.primitive = {
         topology: 'triangle-list',
-        cullMode: 'back',
+        cullMode: 'none',
         frontFace: 'ccw'
       }
     } else {
@@ -828,12 +828,12 @@ export default class ProceduralMeshObj extends Materials {
       mat4.rotateX(modelMatrix, this.rotation.getRotX(), modelMatrix);
       mat4.rotateY(modelMatrix, this.rotation.getRotY(), modelMatrix);
       mat4.rotateZ(modelMatrix, this.rotation.getRotZ(), modelMatrix);
-      if(useScale == true) {
-        this._scaleVec[0] = this.scale[0];
-        this._scaleVec[1] = this.scale[1];
-        this._scaleVec[2] = this.scale[2];
-        mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
-      }
+      // if(useScale == true) {
+      this._scaleVec[0] = this.scale[0];
+      this._scaleVec[1] = this.scale[1];
+      this._scaleVec[2] = this.scale[2];
+      mat4.scale(modelMatrix, this._scaleVec, modelMatrix);
+      // }
       this.modelMatrix = modelMatrix;
       return this.modelMatrix;
     }
@@ -1162,10 +1162,10 @@ export class MeshMorpher {
     };
   }
 
-  static clothPlane(width = 5, height = 5) {
+  static clothPlane(width = 5, height = 5, nx = 10, ny = 10) {
     return (u, v) => {
       const x = (u - 0.5) * width;
-      const y = (0.5 - v) * height;   // v = 0 → top row (pinned)
+      const y = (0.5 - v) * height;
       const z = 0;
       return [x, y, z];
     };

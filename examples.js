@@ -45,6 +45,8 @@ import {loadEarth} from "./examples/earth.js";
 import {loadCameraDepth} from "./examples/camera-depth.js";
 import {loadReactiveAudio} from "./examples/reactive-audio.js";
 import {snakeLightsInstancedMAX} from "./examples/max-instanced-13y-gpu-card.js";
+import {loadHandBeast} from "./examples/games/nui/hand-beast-render.js";
+import {loadFaceBeast} from "./examples/games/nui/face-beast-render.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -100,6 +102,8 @@ byId('loadEarth').addEventListener("click", () => switchDemo('38'));
 byId('loadCameraDepth').addEventListener("click", () => switchDemo('39'));
 byId('loadReactiveAudio').addEventListener("click", () => switchDemo('40'));
 byId('InstancedMAX').addEventListener("click", () => switchDemo('41'));
+byId('loadHandBeast').addEventListener("click", () => switchDemo('42'));
+byId('loadFaceBeast').addEventListener("click", () => switchDemo('43'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
@@ -189,8 +193,11 @@ if(urlQuery['demo'] === '1') {
   loadReactiveAudio();
 } else if(urlQuery['demo'] === '41') {
   snakeLightsInstancedMAX();
-}
-else {
+} else if(urlQuery['demo'] === '42') {
+  loadHandBeast();
+} else if(urlQuery['demo'] === '43') {
+  loadFaceBeast();
+} else {
   loadObjFile();
 }
 

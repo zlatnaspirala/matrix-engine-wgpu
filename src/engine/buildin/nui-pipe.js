@@ -20,69 +20,89 @@
  * Still this feature is marked like "high price" for CPU usage.
  */
 export class PipeCommander {
-  constructor(autostart = true, videoElementId, canvasElementId) {
+  constructor(autostart = true, videoElementId, canvasElementId, opts = {}) {
     this.autostart = autostart;
     this.handLandmarker = undefined;
     this.runningMode = "IMAGE";
     this.webcamRunning = false;
     this.lastVideoTime = -1;
     this.results = undefined;
+    // 'hand' | 'face'
+    this.mode = opts.mode ?? 'hand';
+    this.enableVisual = opts.enableVisual ?? true;
+
     if(videoElementId) {this.video = document.getElementById(videoElementId);}
     if(!this.video) {
       this.video = document.createElement("video");
       this.video.id = "auto-video";
       Object.assign(this.video.style, {
-        position: "absolute",
-        bottom: "3vh",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "480px",
-        zIndex: "-1",
-        pointerEvents: "none",
+        position: "absolute", bottom: "3vh", left: "50%",
+        transform: "translateX(-50%)", width: "480px",
+        zIndex: "-1", pointerEvents: "none",
       });
       this.video.autoplay = true;
       this.video.playsInline = true;
       this.video.muted = true;
-      // this.video.style.transform = "scaleX(-1)";
       document.body.appendChild(this.video);
     }
 
-    if(canvasElementId) {this.canvasElement = document.getElementById(canvasElementId);}
-    if(!this.canvasElement) {
-      this.canvasElement = document.createElement("canvas");
-      this.canvasElement.id = "auto-canvas";
-      Object.assign(this.canvasElement.style, {
-        position: "absolute",
-        bottom: "2.5%",
-        left: "2.5%",
-        width: "95%",
-        height: "95%",
-        zIndex: "10000",
-        pointerEvents: "none",
-      });
-      document.body.appendChild(this.canvasElement);
-    }
-    this.canvasCtx = this.canvasElement.getContext("2d");
+    // Only create canvas if visual overlay is wanted
+    this.canvasElement = null;
+    this.canvasCtx = null;
     this.drawingUtils = null;
+
+    if(this.enableVisual) {
+      if(canvasElementId) {this.canvasElement = document.getElementById(canvasElementId);}
+      if(!this.canvasElement) {
+        this.canvasElement = document.createElement("canvas");
+        this.canvasElement.id = "auto-canvas";
+        Object.assign(this.canvasElement.style, {
+          position: "absolute", bottom: "2.5%", left: "2.5%",
+          width: "95%", height: "95%",
+          zIndex: "10000", pointerEvents: "none",
+        });
+        document.body.appendChild(this.canvasElement);
+      }
+      this.canvasCtx = this.canvasElement.getContext("2d");
+    }
+
     this.ready = this.init();
   }
 
   async init() {
     const visionModule = await import("@mediapipe/tasks-vision");
-    const {HandLandmarker, FilesetResolver, DrawingUtils} = visionModule;
+    const {HandLandmarker, FaceLandmarker, FilesetResolver, DrawingUtils} = visionModule;
     this.HandLandmarker = HandLandmarker;
+    this.FaceLandmarker = FaceLandmarker;
+
     const vision = await FilesetResolver.forVisionTasks("./mediapipe/wasm");
-    this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath:
-          // "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
-          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-        delegate: "GPU"
-      },
-      runningMode: this.runningMode,
-      numHands: 1
-    });
-    this.drawingUtils = new DrawingUtils(this.canvasCtx);
+
+    if(this.mode === 'face') {
+      this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+          delegate: "GPU"
+        },
+        runningMode: this.runningMode,
+        numFaces: 1,
+        outputFaceBlendshapes: false,
+        outputFacialTransformationMatrixes: false
+      });
+    } else {
+      this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+          delegate: "GPU"
+        },
+        runningMode: this.runningMode,
+        numHands: 1
+      });
+    }
+
+    if(this.enableVisual && this.canvasCtx) {
+      this.drawingUtils = new DrawingUtils(this.canvasCtx);
+    }
+
     if(this.autostart === true) this.enableWebcam();
   }
 
@@ -93,12 +113,16 @@ export class PipeCommander {
     await this.video.play();
     const w = this.video.videoWidth;
     const h = this.video.videoHeight;
-    this.canvasElement.width = w;
-    this.canvasElement.height = h;
+
+    if(this.enableVisual && this.canvasElement) {
+      this.canvasElement.width = w;
+      this.canvasElement.height = h;
+      this.canvasElement.style.aspectRatio = `${w}/${h}`;
+    }
     this.video.width = w;
     this.video.height = h;
     this.video.style.aspectRatio = `${w}/${h}`;
-    this.canvasElement.style.aspectRatio = `${w}/${h}`;
+
     this.webcamRunning = true;
     this.predictWebcam();
   }
@@ -106,41 +130,77 @@ export class PipeCommander {
   async predictWebcam() {
     if(this.runningMode === "IMAGE") {
       this.runningMode = "VIDEO";
-      await this.handLandmarker.setOptions({runningMode: "VIDEO"});
+      const landmarker = this.mode === 'face' ? this.faceLandmarker : this.handLandmarker;
+      await landmarker.setOptions({runningMode: "VIDEO"});
     }
+
     const startTimeMs = performance.now();
     if(this.lastVideoTime !== this.video.currentTime) {
       this.lastVideoTime = this.video.currentTime;
-      this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs);
+
+      if(this.mode === 'face') {
+        this.results = this.faceLandmarker.detectForVideo(this.video, startTimeMs, {
+          imageSize: {
+            width: this.video.videoWidth || 640,
+            height: this.video.videoHeight || 480
+          }
+        });
+      } else {
+        this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs, {
+          imageSize: {
+            width: this.video.videoWidth || 640,
+            height: this.video.videoHeight || 480
+          }
+        });
+      }
+
       this.onResults(this.results);
     }
-    this.canvasCtx.save();
-    this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
-    if(this.results?.landmarks) {
-      for(const landmarks of this.results.landmarks) {
-        this.drawingUtils.drawConnectors(landmarks, this.HandLandmarker.HAND_CONNECTIONS, {
-          color: "#00202e",
-          lineWidth: 5
-        });
-        this.drawingUtils.drawLandmarks(landmarks, {color: "#3d002f", lineWidth: 2});
-      }
-    }
-    this.canvasCtx.restore();
-    if(this.webcamRunning) {window.requestAnimationFrame(() => this.predictWebcam())}
-  }
 
-  // Override
-  onResults(results) {
-    if(!results?.landmarks) return;
-    for(let i = 0;i < results.landmarks.length;i++) {
-      const hand = results.landmarks[i];
-      const handedness = results.handednesses[i]?.[0]?.categoryName ?? "Unknown";
-      // hand[0] = WRIST
-      // hand[4] = THUMB_TIP, hand[8] = INDEX_TIP
-      // hand[12] = MIDDLE_TIP, hand[16] = RING_TIP, hand[20] = PINKY_TIP
-      console.log(`Hand ${i} (${handedness}) wrist:`, hand[0]);
+    if(this.enableVisual && this.canvasCtx) {
+      this.canvasCtx.save();
+      this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+      if(this.results?.landmarks && this.drawingUtils) {
+        if(this.mode === 'face') {
+          for(const landmarks of this.results.landmarks) {
+            this.drawingUtils.drawConnectors(
+              landmarks, this.FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+              {color: "#C0C0C070", lineWidth: 1}
+            );
+            this.drawingUtils.drawConnectors(
+              landmarks, this.FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+              {color: "#FF3030"}
+            );
+            this.drawingUtils.drawConnectors(
+              landmarks, this.FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+              {color: "#30FF30"}
+            );
+            this.drawingUtils.drawConnectors(
+              landmarks, this.FaceLandmarker.FACE_LANDMARKS_LIPS,
+              {color: "#E0E0E0"}
+            );
+          }
+        } else {
+          for(const landmarks of this.results.landmarks) {
+            this.drawingUtils.drawConnectors(
+              landmarks, this.HandLandmarker.HAND_CONNECTIONS,
+              {color: "#00202e", lineWidth: 5}
+            );
+            this.drawingUtils.drawLandmarks(
+              landmarks, {color: "#3d002f", lineWidth: 2}
+            );
+          }
+        }
+      }
+      this.canvasCtx.restore();
+    }
+
+    if(this.webcamRunning) {
+      window.requestAnimationFrame(() => this.predictWebcam());
     }
   }
+  
+  onResults(results) {}
 
   disableWebcam() {
     this.webcamRunning = false;

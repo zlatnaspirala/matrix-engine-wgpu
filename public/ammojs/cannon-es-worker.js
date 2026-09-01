@@ -51,6 +51,7 @@ class MatrixCannon {
     this._sab = null;
     this.bodyMap = new Map();
     this.clothDataPackets = [];
+    this.cloths = [];
   }
 
   _allocBuffer(bodyCount) {
@@ -388,11 +389,8 @@ class MatrixCannon {
 
     this.world.broadphase.dirty = true;
     this.world.broadphase.needsUpdate = true;
-
-    // Store metadata on the instance so we can easily reference it later if needed
-    if(!this.cloths) this.cloths = [];
     this.cloths.push({startIndex, nx, ny, count: particles.length});
-    console.log('worker cloths: ', this.cloths)
+    // console.log('worker cloths: ', this.cloths)
     return startIndex;
   }
 

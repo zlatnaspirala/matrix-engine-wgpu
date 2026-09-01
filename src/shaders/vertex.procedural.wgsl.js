@@ -1,4 +1,3 @@
-
 export const vertexMorphWGSL = () => `
 struct Scene {
   lightViewProjMatrix: mat4x4f,
@@ -18,32 +17,32 @@ struct VertexAnimParams {
   flags: f32,
   globalIntensity: f32,
   _pad0: f32,
-  
+
   waveSpeed: f32,
   waveAmplitude: f32,
   waveFrequency: f32,
   _pad1: f32,
-  
+
   windSpeed: f32,
   windStrength: f32,
   windHeightInfluence: f32,
   windTurbulence: f32,
-  
+
   pulseSpeed: f32,
   pulseAmount: f32,
   pulseCenterX: f32,
   pulseCenterY: f32,
-  
+
   twistSpeed: f32,
   twistAmount: f32,
   _pad2: f32,
   _pad3: f32,
-  
+
   noiseScale: f32,
   noiseStrength: f32,
   noiseSpeed: f32,
   _pad4: f32,
-  
+
   oceanWaveScale: f32,
   oceanWaveHeight: f32,
   oceanWaveSpeed: f32,
@@ -54,7 +53,7 @@ struct VertexAnimParams {
 @group(2) @binding(0) var<uniform> model: Model;
 @group(2) @binding(2) var<uniform> vertexAnim: VertexAnimParams;
 @group(2) @binding(3) var<uniform> morphBlend: f32;
-@group(2) @binding(4) var<storage, read> clothBuffer: array<vec4f>;   // ← added
+@group(2) @binding(4) var<storage, read> clothBuffer: array<vec4f>;
 
 const ANIM_WAVE: u32 = 1u;
 const ANIM_WIND: u32 = 2u;
@@ -62,14 +61,14 @@ const ANIM_PULSE: u32 = 4u;
 const ANIM_TWIST: u32 = 8u;
 const ANIM_NOISE: u32 = 16u;
 const ANIM_OCEAN: u32 = 32u;
-const ANIM_CLOTH: u32 = 128u;                                         // ← added
+const ANIM_CLOTH: u32 = 128u;
 
 struct VertexInput {
-  @location(0) position:  vec3f,   // posA
-  @location(1) normal:    vec3f,   // normalA
+  @location(0) position:  vec3f,
+  @location(1) normal:    vec3f,
   @location(2) uv:        vec2f,
-  @location(6) positionB: vec3f,   // posB
-  @location(7) normalB:   vec3f,   // normalB
+  @location(6) positionB: vec3f,
+  @location(7) normalB:   vec3f,
 };
 
 struct VertexOutput {
@@ -142,35 +141,34 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 }
 
 @vertex
-fn main(
-  @builtin(vertex_index) vertexIndex: u32,   // ← needed for cloth
-  input: VertexInput
-) -> VertexOutput {
+fn main(@builtin(vertex_index) vertexIndex: u32, input: VertexInput) -> VertexOutput {
   var output: VertexOutput;
-
   let flags = u32(vertexAnim.flags);
-
   var pos: vec3f;
   var norm: vec3f;
 
-  // ---------- CLOTH PATH ----------
+  // CLOTH PATH
   if ((flags & ANIM_CLOTH) != 0u) {
-    // Cloth positions are already in world space
     pos  = clothBuffer[vertexIndex].xyz;
-    norm = vec3f(0.0, 0.0, 1.0);           // simple normal for now
-
+    let normalMatrix = mat3x3f(
+      model.modelMatrix[0].xyz,
+      model.modelMatrix[1].xyz,
+      model.modelMatrix[2].xyz
+    );
+    let blendedNormal   = normalize(mix(input.normal, input.normalB, morphBlend));
     // IMPORTANT: do NOT multiply by model.modelMatrix
     let worldPos = vec4f(pos, 1.0);
 
     output.Position  = scene.cameraViewProjMatrix * worldPos;
     output.fragPos   = worldPos.xyz;
     output.shadowPos = scene.lightViewProjMatrix * worldPos;
-    output.fragNorm  = norm;
+    // output.fragNorm  = norm;
+    output.fragNorm  = normalize(normalMatrix*blendedNormal);
     output.uv        = input.uv;
     return output;
   }
 
-  // ---------- NORMAL MORPH + VERTEX ANIM PATH ----------
+  // NORMAL MORPH + VERTEX ANIM PATH
   let blendedPosition = mix(input.position, input.positionB, morphBlend);
   let blendedNormal   = normalize(mix(input.normal, input.normalB, morphBlend));
 
@@ -341,14 +339,12 @@ fn applyOcean(pos: vec3f) -> vec3f {
 fn applyVertexAnimation(pos: vec3f) -> vec3f {
   var p = pos;
   let flags = u32(vertexAnim.flags);
-  
   if ((flags & ANIM_WAVE) != 0u) { p = applyWave(p); }
   if ((flags & ANIM_WIND) != 0u) { p = applyWind(p); }
   if ((flags & ANIM_NOISE) != 0u) { p = applyNoiseDisplacement(p); }
   if ((flags & ANIM_OCEAN) != 0u) { p = applyOcean(p); }
   if ((flags & ANIM_PULSE) != 0u) { p = applyPulse(p); }
   if ((flags & ANIM_TWIST) != 0u) { p = applyTwist(p); }
-
   return mix(pos, p, vertexAnim.globalIntensity);
 }
 
@@ -356,14 +352,11 @@ fn applyVertexAnimation(pos: vec3f) -> vec3f {
 fn main(input: VertexInput) -> @builtin(position) vec4f {
   // 1. Morph positions
   let blendedPosition = mix(input.positionA, input.positionB, u_morphBlend);
-  // let blendedPosition = input.positionA;
-  
   // 2. Apply the same vertex animations
   var finalPos = blendedPosition;
   if (u32(vertexAnim.flags) != 0u && vertexAnim.globalIntensity > 0.0) {
     finalPos = applyVertexAnimation(finalPos);
   }
-
   // 3. Transform to world space and light clip space
   let worldPos = model.modelMatrix * vec4f(finalPos, 1.0);
   return scene.lightViewProjMatrix * worldPos;

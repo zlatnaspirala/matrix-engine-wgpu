@@ -361,34 +361,11 @@ export class PhysicsBridge {
   setKinematicInterpolate(idx, targetX, targetY, targetZ = 0, lerpFactor) {
     this._worker.postMessage({cmd: 'setKinematicInterpolate', idx, targetX, targetY, targetZ, lerpFactor});
   }
-  //---
 
   createSphereBoundary(idxs, pos = {x: 0, y: 0, z: 0}, radius = 20) {
     this._worker.postMessage({cmd: 'createSphereBoundary', idxs, pos, radius});
   }
 
-  // _syncToObjects() {
-  //   const snap = this._snapshot;
-  //   if(!snap) return;
-  //   const STRIDE = 8;
-  //   for(const [idx, meObj] of this._bodyIndexMap) {
-  //     // if(!meObj.modelMatrix || meObj.isKinematic=== true) continue;
-  //     if(!meObj.modelMatrix) continue;
-  //     const b = idx * STRIDE;
-  //     const pos = snap.subarray(b, b + 3);
-  //     const quat = snap.subarray(b + 3, b + 7);
-  //     mat4.fromQuat(quat, meObj.modelMatrix);
-  //     meObj.modelMatrix[12] = pos[0];
-  //     meObj.modelMatrix[13] = pos[1];
-  //     meObj.modelMatrix[14] = pos[2];
-  //     mat4.scale(meObj.modelMatrix, meObj.scale, meObj.modelMatrix);
-  //     meObj.modelMatrix[15] = 1;
-  //     meObj.position.inMove = true;
-  //     meObj.position.x = pos[0];
-  //     meObj.position.y = pos[1];
-  //     meObj.position.z = pos[2];
-  //   }
-  // }
   _syncToObjects() {
     const snap = this._snapshot;
     if(!snap) return;
@@ -416,26 +393,21 @@ export class PhysicsBridge {
       for(const [startIndex, clothData] of this._clothMap) {
         const meObj = clothData.mesh;
         const count = clothData.count;
-
-        if(meObj?.vertexAnim?.clothBuffer && app.device) {
+        try {
           const clothPositions = new Float32Array(count * 4);
-
           for(let i = 0;i < count;i++) {
             const base = (startIndex + i) * STRIDE;
-            clothPositions[i * 4 + 0] = snap[base + 0]; // x
-            clothPositions[i * 4 + 1] = snap[base + 1]; // y
-            clothPositions[i * 4 + 2] = snap[base + 2]; // z
+            clothPositions[i * 4 + 0] = snap[base + 0];
+            clothPositions[i * 4 + 1] = snap[base + 1];
+            clothPositions[i * 4 + 2] = snap[base + 2];
             clothPositions[i * 4 + 3] = 0.0;
-            if (i === 50) console.log(i + '=i   WRITE cloth[50]:', clothPositions[50 * 4 + 0], clothPositions[50 * 4 + 1], clothPositions[50 * 4 + 2]);
           }
-
           app.device.queue.writeBuffer(meObj.vertexAnim.clothBuffer, 0, clothPositions);
-        }
+        } catch(err) {}
       }
     }
 
   }
-
 
   _send(cmd, extra = {}) {
     const id = this._msgId++;
@@ -475,16 +447,9 @@ export class PhysicsBridge {
         if(data.clothPackets) {
           for(const packet of data.clothPackets) {
             const clothMeta = this._clothMap.get(packet.startIndex);
-
-            if(
-              clothMeta &&
-              clothMeta.mesh &&
-              clothMeta.mesh.vertexAnim?.clothBuffer &&
-              app.device
-            ) {
+            if(clothMeta && clothMeta.mesh && clothMeta.mesh.vertexAnim?.clothBuffer) {
               const count = clothMeta.count;
-              const src = packet.positions;          // Float32Array of length count*3
-
+              const src = packet.positions;
               // Convert xyz → vec4 (shader expects array<vec4f>)
               const clothPositions = new Float32Array(count * 4);
               for(let i = 0;i < count;i++) {
@@ -493,12 +458,7 @@ export class PhysicsBridge {
                 clothPositions[i * 4 + 2] = src[i * 3 + 2]; // z
                 clothPositions[i * 4 + 3] = 0.0;             // padding
               }
-
-              app.device.queue.writeBuffer(
-                clothMeta.mesh.vertexAnim.clothBuffer,
-                0,
-                clothPositions
-              );
+              app.device.queue.writeBuffer(clothMeta.mesh.vertexAnim.clothBuffer, 0, clothPositions);
             }
           }
         }

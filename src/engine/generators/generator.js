@@ -494,18 +494,16 @@ export function physicsBodiesChain(
   size = 10,
   raycast = false,
   scale = [1, 1, 1],
-  spacing = 1,
-  mass = 1
+  spacing = 1.2,
+  mass = 1,
+  meshPath = "https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/blender/cube.obj"
 ) {
   const engine = this;
-  const inputCube = {mesh: "https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/blender/cube.obj"};
-
+  const inputCube = {mesh: meshPath};
   function handler(m) {
     const RAY = {enabled: !!raycast, radius: 1};
-
     for(let y = 0;y < size;y++) {
       const cubeName = `${name}_${y}`;
-
       engine.addMeshObj({
         material: {type: material, share: true},
         position: {

@@ -2,10 +2,12 @@
 
 [2.0.0]
 
-- GPU Culling with indirect draws options.
+- ProceduralMesh( GEO: MeshMorpher.clothPlane(5, 5) ) get support for physics cloth ONLY FOR CANNON.
+
+- GPU indirect draws options.
   Activation with main program arg `render: 'GPUIndirectDraw'`
   It is implemented in core with main render override solution.
-  
+
 - BC TEX COMPRESSION option (not default)
   call
   ```js
