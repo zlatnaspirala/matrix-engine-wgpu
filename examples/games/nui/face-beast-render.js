@@ -179,14 +179,14 @@ export var loadFaceBeast = function() {
           addressModeV: 'repeat'
         });
 
-        // Now instantiate correctly
-        MYCUBE.effects.gpuText = new MSDFTextEffect(
-          loadFace.device,
-          'rgba16float',      // format for your render targets
-          msdfTexture,        // GPUTexture object (not string!)
-          sampler,            // GPUSampler object (not string!)
-          loadFace.cameraBuffer
-        );
+        // // Now instantiate correctly
+        // MYCUBE.effects.gpuText = new MSDFTextEffect(
+        //   loadFace.device,
+        //   'rgba16float',      // format for your render targets
+        //   msdfTexture,        // GPUTexture object (not string!)
+        //   sampler,            // GPUSampler object (not string!)
+        //   loadFace.cameraBuffer
+        // );
 
 
         MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);

@@ -1,5 +1,3 @@
-import {randomIntFromTo} from "../utils";
-
 /**
  * @description
  * Gaussian Splat PLY Loader & Renderer
@@ -53,7 +51,7 @@ export class GaussianSplatLayer {
       }
       this.splatData = this._parsePLY(arrayBuffer);
       this.vertexCount = this.splatData.positions.length / 3;
-      console.log(`✓ Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] → [${this.aabbMax}]`);
+      console.info(`✓ Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] → [${this.aabbMax}]`);
       await this._initializeGPU();
       return this;
     } catch(err) {
@@ -109,9 +107,10 @@ export class GaussianSplatLayer {
       // const r = this._sigmoid(view.getFloat32(offset + offsets.f_dc_0, true));
       // const g = this._sigmoid(view.getFloat32(offset + offsets.f_dc_1, true));
       // const b = this._sigmoid(view.getFloat32(offset + offsets.f_dc_2, true));
-      const r = randomIntFromTo(0, 10);
-      const g = randomIntFromTo(0, 10);
-      const b = randomIntFromTo(0, 10);
+      const SH_C0 = 0.28209479177387814; // Constant factor for SH degree 0
+      const r = Math.max(0, Math.min(1, 0.5 + SH_C0 * view.getFloat32(offset + offsets.f_dc_0, true)));
+      const g = Math.max(0, Math.min(1, 0.5 + SH_C0 * view.getFloat32(offset + offsets.f_dc_1, true)));
+      const b = Math.max(0, Math.min(1, 0.5 + SH_C0 * view.getFloat32(offset + offsets.f_dc_2, true)));
 
       splatColors[i * 4 + 0] = r;
       splatColors[i * 4 + 1] = g;
@@ -223,31 +222,8 @@ export class GaussianSplatLayer {
     });
     new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
     this.colorBuffer.unmap()
-
     this.positions = this.splatData.positions;
     this.vertexCount = this.splatData.vertexCount;
-
-    // this.vertexBufferLayout = [
-    //   {
-    //     // buffer 0: position + (ignored color slot) + scale + rotation
-    //     arrayStride: 56,
-    //     stepMode: 'vertex',
-    //     attributes: [
-    //       {shaderLocation: 0, offset: 0, format: 'float32x3'},
-    //       {shaderLocation: 2, offset: 28, format: 'float32x3'},
-    //       {shaderLocation: 3, offset: 40, format: 'float32x4'},
-    //     ]
-    //   },
-    //   {
-    //     // buffer 1: animated rgba color
-    //     arrayStride: 16,
-    //     stepMode: 'vertex',
-    //     attributes: [
-    //       {shaderLocation: 1, offset: 0, format: 'float32x4'},
-    //     ]
-    //   }
-    // ];
-    // In vertexBufferLayout, buffer 0 skips position (now dynamic):
     this.vertexBufferLayout = [
       {
         // slot 0: static — scale + rotation only (position slot skipped)
@@ -353,8 +329,7 @@ export class GaussianSplatLayer {
   }
 
   _getRenderShaderCode() {
-    return `
-struct Camera {
+    return `struct Camera {
   mvp: mat4x4<f32>
 };
 
@@ -895,8 +870,6 @@ export class SplatPositionAnimator {
     this.device.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
   }
 
-  // ─── Morph ─────────────────────────────────────────────────────────────────
-
   _applyMorph(rawT) {
     // Smooth-step easing
     const t = rawT * rawT * (3 - 2 * rawT);
@@ -909,8 +882,6 @@ export class SplatPositionAnimator {
     }
   }
 
-  // ─── Procedural effects ────────────────────────────────────────────────────
-
   /**
    * Tornado: splats orbit the Y-axis with radius and angular speed
    * proportional to height; tip contracts, base fans out.
@@ -922,7 +893,7 @@ export class SplatPositionAnimator {
     const sc = this.scale;
     const n = this.vertexCount;
     const up = this._upAxis;
-    const side = up === 1 ? 2 : 1; // the "other horizontal" axis when up changes
+    const side = up === 1 ? 2 : 1;
 
     let cUp = 0;
     for(let i = 0;i < n;i++) cUp += b[i * 3 + up];
@@ -1021,8 +992,8 @@ export class SplatPositionAnimator {
     const n = this.vertexCount;
     const pr = this._dustProgress;
     const up = this._upAxis;
-    const h1 = up === 1 ? 0 : 0; // horizontal axis 1 (always x)
-    const h2 = up === 1 ? 2 : 1; // horizontal axis 2 (whichever isn't up)
+    const h1 = up === 1 ? 0 : 0;
+    const h2 = up === 1 ? 2 : 1;
 
     for(let i = 0;i < n;i++) {
       const delay = ph[i] / (Math.PI * 2) * 0.4;
@@ -1032,8 +1003,8 @@ export class SplatPositionAnimator {
       const bu = b[i * 3 + up];
       const bh1 = b[i * 3 + h1];
       const bh2 = b[i * 3 + h2];
-
-      p[i * 3 + up] = bu * (1 - ease);  // collapse toward 0 on the up axis
+      // collapse toward 0 on the up axis
+      p[i * 3 + up] = bu * (1 - ease);
 
       const spread = ease * 2.0;
       p[i * 3 + h1] = bh1 + sx[i] * spread;

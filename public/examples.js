@@ -48462,12 +48462,12 @@ var flipperJolt = function() {
         REdge.setUVScale(1, 1);
         LEdge.setUVScale(1, 1);
         REdge2.setUVScale(1, 1);
-        let leftBodycurrPos = "unpressed";
+        let leftBodycurrPos2 = "unpressed";
         let rightBodycurrPos = "unpressed";
         window.addEventListener("keydown", (e2) => {
           e2.preventDefault();
-          if (e2.code === "KeyZ" && leftBodycurrPos === "unpressed") {
-            leftBodycurrPos = "pressed";
+          if (e2.code === "KeyZ" && leftBodycurrPos2 === "unpressed") {
+            leftBodycurrPos2 = "pressed";
             flipper.matrixPhysics.activate(leftBody, true);
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -10, POWERPIN * 2);
             flipper.matrixSounds.play("click3");
@@ -48481,11 +48481,11 @@ var flipperJolt = function() {
         window.addEventListener("keyup", (e2) => {
           e2.preventDefault();
           setTimeout(async () => {
-            if (e2.code === "KeyZ" && leftBodycurrPos === "pressed") {
+            if (e2.code === "KeyZ" && leftBodycurrPos2 === "pressed") {
               flipper.matrixPhysics.activate(leftBody, true);
               flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN * 2);
               flipper.matrixSounds.play("click1");
-              leftBodycurrPos = "unpressed";
+              leftBodycurrPos2 = "unpressed";
             } else if (e2.code === "KeyM" && rightBodycurrPos === "pressed") {
               flipper.matrixPhysics.activate(rightBody, true);
               flipper.matrixPhysics.enableAngularMotor(hingeRightID, true, -10, POWERPIN * 2);
@@ -49187,11 +49187,11 @@ var flipperAmmo = function() {
         REdge.setUVScale(1, 1);
         LEdge.setUVScale(1, 1);
         REdge2.setUVScale(1, 1);
-        let leftBodycurrPos = "unpressed";
+        let leftBodycurrPos2 = "unpressed";
         window.addEventListener("keydown", (e2) => {
           e2.preventDefault();
-          if (e2.code === "KeyZ" && leftBodycurrPos == "unpressed") {
-            leftBodycurrPos = "pressed";
+          if (e2.code === "KeyZ" && leftBodycurrPos2 == "unpressed") {
+            leftBodycurrPos2 = "pressed";
             flipper.matrixPhysics.activate(leftBody, true);
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, -10, POWERPIN * 2);
           }
@@ -49202,7 +49202,7 @@ var flipperAmmo = function() {
         });
         window.addEventListener("keyup", async (e2) => {
           if (e2.code === "KeyZ") {
-            leftBodycurrPos = "unpressed";
+            leftBodycurrPos2 = "unpressed";
             flipper.matrixPhysics.enableAngularMotor(hingeLeftID, true, 10, POWERPIN);
           }
           if (e2.code === "KeyM") {
@@ -53381,7 +53381,7 @@ var GaussianSplatLayer = class {
       }
       this.splatData = this._parsePLY(arrayBuffer);
       this.vertexCount = this.splatData.positions.length / 3;
-      console.log(`\u2713 Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] \u2192 [${this.aabbMax}]`);
+      console.info(`\u2713 Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] \u2192 [${this.aabbMax}]`);
       await this._initializeGPU();
       return this;
     } catch (err) {
@@ -53431,9 +53431,10 @@ var GaussianSplatLayer = class {
       this.aabbMax[0] = Math.max(this.aabbMax[0], x3);
       this.aabbMax[1] = Math.max(this.aabbMax[1], y3);
       this.aabbMax[2] = Math.max(this.aabbMax[2], z2);
-      const r3 = randomIntFromTo(0, 10);
-      const g2 = randomIntFromTo(0, 10);
-      const b2 = randomIntFromTo(0, 10);
+      const SH_C0 = 0.28209479177387814;
+      const r3 = Math.max(0, Math.min(1, 0.5 + SH_C0 * view.getFloat32(offset + offsets.f_dc_0, true)));
+      const g2 = Math.max(0, Math.min(1, 0.5 + SH_C0 * view.getFloat32(offset + offsets.f_dc_1, true)));
+      const b2 = Math.max(0, Math.min(1, 0.5 + SH_C0 * view.getFloat32(offset + offsets.f_dc_2, true)));
       splatColors[i2 * 4 + 0] = r3;
       splatColors[i2 * 4 + 1] = g2;
       splatColors[i2 * 4 + 2] = b2;
@@ -53635,8 +53636,7 @@ var GaussianSplatLayer = class {
     });
   }
   _getRenderShaderCode() {
-    return `
-struct Camera {
+    return `struct Camera {
   mvp: mat4x4<f32>
 };
 
@@ -54133,7 +54133,6 @@ var SplatPositionAnimator = class {
     }
     this.device.queue.writeBuffer(this.posBuffer, 0, this._posCPU);
   }
-  // ─── Morph ─────────────────────────────────────────────────────────────────
   _applyMorph(rawT) {
     const t3 = rawT * rawT * (3 - 2 * rawT);
     const from = this._morphFrom;
@@ -54144,7 +54143,6 @@ var SplatPositionAnimator = class {
       out[i2] = from[i2] + (target[i2] - from[i2]) * t3;
     }
   }
-  // ─── Procedural effects ────────────────────────────────────────────────────
   /**
    * Tornado: splats orbit the Y-axis with radius and angular speed
    * proportional to height; tip contracts, base fans out.
@@ -64888,6 +64886,13 @@ var targetBlending = {
     alpha: { srcFactor: "one", dstFactor: "zero", operation: "add" }
   }
 };
+var TOPOLOGY = {
+  POINT_LIST: "point-list",
+  LINE_LIST: "line-list",
+  LINE_STRIPT: "line-strip",
+  TRIANGLE_LIST: "triangle-list",
+  TRIANGLE_STRIP: "triangle-strip"
+};
 
 // examples/earth.js
 var loadEarth = function() {
@@ -67037,16 +67042,6 @@ var loadFaceBeast = function() {
           addressModeU: "repeat",
           addressModeV: "repeat"
         });
-        MYCUBE.effects.gpuText = new MSDFTextEffect(
-          loadFace.device,
-          "rgba16float",
-          // format for your render targets
-          msdfTexture,
-          // GPUTexture object (not string!)
-          sampler,
-          // GPUSampler object (not string!)
-          loadFace.cameraBuffer
-        );
         MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
         const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast.ply", 6, "point-list");
         animator2 = new SplatColorAnimator(
@@ -67104,6 +67099,569 @@ var loadFaceBeast = function() {
     });
   });
   window.app = loadFace;
+};
+
+// examples/gaussian-test.js
+var loadGaussianSplatVertAnim2 = function() {
+  let gaussianSplat = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    let animator2, positionAnimator;
+    gaussianSplat.addLight();
+    downloadMeshes({
+      ball: "./res/meshes/blender/sphere.obj",
+      cube: "./res/meshes/blender/cube.obj",
+      me: "./res/meshes/obj/nidza.obj"
+    }, onLoadObj, { scale: [1, 1, 1] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    const modes = ["rings", "wave", "zones", "pulse"];
+    function onGround(m2) {
+    }
+    async function onLoadObj(m2) {
+      let MYCUBE = gaussianSplat.addMeshObj({
+        material: { type: "power" },
+        // envMapParams: {
+        //   baseColorMix: 0.5,                // CLEAR SKY
+        //   mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+        //   reflectivity: 0.75,               // 25% reflection blend
+        //   illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+        //   illuminateStrength: 1.5,          // Gentle rim
+        //   illuminatePulse: 0.1,             // No pulse (static)
+        //   fresnelPower: 5,                  // Medium-sharp edge
+        //   envLodBias: 1.5,
+        //   usePlanarReflection: false,       // ✅ Env map mode
+        // },
+        position: { x: 0, y: 4, z: -20 },
+        rotation: { x: 180, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 1, z: 0 },
+        scale: [2e-3, 2e-3, 2e-3],
+        texturesPaths: ["./res/icons/512.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "me",
+        // primitive: topologyArgNidza,
+        mesh: m2.me,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false },
+        pointerEffect: { enabled: true, flameEmitter: true }
+      });
+      gaussianSplat.lightContainer[0].setIntensity(365);
+      gaussianSplat.lightContainer[0].setRange(240);
+      gaussianSplat.activateBloomEffect();
+      gaussianSplat.bloomPass.setBlurRadius(0.2);
+      gaussianSplat.lightContainer[0].setPosition(0, 110, -20);
+      gaussianSplat.lightContainer[0].setTarget(0, 0, -20);
+      const glbFile = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer()).then((buf) => uploadGLBModel(buf, gaussianSplat.device));
+      let topologyArg = {
+        topology: "point-list",
+        cullMode: "back",
+        frontFace: "ccw"
+      };
+      let MYGLB = gaussianSplat.addGlbObjInctance({
+        material: { type: "standard", useTextureFromGlb: true },
+        useScale: true,
+        scale: [16, 16, 16],
+        position: { x: 0, y: 4, z: -20 },
+        name: "monster",
+        primitive: topologyArg,
+        texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+      }, null, glbFile);
+      MYGLB.playAnimationByIndex(0);
+      setTimeout(async () => {
+        window.MYCUBE = MYCUBE;
+        window.MYGLB = MYGLB;
+        MYCUBE.position.setSpeed(0.1);
+        MYCUBE.position.translateByY(40);
+        let guard = false;
+        MYCUBE.position.onTargetPositionReach = async () => {
+          MYCUBE.position.translateByY(-10);
+          MYGLB.playAnimationByIndex(2);
+          if (guard === false) {
+            MYCUBE.effects.splat = new GaussianSplatScene(gaussianSplat.device, "rgba16float", gaussianSplat.cameraBuffer);
+            const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/splats/scene.ply", 61, TOPOLOGY.POINT_LIST);
+            positionAnimator = new SplatPositionAnimator(
+              app.device,
+              MYCUBE.effects.splat.splatLayers[0].positions,
+              MYCUBE.effects.splat.splatLayers[0].vertexCount
+            );
+            MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
+            app.autoUpdate.push(positionAnimator);
+            positionAnimator.setMode("hold");
+            setTimeout(() => {
+            }, 14e3);
+            let modeIndex = 0;
+            let arg10 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 19 } : { left: "61" };
+            MobileDOM.addButton(
+              "Mode",
+              function() {
+                const mode = modes[modeIndex];
+                positionAnimator.setMode(mode);
+                console.log("Mode:", mode);
+                modeIndex = (modeIndex + 1) % modes.length;
+              },
+              () => {
+              },
+              arg10
+            );
+            app.TEST_IT = positionAnimator;
+            guard = true;
+          }
+        };
+        MYCUBE.effects.keeffect = new KaleidoscopeEmitter(gaussianSplat.device, "rgba16float", 40, gaussianSplat.cameraBuffer);
+        MYCUBE.effects.flameEmitter.instanceTargets.forEach((e2) => {
+          e2.currentScale = [160, 160, 160];
+        });
+        MYCUBE.effects.flameEmitter.instanceTargets.forEach((p2, i2, array) => {
+          array[i2].color = [0, 11, 0, 0.7];
+        });
+        let cam2 = app.getCamera();
+        cam2.setYaw(0);
+        cam2.setPitch(0);
+        cam2.setZ(30);
+        cam2.setY(12);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+        let bloomRadius = 0.1;
+        let bloomIntesity = 0.1;
+        let glbAnimation = 0;
+        let arg1 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 82 } : { left: "5" };
+        MobileDOM.addButton("Bloom radius +", function() {
+          app.bloomPass.setBlurRadius(bloomRadius);
+          bloomRadius++;
+        }, () => {
+        }, arg1);
+        let arg2 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 73 } : { left: "13" };
+        MobileDOM.addButton("Bloom radius -", function() {
+          app.bloomPass.setBlurRadius(bloomRadius);
+          if (bloomRadius - 1 > 0) bloomRadius--;
+        }, () => {
+        }, arg2);
+        let arg3 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 64 } : { left: "21" };
+        MobileDOM.addButton("Bloom intesity +", function() {
+          app.bloomPass.setIntensity(bloomIntesity);
+          bloomIntesity = bloomIntesity + 10;
+        }, () => {
+        }, arg3);
+        let arg4 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 55 } : { left: "29" };
+        MobileDOM.addButton("Bloom intesity -", function() {
+          app.bloomPass.setIntensity(bloomIntesity);
+          if (bloomIntesity - 10 > 0) bloomIntesity = bloomIntesity - 10;
+        }, () => {
+        }, arg4);
+        let arg5 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 46 } : { left: "37" };
+        MobileDOM.addButton("Flame effect random", function() {
+          let memoS = [randomIntFromTo(10, 150), randomIntFromTo(10, 150), randomIntFromTo(10, 150)];
+          let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
+          MYCUBE.effects.flameEmitter.instanceTargets.forEach((e2) => {
+            e2.currentScale = memoS;
+            e2.color = memoC;
+          }, void 0, { size: isMobile() === true ? 30 : void 0 });
+          MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+          MYCUBE.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+        }, () => {
+        }, arg5);
+        let arg6 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 37 } : { left: "45" };
+        MobileDOM.addButton("Animation", function() {
+          if (glbAnimation < 4) {
+            glbAnimation++;
+          } else {
+            glbAnimation = 0;
+          }
+          MYGLB.playAnimationByIndex(glbAnimation);
+        }, () => {
+        }, arg6);
+        const topologies = [
+          "triangle-list",
+          "triangle-strip",
+          "line-list",
+          "line-strip",
+          "point-list"
+        ];
+        let topologyIndex = 0;
+        let arg7 = isMobile() && getOrientation2() === "portrait" ? { left: "5" } : { left: "53" };
+        MobileDOM.addButton(
+          "Topology",
+          function() {
+            topologyIndex = (topologyIndex + 1) % topologies.length;
+            const topology = topologies[topologyIndex];
+            MYGLB.setTopology(topology);
+          },
+          () => {
+          },
+          arg7
+        );
+        let delay2 = 100;
+        const delayStep = 100;
+        const delayMax = 1e3;
+        let arg8 = isMobile() && getOrientation2() === "portrait" ? { left: "22" } : { left: "69" };
+        MobileDOM.addButton(
+          `Delay (0-1sec)`,
+          function() {
+            delay2 += delayStep;
+            if (delay2 > delayMax) {
+              delay2 = 0;
+            }
+            MYGLB.trailAnimation.delay = delay2;
+            console.log("Trail delay:", delay2);
+          },
+          () => {
+          },
+          arg8
+        );
+        let currentNumberOfTrails = 2;
+        const minInstances = 1;
+        const maxInstances = 5;
+        let arg9 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: "28" } : { left: "77" };
+        MobileDOM.addButton(
+          `Trails (1-5)`,
+          function() {
+            currentNumberOfTrails++;
+            if (currentNumberOfTrails > maxInstances) {
+              currentNumberOfTrails = minInstances;
+            }
+            MYGLB.updateInstances(currentNumberOfTrails);
+            console.log("Trails:", currentNumberOfTrails);
+          },
+          () => {
+          },
+          arg9
+        );
+      }, 500);
+    }
+  });
+  window.app = gaussianSplat;
+};
+
+// examples/games/ultimate-roulette-2/roulette.js
+var loadRoulette = function() {
+  let MYFLIPPER = {
+    BALANCE: 1e4,
+    BALLS: 1,
+    STATUS_PUSH: "wait"
+  };
+  let roulette = new MatrixEngineWGPU({
+    fastRender: 0.7,
+    useJolt: true,
+    canvasSize: "fullscreen",
+    mainCameraParams: { type: "cinematicCamera", responseCoef: 1e3 },
+    PHYSICS_GROUND_BYZ: 40,
+    PHYSICS_GROUND_BYX: 12,
+    MAX_SPOTLIGHTS: isMobile() ? 2 : 4,
+    MAX_BONES: 0,
+    clearColor: { r: 0, g: 1, b: 1, a: 1 }
+  }, () => {
+    roulette.matrixSounds.createAudio("music", "res/audios/hyperball_pursuit.mp3", 1);
+    roulette.matrixSounds.createAudio("push", "res/audios/push.mp3", 1);
+    roulette.matrixSounds.createAudio("click1", "./res/audios/kenney/mp3/click1.mp3", 4);
+    roulette.matrixSounds.createAudio("click3", "./res/audios/kenney/mp3/click3.mp3", 4);
+    roulette.matrixSounds.audios.music.volume = 0.25;
+    roulette.matrixSounds.audios.music.loop = true;
+    roulette.matrixSounds.audios.push.volume = 1;
+    roulette.matrixSounds.audios.click1.volume = 1;
+    roulette.matrixSounds.audios.click3.volume = 1;
+    roulette.matrixSounds.play("music");
+    addEventListener("PhysicsReady", () => {
+      addRaycastsAABBListener();
+      roulette.matrixPhysics.speedUpSimulation(isMobile() === true ? 4 : 3);
+      downloadMeshes(
+        {
+          cube: "./res/meshes/blender/cube.obj",
+          ball: "./res/meshes/blender/sphepe-mob.obj",
+          pin: "./res/meshes/blender/pin-for-pinball.obj",
+          pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
+          pushBtn: "./res/meshes/shapes/pushBtn.obj",
+          vrcLeft: "./res/meshes/blender/vrc-left.obj",
+          jumper: "./res/meshes/blender/jumper-up.obj",
+          bottomLeft: "./res/meshes/blender/bottom-left.obj",
+          glass: "./res/meshes/shapes/plane-subdivine-16.obj",
+          bigBox: "./res/meshes/shapes/flipperBigBox.obj",
+          plane: "./res/meshes/blender/plane.obj"
+        },
+        onGround,
+        { scale: [1, 1, 1] }
+      );
+    });
+    if (isMobile() && byId2("mobileControls")) byId2("mobileControls").style.marginRight = "30%";
+    let preventSpam = false;
+    MobileDOM.addButton("PUSH", async () => {
+      if (preventSpam === false) {
+        preventSpam = true;
+        let ball = app.matrixPhysics.getBodyByName("ball1");
+        const pos2 = await app.matrixPhysics.getPosition(ball);
+        if (pos2.x > 4.85 && pos2.z > -6.6) {
+          if (MYFLIPPER.BALLS == 0) {
+            mb.show("No more balls...");
+            preventSpam = false;
+            return;
+          }
+          roulette.matrixPhysics.applyImpulse(
+            ball,
+            new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2))
+          );
+          roulette.matrixSounds.play("push");
+          MYFLIPPER.BALLS--;
+        }
+        setTimeout(() => {
+          preventSpam = false;
+        }, 1e3);
+      }
+    }, () => {
+    }, { left: "80", bottom: "50" });
+    const NUM_LIGHTS = isMobile() == true ? 2 : 4;
+    const ORBIT_RADIUS = 8;
+    const ORBIT_SPEED = 0.7;
+    const TARGET = { x: 0, y: 0, z: -17 };
+    const LIGHT_COLORS = [
+      [2.5, 0.2, 0.2],
+      // red
+      [2.5, 0.8, 0.1],
+      // orange
+      [0.2, 0.2, 3],
+      // blue
+      [2, 3, 0.1]
+      // yellow
+    ];
+    for (let i2 = 0; i2 < NUM_LIGHTS; i2++) {
+      roulette.addLight();
+    }
+    for (let i2 = 0; i2 < NUM_LIGHTS; i2++) {
+      const light = roulette.lightContainer[i2];
+      const angleOffset = i2 / NUM_LIGHTS * Math.PI * 2;
+      const color = LIGHT_COLORS[i2];
+      light.setIntensity(16);
+      light.color = color;
+      const heightOffset = Math.sin(angleOffset) * 5;
+      light.setPosition(
+        TARGET.x + Math.cos(angleOffset) * ORBIT_RADIUS,
+        4 + heightOffset,
+        TARGET.z + Math.sin(angleOffset) * ORBIT_RADIUS
+      );
+      light.setTarget(TARGET.x, TARGET.y, TARGET.z);
+      light.orbitAngle = angleOffset;
+      light.updater.push((light2) => {
+        light2.orbitAngle += ORBIT_SPEED * 0.01;
+        const height = 8 + Math.sin(light2.orbitAngle + angleOffset) * 5;
+        const x3 = TARGET.x + Math.cos(light2.orbitAngle) * ORBIT_RADIUS;
+        const z2 = TARGET.z + Math.sin(light2.orbitAngle) * ORBIT_RADIUS;
+        light2.setPosition(x3, height, z2);
+        light2.setTarget(TARGET.x, TARGET.y, TARGET.z);
+      });
+    }
+    async function onGround(m2) {
+      const ball1 = roulette.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 2, y: 1, z: -17 },
+        scale: [0.25, 0.25, 0.25],
+        texturesPaths: ["./res/textures/blankgray2.webp"],
+        name: "ball1",
+        mesh: m2.ball,
+        shadowsCast: false,
+        physics: {
+          enabled: true,
+          mass: 0.05,
+          geometry: "Sphere",
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: false, radius: 1 }
+      });
+      if (isMobile() == false) {
+        let pushBtn = roulette.addMeshObj({
+          position: { x: 5, y: 0.7, z: -5.7 },
+          scale: [0.3, 0.3, 0.3],
+          rotation: { x: 90, y: -90, z: 0 },
+          texturesPaths: ["res/textures/pushBtn.webp"],
+          name: "pushBtn",
+          mesh: m2.pushBtn,
+          physics: {
+            enabled: false,
+            mass: 5,
+            geometry: "Cube"
+          },
+          raycast: { enabled: true, radius: 1 }
+        });
+        pushBtn.setUVScale(-1, -1);
+      }
+      roulette.addMeshObj({
+        position: { x: 0, y: -0.1, z: -21 },
+        scale: [6, 0.1, 15],
+        texturesPaths: ["./res/icons/editor/chatgpt-gen-bg-inv.webp"],
+        name: "ground",
+        mesh: m2.cube,
+        shadowsCast: false,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      let envMapParams = {
+        baseColorMix: 0.1,
+        // CLEAR SKY
+        mirrorTint: [0.9, 0.95, 1],
+        // Slight cool tint
+        reflectivity: 0.45,
+        // 25% reflection blend
+        illuminateColor: [0.3, 0.7, 1],
+        // Soft cyan
+        illuminateStrength: 0.5,
+        // Gentle rim
+        illuminatePulse: 0.01,
+        // No pulse (static)
+        fresnelPower: 2,
+        // Medium-sharp edge
+        envLodBias: 1.5,
+        usePlanarReflection: false
+        // ✅ Env map mode
+      };
+      setTimeout(async () => {
+        const ball = roulette.matrixPhysics.getBodyByName("ball1");
+        roulette.matrixPhysics.setRestitution(ball, 0.1);
+        roulette.matrixPhysics.setFriction(ball, 0.1);
+        window.addEventListener("keydown", (e2) => {
+          e2.preventDefault();
+          if (e2.code === "KeyZ" && leftBodycurrPos === "unpressed") {
+            roulette.matrixSounds.play("click3");
+          }
+        });
+        app.matrixPhysics.detectCollision = (e2) => {
+          const body0Name = e2.detail.body0Name;
+          const body1Name = e2.detail.body1Name;
+          const rayDirection = e2.detail.rayDirection;
+          if (body0Name == "ball1" && body1Name.startsWith("bumper")) {
+            roulette.matrixPhysics.applyImpulse(ball, new PVector(
+              rayDirection[0] * 0.015,
+              0,
+              rayDirection[2] * 0.015
+            ));
+            MYFLIPPER.BALANCE = MYFLIPPER.BALANCE + 20;
+          }
+        };
+      }, 1e3);
+      roulette.canvas.addEventListener("ray.hit.event", async (e2) => {
+        app.matrixSounds.play("click1");
+        console.log("e.detail", e2.detail);
+        if (e2.detail.hitObject.name == "pushBtn") {
+          let ball = app.matrixPhysics.getBodyByName(ball1.name);
+          const pos2 = await app.matrixPhysics.getPosition(ball);
+          if (pos2.x > 5 && pos2.z > -6.6) roulette.matrixPhysics.applyImpulse(
+            ball,
+            new PVector(0, 0, -randomFloatFromTo(0.8, 1))
+          );
+        }
+      });
+      roulette.matrixPhysics.setGravity(0, -9.8, 2);
+      if (isMobile() == false) {
+        const leg1 = roulette.addMeshObj({
+          material: { type: "standard", share: true },
+          position: { x: -5.5, y: -5, z: -6.1 },
+          scale: [0.2, 7, 0.2],
+          texturesPaths: ["./res/textures/blankgray2.webp"],
+          name: "leg1",
+          mesh: m2.cube,
+          shadowsCast: false,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+        const leg2 = roulette.addMeshObj({
+          material: { type: "standard", share: true },
+          position: { x: 5.5, y: -5, z: -6.1 },
+          scale: [0.2, 7, 0.2],
+          texturesPaths: ["./res/textures/blankgray2.webp"],
+          name: "leg2",
+          mesh: m2.cube,
+          shadowsCast: false,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+        const leg3 = roulette.addMeshObj({
+          material: { type: "standard", share: true },
+          position: { x: -5.5, y: -5, z: -36 },
+          scale: [0.2, 7, 0.2],
+          texturesPaths: ["./res/textures/blankgray2.webp"],
+          name: "leg3",
+          mesh: m2.cube,
+          shadowsCast: false,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+        const leg4 = roulette.addMeshObj({
+          material: { type: "standard", share: true },
+          position: { x: 5.5, y: -5, z: -36 },
+          scale: [0.2, 7, 0.2],
+          texturesPaths: ["./res/textures/blankgray2.webp"],
+          name: "leg4",
+          mesh: m2.cube,
+          shadowsCast: false,
+          physics: {
+            enabled: false,
+            mass: 0,
+            geometry: "Cube"
+          }
+        });
+      }
+      setTimeout(() => {
+        if (isMobile() == false) {
+          app.activateBloomEffect();
+          app.bloomPass.setBlurRadius(2.5);
+        }
+        const cam2 = app.getCamera();
+        const cinematicPath = new CameraPath([
+          // SHOT 1: High wide angle, far back
+          {
+            position: [0, 20, 35],
+            target: [0, 8, 0],
+            fov: 2 * Math.PI / 4.5
+            // slightly wider
+          },
+          // SHOT 2: Orbit left side, closer
+          {
+            position: [-15, 18, 20],
+            target: [0, 6, 0],
+            fov: 2 * Math.PI / 5
+          },
+          // SHOT 3: Top-down angle
+          {
+            position: [8, 16, 12],
+            target: [0, 5, 0],
+            fov: 2 * Math.PI / 5
+          },
+          {
+            position: [0, 9, -2],
+            target: [0, 3, -15],
+            fov: 2 * Math.PI / 5
+          }
+        ], {
+          parameterization: "arc"
+        });
+        cam2.setPath(cinematicPath).play({
+          speed: 0.65,
+          onEnd: () => {
+            cam2._dirtyAngle = true;
+          }
+        });
+        cam2._dirtyAngle = true;
+      }, 1500);
+    }
+  });
+  window.app = roulette;
 };
 
 // examples.js
@@ -67167,6 +67725,8 @@ byId2("loadReactiveAudio").addEventListener("click", () => switchDemo("40"));
 byId2("InstancedMAX").addEventListener("click", () => switchDemo("41"));
 byId2("loadHandBeast").addEventListener("click", () => switchDemo("42"));
 byId2("loadFaceBeast").addEventListener("click", () => switchDemo("43"));
+byId2("loadGaussianSplatVertAnim2").addEventListener("click", () => switchDemo("44"));
+byId2("loadRoulette").addEventListener("click", () => switchDemo("45"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -67256,6 +67816,10 @@ if (urlQuery["demo"] === "1") {
   loadHandBeast();
 } else if (urlQuery["demo"] === "43") {
   loadFaceBeast();
+} else if (urlQuery["demo"] === "44") {
+  loadGaussianSplatVertAnim2();
+} else if (urlQuery["demo"] === "45") {
+  loadRoulette();
 } else {
   loadObjFile();
 }

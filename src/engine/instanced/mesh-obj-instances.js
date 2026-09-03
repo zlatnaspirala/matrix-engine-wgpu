@@ -375,7 +375,6 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
         });
       }
 
-      // "point-list", "line-list", or "line-strip" topologies.
       if(typeof o.primitive === 'undefined') {
         this.primitive = {
           topology: 'triangle-list',

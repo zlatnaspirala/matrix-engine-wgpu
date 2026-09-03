@@ -31,7 +31,6 @@ export const targetBlending = {
   }
 };
 
-// UPDATE INSTANCE DATA
 //   "never"
 //   "less"
 //   "equal"
@@ -40,3 +39,11 @@ export const targetBlending = {
 //   "not-equal"
 //   "greater-equal"
 //   "always"
+
+export const TOPOLOGY = {
+  POINT_LIST: "point-list",
+  LINE_LIST: "line-list",
+  LINE_STRIPT: "line-strip",
+  TRIANGLE_LIST: "triangle-list",
+  TRIANGLE_STRIP: "triangle-strip",
+};

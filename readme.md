@@ -1399,6 +1399,10 @@ You may use, modify, and sell projects based on this code — just keep this not
   Folder './public/res/bvh/'
   Special thanks to the CMU Graphics Lab Motion Capture Database which provided the data http://mocap.cs.cmu.edu/
 
+  "Dali_world_01" by Mind Expander (https://superspl.at/user/mindbotz)
+  Source: https://superspl.at/scene/50be21df
+  Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+
 ---
 
 ### BSD 3-Clause License (from WebGPU Samples)

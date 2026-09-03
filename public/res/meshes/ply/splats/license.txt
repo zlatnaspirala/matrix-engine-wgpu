@@ -1,0 +1,6 @@
+Title: Dali_world_01
+Author: Mind Expander (https://superspl.at/user/mindbotz)
+Source: https://superspl.at/scene/50be21df
+License: CC Attribution (Creative Commons Attribution)
+License URL: http://creativecommons.org/licenses/by/4.0/
+Requirements: Author must be credited. Commercial use is allowed.

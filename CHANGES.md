@@ -2,6 +2,8 @@
 
 [2.0.0]
 
+
+- Splat effect improved
 - ProceduralMesh( GEO: MeshMorpher.clothPlane(5, 5) ) get support for physics cloth ONLY FOR CANNON.
 
 - GPU indirect draws options.
