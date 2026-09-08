@@ -17446,15 +17446,136 @@ var PointerEffect = class {
   }
 };
 
+// src/shaders/msdf/msdf.fragment.js
+var MSDFFRAG = `
+
+struct Camera {
+  viewProj: mat4x4f,
+};
+
+struct Glyph {
+  transform: mat4x4f,
+  uvOffset: vec2f,
+  uvScale: vec2f,
+};
+
+@group(0) @binding(0) var<uniform> camera: Camera;
+@group(0) @binding(1) var<storage> glyphs: array<Glyph>;
+@group(0) @binding(2) var msdfTexture: texture_2d<f32>;
+@group(0) @binding(3) var msdfSampler: sampler;
+
+struct VertexInput {
+  @location(0) position: vec2f,
+  @location(1) uv: vec2f,
+  @builtin(instance_index) instanceIdx: u32,
+};
+
+struct VertexOutput {
+  @builtin(position) clipPos: vec4f,
+  @location(0) uv: vec2f,
+  @location(1) worldPos: vec3f,
+  @location(2) color: vec4f,
+};
+
+@vertex
+fn vsMain(input: VertexInput) -> VertexOutput {
+  let glyph = glyphs[input.instanceIdx];
+  
+  // Use the precomputed transform matrix
+  let worldPos = (glyph.transform * vec4f(input.position, 0.0, 1.0)).xyz;
+  let clipPos = camera.viewProj * vec4f(worldPos, 1.0);
+  let atlasUv = glyph.uvOffset + input.uv * glyph.uvScale;
+  
+  var output: VertexOutput;
+  output.clipPos = clipPos;
+  output.uv = atlasUv;
+  output.worldPos = worldPos;
+  output.color = vec4f(1.0);
+  
+  return output;
+}
+
+struct FragmentOutput {
+  @location(0) color: vec4f,
+  @location(1) normal: vec4f,
+  @location(2) position: vec4f,
+};
+
+fn FragOut(
+  color: vec4f,
+  normal: vec4f,
+  position: vec4f
+) -> FragmentOutput {
+  var output: FragmentOutput;
+  output.color = color;
+  output.normal = normal;
+  output.position = position;
+  return output;
+}
+
+fn sampleMSDF(uv: vec2f) -> f32 {
+  let sample = textureSample(msdfTexture, msdfSampler, uv);
+  let r = sample.r;
+  let g = sample.g;
+  let b = sample.b;
+  let median = max(min(r, g), min(max(r, g), b));
+  return (median - 0.5) * 2.0;
+}
+
+fn msdfAlpha(signedDist: f32, pxSize: f32) -> f32 {
+  return smoothstep(-pxSize, pxSize, signedDist);
+}
+
+@fragment
+fn fsMain(input: VertexOutput) -> FragmentOutput {
+
+  let sample = textureSample(msdfTexture, msdfSampler, input.uv);
+  
+  // // Just output the raw sample
+  // let debugColor = vec4f(sample.rgb, 1.0);
+  
+  // return FragOut(
+  //   debugColor,
+  //   vec4f(0.0, 0.0, 1.0, 0.0),
+  //   vec4f(input.worldPos, 1.0)
+  // );
+
+
+  let signedDist = sampleMSDF(input.uv);
+  let pxSize = 0.001;
+  let alpha = msdfAlpha(signedDist, pxSize);
+  
+  if (alpha < 0.01) {
+    discard;
+  }
+  
+  let finalColor = input.color.rgb * alpha * input.color.a;
+  let surfaceNormal = vec3f(0.0, 0.0, 1.0);
+  
+  return FragOut(
+    vec4f(finalColor, alpha),
+    vec4f(surfaceNormal, 0.0),
+    vec4f(input.worldPos, 1.0)
+  );
+}
+`;
+
 // src/engine/effects/msdfText.js
 var MSDFTextEffect = class {
-  constructor(device2, format, msdfTexture, sampler, cameraBuffer) {
+  constructor(device2, format, msdfTexture, sampler, cameraBuffer, font) {
     this.device = device2;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
     this.msdfTexture = msdfTexture;
     this.sampler = sampler;
+    this.font = font;
     this.glyphs = [];
+    this.glyphCount = 0;
+    this.enabled = true;
+    this.floatsPerInstance = 20;
+    this.instanceData = new Float32Array(256 * this.floatsPerInstance);
+    this._localMatrix = mat4Impl.create();
+    this._finalMatrix = mat4Impl.create();
     this._init();
   }
   _init() {
@@ -17488,22 +17609,28 @@ var MSDFTextEffect = class {
     ]);
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
+    this.vertexBuffer.unmap();
     this.uvBuffer = this.device.createBuffer({
       size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
+    this.uvBuffer.unmap();
     this.indexBuffer = this.device.createBuffer({
       size: indexData.byteLength,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
+    this.indexBuffer.unmap();
     this.indexCount = indexData.length;
     this.glyphBuffer = this.device.createBuffer({
-      size: 1024 * 64,
+      size: 256 * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
     const bindGroupLayout = this.device.createBindGroupLayout({
@@ -17524,7 +17651,7 @@ var MSDFTextEffect = class {
       ]
     });
     const shaderModule = this.device.createShaderModule({
-      code: MSDF_SHADER
+      code: MSDFFRAG
     });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
@@ -17537,21 +17664,39 @@ var MSDFTextEffect = class {
         buffers: [
           {
             arrayStride: 8,
-            attributes: [{ shaderLocation: 0, format: "float32x2" }]
+            attributes: [{
+              shaderLocation: 0,
+              format: "float32x2",
+              offset: 0
+            }]
           },
           {
             arrayStride: 8,
-            attributes: [{ shaderLocation: 1, format: "float32x2" }]
+            attributes: [{
+              shaderLocation: 1,
+              format: "float32x2",
+              offset: 0
+            }]
           }
         ]
       },
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
-        targets: [{ format: this.format }, { format: "rgba16float" }, { format: "rgba16float" }]
+        targets: [
+          { format: this.format },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
       },
       primitive: {
-        topology: "triangle-list"
+        topology: "triangle-list",
+        cullMode: "none"
+      },
+      depthStencil: {
+        format: "depth24plus",
+        depthWriteEnabled: false,
+        depthCompare: "less"
       }
     });
   }
@@ -17560,15 +17705,74 @@ var MSDFTextEffect = class {
     this._updateGlyphs(text);
   }
   _updateGlyphs(text) {
+    this.glyphs = [];
+    const font = this.font;
+    if (!font) {
+      console.error("MSDFTextEffect: BMFontParser not supplied");
+      return;
+    }
+    const atlasW = font.common.scaleW;
+    const atlasH = font.common.scaleH;
+    const scale4 = 15e-4;
+    let cursorX = 0;
+    for (let i2 = 0; i2 < text.length; i2++) {
+      const charCode = text.charCodeAt(i2);
+      const metrics = font.getCharMetrics(charCode);
+      if (!metrics) {
+        continue;
+      }
+      const glyphWidth = metrics.width * scale4;
+      const glyphHeight = metrics.height * scale4;
+      const xOffset = metrics.xoffset * scale4;
+      const yOffset = metrics.yoffset * scale4;
+      this.glyphs.push({
+        position: [
+          cursorX + xOffset + glyphWidth * 0.5,
+          -yOffset - glyphHeight * 0.5,
+          0
+        ],
+        scale: [
+          glyphWidth,
+          glyphHeight,
+          1
+        ],
+        uvOffset: metrics.uvOffset,
+        uvScale: metrics.uvScale,
+        color: [1, 1, 1, 1]
+      });
+      cursorX += metrics.xadvance * scale4;
+    }
+    this.glyphCount = this.glyphs.length;
   }
-  render(pass, cameraMatrix) {
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
+  // MAIN LOOP CALLS THIS - Calculate final matrix WITH parent
+  updateInstanceData = (baseModelMatrix) => {
+    const count = Math.min(this.glyphs.length, 256);
+    for (let i2 = 0; i2 < count; i2++) {
+      const g2 = this.glyphs[i2];
+      const local2 = this._localMatrix;
+      mat4Impl.identity(local2);
+      mat4Impl.translate(local2, g2.position, local2);
+      mat4Impl.scale(local2, g2.scale, local2);
+      mat4Impl.identity(this._finalMatrix);
+      mat4Impl.multiply(baseModelMatrix, local2, this._finalMatrix);
+      const offset = i2 * this.floatsPerInstance;
+      this.instanceData.set(this._finalMatrix, offset);
+      this.instanceData[offset + 16] = g2.uvOffset[0];
+      this.instanceData[offset + 17] = g2.uvOffset[1];
+      this.instanceData[offset + 18] = g2.uvScale[0];
+      this.instanceData[offset + 19] = g2.uvScale[1];
+    }
+    this.device.queue.writeBuffer(this.glyphBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
+  };
+  render(pass, mesh, viewProjMatrix) {
+    if (this.glyphCount === 0) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.glyphs.length);
+    pass.drawIndexed(this.indexCount, this.glyphCount);
   }
 };
 
@@ -66929,7 +67133,7 @@ var SplatFaceEffect = class {
 
 // examples/games/nui/face-beast-render.js
 var loadFaceBeast = function() {
-  let loadFace = new MatrixEngineWGPU({
+  let loadFace2 = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
     dontUsePhysics: true,
@@ -66949,12 +67153,12 @@ var loadFaceBeast = function() {
       enableVisual: false,
       mode: "face"
     });
-    loadFace.addLight();
+    loadFace2.addLight();
     downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     async function onGround(m2) {
-      loadFace.addMeshObj({
+      loadFace2.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: 0, y: -1, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -66969,8 +67173,8 @@ var loadFaceBeast = function() {
         }
       });
     }
-    function createPillar(loadFace2, m2, x3, y3, z2, name2) {
-      const base = loadFace2.addMeshObj({
+    function createPillar(loadFace3, m2, x3, y3, z2, name2) {
+      const base = loadFace3.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: x3, y: y3, z: z2 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -66982,7 +67186,7 @@ var loadFaceBeast = function() {
         raycast: { enabled: true, radius: 1 },
         physics: { enabled: false, mass: 1, geometry: "Cube" }
       });
-      const top = loadFace2.addMeshObj({
+      const top = loadFace3.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: x3, y: y3 + 6, z: z2 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -66997,7 +67201,7 @@ var loadFaceBeast = function() {
       return { base, top };
     }
     async function onLoadObj(m2) {
-      MYCUBE = loadFace.addMeshObj({
+      MYCUBE = loadFace2.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: 0, y: 5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -67012,40 +67216,92 @@ var loadFaceBeast = function() {
         },
         pointerEffect: { enabled: true }
       });
-      const pillar1 = createPillar(loadFace, m2, -20, 6, -30, "pil1");
-      const pillar2 = createPillar(loadFace, m2, 20, 6, -30, "pil2");
-      const pillar3 = createPillar(loadFace, m2, -20, 6, 20, "pil3");
-      const pillar4 = createPillar(loadFace, m2, 20, 6, 20, "pil4");
-      loadFace.lightContainer[0].setIntensity(0.7);
+      window.MYCUBE = MYCUBE;
+      const pillar1 = createPillar(loadFace2, m2, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(loadFace2, m2, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(loadFace2, m2, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(loadFace2, m2, 20, 6, 20, "pil4");
+      loadFace2.lightContainer[0].setIntensity(0.7);
       app.lightContainer[0].setColorB(100);
-      loadFace.activateBloomEffect();
-      loadFace.lightContainer[0].setPosition(0, 35, 0);
-      loadFace.lightContainer[0].setTarget(0, 0, -20);
+      loadFace2.activateBloomEffect();
+      loadFace2.lightContainer[0].setPosition(0, 35, 0);
+      loadFace2.lightContainer[0].setTarget(0, 0, -20);
       setTimeout(async () => {
-        const msdfTextureImageData = await fetch("./res/textures/default.png").then((r3) => r3.arrayBuffer()).then((buf) => new Uint8Array(buf));
-        const msdfTexture = loadFace.device.createTexture({
-          size: { width: 2048, height: 2048 },
-          // adjust to your atlas size
+        const fontResponse = await fetch("./res/3d-fonts/stormfaze.fnt");
+        if (!fontResponse.ok) {
+          throw new Error(
+            `Failed to load BMFont file: ${fontResponse.status} ${fontResponse.statusText}`
+          );
+        }
+        const fontXml = await fontResponse.text();
+        const font = new BMFontParser(fontXml);
+        console.log("Font loaded:", font.info.face);
+        console.log("Atlas:", font.getAtlasDimensions());
+        const response = await fetch("./res/3d-fonts/atlas.png");
+        if (!response.ok) {
+          throw new Error(
+            `Failed to load MSDF atlas: ${response.status} ${response.statusText}`
+          );
+        }
+        const blob = await response.blob();
+        const bitmap = await createImageBitmap(blob);
+        const device2 = loadFace2.device;
+        const msdfTexture = device2.createTexture({
+          size: {
+            width: bitmap.width,
+            height: bitmap.height,
+            depthOrArrayLayers: 1
+          },
           format: "rgba8unorm",
-          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-          mipLevelCount: 1
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
         });
-        loadFace.device.queue.copyExternalImageToTexture(
-          { source: await createImageBitmap(new Blob([msdfTextureImageData], { type: "image/png" })) },
-          { texture: msdfTexture },
-          { width: 2048, height: 2048 }
+        const canvas = new OffscreenCanvas(
+          bitmap.width,
+          bitmap.height
         );
-        const sampler = loadFace.device.createSampler({
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(bitmap, 0, 0);
+        const imageData = ctx.getImageData(
+          0,
+          0,
+          bitmap.width,
+          bitmap.height
+        );
+        device2.queue.writeTexture(
+          {
+            texture: msdfTexture
+          },
+          imageData.data,
+          {
+            bytesPerRow: bitmap.width * 4,
+            rowsPerImage: bitmap.height
+          },
+          {
+            width: bitmap.width,
+            height: bitmap.height,
+            depthOrArrayLayers: 1
+          }
+        );
+        const sampler = device2.createSampler({
           magFilter: "linear",
           minFilter: "linear",
-          mipmapFilter: "linear",
-          addressModeU: "repeat",
-          addressModeV: "repeat"
+          mipmapFilter: "nearest",
+          addressModeU: "clamp-to-edge",
+          addressModeV: "clamp-to-edge"
         });
-        MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
+        MYCUBE.effects.gpuText = new MSDFTextEffect(
+          device2,
+          "rgba16float",
+          msdfTexture,
+          sampler,
+          loadFace2.cameraBuffer,
+          font
+          // <-- THIS WAS MISSING
+        );
+        MYCUBE.effects.splat = new GaussianSplatScene(loadFace2.device, "rgba16float", loadFace2.cameraBuffer);
         const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast.ply", 6, "point-list");
         animator2 = new SplatColorAnimator(
-          loadFace.device,
+          loadFace2.device,
           layer.positions,
           layer.vertexCount,
           layer.colorBuffer
@@ -67054,20 +67310,20 @@ var loadFaceBeast = function() {
         animator2.setScale(0.8);
         animator2.setSpeed(0.8);
         layer.colorBuffer = animator2.colorBuffer;
-        loadFace.autoUpdate.push(animator2);
-        loadFace.animator = animator2;
+        loadFace2.autoUpdate.push(animator2);
+        loadFace2.animator = animator2;
         let positionAnimator = new SplatPositionAnimator(
-          loadFace.device,
+          loadFace2.device,
           MYCUBE.effects.splat.splatLayers[0].positions,
           MYCUBE.effects.splat.splatLayers[0].vertexCount
         );
         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
-        loadFace.autoUpdate.push(positionAnimator);
+        loadFace2.autoUpdate.push(positionAnimator);
         positionAnimator.setMode("hold");
         const faceEffect = new SplatFaceEffect(
-          loadFace.device,
+          loadFace2.device,
           "rgba16float",
-          loadFace.cameraBuffer,
+          loadFace2.cameraBuffer,
           MYCUBE.effects.splat.splatLayers[0],
           {
             scale: 4.5,
@@ -67078,10 +67334,9 @@ var loadFaceBeast = function() {
         );
         MYCUBE.effects.faceEffect = faceEffect;
         nui.onResults = (results) => {
-          console.log("face detected:", results?.landmarks?.length ?? 0);
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
-        loadFace.activateHZB();
+        loadFace2.activateHZB();
         let cam2 = app.getCamera();
         cam2.setYaw(-0.03);
         cam2.setPitch(-0.49);
@@ -67091,14 +67346,14 @@ var loadFaceBeast = function() {
         cam2._dirtyAngle = true;
       }, 700);
     }
-    loadFace.canvas.addEventListener("ray.hit.event", (e2) => {
+    loadFace2.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       nui.onResults = (results) => {
       };
       MYCUBE.effects.splat.splatLayers[0].positionAnimator.setMode("dust");
     });
   });
-  window.app = loadFace;
+  window.app = loadFace2;
 };
 
 // examples/gaussian-test.js
@@ -67351,7 +67606,8 @@ var loadRoulette = function() {
     fastRender: 0.7,
     useJolt: true,
     canvasSize: "fullscreen",
-    mainCameraParams: { type: "cinematicCamera", responseCoef: 1e3 },
+    // mainCameraParams: {type: 'cinematicCamera', responseCoef: 1000},
+    mainCameraParams: { type: "WASD", responseCoef: 1e3 },
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
     MAX_SPOTLIGHTS: isMobile() ? 2 : 4,
@@ -67375,15 +67631,10 @@ var loadRoulette = function() {
         {
           cube: "./res/meshes/blender/cube.obj",
           ball: "./res/meshes/blender/sphepe-mob.obj",
-          pin: "./res/meshes/blender/pin-for-pinball.obj",
-          pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
-          pushBtn: "./res/meshes/shapes/pushBtn.obj",
-          vrcLeft: "./res/meshes/blender/vrc-left.obj",
-          jumper: "./res/meshes/blender/jumper-up.obj",
-          bottomLeft: "./res/meshes/blender/bottom-left.obj",
-          glass: "./res/meshes/shapes/plane-subdivine-16.obj",
-          bigBox: "./res/meshes/shapes/flipperBigBox.obj",
-          plane: "./res/meshes/blender/plane.obj"
+          plane: "./res/meshes/blender/plane.obj",
+          table: "./res/meshes/blender/roulette-static-1.obj",
+          oval: "./res/meshes/blender/roulette-static-2.obj",
+          tableNumbers: "./res/meshes/blender/roulette-static-3.obj"
         },
         onGround,
         { scale: [1, 1, 1] }
@@ -67391,27 +67642,20 @@ var loadRoulette = function() {
     });
     if (isMobile() && byId2("mobileControls")) byId2("mobileControls").style.marginRight = "30%";
     let preventSpam = false;
-    MobileDOM.addButton("PUSH", async () => {
+    MobileDOM.addButton("ROLL", async () => {
       if (preventSpam === false) {
         preventSpam = true;
         let ball = app.matrixPhysics.getBodyByName("ball1");
         const pos2 = await app.matrixPhysics.getPosition(ball);
-        if (pos2.x > 4.85 && pos2.z > -6.6) {
-          if (MYFLIPPER.BALLS == 0) {
-            mb.show("No more balls...");
-            preventSpam = false;
-            return;
-          }
-          roulette.matrixPhysics.applyImpulse(
-            ball,
-            new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2))
-          );
-          roulette.matrixSounds.play("push");
-          MYFLIPPER.BALLS--;
+        if (MYFLIPPER.BALLS == 0) {
+          mb.show("No more balls...");
+          return;
         }
-        setTimeout(() => {
-          preventSpam = false;
-        }, 1e3);
+        roulette.matrixPhysics.applyImpulse(
+          ball,
+          new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2))
+        );
+        roulette.matrixSounds.play("push");
       }
     }, () => {
     }, { left: "80", bottom: "50" });
@@ -67456,9 +67700,10 @@ var loadRoulette = function() {
       });
     }
     async function onGround(m2) {
+      let staticMARGIN_Y = -10;
       const ball1 = roulette.addMeshObj({
         material: { type: "standard", share: true },
-        position: { x: 2, y: 1, z: -17 },
+        position: { x: 2, y: 11, z: -17 },
         scale: [0.25, 0.25, 0.25],
         texturesPaths: ["./res/textures/blankgray2.webp"],
         name: "ball1",
@@ -67473,35 +67718,56 @@ var loadRoulette = function() {
         },
         raycast: { enabled: false, radius: 1 }
       });
-      if (isMobile() == false) {
-        let pushBtn = roulette.addMeshObj({
-          position: { x: 5, y: 0.7, z: -5.7 },
-          scale: [0.3, 0.3, 0.3],
-          rotation: { x: 90, y: -90, z: 0 },
-          texturesPaths: ["res/textures/pushBtn.webp"],
-          name: "pushBtn",
-          mesh: m2.pushBtn,
-          physics: {
-            enabled: false,
-            mass: 5,
-            geometry: "Cube"
-          },
-          raycast: { enabled: true, radius: 1 }
-        });
-        pushBtn.setUVScale(-1, -1);
-      }
-      roulette.addMeshObj({
-        position: { x: 0, y: -0.1, z: -21 },
-        scale: [6, 0.1, 15],
-        texturesPaths: ["./res/icons/editor/chatgpt-gen-bg-inv.webp"],
-        name: "ground",
-        mesh: m2.cube,
+      const table = roulette.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 5 + staticMARGIN_Y, z: -10 },
+        scale: [0.2, 0.2, 0.2],
+        texturesPaths: ["./res/meshes/blender/textures/leder19.jpg"],
+        name: "table",
+        mesh: m2.table,
         shadowsCast: false,
         physics: {
           enabled: false,
+          mass: 0.05,
+          geometry: "Sphere",
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: false, radius: 1 }
+      });
+      const tablenuMBERSteXTURE = roulette.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 24 + staticMARGIN_Y, z: 8 },
+        rotation: { x: 180, y: 0, z: 0 },
+        scale: [0.17, 0.17, 0.17],
+        texturesPaths: ["./res/meshes/blender/textures/numbers.png"],
+        name: "table",
+        mesh: m2.tableNumbers,
+        shadowsCast: false,
+        physics: {
+          enabled: false,
+          mass: 0.05,
+          geometry: "Sphere",
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: false, radius: 1 }
+      });
+      const oval = roulette.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 5 + staticMARGIN_Y, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [0.2, 0.2, 0.2],
+        texturesPaths: ["./res/meshes/blender/textures/unbenannt.jpg"],
+        name: "oval",
+        mesh: m2.oval,
+        physics: {
+          enabled: true,
           mass: 0,
-          geometry: "Cube"
-        }
+          geometry: "ConvexHull",
+          vertices: m2.oval.vertices
+        },
+        raycast: { enabled: true, radius: 1 }
       });
       let envMapParams = {
         baseColorMix: 0.1,
@@ -67520,7 +67786,7 @@ var loadRoulette = function() {
         // Medium-sharp edge
         envLodBias: 1.5,
         usePlanarReflection: false
-        // ✅ Env map mode
+        // ✅ must be false (no support)
       };
       setTimeout(async () => {
         const ball = roulette.matrixPhysics.getBodyByName("ball1");
@@ -67537,12 +67803,6 @@ var loadRoulette = function() {
           const body1Name = e2.detail.body1Name;
           const rayDirection = e2.detail.rayDirection;
           if (body0Name == "ball1" && body1Name.startsWith("bumper")) {
-            roulette.matrixPhysics.applyImpulse(ball, new PVector(
-              rayDirection[0] * 0.015,
-              0,
-              rayDirection[2] * 0.015
-            ));
-            MYFLIPPER.BALANCE = MYFLIPPER.BALANCE + 20;
           }
         };
       }, 1e3);
@@ -67552,111 +67812,18 @@ var loadRoulette = function() {
         if (e2.detail.hitObject.name == "pushBtn") {
           let ball = app.matrixPhysics.getBodyByName(ball1.name);
           const pos2 = await app.matrixPhysics.getPosition(ball);
-          if (pos2.x > 5 && pos2.z > -6.6) roulette.matrixPhysics.applyImpulse(
+          roulette.matrixPhysics.applyImpulse(
             ball,
             new PVector(0, 0, -randomFloatFromTo(0.8, 1))
           );
         }
       });
-      roulette.matrixPhysics.setGravity(0, -9.8, 2);
-      if (isMobile() == false) {
-        const leg1 = roulette.addMeshObj({
-          material: { type: "standard", share: true },
-          position: { x: -5.5, y: -5, z: -6.1 },
-          scale: [0.2, 7, 0.2],
-          texturesPaths: ["./res/textures/blankgray2.webp"],
-          name: "leg1",
-          mesh: m2.cube,
-          shadowsCast: false,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-        const leg2 = roulette.addMeshObj({
-          material: { type: "standard", share: true },
-          position: { x: 5.5, y: -5, z: -6.1 },
-          scale: [0.2, 7, 0.2],
-          texturesPaths: ["./res/textures/blankgray2.webp"],
-          name: "leg2",
-          mesh: m2.cube,
-          shadowsCast: false,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-        const leg3 = roulette.addMeshObj({
-          material: { type: "standard", share: true },
-          position: { x: -5.5, y: -5, z: -36 },
-          scale: [0.2, 7, 0.2],
-          texturesPaths: ["./res/textures/blankgray2.webp"],
-          name: "leg3",
-          mesh: m2.cube,
-          shadowsCast: false,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-        const leg4 = roulette.addMeshObj({
-          material: { type: "standard", share: true },
-          position: { x: 5.5, y: -5, z: -36 },
-          scale: [0.2, 7, 0.2],
-          texturesPaths: ["./res/textures/blankgray2.webp"],
-          name: "leg4",
-          mesh: m2.cube,
-          shadowsCast: false,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-      }
       setTimeout(() => {
         if (isMobile() == false) {
           app.activateBloomEffect();
           app.bloomPass.setBlurRadius(2.5);
         }
         const cam2 = app.getCamera();
-        const cinematicPath = new CameraPath([
-          // SHOT 1: High wide angle, far back
-          {
-            position: [0, 20, 35],
-            target: [0, 8, 0],
-            fov: 2 * Math.PI / 4.5
-            // slightly wider
-          },
-          // SHOT 2: Orbit left side, closer
-          {
-            position: [-15, 18, 20],
-            target: [0, 6, 0],
-            fov: 2 * Math.PI / 5
-          },
-          // SHOT 3: Top-down angle
-          {
-            position: [8, 16, 12],
-            target: [0, 5, 0],
-            fov: 2 * Math.PI / 5
-          },
-          {
-            position: [0, 9, -2],
-            target: [0, 3, -15],
-            fov: 2 * Math.PI / 5
-          }
-        ], {
-          parameterization: "arc"
-        });
-        cam2.setPath(cinematicPath).play({
-          speed: 0.65,
-          onEnd: () => {
-            cam2._dirtyAngle = true;
-          }
-        });
         cam2._dirtyAngle = true;
       }, 1500);
     }

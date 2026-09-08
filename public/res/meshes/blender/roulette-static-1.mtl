@@ -1,0 +1,33 @@
+# Blender 4.1.1 MTL File: 'roulette-from-blendkit.blend1'
+# www.blender.org
+
+newmtl Material.008
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.421212 0.421212 0.421212
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Ns C:/Wood030_4K_Roughness.jpg
+map_Bump -bm 0.500000 C:/Wood030_4K_NormalGL.jpg
+
+newmtl Tischtuch
+Ns 262.268127
+Ka 1.000000 1.000000 1.000000
+Ks 0.290909 0.290909 0.290909
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:/roulett-tuch-körnung15.png
+
+newmtl leather_01
+Ns 255.996475
+Ka 1.000000 1.000000 1.000000
+Ks 0.484091 0.484091 0.484091
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd textures/leder19-4096-01.jpg

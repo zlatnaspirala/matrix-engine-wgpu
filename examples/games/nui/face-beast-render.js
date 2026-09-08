@@ -122,6 +122,8 @@ export var loadFaceBeast = function() {
         pointerEffect: {enabled: true}
       })
 
+      window.MYCUBE = MYCUBE;
+
 
       // app.physicsBodiesGeneratorWall("standard",
       //   {x: -4.5, y: 1, z: -10}, {x: 0, y: 0, z: 0},
@@ -151,42 +153,128 @@ export var loadFaceBeast = function() {
 
       setTimeout(async () => {
 
-        // Create an MSDF texture (you need the actual MSDF font atlas image)
-        const msdfTextureImageData = await fetch('./res/textures/default.png')
-          .then(r => r.arrayBuffer())
-          .then(buf => new Uint8Array(buf));
+        const fontResponse = await fetch('./res/3d-fonts/stormfaze.fnt');
 
-        const msdfTexture = loadFace.device.createTexture({
-          size: {width: 2048, height: 2048}, // adjust to your atlas size
+        if(!fontResponse.ok) {
+          throw new Error(
+            `Failed to load BMFont file: ${fontResponse.status} ${fontResponse.statusText}`
+          );
+        }
+
+        const fontXml = await fontResponse.text();
+
+        // Parse BMFont XML
+        const font = new BMFontParser(fontXml);
+
+        console.log('Font loaded:', font.info.face);
+        console.log('Atlas:', font.getAtlasDimensions());
+
+
+        // ------------------------------------------------------------
+        // LOAD MSDF ATLAS
+        // ------------------------------------------------------------
+
+        const response = await fetch('./res/3d-fonts/atlas.png');
+
+        if(!response.ok) {
+          throw new Error(
+            `Failed to load MSDF atlas: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const blob = await response.blob();
+        const bitmap = await createImageBitmap(blob);
+
+
+        // ------------------------------------------------------------
+        // CREATE GPU TEXTURE
+        // ------------------------------------------------------------
+
+        const device = loadFace.device;
+
+        const msdfTexture = device.createTexture({
+          size: {
+            width: bitmap.width,
+            height: bitmap.height,
+            depthOrArrayLayers: 1
+          },
+
           format: 'rgba8unorm',
-          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-          mipLevelCount: 1
+
+          usage:
+            GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.COPY_DST
         });
 
-        // Upload MSDF atlas data
-        loadFace.device.queue.copyExternalImageToTexture(
-          {source: await createImageBitmap(new Blob([msdfTextureImageData], {type: 'image/png'}))},
-          {texture: msdfTexture},
-          {width: 2048, height: 2048}
+
+        // ------------------------------------------------------------
+        // UPLOAD ATLAS TO GPU
+        // ------------------------------------------------------------
+
+        const canvas = new OffscreenCanvas(
+          bitmap.width,
+          bitmap.height
         );
 
-        // Create a sampler for texture sampling
-        const sampler = loadFace.device.createSampler({
+        const ctx = canvas.getContext('2d');
+
+        ctx.drawImage(bitmap, 0, 0);
+
+        const imageData = ctx.getImageData(
+          0,
+          0,
+          bitmap.width,
+          bitmap.height
+        );
+
+        device.queue.writeTexture(
+          {
+            texture: msdfTexture
+          },
+
+          imageData.data,
+
+          {
+            bytesPerRow: bitmap.width * 4,
+            rowsPerImage: bitmap.height
+          },
+
+          {
+            width: bitmap.width,
+            height: bitmap.height,
+            depthOrArrayLayers: 1
+          }
+        );
+
+
+        // ------------------------------------------------------------
+        // SAMPLER
+        // ------------------------------------------------------------
+
+        const sampler = device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear',
-          mipmapFilter: 'linear',
-          addressModeU: 'repeat',
-          addressModeV: 'repeat'
+          mipmapFilter: 'nearest',
+
+          addressModeU: 'clamp-to-edge',
+          addressModeV: 'clamp-to-edge'
         });
 
-        // // Now instantiate correctly
-        // MYCUBE.effects.gpuText = new MSDFTextEffect(
-        //   loadFace.device,
-        //   'rgba16float',      // format for your render targets
-        //   msdfTexture,        // GPUTexture object (not string!)
-        //   sampler,            // GPUSampler object (not string!)
-        //   loadFace.cameraBuffer
-        // );
+
+        // ------------------------------------------------------------
+        // CREATE MSDF TEXT EFFECT
+        // ------------------------------------------------------------
+
+        MYCUBE.effects.gpuText = new MSDFTextEffect(
+          device,
+          'rgba16float',
+          msdfTexture,
+          sampler,
+          loadFace.cameraBuffer,
+          font                         // <-- THIS WAS MISSING
+        );
+
+
 
 
         MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);
@@ -232,7 +320,7 @@ export var loadFaceBeast = function() {
 
         // Hook mediapipe into it
         nui.onResults = (results) => {
-          console.log('face detected:', results?.landmarks?.length ?? 0);
+          // console.log('face detected:', results?.landmarks?.length ?? 0);
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
 
@@ -253,7 +341,6 @@ export var loadFaceBeast = function() {
       console.log('ray.hit.event detected');
 
       nui.onResults = (results) => {
-        // console.log('face detected:', results?.landmarks?.length ?? 0);
         // MYCUBE.effects.faceEffect.setFaceData(results);
       };
 

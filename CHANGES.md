@@ -2,8 +2,18 @@
 
 [2.0.0]
 
+- MSDF text preview effect
+- added dev tool `npm install --save-dev msdf-bmfont-xml` ]
+  but to fix env paths quick solution
+  `npm install msdf-bmfont-xml -g`
 
-- Splat effect improved
+  Elegant creating of font atlas
+  test :
+```js
+msdf-bmfont --reuse -o public/res/3d-fonts/atlas.png -m 512,256 -s 42 -r 3 -p 1 -t msdf public/res/fonts/stormfaze.ttf
+```
+
+- Splat effect improved (can be interactive with others components like `morph`)
 - ProceduralMesh( GEO: MeshMorpher.clothPlane(5, 5) ) get support for physics cloth ONLY FOR CANNON.
 
 - GPU indirect draws options.

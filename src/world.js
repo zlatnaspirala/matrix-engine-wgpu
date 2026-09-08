@@ -1519,9 +1519,6 @@ export default class MatrixEngineWGPU {
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }
-
-
-
         // Soft
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
