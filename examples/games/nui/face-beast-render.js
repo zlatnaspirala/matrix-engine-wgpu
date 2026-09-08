@@ -8,7 +8,7 @@ import {MobileDOM} from "../../../src/engine/cameras.js";
 import {SplatHandEffect} from "../../../src/engine/effects/splat-mediapipe.js";
 import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "../../../src/engine/effects/splat.js";
 import {SplatFaceEffect} from "../../../src/engine/effects/splatFace.js";
-import {MSDFTextEffect} from "../../../src/engine/effects/msdfText.js";
+import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfText.js";
 
 export var loadFaceBeast = function() {
 
@@ -153,105 +153,13 @@ export var loadFaceBeast = function() {
 
       setTimeout(async () => {
 
-        const fontResponse = await fetch('./res/3d-fonts/stormfaze.fnt');
-
-        if(!fontResponse.ok) {
-          throw new Error(
-            `Failed to load BMFont file: ${fontResponse.status} ${fontResponse.statusText}`
-          );
-        }
-
-        const fontXml = await fontResponse.text();
-
-        // Parse BMFont XML
-        const font = new BMFontParser(fontXml);
-
-        console.log('Font loaded:', font.info.face);
-        console.log('Atlas:', font.getAtlasDimensions());
-
-
-        // ------------------------------------------------------------
-        // LOAD MSDF ATLAS
-        // ------------------------------------------------------------
-
-        const response = await fetch('./res/3d-fonts/atlas.png');
-
-        if(!response.ok) {
-          throw new Error(
-            `Failed to load MSDF atlas: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const blob = await response.blob();
-        const bitmap = await createImageBitmap(blob);
-
-
-        // ------------------------------------------------------------
-        // CREATE GPU TEXTURE
-        // ------------------------------------------------------------
-
-        const device = loadFace.device;
-
-        const msdfTexture = device.createTexture({
-          size: {
-            width: bitmap.width,
-            height: bitmap.height,
-            depthOrArrayLayers: 1
-          },
-
-          format: 'rgba8unorm',
-
-          usage:
-            GPUTextureUsage.TEXTURE_BINDING |
-            GPUTextureUsage.COPY_DST
-        });
-
-
-        // ------------------------------------------------------------
-        // UPLOAD ATLAS TO GPU
-        // ------------------------------------------------------------
-
-        const canvas = new OffscreenCanvas(
-          bitmap.width,
-          bitmap.height
-        );
-
-        const ctx = canvas.getContext('2d');
-
-        ctx.drawImage(bitmap, 0, 0);
-
-        const imageData = ctx.getImageData(
-          0,
-          0,
-          bitmap.width,
-          bitmap.height
-        );
-
-        device.queue.writeTexture(
-          {
-            texture: msdfTexture
-          },
-
-          imageData.data,
-
-          {
-            bytesPerRow: bitmap.width * 4,
-            rowsPerImage: bitmap.height
-          },
-
-          {
-            width: bitmap.width,
-            height: bitmap.height,
-            depthOrArrayLayers: 1
-          }
-        );
 
 
         // ------------------------------------------------------------
         // SAMPLER
         // ------------------------------------------------------------
 
-        const sampler = device.createSampler({
+        const sampler = loadFace.device.createSampler({
           magFilter: 'linear',
           minFilter: 'linear',
           mipmapFilter: 'nearest',
@@ -264,16 +172,22 @@ export var loadFaceBeast = function() {
         // ------------------------------------------------------------
         // CREATE MSDF TEXT EFFECT
         // ------------------------------------------------------------
+        loadAtlasFONT(loadFace.device).then((OUTPUT) => {
 
-        MYCUBE.effects.gpuText = new MSDFTextEffect(
-          device,
-          'rgba16float',
-          msdfTexture,
-          sampler,
-          loadFace.cameraBuffer,
-          font                         // <-- THIS WAS MISSING
-        );
+          console.log("FONT ", OUTPUT)
+          MYCUBE.effects.gpuText = new MSDFTextEffect(
+            loadFace.device,
+            'rgba16float',
+            OUTPUT.msdfTexture,
+            sampler,
+            loadFace.cameraBuffer,
+            OUTPUT.font                         // <-- THIS WAS MISSING
+          );
 
+        });
+
+
+    MYCUBE.setBlend(0.00)
 
 
 

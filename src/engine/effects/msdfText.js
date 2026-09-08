@@ -1,34 +1,39 @@
-import {MSDFFRAG} from "../../shaders/msdf/msdf.fragment.js"
-
 import {mat4} from "wgpu-matrix";
+import {MSDFFRAG} from "../../shaders/msdf/msdf.fragment.js";
 
 export class MSDFTextEffect {
-  constructor(
-    device,
-    format,
-    msdfTexture,
-    sampler,
-    cameraBuffer,
-    font
-  ) {
+  constructor(device, format, msdfTexture, sampler, cameraBuffer, font, options = {}) {
     this.device = device;
     this.format = format;
-    this.cameraBuffer = cameraBuffer;
     this.msdfTexture = msdfTexture;
     this.sampler = sampler;
+    this.cameraBuffer = cameraBuffer;
     this.font = font;
-
-    this.glyphs = [];
-    this.glyphCount = 0;
     this.enabled = true;
-
-    this.floatsPerInstance = 20;
-    this.instanceData =
-      new Float32Array(256 * this.floatsPerInstance);
-
-    this._localMatrix = mat4.create();
-    this._finalMatrix = mat4.create();
-
+    this.scale = options.scale ?? 0.0015;
+    this.glyphXOffsetFix = {
+      // "I": +8,
+      // "J": -3,
+      // "T": -2
+    };
+    // 40 means every character occupies 40 font pixels
+    // horizontally, regardless of xadvance.
+    this.fixedAdvancePx = options.fixedAdvancePx ?? 40;
+    this.trackingPx = options.trackingPx ?? 0;
+    this.color = options.color ?? [1, 1, 1, 1];
+    this.maxGlyphs = options.maxGlyphs ?? 256;
+    this.text = "";
+    this.glyphCount = 0;
+    this.floatsPerGlyph = 8;
+    this.instanceData = new Float32Array(this.maxGlyphs * this.floatsPerGlyph);
+    this.parentMatrixBuffer = device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
+    this.colorBuffer =
+      device.createBuffer({
+        size: 16,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+    this.device.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
+    this._identity = mat4.create();
     this._init();
   }
 
@@ -37,74 +42,119 @@ export class MSDFTextEffect {
       -0.5, 0.5,
       0.5, 0.5,
       -0.5, -0.5,
-      0.5, -0.5,
+      0.5, -0.5
     ]);
 
     const uvData = new Float32Array([
-      0, 1, 1, 1, 0, 0, 1, 0
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 0
     ]);
 
     const indexData = new Uint16Array([
-      0, 2, 1, 1, 2, 3
+      0, 2, 1,
+      1, 2, 3
     ]);
 
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
+
+      usage:
+        GPUBufferUsage.VERTEX |
+        GPUBufferUsage.COPY_DST,
+
+      mappedAtCreation: true
     });
-    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
+
+    new Float32Array(
+      this.vertexBuffer.getMappedRange()
+    ).set(vertexData);
     this.vertexBuffer.unmap();
 
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
-    });
+    this.uvBuffer =
+      this.device.createBuffer({
+        size: uvData.byteLength,
+        usage:
+          GPUBufferUsage.VERTEX |
+          GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+
     new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
     this.uvBuffer.unmap();
 
-    this.indexBuffer = this.device.createBuffer({
-      size: indexData.byteLength,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
-    });
-    new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
+    this.indexBuffer =
+      this.device.createBuffer({
+        size: indexData.byteLength,
+        usage:
+          GPUBufferUsage.INDEX |
+          GPUBufferUsage.COPY_DST,
+
+        mappedAtCreation: true
+      });
+
+    new Uint16Array(
+      this.indexBuffer.getMappedRange()
+    ).set(indexData);
+
     this.indexBuffer.unmap();
+
     this.indexCount = indexData.length;
 
-    this.glyphBuffer = this.device.createBuffer({
-      size: 256 * this.floatsPerInstance * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
-        {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {}},
-        {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
-      ]
-    });
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        {binding: 0, resource: {buffer: this.cameraBuffer}},
-        {binding: 1, resource: {buffer: this.glyphBuffer}},
-        {binding: 2, resource: this.msdfTexture.createView()},
-        {binding: 3, resource: this.sampler},
-      ]
-    });
+    // GLYPH STORAGE BUFFER
 
-    const shaderModule = this.device.createShaderModule({
-      code: MSDFFRAG
-    });
+
+    this.glyphBuffer =
+      this.device.createBuffer({
+
+        size:
+          this.maxGlyphs *
+          this.floatsPerGlyph *
+          4,
+
+        usage:
+          GPUBufferUsage.STORAGE |
+          GPUBufferUsage.COPY_DST
+      });
+
+
+
+    // BIND GROUP LAYOUT
+
+
+    const bindGroupLayout =
+      this.device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
+          {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {}},
+          {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
+          {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: {}}
+        ]
+      });
+
+    this.bindGroup =
+      this.device.createBindGroup({
+        layout: bindGroupLayout,
+        entries: [
+          {binding: 0, resource: {buffer: this.cameraBuffer}},
+          {binding: 1, resource: {buffer: this.glyphBuffer}},
+          {binding: 2, resource: this.msdfTexture.createView()},
+          {binding: 3, resource: this.sampler},
+          {binding: 4, resource: {buffer: this.parentMatrixBuffer}},
+          {binding: 5, resource: {buffer: this.colorBuffer}}
+        ]
+      });
+
+    const shaderModule = this.device.createShaderModule({code: MSDFFRAG});
 
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
     });
-
     this.pipeline = this.device.createRenderPipeline({
       layout: pipelineLayout,
       vertex: {
@@ -113,151 +163,314 @@ export class MSDFTextEffect {
         buffers: [
           {
             arrayStride: 8,
-            attributes: [{
-              shaderLocation: 0,
-              format: "float32x2",
-              offset: 0
-            }]
+            attributes: [
+              {
+                shaderLocation: 0,
+                format: "float32x2",
+                offset: 0
+              }
+            ]
           },
           {
             arrayStride: 8,
-            attributes: [{
-              shaderLocation: 1,
-              format: "float32x2",
-              offset: 0
-            }]
+            attributes: [
+              {
+                shaderLocation: 1,
+                format: "float32x2",
+                offset: 0
+              }
+            ]
           }
         ]
       },
+
       fragment: {
         module: shaderModule,
         entryPoint: "fsMain",
         targets: [
-          {format: this.format},
-          {format: 'rgba16float'},
-          {format: 'rgba16float'}
+          {
+            format: this.format
+          },
+          {
+            format: "rgba16float"
+          },
+
+          {
+            format: "rgba16float"
+          }
         ]
       },
+
       primitive: {
+
         topology: "triangle-list",
-        cullMode: 'none'
+
+        cullMode: "none"
       },
+
       depthStencil: {
-        format: 'depth24plus',
+
+        format: "depth24plus",
+
         depthWriteEnabled: false,
-        depthCompare: 'less'
+
+        depthCompare: "less"
       }
     });
   }
 
+
+  // =====================================================
+  // SET TEXT
+  // =====================================================
+
   setText(text) {
-    this.text = text;
-    this._updateGlyphs(text);
+
+    this.text = text ?? "";
+
+    this._updateGlyphs();
+
+    this._uploadGlyphs();
   }
 
 
-  _updateGlyphs(text) {
-    this.glyphs = [];
+  // =====================================================
+  // BUILD GLYPH DATA
+  //
+  // THIS RUNS ONLY WHEN TEXT CHANGES
+  // =====================================================
+
+  _updateGlyphs() {
 
     const font = this.font;
 
     if(!font) {
-      console.error('MSDFTextEffect: BMFontParser not supplied');
+
+      console.error(
+        "MSDFTextEffect: BMFontParser not supplied"
+      );
+
+      this.glyphCount = 0;
+
       return;
     }
 
-    const atlasW = font.common.scaleW;
-    const atlasH = font.common.scaleH;
-
-    // How large one font pixel should be in your world.
-    const scale = 0.0015;
+    const text = this.text;
 
     let cursorX = 0;
 
-    for(let i = 0;i < text.length;i++) {
-      const charCode = text.charCodeAt(i);
+    let count = 0;
 
-      const metrics = font.getCharMetrics(charCode);
+    for(
+      let i = 0;
+      i < text.length;
+      i++
+    ) {
 
-      if(!metrics) {
-        continue;
+      if(count >= this.maxGlyphs)
+        break;
+
+
+      const charCode =
+        text.charCodeAt(i);
+
+      const metrics =
+        font.getCharMetrics(charCode);
+
+      if(!metrics) continue;
+
+      const width = metrics.width * this.scale;
+      const height = metrics.height * this.scale;
+      // BMFont BASELINE
+      //
+      // BMFont coordinates are top-down.
+      // Our world coordinates are Y-up.
+      //
+      // Glyph top:
+      //
+      // base - yoffset
+      //
+      // Glyph center:
+      //
+      // base - yoffset - height / 2
+      const char = text[i];
+      const xOffsetFix = this.glyphXOffsetFix[char] ?? 0;
+      const x = cursorX + (metrics.xoffset + xOffsetFix) * this.scale + width * 0.5;
+      const y = (font.common.base - metrics.yoffset - metrics.height * 0.5) * this.scale;
+      const offset = count * this.floatsPerGlyph;
+
+      this.instanceData[offset + 0] = x;
+      this.instanceData[offset + 1] = y;
+      this.instanceData[offset + 2] = width;
+      this.instanceData[offset + 3] = height;
+      // UV OFFSET
+      this.instanceData[offset + 4] = metrics.uvOffset[0];
+      this.instanceData[offset + 5] = metrics.uvOffset[1];
+      // UV SCALE
+      this.instanceData[offset + 6] = metrics.uvScale[0];
+      this.instanceData[offset + 7] = metrics.uvScale[1];
+      let advancePx;
+      if(this.fixedAdvancePx !== null) {
+        advancePx = this.fixedAdvancePx;
+      } else {
+        advancePx = metrics.xadvance;
       }
-
-      const glyphWidth = metrics.width * scale;
-      const glyphHeight = metrics.height * scale;
-
-      const xOffset = metrics.xoffset * scale;
-      const yOffset = metrics.yoffset * scale;
-
-      this.glyphs.push({
-        position: [
-          cursorX + xOffset + glyphWidth * 0.5,
-          -yOffset - glyphHeight * 0.5,
-          0
-        ],
-
-        scale: [
-          glyphWidth,
-          glyphHeight,
-          1
-        ],
-
-        uvOffset: metrics.uvOffset,
-        uvScale: metrics.uvScale,
-
-        color: [1, 1, 1, 1]
-      });
-
-      cursorX += metrics.xadvance * scale;
+      cursorX += (advancePx + this.trackingPx) * this.scale;
+      count++;
     }
-
-    this.glyphCount = this.glyphs.length;
+    this.glyphCount = count;
   }
 
-  // MAIN LOOP CALLS THIS - Calculate final matrix WITH parent
-  updateInstanceData = (baseModelMatrix) => {
-    const count = Math.min(this.glyphs.length, 256);
 
-    for(let i = 0;i < count;i++) {
-      const g = this.glyphs[i];
+  // =====================================================
+  // UPLOAD GLYPHS
+  //
+  // ONLY CALLED WHEN TEXT CHANGES
+  // =====================================================
 
-      // LIKE FlameEmitter - create local matrix
-      const local = this._localMatrix;
-      mat4.identity(local);
-      mat4.translate(local, g.position, local);
-      mat4.scale(local, g.scale, local);
+  _uploadGlyphs() {
 
-      // LIKE FlameEmitter - multiply with parent
-      mat4.identity(this._finalMatrix);
-      mat4.multiply(baseModelMatrix, local, this._finalMatrix);
+    if(this.glyphCount === 0)
+      return;
 
-      // Store final matrix
-      const offset = i * this.floatsPerInstance;
-      this.instanceData.set(this._finalMatrix, offset);
+    const floatCount =
+      this.glyphCount *
+      this.floatsPerGlyph;
 
-      // Store UV data after matrix
-      this.instanceData[offset + 16] = g.uvOffset[0];
-      this.instanceData[offset + 17] = g.uvOffset[1];
-      this.instanceData[offset + 18] = g.uvScale[0];
-      this.instanceData[offset + 19] = g.uvScale[1];
-      // Color can go in next batch if needed
-    }
+    this.device.queue.writeBuffer(
+      this.glyphBuffer,
 
-    this.device.queue.writeBuffer(this.glyphBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
+      0,
+
+      this.instanceData.buffer,
+
+      0,
+
+      floatCount * 4
+    );
   }
+
+
+  // =====================================================
+  // MAIN LOOP
+  //
+  // ONLY PARENT MATRIX IS UPDATED
+  //
+  // NO GLYPH LOOP HERE
+  // =====================================================
+
+  updateInstanceData(baseModelMatrix) {
+
+    this.device.queue.writeBuffer(
+      this.parentMatrixBuffer,
+
+      0,
+
+      baseModelMatrix
+    );
+  }
+
+
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   render(pass, mesh, viewProjMatrix) {
-    if(this.glyphCount === 0) return;
 
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    if(
+      !this.enabled ||
+      this.glyphCount === 0
+    ) {
+      return;
+    }
 
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
 
-    pass.drawIndexed(this.indexCount, this.glyphCount);
+    // Camera VP
+    this.device.queue.writeBuffer(
+      this.cameraBuffer,
+
+      0,
+
+      viewProjMatrix
+    );
+
+
+    pass.setPipeline(
+      this.pipeline
+    );
+
+
+    pass.setBindGroup(
+      0,
+      this.bindGroup
+    );
+
+
+    pass.setVertexBuffer(
+      0,
+      this.vertexBuffer
+    );
+
+
+    pass.setVertexBuffer(
+      1,
+      this.uvBuffer
+    );
+
+
+    pass.setIndexBuffer(
+      this.indexBuffer,
+      "uint16"
+    );
+
+
+
+    // GPU INSTANCING
+    //
+    // 6 indices
+    // glyphCount instances
+
+
+    pass.drawIndexed(
+      this.indexCount,
+      this.glyphCount
+    );
+  }
+
+
+  // =====================================================
+  // COLOR
+  // =====================================================
+
+  setColor(r, g, b, a = 1) {
+
+    this.color[0] = r;
+    this.color[1] = g;
+    this.color[2] = b;
+    this.color[3] = a;
+
+    this.device.queue.writeBuffer(
+      this.colorBuffer,
+
+      0,
+
+      new Float32Array(this.color)
+    );
+  }
+
+
+  // =====================================================
+  // DESTROY
+  // =====================================================
+
+  destroy() {
+
+    this.vertexBuffer?.destroy();
+    this.uvBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.glyphBuffer?.destroy();
+    this.parentMatrixBuffer?.destroy();
+    this.colorBuffer?.destroy();
   }
 }
 
@@ -347,100 +560,46 @@ export class BMFontParser {
   }
 }
 
-
-export async function loadAtlasFONT(PATH = './res/3d-fonts/stormfaze.fnt') {
-
-  const fontResponse = await fetch(PATH);
-
-  if(!fontResponse.ok) {
-    throw new Error(
-      `Failed to load BMFont file: ${fontResponse.status} ${fontResponse.statusText}`
-    );
-  }
-
-  const fontXml = await fontResponse.text();
-
-  // Parse BMFont XML
-  const font = new BMFontParser(fontXml);
-
-  console.log('Font loaded:', font.info.face);
-  console.log('Atlas:', font.getAtlasDimensions());
-
-
-  // ------------------------------------------------------------
-  // LOAD MSDF ATLAS
-  // ------------------------------------------------------------
-
-  const response = await fetch('./res/3d-fonts/atlas.png');
-
-  if(!response.ok) {
-    throw new Error(
-      `Failed to load MSDF atlas: ${response.status} ${response.statusText}`
-    );
-  }
-
-  const blob = await response.blob();
-  const bitmap = await createImageBitmap(blob);
-
-
-  // ------------------------------------------------------------
-  // CREATE GPU TEXTURE
-  // ------------------------------------------------------------
-
-  const device = loadFace.device;
-
-  const msdfTexture = device.createTexture({
-    size: {
-      width: bitmap.width,
-      height: bitmap.height,
-      depthOrArrayLayers: 1
-    },
-
-    format: 'rgba8unorm',
-
-    usage:
-      GPUTextureUsage.TEXTURE_BINDING |
-      GPUTextureUsage.COPY_DST
-  });
-
-
-  // ------------------------------------------------------------
-  // UPLOAD ATLAS TO GPU
-  // ------------------------------------------------------------
-
-  const canvas = new OffscreenCanvas(
-    bitmap.width,
-    bitmap.height
-  );
-
-  const ctx = canvas.getContext('2d');
-
-  ctx.drawImage(bitmap, 0, 0);
-
-  const imageData = ctx.getImageData(
-    0,
-    0,
-    bitmap.width,
-    bitmap.height
-  );
-
-  device.queue.writeTexture(
-    {
-      texture: msdfTexture
-    },
-
-    imageData.data,
-
-    {
-      bytesPerRow: bitmap.width * 4,
-      rowsPerImage: bitmap.height
-    },
-
-    {
-      width: bitmap.width,
-      height: bitmap.height,
-      depthOrArrayLayers: 1
+export function loadAtlasFONT(device, PATH = './res/3d-fonts/stormfaze.fnt', ATLAS_PATH = './res/3d-fonts/atlas.png') {
+  return new Promise(async (resolve) => {
+    const fontResponse = await fetch(PATH);
+    if(!fontResponse.ok) {
+      throw new Error(
+        `Failed to load BMFont file: ${fontResponse.status} ${fontResponse.statusText}`
+      );
     }
-  );
-
+    const fontXml = await fontResponse.text();
+    const font = new BMFontParser(fontXml);
+    const response = await fetch(ATLAS_PATH);
+    if(!response.ok) {
+      throw new Error(
+        `Failed to load MSDF atlas: ${response.status} ${response.statusText}`
+      );
+    }
+    const blob = await response.blob();
+    const bitmap = await createImageBitmap(blob);
+    const msdfTexture = device.createTexture({
+      size: {
+        width: bitmap.width,
+        height: bitmap.height,
+        depthOrArrayLayers: 1
+      },
+      format: 'rgba8unorm',
+      usage:
+        GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.COPY_DST
+    });
+    // UPLOAD ATLAS TO GPU
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0);
+    const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+    device.queue.writeTexture({texture: msdfTexture},
+      imageData.data,
+      {bytesPerRow: bitmap.width * 4, rowsPerImage: bitmap.height},
+      {width: bitmap.width, height: bitmap.height, depthOrArrayLayers: 1}
+    );
+    const OUTPUT = {msdfTexture: msdfTexture, font: font};
+    resolve(OUTPUT)
+  })
 }

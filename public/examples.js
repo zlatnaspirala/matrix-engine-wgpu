@@ -17448,134 +17448,133 @@ var PointerEffect = class {
 
 // src/shaders/msdf/msdf.fragment.js
 var MSDFFRAG = `
-
 struct Camera {
   viewProj: mat4x4f,
 };
 
 struct Glyph {
-  transform: mat4x4f,
+  position: vec2f,
+  size: vec2f,
   uvOffset: vec2f,
   uvScale: vec2f,
 };
 
+struct TextColor {
+  color: vec4f,
+};
+
 @group(0) @binding(0) var<uniform> camera: Camera;
-@group(0) @binding(1) var<storage> glyphs: array<Glyph>;
+@group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
 @group(0) @binding(2) var msdfTexture: texture_2d<f32>;
 @group(0) @binding(3) var msdfSampler: sampler;
+@group(0) @binding(4) var<uniform> parent: mat4x4f;
+@group(0) @binding(5) var<uniform> textColor: TextColor;
 
 struct VertexInput {
-  @location(0) position: vec2f,
-  @location(1) uv: vec2f,
-  @builtin(instance_index) instanceIdx: u32,
+  @location(0)
+  position: vec2f,
+  @location(1)
+  uv: vec2f,
+  @builtin(instance_index)
+  instanceIdx: u32,
 };
 
 struct VertexOutput {
-  @builtin(position) clipPos: vec4f,
-  @location(0) uv: vec2f,
-  @location(1) worldPos: vec3f,
-  @location(2) color: vec4f,
+  @builtin(position)
+  clipPos: vec4f,
+  @location(0)
+  uv: vec2f,
+  @location(1)
+  worldPos: vec3f,
 };
 
 @vertex
 fn vsMain(input: VertexInput) -> VertexOutput {
   let glyph = glyphs[input.instanceIdx];
-  
-  // Use the precomputed transform matrix
-  let worldPos = (glyph.transform * vec4f(input.position, 0.0, 1.0)).xyz;
+  let localPos = glyph.position + vec2f(input.position.x, -input.position.y) * glyph.size;
+  let worldPos = (parent * vec4f(localPos.x, localPos.y, 0.0, 1.0)).xyz;
   let clipPos = camera.viewProj * vec4f(worldPos, 1.0);
+  // ATLAS UV
   let atlasUv = glyph.uvOffset + input.uv * glyph.uvScale;
-  
   var output: VertexOutput;
   output.clipPos = clipPos;
   output.uv = atlasUv;
   output.worldPos = worldPos;
-  output.color = vec4f(1.0);
-  
   return output;
 }
 
 struct FragmentOutput {
-  @location(0) color: vec4f,
-  @location(1) normal: vec4f,
-  @location(2) position: vec4f,
+  @location(0)
+  color: vec4f,
+  @location(1)
+  normal: vec4f,
+  @location(2)
+  position: vec4f,
 };
 
-fn FragOut(
-  color: vec4f,
-  normal: vec4f,
-  position: vec4f
-) -> FragmentOutput {
-  var output: FragmentOutput;
-  output.color = color;
-  output.normal = normal;
-  output.position = position;
-  return output;
+fn median(r: f32, g: f32, b: f32) -> f32 {
+  return max(min(r, g), min( max(r, g), b));
 }
 
 fn sampleMSDF(uv: vec2f) -> f32 {
   let sample = textureSample(msdfTexture, msdfSampler, uv);
-  let r = sample.r;
-  let g = sample.g;
-  let b = sample.b;
-  let median = max(min(r, g), min(max(r, g), b));
-  return (median - 0.5) * 2.0;
-}
-
-fn msdfAlpha(signedDist: f32, pxSize: f32) -> f32 {
-  return smoothstep(-pxSize, pxSize, signedDist);
+  let sd = median(
+          sample.r,
+          sample.g,
+          sample.b
+      );
+  return sd - 0.5;
 }
 
 @fragment
 fn fsMain(input: VertexOutput) -> FragmentOutput {
-
-  let sample = textureSample(msdfTexture, msdfSampler, input.uv);
-  
-  // // Just output the raw sample
-  // let debugColor = vec4f(sample.rgb, 1.0);
-  
-  // return FragOut(
-  //   debugColor,
-  //   vec4f(0.0, 0.0, 1.0, 0.0),
-  //   vec4f(input.worldPos, 1.0)
-  // );
-
-
-  let signedDist = sampleMSDF(input.uv);
-  let pxSize = 0.001;
-  let alpha = msdfAlpha(signedDist, pxSize);
-  
-  if (alpha < 0.01) {
-    discard;
-  }
-  
-  let finalColor = input.color.rgb * alpha * input.color.a;
+  // MSDF
+  let signedDistance = sampleMSDF(input.uv);
+  let screenPxRange = max(fwidth(signedDistance), 0.00001);
+  let alpha = clamp(signedDistance / screenPxRange + 0.5, 0.0, 1.0);
+  if (alpha < 0.01) { discard;}
+  let finalColor = vec4f(textColor.color.rgb, textColor.color.a * alpha);
+  // FLAT TEXT NORMAL
   let surfaceNormal = vec3f(0.0, 0.0, 1.0);
-  
-  return FragOut(
-    vec4f(finalColor, alpha),
-    vec4f(surfaceNormal, 0.0),
-    vec4f(input.worldPos, 1.0)
-  );
+  var output: FragmentOutput;
+  output.color = finalColor;
+  output.normal = vec4f(surfaceNormal, 0.0);
+  output.position = vec4f(input.worldPos, 1.0);
+  return output;
 }
 `;
 
 // src/engine/effects/msdfText.js
 var MSDFTextEffect = class {
-  constructor(device2, format, msdfTexture, sampler, cameraBuffer, font) {
+  constructor(device2, format, msdfTexture, sampler, cameraBuffer, font, options2 = {}) {
     this.device = device2;
     this.format = format;
-    this.cameraBuffer = cameraBuffer;
     this.msdfTexture = msdfTexture;
     this.sampler = sampler;
+    this.cameraBuffer = cameraBuffer;
     this.font = font;
-    this.glyphs = [];
-    this.glyphCount = 0;
     this.enabled = true;
-    this.floatsPerInstance = 20;
-    this.instanceData = new Float32Array(256 * this.floatsPerInstance);
-    this._localMatrix = mat4Impl.create();
-    this._finalMatrix = mat4Impl.create();
+    this.scale = options2.scale ?? 15e-4;
+    this.glyphXOffsetFix = {
+      // "I": +8,
+      // "J": -3,
+      // "T": -2
+    };
+    this.fixedAdvancePx = options2.fixedAdvancePx ?? 40;
+    this.trackingPx = options2.trackingPx ?? 0;
+    this.color = options2.color ?? [1, 1, 1, 1];
+    this.maxGlyphs = options2.maxGlyphs ?? 256;
+    this.text = "";
+    this.glyphCount = 0;
+    this.floatsPerGlyph = 8;
+    this.instanceData = new Float32Array(this.maxGlyphs * this.floatsPerGlyph);
+    this.parentMatrixBuffer = device2.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.colorBuffer = device2.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.device.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
+    this._identity = mat4Impl.create();
     this._init();
   }
   _init() {
@@ -17612,7 +17611,9 @@ var MSDFTextEffect = class {
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
-    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
+    new Float32Array(
+      this.vertexBuffer.getMappedRange()
+    ).set(vertexData);
     this.vertexBuffer.unmap();
     this.uvBuffer = this.device.createBuffer({
       size: uvData.byteLength,
@@ -17626,11 +17627,13 @@ var MSDFTextEffect = class {
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
-    new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
+    new Uint16Array(
+      this.indexBuffer.getMappedRange()
+    ).set(indexData);
     this.indexBuffer.unmap();
     this.indexCount = indexData.length;
     this.glyphBuffer = this.device.createBuffer({
-      size: 256 * this.floatsPerInstance * 4,
+      size: this.maxGlyphs * this.floatsPerGlyph * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
     const bindGroupLayout = this.device.createBindGroupLayout({
@@ -17638,7 +17641,9 @@ var MSDFTextEffect = class {
         { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
         { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
         { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {} },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {} }
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
       ]
     });
     this.bindGroup = this.device.createBindGroup({
@@ -17647,12 +17652,12 @@ var MSDFTextEffect = class {
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.glyphBuffer } },
         { binding: 2, resource: this.msdfTexture.createView() },
-        { binding: 3, resource: this.sampler }
+        { binding: 3, resource: this.sampler },
+        { binding: 4, resource: { buffer: this.parentMatrixBuffer } },
+        { binding: 5, resource: { buffer: this.colorBuffer } }
       ]
     });
-    const shaderModule = this.device.createShaderModule({
-      code: MSDFFRAG
-    });
+    const shaderModule = this.device.createShaderModule({ code: MSDFFRAG });
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]
     });
@@ -17664,19 +17669,23 @@ var MSDFTextEffect = class {
         buffers: [
           {
             arrayStride: 8,
-            attributes: [{
-              shaderLocation: 0,
-              format: "float32x2",
-              offset: 0
-            }]
+            attributes: [
+              {
+                shaderLocation: 0,
+                format: "float32x2",
+                offset: 0
+              }
+            ]
           },
           {
             arrayStride: 8,
-            attributes: [{
-              shaderLocation: 1,
-              format: "float32x2",
-              offset: 0
-            }]
+            attributes: [
+              {
+                shaderLocation: 1,
+                format: "float32x2",
+                offset: 0
+              }
+            ]
           }
         ]
       },
@@ -17684,9 +17693,15 @@ var MSDFTextEffect = class {
         module: shaderModule,
         entryPoint: "fsMain",
         targets: [
-          { format: this.format },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
+          {
+            format: this.format
+          },
+          {
+            format: "rgba16float"
+          },
+          {
+            format: "rgba16float"
+          }
         ]
       },
       primitive: {
@@ -17700,81 +17715,268 @@ var MSDFTextEffect = class {
       }
     });
   }
+  // =====================================================
+  // SET TEXT
+  // =====================================================
   setText(text) {
-    this.text = text;
-    this._updateGlyphs(text);
+    this.text = text ?? "";
+    this._updateGlyphs();
+    this._uploadGlyphs();
   }
-  _updateGlyphs(text) {
-    this.glyphs = [];
+  // =====================================================
+  // BUILD GLYPH DATA
+  //
+  // THIS RUNS ONLY WHEN TEXT CHANGES
+  // =====================================================
+  _updateGlyphs() {
     const font = this.font;
     if (!font) {
-      console.error("MSDFTextEffect: BMFontParser not supplied");
+      console.error(
+        "MSDFTextEffect: BMFontParser not supplied"
+      );
+      this.glyphCount = 0;
       return;
     }
-    const atlasW = font.common.scaleW;
-    const atlasH = font.common.scaleH;
-    const scale4 = 15e-4;
+    const text = this.text;
     let cursorX = 0;
+    let count = 0;
     for (let i2 = 0; i2 < text.length; i2++) {
+      if (count >= this.maxGlyphs)
+        break;
       const charCode = text.charCodeAt(i2);
       const metrics = font.getCharMetrics(charCode);
-      if (!metrics) {
-        continue;
+      if (!metrics) continue;
+      const width = metrics.width * this.scale;
+      const height = metrics.height * this.scale;
+      const char = text[i2];
+      const xOffsetFix = this.glyphXOffsetFix[char] ?? 0;
+      const x3 = cursorX + (metrics.xoffset + xOffsetFix) * this.scale + width * 0.5;
+      const y3 = (font.common.base - metrics.yoffset - metrics.height * 0.5) * this.scale;
+      const offset = count * this.floatsPerGlyph;
+      this.instanceData[offset + 0] = x3;
+      this.instanceData[offset + 1] = y3;
+      this.instanceData[offset + 2] = width;
+      this.instanceData[offset + 3] = height;
+      this.instanceData[offset + 4] = metrics.uvOffset[0];
+      this.instanceData[offset + 5] = metrics.uvOffset[1];
+      this.instanceData[offset + 6] = metrics.uvScale[0];
+      this.instanceData[offset + 7] = metrics.uvScale[1];
+      let advancePx;
+      if (this.fixedAdvancePx !== null) {
+        advancePx = this.fixedAdvancePx;
+      } else {
+        advancePx = metrics.xadvance;
       }
-      const glyphWidth = metrics.width * scale4;
-      const glyphHeight = metrics.height * scale4;
-      const xOffset = metrics.xoffset * scale4;
-      const yOffset = metrics.yoffset * scale4;
-      this.glyphs.push({
-        position: [
-          cursorX + xOffset + glyphWidth * 0.5,
-          -yOffset - glyphHeight * 0.5,
-          0
-        ],
-        scale: [
-          glyphWidth,
-          glyphHeight,
-          1
-        ],
-        uvOffset: metrics.uvOffset,
-        uvScale: metrics.uvScale,
-        color: [1, 1, 1, 1]
-      });
-      cursorX += metrics.xadvance * scale4;
+      cursorX += (advancePx + this.trackingPx) * this.scale;
+      count++;
     }
-    this.glyphCount = this.glyphs.length;
+    this.glyphCount = count;
   }
-  // MAIN LOOP CALLS THIS - Calculate final matrix WITH parent
-  updateInstanceData = (baseModelMatrix) => {
-    const count = Math.min(this.glyphs.length, 256);
-    for (let i2 = 0; i2 < count; i2++) {
-      const g2 = this.glyphs[i2];
-      const local2 = this._localMatrix;
-      mat4Impl.identity(local2);
-      mat4Impl.translate(local2, g2.position, local2);
-      mat4Impl.scale(local2, g2.scale, local2);
-      mat4Impl.identity(this._finalMatrix);
-      mat4Impl.multiply(baseModelMatrix, local2, this._finalMatrix);
-      const offset = i2 * this.floatsPerInstance;
-      this.instanceData.set(this._finalMatrix, offset);
-      this.instanceData[offset + 16] = g2.uvOffset[0];
-      this.instanceData[offset + 17] = g2.uvOffset[1];
-      this.instanceData[offset + 18] = g2.uvScale[0];
-      this.instanceData[offset + 19] = g2.uvScale[1];
-    }
-    this.device.queue.writeBuffer(this.glyphBuffer, 0, this.instanceData.subarray(0, count * this.floatsPerInstance));
-  };
+  // =====================================================
+  // UPLOAD GLYPHS
+  //
+  // ONLY CALLED WHEN TEXT CHANGES
+  // =====================================================
+  _uploadGlyphs() {
+    if (this.glyphCount === 0)
+      return;
+    const floatCount = this.glyphCount * this.floatsPerGlyph;
+    this.device.queue.writeBuffer(
+      this.glyphBuffer,
+      0,
+      this.instanceData.buffer,
+      0,
+      floatCount * 4
+    );
+  }
+  // =====================================================
+  // MAIN LOOP
+  //
+  // ONLY PARENT MATRIX IS UPDATED
+  //
+  // NO GLYPH LOOP HERE
+  // =====================================================
+  updateInstanceData(baseModelMatrix) {
+    this.device.queue.writeBuffer(
+      this.parentMatrixBuffer,
+      0,
+      baseModelMatrix
+    );
+  }
+  // =====================================================
+  // RENDER
+  // =====================================================
   render(pass, mesh, viewProjMatrix) {
-    if (this.glyphCount === 0) return;
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
-    pass.setVertexBuffer(0, this.vertexBuffer);
-    pass.setVertexBuffer(1, this.uvBuffer);
-    pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(this.indexCount, this.glyphCount);
+    if (!this.enabled || this.glyphCount === 0) {
+      return;
+    }
+    this.device.queue.writeBuffer(
+      this.cameraBuffer,
+      0,
+      viewProjMatrix
+    );
+    pass.setPipeline(
+      this.pipeline
+    );
+    pass.setBindGroup(
+      0,
+      this.bindGroup
+    );
+    pass.setVertexBuffer(
+      0,
+      this.vertexBuffer
+    );
+    pass.setVertexBuffer(
+      1,
+      this.uvBuffer
+    );
+    pass.setIndexBuffer(
+      this.indexBuffer,
+      "uint16"
+    );
+    pass.drawIndexed(
+      this.indexCount,
+      this.glyphCount
+    );
+  }
+  // =====================================================
+  // COLOR
+  // =====================================================
+  setColor(r3, g2, b2, a2 = 1) {
+    this.color[0] = r3;
+    this.color[1] = g2;
+    this.color[2] = b2;
+    this.color[3] = a2;
+    this.device.queue.writeBuffer(
+      this.colorBuffer,
+      0,
+      new Float32Array(this.color)
+    );
+  }
+  // =====================================================
+  // DESTROY
+  // =====================================================
+  destroy() {
+    this.vertexBuffer?.destroy();
+    this.uvBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.glyphBuffer?.destroy();
+    this.parentMatrixBuffer?.destroy();
+    this.colorBuffer?.destroy();
   }
 };
+var BMFontParser = class {
+  constructor(xmlText) {
+    this.chars = {};
+    this.info = {};
+    this.common = {};
+    this.parse(xmlText);
+  }
+  parse(xmlText) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, "text/xml");
+    const infoEl = doc.querySelector("info");
+    this.info = {
+      face: infoEl.getAttribute("face"),
+      size: parseInt(infoEl.getAttribute("size"))
+    };
+    const commonEl = doc.querySelector("common");
+    this.common = {
+      lineHeight: parseInt(commonEl.getAttribute("lineHeight")),
+      base: parseInt(commonEl.getAttribute("base")),
+      scaleW: parseInt(commonEl.getAttribute("scaleW")),
+      scaleH: parseInt(commonEl.getAttribute("scaleH"))
+    };
+    const charEls = doc.querySelectorAll("char");
+    charEls.forEach((el2) => {
+      const id2 = parseInt(el2.getAttribute("id"));
+      const char = String.fromCharCode(id2);
+      this.chars[id2] = {
+        char,
+        x: parseInt(el2.getAttribute("x")),
+        y: parseInt(el2.getAttribute("y")),
+        width: parseInt(el2.getAttribute("width")),
+        height: parseInt(el2.getAttribute("height")),
+        xoffset: parseInt(el2.getAttribute("xoffset")),
+        yoffset: parseInt(el2.getAttribute("yoffset")),
+        xadvance: parseInt(el2.getAttribute("xadvance"))
+      };
+    });
+    console.log("BMFont parsed:", {
+      face: this.info.face,
+      atlasSize: `${this.common.scaleW}x${this.common.scaleH}`,
+      charCount: Object.keys(this.chars).length
+    });
+  }
+  getCharMetrics(charCode) {
+    if (!this.chars[charCode]) {
+      console.warn(`Character ${charCode} not found in font`);
+      return null;
+    }
+    const char = this.chars[charCode];
+    const atlasW = this.common.scaleW;
+    const atlasH = this.common.scaleH;
+    return {
+      char: char.char,
+      // UV coordinates (normalized 0-1)
+      uvOffset: [char.x / atlasW, char.y / atlasH],
+      uvScale: [char.width / atlasW, char.height / atlasH],
+      // Dimensions in pixels
+      width: char.width,
+      height: char.height,
+      xoffset: char.xoffset,
+      yoffset: char.yoffset,
+      xadvance: char.xadvance
+    };
+  }
+  getAtlasDimensions() {
+    return {
+      width: this.common.scaleW,
+      height: this.common.scaleH
+    };
+  }
+};
+function loadAtlasFONT(device2, PATH = "./res/3d-fonts/stormfaze.fnt", ATLAS_PATH = "./res/3d-fonts/atlas.png") {
+  return new Promise(async (resolve) => {
+    const fontResponse = await fetch(PATH);
+    if (!fontResponse.ok) {
+      throw new Error(
+        `Failed to load BMFont file: ${fontResponse.status} ${fontResponse.statusText}`
+      );
+    }
+    const fontXml = await fontResponse.text();
+    const font = new BMFontParser(fontXml);
+    const response = await fetch(ATLAS_PATH);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load MSDF atlas: ${response.status} ${response.statusText}`
+      );
+    }
+    const blob = await response.blob();
+    const bitmap = await createImageBitmap(blob);
+    const msdfTexture = device2.createTexture({
+      size: {
+        width: bitmap.width,
+        height: bitmap.height,
+        depthOrArrayLayers: 1
+      },
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0);
+    const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+    device2.queue.writeTexture(
+      { texture: msdfTexture },
+      imageData.data,
+      { bytesPerRow: bitmap.width * 4, rowsPerImage: bitmap.height },
+      { width: bitmap.width, height: bitmap.height, depthOrArrayLayers: 1 }
+    );
+    const OUTPUT = { msdfTexture, font };
+    resolve(OUTPUT);
+  });
+}
 
 // src/shaders/blood/blood-target.js
 var bloodBurstShader = `
@@ -67133,7 +67335,7 @@ var SplatFaceEffect = class {
 
 // examples/games/nui/face-beast-render.js
 var loadFaceBeast = function() {
-  let loadFace2 = new MatrixEngineWGPU({
+  let loadFace = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
     dontUsePhysics: true,
@@ -67153,12 +67355,12 @@ var loadFaceBeast = function() {
       enableVisual: false,
       mode: "face"
     });
-    loadFace2.addLight();
+    loadFace.addLight();
     downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     async function onGround(m2) {
-      loadFace2.addMeshObj({
+      loadFace.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: 0, y: -1, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -67173,8 +67375,8 @@ var loadFaceBeast = function() {
         }
       });
     }
-    function createPillar(loadFace3, m2, x3, y3, z2, name2) {
-      const base = loadFace3.addMeshObj({
+    function createPillar(loadFace2, m2, x3, y3, z2, name2) {
+      const base = loadFace2.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: x3, y: y3, z: z2 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -67186,7 +67388,7 @@ var loadFaceBeast = function() {
         raycast: { enabled: true, radius: 1 },
         physics: { enabled: false, mass: 1, geometry: "Cube" }
       });
-      const top = loadFace3.addMeshObj({
+      const top = loadFace2.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: x3, y: y3 + 6, z: z2 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -67201,7 +67403,7 @@ var loadFaceBeast = function() {
       return { base, top };
     }
     async function onLoadObj(m2) {
-      MYCUBE = loadFace2.addMeshObj({
+      MYCUBE = loadFace.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: 0, y: 5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -67217,91 +67419,40 @@ var loadFaceBeast = function() {
         pointerEffect: { enabled: true }
       });
       window.MYCUBE = MYCUBE;
-      const pillar1 = createPillar(loadFace2, m2, -20, 6, -30, "pil1");
-      const pillar2 = createPillar(loadFace2, m2, 20, 6, -30, "pil2");
-      const pillar3 = createPillar(loadFace2, m2, -20, 6, 20, "pil3");
-      const pillar4 = createPillar(loadFace2, m2, 20, 6, 20, "pil4");
-      loadFace2.lightContainer[0].setIntensity(0.7);
+      const pillar1 = createPillar(loadFace, m2, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(loadFace, m2, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(loadFace, m2, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(loadFace, m2, 20, 6, 20, "pil4");
+      loadFace.lightContainer[0].setIntensity(0.7);
       app.lightContainer[0].setColorB(100);
-      loadFace2.activateBloomEffect();
-      loadFace2.lightContainer[0].setPosition(0, 35, 0);
-      loadFace2.lightContainer[0].setTarget(0, 0, -20);
+      loadFace.activateBloomEffect();
+      loadFace.lightContainer[0].setPosition(0, 35, 0);
+      loadFace.lightContainer[0].setTarget(0, 0, -20);
       setTimeout(async () => {
-        const fontResponse = await fetch("./res/3d-fonts/stormfaze.fnt");
-        if (!fontResponse.ok) {
-          throw new Error(
-            `Failed to load BMFont file: ${fontResponse.status} ${fontResponse.statusText}`
-          );
-        }
-        const fontXml = await fontResponse.text();
-        const font = new BMFontParser(fontXml);
-        console.log("Font loaded:", font.info.face);
-        console.log("Atlas:", font.getAtlasDimensions());
-        const response = await fetch("./res/3d-fonts/atlas.png");
-        if (!response.ok) {
-          throw new Error(
-            `Failed to load MSDF atlas: ${response.status} ${response.statusText}`
-          );
-        }
-        const blob = await response.blob();
-        const bitmap = await createImageBitmap(blob);
-        const device2 = loadFace2.device;
-        const msdfTexture = device2.createTexture({
-          size: {
-            width: bitmap.width,
-            height: bitmap.height,
-            depthOrArrayLayers: 1
-          },
-          format: "rgba8unorm",
-          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-        });
-        const canvas = new OffscreenCanvas(
-          bitmap.width,
-          bitmap.height
-        );
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(bitmap, 0, 0);
-        const imageData = ctx.getImageData(
-          0,
-          0,
-          bitmap.width,
-          bitmap.height
-        );
-        device2.queue.writeTexture(
-          {
-            texture: msdfTexture
-          },
-          imageData.data,
-          {
-            bytesPerRow: bitmap.width * 4,
-            rowsPerImage: bitmap.height
-          },
-          {
-            width: bitmap.width,
-            height: bitmap.height,
-            depthOrArrayLayers: 1
-          }
-        );
-        const sampler = device2.createSampler({
+        const sampler = loadFace.device.createSampler({
           magFilter: "linear",
           minFilter: "linear",
           mipmapFilter: "nearest",
           addressModeU: "clamp-to-edge",
           addressModeV: "clamp-to-edge"
         });
-        MYCUBE.effects.gpuText = new MSDFTextEffect(
-          device2,
-          "rgba16float",
-          msdfTexture,
-          sampler,
-          loadFace2.cameraBuffer,
-          font
-          // <-- THIS WAS MISSING
-        );
-        MYCUBE.effects.splat = new GaussianSplatScene(loadFace2.device, "rgba16float", loadFace2.cameraBuffer);
+        loadAtlasFONT(loadFace.device).then((OUTPUT) => {
+          console.log("FONT ", OUTPUT);
+          MYCUBE.effects.gpuText = new MSDFTextEffect(
+            loadFace.device,
+            "rgba16float",
+            OUTPUT.msdfTexture,
+            sampler,
+            loadFace.cameraBuffer,
+            OUTPUT.font
+            // <-- THIS WAS MISSING
+          );
+        });
+        MYCUBE.setBlend(0);
+        MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
         const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast.ply", 6, "point-list");
         animator2 = new SplatColorAnimator(
-          loadFace2.device,
+          loadFace.device,
           layer.positions,
           layer.vertexCount,
           layer.colorBuffer
@@ -67310,20 +67461,20 @@ var loadFaceBeast = function() {
         animator2.setScale(0.8);
         animator2.setSpeed(0.8);
         layer.colorBuffer = animator2.colorBuffer;
-        loadFace2.autoUpdate.push(animator2);
-        loadFace2.animator = animator2;
+        loadFace.autoUpdate.push(animator2);
+        loadFace.animator = animator2;
         let positionAnimator = new SplatPositionAnimator(
-          loadFace2.device,
+          loadFace.device,
           MYCUBE.effects.splat.splatLayers[0].positions,
           MYCUBE.effects.splat.splatLayers[0].vertexCount
         );
         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
-        loadFace2.autoUpdate.push(positionAnimator);
+        loadFace.autoUpdate.push(positionAnimator);
         positionAnimator.setMode("hold");
         const faceEffect = new SplatFaceEffect(
-          loadFace2.device,
+          loadFace.device,
           "rgba16float",
-          loadFace2.cameraBuffer,
+          loadFace.cameraBuffer,
           MYCUBE.effects.splat.splatLayers[0],
           {
             scale: 4.5,
@@ -67336,7 +67487,7 @@ var loadFaceBeast = function() {
         nui.onResults = (results) => {
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
-        loadFace2.activateHZB();
+        loadFace.activateHZB();
         let cam2 = app.getCamera();
         cam2.setYaw(-0.03);
         cam2.setPitch(-0.49);
@@ -67346,14 +67497,14 @@ var loadFaceBeast = function() {
         cam2._dirtyAngle = true;
       }, 700);
     }
-    loadFace2.canvas.addEventListener("ray.hit.event", (e2) => {
+    loadFace.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       nui.onResults = (results) => {
       };
       MYCUBE.effects.splat.splatLayers[0].positionAnimator.setMode("dust");
     });
   });
-  window.app = loadFace2;
+  window.app = loadFace;
 };
 
 // examples/gaussian-test.js
