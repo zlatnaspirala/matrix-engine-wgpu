@@ -1,3 +1,5 @@
+import {byId} from "../utils";
+
 /**
  * SplatFaceEffect
  * Maps MediaPipe FaceLandmarker 478 landmarks into a splat point cloud.
@@ -18,6 +20,7 @@ export class SplatFaceEffect {
    * @param {boolean} opts.mirrorX      flip X for webcam (default true)
    */
   constructor(device, format, cameraBuffer, splatLayer, opts = {}) {
+
     this.device = device;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
@@ -29,6 +32,11 @@ export class SplatFaceEffect {
     this.clusterRadius = opts.clusterRadius ?? 1.0;
     this.origin = opts.origin ?? [0, 1.6, 0];
     this.mirrorX = opts.mirrorX ?? true;
+
+    this._videoElement = byId('auto-video');
+    this._videoCanvas = document.createElement('canvas');
+    this._videoCanvas.width = this._videoElement.videoWidth || 640;
+    this._videoCanvas.height = this._videoElement.videoHeight || 480;
 
     this._landmarks = null;
 
@@ -125,17 +133,14 @@ export class SplatFaceEffect {
     setRange(27, 30, 0.4, 0.6, 1.0);
     // Nose bottom — blue
     setRange(31, 35, 0.3, 0.5, 1.0);
-
     // Right eye — bright green
     setRange(36, 41, 0.2, 1.0, 0.3);
     // Left eye — bright green
     setRange(42, 47, 0.2, 1.0, 0.3);
-
     // Lips outer — hot pink/red
     setRange(48, 59, 1.0, 0.2, 0.4);
     // Lips inner — bright red
     setRange(60, 67, 1.0, 0.1, 0.2);
-
     // Key landmarks — white highlights
     [1, 4, 10, 33, 61, 133, 152, 234, 263, 291, 362, 454].forEach(i => {
       colors[i * 3] = 1.0;
@@ -146,17 +151,12 @@ export class SplatFaceEffect {
     return colors;
   }
 
-  // ── Cluster assignment ────────────────────────────────────────────────────
-
   _buildWeights() {
     const w = new Float32Array(478).fill(0.8); // base weight for all face mesh
-
     // Jaw — structural, more points
     for(let i = 0;i <= 16;i++) w[i] = 1.5;
-
     // Eyebrows
     for(let i = 17;i <= 26;i++) w[i] = 1.2;
-
     // Nose
     for(let i = 27;i <= 35;i++) w[i] = 1.2;
 
@@ -231,7 +231,6 @@ export class SplatFaceEffect {
   setOrigin(x, y, z) {this.origin = [x, y, z];}
 
   // ── Effect interface ──────────────────────────────────────────────────────
-
   updateInstanceData(baseModelMatrix) {
     if(!this.enabled) return;
 
@@ -286,31 +285,47 @@ export class SplatFaceEffect {
     this.time += dt;
   }
 
+  /**
+   * Sample pixel color from video at each landmark position
+   * and apply to splat colors
+   */
   _updateColors() {
+    if(!this._videoCanvas || !this._landmarks) return;
+
+    const ctx = this._videoCanvas.getContext('2d', {willReadFrequently: true});
     const c = this._colorCPU;
     const n = this.splatLayer.vertexCount;
-    // Lips pulse faster — expressive
-    const lipPulse = Math.sin(this.time * 4.0) * 0.2 + 0.9;
-    // Eyes pulse medium
-    const eyePulse = Math.sin(this.time * 2.5) * 0.15 + 0.9;
-    // Rest breathes slowly
-    const basePulse = Math.sin(this.time * 1.5) * 0.1 + 0.9;
+    const lm = this._landmarks;
+
+    // Draw current video frame to canvas
+    const video = this._videoElement;
+    ctx.drawImage(video, 0, 0, this._videoCanvas.width, this._videoCanvas.height);
+
+    const imageData = ctx.getImageData(0, 0, this._videoCanvas.width, this._videoCanvas.height);
+    const data = imageData.data;
+    const w = this._videoCanvas.width;
+    const h = this._videoCanvas.height;
 
     for(let i = 0;i < n;i++) {
       const ci = this._clusterIdx[i];
-      const r = this._landmarkColors[ci * 3];
-      const g = this._landmarkColors[ci * 3 + 1];
-      const b = this._landmarkColors[ci * 3 + 2];
+      const joint = lm[ci];
 
-      // Pick pulse rate by region
-      let bright;
-      if(ci >= 48 && ci <= 67) bright = lipPulse;   // lips
-      else if(ci >= 36 && ci <= 47) bright = eyePulse;   // eyes
-      else bright = basePulse;
+      // Normalized coords → pixel coords
+      const px = Math.floor(joint.x * w);
+      const py = Math.floor(joint.y * h);
+      const idx = (py * w + px) * 4;
 
-      c[i * 4] = r * bright;
-      c[i * 4 + 1] = g * bright;
-      c[i * 4 + 2] = b * bright;
+      // Sample actual pixel
+      const r = data[idx] / 255;
+      const g = data[idx + 1] / 255;
+      const b = data[idx + 2] / 255;
+
+      // Optional: mix with original landmark color for stability
+      const orig = this._landmarkColors;
+      const blend = 0.7; // 70% video, 30% base color
+      c[i * 4] = r * blend + orig[ci * 3] * (1 - blend);
+      c[i * 4 + 1] = g * blend + orig[ci * 3 + 1] * (1 - blend);
+      c[i * 4 + 2] = b * blend + orig[ci * 3 + 2] * (1 - blend);
       c[i * 4 + 3] = 1.0;
     }
 

@@ -12715,6 +12715,317 @@ fn main(input: FragmentInput) -> FragOut {
   );
 }`;
 
+// src/shaders/shadertoy_source/fragment.wgsl.js
+var fragmentHellWGSL = () => `
+override shadowDepthTextureSize: f32 = ${MEConfig.SHADOW_RES};
+const PI: f32 = 3.141592653589793;
+
+struct Scene {
+  lightViewProjMatrix  : mat4x4f,
+  cameraViewProjMatrix : mat4x4f,
+  cameraPos            : vec3f,
+  padding2             : f32,
+  lightPos             : vec3f,
+  padding              : f32,
+  globalAmbient        : vec3f,
+  padding3             : f32,
+  time                 : f32,
+  deltaTime            : f32,
+  padding4             : vec2f,
+};
+
+struct SpotLight {
+  position      : vec3f,
+  _pad1         : f32,
+  direction     : vec3f,
+  _pad2         : f32,
+  innerCutoff   : f32,
+  outerCutoff   : f32,
+  intensity     : f32,
+  _pad3         : f32,
+  color         : vec3f,
+  _pad4         : f32,
+  range         : f32,
+  ambientFactor : f32,
+  shadowBias    : f32,
+  _pad5         : f32,
+  lightViewProj : mat4x4<f32>,
+};
+
+struct MaterialPBR {
+  baseColorFactor : vec4f,
+  metallicFactor  : f32,
+  roughnessFactor : f32,
+  effectMix       : f32,
+  lightingEnabled : f32,
+  ambientColor    : vec3f,  // add this
+  _pad            : f32,    // alignment padding
+};
+
+struct PBRMaterialData {
+  baseColor : vec3f,
+  metallic  : f32,
+  roughness : f32,
+  alpha     : f32,
+};
+
+const MAX_SPOTLIGHTS = ${MEConfig.MAX_SPOTLIGHTS}u;
+
+@group(0) @binding(0) var<uniform> scene : Scene;
+@group(0) @binding(1) var shadowMapArray: texture_depth_2d_array;
+@group(0) @binding(2) var shadowSampler: sampler_comparison;
+@group(0) @binding(3) var<storage, read> spotlights: array<SpotLight, MAX_SPOTLIGHTS>;
+@group(1) @binding(0) var meshTexture: texture_2d<f32>;
+@group(1) @binding(1) var meshSampler: sampler;
+@group(1) @binding(2) var metallicRoughnessTex: texture_2d<f32>;
+@group(1) @binding(3) var metallicRoughnessSampler: sampler;
+@group(1) @binding(4) var<uniform> material: MaterialPBR;
+@group(1) @binding(5) var normalTexture: texture_2d<f32>;
+@group(1) @binding(6) var normalSampler: sampler;
+
+struct FragmentInput {
+  @builtin(position) position : vec4f,
+  @location(0) shadowPos : vec4f,
+  @location(1) fragPos   : vec3f,
+  @location(2) fragNorm  : vec3f,
+  @location(3) uv        : vec2f,
+};
+
+fn getPBRMaterial(uv: vec2f) -> PBRMaterialData {
+  let texColor = textureSample(meshTexture, meshSampler, uv);
+  let baseColor = texColor.rgb * material.baseColorFactor.rgb;
+  let mrTex = textureSample(metallicRoughnessTex, metallicRoughnessSampler, uv);
+  let metallic = mrTex.b * material.metallicFactor;
+  let roughness = mrTex.g * material.roughnessFactor;
+  let alpha = material.baseColorFactor.a;
+  return PBRMaterialData(baseColor, metallic, roughness, alpha);
+}
+
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let NdotH = max(dot(N, H), 0.0);
+  let NdotH2 = NdotH * NdotH;
+  let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
+}
+
+fn geometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+  let r = (roughness + 1.0);
+  let k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+fn geometrySmith(N: vec3f, V: vec3f, L: vec3f, roughness: f32) -> f32 {
+  let NdotV = max(dot(N, V), 0.0);
+  let NdotL = max(dot(N, L), 0.0);
+  return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+fn calculateSpotlightFactor(light: SpotLight, fragPos: vec3f) -> f32 {
+  let L = normalize(light.position - fragPos);
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  return clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+}
+
+fn computeSpotLight(light: SpotLight, N: vec3f, fragPos: vec3f, V: vec3f, material: PBRMaterialData) -> vec3f {
+  let toLight = light.position - fragPos;
+  let dist = length(toLight);
+  let L = normalize(toLight);
+  let NdotL = max(dot(N, L), 0.0);
+
+  let theta = dot(L, normalize(-light.direction));
+  let epsilon = light.innerCutoff - light.outerCutoff;
+  var coneAtten = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
+  if (coneAtten <= 0.0 || NdotL <= 0.0) {
+    return vec3f(0.0);
+  }
+
+  // Distance attenuation
+  let attenuation = clamp(1.0 - (dist / light.range), 0.0, 1.0);
+  let attenuation2 = attenuation * attenuation; // quadratic falloff curve
+
+  let F0 = mix(vec3f(0.04), material.baseColor.rgb, vec3f(material.metallic));
+  let H = normalize(L + V);
+  let F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+  let alpha = material.roughness * material.roughness;
+  let NdotH = max(dot(N, H), 0.0);
+  let alpha2 = alpha * alpha;
+  let denom = (NdotH * NdotH * (alpha2 - 1.0) + 1.0);
+  let D = alpha2 / (PI * denom * denom + 1e-5);
+
+  let k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
+  let NdotV = max(dot(N, V), 0.0);
+  let Gv = NdotV / (NdotV * (1.0 - k) + k);
+  let Gl = NdotL / (NdotL * (1.0 - k) + k);
+  let G = Gv * Gl;
+
+  let numerator = D * G * F;
+  let denominator = 4.0 * NdotV * NdotL + 1e-5;
+  let specular = numerator / denominator;
+
+  let kS = F;
+  let kD = (vec3f(1.0) - kS) * (1.0 - material.metallic);
+  let diffuse = kD * material.baseColor.rgb / PI;
+
+  let radiance = light.color * light.intensity * attenuation2;
+
+  return (diffuse + specular) * radiance * NdotL * coneAtten;
+}
+  
+fn sampleShadow(shadowUV: vec2f, layer: i32, depthRef: f32, normal: vec3f, lightDir: vec3f) -> f32 {
+  var visibility: f32 = 0.0;
+  let biasConstant: f32 = 0.001;
+  let slopeBias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0);
+  let bias = biasConstant + slopeBias;
+  let oneOverSize = 1.0 / (shadowDepthTextureSize * 0.5);
+  let offsets: array<vec2f, 9> = array<vec2f, 9>(
+      vec2(-1.0, -1.0), vec2(0.0, -1.0), vec2(1.0, -1.0),
+      vec2(-1.0,  0.0), vec2(0.0,  0.0), vec2(1.0,  0.0),
+      vec2(-1.0,  1.0), vec2(0.0,  1.0), vec2(1.0,  1.0)
+  );
+  var weight: f32 = 0.0;
+  for(var i: u32 = 0u; i < 9u; i = i + 1u) {
+      let sampleUV = shadowUV + offsets[i] * oneOverSize;
+      let inBounds = sampleUV.x >= 0.0 && sampleUV.x <= 1.0 &&
+                      sampleUV.y >= 0.0 && sampleUV.y <= 1.0;
+      let s = textureSampleCompare(
+          shadowMapArray, shadowSampler,
+          sampleUV, layer, depthRef - bias
+      );
+      // only accumulate in-bounds samples, out-of-bounds count as lit (1.0)
+      visibility += select(1.0, s, inBounds);
+      weight += 1.0;
+  }
+  return visibility / weight;
+}
+
+struct FragOut {
+  @location(0) color  : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+}
+
+fn rand(n: vec2f) -> f32 {
+  return fract(
+    sin(cos(dot(n, vec2f(12.9898, 12.1414)))) *
+    83758.5453
+  );
+}
+
+fn noise(n: vec2f) -> f32 {
+  let d = vec2f(0.0, 1.0);
+  let b = floor(n);
+  let f = smoothstep(vec2f(0.0), vec2f(1.0), fract(n));
+  return mix(mix(rand(b), rand(b + d.yx), f.x),
+      mix(rand(b + d.xy), rand(b + d.yy), f.x),
+      f.y);
+}
+
+fn fbm(n: vec2f, aspect: f32) -> f32 {
+  var total = 0.0;
+  var amplitude = aspect * 0.5;
+  var vn = n;
+  for (var i: i32 = 0; i < 5; i++) {
+    total += noise(vn) * amplitude;
+    vn += vn * 1.7;
+    amplitude *= 0.47;
+  }
+  return total;
+}
+
+fn fireEffect(fragCoord: vec2f, resolution: vec2f, time: f32) -> vec3f {
+  let c1 = vec3f(0.5, 0.0, 0.1);
+  let c2 = vec3f(0.9, 0.1, 0.0);
+  let c3 = vec3f(0.2, 0.1, 0.7);
+  let c4 = vec3f(1.0, 0.9, 0.1);
+  let c5 = vec3f(0.1);
+  let c6 = vec3f(0.9);
+  let speed = vec2f(0.1, 0.9);
+  let shift = 1.327 + sin(time * 2.0) / 2.4;
+  let dist = 3.5 - sin(time * 0.4) / 1.89;
+  var p = fragCoord * dist / resolution.xx;
+  p += sin(p.yx * 4.0 + vec2f(0.2, -0.3) * time) * 0.04;
+  p += sin(p.yx * 8.0 + vec2f(0.6, 0.1) * time) * 0.01;
+  p.x -= time / 1.1;
+  var q = fbm(p - time * 0.3 + 1.0 * sin(time + 0.5) / 2.0, resolution.x / resolution.y);
+  let qb = fbm(
+      p - time * 0.4 +
+      0.1 * cos(time) / 2.0,
+      resolution.x / resolution.y
+  );
+  let q2 = fbm(
+      p - time * 0.44 -
+      5.0 * cos(time) / 2.0,
+      resolution.x / resolution.y
+  ) - 6.0;
+  let q3 = fbm(p - time * 0.9 -
+      10.0 * cos(time) / 15.0,
+      resolution.x / resolution.y
+  ) - 4.0;
+  let q4 = fbm(p - time * 1.4 -
+      20.0 * sin(time) / 14.0,
+      resolution.x / resolution.y
+  ) + 2.0;
+  q = (q + qb - 0.4 * q2 - 2.0 * q3 + 0.6 * q4) / 3.8;
+  let r = vec2f(fbm(p + q / 2.0 + time * speed.x - p.x - p.y, resolution.x / resolution.y),
+      fbm(p + q - time * speed.y, resolution.x / resolution.y));
+  let c = mix(c1, c2, fbm(p + r, resolution.x / resolution.y)) + mix(c3, c4, r.x) - mix(c5, c6, r.y);
+  var color = vec3f(1.0) / pow(c + 1.61, vec3f(4.0)) * cos(shift * fragCoord.y / resolution.y);
+  color = vec3f(1.0, 0.2, 0.05) / pow((r.y + r.y) * max(0.0, p.y) + 0.1, 4.0);
+  color = color / (vec3f(1.0) + max(vec3f(0.0), color));
+  return color;
+}
+
+@fragment
+fn main(input: FragmentInput) -> FragOut {
+// let resolution = vec2f(1024.0, 1024.0);
+let resolution = vec2f(514.0, 514.0);
+let fragCoord = vec2f(
+    input.position.x,
+    resolution.y - input.position.y
+);
+let norm = normalize(input.fragNorm);
+let viewDir = normalize(scene.cameraPos - input.fragPos);
+let materialData = getPBRMaterial(input.uv);
+var lightContribution = vec3f(0.0);
+for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
+    let sc = spotlights[i].lightViewProj * vec4f(input.fragPos, 1.0);
+    let p = sc.xyz / sc.w;
+    let shadowUV = vec2f(p.x * 0.5 + 0.5, -p.y * 0.5 + 0.5);
+    let depthRef = p.z;
+    let lightDir = normalize(spotlights[i].position - input.fragPos);
+    let inDepth =
+        p.z >= 0.0 &&
+        p.z <= 1.0;
+    let visibility = sampleShadow(
+        shadowUV,
+        i32(i),
+        depthRef,
+        norm,
+        lightDir
+    );
+    let shadowFactor = select(1.0, visibility, inDepth);
+    let contrib = computeSpotLight(spotlights[i], norm, input.fragPos, viewDir, materialData);
+    lightContribution += contrib * shadowFactor;
+}
+let texColor = textureSample(meshTexture, meshSampler, input.uv);
+let fireColor = fireEffect(fragCoord, resolution, scene.time);
+var finalColor = fireColor;
+let alpha = texColor.a * material.baseColorFactor.a;
+return FragOut(
+  vec4f(finalColor, alpha),
+  vec4f(norm, 0.0),
+  vec4f(input.fragPos, 1.0));
+}`;
+
 // src/engine/materials.js
 var Materials = class {
   constructor(device2, material, glb, textureCache, isVideo) {
@@ -13052,6 +13363,8 @@ var Materials = class {
   getMaterial() {
     if (this.material.type == "standard") {
       return fragmentWGSL();
+    } else if (this.material.type == "hell") {
+      return fragmentHellWGSL();
     } else if (this.material.type == "dark") {
       return fragmentDarkWGSL();
     } else if (this.material.type == "pong") {
@@ -17556,7 +17869,7 @@ var MSDFTextEffect = class {
     this.enabled = true;
     this.scale = options2.scale ?? 15e-4;
     this.glyphXOffsetFix = {
-      // "I": +8,
+      "I": 8
       // "J": -3,
       // "T": -2
     };
@@ -17576,6 +17889,35 @@ var MSDFTextEffect = class {
     this.device.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
     this._identity = mat4Impl.create();
     this._init();
+  }
+  // TYPING ANIMATION - character by character
+  typeText(text, delayMs = 100, onComplete = null) {
+    if (this.isTyping) {
+      clearInterval(this.typeInterval);
+    }
+    this.isTyping = true;
+    this.typeIndex = 0;
+    this.onTypeComplete = onComplete;
+    this.setText(text.substring(0, 1));
+    this.typeInterval = setInterval(() => {
+      this.typeIndex++;
+      if (this.typeIndex >= text.length) {
+        clearInterval(this.typeInterval);
+        this.isTyping = false;
+        if (this.onTypeComplete) {
+          this.onTypeComplete();
+        }
+        return;
+      }
+      this.setText(text.substring(0, this.typeIndex + 1));
+    }, delayMs);
+  }
+  // Stop typing animation
+  stopTyping() {
+    if (this.typeInterval) {
+      clearInterval(this.typeInterval);
+      this.isTyping = false;
+    }
   }
   _init() {
     const vertexData = new Float32Array([
@@ -17607,13 +17949,12 @@ var MSDFTextEffect = class {
       3
     ]);
     this.vertexBuffer = this.device.createBuffer({
+      label: "vb_msdf",
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
-    new Float32Array(
-      this.vertexBuffer.getMappedRange()
-    ).set(vertexData);
+    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
     this.uvBuffer = this.device.createBuffer({
       size: uvData.byteLength,
@@ -17627,9 +17968,7 @@ var MSDFTextEffect = class {
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
-    new Uint16Array(
-      this.indexBuffer.getMappedRange()
-    ).set(indexData);
+    new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
     this.indexBuffer.unmap();
     this.indexCount = indexData.length;
     this.glyphBuffer = this.device.createBuffer({
@@ -17693,15 +18032,9 @@ var MSDFTextEffect = class {
         module: shaderModule,
         entryPoint: "fsMain",
         targets: [
-          {
-            format: this.format
-          },
-          {
-            format: "rgba16float"
-          },
-          {
-            format: "rgba16float"
-          }
+          { format: this.format },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
         ]
       },
       primitive: {
@@ -17715,25 +18048,15 @@ var MSDFTextEffect = class {
       }
     });
   }
-  // =====================================================
-  // SET TEXT
-  // =====================================================
   setText(text) {
     this.text = text ?? "";
     this._updateGlyphs();
     this._uploadGlyphs();
   }
-  // =====================================================
-  // BUILD GLYPH DATA
-  //
-  // THIS RUNS ONLY WHEN TEXT CHANGES
-  // =====================================================
   _updateGlyphs() {
     const font = this.font;
     if (!font) {
-      console.error(
-        "MSDFTextEffect: BMFontParser not supplied"
-      );
+      console.error("MSDFTextEffect: BMFontParser not supplied");
       this.glyphCount = 0;
       return;
     }
@@ -17772,30 +18095,11 @@ var MSDFTextEffect = class {
     }
     this.glyphCount = count;
   }
-  // =====================================================
-  // UPLOAD GLYPHS
-  //
-  // ONLY CALLED WHEN TEXT CHANGES
-  // =====================================================
   _uploadGlyphs() {
-    if (this.glyphCount === 0)
-      return;
+    if (this.glyphCount === 0) return;
     const floatCount = this.glyphCount * this.floatsPerGlyph;
-    this.device.queue.writeBuffer(
-      this.glyphBuffer,
-      0,
-      this.instanceData.buffer,
-      0,
-      floatCount * 4
-    );
+    this.device.queue.writeBuffer(this.glyphBuffer, 0, this.instanceData.buffer, 0, floatCount * 4);
   }
-  // =====================================================
-  // MAIN LOOP
-  //
-  // ONLY PARENT MATRIX IS UPDATED
-  //
-  // NO GLYPH LOOP HERE
-  // =====================================================
   updateInstanceData(baseModelMatrix) {
     this.device.queue.writeBuffer(
       this.parentMatrixBuffer,
@@ -17803,59 +18107,24 @@ var MSDFTextEffect = class {
       baseModelMatrix
     );
   }
-  // =====================================================
-  // RENDER
-  // =====================================================
   render(pass, mesh, viewProjMatrix) {
     if (!this.enabled || this.glyphCount === 0) {
       return;
     }
-    this.device.queue.writeBuffer(
-      this.cameraBuffer,
-      0,
-      viewProjMatrix
-    );
-    pass.setPipeline(
-      this.pipeline
-    );
-    pass.setBindGroup(
-      0,
-      this.bindGroup
-    );
-    pass.setVertexBuffer(
-      0,
-      this.vertexBuffer
-    );
-    pass.setVertexBuffer(
-      1,
-      this.uvBuffer
-    );
-    pass.setIndexBuffer(
-      this.indexBuffer,
-      "uint16"
-    );
-    pass.drawIndexed(
-      this.indexCount,
-      this.glyphCount
-    );
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setVertexBuffer(1, this.uvBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, this.glyphCount);
   }
-  // =====================================================
-  // COLOR
-  // =====================================================
   setColor(r3, g2, b2, a2 = 1) {
     this.color[0] = r3;
     this.color[1] = g2;
     this.color[2] = b2;
     this.color[3] = a2;
-    this.device.queue.writeBuffer(
-      this.colorBuffer,
-      0,
-      new Float32Array(this.color)
-    );
+    this.device.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
   }
-  // =====================================================
-  // DESTROY
-  // =====================================================
   destroy() {
     this.vertexBuffer?.destroy();
     this.uvBuffer?.destroy();
@@ -17902,11 +18171,6 @@ var BMFontParser = class {
         xadvance: parseInt(el2.getAttribute("xadvance"))
       };
     });
-    console.log("BMFont parsed:", {
-      face: this.info.face,
-      atlasSize: `${this.common.scaleW}x${this.common.scaleH}`,
-      charCount: Object.keys(this.chars).length
-    });
   }
   getCharMetrics(charCode) {
     if (!this.chars[charCode]) {
@@ -17940,17 +18204,13 @@ function loadAtlasFONT(device2, PATH = "./res/3d-fonts/stormfaze.fnt", ATLAS_PAT
   return new Promise(async (resolve) => {
     const fontResponse = await fetch(PATH);
     if (!fontResponse.ok) {
-      throw new Error(
-        `Failed to load BMFont file: ${fontResponse.status} ${fontResponse.statusText}`
-      );
+      throw new Error(`Failed to load BMFont file: ${fontResponse.status} ${fontResponse.statusText}`);
     }
     const fontXml = await fontResponse.text();
     const font = new BMFontParser(fontXml);
     const response = await fetch(ATLAS_PATH);
     if (!response.ok) {
-      throw new Error(
-        `Failed to load MSDF atlas: ${response.status} ${response.statusText}`
-      );
+      throw new Error(`Failed to load MSDF atlas: ${response.status} ${response.statusText}`);
     }
     const blob = await response.blob();
     const bitmap = await createImageBitmap(blob);
@@ -25686,6 +25946,8 @@ var MaterialsInstanced = class {
   getMaterial() {
     if (this.material.type == "standard") {
       return fragmentWGSLInstanced();
+    } else if (this.material.type == "hell") {
+      return fragmentHellWGSL();
     } else if (this.material.type == "pong") {
       return fragmentWGSLPong();
     } else if (this.material.type == "power") {
@@ -44857,6 +45119,638 @@ async function GPUIndirectDraws() {
   }
 }
 
+// src/engine/postprocessing/volumetric-advanced.js
+var AdvancedVolumetricPass = class {
+  constructor(width, height, device2, options2 = {}, sceneView) {
+    this.enabled = false;
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.isMobile = this._detectMobileDevice();
+    this.qualityScale = options2.qualityScale ?? (this.isMobile ? 0.5 : 1);
+    this.effectiveWidth = Math.ceil(width * this.qualityScale);
+    this.effectiveHeight = Math.ceil(height * this.qualityScale);
+    this.volumetricTex = this._createTexture(this.effectiveWidth, this.effectiveHeight, "rgba16float");
+    this.volumetricTexView = this.volumetricTex.createView();
+    this.historyTex = this._createTexture(this.effectiveWidth, this.effectiveHeight, "rgba16float");
+    this.historyTexView = this.historyTex.createView();
+    this.compositeOutputTex = this._createTexture(width, height, "rgba16float");
+    this.compositeOutputTexView = this.compositeOutputTex.createView();
+    this.linearSampler = device2.createSampler({
+      label: "AdvancedVolumetricPass.linearSampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "clamp-to-edge",
+      addressModeV: "clamp-to-edge"
+    });
+    this.depthSampler = device2.createSampler({
+      label: "AdvancedVolumetricPass.depthSampler",
+      compare: "less-equal"
+    });
+    this.projectionSampler = device2.createSampler({
+      label: "AdvancedVolumetricPass.projectionSampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "clamp-to-edge",
+      addressModeV: "clamp-to-edge"
+    });
+    this.params = {
+      density: options2.density ?? 0.02,
+      steps: this.isMobile ? options2.steps ?? 16 : options2.steps ?? 32,
+      scatterStrength: options2.scatterStrength ?? 1,
+      heightFalloff: options2.heightFalloff ?? 0.08,
+      range: options2.range ?? 50,
+      temporalBlend: options2.temporalBlend ?? 0.8,
+      useTemporalReprojection: options2.useTemporalReprojection ?? true,
+      mobileOptimizations: options2.mobileOptimizations ?? this.isMobile,
+      useTextureProjection: options2.useTextureProjection ?? false,
+      textureProjectionIntensity: options2.textureProjectionIntensity ?? 1
+    };
+    this.lightParams = {
+      color: options2.lightColor ?? [1, 0.85, 0.6],
+      direction: [0, -1, 0.5]
+    };
+    this._projectionTexView = null;
+    this._projectionMatrix = new Float32Array(16);
+    this.paramsBuffer = device2.createBuffer({
+      label: "AdvancedVolumetricPass.paramsBuffer",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.invViewProjBuffer = device2.createBuffer({
+      label: "AdvancedVolumetricPass.invViewProjBuffer",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.lightViewProjBuffer = device2.createBuffer({
+      label: "AdvancedVolumetricPass.lightViewProjBuffer",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.projectionMatrixBuffer = device2.createBuffer({
+      label: "AdvancedVolumetricPass.projectionMatrixBuffer",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.lightDirBuffer = device2.createBuffer({
+      label: "AdvancedVolumetricPass.lightDirBuffer",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.lightColorBuffer = device2.createBuffer({
+      label: "AdvancedVolumetricPass.lightColorBuffer",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._lightDir = new Float32Array(4);
+    this._marchBG = null;
+    this._compositeBG = null;
+    this._temporalBG = null;
+    this._updateParams();
+    this._updateLightColor();
+    this.marchPipeline = this._createMarchPipeline();
+    this.temporalPipeline = this._createTemporalPipeline();
+    this.compositePipeline = this._createCompositePipeline();
+    this.setCompositeInput(sceneView);
+  }
+  _detectMobileDevice() {
+    if (typeof navigator === "undefined") return false;
+    const ua2 = navigator.userAgent || "";
+    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua2.toLowerCase());
+  }
+  _createTexture(w2, h2, format) {
+    return this.device.createTexture({
+      label: `AdvancedVolumetricPass.texture[${w2}x${h2}]`,
+      size: [w2, h2],
+      format,
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  // Texture Projection API
+  setProjectionTexture(textureView, projectionMatrix) {
+    this._projectionTexView = textureView;
+    if (projectionMatrix) {
+      this._projectionMatrix.set(projectionMatrix);
+      this.device.queue.writeBuffer(this.projectionMatrixBuffer, 0, this._projectionMatrix);
+    }
+    this.params.useTextureProjection = true;
+    this._updateParams();
+    this._marchBG = null;
+  }
+  disableTextureProjection() {
+    this.params.useTextureProjection = false;
+    this._updateParams();
+    this._marchBG = null;
+  }
+  setTextureProjectionIntensity(intensity) {
+    this.params.textureProjectionIntensity = Math.max(0, Math.min(2, intensity));
+    this._updateParams();
+  }
+  setDensity = (v2) => {
+    this.params.density = v2;
+    this._updateParams();
+  };
+  setSteps = (v2) => {
+    this.params.steps = Math.max(v2, 8);
+    this._updateParams();
+  };
+  setScatterStrength = (v2) => {
+    this.params.scatterStrength = v2;
+    this._updateParams();
+  };
+  setHeightFalloff = (v2) => {
+    this.params.heightFalloff = v2;
+    this._updateParams();
+  };
+  setRange = (v2) => {
+    this.params.range = v2;
+    this._updateParams();
+  };
+  setTemporalBlend = (v2) => {
+    this.params.temporalBlend = Math.max(0, Math.min(1, v2));
+    this._updateParams();
+  };
+  setLightColor = (r3, g2, b2) => {
+    this.lightParams.color = [r3, g2, b2];
+    this._updateLightColor();
+  };
+  setLightDirection = (x3, y3, z2) => {
+    this.lightParams.direction = [x3, y3, z2];
+    this._lightDir[0] = x3;
+    this._lightDir[1] = y3;
+    this._lightDir[2] = z2;
+    this._lightDir[3] = 0;
+    this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
+  };
+  _updateParams() {
+    this.device.queue.writeBuffer(this.paramsBuffer, 0, new Float32Array([
+      this.params.density,
+      this.params.steps,
+      this.params.scatterStrength,
+      this.params.heightFalloff,
+      this.params.range,
+      this.params.temporalBlend,
+      this.params.useTemporalReprojection ? 1 : 0,
+      this.params.mobileOptimizations ? 1 : 0,
+      this.qualityScale,
+      this.params.useTextureProjection ? 1 : 0,
+      this.params.textureProjectionIntensity,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]));
+  }
+  _updateLightColor() {
+    this.device.queue.writeBuffer(
+      this.lightColorBuffer,
+      0,
+      new Float32Array([...this.lightParams.color, 0])
+    );
+  }
+  setCompositeInput(sceneView) {
+    this._compositeBG = this.device.createBindGroup({
+      layout: this.compositePipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: sceneView },
+        { binding: 1, resource: this.compositeOutputTexView },
+        { binding: 2, resource: this.linearSampler },
+        { binding: 3, resource: { buffer: this.paramsBuffer } }
+      ]
+    });
+  }
+  setMarchInputs(depthView, shadowArrayView) {
+    if (this._depthView !== depthView || this._shadowView !== shadowArrayView || this._lastProjTexView !== this._projectionTexView || !this._marchBG) {
+      this._depthView = depthView;
+      this._shadowView = shadowArrayView;
+      this._lastProjTexView = this._projectionTexView;
+      const entries = [
+        { binding: 0, resource: depthView },
+        { binding: 1, resource: shadowArrayView },
+        { binding: 2, resource: this.device.createSampler({ compare: "less-equal" }) },
+        { binding: 3, resource: { buffer: this.invViewProjBuffer } },
+        { binding: 4, resource: { buffer: this.lightViewProjBuffer } },
+        { binding: 5, resource: { buffer: this.lightDirBuffer } },
+        { binding: 6, resource: { buffer: this.lightColorBuffer } },
+        { binding: 7, resource: { buffer: this.paramsBuffer } }
+      ];
+      if (this._projectionTexView) {
+        entries.push(
+          { binding: 8, resource: this._projectionTexView },
+          { binding: 9, resource: this.projectionSampler },
+          { binding: 10, resource: { buffer: this.projectionMatrixBuffer } }
+        );
+      }
+      this._marchBG = this.device.createBindGroup({
+        layout: this.marchPipeline.getBindGroupLayout(0),
+        entries
+      });
+    }
+    if (!this._temporalBG) {
+      this._temporalBG = this.device.createBindGroup({
+        layout: this.temporalPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: this.volumetricTexView },
+          { binding: 1, resource: this.historyTexView },
+          { binding: 2, resource: this.linearSampler },
+          { binding: 3, resource: { buffer: this.paramsBuffer } }
+        ]
+      });
+    }
+  }
+  _beginPass(encoder, targetView, label) {
+    return encoder.beginRenderPass({
+      label,
+      colorAttachments: [{
+        view: targetView,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    });
+  }
+  _createMarchPipeline() {
+    const entries = [
+      { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth" } },
+      { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth", viewDimension: "2d-array" } },
+      { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } },
+      { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+      { binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+      { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+      { binding: 6, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+      { binding: 7, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+      { binding: 8, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+      { binding: 9, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+      { binding: 10, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+    ];
+    const bgl = this.device.createBindGroupLayout({
+      label: "AdvancedVolumetricPass.marchBGL",
+      entries
+    });
+    return this.device.createRenderPipeline({
+      label: "AdvancedVolumetricPass.marchPipeline",
+      layout: this.device.createPipelineLayout({
+        label: "AdvancedVolumetricPass.marchPipelineLayout",
+        bindGroupLayouts: [bgl]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          label: "AdvancedVolumetricPass.marchVert",
+          code: fullscreenVertWGSL2()
+        }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({
+          label: "AdvancedVolumetricPass.marchFrag",
+          code: advancedMarchFragWGSL()
+        }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  _createTemporalPipeline() {
+    const bgl = this.device.createBindGroupLayout({
+      label: "AdvancedVolumetricPass.temporalBGL",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    });
+    return this.device.createRenderPipeline({
+      label: "AdvancedVolumetricPass.temporalPipeline",
+      layout: this.device.createPipelineLayout({
+        label: "AdvancedVolumetricPass.temporalPipelineLayout",
+        bindGroupLayouts: [bgl]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          label: "AdvancedVolumetricPass.temporalVert",
+          code: fullscreenVertWGSL2()
+        }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({
+          label: "AdvancedVolumetricPass.temporalFrag",
+          code: temporalBlendFragWGSL()
+        }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  _createCompositePipeline() {
+    const bgl = this.device.createBindGroupLayout({
+      label: "AdvancedVolumetricPass.compositeBGL",
+      entries: [
+        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
+        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+      ]
+    });
+    return this.device.createRenderPipeline({
+      label: "AdvancedVolumetricPass.compositePipeline",
+      layout: this.device.createPipelineLayout({
+        label: "AdvancedVolumetricPass.compositePipelineLayout",
+        bindGroupLayouts: [bgl]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({
+          label: "AdvancedVolumetricPass.compositeVert",
+          code: fullscreenVertWGSL2()
+        }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({
+          label: "AdvancedVolumetricPass.compositeFrag",
+          code: advancedCompositeFragWGSL()
+        }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
+    this.device.queue.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
+    this.device.queue.writeBuffer(this.lightViewProjBuffer, 0, light.viewProjectionMatrix);
+    this._lightDir[0] = light.direction[0];
+    this._lightDir[1] = light.direction[1];
+    this._lightDir[2] = light.direction[2];
+    this._lightDir[3] = 0;
+    this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
+    this.setMarchInputs(depthView, shadowArrayView);
+    {
+      const pass = this._beginPass(encoder, this.volumetricTexView, "volumetric-march");
+      pass.setPipeline(this.marchPipeline);
+      pass.setBindGroup(0, this._marchBG);
+      pass.draw(6);
+      pass.end();
+    }
+    if (this.params.useTemporalReprojection) {
+      const pass = this._beginPass(encoder, this.historyTexView, "temporal-blend");
+      pass.setPipeline(this.temporalPipeline);
+      pass.setBindGroup(0, this._temporalBG);
+      pass.draw(6);
+      pass.end();
+      [this.volumetricTex, this.historyTex] = [this.historyTex, this.volumetricTex];
+      this.volumetricTexView = this.volumetricTex.createView();
+      this.historyTexView = this.historyTex.createView();
+    }
+    {
+      const pass = this._beginPass(encoder, this.compositeOutputTexView, "volumetric-composite");
+      pass.setPipeline(this.compositePipeline);
+      pass.setBindGroup(0, this._compositeBG);
+      pass.draw(6);
+      pass.end();
+    }
+  }
+  init() {
+    return this;
+  }
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this.effectiveWidth = Math.ceil(width * this.qualityScale);
+    this.effectiveHeight = Math.ceil(height * this.qualityScale);
+    this.volumetricTex = this._createTexture(this.effectiveWidth, this.effectiveHeight, "rgba16float");
+    this.volumetricTexView = this.volumetricTex.createView();
+    this.historyTex = this._createTexture(this.effectiveWidth, this.effectiveHeight, "rgba16float");
+    this.historyTexView = this.historyTex.createView();
+    this.compositeOutputTex = this._createTexture(width, height, "rgba16float");
+    this.compositeOutputTexView = this.compositeOutputTex.createView();
+  }
+  getOutputView() {
+    return this.compositeOutputTexView;
+  }
+  setQualityScale(scale4) {
+    this.qualityScale = Math.max(0.25, Math.min(1, scale4));
+    this._updateParams();
+    this.resize(this.width, this.height);
+  }
+};
+function fullscreenVertWGSL2() {
+  return (
+    /* wgsl */
+    `
+    @vertex
+    fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0,  1.0),
+        vec2(-1.0,  1.0), vec2(1.0, -1.0), vec2(1.0,  1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `
+  );
+}
+function advancedMarchFragWGSL() {
+  return (
+    /* wgsl */
+    `
+  @group(0) @binding(0) var depthTex:   texture_depth_2d;
+  @group(0) @binding(1) var shadowTex:  texture_depth_2d_array;
+  @group(0) @binding(2) var cmpSamp:    sampler_comparison;
+  @group(0) @binding(3) var<uniform> invViewProj:   mat4x4<f32>;
+  @group(0) @binding(4) var<uniform> lightViewProj: mat4x4<f32>;
+  @group(0) @binding(5) var<uniform> lightDir:      vec4<f32>;
+  @group(0) @binding(6) var<uniform> lightColor:    vec4<f32>;
+  @group(0) @binding(7) var<uniform> params:        Params;
+  @group(0) @binding(8) var projTex:                texture_2d<f32>;
+  @group(0) @binding(9) var projSamp:               sampler;
+  @group(0) @binding(10) var<uniform> projMatrix:   mat4x4<f32>;
+
+  struct Params {
+    density: f32,
+    steps: f32,
+    scatterStrength: f32,
+    heightFalloff: f32,
+    range: f32,
+    temporalBlend: f32,
+    useTemporalReprojection: f32,
+    mobileOptimizations: f32,
+    qualityScale: f32,
+    useTextureProjection: f32,
+    textureProjectionIntensity: f32,
+    _pad: f32,
+    _pad2: f32, _pad3: f32, _pad4: f32, _pad5: f32,
+  }
+
+  fn worldPos(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+    let ndc = vec4(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+    let world = invViewProj * ndc;
+    return world.xyz / world.w;
+  }
+
+  fn fogDensity(p: vec3<f32>) -> f32 {
+    let height = max(p.y, 0.0);
+    return params.density * exp(-height * params.heightFalloff);
+  }
+
+  fn sampleProjectionTexture(worldPos: vec3<f32>) -> vec3<f32> {
+    if (params.useTextureProjection < 0.5) { return vec3(1.0); }
+    
+    let projPos = projMatrix * vec4(worldPos, 1.0);
+    let projUv = (projPos.xy / projPos.w) * 0.5 + 0.5;
+    
+    // Clamp to valid range with fade-out
+    let bounds = step(0.0, projUv) * step(projUv, vec2(1.0));
+    let fade = bounds.x * bounds.y;
+    
+    let projColor = textureSample(projTex, projSamp, projUv).rgb;
+    return mix(vec3(1.0), projColor, fade * params.textureProjectionIntensity);
+  }
+
+  fn sampleShadow(worldPos: vec3<f32>) -> f32 {
+    let ls = lightViewProj * vec4(worldPos, 1.0);
+    let lp = ls.xyz / ls.w;
+    let suv = lp.xy * 0.5 + 0.5;
+
+    let inBounds = f32(suv.x >= 0.0 && suv.x <= 1.0 && suv.y >= 0.0 && suv.y <= 1.0);
+    if (inBounds < 0.5) { return 0.0; }
+
+    let shadow = textureSampleCompare(shadowTex, cmpSamp, suv, 0, lp.z - 0.002);
+    return shadow * inBounds;
+  }
+
+  @fragment
+  fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+    let sz = vec2<f32>(textureDimensions(depthTex));
+    let uv = fc.xy / sz;
+    let depth = textureLoad(depthTex, vec2<i32>(fc.xy), 0);
+
+    let ro = worldPos(uv, 0.0);
+    let rt = worldPos(uv, depth);
+    let rlen = length(rt - ro);
+    let rdir = normalize(rt - ro);
+    
+    let steps = max(i32(params.steps), 4);
+    let step = rlen / f32(steps);
+
+    var accum = vec3<f32>(0.0);
+    var trans = 1.0;
+
+    let densityThreshold = select(0.00001, 0.0001, params.mobileOptimizations > 0.5);
+
+    for (var i = 0; i < steps; i++) {
+      let p = ro + rdir * ((f32(i) + 0.5) * step);
+
+      let d = fogDensity(p) * step;
+      if (d < densityThreshold) { continue; }
+
+      let ext = exp(-d);
+      let lit = sampleShadow(p);
+      let projTex = sampleProjectionTexture(p);
+
+      let distToLight = length(p);
+      let rangeAtten = clamp(1.0 - (distToLight / params.range), 0.0, 1.0);
+      let rangeAtten2 = rangeAtten * rangeAtten;
+
+      let scatter = trans * (1.0 - ext) * lit * params.scatterStrength * rangeAtten2 * projTex;
+      accum += scatter * lightColor.rgb;
+      trans *= ext;
+
+      if (trans < 0.01) { break; }
+    }
+
+    return vec4<f32>(accum, 1.0 - trans);
+  }
+  `
+  );
+}
+function temporalBlendFragWGSL() {
+  return (
+    /* wgsl */
+    `
+  @group(0) @binding(0) var currentTex: texture_2d<f32>;
+  @group(0) @binding(1) var historyTex: texture_2d<f32>;
+  @group(0) @binding(2) var samp: sampler;
+  
+  struct Params {
+    density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32,
+    range: f32, temporalBlend: f32, useTemporalReprojection: f32, mobileOptimizations: f32,
+    qualityScale: f32, useTextureProjection: f32, textureProjectionIntensity: f32,
+    _pad: f32, _pad2: f32, _pad3: f32, _pad4: f32, _pad5: f32,
+  }
+  
+  @group(0) @binding(3) var<uniform> params: Params;
+
+  @fragment
+  fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+    let sz = vec2<f32>(textureDimensions(currentTex));
+    let uv = fc.xy / sz;
+    
+    let current = textureSample(currentTex, samp, uv);
+    let history = textureSample(historyTex, samp, uv);
+    
+    let blended = mix(current, history, params.temporalBlend);
+    let clamped = clamp(blended, vec4(0.0), vec4(2.0));
+    
+    return clamped;
+  }
+  `
+  );
+}
+function advancedCompositeFragWGSL() {
+  return (
+    /* wgsl */
+    `
+  @group(0) @binding(0) var sceneTex: texture_2d<f32>;
+  @group(0) @binding(1) var volTex: texture_2d<f32>;
+  @group(0) @binding(2) var samp: sampler;
+  
+  struct Params {
+    density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32,
+    range: f32, temporalBlend: f32, useTemporalReprojection: f32, mobileOptimizations: f32,
+    qualityScale: f32, useTextureProjection: f32, textureProjectionIntensity: f32,
+    _pad: f32, _pad2: f32, _pad3: f32, _pad4: f32, _pad5: f32,
+  }
+  
+  @group(0) @binding(3) var<uniform> params: Params;
+
+  fn upsampleBilinear(uv: vec2<f32>) -> vec4<f32> {
+    let texSize = vec2<f32>(textureDimensions(volTex));
+    let scaledUv = uv * params.qualityScale;
+    
+    let texelUv = scaledUv * texSize;
+    let frac = fract(texelUv);
+    let base = floor(texelUv);
+    
+    let c00 = textureSampleLevel(volTex, samp, base / texSize, 0.0);
+    let c10 = textureSampleLevel(volTex, samp, (base + vec2(1.0, 0.0)) / texSize, 0.0);
+    let c01 = textureSampleLevel(volTex, samp, (base + vec2(0.0, 1.0)) / texSize, 0.0);
+    let c11 = textureSampleLevel(volTex, samp, (base + vec2(1.0, 1.0)) / texSize, 0.0);
+    
+    let c0 = mix(c00, c10, frac.x);
+    let c1 = mix(c01, c11, frac.x);
+    return mix(c0, c1, frac.y);
+  }
+
+  @fragment
+  fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+    let sceneSz = vec2<f32>(textureDimensions(sceneTex));
+    let sceneUv = fc.xy / sceneSz;
+    
+    let scene = textureSample(sceneTex, samp, sceneUv);
+    let vol = upsampleBilinear(sceneUv);
+    
+    let composite = scene.rgb * (1.0 - vol.a) + vol.rgb;
+    
+    return vec4<f32>(composite, scene.a);
+  }
+  `
+  );
+}
+
 // src/world.js
 var APP_READY = false;
 if (MEConfig.CACHE !== true && location.hostname != "localhost") {
@@ -46548,7 +47442,7 @@ var MatrixEngineWGPU = class {
       p2 = arg;
     }
     if (this.volumetricPass.enabled != true) {
-      this.volumetricPass = new Volum(this.canvas.width, this.canvas.height, this.device, p2, this.sceneTextureView).init();
+      this.volumetricPass = new AdvancedVolumetricPass(this.canvas.width, this.canvas.height, this.device, p2, this.sceneTextureView).init();
       this.volumetricPass.enabled = true;
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
@@ -46659,7 +47553,7 @@ function loadGLBLoader() {
       texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
     }, null, glbFile01);
     TEST_ANIM.addGlbObj({
-      material: { type: "pong", useTextureFromGlb: true },
+      material: { type: "hell", useTextureFromGlb: true },
       useScale: true,
       scale: [20, 20, 20],
       position: { x: 30, y: -4, z: -70 },
@@ -46790,7 +47684,7 @@ var myLights = function() {
       [1, 0.1, 0.4]
       // rose
     ];
-    downloadMeshes({ plane: "./res/meshes/blender/plane.obj" }, (m2) => {
+    downloadMeshes({ plane: "./res/meshes/blender/plane.obj", ball: "./res/meshes/blender/sphere.obj" }, (m2) => {
       const floor2 = myLights2.addMeshObj({
         material: { type: "standard" },
         shadowsCast: false,
@@ -46800,6 +47694,20 @@ var myLights = function() {
         mesh: m2.plane,
         scale: [6, 0.5, 6],
         physics: { enabled: false }
+      });
+      myLights2.addMeshObj({
+        material: { type: "hell", share: true },
+        position: { x: 0, y: -0, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [50, 50, 50],
+        rotationSpeed: { x: 0, y: 0.01, z: 0 },
+        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "sky",
+        mesh: m2.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
       });
       setTimeout(() => {
         const checker2 = floor2.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
@@ -46872,6 +47780,7 @@ var myLights = function() {
       const cam2 = myLights2.getCamera();
       const orbit = new CameraPath(frames, { loop: true, parameterization: "arc" });
       cam2.setPath(orbit).play({ speed: 0.1, loop: true });
+      myLights2.bloomPass.setIntensity(9);
     }, 800);
   });
   window.app = myLights2;
@@ -47036,6 +47945,8 @@ var loadObjsSequence = function() {
     loadObjFile2.lightContainer[0].setPosY(35);
     loadObjFile2.lightContainer[0].setIntensity(5);
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [20, 1, 20] });
+    loadObjFile2.activateBloomEffect();
+    loadObjFile2.activateVolumetricEffect({ density: 1.5, steps: 30, scatterStrength: 1, heightFalloff: 1.6, lightColor: [10, 1.8, 0] });
     downloadMeshes(
       makeObjSeqArg({
         id: "swat-walk-pistol",
@@ -47134,7 +48045,9 @@ var physicsPlayground = function() {
         ball: "./res/meshes/shapes/sphere-uv-cilinder-proj.obj",
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, { scale: [1, 1, 1] });
-      physicsPlayground2.matrixPhysics.speedUpSimulation(11);
+      physicsPlayground2.matrixPhysics.speedUpSimulation(4);
+      app.activateBloomEffect();
+      app.activateVolumetricEffect({ density: 0.5, steps: 30, scatterStrength: 2, heightFalloff: 0.2, lightColor: [0, 1.8, 10] });
       physicsPlayground2.physicsBodiesGeneratorDeepPyramid(
         "standard",
         { x: 0, y: 1, z: -20 },
@@ -47278,7 +48191,6 @@ var physicsPlayground = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
-      if (isMobile() === false) app.activateBloomEffect();
       physicsPlayground2.lightContainer[0].setPosY(14);
       physicsPlayground2.lightContainer[0].setIntensity(24);
     }
@@ -49948,7 +50860,8 @@ var testJolt = function() {
         },
         raycast: { enabled: true, radius: 1 }
       });
-      if (isMobile() == false) app.activateBloomEffect();
+      physicsPlayground2.activateBloomEffect();
+      physicsPlayground2.activateVolumetricEffect({ density: 1.5, steps: 30, scatterStrength: 1, heightFalloff: 1.6, lightColor: [10, 1.8, 0] });
       physicsPlayground2.lightContainer[0].setPosY(14);
       physicsPlayground2.lightContainer[0].setIntensity(24);
     }
@@ -58225,6 +59138,13 @@ var loadHang3d = function() {
     addRaycastsAABBListener(void 0, "mousedown");
     app2.activateHZB();
     app2.activateBloomEffect();
+    app2.activateVolumetricEffect({
+      density: 21,
+      steps: 24,
+      scatterStrength: 0.5,
+      heightFalloff: 10,
+      lightColor: [0.3, 1, 2]
+    });
     app2.matrixSounds.createAudio("shot", "res/audios/gun/gunshot.mp3", 3);
     app2.matrixSounds.createAudio("zombie1", "res/audios/zombie/zombie-1.mp3", 2);
     app2.matrixSounds.createAudio("zombie2", "res/audios/zombie/zombie-2.mp3", 2);
@@ -67136,6 +68056,10 @@ var SplatFaceEffect = class {
     this.clusterRadius = opts.clusterRadius ?? 1;
     this.origin = opts.origin ?? [0, 1.6, 0];
     this.mirrorX = opts.mirrorX ?? true;
+    this._videoElement = byId2("auto-video");
+    this._videoCanvas = document.createElement("canvas");
+    this._videoCanvas.width = this._videoElement.videoWidth || 640;
+    this._videoCanvas.height = this._videoElement.videoHeight || 480;
     this._landmarks = null;
     const n3 = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n3 * 3);
@@ -67199,7 +68123,6 @@ var SplatFaceEffect = class {
     });
     return colors;
   }
-  // ── Cluster assignment ────────────────────────────────────────────────────
   _buildWeights() {
     const w2 = new Float32Array(478).fill(0.8);
     for (let i2 = 0; i2 <= 16; i2++) w2[i2] = 1.5;
@@ -67307,24 +68230,36 @@ var SplatFaceEffect = class {
   render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
     this.time += dt2;
   }
+  /**
+   * Sample pixel color from video at each landmark position
+   * and apply to splat colors
+   */
   _updateColors() {
+    if (!this._videoCanvas || !this._landmarks) return;
+    const ctx = this._videoCanvas.getContext("2d", { willReadFrequently: true });
     const c2 = this._colorCPU;
     const n3 = this.splatLayer.vertexCount;
-    const lipPulse = Math.sin(this.time * 4) * 0.2 + 0.9;
-    const eyePulse = Math.sin(this.time * 2.5) * 0.15 + 0.9;
-    const basePulse = Math.sin(this.time * 1.5) * 0.1 + 0.9;
+    const lm = this._landmarks;
+    const video = this._videoElement;
+    ctx.drawImage(video, 0, 0, this._videoCanvas.width, this._videoCanvas.height);
+    const imageData = ctx.getImageData(0, 0, this._videoCanvas.width, this._videoCanvas.height);
+    const data = imageData.data;
+    const w2 = this._videoCanvas.width;
+    const h2 = this._videoCanvas.height;
     for (let i2 = 0; i2 < n3; i2++) {
       const ci2 = this._clusterIdx[i2];
-      const r3 = this._landmarkColors[ci2 * 3];
-      const g2 = this._landmarkColors[ci2 * 3 + 1];
-      const b2 = this._landmarkColors[ci2 * 3 + 2];
-      let bright;
-      if (ci2 >= 48 && ci2 <= 67) bright = lipPulse;
-      else if (ci2 >= 36 && ci2 <= 47) bright = eyePulse;
-      else bright = basePulse;
-      c2[i2 * 4] = r3 * bright;
-      c2[i2 * 4 + 1] = g2 * bright;
-      c2[i2 * 4 + 2] = b2 * bright;
+      const joint = lm[ci2];
+      const px = Math.floor(joint.x * w2);
+      const py = Math.floor(joint.y * h2);
+      const idx = (py * w2 + px) * 4;
+      const r3 = data[idx] / 255;
+      const g2 = data[idx + 1] / 255;
+      const b2 = data[idx + 2] / 255;
+      const orig = this._landmarkColors;
+      const blend = 0.7;
+      c2[i2 * 4] = r3 * blend + orig[ci2 * 3] * (1 - blend);
+      c2[i2 * 4 + 1] = g2 * blend + orig[ci2 * 3 + 1] * (1 - blend);
+      c2[i2 * 4 + 2] = b2 * blend + orig[ci2 * 3 + 2] * (1 - blend);
       c2[i2 * 4 + 3] = 1;
     }
     this.device.queue.writeBuffer(this.splatLayer.colorBuffer, 0, c2);
@@ -67334,6 +68269,7 @@ var SplatFaceEffect = class {
 };
 
 // examples/games/nui/face-beast-render.js
+var TEXT = `The Beast`;
 var loadFaceBeast = function() {
   let loadFace = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
@@ -67355,12 +68291,39 @@ var loadFaceBeast = function() {
       enableVisual: false,
       mode: "face"
     });
+    let bloomRadius = 0.1;
+    let bloomIntesity = 0.1;
+    let glbAnimation = 0;
+    let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 82 } : { left: "5" };
+    MobileDOM.addButton("Bloom radius +", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      bloomRadius++;
+    }, () => {
+    }, arg1);
+    let arg2 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 73 } : { left: "13" };
+    MobileDOM.addButton("Bloom radius -", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      if (bloomRadius - 1 > 0) bloomRadius--;
+    }, () => {
+    }, arg2);
+    let arg3 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 64 } : { left: "21" };
+    MobileDOM.addButton("Bloom intesity +", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      bloomIntesity = bloomIntesity + 20;
+    }, () => {
+    }, arg3);
+    let arg4 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 55 } : { left: "29" };
+    MobileDOM.addButton("Bloom intesity -", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      if (bloomIntesity - 10 > 0) bloomIntesity = bloomIntesity - 10;
+    }, () => {
+    }, arg4);
     loadFace.addLight();
     downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     async function onGround(m2) {
-      loadFace.addMeshObj({
+      loadFace.floor = loadFace.addMeshObj({
         material: { type: "dark", share: true },
         position: { x: 0, y: -1, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -67404,10 +68367,11 @@ var loadFaceBeast = function() {
     }
     async function onLoadObj(m2) {
       MYCUBE = loadFace.addMeshObj({
-        material: { type: "dark", share: true },
+        material: { type: "standard", share: true },
         position: { x: 0, y: 5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 1, 1],
         texturesPaths: ["./res/textures/white-metal.png"],
         name: "MYCUBE",
         mesh: m2.cube,
@@ -67418,7 +68382,6 @@ var loadFaceBeast = function() {
         },
         pointerEffect: { enabled: true }
       });
-      window.MYCUBE = MYCUBE;
       const pillar1 = createPillar(loadFace, m2, -20, 6, -30, "pil1");
       const pillar2 = createPillar(loadFace, m2, 20, 6, -30, "pil2");
       const pillar3 = createPillar(loadFace, m2, -20, 6, 20, "pil3");
@@ -67426,28 +68389,30 @@ var loadFaceBeast = function() {
       loadFace.lightContainer[0].setIntensity(0.7);
       app.lightContainer[0].setColorB(100);
       loadFace.activateBloomEffect();
-      loadFace.lightContainer[0].setPosition(0, 35, 0);
+      loadFace.lightContainer[0].setPosition(0, 55, 0);
       loadFace.lightContainer[0].setTarget(0, 0, -20);
+      const sampler = loadFace.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+        mipmapFilter: "nearest",
+        addressModeU: "clamp-to-edge",
+        addressModeV: "clamp-to-edge"
+      });
+      loadAtlasFONT(loadFace.device).then((OUTPUT) => {
+        loadFace.floor.effects.gpuText = new MSDFTextEffect(
+          loadFace.device,
+          "rgba16float",
+          OUTPUT.msdfTexture,
+          sampler,
+          loadFace.cameraBuffer,
+          OUTPUT.font,
+          { scale: 0.1 }
+        );
+        loadFace.floor.effects.gpuText.typeText(TEXT, 200, () => {
+          console.log("Typing complete!");
+        });
+      });
       setTimeout(async () => {
-        const sampler = loadFace.device.createSampler({
-          magFilter: "linear",
-          minFilter: "linear",
-          mipmapFilter: "nearest",
-          addressModeU: "clamp-to-edge",
-          addressModeV: "clamp-to-edge"
-        });
-        loadAtlasFONT(loadFace.device).then((OUTPUT) => {
-          console.log("FONT ", OUTPUT);
-          MYCUBE.effects.gpuText = new MSDFTextEffect(
-            loadFace.device,
-            "rgba16float",
-            OUTPUT.msdfTexture,
-            sampler,
-            loadFace.cameraBuffer,
-            OUTPUT.font
-            // <-- THIS WAS MISSING
-          );
-        });
         MYCUBE.setBlend(0);
         MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
         const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast.ply", 6, "point-list");
@@ -67471,19 +68436,22 @@ var loadFaceBeast = function() {
         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
         loadFace.autoUpdate.push(positionAnimator);
         positionAnimator.setMode("hold");
+        loadFace.positionAnimator = positionAnimator;
         const faceEffect = new SplatFaceEffect(
           loadFace.device,
           "rgba16float",
           loadFace.cameraBuffer,
           MYCUBE.effects.splat.splatLayers[0],
           {
-            scale: 4.5,
+            scale: 5,
             clusterRadius: 1,
-            origin: [0, 1.6, 0],
+            origin: [0, 0, 0],
             mirrorX: true
           }
         );
         MYCUBE.effects.faceEffect = faceEffect;
+        app.MYCUBE = MYCUBE;
+        loadFace.MYCUBE.position.thrust = 0.1;
         nui.onResults = (results) => {
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
@@ -67495,12 +68463,10 @@ var loadFaceBeast = function() {
         cam2.setY(7);
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
-      }, 700);
+      }, 6e3);
     }
     loadFace.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
-      nui.onResults = (results) => {
-      };
       MYCUBE.effects.splat.splatLayers[0].positionAnimator.setMode("dust");
     });
   });
@@ -67982,6 +68948,147 @@ var loadRoulette = function() {
   window.app = roulette;
 };
 
+// examples/msdfText.js
+var loadMSDFText = function() {
+  let msdfText = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    msdfText.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      msdfText.addMeshObj({
+        material: { type: "hell", share: true },
+        position: { x: 0, y: -5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/floor1.webp"],
+        //, './res/textures/env-maps/sky1_lod_mid.webp'],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    async function onLoadObj(m2) {
+      msdfText.addMeshObj({
+        material: { type: "hell", share: true },
+        position: { x: 0, y: -1, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [100, 100, 100],
+        rotationSpeed: { x: 0, y: 0.01, z: 0 },
+        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "sky",
+        mesh: m2.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
+      let MYCUBE = msdfText.addMeshObj({
+        material: { type: "hell" },
+        position: { x: 0, y: 4, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3, 5, 3],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          flameEmitter: true,
+          bloodBurst: true
+        }
+      });
+      msdfText.lightContainer[0].setIntensity(15);
+      msdfText.activateBloomEffect();
+      msdfText.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      msdfText.lightContainer[0].behavior.value_ = -1;
+      msdfText.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      msdfText.lightContainer[0].setPosition(0, 15, -10);
+      msdfText.lightContainer[0].setTarget(0, 0, -10);
+      setTimeout(() => {
+        MYCUBE.effects.circle = new GenGeoTexture2(msdfText.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
+        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
+        MYCUBE.effects.flameEmitter.rotSpeed = 1;
+        MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
+          -2.582509022040566,
+          0.21125441598805741,
+          0.4249951687253338,
+          0.4724163587305734,
+          2.381811753816671,
+          3.074841196886901,
+          -2.3797025623904164,
+          -3.4608908819087145
+        ]);
+        MYCUBE.setAmbient(2, 3, 0.5);
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(10);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 700);
+    }
+    msdfText.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cube")) {
+        e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+      }
+    });
+  });
+  window.app = msdfText;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -68045,6 +69152,7 @@ byId2("loadHandBeast").addEventListener("click", () => switchDemo("42"));
 byId2("loadFaceBeast").addEventListener("click", () => switchDemo("43"));
 byId2("loadGaussianSplatVertAnim2").addEventListener("click", () => switchDemo("44"));
 byId2("loadRoulette").addEventListener("click", () => switchDemo("45"));
+byId2("loadMSDFText").addEventListener("click", () => switchDemo("46"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -68138,6 +69246,8 @@ if (urlQuery["demo"] === "1") {
   loadGaussianSplatVertAnim2();
 } else if (urlQuery["demo"] === "45") {
   loadRoulette();
+} else if (urlQuery["demo"] === "46") {
+  loadMSDFText();
 } else {
   loadObjFile();
 }

@@ -11,6 +11,7 @@ import {coloraWGSL} from "../../shaders/minimalist/color-a.wgsl";
 import {colorbWGSL} from "../../shaders/minimalist/color-b.wgsl";
 import {hybridWGSL} from "../../shaders/minimalist/hybrid.wgsl";
 import {miniWGSL} from "../../shaders/minimalist/mini.wgsl";
+import {fragmentHellWGSL} from "../../shaders/shadertoy_source/fragment.wgsl";
 import {fragmentWaterWGSL} from "../../shaders/water/water-c.wgls";
 import {MaterialBindGroupCache} from "../pipelineManager";
 
@@ -288,7 +289,7 @@ export default class MaterialsInstanced {
     this.setupPipeline();
   }
 
-  setBlend = (alpha, r=1, g=1, b=1) => {
+  setBlend = (alpha, r = 1, g = 1, b = 1) => {
     this.material.useBlend = true;
     this.setupMaterialPBR([r, g, b, alpha]);
     if(app) app.buildLightShadowBuckets();
@@ -297,6 +298,8 @@ export default class MaterialsInstanced {
   getMaterial() {
     if(this.material.type == 'standard') {
       return fragmentWGSLInstanced();
+    } else if(this.material.type == 'hell') {
+      return fragmentHellWGSL();
     } else if(this.material.type == 'pong') {
       return fragmentWGSLPong();
     } else if(this.material.type == 'power') {

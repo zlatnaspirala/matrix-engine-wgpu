@@ -170,7 +170,6 @@ export var testCannonES = function() {
 
       app.activateBloomEffect();
       app.activateVolumetricEffect();
-      
 
       physicsPlayground.lightContainer[0].setPosY(65);
       physicsPlayground.lightContainer[0].setIntensity(100);

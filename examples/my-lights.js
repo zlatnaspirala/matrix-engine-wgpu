@@ -22,7 +22,7 @@ import {CameraPath, isMobile, ORBIT} from '../src/engine/utils.js';
 export var myLights = function() {
   let myLights = new MatrixEngineWGPU({
     fastRender: 0.9,
-    MAX_SPOTLIGHTS : 4,
+    MAX_SPOTLIGHTS: 4,
     canvasSize: 'fullscreen',
     dontUsePhysics: true,
     mainCameraParams: {
@@ -51,7 +51,7 @@ export var myLights = function() {
       [1.0, 0.1, 0.4],  // rose
     ];
     // Ground
-    downloadMeshes({plane: "./res/meshes/blender/plane.obj"}, (m) => {
+    downloadMeshes({plane: "./res/meshes/blender/plane.obj", ball: "./res/meshes/blender/sphere.obj"}, (m) => {
       const floor = myLights.addMeshObj({
         material: {type: 'standard'},
         shadowsCast: false,
@@ -61,6 +61,21 @@ export var myLights = function() {
         mesh: m.plane,
         scale: [6, 0.5, 6],
         physics: {enabled: false}
+      });
+
+      myLights.addMeshObj({
+        material: {type: 'hell', share: true},
+        position: {x: 0, y: -0, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [50, 50, 50],
+        rotationSpeed: {x: 0, y: 0.01, z: 0},
+        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+        name: 'sky',
+        mesh: m.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
       });
 
       setTimeout(() => {
@@ -152,6 +167,8 @@ export var myLights = function() {
       const cam = myLights.getCamera();
       const orbit = new CameraPath(frames, {loop: true, parameterization: 'arc'});
       cam.setPath(orbit).play({speed: 0.1, loop: true});
+
+      myLights.bloomPass.setIntensity(9)
 
     }, 800);
   });

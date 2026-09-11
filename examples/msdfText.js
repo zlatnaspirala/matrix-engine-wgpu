@@ -4,9 +4,9 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 
-export var loadObjFile = function() {
+export var loadMSDFText = function() {
 
-  let loadObjFile = new MatrixEngineWGPU({
+  let msdfText = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     dontUsePhysics: true,
@@ -19,7 +19,7 @@ export var loadObjFile = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
-    loadObjFile.addLight();
+    msdfText.addLight();
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
@@ -28,8 +28,8 @@ export var loadObjFile = function() {
     addRaycastsAABBListener('canvas1', 'click');
 
     function onGround(m) {
-      loadObjFile.addMeshObj({
-        material: {type: 'standard', share: true},
+      msdfText.addMeshObj({
+        material: {type: 'hell', share: true},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -45,8 +45,8 @@ export var loadObjFile = function() {
     }
 
     async function onLoadObj(m) {
-      loadObjFile.addMeshObj({
-        material: {type: 'standard', share: true},
+      msdfText.addMeshObj({
+        material: {type: 'hell', share: true},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [100, 100, 100],
@@ -61,8 +61,8 @@ export var loadObjFile = function() {
       });
 
       // material: {type: 'mirror', share: true }, share: true if not defined it is false.
-      let MYCUBE = loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
+      let MYCUBE = msdfText.addMeshObj({
+        material: {type: 'hell'},
         position: {x: 0, y: 4, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
@@ -94,23 +94,23 @@ export var loadObjFile = function() {
         }
       })
 
-      loadObjFile.lightContainer[0].setIntensity(15);
-      loadObjFile.activateBloomEffect();
-      loadObjFile.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
-      loadObjFile.lightContainer[0].behavior.value_ = -1;
-      loadObjFile.lightContainer[0].updater.push((light) => {
+      msdfText.lightContainer[0].setIntensity(15);
+      msdfText.activateBloomEffect();
+      msdfText.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
+      msdfText.lightContainer[0].behavior.value_ = -1;
+      msdfText.lightContainer[0].updater.push((light) => {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       })
-      loadObjFile.lightContainer[0].setPosition(0, 15, -10);
-      loadObjFile.lightContainer[0].setTarget(0, 0, -10);
+      msdfText.lightContainer[0].setPosition(0, 15, -10);
+      msdfText.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
-        MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
+        MYCUBE.effects.circle = new GenGeoTexture2(msdfText.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
 
-        // Nice fire tourch effect, data from test case logs.
+        // Nice fire tourch effect.
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
           0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
@@ -127,7 +127,7 @@ export var loadObjFile = function() {
       }, 700);
     }
 
-    loadObjFile.canvas.addEventListener("ray.hit.event", (e) => {
+    msdfText.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
@@ -138,5 +138,5 @@ export var loadObjFile = function() {
     });
 
   })
-  window.app = loadObjFile;
+  window.app = msdfText;
 }

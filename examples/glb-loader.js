@@ -67,7 +67,7 @@ export function loadGLBLoader() {
     }, null, glbFile01);
 
     TEST_ANIM.addGlbObj({
-      material: {type: 'pong', useTextureFromGlb: true},
+      material: {type: 'hell', useTextureFromGlb: true},
       useScale: true,
       scale: [20, 20, 20],
       position: {x: 30, y: -4, z: -70},
