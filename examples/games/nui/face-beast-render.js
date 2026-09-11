@@ -5,10 +5,13 @@ import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
 import {byId, isMobile} from "../../../src/engine/utils.js";
 import {PipeCommander, PipeGestureResolver} from "../../../src/engine/buildin/nui-pipe.js";
 import {MobileDOM} from "../../../src/engine/cameras.js";
-import {SplatHandEffect} from "../../../src/engine/effects/splat-mediapipe.js";
+// import {SplatHandEffect} from "../../../src/engine/effects/splat-mediapipe.js";
 import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "../../../src/engine/effects/splat.js";
 import {SplatFaceEffect} from "../../../src/engine/effects/splatFace.js";
-import {MSDFTextEffect} from "../../../src/engine/effects/msdfText.js";
+import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfText.js";
+import {MatrixTTS} from "../../../src/engine/tts.js";
+
+const TEXT = `The Beast`;
 
 export var loadFaceBeast = function() {
 
@@ -27,6 +30,8 @@ export var loadFaceBeast = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
+    // MatrixTTS
+    // loadFace.tts = new MatrixTTS();
     let MYCUBE, animator;
     const pipe = new PipeGestureResolver();
     const nui = new PipeCommander(true, null, null, {
@@ -34,10 +39,36 @@ export var loadFaceBeast = function() {
       mode: 'face'
     });
 
-    // for now on top level
-    // note : this must go in build in pack.
-    // any way - override is always legal for any cather.
-    // const cam = app.getCamera();
+
+    // Dom
+    let bloomRadius = 0.1;
+    let bloomIntesity = 0.1;
+    let glbAnimation = 0;
+
+    let arg1 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 82} : {left: '5'};
+    MobileDOM.addButton("Bloom radius +", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      bloomRadius++;
+    }, () => {}, arg1);
+
+    let arg2 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 73} : {left: '13'};
+    MobileDOM.addButton("Bloom radius -", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      if((bloomRadius - 1 > 0)) bloomRadius--;
+    }, () => {}, arg2);
+
+    let arg3 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 64} : {left: '21'};
+    MobileDOM.addButton("Bloom intesity +", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      bloomIntesity = bloomIntesity + 20;
+    }, () => {}, arg3);
+
+    let arg4 = isMobile() && getOrientation() === 'portrait' ? {left: '84', bottom: 55} : {left: '29'};
+    MobileDOM.addButton("Bloom intesity -", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      if((bloomIntesity - 10 > 0)) bloomIntesity = bloomIntesity - 10;
+    }, () => {}, arg4);
+
     loadFace.addLight();
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
@@ -58,7 +89,7 @@ export var loadFaceBeast = function() {
       //   },
       //   () => {}, arg1);
 
-      loadFace.addMeshObj({
+      loadFace.floor = loadFace.addMeshObj({
         material: {type: 'dark', share: true},
         position: {x: 0, y: -1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -107,10 +138,11 @@ export var loadFaceBeast = function() {
     async function onLoadObj(m) {
 
       MYCUBE = loadFace.addMeshObj({
-        material: {type: 'dark', share: true},
+        material: {type: 'standard', share: true},
         position: {x: 0, y: 5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [1, 1, 1],
         texturesPaths: ['./res/textures/white-metal.png'],
         name: 'MYCUBE',
         mesh: m.cube,
@@ -121,12 +153,6 @@ export var loadFaceBeast = function() {
         },
         pointerEffect: {enabled: true}
       })
-
-
-      // app.physicsBodiesGeneratorWall("standard",
-      //   {x: -4.5, y: 1, z: -10}, {x: 0, y: 0, z: 0},
-      //   ["./res/textures/rust.jpg",],
-      //   'my_set_walls', "5x3", true, [1, 1, 1], 2.05, 1000, "ByX");
 
       const pillar1 = createPillar(loadFace, m, -20, 6, -30, "pil1");
       const pillar2 = createPillar(loadFace, m, 20, 6, -30, "pil2");
@@ -143,54 +169,41 @@ export var loadFaceBeast = function() {
       //   heightFalloff: 0.2,
       //   lightColor: [0, 1.8, 10]
       // })
-      loadFace.lightContainer[0].setPosition(0, 35, 0);
+      loadFace.lightContainer[0].setPosition(0, 55, 0);
       loadFace.lightContainer[0].setTarget(0, 0, -20);
 
+      const sampler = loadFace.device.createSampler({
+        magFilter: 'linear',
+        minFilter: 'linear',
+        mipmapFilter: 'nearest',
+        addressModeU: 'clamp-to-edge',
+        addressModeV: 'clamp-to-edge'
+      });
 
-      // text
-
-      setTimeout(async () => {
-
-        // Create an MSDF texture (you need the actual MSDF font atlas image)
-        const msdfTextureImageData = await fetch('./res/textures/default.png')
-          .then(r => r.arrayBuffer())
-          .then(buf => new Uint8Array(buf));
-
-        const msdfTexture = loadFace.device.createTexture({
-          size: {width: 2048, height: 2048}, // adjust to your atlas size
-          format: 'rgba8unorm',
-          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-          mipLevelCount: 1
-        });
-
-        // Upload MSDF atlas data
-        loadFace.device.queue.copyExternalImageToTexture(
-          {source: await createImageBitmap(new Blob([msdfTextureImageData], {type: 'image/png'}))},
-          {texture: msdfTexture},
-          {width: 2048, height: 2048}
+      loadAtlasFONT(loadFace.device).then((OUTPUT) => {
+        // console.log("FONT ", OUTPUT)
+        loadFace.floor.effects.gpuText = new MSDFTextEffect(
+          loadFace.device,
+          'rgba16float',
+          OUTPUT.msdfTexture,
+          sampler,
+          loadFace.cameraBuffer,
+          OUTPUT.font, {scale: 0.1}
         );
 
-        // Create a sampler for texture sampling
-        const sampler = loadFace.device.createSampler({
-          magFilter: 'linear',
-          minFilter: 'linear',
-          mipmapFilter: 'linear',
-          addressModeU: 'repeat',
-          addressModeV: 'repeat'
+        loadFace.floor.effects.gpuText.typeText(TEXT, 200, () => {
+          console.log('Typing complete!');
         });
+      });
+      // text
+      setTimeout(async () => {
 
-        // // Now instantiate correctly
-        // MYCUBE.effects.gpuText = new MSDFTextEffect(
-        //   loadFace.device,
-        //   'rgba16float',      // format for your render targets
-        //   msdfTexture,        // GPUTexture object (not string!)
-        //   sampler,            // GPUSampler object (not string!)
-        //   loadFace.cameraBuffer
-        // );
 
+        MYCUBE.setBlend(0);
 
         MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);
         const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "point-list");
+        // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "triangle-list");
         animator = new SplatColorAnimator(
           loadFace.device,
           layer.positions,
@@ -215,24 +228,30 @@ export var loadFaceBeast = function() {
         loadFace.autoUpdate.push(positionAnimator);
         positionAnimator.setMode('hold');
 
+        loadFace.positionAnimator = positionAnimator;
+
         const faceEffect = new SplatFaceEffect(
           loadFace.device,
           'rgba16float',
           loadFace.cameraBuffer,
           MYCUBE.effects.splat.splatLayers[0],
+
           {
-            scale: 4.5,
+            scale: 5,
             clusterRadius: 1.0,
-            origin: [0, 1.6, 0],
+            origin: [0, 0, 0],
             mirrorX: true
           }
         );
 
         MYCUBE.effects.faceEffect = faceEffect;
+        app.MYCUBE = MYCUBE; // denug
+        loadFace.MYCUBE.position.thrust = 0.1;
+        // app.MYCUBE.position.translateByX(-10)
 
         // Hook mediapipe into it
         nui.onResults = (results) => {
-          console.log('face detected:', results?.landmarks?.length ?? 0);
+          // console.log('face detected:', results?.landmarks?.length ?? 0);
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
 
@@ -246,18 +265,18 @@ export var loadFaceBeast = function() {
         cam.setY(7);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 700);
+      }, 6000);
     }
+
 
     loadFace.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
-
-      nui.onResults = (results) => {
-        // console.log('face detected:', results?.landmarks?.length ?? 0);
-        // MYCUBE.effects.faceEffect.setFaceData(results);
-      };
-
-      MYCUBE.effects.splat.splatLayers[0].positionAnimator.setMode('dust')
+      // if you wanna disable
+      // nui.onResults = (results) => {
+      //   // MYCUBE.effects.faceEffect.setFaceData(results);
+      // };
+      MYCUBE.effects.splat.splatLayers[0].positionAnimator.setMode('dust');
+      // app.MYCUBE.position.translateByX(-5000)
       // if(e.detail.hitObject.name.startsWith('cube')) {      }
     });
 

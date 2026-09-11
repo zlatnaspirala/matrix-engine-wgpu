@@ -49,6 +49,14 @@ export var loadHang3d = function() {
     addRaycastsAABBListener(undefined, "mousedown");
     app.activateHZB();
     app.activateBloomEffect();
+
+    app.activateVolumetricEffect({
+        density: 21,
+        steps: 24,
+        scatterStrength: 0.5,
+        heightFalloff: 10,
+        lightColor: [0.3, 1, 2]
+      })
     // Audios
     // app.matrixSounds.createAudio('music', 'res/audios/audionautix-black-fly.mp3', 1);
     app.matrixSounds.createAudio('shot', 'res/audios/gun/gunshot.mp3', 3);

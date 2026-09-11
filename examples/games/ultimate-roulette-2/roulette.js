@@ -17,7 +17,8 @@ export var loadRoulette = function() {
     fastRender: 0.7,
     useJolt: true,
     canvasSize: 'fullscreen',
-    mainCameraParams: {type: 'cinematicCamera', responseCoef: 1000},
+    // mainCameraParams: {type: 'cinematicCamera', responseCoef: 1000},
+    mainCameraParams: {type: 'WASD', responseCoef: 1000},
     PHYSICS_GROUND_BYZ: 40,
     PHYSICS_GROUND_BYX: 12,
     MAX_SPOTLIGHTS: isMobile() ? 2 : 4,
@@ -43,15 +44,10 @@ export var loadRoulette = function() {
       downloadMeshes({
         cube: "./res/meshes/blender/cube.obj",
         ball: "./res/meshes/blender/sphepe-mob.obj",
-        pin: "./res/meshes/blender/pin-for-pinball.obj",
-        pinR: "./res/meshes/blender/pin-for-pinball_right.obj",
-        pushBtn: "./res/meshes/shapes/pushBtn.obj",
-        vrcLeft: "./res/meshes/blender/vrc-left.obj",
-        jumper: "./res/meshes/blender/jumper-up.obj",
-        bottomLeft: "./res/meshes/blender/bottom-left.obj",
-        glass: "./res/meshes/shapes/plane-subdivine-16.obj",
-        bigBox: "./res/meshes/shapes/flipperBigBox.obj",
-        plane: "./res/meshes/blender/plane.obj"
+        plane: "./res/meshes/blender/plane.obj",
+        table: './res/meshes/blender/roulette-static-1.obj',
+        oval: './res/meshes/blender/roulette-static-2.obj',
+        tableNumbers:  './res/meshes/blender/roulette-static-3.obj',
       },
         onGround, {scale: [1, 1, 1]});
     });
@@ -59,27 +55,19 @@ export var loadRoulette = function() {
     if(isMobile() && byId('mobileControls')) byId('mobileControls').style.marginRight = '30%';
 
     let preventSpam = false;
-    MobileDOM.addButton("PUSH", async () => {
+    MobileDOM.addButton("ROLL", async () => {
       if(preventSpam === false) {
         preventSpam = true;
         let ball = app.matrixPhysics.getBodyByName('ball1');
         const pos = await app.matrixPhysics.getPosition(ball);
-        // 5.349976062774658 0.25000062584877014 -6.4499993324279785
-        if(pos.x > 4.85 && pos.z > -6.6) {
-          if(MYFLIPPER.BALLS == 0) {
-            mb.show('No more balls...');
-            preventSpam = false;
-            return;
-          }
-          // micro opti needed!
-          roulette.matrixPhysics.applyImpulse(ball,
-            new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2)));
-          roulette.matrixSounds.play('push');
-          MYFLIPPER.BALLS--;
+        if(MYFLIPPER.BALLS == 0) {
+          mb.show('No more balls...');
+          return;
         }
-        setTimeout(() => {
-          preventSpam = false;
-        }, 1000)
+        // micro opti needed!
+        roulette.matrixPhysics.applyImpulse(ball,
+          new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2)));
+        roulette.matrixSounds.play('push');
       }
     }, () => {}, {left: '80', bottom: '50'});
 
@@ -123,10 +111,12 @@ export var loadRoulette = function() {
     }
 
     async function onGround(m) {
+
+      let staticMARGIN_Y = -10;
       // Ball
       const ball1 = roulette.addMeshObj({
         material: {type: 'standard', share: true},
-        position: {x: 2, y: 1, z: -17},
+        position: {x: 2, y: 11, z: -17},
         scale: [0.25, 0.25, 0.25],
         texturesPaths: ['./res/textures/blankgray2.webp'],
         name: 'ball1',
@@ -142,40 +132,75 @@ export var loadRoulette = function() {
         raycast: {enabled: false, radius: 1},
       });
 
-      if(isMobile() == false) {
-        // Shooter btn
-        let pushBtn = roulette.addMeshObj({
-          position: {x: 5, y: 0.7, z: -5.7},
-          scale: [0.3, 0.3, 0.3],
-          rotation: {x: 90, y: -90, z: 0},
-          texturesPaths: ['res/textures/pushBtn.webp'],
-          name: 'pushBtn',
-          mesh: m.pushBtn,
-          physics: {
-            enabled: false,
-            mass: 5,
-            geometry: "Cube"
-          },
-          raycast: {enabled: true, radius: 1}
-        });
-
-        pushBtn.setUVScale(-1, -1);
-      }
-
-      // GROUND
-      roulette.addMeshObj({
-        position: {x: 0, y: -0.1, z: -21},
-        scale: [6, 0.1, 15],
-        texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
-        name: 'ground',
-        mesh: m.cube,
+      const table = roulette.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 5 + staticMARGIN_Y, z: -10},
+        scale: [0.2, 0.2, 0.2],
+        texturesPaths: ['./res/meshes/blender/textures/leder19.jpg'],
+        name: 'table',
+        mesh: m.table,
         shadowsCast: false,
         physics: {
           enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
+          mass: 0.05,
+          geometry: "Sphere",
+          group: 2,
+          mask: -1
+        },
+        raycast: {enabled: false, radius: 1},
       });
+
+      const tablenuMBERSteXTURE = roulette.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 24+ staticMARGIN_Y, z: 8},
+        rotation: {x: 180, y: 0, z: 0},
+        scale: [0.17, 0.17, 0.17],
+        texturesPaths: ['./res/meshes/blender/textures/numbers.png'],
+        name: 'table',
+        mesh: m.tableNumbers,
+        shadowsCast: false,
+        physics: {
+          enabled: false,
+          mass: 0.05,
+          geometry: "Sphere",
+          group: 2,
+          mask: -1
+        },
+        raycast: {enabled: false, radius: 1},
+      });
+
+
+      const oval = roulette.addMeshObj({
+        material: {type: 'standard'},
+        position: {x: 0, y: 5+ staticMARGIN_Y, z: -10},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [0.2, 0.2, 0.2],
+        texturesPaths: ['./res/meshes/blender/textures/unbenannt.jpg'],
+        name: 'oval',
+        mesh: m.oval,
+        physics: {
+          enabled: true,
+          mass: 0,
+          geometry: "ConvexHull",
+          vertices: m.oval.vertices
+        },
+        raycast: {enabled: true, radius: 1}
+      });
+
+      // GROUND
+      // roulette.addMeshObj({
+      //   position: {x: 0, y: 5, z: -21},
+      //   scale: [6, 0.1, 15],
+      //   texturesPaths: ['./res/icons/editor/chatgpt-gen-bg-inv.webp'],
+      //   name: 'ground',
+      //   mesh: m.cube,
+      //   shadowsCast: false,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // });
 
       let envMapParams = {
         baseColorMix: 0.1,                // CLEAR SKY
@@ -186,117 +211,44 @@ export var loadRoulette = function() {
         illuminatePulse: 0.01,            // No pulse (static)
         fresnelPower: 2.0,                // Medium-sharp edge
         envLodBias: 1.5,
-        usePlanarReflection: false,       // ✅ Env map mode
+        usePlanarReflection: false,       // ✅ must be false (no support)
       }
 
       setTimeout(async () => {
-      
         // BALL PHYSICS TUNING
         const ball = roulette.matrixPhysics.getBodyByName('ball1');
         roulette.matrixPhysics.setRestitution(ball, 0.1);
         roulette.matrixPhysics.setFriction(ball, 0.1);
-        // FLIPPER SETUP
-      
+
         window.addEventListener("keydown", (e) => {
           e.preventDefault();
           if(e.code === "KeyZ" && leftBodycurrPos === "unpressed") {
             roulette.matrixSounds.play('click3');
-          } 
+          }
         });
-
-    
 
         app.matrixPhysics.detectCollision = (e) => {
           const body0Name = e.detail.body0Name;
           const body1Name = e.detail.body1Name;
           const rayDirection = e.detail.rayDirection;
           if(body0Name == "ball1" && body1Name.startsWith("bumper")) {
-            roulette.matrixPhysics.applyImpulse(ball, new PVector(
-              rayDirection[0] * 0.015, 0, rayDirection[2] * 0.015));
-            MYFLIPPER.BALANCE = MYFLIPPER.BALANCE + 20;
-          } 
+            //
+          }
         };
       }, 1000);
 
-   
       roulette.canvas.addEventListener("ray.hit.event", async (e) => {
         app.matrixSounds.play('click1');
         console.log('e.detail', e.detail);
         if(e.detail.hitObject.name == "pushBtn") {
           let ball = app.matrixPhysics.getBodyByName(ball1.name);
           const pos = await app.matrixPhysics.getPosition(ball);
-          // 5.349976062774658 0.25000062584877014 -6.4499993324279785
-          if(pos.x > 5 && pos.z > -6.6) roulette.matrixPhysics.applyImpulse(ball,
+          roulette.matrixPhysics.applyImpulse(ball,
             new PVector(0, 0, -randomFloatFromTo(0.8, 1)));
         }
       });
 
-      // GRAVITY TILT (PINBALL FEEL)
-      roulette.matrixPhysics.setGravity(0, -9.8, 2);
-
-      if(isMobile() == false) {
-        // only render objs
-        const leg1 = roulette.addMeshObj({
-          material: {type: 'standard', share: true},
-          position: {x: -5.5, y: -5, z: -6.1},
-          scale: [0.2, 7, 0.2],
-          texturesPaths: ['./res/textures/blankgray2.webp'],
-          name: 'leg1',
-          mesh: m.cube,
-          shadowsCast: false,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-
-        const leg2 = roulette.addMeshObj({
-          material: {type: 'standard', share: true},
-          position: {x: 5.5, y: -5, z: -6.1},
-          scale: [0.2, 7, 0.2],
-          texturesPaths: ['./res/textures/blankgray2.webp'],
-          name: 'leg2',
-          mesh: m.cube,
-          shadowsCast: false,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-
-        const leg3 = roulette.addMeshObj({
-          material: {type: 'standard', share: true},
-          position: {x: -5.5, y: -5, z: -36},
-          scale: [0.2, 7, 0.2],
-          texturesPaths: ['./res/textures/blankgray2.webp'],
-          name: 'leg3',
-          mesh: m.cube,
-          shadowsCast: false,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-
-        const leg4 = roulette.addMeshObj({
-          material: {type: 'standard', share: true},
-          position: {x: 5.5, y: -5, z: -36},
-          scale: [0.2, 7, 0.2],
-          texturesPaths: ['./res/textures/blankgray2.webp'],
-          name: 'leg4',
-          mesh: m.cube,
-          shadowsCast: false,
-          physics: {
-            enabled: false,
-            mass: 0,
-            geometry: "Cube"
-          }
-        });
-      }
-
+      // roulette.matrixPhysics.setGravity(0, -9.8, 0);
       setTimeout(() => {
         if(isMobile() == false) {
           app.activateBloomEffect();
@@ -304,41 +256,41 @@ export var loadRoulette = function() {
         }
 
         const cam = app.getCamera();
-        const cinematicPath = new CameraPath([
-          // SHOT 1: High wide angle, far back
-          {
-            position: [0, 20, 35],
-            target: [0, 8, 0],
-            fov: (2 * Math.PI) / 4.5  // slightly wider
-          },
-          // SHOT 2: Orbit left side, closer
-          {
-            position: [-15, 18, 20],
-            target: [0, 6, 0],
-            fov: (2 * Math.PI) / 5
-          },
-          // SHOT 3: Top-down angle
-          {
-            position: [8, 16, 12],
-            target: [0, 5, 0],
-            fov: (2 * Math.PI) / 5
-          },
-          {
-            position: [0, 9, -2],
-            target: [0, 3, -15],
-            fov: (2 * Math.PI) / 5
-          }
-        ], {
-          parameterization: 'arc'
-        });
+        // const cinematicPath = new CameraPath([
+        //   // SHOT 1: High wide angle, far back
+        //   {
+        //     position: [0, 20, 35],
+        //     target: [0, 8, 0],
+        //     fov: (2 * Math.PI) / 4.5  // slightly wider
+        //   },
+        //   // SHOT 2: Orbit left side, closer
+        //   {
+        //     position: [-15, 18, 20],
+        //     target: [0, 6, 0],
+        //     fov: (2 * Math.PI) / 5
+        //   },
+        //   // SHOT 3: Top-down angle
+        //   {
+        //     position: [8, 16, 12],
+        //     target: [0, 5, 0],
+        //     fov: (2 * Math.PI) / 5
+        //   },
+        //   {
+        //     position: [0, 9, -2],
+        //     target: [0, 3, -15],
+        //     fov: (2 * Math.PI) / 5
+        //   }
+        // ], {
+        //   parameterization: 'arc'
+        // });
 
-        cam.setPath(cinematicPath).play({
-          speed: 0.65,
-          onEnd: () => {
-            cam._dirtyAngle = true;
-            // console.log('✅ Cinematic done, gameplay cam active');
-          }
-        });
+        // cam.setPath(cinematicPath).play({
+        //   speed: 0.65,
+        //   onEnd: () => {
+        //     cam._dirtyAngle = true;
+        //     // console.log('✅ Cinematic done, gameplay cam active');
+        //   }
+        // });
         cam._dirtyAngle = true;
       }, 1500);
     }

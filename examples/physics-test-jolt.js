@@ -168,7 +168,9 @@ export var testJolt = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      if (isMobile() == false) app.activateBloomEffect();
+      physicsPlayground.activateBloomEffect();
+      physicsPlayground.activateVolumetricEffect({density: 1.5, steps: 30, scatterStrength: 1, heightFalloff: 1.6, lightColor: [10, 1.8, 0]})
+
       physicsPlayground.lightContainer[0].setPosY(14);
       physicsPlayground.lightContainer[0].setIntensity(24);
     }

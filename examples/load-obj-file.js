@@ -110,7 +110,7 @@ export var loadObjFile = function() {
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
 
-        // Nice fire tourch effect.
+        // Nice fire tourch effect, data from test case logs.
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
           0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);

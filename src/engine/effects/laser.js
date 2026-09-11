@@ -233,12 +233,8 @@ export class LaserProjectile {
   setWidth(w)             { this.width = w; }
   setIntensity(v)         { this.intensity = v; }
 
-  // ── Effect interface ──────────────────────────────────────────────────────
-
   updateInstanceData(baseModelMatrix) {
     if (!this.enabled) return;
-
-    // Expire timed beams
     for (const b of this._beams) {
       if (b.life > 0 && b.age >= b.life) b.active = false;
     }
@@ -246,16 +242,13 @@ export class LaserProjectile {
     const active = this._beams.filter(b => b.active);
     const count  = Math.min(active.length, this.maxBeams);
     if (count === 0) return;
-
     for (let i = 0; i < count; i++) {
       const b = active[i];
-
       // Build beam matrix: translate to `from`, orient toward `to`, scale by length/width
       const dx = b.to[0] - b.from[0];
       const dy = b.to[1] - b.from[1];
       const dz = b.to[2] - b.from[2];
       const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.001;
-
       // Build look-at rotation: beam points along +X axis of the quad
       const forward = [dx / len, dy / len, dz / len];
       const up      = Math.abs(forward[1]) < 0.99 ? [0, 1, 0] : [1, 0, 0];

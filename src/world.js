@@ -36,6 +36,7 @@ import {CulledRenderPass} from "./engine/culling/culling.js";
 import {GPUCapabilities} from "./engine/GPUCapabilities.js";
 import {ComputeCullingSystem, IndirectRenderingManager} from "./engine/indirect-core.js";
 import {GPUIndirectDraws} from "./engine/overrides/GPUCulling.js";
+import {AdvancedVolumetricPass} from "./engine/postprocessing/volumetric-advanced.js";
 
 /**
  * @description
@@ -1519,9 +1520,6 @@ export default class MatrixEngineWGPU {
         } else {
           bvhPlayer.itIsPhysicsBody = false;
         }
-
-
-
         // Soft
         this.mainRenderBundle.push(bvhPlayer);
         r.push(bvhPlayer)
@@ -1718,7 +1716,7 @@ export default class MatrixEngineWGPU {
       }
     } else {p = arg}
     if(this.volumetricPass.enabled != true) {
-      this.volumetricPass = new Volum(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView).init();
+      this.volumetricPass = new AdvancedVolumetricPass(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView).init();
       this.volumetricPass.enabled = true;
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }

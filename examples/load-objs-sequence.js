@@ -35,6 +35,9 @@ export var loadObjsSequence = function() {
 
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [20, 1, 20]});
 
+    loadObjFile.activateBloomEffect();
+    loadObjFile.activateVolumetricEffect({density: 1.5, steps: 30, scatterStrength: 1, heightFalloff: 1.6, lightColor: [10, 1.8, 0]})
+
     downloadMeshes(
       makeObjSeqArg({
         id: "swat-walk-pistol",

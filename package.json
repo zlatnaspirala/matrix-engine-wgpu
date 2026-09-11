@@ -14,22 +14,16 @@
     "moba": "watchify ./examples/games/moba/forestOfHollowBlood.js -p [esmify --noImplicitAny] -o public/moba-game.js",
     "moba-menu": "watchify ./examples/games/moba/start-menu.js -p [esmify --noImplicitAny] -o public/moba-menu.js",
     "build-all": "npm run examples | npm run main | npm run empty",
-
     "creator-install": "npm --prefix src/tools/the-beast-code-gen i",
     "creator": "npm --prefix src/tools/the-beast-code-gen run dev",
     "creator-backend": "npm --prefix src/tools/the-beast-code-gen run backend",
-
     "landpage": "watchify ./examples/my-lights.js -p [esmify --noImplicitAny] -o public/landpage.js",
-
     "hosts": "http-server ./public/ -p 3000",
-
     "editor-landing": "watchify ./src/tools/editor/template/autogen.js -p [esmify --noImplicitAny] -o public/matrix-engine-autogen.js",
     "editorx": "cd src/tools/editor/backend && node matrix-editor.js",
-
     "webp-to-dds": "npm run webp-to-dds0 && npm run webp-to-dds1",
     "webp-to-dds0": "cd public/res/textures/ && for %f in (*.webp) do magick \"%f\" \"%~nf.dds\"",
     "webp-to-dds1": "cd public/res/textures/env-maps/ && for %f in (*.webp) do magick \"%f\" \"%~nf.dds\""
-                  
   },
   "author": "Nikola Lukic",
   "license": "MIT",
@@ -39,6 +33,7 @@
     "esbuild": "^0.27.1",
     "esmify": "^2.1.1",
     "http-server": "^14.1.1",
+    "msdf-bmfont-xml": "^2.8.0",
     "ollama": "^0.6.3",
     "typedoc": "^0.28.16",
     "watchify": "^4.0.0",

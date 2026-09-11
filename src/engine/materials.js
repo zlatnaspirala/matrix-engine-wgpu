@@ -19,6 +19,7 @@ import {fountainBasinFragmentWGSL} from "../shaders/fontana/fontana.wgsl";
 import {MaterialBindGroupCache} from "./pipelineManager";
 import {fragmentDarkWGSL} from "../shaders/fragment.dark.wgsl";
 import {MEConfig} from "../me-config";
+import {fragmentHellWGSL} from "../shaders/shadertoy_source/fragment.wgsl";
 /**
  * @description
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
@@ -370,6 +371,8 @@ export default class Materials {
     // console.log('Material TYPE:', this.material.type);
     if(this.material.type == 'standard') {
       return fragmentWGSL();
+    }else if(this.material.type == 'hell') {
+      return fragmentHellWGSL();
     } else if(this.material.type == 'dark') {
       return fragmentDarkWGSL();
     } else if(this.material.type == 'pong') {

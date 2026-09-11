@@ -11,7 +11,7 @@ export var physicsPlayground = function() {
     canvasSize: 'fullscreen',
     useAmmo: true,
     fastRender: 0.7,
-    MAX_SPOTLIGHTS : 1,
+    MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
@@ -28,8 +28,10 @@ export var physicsPlayground = function() {
         reel: "./res/meshes/obj/reel.obj"
       }, onGround, {scale: [1, 1, 1]});
 
-      physicsPlayground.matrixPhysics.speedUpSimulation(11);
+      physicsPlayground.matrixPhysics.speedUpSimulation(4);
 
+      app.activateBloomEffect();
+      app.activateVolumetricEffect({density: 0.5, steps: 30, scatterStrength: 2, heightFalloff: 0.2, lightColor: [0, 1.8, 10]})
       // physicsPlayground.physicsBodiesGenerator(
       //   "standard",
       //   {x: 0, y: 0, z: -20},
@@ -74,10 +76,10 @@ export var physicsPlayground = function() {
           e.detail.rayDirection[0] * strength,
           e.detail.rayDirection[1] * strength,
           e.detail.rayDirection[2] * strength));
-      //   app.matrixPhysics.explode(b,
-      //     e.detail.hitObject.position.x * strength,
-      //     e.detail.hitObject.position.y * strength,
-      //     e.detail.hitObject.position.z * strength, 4, 1);
+        //   app.matrixPhysics.explode(b,
+        //     e.detail.hitObject.position.x * strength,
+        //     e.detail.hitObject.position.y * strength,
+        //     e.detail.hitObject.position.z * strength, 4, 1);
       });
     })
 
@@ -221,7 +223,6 @@ export var physicsPlayground = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      if (isMobile() === false) app.activateBloomEffect();
       // physicsPlayground.lightContainer[0].behavior.setOsc0(-1, 1, 0.001)
       // physicsPlayground.lightContainer[0].behavior.value_ = -1;
       // physicsPlayground.lightContainer[0].updater.push((light) => {
