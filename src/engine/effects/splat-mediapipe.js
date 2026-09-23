@@ -93,45 +93,11 @@ export class SplatHandEffect {
       [0.1, 0.8, 0.8],  // 19 pinky DIP
       [0.0, 1.0, 1.0],  // 20 pinky tip    — cyan
     ];
-
     // Park all points at origin until hand data arrives
     this._posCPU.fill(0);
     device.queue.writeBuffer(splatLayer.positionAnimator.posBuffer, 0, this._posCPU);
   }
 
-  // ── Cluster setup ──────────────────────────────────────────────────────────
-
-  // _precompute(n) {
-  //   // Weight distribution: fingertips heavier, wrist medium
-  //   const weights = new Float32Array(21).fill(1.0);
-  //   [4, 8, 12, 16, 20].forEach(i => weights[i] = 1.8); // fingertips
-  //   weights[0] = 1.5;                                    // wrist
-
-  //   let total = 0;
-  //   for (let i = 0; i < 21; i++) total += weights[i];
-  //   const cdf = new Float32Array(21);
-  //   let run = 0;
-  //   for (let i = 0; i < 21; i++) { run += weights[i] / total; cdf[i] = run; }
-  //   cdf[20] = 1.0;
-
-  //   for (let p = 0; p < n; p++) {
-  //     const r = Math.random();
-  //     let ci = 0;
-  //     while (ci < 20 && cdf[ci] < r) ci++;
-  //     this._clusterIdx[p] = ci;
-
-  //     // Uniform random point inside unit sphere
-  //     let ox, oy, oz;
-  //     do {
-  //       ox = (Math.random() - 0.5) * 2;
-  //       oy = (Math.random() - 0.5) * 2;
-  //       oz = (Math.random() - 0.5) * 2;
-  //     } while (ox * ox + oy * oy + oz * oz > 1.0);
-  //     this._offsetX[p] = ox;
-  //     this._offsetY[p] = oy;
-  //     this._offsetZ[p] = oz;
-  //   }
-  // }
   _precompute(n) {
     // Full 21-landmark weight map — every bone gets representation
     const weights = new Float32Array([
@@ -184,8 +150,6 @@ export class SplatHandEffect {
     }
   }
 
-  // ── Public API ─────────────────────────────────────────────────────────────
-
   /**
    * Feed raw MediaPipe results directly.
    * Call from your PipeCommander.onResults() override.
@@ -211,8 +175,7 @@ export class SplatHandEffect {
   setClusterRadius(r) {this.clusterRadius = r;}
   setOrigin(x, y, z) {this.origin = [x, y, z];}
 
-  // ── Effect interface (called automatically by main loop) ───────────────────
-
+  // ── Effect interface (called automatically by main loop)
   updateInstanceData(baseModelMatrix) {
     if(!this.enabled) return;
 

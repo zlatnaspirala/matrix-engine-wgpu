@@ -50,6 +50,7 @@ import {loadFaceBeast} from "./examples/games/nui/face-beast-render.js";
 import {loadGaussianSplatVertAnim2} from "./examples/gaussian-test.js";
 import {loadRoulette} from "./examples/games/ultimate-roulette-2/roulette.js";
 import {loadMSDFText} from "./examples/msdfText.js";
+import {loadFaceMask} from "./examples/face-mask.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -110,6 +111,7 @@ byId('loadFaceBeast').addEventListener("click", () => switchDemo('43'));
 byId('loadGaussianSplatVertAnim2').addEventListener("click", () => switchDemo('44'));
 byId('loadRoulette').addEventListener("click", () => switchDemo('45'));
 byId('loadMSDFText').addEventListener("click", () => switchDemo('46'));
+byId('loadFaceMask').addEventListener("click", () => switchDemo('47'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
@@ -209,6 +211,8 @@ if(urlQuery['demo'] === '1') {
   loadRoulette();
 } else if (urlQuery['demo'] === '46') {
   loadMSDFText();
+} else if (urlQuery['demo'] === '47') {
+  loadFaceMask();
 } else {
   loadObjFile();
 }

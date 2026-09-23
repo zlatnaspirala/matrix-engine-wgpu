@@ -1405,6 +1405,11 @@ You may use, modify, and sell projects based on this code — just keep this not
   Source: https://superspl.at/scene/50be21df
   Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
 
+  "Towers WoW" (https://skfb.ly/6XtCI) by CGArt is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+  One of buildin shaders use original source (material: {type: 'hell'})
+  https://www.shadertoy.com/view/4ttGWM
+
 ---
 
 ### BSD 3-Clause License (from WebGPU Samples)
