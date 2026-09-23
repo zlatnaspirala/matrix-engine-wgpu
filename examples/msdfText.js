@@ -3,6 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
+import {loadAtlasFONT, MSDFTextEffect} from "../src/engine/effects/msdfText.js";
 
 export var loadMSDFText = function() {
 
@@ -93,6 +94,23 @@ export var loadMSDFText = function() {
           bloodBurst: true
         }
       })
+
+
+      loadAtlasFONT(msdfText.device).then((OUTPUT) => {
+        // console.log("FONT ", OUTPUT)
+        msdfText.floor.effects.gpuText = new MSDFTextEffect(
+          msdfText.device,
+          'rgba16float',
+          OUTPUT.msdfTexture,
+          sampler,
+          msdfText.cameraBuffer,
+          OUTPUT.font, {scale: 0.1}
+        );
+
+        msdfText.floor.effects.gpuText.typeText("TEXT123", 200, () => {
+          console.log('Typing complete!');
+        });
+      });
 
       msdfText.lightContainer[0].setIntensity(15);
       msdfText.activateBloomEffect();

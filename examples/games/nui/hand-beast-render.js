@@ -253,10 +253,10 @@ export var loadHandBeast = function() {
         // MYCUBE.effects.circle = new GenGeoTexture2(loadHand.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         let cam = app.getCamera();
-        cam.setYaw(-0.03);
-        cam.setPitch(-0.49);
+        cam.setYaw(-0.0);
+        cam.setPitch(-0.19);
         cam.setZ(0);
-        cam.setY(7);
+        cam.setY(13);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 700);

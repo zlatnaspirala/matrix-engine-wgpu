@@ -13225,14 +13225,14 @@ var Materials = class {
    * Change ONLY base color texture (binding = 3)
    * Does NOT rebuild pipeline or layout
    **/
-  changeTexture(newTexture, sampler) {
+  changeTexture(newTexture, sampler2) {
     if (newTexture instanceof GPUTexture) {
       this.texture0 = newTexture;
     } else {
       this.texture0 = { createView: () => newTexture };
     }
     this.isVideo = false;
-    if (sampler) this.imageSampler = sampler;
+    if (sampler2) this.imageSampler = sampler2;
     this.createBindGroupForRender();
   }
   changeMaterial(newType = "graph", graphShader) {
@@ -13480,18 +13480,18 @@ var Materials = class {
   async loadTex0(texturesPaths) {
     return new Promise(async (resolve) => {
       const path2 = texturesPaths[0];
-      const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), false, MEConfig.gpuCapabilities.isEnabled("texture-compression-bc"));
+      const { texture, sampler: sampler2 } = await this.textureCache.get(path2, this.getFormat(), false, MEConfig.gpuCapabilities.isEnabled("texture-compression-bc"));
       this.texture0 = texture;
-      this.sampler = sampler;
+      this.sampler = sampler2;
       resolve(this);
     });
   }
   async loadEnvMap(texturesPaths, isEnvMap = false) {
     const path2 = texturesPaths[1] || texturesPaths[0];
-    const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
+    const { texture, sampler: sampler2 } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
     return {
       texture,
-      sampler
+      sampler: sampler2
     };
   }
   async loadVideoTexture(arg) {
@@ -17859,11 +17859,11 @@ fn fsMain(input: VertexOutput) -> FragmentOutput {
 
 // src/engine/effects/msdfText.js
 var MSDFTextEffect = class {
-  constructor(device2, format, msdfTexture, sampler, cameraBuffer, font, options2 = {}) {
+  constructor(device2, format, msdfTexture, sampler2, cameraBuffer, font, options2 = {}) {
     this.device = device2;
     this.format = format;
     this.msdfTexture = msdfTexture;
-    this.sampler = sampler;
+    this.sampler = sampler2;
     this.cameraBuffer = cameraBuffer;
     this.font = font;
     this.enabled = true;
@@ -24396,24 +24396,24 @@ var GLTFMaterial = class {
   }
 };
 var GLTFSampler = class {
-  constructor(sampler, device2) {
-    var magFilter = sampler["magFilter"] === void 0 || sampler["magFilter"] == GLTFTextureFilter.LINEAR ? "linear" : "nearest";
-    var minFilter = sampler["minFilter"] === void 0 || sampler["minFilter"] == GLTFTextureFilter.LINEAR ? "linear" : "nearest";
+  constructor(sampler2, device2) {
+    var magFilter = sampler2["magFilter"] === void 0 || sampler2["magFilter"] == GLTFTextureFilter.LINEAR ? "linear" : "nearest";
+    var minFilter = sampler2["minFilter"] === void 0 || sampler2["minFilter"] == GLTFTextureFilter.LINEAR ? "linear" : "nearest";
     var wrapS = "repeat";
-    if (sampler["wrapS"] !== void 0) {
-      if (sampler["wrapS"] == GLTFTextureFilter.REPEAT) {
+    if (sampler2["wrapS"] !== void 0) {
+      if (sampler2["wrapS"] == GLTFTextureFilter.REPEAT) {
         wrapS = "repeat";
-      } else if (sampler["wrapS"] == GLTFTextureFilter.CLAMP_TO_EDGE) {
+      } else if (sampler2["wrapS"] == GLTFTextureFilter.CLAMP_TO_EDGE) {
         wrapS = "clamp-to-edge";
       } else {
         wrapS = "mirror-repeat";
       }
     }
     var wrapT = "repeat";
-    if (sampler["wrapT"] !== void 0) {
-      if (sampler["wrapT"] == GLTFTextureFilter.REPEAT) {
+    if (sampler2["wrapT"] !== void 0) {
+      if (sampler2["wrapT"] == GLTFTextureFilter.REPEAT) {
         wrapT = "repeat";
-      } else if (sampler["wrapT"] == GLTFTextureFilter.CLAMP_TO_EDGE) {
+      } else if (sampler2["wrapT"] == GLTFTextureFilter.CLAMP_TO_EDGE) {
         wrapT = "clamp-to-edge";
       } else {
         wrapT = "mirror-repeat";
@@ -24428,9 +24428,9 @@ var GLTFSampler = class {
   }
 };
 var GLTFTexture = class {
-  constructor(sampler, image) {
-    this.gltfsampler = sampler;
-    this.sampler = sampler.sampler;
+  constructor(sampler2, image) {
+    this.gltfsampler = sampler2;
+    this.sampler = sampler2.sampler;
     this.image = image;
     this.imageView = image.createView();
   }
@@ -24491,8 +24491,8 @@ async function uploadGLBModel(buffer, device2) {
     (s2) => new GLTFSampler(s2, device2)
   );
   const textures = (glbJsonData.textures || []).map((tex) => {
-    const sampler = tex.sampler !== void 0 ? samplers[tex.sampler] : defaultSampler;
-    return new GLTFTexture(sampler, images[tex.source]);
+    const sampler2 = tex.sampler !== void 0 ? samplers[tex.sampler] : defaultSampler;
+    return new GLTFTexture(sampler2, images[tex.source]);
   });
   const defaultMaterial = new GLTFMaterial({});
   const materials = (glbJsonData.materials || []).map(
@@ -24693,12 +24693,12 @@ var BVHPlayer = class extends MEMeshObj {
     }
     for (let i2 = 0; i2 < anim.channels.length; i2++) {
       const channel = anim.channels[i2];
-      const sampler = anim.samplers[channel.sampler];
-      channel._inputTimes = this.getAccessorArray(this.glb, sampler.input);
-      channel._outputArray = this.getAccessorArray(this.glb, sampler.output);
+      const sampler2 = anim.samplers[channel.sampler];
+      channel._inputTimes = this.getAccessorArray(this.glb, sampler2.input);
+      channel._outputArray = this.getAccessorArray(this.glb, sampler2.output);
       channel._numComponents = channel.target.path === "rotation" ? 4 : 3;
       channel._animLength = channel._inputTimes[channel._inputTimes.length - 1];
-      channel._isStep = sampler.interpolation === "STEP";
+      channel._isStep = sampler2.interpolation === "STEP";
       channel._lastKeyIndex = 0;
       channel._pathType = channel.target.path === "rotation" ? 2 : channel.target.path === "translation" ? 0 : 1;
       channel._lastFrame = channel._inputTimes.length - 1;
@@ -24708,8 +24708,8 @@ var BVHPlayer = class extends MEMeshObj {
   getAnimationLength(animation) {
     let maxTime = 0;
     for (const channel of animation.channels) {
-      const sampler = animation.samplers[channel.sampler];
-      const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+      const sampler2 = animation.samplers[channel.sampler];
+      const inputTimes = this.getAccessorArray(this.glb, sampler2.input);
       const lastTime = inputTimes[inputTimes.length - 1];
       if (lastTime > maxTime) maxTime = lastTime;
     }
@@ -24789,8 +24789,8 @@ var BVHPlayer = class extends MEMeshObj {
   };
   getNumberOfFramesCurAni() {
     let anim = this.glb.glbJsonData.animations[this.animationIndex];
-    const sampler = anim.samplers[0];
-    const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+    const sampler2 = anim.samplers[0];
+    const inputAccessor = this.glb.glbJsonData.accessors[sampler2.input];
     const numFrames = inputAccessor.count;
     return numFrames;
   }
@@ -26045,10 +26045,10 @@ var MaterialsInstanced = class {
   }
   async loadEnvMap(texturesPaths, isEnvMap = false) {
     const path2 = texturesPaths[1] || texturesPaths[0];
-    const { texture, sampler } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
+    const { texture, sampler: sampler2 } = await this.textureCache.get(path2, this.getFormat(), isEnvMap);
     return {
       texture,
-      sampler
+      sampler: sampler2
     };
   }
   async loadVideoTexture(arg) {
@@ -27183,14 +27183,14 @@ var GenGeoTexture = class {
         { texture },
         [img.width, img.height]
       );
-      const sampler = this.device.createSampler({
+      const sampler2 = this.device.createSampler({
         magFilter: "linear",
         minFilter: "linear",
         addressModeU: "repeat",
         addressModeV: "repeat"
       });
       this.texture = texture;
-      this.sampler = sampler;
+      this.sampler = sampler2;
       resolve();
     });
   }
@@ -28789,12 +28789,12 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     for (let i2 = 0; i2 < anim.channels.length; i2++) {
       const channel = anim.channels[i2];
-      const sampler = anim.samplers[channel.sampler];
-      channel._inputTimes = this.getAccessorArray(this.glb, sampler.input);
-      channel._outputArray = this.getAccessorArray(this.glb, sampler.output);
+      const sampler2 = anim.samplers[channel.sampler];
+      channel._inputTimes = this.getAccessorArray(this.glb, sampler2.input);
+      channel._outputArray = this.getAccessorArray(this.glb, sampler2.output);
       channel._numComponents = channel.target.path === "rotation" ? 4 : 3;
       channel._animLength = channel._inputTimes[channel._inputTimes.length - 1];
-      channel._isStep = sampler.interpolation === "STEP";
+      channel._isStep = sampler2.interpolation === "STEP";
       channel._lastKeyIndex = 0;
       channel._pathType = channel.target.path === "rotation" ? 2 : channel.target.path === "translation" ? 0 : 1;
       channel._lastFrame = channel._inputTimes.length - 1;
@@ -28883,8 +28883,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       console.log("[anim undefined]", this.name);
       return 1;
     }
-    for (const sampler of anim.samplers) {
-      const inputAccessor = this.glb.glbJsonData.accessors[sampler.input];
+    for (const sampler2 of anim.samplers) {
+      const inputAccessor = this.glb.glbJsonData.accessors[sampler2.input];
       if (inputAccessor.count > maxFrames) maxFrames = inputAccessor.count;
     }
     return maxFrames;
@@ -28892,8 +28892,8 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
   getAnimationLength(animation) {
     let maxTime = 0;
     for (const channel of animation.channels) {
-      const sampler = animation.samplers[channel.sampler];
-      const inputTimes = this.getAccessorArray(this.glb, sampler.input);
+      const sampler2 = animation.samplers[channel.sampler];
+      const inputTimes = this.getAccessorArray(this.glb, sampler2.input);
       const lastTime = inputTimes[inputTimes.length - 1];
       if (lastTime > maxTime) maxTime = lastTime;
     }
@@ -42011,7 +42011,7 @@ var TextureCache = class {
       );
       offset += mipBytes;
     }
-    const sampler = this.device.createSampler({
+    const sampler2 = this.device.createSampler({
       magFilter: "linear",
       minFilter: "linear",
       mipmapFilter: mipCount > 1 ? "linear" : void 0,
@@ -42019,7 +42019,7 @@ var TextureCache = class {
       addressModeV: "repeat",
       addressModeW: "repeat"
     });
-    return { texture, sampler };
+    return { texture, sampler: sampler2 };
   }
   async loadEnvMap(path2) {
     const envKey = `env:${path2}`;
@@ -42044,14 +42044,14 @@ var TextureCache = class {
       { texture },
       [imageBitmap.width, imageBitmap.height]
     );
-    const sampler = this.device.createSampler({
+    const sampler2 = this.device.createSampler({
       magFilter: "linear",
       minFilter: "linear",
       addressModeU: "repeat",
       addressModeV: "repeat",
       addressModeW: "repeat"
     });
-    return { texture, sampler };
+    return { texture, sampler: sampler2 };
   }
   async #loadEnvMap(path2) {
     const response = await fetch(path2);
@@ -42073,7 +42073,7 @@ var TextureCache = class {
       { texture },
       [width, height]
     );
-    const sampler = this.device.createSampler({
+    const sampler2 = this.device.createSampler({
       label: "EnvMap Sampler",
       magFilter: "linear",
       minFilter: "linear",
@@ -42084,7 +42084,7 @@ var TextureCache = class {
       addressModeV: "clamp-to-edge"
       // ✅ Clamp at poles (top/bottom)
     });
-    return { texture, sampler };
+    return { texture, sampler: sampler2 };
   }
 };
 
@@ -52656,14 +52656,14 @@ var SpritesPack2D = class {
    */
   async registerSpritesheet(name2, imageSource, gridCols, gridRows) {
     const texture = await this._loadTexture(imageSource);
-    const sampler = this.device.createSampler({
+    const sampler2 = this.device.createSampler({
       magFilter: "nearest",
       minFilter: "nearest"
     });
     this.spriteSheets.set(name2, {
       texture,
       textureView: texture.createView(),
-      sampler,
+      sampler: sampler2,
       gridCols,
       gridRows,
       totalFrames: gridCols * gridRows
@@ -67694,35 +67694,6 @@ var SplatHandEffect = class {
     this._posCPU.fill(0);
     device2.queue.writeBuffer(splatLayer.positionAnimator.posBuffer, 0, this._posCPU);
   }
-  // ── Cluster setup ──────────────────────────────────────────────────────────
-  // _precompute(n) {
-  //   // Weight distribution: fingertips heavier, wrist medium
-  //   const weights = new Float32Array(21).fill(1.0);
-  //   [4, 8, 12, 16, 20].forEach(i => weights[i] = 1.8); // fingertips
-  //   weights[0] = 1.5;                                    // wrist
-  //   let total = 0;
-  //   for (let i = 0; i < 21; i++) total += weights[i];
-  //   const cdf = new Float32Array(21);
-  //   let run = 0;
-  //   for (let i = 0; i < 21; i++) { run += weights[i] / total; cdf[i] = run; }
-  //   cdf[20] = 1.0;
-  //   for (let p = 0; p < n; p++) {
-  //     const r = Math.random();
-  //     let ci = 0;
-  //     while (ci < 20 && cdf[ci] < r) ci++;
-  //     this._clusterIdx[p] = ci;
-  //     // Uniform random point inside unit sphere
-  //     let ox, oy, oz;
-  //     do {
-  //       ox = (Math.random() - 0.5) * 2;
-  //       oy = (Math.random() - 0.5) * 2;
-  //       oz = (Math.random() - 0.5) * 2;
-  //     } while (ox * ox + oy * oy + oz * oz > 1.0);
-  //     this._offsetX[p] = ox;
-  //     this._offsetY[p] = oy;
-  //     this._offsetZ[p] = oz;
-  //   }
-  // }
   _precompute(n3) {
     const weights = new Float32Array([
       2,
@@ -67793,7 +67764,6 @@ var SplatHandEffect = class {
       this._offsetZ[p2] = oz;
     }
   }
-  // ── Public API ─────────────────────────────────────────────────────────────
   /**
    * Feed raw MediaPipe results directly.
    * Call from your PipeCommander.onResults() override.
@@ -67824,7 +67794,7 @@ var SplatHandEffect = class {
   setOrigin(x3, y3, z2) {
     this.origin = [x3, y3, z2];
   }
-  // ── Effect interface (called automatically by main loop) ───────────────────
+  // ── Effect interface (called automatically by main loop)
   updateInstanceData(baseModelMatrix) {
     if (!this.enabled) return;
     this.time += 0.016;
@@ -68015,10 +67985,10 @@ var loadHandBeast = function() {
         };
         loadHand2.activateHZB();
         let cam3 = app.getCamera();
-        cam3.setYaw(-0.03);
-        cam3.setPitch(-0.49);
+        cam3.setYaw(-0);
+        cam3.setPitch(-0.19);
         cam3.setZ(0);
-        cam3.setY(7);
+        cam3.setY(13);
         app.buildRenderBuckets();
         cam3._dirtyAngle = true;
       }, 700);
@@ -68391,7 +68361,7 @@ var loadFaceBeast = function() {
       loadFace.activateBloomEffect();
       loadFace.lightContainer[0].setPosition(0, 55, 0);
       loadFace.lightContainer[0].setTarget(0, 0, -20);
-      const sampler = loadFace.device.createSampler({
+      const sampler2 = loadFace.device.createSampler({
         magFilter: "linear",
         minFilter: "linear",
         mipmapFilter: "nearest",
@@ -68403,7 +68373,7 @@ var loadFaceBeast = function() {
           loadFace.device,
           "rgba16float",
           OUTPUT.msdfTexture,
-          sampler,
+          sampler2,
           loadFace.cameraBuffer,
           OUTPUT.font,
           { scale: 0.1 }
@@ -68457,10 +68427,10 @@ var loadFaceBeast = function() {
         };
         loadFace.activateHZB();
         let cam2 = app.getCamera();
-        cam2.setYaw(-0.03);
-        cam2.setPitch(-0.49);
+        cam2.setYaw(0);
+        cam2.setPitch(-0.1);
         cam2.setZ(0);
-        cam2.setY(7);
+        cam2.setY(17);
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
       }, 6e3);
@@ -69042,6 +69012,20 @@ var loadMSDFText = function() {
           bloodBurst: true
         }
       });
+      loadAtlasFONT(msdfText.device).then((OUTPUT) => {
+        msdfText.floor.effects.gpuText = new MSDFTextEffect(
+          msdfText.device,
+          "rgba16float",
+          OUTPUT.msdfTexture,
+          sampler,
+          msdfText.cameraBuffer,
+          OUTPUT.font,
+          { scale: 0.1 }
+        );
+        msdfText.floor.effects.gpuText.typeText("TEXT123", 200, () => {
+          console.log("Typing complete!");
+        });
+      });
       msdfText.lightContainer[0].setIntensity(15);
       msdfText.activateBloomEffect();
       msdfText.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
@@ -69087,6 +69071,616 @@ var loadMSDFText = function() {
     });
   });
   window.app = msdfText;
+};
+
+// src/engine/effects/facemask.js
+var sacredGeometryShader = `
+struct Camera {
+  viewProj : mat4x4<f32>
+};
+
+@group(0) @binding(0) var<uniform> camera : Camera;
+
+struct ModelData {
+  model       : mat4x4<f32>,
+  uniforms    : vec4<f32>,
+  lineWidth   : f32,
+  pad1        : f32,
+  pad2        : f32,
+  pad3        : f32
+};
+
+@group(0) @binding(1) var<storage, read> modelDataArray : array<ModelData>;
+
+struct VSIn {
+  @location(0) position : vec3<f32>,
+  @location(1) normal : vec3<f32>,
+  @location(2) uv : vec2<f32>,
+  @builtin(instance_index) instanceIdx : u32,
+};
+
+struct VSOut {
+  @builtin(position) position : vec4<f32>,
+  @location(0) uv : vec2<f32>,
+  @location(1) normal : vec3<f32>,
+  @location(2) fragPos : vec3<f32>,
+  @location(3) data0 : vec4<f32>,
+  @location(4) lineWidth : f32,
+};
+
+@vertex
+fn vsMain(input : VSIn) -> VSOut {
+  var output : VSOut;
+  let modelData = modelDataArray[input.instanceIdx];
+
+  let worldPos = modelData.model * vec4<f32>(input.position, 1.0);
+  output.position = camera.viewProj * worldPos;
+  
+  output.uv = input.uv;
+  output.fragPos = worldPos.xyz;
+  
+  let normalMatrix = mat3x3f(
+    modelData.model[0].xyz,
+    modelData.model[1].xyz,
+    modelData.model[2].xyz
+  );
+  output.normal = normalMatrix * input.normal;
+  
+  output.data0 = modelData.uniforms;
+  output.lineWidth = modelData.lineWidth;
+
+  return output;
+}
+
+fn distanceToPentagram(p : vec2<f32>) -> f32 {
+  var minDist = 1e6;
+  let tau = 6.28318530718;
+  
+  for (var i = 0u; i < 5u; i = i + 1u) {
+    let angle = f32(i) * tau / 5.0;
+    let p1 = vec2<f32>(cos(angle), sin(angle));
+    let angle2 = angle + tau / 10.0;
+    let p2 = vec2<f32>(cos(angle2), sin(angle2)) * 0.4;
+    
+    let v = p2 - p1;
+    let w = p - p1;
+    let c1 = dot(w, v);
+    if (c1 <= 0.0) { minDist = min(minDist, length(w)); continue; }
+    let c2 = dot(v, v);
+    if (c1 >= c2) { minDist = min(minDist, length(p - p2)); continue; }
+    let t = c1 / c2;
+    let closest = p1 + v * t;
+    minDist = min(minDist, length(p - closest));
+  }
+  
+  return minDist;
+}
+
+fn distanceToTriangle(p : vec2<f32>) -> f32 {
+  let p1 = vec2<f32>(0.0, 0.866);
+  let p2 = vec2<f32>(-1.0, -0.5);
+  let p3 = vec2<f32>(1.0, -0.5);
+  
+  var minDist = 1e6;
+  
+  let v = p2 - p1;
+  let w = p - p1;
+  let t = clamp(dot(w, v) / dot(v, v), 0.0, 1.0);
+  minDist = min(minDist, length(p - (p1 + v * t)));
+  
+  let v2 = p3 - p2;
+  let w2 = p - p2;
+  let t2 = clamp(dot(w2, v2) / dot(v2, v2), 0.0, 1.0);
+  minDist = min(minDist, length(p - (p2 + v2 * t2)));
+  
+  let v3 = p1 - p3;
+  let w3 = p - p3;
+  let t3 = clamp(dot(w3, v3) / dot(v3, v3), 0.0, 1.0);
+  minDist = min(minDist, length(p - (p3 + v3 * t3)));
+  
+  return minDist;
+}
+
+fn distanceToHexagon(p : vec2<f32>) -> f32 {
+  var minDist = 1e6;
+  let tau = 6.28318530718;
+  
+  for (var i = 0u; i < 6u; i = i + 1u) {
+    let angle = f32(i) * tau / 6.0;
+    let p1 = vec2<f32>(cos(angle), sin(angle));
+    let angle2 = angle + tau / 6.0;
+    let p2 = vec2<f32>(cos(angle2), sin(angle2));
+    
+    let v = p2 - p1;
+    let w = p - p1;
+    let t = clamp(dot(w, v) / dot(v, v), 0.0, 1.0);
+    minDist = min(minDist, length(p - (p1 + v * t)));
+  }
+  
+  return minDist;
+}
+
+fn distanceToCircle(p : vec2<f32>) -> f32 {
+  return abs(length(p) - 0.8);
+}
+
+fn distanceToSquare(p : vec2<f32>) -> f32 {
+  let q = abs(p) - 0.7;
+  return length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0);
+}
+
+fn getDistanceField(p : vec2<f32>, mode : u32) -> f32 {
+  switch(mode) {
+    case 0u: { return distanceToPentagram(p); }
+    case 1u: { return distanceToTriangle(p); }
+    case 2u: { return distanceToHexagon(p); }
+    case 3u: { return distanceToCircle(p); }
+    case 4u: { return distanceToSquare(p); }
+    default: { return distanceToPentagram(p); }
+  }
+}
+
+struct FragOut {
+  @location(0) color : vec4f,
+  @location(1) normal : vec4f,
+  @location(2) worldPos : vec4f,
+};
+
+@fragment
+fn fsMain(input : VSOut) -> FragOut {
+  let time = input.data0.x;
+  let modeShapeF = input.data0.y;
+  let pulseSpeed = input.data0.z;
+  let glowIntensity = input.data0.w;
+  let lineWidth = input.lineWidth;
+  
+  let modeShape = u32(modeShapeF);
+  
+  let uv = input.uv * 2.0 - 1.0;
+  let dist = getDistanceField(uv, modeShape);
+  
+  let pulse = 0.5 + 0.5 * sin(time * pulseSpeed);
+  let lineThickness = lineWidth * (0.8 + 0.2 * pulse);
+  
+  let line = smoothstep(lineThickness + 0.02, lineThickness, dist);
+  
+  var neonColor = vec3<f32>(0.0);
+  switch(modeShape) {
+    case 0u: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
+    case 1u: { neonColor = vec3<f32>(1.0, 0.0, 1.0); }
+    case 2u: { neonColor = vec3<f32>(0.0, 1.0, 0.0); }
+    case 3u: { neonColor = vec3<f32>(1.0, 1.0, 0.0); }
+    case 4u: { neonColor = vec3<f32>(1.0, 0.0, 0.0); }
+    default: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
+  }
+  
+  let finalIntensity = line * glowIntensity * pulse;
+  let glowColor = neonColor * finalIntensity;
+  
+  let halo = exp(-dist * 5.0) * 0.3 * pulse;
+  let finalColor = glowColor + neonColor * halo;
+  
+  return FragOut(
+    vec4f(finalColor, line),
+    vec4f(normalize(input.normal), 0.0),
+    vec4f(input.fragPos, 1.0)
+  );
+}
+`;
+var SacredGeometryEffect = class {
+  constructor(device2, format, cameraBuffer) {
+    console.log("%c[SacredGeometryEffect] Initializing...", "color: cyan; font-weight: bold;");
+    this.device = device2;
+    this.format = format;
+    this.cameraBuffer = cameraBuffer;
+    this.time = 0;
+    this.enabled = true;
+    this.intensity = 1;
+    this.SHAPE_MODES = {
+      PENTAGRAM: 0,
+      TRIANGLE: 1,
+      HEXAGON: 2,
+      CIRCLE: 3,
+      SQUARE: 4
+    };
+    this.currentMode = this.SHAPE_MODES.PENTAGRAM;
+    this.pulseSpeed = 3;
+    this.glowIntensity = 2.5;
+    this.lineWidth = 0.08;
+    this.pipeline = null;
+    this.bindGroup = null;
+    this.modelBuffer = null;
+    this.vertexBuffer = null;
+    this.indexBuffer = null;
+    this.indexCount = 0;
+    this.maxInstances = 1;
+    this.floatsPerInstance = 24;
+    this.instanceData = new Float32Array(this.maxInstances * this.floatsPerInstance);
+    this._baseModelMatrix = mat4Impl.create();
+    this._initPipeline();
+    this.renderCount = 0;
+  }
+  _initPipeline() {
+    const vertexData = new Float32Array([
+      -2,
+      -2,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      2,
+      -2,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      2,
+      2,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      -2,
+      2,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1
+    ]);
+    const indexData = new Uint32Array([0, 1, 2, 0, 2, 3]);
+    this.vertexBuffer = this.device.createBuffer({
+      label: "sacred-geometry-vertex",
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
+    this.vertexBuffer.unmap();
+    this.indexBuffer = this.device.createBuffer({
+      label: "sacred-geometry-index",
+      size: indexData.byteLength,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Uint32Array(this.indexBuffer.getMappedRange()).set(indexData);
+    this.indexBuffer.unmap();
+    this.indexCount = indexData.length;
+    this.modelBuffer = this.device.createBuffer({
+      label: "sacred-geometry-model-buffer",
+      size: this.maxInstances * this.floatsPerInstance * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: false
+    });
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      label: "sacred-geometry-layout",
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: { type: "uniform" }
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: { type: "read-only-storage" }
+        }
+      ]
+    });
+    this.bindGroup = this.device.createBindGroup({
+      label: "sacred-geometry-bindgroup",
+      layout: bindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: this.cameraBuffer }
+        },
+        {
+          binding: 1,
+          resource: { buffer: this.modelBuffer }
+        }
+      ]
+    });
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
+    const shaderModule = this.device.createShaderModule({
+      label: "sacred-geometry-shader",
+      code: sacredGeometryShader
+    });
+    this.pipeline = this.device.createRenderPipeline({
+      label: "sacred-geometry-pipeline",
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: "vsMain",
+        buffers: [
+          {
+            arrayStride: 32,
+            attributes: [
+              { shaderLocation: 0, offset: 0, format: "float32x3" },
+              { shaderLocation: 1, offset: 12, format: "float32x3" },
+              { shaderLocation: 2, offset: 24, format: "float32x2" }
+            ]
+          }
+        ]
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: "fsMain",
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
+      },
+      primitive: {
+        topology: "triangle-list",
+        cullMode: "none"
+      },
+      depthStencil: {
+        format: "depth24plus",
+        depthWriteEnabled: false,
+        depthCompare: "less"
+      }
+    });
+    console.log("%c[SacredGeometryEffect] \u2713 Initialized - Plane: 4x4 units, Glow: 2.5, LineWidth: 0.08", "color: lime; font-weight: bold;");
+  }
+  updateInstanceData(baseModelMatrix) {
+    mat4Impl.copy(baseModelMatrix, this._baseModelMatrix);
+  }
+  render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
+    if (!this.enabled) return;
+    this.time += dt2;
+    this.renderCount++;
+    if (this.renderCount % 60 === 0) {
+      console.log(`%c[render] Frame ${this.renderCount}, time: ${this.time.toFixed(2)}s`, "color: orange;");
+    }
+    const offset = 0;
+    const floatView = this.instanceData;
+    floatView.set(this._baseModelMatrix, offset);
+    floatView[offset + 16] = this.time;
+    floatView[offset + 17] = this.currentMode;
+    floatView[offset + 18] = this.pulseSpeed;
+    floatView[offset + 19] = this.glowIntensity;
+    floatView[offset + 20] = this.lineWidth;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData, 0, 24);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint32");
+    pass.drawIndexed(this.indexCount, 1);
+  }
+  setShape(mode) {
+    if (typeof mode === "string") {
+      mode = this.SHAPE_MODES[mode.toUpperCase()] ?? this.SHAPE_MODES.PENTAGRAM;
+    }
+    this.currentMode = mode;
+    console.log(`%c[SacredGeometryEffect] Shape: ${Object.keys(this.SHAPE_MODES).find((k2) => this.SHAPE_MODES[k2] === mode)}`, "color: yellow;");
+  }
+  setPulseSpeed(speed) {
+    this.pulseSpeed = speed;
+  }
+  setGlowIntensity(intensity) {
+    this.glowIntensity = intensity;
+  }
+  setLineWidth(width) {
+    this.lineWidth = width;
+  }
+  setIntensity(v2) {
+    this.intensity = v2;
+  }
+  destroy() {
+    if (this.modelBuffer) this.modelBuffer.destroy();
+    if (this.vertexBuffer) this.vertexBuffer.destroy();
+    if (this.indexBuffer) this.indexBuffer.destroy();
+  }
+};
+
+// examples/face-mask.js
+var loadFaceMask = function() {
+  let FACEMASK = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_BONES: 0,
+    MAX_SPOTLIGHTS: 1,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    FACEMASK.addLight();
+    FACEMASK.buildLightShadowBuckets();
+    touchCoordinate.stopOnFirstDetectedHit = true;
+    downloadMeshes(
+      {
+        ball: "./res/meshes/blender/sphere.obj",
+        facemask: "./res/meshes/obj/facemask.obj",
+        cube: "./res/meshes/blender/cube.obj"
+      },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    let activeGridCubes = [];
+    let completedCubesCount = 0;
+    const totalCubesInGrid = 9;
+    function onGround(m2) {
+      FACEMASK.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -1.1, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: { enabled: false, mass: 0, geometry: "Cube" }
+      });
+    }
+    function createCube(mesh, options2 = {}) {
+      return FACEMASK.addMeshObj({
+        material: { type: options2.materialType || "dark" },
+        position: { x: options2.x || 0, y: options2.y || 3, z: options2.z || -15 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: options2.scale || [3.5, 3.5, 3.5],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: options2.name || "cube",
+        mesh,
+        envMapParams: {
+          baseColorMix: 0.1,
+          mirrorTint: [0.9, 0.95, 1],
+          reflectivity: 0.75,
+          illuminateColor: [0.3, 0.7, 1],
+          illuminateStrength: 1.5,
+          illuminatePulse: 0.1,
+          fresnelPower: 5,
+          envLodBias: 1.5,
+          usePlanarReflection: false
+        },
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 0, geometry: "Cube" },
+        pointerEffect: { enabled: true }
+      });
+    }
+    function runSingleLap(cubeObj, startX, startZ, row2, col) {
+      cubeObj.position.setSpeed(0.2);
+      const travelDistance = 12;
+      const groundY = 3;
+      const peakY = 11;
+      const pathPoints = [
+        { x: startX + travelDistance, y: groundY, z: startZ },
+        { x: startX + travelDistance, y: peakY, z: startZ - travelDistance },
+        { x: startX, y: peakY, z: startZ - travelDistance },
+        { x: startX, y: groundY, z: startZ }
+      ];
+      let currentStep = 0;
+      function executeNextMove() {
+        const target = pathPoints[currentStep];
+        cubeObj.position.translateByX(target.x);
+        cubeObj.position.translateByY(target.y);
+        cubeObj.position.translateByZ(target.z);
+        cubeObj.position.onTargetPositionReach = () => {
+          cubeObj.position.onTargetPositionReach = null;
+          if (currentStep === 3) {
+            console.log("test rotate");
+            cubeObj.rotationSpeed.y = 10;
+            setTimeout(() => {
+              cubeObj.rotationSpeed.y = 0;
+              cubeObj.rotation.y = 0;
+              completedCubesCount++;
+              if (completedCubesCount === totalCubesInGrid) {
+                console.log("All cubes parked! Starting global sequence cooldown...");
+                setTimeout(() => {
+                  triggerEntireGridSequence();
+                }, 2e3);
+              }
+            }, 600);
+          } else {
+            currentStep++;
+            executeNextMove();
+          }
+        };
+      }
+      setTimeout(() => {
+        executeNextMove();
+      }, (row2 + col) * 250);
+    }
+    function triggerEntireGridSequence() {
+      completedCubesCount = 0;
+      console.log("\u{1F3AC} Playing layout sequence again...");
+      activeGridCubes.forEach((item) => {
+        item.cube.position.x = item.startX;
+        item.cube.position.y = 3;
+        item.cube.position.z = item.startZ;
+        runSingleLap(item.cube, item.startX, item.startZ, item.row, item.col);
+      });
+    }
+    FACEMASK.triggerEntireGridSequence = triggerEntireGridSequence;
+    function generateCubeGrid(mesh, rows = 3, cols = 3, spacing2 = 12) {
+      const startX = -((cols - 1) * spacing2) / 2;
+      const startZ = -15;
+      for (let r3 = 0; r3 < rows; r3++) {
+        for (let c2 = 0; c2 < cols; c2++) {
+          const posX = startX + c2 * spacing2;
+          const posZ = startZ + r3 * spacing2;
+          const cubeName = `cube_r${r3}_c${c2}`;
+          let newCube = createCube(mesh, {
+            x: posX,
+            y: 3,
+            z: posZ,
+            name: cubeName
+          });
+          activeGridCubes.push({
+            cube: newCube,
+            startX: posX,
+            startZ: posZ,
+            row: r3,
+            col: c2
+          });
+        }
+      }
+    }
+    async function onLoadObj(m2) {
+      FACEMASK.MYCUBE = FACEMASK.addMeshObj({
+        material: { type: "standard", useBlend: true },
+        position: { x: 0, y: 5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 1, 1],
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "MYCUBE",
+        mesh: m2.facemask,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: { enabled: true }
+      });
+      setTimeout(() => {
+        FACEMASK.MYCUBE.effects.fancy = new SacredGeometryEffect(FACEMASK.device, "rgba16float", FACEMASK.cameraBuffer);
+        FACEMASK.lightContainer[0].setIntensity(14);
+        FACEMASK.activateBloomEffect();
+        FACEMASK.bloomPass.setBlurRadius(16);
+        FACEMASK.lightContainer[0].setPosition(0, 45, -10);
+        FACEMASK.lightContainer[0].setTarget(0, 0, -10);
+        app.buildLightShadowBuckets();
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0);
+        cam2.setPitch(-0.29);
+        cam2.setZ(25);
+        cam2.setY(5);
+        FACEMASK.getCamera().setPosition(0, 3, 10);
+        cam2._dirtyAngle = true;
+        FACEMASK.MYCUBE.setBlend(0);
+        setTimeout(() => {
+          app.MYCUBE.setBlend(0);
+          app.buildRenderBuckets();
+        }, 1550);
+      }, 700);
+    }
+    FACEMASK.canvas.addEventListener("ray.hit.event", (e2) => {
+    });
+  });
+  window.app = FACEMASK;
 };
 
 // examples.js
@@ -69153,6 +69747,7 @@ byId2("loadFaceBeast").addEventListener("click", () => switchDemo("43"));
 byId2("loadGaussianSplatVertAnim2").addEventListener("click", () => switchDemo("44"));
 byId2("loadRoulette").addEventListener("click", () => switchDemo("45"));
 byId2("loadMSDFText").addEventListener("click", () => switchDemo("46"));
+byId2("loadFaceMask").addEventListener("click", () => switchDemo("47"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -69248,6 +69843,8 @@ if (urlQuery["demo"] === "1") {
   loadRoulette();
 } else if (urlQuery["demo"] === "46") {
   loadMSDFText();
+} else if (urlQuery["demo"] === "47") {
+  loadFaceMask();
 } else {
   loadObjFile();
 }
