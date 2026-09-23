@@ -2,12 +2,10 @@ import {mat4} from "wgpu-matrix";
 import {flameEffectInstance} from "../../shaders/flame-effect/flame-instanced";
 import {LOG_FUNNY_ARCADE, randomFloatFromTo} from "../utils";
 
-/**
- * @description
- * FlameEmitter
- * transformed vertex particle, posible to choose dir also...
- */
 export class FlameEmitter {
+  // Static cache - one pipeline per device
+  static _pipelineCache = new WeakMap();
+
   constructor(device, format, maxParticles = 20, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -21,9 +19,6 @@ export class FlameEmitter {
     this.smoothFlickeringScale = 0.1;
     this.minBound = 0;
     this.maxBound = 1.9;
-    // this.swap0 = 0;
-    // this.swap1 = 1;
-    // this.swap2 = 2;
     this.swap0 = 2;
     this.swap1 = 1;
     this.swap2 = 0;
@@ -109,71 +104,96 @@ export class FlameEmitter {
   }
 
   _initPipeline() {
-    const S = 2;
+    // Check cache first - if pipeline already built for this device, reuse it
+    if(FlameEmitter._pipelineCache.has(this.device)) {
+      const cached = FlameEmitter._pipelineCache.get(this.device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      // Build pipeline only once per device
+      this.bindGroupLayout = this.device.createBindGroupLayout({
+        label: 'flame-emmiter bindGroupLayout',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
+        ]
+      });
+      this.shaderModule = this.device.createShaderModule({code: flameEffectInstance});
+      this.pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+      this.pipeline = this.device.createRenderPipeline({
+        label: 'flame-emmiter pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{
+            format: this.format,
+            blend: {
+              color: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one',
+                operation: 'add',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+
+            }
+          },
+          {format: 'rgba16float'},
+          {format: 'rgba16float'}]
+        },
+        primitive: {topology: "triangle-list"},
+        depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}
+      });
+
+      // Cache it for next emitters
+      FlameEmitter._pipelineCache.set(this.device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+
+    // Each emitter gets own buffers (not cached)
     const vertexData = this.recreateVertexDataRND(1);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.vertexBuffer = this.device.createBuffer({size: vertexData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     this.uvBuffer = this.device.createBuffer({size: uvData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.indexBuffer = this.device.createBuffer({size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
+
     this.modelBuffer = this.device.createBuffer({label: 'flame-emmiter modeBuffer', size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST});
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'flame-emmiter bindGroupLayout',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-      ]
-    });
+
     this.bindGroup = this.device.createBindGroup({
       label: 'flame-emmiter bindGroup',
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
-    const shaderModule = this.device.createShaderModule({code: flameEffectInstance});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'flame-emmiter pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one',
-              operation: 'add',
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
-            },
 
-          }
-        },
-        {format: 'rgba16float'},
-        {format: 'rgba16float'}]
-      },
-      primitive: {topology: "triangle-list"},
-      depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}
-    });
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {})) }, 200)
   }
 
   updateInstanceData = (baseModelMatrix) => {
@@ -244,7 +264,7 @@ export class FlameEmitter {
 
   setDirection(direction) {
     this.riseDirection = 1;
-    this.baseRotation = [0, 0, 0]; // Reset
+    this.baseRotation = [0, 0, 0];
     switch(direction) {
       case 'up':
         this.swap0 = 0; this.swap1 = 1; this.swap2 = 2;
@@ -260,16 +280,16 @@ export class FlameEmitter {
       case 'back':
         this.swap0 = 0; this.swap1 = 2; this.swap2 = 1;
         this.riseDirection = -1;
-        this.baseRotation = [-Math.PI / 2, 0, 0]; // Tilt -90 on X
+        this.baseRotation = [-Math.PI / 2, 0, 0];
         break;
       case 'right':
         this.swap0 = 1; this.swap1 = 0; this.swap2 = 2;
-        this.baseRotation = [0, 0, -Math.PI / 2]; // Tilt -90 on Z
+        this.baseRotation = [0, 0, -Math.PI / 2];
         break;
       case 'left':
         this.swap0 = 1; this.swap1 = 0; this.swap2 = 2;
         this.riseDirection = -1;
-        this.baseRotation = [0, 0, Math.PI / 2]; // Tilt 90 on Z
+        this.baseRotation = [0, 0, Math.PI / 2];
         break;
     }
   }

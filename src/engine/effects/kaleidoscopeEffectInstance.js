@@ -1,12 +1,16 @@
 import {mat4} from "wgpu-matrix";
 import {kaleidoscopeEffectInstance} from "../../shaders/kale/kale.wgsl";
 import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
+
 /**
  * @description
  * KaleidoscopeEmitter
  * procedural kaleidoscope particles with vertex animation.
  */
 export class KaleidoscopeEmitter {
+  // Static cache - one pipeline per device
+  static _pipelineCache = new WeakMap();
+
   constructor(device, format, maxParticles = 20, cameraBuffer, initSwap = [0, 1, 2], baseRotation = [0, 0, 0]) {
     this.device = device;
     this.format = format;
@@ -25,7 +29,6 @@ export class KaleidoscopeEmitter {
     this.swap1 = initSwap[1];
     this.swap2 = initSwap[2];
     this.riseDirection = 1;
-    // this.baseRotation = [0, 0, 0];
     this.baseRotation = baseRotation;
     this.scaleCoeficient = 0.12;
     this.rotSpeed = 0.1;
@@ -105,35 +108,6 @@ export class KaleidoscopeEmitter {
     const memory21 = randomFloatFromTo(0.4, 0.4 + S);
     const memory22 = -randomFloatFromTo(0.4, 0.4 + S);
     const memory23 = -randomFloatFromTo(0.4, 0.4 + S);
-    // this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    // console.info(`%cCrazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
-    this.VERTEX_TEMPLATE[0] = memory1;
-    this.VERTEX_TEMPLATE[1] = memory2;
-    this.VERTEX_TEMPLATE[2] = 0.0;
-    this.VERTEX_TEMPLATE[3] = memory11;
-    this.VERTEX_TEMPLATE[4] = memory21;
-    this.VERTEX_TEMPLATE[5] = 0.0;
-    this.VERTEX_TEMPLATE[6] = memory12;
-    this.VERTEX_TEMPLATE[7] = memory22;
-    this.VERTEX_TEMPLATE[8] = 0.0;
-    this.VERTEX_TEMPLATE[9] = memory13;
-    this.VERTEX_TEMPLATE[10] = memory23;
-    this.VERTEX_TEMPLATE[11] = 0.0;
-    if(this.vertexBuffer) this.device.queue.writeBuffer(this.vertexBuffer, 0, this.VERTEX_TEMPLATE);
-    return this.VERTEX_TEMPLATE;
-  }
-
-  recreateVertexDataCrazzy(S) {
-    const memory1 = -randomFloatFromTo(0.1, 0.1 + S);
-    const memory11 = randomFloatFromTo(0.1, 0.1 + S);
-    const memory12 = randomFloatFromTo(0.1, 0.1 + S);
-    const memory13 = randomFloatFromTo(0.1, 0.1 + S);
-    const memory2 = randomFloatFromTo(0.4, 0.4 + S);
-    const memory21 = randomFloatFromTo(0.4, 0.4 + S);
-    const memory22 = -randomFloatFromTo(0.4, 0.4 + S);
-    const memory23 = -randomFloatFromTo(0.4, 0.4 + S);
-    // this.memoryCrazzyCase = [memory1, memory11, memory12, memory13, memory2, memory21, memory22, memory23];
-    // console.info(`%cCrazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase}`, LOG_FUNNY_ARCADE);
     this.VERTEX_TEMPLATE[0] = memory1;
     this.VERTEX_TEMPLATE[1] = memory2;
     this.VERTEX_TEMPLATE[2] = 0.0;
@@ -151,7 +125,6 @@ export class KaleidoscopeEmitter {
   }
 
   recreateVertexDataFromData(data) {
-    // console.info(`%c Crazzy kaleidoscope emitter case data [use random input and choose best configuration for your effect]: ${this.memoryCrazzyCase} \n  Just call mesh.effects.recreateVertexDataFromData(dataArr) `, LOG_FUNNY_ARCADE);
     this.VERTEX_TEMPLATE[0] = data[0];
     this.VERTEX_TEMPLATE[1] = data[4];
     this.VERTEX_TEMPLATE[2] = 0.0;
@@ -169,85 +142,110 @@ export class KaleidoscopeEmitter {
   }
 
   _initPipeline() {
+    // Check cache first - if pipeline already built for this device, reuse it
+    if (KaleidoscopeEmitter._pipelineCache.has(this.device)) {
+      const cached = KaleidoscopeEmitter._pipelineCache.get(this.device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      // Build pipeline only once per device
+      this.bindGroupLayout = this.device.createBindGroupLayout({
+        label: 'kale-emitter layout',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
+        ]
+      });
+      this.shaderModule = this.device.createShaderModule({code: kaleidoscopeEffectInstance});
+      this.pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+      this.pipeline = this.device.createRenderPipeline({
+        label: 'kaleidoscope-emitter pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{
+            format: this.format,
+            blend: {
+              color: {
+                srcFactor: 'src-alpha',
+                dstFactor: 'one',
+                operation: 'add',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+            },
+            writeMask: 0xF
+          },
+          {format: this.format},
+          {format: this.format}]
+        },
+        primitive: {topology: "triangle-list"},
+        depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}
+      });
+
+      // Cache it for next emitters
+      KaleidoscopeEmitter._pipelineCache.set(this.device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+
+    // Each emitter gets own buffers (not cached)
     const vertexData = this.recreateVertexDataRND(1);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     this.uvBuffer = this.device.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.indexBuffer = this.device.createBuffer({
       size: Math.ceil(indexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
+    
     this.modelBuffer = this.device.createBuffer({
       label: 'kale-emitter modelBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'kale-emitter layout',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-      ]
-    });
+    
     this.bindGroup = this.device.createBindGroup({
       label: 'kaleidoscope-emitter bindGroup',
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
-    const shaderModule = this.device.createShaderModule({code: kaleidoscopeEffectInstance});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'kaleidoscope-emitter pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {
-              srcFactor: 'src-alpha',
-              dstFactor: 'one',
-              operation: 'add',
-            },
-            alpha: {
-              srcFactor: 'one',
-              dstFactor: 'one-minus-src-alpha',
-              operation: 'add',
-            },
-          },
-          writeMask: 0xF
-        },
-        {format: this.format},
-        {format: this.format}
 
-        ]
-      },
-      primitive: {topology: "triangle-list"},
-      depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}
-    });
+    // Trigger effect reorganization in main loop
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
   }
 
   updateInstanceData = (baseModelMatrix) => {
@@ -262,11 +260,7 @@ export class KaleidoscopeEmitter {
       const local = this._localMatrix;
       mat4.identity(local);
       mat4.translate(local, t.currentPosition, local);
-      // mat4.rotateX(local, this.baseRotation[0], local);
-      // mat4.rotateY(local, this.baseRotation[1] + t.rotation, local);
-      // mat4.rotateZ(local, this.baseRotation[2], local);
       mat4.rotateY(local, t.rotation, local);
-
       mat4.scale(local, t.currentScale, local);
       mat4.identity(this._finalMatrix);
       mat4.multiply(baseModelMatrix, local, this._finalMatrix);

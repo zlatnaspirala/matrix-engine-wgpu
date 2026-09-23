@@ -3,6 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
+import {FlameEmitter} from "../src/engine/effects/flame-emmiter.js";
 
 export var loadObjFile = function() {
 
@@ -106,7 +107,11 @@ export var loadObjFile = function() {
       loadObjFile.lightContainer[0].setTarget(0, 0, -10);
 
       setTimeout(() => {
+        app.MYCUBE = MYCUBE;
         MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
+
+        MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile.device, "rgba16float", 20, loadObjFile.cameraBuffer);
+
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
 
@@ -132,6 +137,19 @@ export var loadObjFile = function() {
       if(e.detail.hitObject.name.startsWith('cube')) {
         e.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
         e.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+
+        e.detail.hitObject.effects.flameEmitterBlue.recreateVertexDataCrazzy(5);
+        app.MYCUBE.effects.flameEmitterBlue.instanceTargets.forEach((ins) => {
+          ins.color[0] = randomIntFromTo(0, 1)
+          ins.color[1] = randomIntFromTo(0, 1)
+          ins.color[2] = randomIntFromTo(1000, 2000)
+        })
+        app.MYCUBE.effects.flameEmitter.instanceTargets.forEach((ins) => {
+          ins.color[0] = randomIntFromTo(1, 10)
+          ins.color[1] = randomIntFromTo(1, 10)
+          ins.color[2] = 0
+        })
+
         e.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
         app.bloomPass.setBlurRadius(randomIntFromTo(1, 5))
       }

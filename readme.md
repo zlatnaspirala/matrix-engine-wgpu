@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.19.0 2026 Alias `The beast`
+📅 Version: 2.0.0 Beta 2026 Alias `The beast`
 
 ---
 
@@ -40,7 +40,8 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 - ✔️ Volumetric post processing.
 - ✔️ GPU Features: `texture-compression-bc` - (Not active by default).
 - ✔️ Scene Culling feature (see maze example for CPU Culling).
-- 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
+- ✔️ Effects (sub draw system) Cached pipelines. Effect is standalone webgpu entity with own
+     groups and pipelines. With effects i can add any exsternal demo very easy and quick.
 - ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).
 - ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader).
 - ✔️ Dynamic shadow cast (done also for skinned meshes).
