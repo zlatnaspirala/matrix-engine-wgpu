@@ -402,16 +402,8 @@ export class ChartsEffect {
     this._gridSpacingHeight[1] = this.cubeHeight;
     this._gridTime[0] = this.time;
     this.device.queue.writeBuffer(this.gridUniformBuffer, 0, baseModelMatrix);
-    this.device.queue.writeBuffer(
-      this.gridUniformBuffer,
-      64,
-      this._gridTimeStepsCoinCount,
-    );
-    this.device.queue.writeBuffer(
-      this.gridUniformBuffer,
-      72,
-      this._gridSpacingHeight,
-    );
+    this.device.queue.writeBuffer(this.gridUniformBuffer, 64, this._gridTimeStepsCoinCount,);
+    this.device.queue.writeBuffer(this.gridUniformBuffer, 72, this._gridSpacingHeight,);
     this.device.queue.writeBuffer(this.gridUniformBuffer, 80, this._gridTime);
     const vp = this.camera.VP;
     const width = app.canvas.width;
@@ -428,9 +420,7 @@ export class ChartsEffect {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.normalBuffer);
     pass.setIndexBuffer(this.indexBuffer, "uint16");
-    pass.drawIndexed(
-      this.indexCount,
-      Math.min(this.timeSteps * this.coinCount, this.maxInstances),
+    pass.drawIndexed(this.indexCount, Math.min(this.timeSteps * this.coinCount, this.maxInstances),
     );
   }
 }

@@ -85,6 +85,7 @@ export const FlamePresets = {
 
 // FlameEffect
 export class FlameEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, colorFormat, params = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -137,50 +138,79 @@ export class FlameEffect {
     this.indexCount = geo.indices.length;
     this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
   }
-
   _initPipeline() {
-    this.modelBuffer = this.device.createBuffer({size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}},
-      ]
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(FlameEffect._pipelineCache.has(device)) {
+      const cached = FlameEffect._pipelineCache.get(device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}},
+        ]
+      });
+
+      this.shaderModule = device.createShaderModule({code: flameEffect});
+      this.pipelineLayout = device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+
+      this.pipeline = device.createRenderPipeline({
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]},
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{
+            format: this.colorFormat,
+            blend: {
+              color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
+              alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
+            }
+          },
+          {format: 'rgba16float'},
+          {format: 'rgba16float'}]
+        },
+        primitive: {topology: "triangle-list"},
+        depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},
+      });
+
+      // ========== CACHE THEM ==========
+      FlameEffect._pipelineCache.set(device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+    this.modelBuffer = device.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
-    const shaderModule = this.device.createShaderModule({code: flameEffect});
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]}),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]},
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.colorFormat,
-          blend: {
-            color: {srcFactor: "src-alpha", dstFactor: "one", operation: "add"},
-            alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
-          }
-        },
-        {format: 'rgba16float'},
-        {format: 'rgba16float'}]
-      },
-      primitive: {topology: "triangle-list"},
-      depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},
-    });
   }
+
   async morphTo(type, size = 40, duration = 200) {
     const originalIntensity = this.intensity;
     const steps = 10;
@@ -255,14 +285,13 @@ export class FlameEffect {
 
   draw(pass, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
+    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
     pass.drawIndexed(this.indexCount);
   }
-  // Interface for effect -> (pass, mesh, viewProj)
   render(pass, mesh, viewProjMatrix) {
     this.time += 0.016;
     this.draw(pass, viewProjMatrix);

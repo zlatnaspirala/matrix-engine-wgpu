@@ -1414,7 +1414,7 @@ export default class MatrixEngineWGPU {
       for(const className in this.effectsByType) {
         const pile = this.effectsByType[className];
         if(pile.length === 0) continue;
-        if(className === '_WaterSimEffect') {
+        if(className === '_WaterSimEffect' || className === '_DepthWebcamVoxelEffect') {
           for(const {effect, mesh} of pile) {
             if(effect.enabled === false) continue;
             if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);

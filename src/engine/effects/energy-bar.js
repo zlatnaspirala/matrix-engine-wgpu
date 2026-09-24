@@ -2,6 +2,7 @@ import {mat4} from "wgpu-matrix";
 import {hpBarEffectShaders} from "../../shaders/energy-bars/energy-bar-shader.js";
 
 export class HPBarEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer, barWidth = 20, barHeight = 1.5) {
     this.device = device;
     this.format = format;
@@ -20,87 +21,105 @@ export class HPBarEffect {
   }
 
   _initPipeline(barWidth, barHeight) {
+    const device = this.device;
     const W = barWidth;
     const H = barHeight;
+
+    // ========== CACHE CHECK ==========
+    if(HPBarEffect._pipelineCache.has(device)) {
+      const cached = HPBarEffect._pipelineCache.get(device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        label: 'energy-bar bindGroupLayout',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
+        ]
+      });
+
+      this.shaderModule = device.createShaderModule({code: hpBarEffectShaders});
+      this.pipelineLayout = device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+
+      this.pipeline = device.createRenderPipeline({
+        label: 'energy-bar pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: 'vsMain',
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: 'fsMain',
+          targets: [{format: 'rgba16float'}, {format: 'rgba16float'}, {format: 'rgba16float'}]
+        },
+        primitive: {topology: 'triangle-list'},
+        depthStencil: {depthWriteEnabled: false, depthCompare: 'always', format: 'depth24plus'}
+      });
+
+      HPBarEffect._pipelineCache.set(device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+
     const vertexData = new Float32Array([
       -W, H, 0.0,
       W, H, 0.0,
       -W, -H, 0.0,
       W, -H, 0.0,
     ]);
-    // Static UV data - could be shared across instances
-    const uvData = new Float32Array([
-      0, 1, 1, 1, 0, 0, 1, 0
-    ]);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    // Buffers with optimized sizing
-    this.vertexBuffer = this.device.createBuffer({
+
+    this.vertexBuffer = device.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true,
     });
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
-    this.uvBuffer = this.device.createBuffer({
+
+    this.uvBuffer = device.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true,
     });
     new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
     this.uvBuffer.unmap();
-    // Index buffer with exact size (already multiple of 4)
-    this.indexBuffer = this.device.createBuffer({
-      size: 12, // 6 indices * 2 bytes (Uint16)
+
+    this.indexBuffer = device.createBuffer({
+      size: 12,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true,
     });
     new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
     this.indexBuffer.unmap();
+
     this.indexCount = 6;
-    // model (64) + color (16) + progress (4) = 84, padded to 96
-    this.modelBuffer = this.device.createBuffer({
+
+    this.modelBuffer = device.createBuffer({
       size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'energy-bar bindGroupLayout',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
-      ]
-    });
 
-    this.bindGroup = this.device.createBindGroup({
+    this.bindGroup = device.createBindGroup({
       label: 'energy-bar bindGroup',
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}}
       ]
-    });
-
-    // Pipeline - specify all target formats upfront
-    const shaderModule = this.device.createShaderModule({code: hpBarEffectShaders});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'energy-bar pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
-          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [{format: 'rgba16float'}, {format: 'rgba16float'}, {format: 'rgba16float'}]
-      },
-      primitive: {topology: 'triangle-list'},
-      depthStencil: {depthWriteEnabled: false, depthCompare: 'always', format: 'depth24plus'}
     });
   }
 
@@ -139,7 +158,6 @@ export class HPBarEffect {
       this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
       this._progressDirty = false;
     }
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);

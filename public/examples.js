@@ -16937,7 +16937,8 @@ var FlamePresets = {
     activeRotate: [0, 0, 0]
   }
 };
-var FlameEffect = class {
+var FlameEffect = class _FlameEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, colorFormat, params = {}, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -16989,48 +16990,67 @@ var FlameEffect = class {
     this.indexFormat = geo2.indices instanceof Uint16Array ? "uint16" : "uint32";
   }
   _initPipeline() {
-    this.modelBuffer = this.device.createBuffer({ size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
-      ]
+    const device2 = this.device;
+    if (_FlameEffect._pipelineCache.has(device2)) {
+      const cached = _FlameEffect._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: flameEffect });
+      this.pipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+      this.pipeline = device2.createRenderPipeline({
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.colorFormat,
+              blend: {
+                color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
+      });
+      _FlameEffect._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+    this.modelBuffer = device2.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: flameEffect });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.colorFormat,
-            blend: {
-              color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
     });
   }
   async morphTo(type2, size2 = 40, duration = 200) {
@@ -17107,14 +17127,12 @@ var FlameEffect = class {
   }
   draw(pass, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
     pass.drawIndexed(this.indexCount);
   }
-  // Interface for effect -> (pass, mesh, viewProj)
   render(pass, mesh, viewProjMatrix) {
     this.time += 0.016;
     this.draw(pass, viewProjMatrix);
@@ -26816,7 +26834,8 @@ fn fsMain(in : VertexOutput) -> FragOut {
 `;
 
 // src/engine/effects/energy-bar.js
-var HPBarEffect = class {
+var HPBarEffect = class _HPBarEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer, barWidth = 20, barHeight = 1.5) {
     this.device = device2;
     this.format = format;
@@ -26834,8 +26853,51 @@ var HPBarEffect = class {
     this._initPipeline(barWidth, barHeight);
   }
   _initPipeline(barWidth, barHeight) {
+    const device2 = this.device;
     const W2 = barWidth;
     const H2 = barHeight;
+    if (_HPBarEffect._pipelineCache.has(device2)) {
+      const cached = _HPBarEffect._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        label: "energy-bar bindGroupLayout",
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: hpBarEffectShaders });
+      this.pipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+      this.pipeline = device2.createRenderPipeline({
+        label: "energy-bar pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{ format: "rgba16float" }, { format: "rgba16float" }, { format: "rgba16float" }]
+        },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
+      });
+      _HPBarEffect._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
     const vertexData = new Float32Array([
       -W2,
       H2,
@@ -26850,79 +26912,41 @@ var HPBarEffect = class {
       -H2,
       0
     ]);
-    const uvData = new Float32Array([
-      0,
-      1,
-      1,
-      1,
-      0,
-      0,
-      1,
-      0
-    ]);
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device2.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
-    this.uvBuffer = this.device.createBuffer({
+    this.uvBuffer = device2.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
     new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
     this.uvBuffer.unmap();
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device2.createBuffer({
       size: 12,
-      // 6 indices * 2 bytes (Uint16)
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
     new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
     this.indexBuffer.unmap();
     this.indexCount = 6;
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device2.createBuffer({
       size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: "energy-bar bindGroupLayout",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
+    this.bindGroup = device2.createBindGroup({
       label: "energy-bar bindGroup",
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: hpBarEffectShaders });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "energy-bar pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{ format: "rgba16float" }, { format: "rgba16float" }, { format: "rgba16float" }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
     });
   }
   setProgress(value) {
@@ -26957,7 +26981,6 @@ var HPBarEffect = class {
       this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
       this._progressDirty = false;
     }
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -47949,6 +47972,7 @@ var loadObjFile = function() {
         app.MYCUBE = MYCUBE;
         MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile2.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
         MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile2.device, "rgba16float", 20, loadObjFile2.cameraBuffer);
+        MYCUBE.effects.testflame = new FlameEffect(loadObjFile2.device, "rgba16float", "rgba16float", {}, loadObjFile2.cameraBuffer);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566,
@@ -65088,16 +65112,8 @@ var ChartsEffect = class {
     this._gridSpacingHeight[1] = this.cubeHeight;
     this._gridTime[0] = this.time;
     this.device.queue.writeBuffer(this.gridUniformBuffer, 0, baseModelMatrix);
-    this.device.queue.writeBuffer(
-      this.gridUniformBuffer,
-      64,
-      this._gridTimeStepsCoinCount
-    );
-    this.device.queue.writeBuffer(
-      this.gridUniformBuffer,
-      72,
-      this._gridSpacingHeight
-    );
+    this.device.queue.writeBuffer(this.gridUniformBuffer, 64, this._gridTimeStepsCoinCount);
+    this.device.queue.writeBuffer(this.gridUniformBuffer, 72, this._gridSpacingHeight);
     this.device.queue.writeBuffer(this.gridUniformBuffer, 80, this._gridTime);
     const vp = this.camera.VP;
     const width = app.canvas.width;
@@ -66524,9 +66540,7 @@ var loadEarth = function() {
 
 // src/engine/effects/camera-depth.js
 var HEIGHT_WORKGROUP_SIZE = 8;
-var COMPUTE_SHADER = (
-  /* wgsl */
-  `
+var COMPUTE_SHADER = `
 struct GridParams {
   cols: u32,
   rows: u32,
@@ -66565,8 +66579,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prev = cells[idx];
   cells[idx] = mix(targetF, prev, params.smoothing);
 }
-`
-);
+`;
 var RENDER_SHADER = (
   /* wgsl */
   `

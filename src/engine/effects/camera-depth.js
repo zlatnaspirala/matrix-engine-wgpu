@@ -1,31 +1,7 @@
-// DepthWebcamVoxelEffect.js
-//
-// Webcam-driven voxel heightfield effect for matrix-engine-wgpu.
-// Samples the live webcam feed each frame (via GPUExternalTexture), converts
-// luminance -> per-cell height in a compute pass, then instance-draws a unit
-// cube mesh across a grid, offsetting each instance's Y by its sampled height.
-//
-// Assumption: no hardware depth camera is assumed. If you have a real depth
-// source (WebXR depth API, RealSense, etc.) replace `_dispatchHeightCompute`'s
-// sample source — everything else (buffers, render pipeline, instancing)
-// stays the same since it just reads a `f32` height per cell from storage.
-//
-// Follows engine conventions:
-//   - effect.render(pass, mesh, viewProjMatrix, dt)
-//   - effect.updateInstanceData(baseModelMatrix)
-//   - deferred G-buffer, MRT normal/worldPos as rgba16float
-//   - wgpu-matrix for CPU-side math
-//   - storage buffers for instancing
-//
-// The height/color compute pass is self-contained: it uses its own command
-// encoder and submits immediately inside render(), so it works with the
-// plain 4-arg interface above without needing the engine's main encoder.
-
 import {mat4} from 'wgpu-matrix';
 
 const HEIGHT_WORKGROUP_SIZE = 8;
-
-const COMPUTE_SHADER = /* wgsl */ `
+const COMPUTE_SHADER = `
 struct GridParams {
   cols: u32,
   rows: u32,

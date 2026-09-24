@@ -4,6 +4,8 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {FlameEmitter} from "../src/engine/effects/flame-emmiter.js";
+import {HPBarEffect} from "../src/engine/effects/energy-bar.js";
+import {FlameEffect} from "../src/engine/effects/flame.js";
 
 export var loadObjFile = function() {
 
@@ -111,6 +113,9 @@ export var loadObjFile = function() {
         MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
 
         MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile.device, "rgba16float", 20, loadObjFile.cameraBuffer);
+
+
+        MYCUBE.effects.testflame = new FlameEffect(loadObjFile.device, 'rgba16float', 'rgba16float', {}, loadObjFile.cameraBuffer)
 
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
