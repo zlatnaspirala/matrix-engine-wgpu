@@ -46,20 +46,20 @@ export var loadObjFile = function() {
     }
 
     async function onLoadObj(m) {
-      loadObjFile.addMeshObj({
-        material: {type: 'standard', share: true},
-        position: {x: 0, y: -1, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 0.01, z: 0},
-        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'sky',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
+      // loadObjFile.addMeshObj({
+      //   material: {type: 'standard', share: true},
+      //   position: {x: 0, y: -1, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [100, 100, 100],
+      //   rotationSpeed: {x: 0, y: 0.01, z: 0},
+      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+      //   name: 'sky',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
 
       // material: {type: 'mirror', share: true }, share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
@@ -112,7 +112,7 @@ export var loadObjFile = function() {
 
         MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile.device, "rgba16float", 20, loadObjFile.cameraBuffer);
 
-        app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
 
         // Nice fire tourch effect, data from test case logs.

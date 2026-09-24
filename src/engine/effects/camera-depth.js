@@ -25,7 +25,6 @@ import {mat4} from 'wgpu-matrix';
 
 const HEIGHT_WORKGROUP_SIZE = 8;
 
-// -------------------- WGSL: compute pass (luminance -> height, rgb -> color) --------------------
 const COMPUTE_SHADER = /* wgsl */ `
 struct GridParams {
   cols: u32,
@@ -67,7 +66,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 }
 `;
 
-// -------------------- WGSL: render pass (instanced voxel cubes) --------------------
 const RENDER_SHADER = /* wgsl */ `
 struct SceneUniforms {
   viewProj: mat4x4<f32>,
@@ -157,20 +155,7 @@ fn fs_main(vin: VertexOut) -> FragOut {
 `;
 
 export class DepthWebcamVoxelEffect {
-  /**
-   * @param {GPUDevice} device
-   * @param {object} opts
-   * @param {number} [opts.cols=64]
-   * @param {number} [opts.rows=48]
-   * @param {number} [opts.spacing=0.08]      grid cell spacing, local units
-   * @param {number} [opts.voxelScale=0.07]   voxel XZ footprint, local units
-   * @param {number} [opts.heightScale=2.0]   max voxel height at luminance=1
-   * @param {number} [opts.smoothing=0.6]     0 = snap to new frame, ~0.6-0.85 = smoothed
-   * @param {GPUTextureFormat} [opts.normalFormat='rgba16float']
-   * @param {GPUTextureFormat} [opts.worldPosFormat='rgba16float']
-   * @param {GPUTextureFormat} [opts.colorFormat='rgba16float']  matches engine's
-   *        3-target G-buffer MRT layout: [color, normal, worldPos]
-   */
+  static _pipelineCache = new WeakMap();
   constructor(device, opts = {}) {
     this.device = device;
     this.cols = opts.cols ?? 64;
@@ -182,41 +167,27 @@ export class DepthWebcamVoxelEffect {
     this.normalFormat = opts.normalFormat ?? 'rgba16float';
     this.worldPosFormat = opts.worldPosFormat ?? 'rgba16float';
     this.colorFormat = opts.colorFormat ?? 'rgba16float';
-
     this.instanceCount = this.cols * this.rows;
-
     this.video = null;
     this.videoReady = false;
     this._stream = null;
-
     this._baseModelMatrix = mat4.identity();
-
     this._buildStaticResources();
   }
 
-  // -------------------- setup --------------------
-
-  /**
-   * Requests webcam access and starts the video element. Call once before
-   * the first render() (render() will simply skip work until this resolves).
-   * @param {MediaStreamConstraints} [constraints]
-   */
   async initWebcam(constraints = {video: {width: 640, height: 480}, audio: false}) {
     this._stream = await navigator.mediaDevices.getUserMedia(constraints);
     this.video = document.createElement('video');
     this.video.muted = true;
     this.video.playsInline = true;
     this.video.srcObject = this._stream;
-
     await new Promise((resolve) => {
       this.video.onloadedmetadata = () => resolve();
     });
     await this.video.play();
-
     this.videoWidth = this.video.videoWidth;
     this.videoHeight = this.video.videoHeight;
     this._createWebcamTexture();
-
     this.videoReady = true;
   }
 
@@ -235,8 +206,6 @@ export class DepthWebcamVoxelEffect {
         GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
-    // Static bind group -- unlike texture_external, a regular texture's
-    // view is stable across frames, so this only needs to be built once.
     this.computeBindGroup = device.createBindGroup({
       label: 'depthWebcamVoxel-computeBG',
       layout: this.computeBindGroupLayout,
@@ -247,19 +216,111 @@ export class DepthWebcamVoxelEffect {
         {binding: 3, resource: {buffer: this.computeParamsBuffer}},
       ],
     });
+
+    this.renderBindGroup = device.createBindGroup({
+      label: 'depthWebcamVoxel-renderBG',
+      layout: this.renderBindGroupLayout,
+      entries: [
+        {binding: 0, resource: {buffer: this.sceneUniformBuffer}},
+        {binding: 1, resource: {buffer: this.gridLayoutBuffer}},
+        {binding: 2, resource: {buffer: this.heightsBuffer}},
+      ],
+    });
+
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
   }
 
   _buildStaticResources() {
     const device = this.device;
+    if(DepthWebcamVoxelEffect._pipelineCache.has(device)) {
+      const cached = DepthWebcamVoxelEffect._pipelineCache.get(device);
+      this.computePipeline = cached.computePipeline;
+      this.renderPipeline = cached.renderPipeline;
+      this.computeBindGroupLayout = cached.computeBindGroupLayout;
+      this.renderBindGroupLayout = cached.renderBindGroupLayout;
+    } else {
+      this.computeBindGroupLayout = device.createBindGroupLayout({
+        label: 'depthWebcamVoxel-computeBGL',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.COMPUTE, texture: {sampleType: 'float'}},
+          {binding: 1, visibility: GPUShaderStage.COMPUTE, sampler: {}},
+          {binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: {type: 'storage'}},
+          {binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: {type: 'uniform'}},
+        ],
+      });
 
-    // storage buffer: one vec4 per grid cell (x=height, yzw=webcam color)
+      this.computePipeline = device.createComputePipeline({
+        label: 'depthWebcamVoxel-computePipeline',
+        layout: device.createPipelineLayout({
+          bindGroupLayouts: [this.computeBindGroupLayout],
+        }),
+        compute: {
+          module: device.createShaderModule({code: COMPUTE_SHADER}),
+          entryPoint: 'main',
+        },
+      });
+
+      this.renderBindGroupLayout = device.createBindGroupLayout({
+        label: 'depthWebcamVoxel-renderBGL',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}},
+        ],
+      });
+
+      this.renderPipeline = device.createRenderPipeline({
+        label: 'depthWebcamVoxel-renderPipeline',
+        layout: device.createPipelineLayout({
+          bindGroupLayouts: [this.renderBindGroupLayout],
+        }),
+        vertex: {
+          module: device.createShaderModule({code: RENDER_SHADER}),
+          entryPoint: 'vs_main',
+          buffers: [
+            {
+              arrayStride: 6 * 4,
+              attributes: [
+                {shaderLocation: 0, offset: 0, format: 'float32x3'},
+                {shaderLocation: 1, offset: 3 * 4, format: 'float32x3'},
+              ],
+            },
+          ],
+        },
+        fragment: {
+          module: device.createShaderModule({code: RENDER_SHADER}),
+          entryPoint: 'fs_main',
+          targets: [
+            {format: this.colorFormat},
+            {format: this.normalFormat},
+            {format: this.worldPosFormat},
+          ],
+        },
+        primitive: {
+          topology: 'triangle-list',
+          cullMode: 'back',
+        },
+        depthStencil: {
+          format: 'depth24plus',
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+        },
+      });
+
+      DepthWebcamVoxelEffect._pipelineCache.set(device, {
+        computePipeline: this.computePipeline,
+        renderPipeline: this.renderPipeline,
+        computeBindGroupLayout: this.computeBindGroupLayout,
+        renderBindGroupLayout: this.renderBindGroupLayout,
+      });
+    }
+
     this.heightsBuffer = device.createBuffer({
       label: 'depthWebcamVoxel-heights',
-      size: this.instanceCount * 4 * 4, // vec4<f32> = 16 bytes/cell
+      size: this.instanceCount * 4 * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
 
-    // compute pass uniforms: cols, rows, heightScale, smoothing
     this.computeParamsBuffer = device.createBuffer({
       label: 'depthWebcamVoxel-computeParams',
       size: 16,
@@ -276,40 +337,12 @@ export class DepthWebcamVoxelEffect {
       new Float32Array([this.heightScale, this.smoothing])
     );
 
-    this.webcamSampler = device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear',
-    });
-
-    this.computeBindGroupLayout = device.createBindGroupLayout({
-      label: 'depthWebcamVoxel-computeBGL',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.COMPUTE, texture: {sampleType: 'float'}},
-        {binding: 1, visibility: GPUShaderStage.COMPUTE, sampler: {}},
-        {binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: {type: 'storage'}},
-        {binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: {type: 'uniform'}},
-      ],
-    });
-
-    this.computePipeline = device.createComputePipeline({
-      label: 'depthWebcamVoxel-computePipeline',
-      layout: device.createPipelineLayout({
-        bindGroupLayouts: [this.computeBindGroupLayout],
-      }),
-      compute: {
-        module: device.createShaderModule({code: COMPUTE_SHADER}),
-        entryPoint: 'main',
-      },
-    });
-
-    // render pass uniforms: viewProj (mat4) + baseModel (mat4) = 128 bytes
     this.sceneUniformBuffer = device.createBuffer({
       label: 'depthWebcamVoxel-sceneUniforms',
       size: 128,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    // grid layout uniforms: cols, rows, spacing, voxelScale
     this.gridLayoutBuffer = device.createBuffer({
       label: 'depthWebcamVoxel-gridLayout',
       size: 16,
@@ -326,68 +359,12 @@ export class DepthWebcamVoxelEffect {
       new Float32Array([this.spacing, this.voxelScale])
     );
 
-    this.renderBindGroupLayout = device.createBindGroupLayout({
-      label: 'depthWebcamVoxel-renderBGL',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}},
-      ],
-    });
-
-    this.renderBindGroup = device.createBindGroup({
-      label: 'depthWebcamVoxel-renderBG',
-      layout: this.renderBindGroupLayout,
-      entries: [
-        {binding: 0, resource: {buffer: this.sceneUniformBuffer}},
-        {binding: 1, resource: {buffer: this.gridLayoutBuffer}},
-        {binding: 2, resource: {buffer: this.heightsBuffer}},
-      ],
-    });
-
-    // Vertex layout assumed to match the engine's standard cube mesh:
-    // location(0) = position (vec3), location(1) = normal (vec3).
-    // Adjust attribute slots here if GeometryFactory's cube differs.
-    this.renderPipeline = device.createRenderPipeline({
-      label: 'depthWebcamVoxel-renderPipeline',
-      layout: device.createPipelineLayout({
-        bindGroupLayouts: [this.renderBindGroupLayout],
-      }),
-      vertex: {
-        module: device.createShaderModule({code: RENDER_SHADER}),
-        entryPoint: 'vs_main',
-        buffers: [
-          {
-            arrayStride: 6 * 4,
-            attributes: [
-              {shaderLocation: 0, offset: 0, format: 'float32x3'},
-              {shaderLocation: 1, offset: 3 * 4, format: 'float32x3'},
-            ],
-          },
-        ],
-      },
-      fragment: {
-        module: device.createShaderModule({code: RENDER_SHADER}),
-        entryPoint: 'fs_main',
-        targets: [
-          {format: this.colorFormat},
-          {format: this.normalFormat},
-          {format: this.worldPosFormat},
-        ],
-      },
-      primitive: {
-        topology: 'triangle-list',
-        cullMode: 'back',
-      },
-      depthStencil: {
-        format: 'depth24plus',
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-      },
+    this.webcamSampler = device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
     });
   }
 
-  // Per-frame 
   updateInstanceData(baseModelMatrix) {
     this._baseModelMatrix = baseModelMatrix;
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, baseModelMatrix);
@@ -426,13 +403,6 @@ export class DepthWebcamVoxelEffect {
     this.device.queue.submit([encoder.finish()]);
   }
 
-  /**
-   * @param {GPURenderPassEncoder} pass  active G-buffer render pass
-   * @param {{vertexBuffer: GPUBuffer, indexBuffer: GPUBuffer, indexCount: number}} mesh
-   *        unit cube mesh (position+normal interleaved), from GeometryFactory
-   * @param {Float32Array} viewProjMatrix mat4, column-major
-   * @param {number} dt
-   */
   render(pass, mesh, viewProjMatrix, dt) {
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, viewProjMatrix);
     this._dispatchHeightCompute();

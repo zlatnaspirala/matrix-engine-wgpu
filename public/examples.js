@@ -47109,7 +47109,7 @@ var MatrixEngineWGPU = class {
       for (const className in this.effectsByType) {
         const pile = this.effectsByType[className];
         if (pile.length === 0) continue;
-        if (className === "_WaterSimEffect") {
+        if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect") {
           for (const { effect, mesh } of pile) {
             if (effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -47895,20 +47895,6 @@ var loadObjFile = function() {
       });
     }
     async function onLoadObj(m2) {
-      loadObjFile2.addMeshObj({
-        material: { type: "standard", share: true },
-        position: { x: 0, y: -1, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: [100, 100, 100],
-        rotationSpeed: { x: 0, y: 0.01, z: 0 },
-        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
-        name: "sky",
-        mesh: m2.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
       let MYCUBE = loadObjFile2.addMeshObj({
         material: { type: "mirror" },
         position: { x: 0, y: 4, z: -10 },
@@ -47963,7 +47949,6 @@ var loadObjFile = function() {
         app.MYCUBE = MYCUBE;
         MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile2.device, "rgba16float", "circle2", "./res/textures/star1.png", 1, app.cameraBuffer);
         MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile2.device, "rgba16float", 20, loadObjFile2.cameraBuffer);
-        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566,
@@ -52408,7 +52393,7 @@ var loadKinematicCollision = function() {
       onLoadObj,
       { scale: [1, 1, 1] }
     );
-    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [45, 1, 45] });
     addRaycastsAABBListener("canvas1", "click");
     let activeGridCubes = [];
     let completedCubesCount = 0;
@@ -52562,10 +52547,9 @@ var loadKinematicCollision = function() {
         let cam2 = app.getCamera();
         cam2.setYaw(-0);
         cam2.setPitch(-0.29);
-        cam2.setZ(25);
-        cam2.setY(8);
-        collision.getCamera().setPosition(0, 3, 10);
-        collision.collisionSystem.registerCamera(collision.getCamera().position, 2);
+        cam2.setZ(20);
+        cam2.setY(38);
+        collision.collisionSystem.registerCamera(collision.getCamera().position, 1);
         cam2._dirtyAngle = true;
       }, 700);
     }
@@ -54511,13 +54495,6 @@ var loadDrumCannon = function() {
         sky.setAmbient(0.18, 0, 0.05);
         floor2.effects.kale = new KaleidoscopeEmitter(DRUM.device, "rgba16float", 30, DRUM.cameraBuffer);
         DRUM.sky = sky;
-        DRUM.drumFinal.effects.kale = new KaleidoscopeEffect(
-          DRUM.device,
-          "rgba16float",
-          "diamond",
-          KaleidoscopePresets.fast,
-          DRUM.cameraBuffer
-        );
         const keys = Object.keys(geometryTypes);
         const randomType = keys[Math.floor(Math.random() * keys.length)];
         DRUM.drumFinal.effects.flameEffect.setGeometry(randomType, 10);
@@ -63495,7 +63472,8 @@ function randomAxis() {
   const l2 = Math.hypot(x3, y3, z2);
   return [x3 / l2, y3 / l2, z2 / l2];
 }
-var ParticleActionEmitter = class {
+var ParticleActionEmitter = class _ParticleActionEmitter {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, maxShards = 800, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -63553,6 +63531,54 @@ var ParticleActionEmitter = class {
     return { positions: new Float32Array(positions), normals: new Float32Array(normals) };
   }
   _initPipeline() {
+    if (_ParticleActionEmitter._pipelineCache.has(this.device)) {
+      const cached = _ParticleActionEmitter._pipelineCache.get(this.device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      this.bindGroupLayout = this.device.createBindGroupLayout({
+        label: "shredder bindGroupLayout",
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
+        ]
+      });
+      this.shaderModule = this.device.createShaderModule({ code: shredderEffectInstance });
+      this.pipelineLayout = this.device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = this.device.createRenderPipeline({
+        label: "shredder pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 12, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            { format: this.format },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "triangle-list", cullMode: "back" },
+        depthStencil: { depthWriteEnabled: true, depthCompare: "less", format: "depth24plus" }
+      });
+      _ParticleActionEmitter._pipelineCache.set(this.device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
     const { positions, normals } = this._tetraGeometry();
     this.vertexCount = positions.length / 3;
     this.posBuffer = this.device.createBuffer({ size: positions.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
@@ -63564,47 +63590,17 @@ var ParticleActionEmitter = class {
       size: this.maxShards * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: "shredder bindGroupLayout",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
-      ]
-    });
     this.bindGroup = this.device.createBindGroup({
       label: "shredder bindGroup",
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: shredderEffectInstance });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "shredder pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 12, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          { format: this.format },
-          // opaque, no blend — solid debris
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: { topology: "triangle-list", cullMode: "back" },
-      depthStencil: { depthWriteEnabled: true, depthCompare: "less", format: "depth24plus" }
-    });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   setAction(name2, overrides = {}) {
     const preset = ACTION_PRESETS[name2];
@@ -63895,10 +63891,8 @@ var ParticleActionEmitter = class {
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData);
   };
   render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
-    this._dt = dt2;
     this.time += dt2;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.posBuffer);
     pass.setVertexBuffer(1, this.normBuffer);
@@ -66663,21 +66657,8 @@ fn fs_main(vin: VertexOut) -> FragOut {
 }
 `
 );
-var DepthWebcamVoxelEffect = class {
-  /**
-   * @param {GPUDevice} device
-   * @param {object} opts
-   * @param {number} [opts.cols=64]
-   * @param {number} [opts.rows=48]
-   * @param {number} [opts.spacing=0.08]      grid cell spacing, local units
-   * @param {number} [opts.voxelScale=0.07]   voxel XZ footprint, local units
-   * @param {number} [opts.heightScale=2.0]   max voxel height at luminance=1
-   * @param {number} [opts.smoothing=0.6]     0 = snap to new frame, ~0.6-0.85 = smoothed
-   * @param {GPUTextureFormat} [opts.normalFormat='rgba16float']
-   * @param {GPUTextureFormat} [opts.worldPosFormat='rgba16float']
-   * @param {GPUTextureFormat} [opts.colorFormat='rgba16float']  matches engine's
-   *        3-target G-buffer MRT layout: [color, normal, worldPos]
-   */
+var DepthWebcamVoxelEffect = class _DepthWebcamVoxelEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, opts = {}) {
     this.device = device2;
     this.cols = opts.cols ?? 64;
@@ -66696,12 +66677,6 @@ var DepthWebcamVoxelEffect = class {
     this._baseModelMatrix = mat4Impl.identity();
     this._buildStaticResources();
   }
-  // -------------------- setup --------------------
-  /**
-   * Requests webcam access and starts the video element. Call once before
-   * the first render() (render() will simply skip work until this resolves).
-   * @param {MediaStreamConstraints} [constraints]
-   */
   async initWebcam(constraints = { video: { width: 640, height: 480 }, audio: false }) {
     this._stream = await navigator.mediaDevices.getUserMedia(constraints);
     this.video = document.createElement("video");
@@ -66737,13 +66712,102 @@ var DepthWebcamVoxelEffect = class {
         { binding: 3, resource: { buffer: this.computeParamsBuffer } }
       ]
     });
+    this.renderBindGroup = device2.createBindGroup({
+      label: "depthWebcamVoxel-renderBG",
+      layout: this.renderBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
+        { binding: 1, resource: { buffer: this.gridLayoutBuffer } },
+        { binding: 2, resource: { buffer: this.heightsBuffer } }
+      ]
+    });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   _buildStaticResources() {
     const device2 = this.device;
+    if (_DepthWebcamVoxelEffect._pipelineCache.has(device2)) {
+      const cached = _DepthWebcamVoxelEffect._pipelineCache.get(device2);
+      this.computePipeline = cached.computePipeline;
+      this.renderPipeline = cached.renderPipeline;
+      this.computeBindGroupLayout = cached.computeBindGroupLayout;
+      this.renderBindGroupLayout = cached.renderBindGroupLayout;
+    } else {
+      this.computeBindGroupLayout = device2.createBindGroupLayout({
+        label: "depthWebcamVoxel-computeBGL",
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: "float" } },
+          { binding: 1, visibility: GPUShaderStage.COMPUTE, sampler: {} },
+          { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+          { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }
+        ]
+      });
+      this.computePipeline = device2.createComputePipeline({
+        label: "depthWebcamVoxel-computePipeline",
+        layout: device2.createPipelineLayout({
+          bindGroupLayouts: [this.computeBindGroupLayout]
+        }),
+        compute: {
+          module: device2.createShaderModule({ code: COMPUTE_SHADER }),
+          entryPoint: "main"
+        }
+      });
+      this.renderBindGroupLayout = device2.createBindGroupLayout({
+        label: "depthWebcamVoxel-renderBGL",
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
+        ]
+      });
+      this.renderPipeline = device2.createRenderPipeline({
+        label: "depthWebcamVoxel-renderPipeline",
+        layout: device2.createPipelineLayout({
+          bindGroupLayouts: [this.renderBindGroupLayout]
+        }),
+        vertex: {
+          module: device2.createShaderModule({ code: RENDER_SHADER }),
+          entryPoint: "vs_main",
+          buffers: [
+            {
+              arrayStride: 6 * 4,
+              attributes: [
+                { shaderLocation: 0, offset: 0, format: "float32x3" },
+                { shaderLocation: 1, offset: 3 * 4, format: "float32x3" }
+              ]
+            }
+          ]
+        },
+        fragment: {
+          module: device2.createShaderModule({ code: RENDER_SHADER }),
+          entryPoint: "fs_main",
+          targets: [
+            { format: this.colorFormat },
+            { format: this.normalFormat },
+            { format: this.worldPosFormat }
+          ]
+        },
+        primitive: {
+          topology: "triangle-list",
+          cullMode: "back"
+        },
+        depthStencil: {
+          format: "depth24plus",
+          depthWriteEnabled: true,
+          depthCompare: "less"
+        }
+      });
+      _DepthWebcamVoxelEffect._pipelineCache.set(device2, {
+        computePipeline: this.computePipeline,
+        renderPipeline: this.renderPipeline,
+        computeBindGroupLayout: this.computeBindGroupLayout,
+        renderBindGroupLayout: this.renderBindGroupLayout
+      });
+    }
     this.heightsBuffer = device2.createBuffer({
       label: "depthWebcamVoxel-heights",
       size: this.instanceCount * 4 * 4,
-      // vec4<f32> = 16 bytes/cell
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
     this.computeParamsBuffer = device2.createBuffer({
@@ -66761,29 +66825,6 @@ var DepthWebcamVoxelEffect = class {
       8,
       new Float32Array([this.heightScale, this.smoothing])
     );
-    this.webcamSampler = device2.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
-    this.computeBindGroupLayout = device2.createBindGroupLayout({
-      label: "depthWebcamVoxel-computeBGL",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: "float" } },
-        { binding: 1, visibility: GPUShaderStage.COMPUTE, sampler: {} },
-        { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
-        { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }
-      ]
-    });
-    this.computePipeline = device2.createComputePipeline({
-      label: "depthWebcamVoxel-computePipeline",
-      layout: device2.createPipelineLayout({
-        bindGroupLayouts: [this.computeBindGroupLayout]
-      }),
-      compute: {
-        module: device2.createShaderModule({ code: COMPUTE_SHADER }),
-        entryPoint: "main"
-      }
-    });
     this.sceneUniformBuffer = device2.createBuffer({
       label: "depthWebcamVoxel-sceneUniforms",
       size: 128,
@@ -66804,62 +66845,11 @@ var DepthWebcamVoxelEffect = class {
       8,
       new Float32Array([this.spacing, this.voxelScale])
     );
-    this.renderBindGroupLayout = device2.createBindGroupLayout({
-      label: "depthWebcamVoxel-renderBGL",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
-      ]
-    });
-    this.renderBindGroup = device2.createBindGroup({
-      label: "depthWebcamVoxel-renderBG",
-      layout: this.renderBindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.sceneUniformBuffer } },
-        { binding: 1, resource: { buffer: this.gridLayoutBuffer } },
-        { binding: 2, resource: { buffer: this.heightsBuffer } }
-      ]
-    });
-    this.renderPipeline = device2.createRenderPipeline({
-      label: "depthWebcamVoxel-renderPipeline",
-      layout: device2.createPipelineLayout({
-        bindGroupLayouts: [this.renderBindGroupLayout]
-      }),
-      vertex: {
-        module: device2.createShaderModule({ code: RENDER_SHADER }),
-        entryPoint: "vs_main",
-        buffers: [
-          {
-            arrayStride: 6 * 4,
-            attributes: [
-              { shaderLocation: 0, offset: 0, format: "float32x3" },
-              { shaderLocation: 1, offset: 3 * 4, format: "float32x3" }
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: device2.createShaderModule({ code: RENDER_SHADER }),
-        entryPoint: "fs_main",
-        targets: [
-          { format: this.colorFormat },
-          { format: this.normalFormat },
-          { format: this.worldPosFormat }
-        ]
-      },
-      primitive: {
-        topology: "triangle-list",
-        cullMode: "back"
-      },
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: true,
-        depthCompare: "less"
-      }
+    this.webcamSampler = device2.createSampler({
+      magFilter: "linear",
+      minFilter: "linear"
     });
   }
-  // Per-frame 
   updateInstanceData(baseModelMatrix) {
     this._baseModelMatrix = baseModelMatrix;
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 64, baseModelMatrix);
@@ -66886,13 +66876,6 @@ var DepthWebcamVoxelEffect = class {
     pass.end();
     this.device.queue.submit([encoder.finish()]);
   }
-  /**
-   * @param {GPURenderPassEncoder} pass  active G-buffer render pass
-   * @param {{vertexBuffer: GPUBuffer, indexBuffer: GPUBuffer, indexCount: number}} mesh
-   *        unit cube mesh (position+normal interleaved), from GeometryFactory
-   * @param {Float32Array} viewProjMatrix mat4, column-major
-   * @param {number} dt
-   */
   render(pass, mesh, viewProjMatrix, dt2) {
     this.device.queue.writeBuffer(this.sceneUniformBuffer, 0, viewProjMatrix);
     this._dispatchHeightCompute();

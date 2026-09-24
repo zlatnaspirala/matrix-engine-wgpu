@@ -250,8 +250,8 @@ export var loadDrumCannon = function() {
         floor.effects.kale = new KaleidoscopeEmitter(DRUM.device, 'rgba16float', 30, DRUM.cameraBuffer);
         // just for dev
         DRUM.sky = sky;
-        DRUM.drumFinal.effects.kale = new KaleidoscopeEffect(DRUM.device, 'rgba16float',
-          'diamond', KaleidoscopePresets.fast, DRUM.cameraBuffer);
+        // DRUM.drumFinal.effects.kale = new KaleidoscopeEffect(DRUM.device, 'rgba16float',
+        //   'diamond', KaleidoscopePresets.fast, DRUM.cameraBuffer);
 
         const keys = Object.keys(geometryTypes);
         const randomType = keys[Math.floor(Math.random() * keys.length)];

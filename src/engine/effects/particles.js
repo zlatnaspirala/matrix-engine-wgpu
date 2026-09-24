@@ -181,13 +181,13 @@ function randomAxis() {
 }
 
 export class ParticleActionEmitter {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, maxShards = 800, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.time = 0;
     this.enabled = true;
     this.maxShards = maxShards;
-    // mat4(16) + timeSpeed(4) + params(4) + tint(4)
     this.floatsPerInstance = 28;//28;
     this.instanceData = new Float32Array(maxShards * this.floatsPerInstance);
     this.cameraBuffer = cameraBuffer;
@@ -195,7 +195,6 @@ export class ParticleActionEmitter {
     this._finalMatrix = mat4.create();
     this._rotMatrix = mat4.create();
     this._q = quat.create();
-    // ...same buffer/pipeline setup as before...
     this.shards = [];
     for(let i = 0;i < maxShards;i++) {
       this.shards.push({
@@ -240,6 +239,63 @@ export class ParticleActionEmitter {
   }
 
   _initPipeline() {
+    // Check cache first
+    if(ParticleActionEmitter._pipelineCache.has(this.device)) {
+      const cached = ParticleActionEmitter._pipelineCache.get(this.device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      // Build pipeline once per device
+      this.bindGroupLayout = this.device.createBindGroupLayout({
+        label: 'shredder bindGroupLayout',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
+        ]
+      });
+
+      this.shaderModule = this.device.createShaderModule({code: shredderEffectInstance});
+
+      this.pipelineLayout = this.device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+
+      this.pipeline = this.device.createRenderPipeline({
+        label: 'shredder pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+            {arrayStride: 12, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {format: this.format},
+            {format: 'rgba16float'},
+            {format: 'rgba16float'}
+          ]
+        },
+        primitive: {topology: "triangle-list", cullMode: "back"},
+        depthStencil: {depthWriteEnabled: true, depthCompare: "less", format: "depth24plus"}
+      });
+
+      // Cache it
+      ParticleActionEmitter._pipelineCache.set(this.device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+
+    // Each emitter gets own geometry and buffers (NOT cached)
     const {positions, normals} = this._tetraGeometry();
     this.vertexCount = positions.length / 3;
     this.posBuffer = this.device.createBuffer({size: positions.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST});
@@ -253,47 +309,17 @@ export class ParticleActionEmitter {
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'shredder bindGroupLayout',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-      ]
-    });
     this.bindGroup = this.device.createBindGroup({
       label: 'shredder bindGroup',
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
 
-    const shaderModule = this.device.createShaderModule({code: shredderEffectInstance});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'shredder pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 12, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {format: this.format}, // opaque, no blend — solid debris
-          {format: 'rgba16float'},
-          {format: 'rgba16float'}
-        ]
-      },
-      primitive: {topology: "triangle-list", cullMode: "back"},
-      depthStencil: {depthWriteEnabled: true, depthCompare: "less", format: "depth24plus"}
-    });
+    // Trigger effect reorganization
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
   }
 
   setAction(name, overrides = {}) {
@@ -589,12 +615,12 @@ export class ParticleActionEmitter {
       this.instanceData.set(this._finalMatrix, off);
       this.instanceData[off + 16] = s.age;
       this.instanceData[off + 17] = s.life;
-      this.instanceData[off + 18] = 0.0; 
-      this.instanceData[off + 19] = 0.0; 
+      this.instanceData[off + 18] = 0.0;
+      this.instanceData[off + 19] = 0.0;
       this.instanceData[off + 20] = s.alpha;
       this.instanceData[off + 21] = t;
-      this.instanceData[off + 22] = 0.0; 
-      this.instanceData[off + 23] = 0.0; 
+      this.instanceData[off + 22] = 0.0;
+      this.instanceData[off + 23] = 0.0;
       this.instanceData[off + 24] = s.color[0];
       this.instanceData[off + 25] = s.color[1];
       this.instanceData[off + 26] = s.color[2];
@@ -604,10 +630,9 @@ export class ParticleActionEmitter {
   }
 
   render(pass, mesh, viewProjMatrix, dt = 0.016) {
-    this._dt = dt;
+    // this._dt = dt;
     this.time += dt;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.posBuffer);
     pass.setVertexBuffer(1, this.normBuffer);
