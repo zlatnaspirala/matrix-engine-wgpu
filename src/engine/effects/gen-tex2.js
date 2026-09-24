@@ -53,22 +53,85 @@ export class GenGeoTexture2 {
   }
 
   _initPipeline() {
+    const device = this.device;
     const {vertexData, uvData, indexData} = this;
 
-    this.vertexBuffer = this.device.createBuffer({
+    // ========== CACHE CHECK ==========
+    if(GeoInstancedTexEffect2._pipelineCache.has(device)) {
+      const cached = GeoInstancedTexEffect2._pipelineCache.get(device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        label: 'geo-texture bindGroupLayout',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
+          {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
+          {binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {}},
+        ],
+      });
+
+      this.shaderModule = device.createShaderModule({code: geoInstancedTexEffect()});
+      this.pipelineLayout = device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+
+      this.pipeline = device.createRenderPipeline({
+        label: 'geo tex 2 Pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: 'vsMain',
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: 'fsMain',
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+                alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+              },
+            },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'}
+          ]
+        },
+        primitive: {topology: 'triangle-list'},
+        depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}
+      });
+
+      // ========== CACHE THEM ==========
+      GeoInstancedTexEffect2._pipelineCache.set(device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+    this.vertexBuffer = device.createBuffer({
       size: Math.ceil(vertexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
 
-    this.uvBuffer = this.device.createBuffer({
+    this.uvBuffer = device.createBuffer({
       size: Math.ceil(uvData.byteLength / 4) * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    device.queue.writeBuffer(this.uvBuffer, 0, uvData);
 
     const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device.createBuffer({
       size: alignedIndexSize,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
@@ -76,9 +139,9 @@ export class GenGeoTexture2 {
     if(indexData.byteLength !== alignedIndexSize) {
       const paddedIndexData = new Uint8Array(alignedIndexSize);
       paddedIndexData.set(new Uint8Array(indexData.buffer));
-      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedIndexData);
+      device.queue.writeBuffer(this.indexBuffer, 0, paddedIndexData);
     } else {
-      this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+      device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     }
 
     this.indexCount = indexData.length;
@@ -104,23 +167,13 @@ export class GenGeoTexture2 {
     }
 
     this.instanceData = new Float32Array(this.maxInstances * this.floatsPerInstance);
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device.createBuffer({
       label: 'geo-texture modelBuffer',
       size: this.instanceData.byteLength * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
 
-    this.bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'geo-texture bindGroupLayout',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
-        {binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
-        {binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {}},
-      ],
-    });
-
-    this.bindGroup = this.device.createBindGroup({
+    this.bindGroup = device.createBindGroup({
       label: 'geo-texture bindGroup',
       layout: this.bindGroupLayout,
       entries: [
@@ -129,39 +182,6 @@ export class GenGeoTexture2 {
         {binding: 2, resource: this.sampler},
         {binding: 3, resource: this.texture.createView()},
       ]
-    });
-
-    const shaderModule = this.device.createShaderModule({code: geoInstancedTexEffect()});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
-
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'geo tex 2 Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
-          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
-              alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
-            },
-          },
-          {format: 'rgba16float'},
-          {format: 'rgba16float'}
-        ]
-      },
-      primitive: {topology: 'triangle-list'},
-      depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}
     });
   }
 
@@ -220,19 +240,13 @@ export class GenGeoTexture2 {
   }
 
   render(transPass, mesh, viewProjMatrix) {
-    if(!this.pipeline) return;
-
-    // this.updateInstanceData(mesh.modelMatrix || mat4.identity(this.localMatrix));
-     this.updateInstanceData(mesh.modelMatrix);
-
-    // --- FIXED: Replaced "new Float32Array" allocation with an in-place typed array copy ---
+    this.updateInstanceData(mesh.modelMatrix);
     if(!this.isCameraInitialized || !this._matricesEqual(this.lastCameraMatrix, viewProjMatrix)) {
       this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
       this.lastCameraMatrix.set(viewProjMatrix); // Copies values directly without allocating memory
       this.isCameraInitialized = true;
     }
-
-    transPass.setPipeline(this.pipeline);
+    // transPass.setPipeline(this.pipeline);
     transPass.setBindGroup(0, this.bindGroup);
     transPass.setVertexBuffer(0, this.vertexBuffer);
     transPass.setVertexBuffer(1, this.uvBuffer);

@@ -1,8 +1,9 @@
 import {geoInstancedTexEffect} from "../../shaders/standalone/geo.tex.js";
 import {GeometryFactory} from "../geometry-factory.js";
 import {mat4} from "wgpu-matrix";
-
+// ?
 export class GenGeoTexture {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, type = "sphere", path, scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -50,52 +51,20 @@ export class GenGeoTexture {
     })
   }
 
-  _initPipeline() {
-    const {vertexData, uvData, indexData} = this;
-    // GPU buffers
-    this.vertexBuffer = this.device.createBuffer({
-      size: vertexData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+_initPipeline() {
+  const device = this.device;
+  const {vertexData, uvData, indexData} = this;
 
-    this.uvBuffer = this.device.createBuffer({
-      size: uvData.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-
-    this.indexBuffer = this.device.createBuffer({
-      size: Math.ceil(indexData.byteLength / 4) * 4,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
-    });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
-    this.indexCount = indexData.length;
-
-    this.instanceTargets = [];
-    this.lerpSpeed = 0.05;
-    this.maxInstances = 5;
-    this.instanceCount = 2;
-    this.floatsPerInstance = 16 + 4;
-
-    for(let x = 0;x < this.maxInstances;x++) {
-      this.instanceTargets.push({
-        index: x,
-        position: [0, 0, 0],
-        currentPosition: [0, 0, 0],
-        scale: [1, 1, 1],
-        currentScale: [1, 1, 1],
-        color: [0.6, 0.8, 1.0, 0.4],
-      });
-    }
-    this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-
-    this.modelBuffer = this.device.createBuffer({
-      size: this.instanceData.byteLength,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
-
-    const bindGroupLayout = this.device.createBindGroupLayout({
+  // ========== CACHE CHECK ==========
+  if (GenGeoTexture._pipelineCache.has(device)) {
+    const cached = GenGeoTexture._pipelineCache.get(device);
+    this.pipeline = cached.pipeline;
+    this.bindGroupLayout = cached.bindGroupLayout;
+    this.pipelineLayout = cached.pipelineLayout;
+    this.shaderModule = cached.shaderModule;
+  } else {
+    // ========== BUILD PIPELINE ONCE ==========
+    this.bindGroupLayout = device.createBindGroupLayout({
       entries: [
         {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
         {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
@@ -104,23 +73,14 @@ export class GenGeoTexture {
       ],
     });
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        {binding: 0, resource: {buffer: this.cameraBuffer}},
-        {binding: 1, resource: {buffer: this.modelBuffer}},
-        {binding: 2, resource: this.sampler},
-        {binding: 3, resource: this.texture.createView()},
-      ]
-    });
+    this.shaderModule = device.createShaderModule({code: geoInstancedTexEffect()});
+    this.pipelineLayout = device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
 
-    const shaderModule = this.device.createShaderModule({code: geoInstancedTexEffect()});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-    this.pipeline = this.device.createRenderPipeline({
+    this.pipeline = device.createRenderPipeline({
       label: 'gen-geo-tex pipeline',
-      layout: pipelineLayout,
+      layout: this.pipelineLayout,
       vertex: {
-        module: shaderModule,
+        module: this.shaderModule,
         entryPoint: 'vsMain',
         buffers: [
           {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
@@ -128,7 +88,7 @@ export class GenGeoTexture {
         ]
       },
       fragment: {
-        module: shaderModule,
+        module: this.shaderModule,
         entryPoint: 'fsMain',
         targets: [{
           format: this.format,
@@ -150,7 +110,69 @@ export class GenGeoTexture {
       primitive: {topology: 'triangle-list'},
       depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}
     });
+
+    // ========== CACHE THEM ==========
+    GenGeoTexture._pipelineCache.set(device, {
+      pipeline: this.pipeline,
+      bindGroupLayout: this.bindGroupLayout,
+      pipelineLayout: this.pipelineLayout,
+      shaderModule: this.shaderModule
+    });
   }
+
+  // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+  this.vertexBuffer = device.createBuffer({
+    size: vertexData.byteLength,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+  });
+  device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+
+  this.uvBuffer = device.createBuffer({
+    size: uvData.byteLength,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+  });
+  device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+
+  this.indexBuffer = device.createBuffer({
+    size: Math.ceil(indexData.byteLength / 4) * 4,
+    usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+  });
+  device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+  this.indexCount = indexData.length;
+
+  this.instanceTargets = [];
+  this.lerpSpeed = 0.05;
+  this.maxInstances = 5;
+  this.instanceCount = 2;
+  this.floatsPerInstance = 16 + 4;
+
+  for(let x = 0; x < this.maxInstances; x++) {
+    this.instanceTargets.push({
+      index: x,
+      position: [0, 0, 0],
+      currentPosition: [0, 0, 0],
+      scale: [1, 1, 1],
+      currentScale: [1, 1, 1],
+      color: [0.6, 0.8, 1.0, 0.4],
+    });
+  }
+
+  this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
+  this.modelBuffer = device.createBuffer({
+    size: this.instanceData.byteLength,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+
+  this.bindGroup = device.createBindGroup({
+    layout: this.bindGroupLayout,
+    entries: [
+      {binding: 0, resource: {buffer: this.cameraBuffer}},
+      {binding: 1, resource: {buffer: this.modelBuffer}},
+      {binding: 2, resource: this.sampler},
+      {binding: 3, resource: this.texture.createView()},
+    ]
+  });
+}
 
   updateInstanceData = (baseModelMatrix) => {
     if(this.rotateEffect) {
@@ -190,7 +212,7 @@ export class GenGeoTexture {
 
   draw(pass, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
+    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -201,7 +223,7 @@ export class GenGeoTexture {
   render(pass, mesh, viewProjMatrix, dt = 0.1) {
     if(!this.activeCount) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
+    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
