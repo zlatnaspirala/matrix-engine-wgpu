@@ -14215,7 +14215,8 @@ fn fsMain(input : VSOut) -> FragOut {
 }`;
 
 // src/engine/effects/gizmo.js
-var GizmoEffect = class {
+var GizmoEffect = class _GizmoEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -14262,62 +14263,86 @@ var GizmoEffect = class {
     addEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
   _initPipeline() {
+    const device2 = this.device;
+    if (_GizmoEffect._pipelineCache.has(device2)) {
+      const cached = _GizmoEffect._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 2, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: gizmoEffect });
+      this.pipelineLayout = device2.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
+        label: "gizmo",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 3 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "line-list" },
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: "always",
+          format: "depth24plus"
+        }
+      });
+      _GizmoEffect._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
     this._createTranslateGizmo();
-    this.modelBuffer = this.device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.gizmoSettingsBuffer = this.device.createBuffer({ size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this._updateGizmoSettings();
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 2, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
-      ]
+    this.modelBuffer = device2.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.gizmoSettingsBuffer = device2.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateGizmoSettings();
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } },
         { binding: 2, resource: { buffer: this.gizmoSettingsBuffer } }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: gizmoEffect });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "gizmo",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 3 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: { topology: "line-list" },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "always",
-        format: "depth24plus"
-      }
-    });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   _createTranslateGizmo() {
     const axisLength = 1;
@@ -14756,7 +14781,6 @@ var GizmoEffect = class {
   draw(pass, cameraMatrix) {
     if (!this.enabled) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);
@@ -14937,7 +14961,8 @@ fn fsMain(input: VertexOutput) -> @location(0) vec4<f32> {
 `;
 
 // src/engine/effects/destruction.js
-var DestructionEffect2 = class {
+var DestructionEffect2 = class _DestructionEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, config = {}, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -14954,6 +14979,89 @@ var DestructionEffect2 = class {
     this._initParticles();
   }
   _initPipeline() {
+    const device2 = this.device;
+    if (_DestructionEffect._pipelineCache.has(device2)) {
+      const cached = _DestructionEffect._pipelineCache.get(device2);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          // camera
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
+          // model + time
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: dustShader });
+      this.pipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+      this.pipeline = device2.createRenderPipeline({
+        label: "destruction Pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            // Vertex positions (per-vertex, shared quad)
+            {
+              arrayStride: 3 * 4,
+              stepMode: "vertex",
+              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+            },
+            // UVs (per-vertex, shared quad)
+            {
+              arrayStride: 2 * 4,
+              stepMode: "vertex",
+              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }]
+            },
+            // Instance data (per-particle)
+            {
+              arrayStride: 12 * 4,
+              // 3 vec4s = 12 floats
+              stepMode: "instance",
+              attributes: [
+                { shaderLocation: 2, offset: 0, format: "float32x4" },
+                // position + size
+                { shaderLocation: 3, offset: 16, format: "float32x4" },
+                // velocity + life
+                { shaderLocation: 4, offset: 32, format: "float32x4" }
+                // color
+              ]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "triangle-list", cullMode: "none" },
+        depthStencil: {
+          depthWriteEnabled: false,
+          // Particles don't write depth
+          depthCompare: "less",
+          format: "depth24plus"
+        }
+      });
+      _DestructionEffect._pipelineCache.set(device2, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
     const S2 = 1;
     const vertexData = new Float32Array([
       -0.5 * S2,
@@ -14988,108 +15096,43 @@ var DestructionEffect2 = class {
       // Bottom-right
     ]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device2.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
+    device2.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = device2.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
+    device2.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = device2.createBuffer({
       size: Math.ceil(indexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    device2.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
     const maxParticles = this.particleCount;
     const instanceDataSize = maxParticles * (4 + 4 + 4) * 4;
-    this.instanceBuffer = this.device.createBuffer({
+    this.instanceBuffer = device2.createBuffer({
       size: instanceDataSize,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device2.createBuffer({
       size: 64 + 16 + 16,
       // model matrix + time + intensity (padded)
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        // camera
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
-        // model + time
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: dustShader });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "destruction Pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          // Vertex positions (per-vertex, shared quad)
-          {
-            arrayStride: 3 * 4,
-            stepMode: "vertex",
-            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-          },
-          // UVs (per-vertex, shared quad)
-          {
-            arrayStride: 2 * 4,
-            stepMode: "vertex",
-            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }]
-          },
-          // Instance data (per-particle)
-          {
-            arrayStride: 12 * 4,
-            // 3 vec4s = 12 floats
-            stepMode: "instance",
-            attributes: [
-              { shaderLocation: 2, offset: 0, format: "float32x4" },
-              // position + size
-              { shaderLocation: 3, offset: 16, format: "float32x4" },
-              // velocity + life
-              { shaderLocation: 4, offset: 32, format: "float32x4" }
-              // color
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: { topology: "triangle-list", cullMode: "none" },
-      depthStencil: {
-        depthWriteEnabled: false,
-        // Particles don't write depth
-        depthCompare: "less",
-        format: "depth24plus"
-      }
-    });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   _initParticles() {
     for (let i2 = 0; i2 < this.particleCount; i2++) {
@@ -17052,6 +17095,9 @@ var FlameEffect = class _FlameEffect {
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   async morphTo(type2, size2 = 40, duration = 200) {
     const originalIntensity = this.intensity;
@@ -26635,7 +26681,8 @@ fn fsMain(input : VertexOutput) -> FragOut {
 `;
 
 // src/engine/effects/gen.js
-var GenGeo = class {
+var GenGeo = class _GenGeo {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, type2 = "sphere", scale4 = 1, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -26648,22 +26695,82 @@ var GenGeo = class {
     this._initPipeline();
   }
   _initPipeline() {
+    const device2 = this.device;
     const { vertexData, uvData, indexData } = this;
-    this.vertexBuffer = this.device.createBuffer({
+    if (_GenGeo._pipelineCache.has(device2)) {
+      const cached = _GenGeo._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: geoInstancedEffect() });
+      this.pipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+      this.pipeline = device2.createRenderPipeline({
+        label: "geo gen Pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: {
+                  srcFactor: "src-alpha",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
+      });
+      _GenGeo._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+    this.vertexBuffer = device2.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
+    device2.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = device2.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
+    device2.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = device2.createBuffer({
       size: Math.ceil(indexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    device2.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
     this.instanceTargets = [];
     this.lerpSpeed = 0.05;
@@ -26681,61 +26788,16 @@ var GenGeo = class {
       });
     }
     this.instanceData = new Float32Array(this.instanceCount * this.floatsPerInstance);
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device2.createBuffer({
       size: this.instanceData.byteLength,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: geoInstancedEffect() });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "geo gen Pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: {
-                srcFactor: "src-alpha",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              },
-              alpha: {
-                srcFactor: "one",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              }
-            }
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
     });
   }
   updateInstanceData = (baseModelMatrix) => {
@@ -26761,7 +26823,6 @@ var GenGeo = class {
   };
   draw(pass, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -26999,7 +27060,8 @@ var HPBarEffect = class _HPBarEffect {
 };
 
 // src/engine/effects/mana-bar.js
-var MANABarEffect = class {
+var MANABarEffect = class _MANABarEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -27015,6 +27077,48 @@ var MANABarEffect = class {
     this._initPipeline();
   }
   _initPipeline() {
+    const device2 = this.device;
+    if (_MANABarEffect._pipelineCache.has(device2)) {
+      const cached = _MANABarEffect._pipelineCache.get(device2);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: hpBarEffectShaders });
+      this.pipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+      this.pipeline = device2.createRenderPipeline({
+        label: "mana Pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{ format: this.format }, { format: "rgba16float" }, { format: "rgba16float" }]
+        },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
+      });
+      _MANABarEffect._pipelineCache.set(device2, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
     const W2 = 40;
     const H2 = 3;
     const vertexData = new Float32Array([
@@ -27042,60 +27146,36 @@ var MANABarEffect = class {
       0
     ]);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device2.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
+    device2.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = device2.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    this.indexBuffer = this.device.createBuffer({
+    device2.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.indexBuffer = device2.createBuffer({
       size: Math.ceil(indexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    device2.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device2.createBuffer({
       size: 64 + 16 + 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: hpBarEffectShaders });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "mana Pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{ format: this.format }, { format: "rgba16float" }, { format: "rgba16float" }]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "always", format: "depth24plus" }
-    });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   setProgress(value) {
     this.progress = Math.max(0, Math.min(1, value));
@@ -27425,7 +27505,8 @@ var GenGeoTexture = class _GenGeoTexture {
 };
 
 // src/engine/effects/gen-tex2.js
-var GenGeoTexture2 = class {
+var GenGeoTexture2 = class _GenGeoTexture2 {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, type2 = "sphere", path2, scale4 = 1, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -27470,28 +27551,83 @@ var GenGeoTexture2 = class {
     this.texture = texture;
   }
   _initPipeline() {
+    const device2 = this.device;
     const { vertexData, uvData, indexData } = this;
-    this.vertexBuffer = this.device.createBuffer({
+    if (_GenGeoTexture2._pipelineCache.has(device2)) {
+      const cached = _GenGeoTexture2._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        label: "geo-texture bindGroupLayout",
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
+          { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+          { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: geoInstancedTexEffect() });
+      this.pipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+      this.pipeline = device2.createRenderPipeline({
+        label: "geo tex 2 Pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
+      });
+      _GenGeoTexture2._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+    this.vertexBuffer = device2.createBuffer({
       size: Math.ceil(vertexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    this.uvBuffer = this.device.createBuffer({
+    device2.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.uvBuffer = device2.createBuffer({
       size: Math.ceil(uvData.byteLength / 4) * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    device2.queue.writeBuffer(this.uvBuffer, 0, uvData);
     const alignedIndexSize = Math.ceil(indexData.byteLength / 4) * 4;
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device2.createBuffer({
       size: alignedIndexSize,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
     if (indexData.byteLength !== alignedIndexSize) {
       const paddedIndexData = new Uint8Array(alignedIndexSize);
       paddedIndexData.set(new Uint8Array(indexData.buffer));
-      this.device.queue.writeBuffer(this.indexBuffer, 0, paddedIndexData);
+      device2.queue.writeBuffer(this.indexBuffer, 0, paddedIndexData);
     } else {
-      this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+      device2.queue.writeBuffer(this.indexBuffer, 0, indexData);
     }
     this.indexCount = indexData.length;
     this.instanceTargets = [];
@@ -27514,21 +27650,12 @@ var GenGeoTexture2 = class {
       });
     }
     this.instanceData = new Float32Array(this.maxInstances * this.floatsPerInstance);
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device2.createBuffer({
       label: "geo-texture modelBuffer",
       size: this.instanceData.byteLength * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    this.bindGroupLayout = this.device.createBindGroupLayout({
-      label: "geo-texture bindGroupLayout",
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
+    this.bindGroup = device2.createBindGroup({
       label: "geo-texture bindGroup",
       layout: this.bindGroupLayout,
       entries: [
@@ -27538,37 +27665,9 @@ var GenGeoTexture2 = class {
         { binding: 3, resource: this.texture.createView() }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: geoInstancedTexEffect() });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "geo tex 2 Pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" }
-    });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   updateInstanceCount(newCount) {
     if (newCount > this.maxInstances) {
@@ -27616,14 +27715,12 @@ var GenGeoTexture2 = class {
     }
   };
   render(transPass, mesh, viewProjMatrix) {
-    if (!this.pipeline) return;
     this.updateInstanceData(mesh.modelMatrix);
     if (!this.isCameraInitialized || !this._matricesEqual(this.lastCameraMatrix, viewProjMatrix)) {
       this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
       this.lastCameraMatrix.set(viewProjMatrix);
       this.isCameraInitialized = true;
     }
-    transPass.setPipeline(this.pipeline);
     transPass.setBindGroup(0, this.bindGroup);
     transPass.setVertexBuffer(0, this.vertexBuffer);
     transPass.setVertexBuffer(1, this.uvBuffer);
@@ -44357,7 +44454,6 @@ fn fsMain(input : VSOut) -> FragOut {
 
 // src/engine/effects/KaleidoscopeEffect.js
 var KaleidoscopePresets = {
-  // Classic symmetric kaleidoscope
   classic: {
     intensity: 1,
     speed: 0.5,
@@ -44372,7 +44468,6 @@ var KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0, 0, 0]
   },
-  // Fast rotating 8-segment
   fast: {
     intensity: 1.2,
     speed: 1,
@@ -44387,7 +44482,6 @@ var KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0, 0.5, 0]
   },
-  // Slow, deep zoom
   deep: {
     intensity: 0.8,
     speed: 0.3,
@@ -44402,7 +44496,6 @@ var KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0, 0, 0]
   },
-  // Psychedelic cyan/magenta
   psycho: {
     intensity: 1.5,
     speed: 1.4,
@@ -44417,7 +44510,6 @@ var KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0.3, 0.2, 0]
   },
-  // Cool blues
   cool: {
     intensity: 1,
     speed: 0.7,
@@ -44432,7 +44524,6 @@ var KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0, 0.3, 0]
   },
-  // Warm fire-like
   warm: {
     intensity: 1.3,
     speed: 0.6,
@@ -44448,7 +44539,8 @@ var KaleidoscopePresets = {
     activeRotate: [0, 0.2, 0]
   }
 };
-var KaleidoscopeEffect = class {
+var KaleidoscopeEffect = class _KaleidoscopeEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, shape = "quad", params = {}, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -44497,51 +44589,67 @@ var KaleidoscopeEffect = class {
     this.indexFormat = geo2.indices instanceof Uint16Array ? "uint16" : "uint32";
   }
   _initPipeline() {
-    this.modelBuffer = this.device.createBuffer({
+    const device2 = this.device;
+    if (_KaleidoscopeEffect._pipelineCache.has(device2)) {
+      const cached = _KaleidoscopeEffect._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: kaleidoscopeEffectShader });
+      this.pipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+      this.pipeline = device2.createRenderPipeline({
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.colorFormat,
+              blend: {
+                color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+              }
+            },
+            { format: this.colorFormat },
+            { format: this.colorFormat }
+          ]
+        },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
+      });
+      _KaleidoscopeEffect._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+    this.modelBuffer = device2.createBuffer({
       size: 128,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: kaleidoscopeEffectShader });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.colorFormat,
-            blend: {
-              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
-          },
-          { format: this.colorFormat },
-          { format: this.colorFormat }
-        ]
-      },
-      primitive: { topology: "triangle-list" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
     });
   }
   _uploadVertex(data) {
@@ -44588,17 +44696,16 @@ var KaleidoscopeEffect = class {
   }
   draw(pass, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
     pass.drawIndexed(this.indexCount);
   }
-  render(pass, mesh, viewProjMatrix) {
+  render(pass, mesh, vp) {
     this.time += 0.016;
     this.colorShift = (this.colorShift + 0.016 * this.colorShiftSpeed) % (Math.PI * 2);
-    this.draw(pass, viewProjMatrix);
+    this.draw(pass, vp);
   }
   // Control setters
   setIntensity(intensity) {
@@ -47969,7 +48076,8 @@ var loadObjFile = function() {
         pointerEffect: {
           enabled: true,
           flameEmitter: true,
-          bloodBurst: true
+          // bloodBurst: true
+          flameEffect: true
         }
       });
       loadObjFile2.lightContainer[0].setIntensity(15);
@@ -47984,15 +48092,49 @@ var loadObjFile = function() {
       loadObjFile2.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         app.MYCUBE = MYCUBE;
+        app.MYCUBE.effects.mana = new MANABarEffect(app.device, "rgba16float", app.cameraBuffer);
+        const center = [0, 10, -20];
+        let time = 0;
+        const totalBeams = 25;
+        const spiralRadius = 8;
+        const heightStep = 0.6;
+        function animateSpiralLasers() {
+          time += 0.03;
+          for (let i2 = 0; i2 < totalBeams; i2++) {
+            setTimeout(() => {
+              const t3 = i2 / totalBeams;
+              const angle2 = time + t3 * Math.PI * 6;
+              const currentRadius = spiralRadius * t3;
+              const fromX = center[0] + Math.cos(angle2) * currentRadius;
+              const fromY = center[1] + i2 * heightStep;
+              const fromZ = center[2] + Math.sin(angle2) * currentRadius;
+              const nextAngle = angle2 + 0.4;
+              const nextRadius = spiralRadius * (t3 + 0.05);
+              const toX = center[0] + Math.cos(nextAngle) * nextRadius;
+              const toY = center[1] + (i2 + 1) * heightStep;
+              const toZ = center[2] + Math.sin(nextAngle) * nextRadius;
+              const hueShift = (time * 50 + i2 * 10) % 360;
+              app.MYCUBE.effects.laser.fireBeam(
+                [fromX, fromY, fromZ],
+                [toX, toY, toZ],
+                0.08,
+                // Short lifespan guarantees lasers disappear and update instantly
+                {
+                  colorA: [255, Math.floor(Math.abs(Math.sin(time + t3) * 255)), 100],
+                  colorB: [0, 200, 255],
+                  width: 0.6,
+                  intensity: 1.5,
+                  scrollSpeed: 8
+                  // Fast texture scroll along the laser body
+                }
+              );
+            }, 100 * i2);
+          }
+          setTimeout(() => {
+            animateSpiralLasers();
+          }, 1e3);
+        }
         MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile2.device, "rgba16float", 20, loadObjFile2.cameraBuffer);
-        MYCUBE.effects.GenGeoTexture = new GenGeoTexture(
-          loadObjFile2.device,
-          "rgba16float",
-          void 0,
-          "./res/textures/star1.png",
-          12,
-          loadObjFile2.cameraBuffer
-        );
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
           -2.582509022040566,
@@ -51648,7 +51790,6 @@ var loadDestructionProcedural = function() {
 
 // src/engine/effects/kaleidoscopeEffectInstance.js
 var KaleidoscopeEmitter = class _KaleidoscopeEmitter {
-  // Static cache - one pipeline per device
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, maxParticles = 20, cameraBuffer, initSwap = [0, 1, 2], baseRotation = [0, 0, 0]) {
     this.device = device2;
@@ -69457,7 +69598,8 @@ fn fsMain(input : VSOut) -> FragOut {
   );
 }
 `;
-var SacredGeometryEffect = class {
+var SacredGeometryEffect = class _SacredGeometryEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer) {
     console.log("%c[SacredGeometryEffect] Initializing...", "color: cyan; font-weight: bold;");
     this.device = device2;
@@ -69491,6 +69633,85 @@ var SacredGeometryEffect = class {
     this.renderCount = 0;
   }
   _initPipeline() {
+    const device2 = this.device;
+    if (_SacredGeometryEffect._pipelineCache.has(device2)) {
+      const cached = _SacredGeometryEffect._pipelineCache.get(device2);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        label: "sacred-geometry-layout",
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: { type: "uniform" }
+          },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: { type: "read-only-storage" }
+          }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({
+        label: "sacred-geometry-shader",
+        code: sacredGeometryShader
+      });
+      this.pipelineLayout = device2.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
+        label: "sacred-geometry-pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 32,
+              attributes: [
+                { shaderLocation: 0, offset: 0, format: "float32x3" },
+                { shaderLocation: 1, offset: 12, format: "float32x3" },
+                { shaderLocation: 2, offset: 24, format: "float32x2" }
+              ]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: {
+          topology: "triangle-list",
+          cullMode: "none"
+        },
+        depthStencil: {
+          format: "depth24plus",
+          depthWriteEnabled: false,
+          depthCompare: "less"
+        }
+      });
+      _SacredGeometryEffect._pipelineCache.set(device2, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
     const vertexData = new Float32Array([
       -2,
       -2,
@@ -69526,7 +69747,7 @@ var SacredGeometryEffect = class {
       1
     ]);
     const indexData = new Uint32Array([0, 1, 2, 0, 2, 3]);
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device2.createBuffer({
       label: "sacred-geometry-vertex",
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -69534,7 +69755,7 @@ var SacredGeometryEffect = class {
     });
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device2.createBuffer({
       label: "sacred-geometry-index",
       size: indexData.byteLength,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
@@ -69543,30 +69764,15 @@ var SacredGeometryEffect = class {
     new Uint32Array(this.indexBuffer.getMappedRange()).set(indexData);
     this.indexBuffer.unmap();
     this.indexCount = indexData.length;
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device2.createBuffer({
       label: "sacred-geometry-model-buffer",
       size: this.maxInstances * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       mappedAtCreation: false
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: "sacred-geometry-layout",
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: { type: "uniform" }
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: { type: "read-only-storage" }
-        }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
+    this.bindGroup = device2.createBindGroup({
       label: "sacred-geometry-bindgroup",
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         {
           binding: 0,
@@ -69577,55 +69783,6 @@ var SacredGeometryEffect = class {
           resource: { buffer: this.modelBuffer }
         }
       ]
-    });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    const shaderModule = this.device.createShaderModule({
-      label: "sacred-geometry-shader",
-      code: sacredGeometryShader
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "sacred-geometry-pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 32,
-            attributes: [
-              { shaderLocation: 0, offset: 0, format: "float32x3" },
-              { shaderLocation: 1, offset: 12, format: "float32x3" },
-              { shaderLocation: 2, offset: 24, format: "float32x2" }
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: {
-        topology: "triangle-list",
-        cullMode: "none"
-      },
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "less"
-      }
     });
     console.log("%c[SacredGeometryEffect] \u2713 Initialized - Plane: 4x4 units, Glow: 2.5, LineWidth: 0.08", "color: lime; font-weight: bold;");
   }

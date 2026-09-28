@@ -203,6 +203,7 @@ fn fsMain(input : VSOut) -> FragOut {
 `;
 
 export class SacredGeometryEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer) {
     console.log('%c[SacredGeometryEffect] Initializing...', 'color: cyan; font-weight: bold;');
 
@@ -245,6 +246,95 @@ export class SacredGeometryEffect {
   }
 
   _initPipeline() {
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(SacredGeometryEffect._pipelineCache.has(device)) {
+      const cached = SacredGeometryEffect._pipelineCache.get(device);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        label: 'sacred-geometry-layout',
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {type: 'uniform'},
+          },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: {type: 'read-only-storage'},
+          },
+        ],
+      });
+
+      this.shaderModule = device.createShaderModule({
+        label: 'sacred-geometry-shader',
+        code: sacredGeometryShader,
+      });
+
+      this.pipelineLayout = device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout],
+      });
+
+      this.pipeline = device.createRenderPipeline({
+        label: 'sacred-geometry-pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: 'vsMain',
+          buffers: [
+            {
+              arrayStride: 32,
+              attributes: [
+                {shaderLocation: 0, offset: 0, format: 'float32x3'},
+                {shaderLocation: 1, offset: 12, format: 'float32x3'},
+                {shaderLocation: 2, offset: 24, format: 'float32x2'},
+              ],
+            },
+          ],
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: 'fsMain',
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: {srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add'},
+                alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+              },
+            },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'},
+          ],
+        },
+        primitive: {
+          topology: 'triangle-list',
+          cullMode: 'none',
+        },
+        depthStencil: {
+          format: 'depth24plus',
+          depthWriteEnabled: false,
+          depthCompare: 'less',
+        },
+      });
+
+      // ========== CACHE THEM ==========
+      SacredGeometryEffect._pipelineCache.set(device, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
     // Plane geometry - LARGER SCALE (4x4 instead of 2x2)
     const vertexData = new Float32Array([
       -2, -2, 0, 0, 0, 1, 0, 0,
@@ -255,7 +345,7 @@ export class SacredGeometryEffect {
 
     const indexData = new Uint32Array([0, 1, 2, 0, 2, 3]);
 
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device.createBuffer({
       label: 'sacred-geometry-vertex',
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -264,7 +354,7 @@ export class SacredGeometryEffect {
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
 
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device.createBuffer({
       label: 'sacred-geometry-index',
       size: indexData.byteLength,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
@@ -274,32 +364,16 @@ export class SacredGeometryEffect {
     this.indexBuffer.unmap();
     this.indexCount = indexData.length;
 
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device.createBuffer({
       label: 'sacred-geometry-model-buffer',
       size: this.maxInstances * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       mappedAtCreation: false,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'sacred-geometry-layout',
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {type: 'uniform'},
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {type: 'read-only-storage'},
-        },
-      ],
-    });
-
-    this.bindGroup = this.device.createBindGroup({
+    this.bindGroup = device.createBindGroup({
       label: 'sacred-geometry-bindgroup',
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         {
           binding: 0,
@@ -310,58 +384,6 @@ export class SacredGeometryEffect {
           resource: {buffer: this.modelBuffer},
         },
       ],
-    });
-
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout],
-    });
-
-    const shaderModule = this.device.createShaderModule({
-      label: 'sacred-geometry-shader',
-      code: sacredGeometryShader,
-    });
-
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'sacred-geometry-pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [
-          {
-            arrayStride: 32,
-            attributes: [
-              {shaderLocation: 0, offset: 0, format: 'float32x3'},
-              {shaderLocation: 1, offset: 12, format: 'float32x3'},
-              {shaderLocation: 2, offset: 24, format: 'float32x2'},
-            ],
-          },
-        ],
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: {srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add'},
-              alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
-            },
-          },
-          {format: 'rgba16float'},
-          {format: 'rgba16float'},
-        ],
-      },
-      primitive: {
-        topology: 'triangle-list',
-        cullMode: 'none',
-      },
-      depthStencil: {
-        format: 'depth24plus',
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-      },
     });
 
     console.log('%c[SacredGeometryEffect] ✓ Initialized - Plane: 4x4 units, Glow: 2.5, LineWidth: 0.08', 'color: lime; font-weight: bold;');

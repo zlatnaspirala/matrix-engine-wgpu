@@ -1,10 +1,8 @@
 import {mat4} from "wgpu-matrix";
-// import {kaleidoscopeEffectShader} from "../../shaders/kaleidoscope-effect/kaleidoscopeEffect";
 import {GeometryFactory} from "../geometry-factory";
 import {kaleidoscopeEffectShader} from "../../shaders/kale/kale.wgsl";
 
 export const KaleidoscopePresets = {
-  // Classic symmetric kaleidoscope
   classic: {
     intensity: 1.0,
     speed: 0.5,
@@ -19,7 +17,7 @@ export const KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0, 0, 0]
   },
-  // Fast rotating 8-segment
+
   fast: {
     intensity: 1.2,
     speed: 1.0,
@@ -34,7 +32,7 @@ export const KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0, 0.5, 0]
   },
-  // Slow, deep zoom
+
   deep: {
     intensity: 0.8,
     speed: 0.3,
@@ -49,7 +47,7 @@ export const KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0, 0, 0]
   },
-  // Psychedelic cyan/magenta
+
   psycho: {
     intensity: 1.5,
     speed: 1.4,
@@ -64,7 +62,7 @@ export const KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0.3, 0.2, 0]
   },
-  // Cool blues
+
   cool: {
     intensity: 1.0,
     speed: 0.7,
@@ -79,7 +77,7 @@ export const KaleidoscopePresets = {
     localRotation: [0, 0, 0],
     activeRotate: [0, 0.3, 0]
   },
-  // Warm fire-like
+
   warm: {
     intensity: 1.3,
     speed: 0.6,
@@ -97,6 +95,7 @@ export const KaleidoscopePresets = {
 };
 
 export class KaleidoscopeEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, shape = "quad", params = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -153,51 +152,73 @@ export class KaleidoscopeEffect {
   }
 
   _initPipeline() {
-    this.modelBuffer = this.device.createBuffer({
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(KaleidoscopeEffect._pipelineCache.has(device)) {
+      const cached = KaleidoscopeEffect._pipelineCache.get(device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}},
+        ]
+      });
+
+      this.shaderModule = device.createShaderModule({code: kaleidoscopeEffectShader});
+      this.pipelineLayout = device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+
+      this.pipeline = device.createRenderPipeline({
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]},
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{
+            format: this.colorFormat,
+            blend: {
+              color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
+              alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
+            }
+          },
+          {format: this.colorFormat}, {format: this.colorFormat}]
+        },
+        primitive: {topology: "triangle-list"},
+        depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},
+      });
+
+      KaleidoscopeEffect._pipelineCache.set(device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+
+
+    this.modelBuffer = device.createBuffer({
       size: 128,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}},
-      ]
-    });
-
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
-    });
-
-    const shaderModule = this.device.createShaderModule({code: kaleidoscopeEffectShader});
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]}),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]},
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.colorFormat,
-          blend: {
-            color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
-            alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"},
-          }
-        },
-        {format: this.colorFormat},{format: this.colorFormat}]
-      },
-      primitive: {topology: "triangle-list"},
-      depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},
     });
   }
 
@@ -247,7 +268,6 @@ export class KaleidoscopeEffect {
 
   draw(pass, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -255,10 +275,10 @@ export class KaleidoscopeEffect {
     pass.drawIndexed(this.indexCount);
   }
 
-  render(pass, mesh, viewProjMatrix) {
+  render(pass, mesh, vp) {
     this.time += 0.016;
     this.colorShift = (this.colorShift + 0.016 * this.colorShiftSpeed) % (Math.PI * 2);
-    this.draw(pass, viewProjMatrix);
+    this.draw(pass, vp);
   }
 
   // Control setters

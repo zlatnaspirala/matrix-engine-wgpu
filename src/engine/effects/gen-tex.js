@@ -111,7 +111,7 @@ _initPipeline() {
       depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}
     });
 
-    // ========== CACHE THEM ==========
+    
     GenGeoTexture._pipelineCache.set(device, {
       pipeline: this.pipeline,
       bindGroupLayout: this.bindGroupLayout,
@@ -120,7 +120,7 @@ _initPipeline() {
     });
   }
 
-  // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+  
   this.vertexBuffer = device.createBuffer({
     size: vertexData.byteLength,
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST

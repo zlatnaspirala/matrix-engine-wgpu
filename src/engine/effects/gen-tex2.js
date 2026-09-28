@@ -3,6 +3,7 @@ import {GeometryFactory} from "../geometry-factory.js";
 import {mat4} from "wgpu-matrix";
 
 export class GenGeoTexture2 {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, type = "sphere", path, scale = 1, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -55,16 +56,13 @@ export class GenGeoTexture2 {
   _initPipeline() {
     const device = this.device;
     const {vertexData, uvData, indexData} = this;
-
-    // ========== CACHE CHECK ==========
-    if(GeoInstancedTexEffect2._pipelineCache.has(device)) {
-      const cached = GeoInstancedTexEffect2._pipelineCache.get(device);
+    if(GenGeoTexture2._pipelineCache.has(device)) {
+      const cached = GenGeoTexture2._pipelineCache.get(device);
       this.pipeline = cached.pipeline;
       this.bindGroupLayout = cached.bindGroupLayout;
       this.pipelineLayout = cached.pipelineLayout;
       this.shaderModule = cached.shaderModule;
     } else {
-      // ========== BUILD PIPELINE ONCE ==========
       this.bindGroupLayout = device.createBindGroupLayout({
         label: 'geo-texture bindGroupLayout',
         entries: [
@@ -108,8 +106,8 @@ export class GenGeoTexture2 {
         depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}
       });
 
-      // ========== CACHE THEM ==========
-      GeoInstancedTexEffect2._pipelineCache.set(device, {
+      
+      GenGeoTexture2._pipelineCache.set(device, {
         pipeline: this.pipeline,
         bindGroupLayout: this.bindGroupLayout,
         pipelineLayout: this.pipelineLayout,
@@ -117,7 +115,7 @@ export class GenGeoTexture2 {
       });
     }
 
-    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+    
     this.vertexBuffer = device.createBuffer({
       size: Math.ceil(vertexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
@@ -183,6 +181,8 @@ export class GenGeoTexture2 {
         {binding: 3, resource: this.texture.createView()},
       ]
     });
+
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200)
   }
 
   updateInstanceCount(newCount) {

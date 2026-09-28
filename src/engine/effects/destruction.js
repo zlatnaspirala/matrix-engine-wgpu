@@ -18,6 +18,7 @@ import {mat4} from "wgpu-matrix";
 import {dustShader} from "../../shaders/desctruction/dust-shader.wgsl.js";
 
 export class DestructionEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, config = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -44,6 +45,89 @@ export class DestructionEffect {
   }
 
   _initPipeline() {
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(DestructionEffect._pipelineCache.has(device)) {
+      const cached = DestructionEffect._pipelineCache.get(device);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}}, // camera
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {}}, // model + time
+        ]
+      });
+
+      this.shaderModule = device.createShaderModule({code: dustShader});
+
+      this.pipelineLayout = device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+
+      this.pipeline = device.createRenderPipeline({
+        label: 'destruction Pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            // Vertex positions (per-vertex, shared quad)
+            {
+              arrayStride: 3 * 4,
+              stepMode: "vertex",
+              attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]
+            },
+            // UVs (per-vertex, shared quad)
+            {
+              arrayStride: 2 * 4,
+              stepMode: "vertex",
+              attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]
+            },
+            // Instance data (per-particle)
+            {
+              arrayStride: 12 * 4, // 3 vec4s = 12 floats
+              stepMode: "instance",
+              attributes: [
+                {shaderLocation: 2, offset: 0, format: "float32x4"},      // position + size
+                {shaderLocation: 3, offset: 16, format: "float32x4"},     // velocity + life
+                {shaderLocation: 4, offset: 32, format: "float32x4"}      // color
+              ]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{
+            format: this.format,
+            blend: {
+              color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
+              alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+            }
+          }, {format: 'rgba16float'},
+          {format: 'rgba16float'}]
+        },
+        primitive: {topology: "triangle-list", cullMode: "none"},
+        depthStencil: {
+          depthWriteEnabled: false, // Particles don't write depth
+          depthCompare: "less",
+          format: "depth24plus"
+        }
+      });
+
+      // ========== CACHE THEM ==========
+      DestructionEffect._pipelineCache.set(device, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
     // Single quad for billboarded particles
     const S = 1.0; // Base particle size
     const vertexData = new Float32Array([
@@ -63,25 +147,25 @@ export class DestructionEffect {
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
 
     // Vertex buffer (shared quad geometry)
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
 
     // UV buffer
-    this.uvBuffer = this.device.createBuffer({
+    this.uvBuffer = device.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    device.queue.writeBuffer(this.uvBuffer, 0, uvData);
 
     // Index buffer
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device.createBuffer({
       size: Math.ceil(indexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
 
     // Instance buffer (per-particle data: position, velocity, life, size)
@@ -89,87 +173,25 @@ export class DestructionEffect {
     const maxParticles = this.particleCount;
     const instanceDataSize = maxParticles * (4 + 4 + 4) * 4; // 3 vec4s per particle
 
-    this.instanceBuffer = this.device.createBuffer({
+    this.instanceBuffer = device.createBuffer({
       size: instanceDataSize,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
 
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device.createBuffer({
       size: 64 + 16 + 16, // model matrix + time + intensity (padded)
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    // Bind group layout
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}}, // camera
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {}}, // model + time
-      ]
-    });
-
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
 
-    // Shader module
-    const shaderModule = this.device.createShaderModule({code: dustShader});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-
-    // Render pipeline with alpha blending
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'destruction Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          // Vertex positions (per-vertex, shared quad)
-          {
-            arrayStride: 3 * 4,
-            stepMode: "vertex",
-            attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]
-          },
-          // UVs (per-vertex, shared quad)
-          {
-            arrayStride: 2 * 4,
-            stepMode: "vertex",
-            attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]
-          },
-          // Instance data (per-particle)
-          {
-            arrayStride: 12 * 4, // 3 vec4s = 12 floats
-            stepMode: "instance",
-            attributes: [
-              {shaderLocation: 2, offset: 0, format: "float32x4"},      // position + size
-              {shaderLocation: 3, offset: 16, format: "float32x4"},     // velocity + life
-              {shaderLocation: 4, offset: 32, format: "float32x4"}      // color
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
-            alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-          }
-        }, {format: 'rgba16float'},
-        {format: 'rgba16float'}]
-      },
-      primitive: {topology: "triangle-list", cullMode: "none"},
-      depthStencil: {
-        depthWriteEnabled: false, // Particles don't write depth
-        depthCompare: "less",
-        format: "depth24plus"
-      }
-    });
+     setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {})) }, 200)
   }
 
   _initParticles() {

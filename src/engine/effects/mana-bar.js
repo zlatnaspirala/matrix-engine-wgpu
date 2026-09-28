@@ -2,6 +2,7 @@ import {mat4} from "wgpu-matrix";
 import {hpBarEffectShaders} from "../../shaders/energy-bars/energy-bar-shader.js";
 
 export class MANABarEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -18,6 +19,58 @@ export class MANABarEffect {
   }
 
   _initPipeline() {
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(MANABarEffect._pipelineCache.has(device)) {
+      const cached = MANABarEffect._pipelineCache.get(device);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {}}
+        ]
+      });
+
+      this.shaderModule = device.createShaderModule({code: hpBarEffectShaders});
+
+      this.pipelineLayout = device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+
+      this.pipeline = device.createRenderPipeline({
+        label: 'mana Pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: 'vsMain',
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: 'fsMain',
+          targets: [{format: this.format}, {format: 'rgba16float'}, {format: 'rgba16float'}]
+        },
+        primitive: {topology: 'triangle-list'},
+        depthStencil: {depthWriteEnabled: false, depthCompare: 'always', format: 'depth24plus'}
+      });
+
+      // ========== CACHE THEM ==========
+      MANABarEffect._pipelineCache.set(device, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
     const W = 40;
     const H = 3;
 
@@ -37,67 +90,39 @@ export class MANABarEffect {
 
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
 
-    // Buffers
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
 
-    this.uvBuffer = this.device.createBuffer({
+    this.uvBuffer = device.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    device.queue.writeBuffer(this.uvBuffer, 0, uvData);
 
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device.createBuffer({
       size: Math.ceil(indexData.byteLength / 4) * 4,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
 
-    this.modelBuffer = this.device.createBuffer({
+    this.modelBuffer = device.createBuffer({
       size: 64 + 16 + 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {}}
-      ]
-    });
-
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}}
       ]
     });
 
-    const shaderModule = this.device.createShaderModule({code: hpBarEffectShaders});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'mana Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vsMain',
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
-          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: 'float32x2'}]}
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fsMain',
-        targets: [{format: this.format}, {format: 'rgba16float'}, {format: 'rgba16float'}]
-      },
-      primitive: {topology: 'triangle-list'},
-      depthStencil: {depthWriteEnabled: false, depthCompare: 'always', format: 'depth24plus'}
-    });
+     setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {})) }, 200)
   }
 
   setProgress(value) {

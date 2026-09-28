@@ -2,6 +2,7 @@ import {gizmoEffect} from "../../shaders/gizmo/gimzoShader";
 import {byId} from "../utils";
 
 export class GizmoEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -58,62 +59,97 @@ export class GizmoEffect {
   }
 
   _initPipeline() {
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(GizmoEffect._pipelineCache.has(device)) {
+      const cached = GizmoEffect._pipelineCache.get(device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 2, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {}},
+        ]
+      });
+
+      this.shaderModule = device.createShaderModule({code: gizmoEffect});
+      this.pipelineLayout = device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+
+      this.pipeline = device.createRenderPipeline({
+        label: 'gizmo',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+            {arrayStride: 3 * 4, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
+                alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+              }
+            },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'}
+          ]
+        },
+        primitive: {topology: "line-list"},
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: "always",
+          format: "depth24plus"
+        }
+      });
+
+      
+      GizmoEffect._pipelineCache.set(device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+
+    
     this._createTranslateGizmo();
-    this.modelBuffer = this.device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-    this.gizmoSettingsBuffer = this.device.createBuffer({size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-    this._updateGizmoSettings();
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 2, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {}},
-      ]
+
+    this.modelBuffer = device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+
+    this.gizmoSettingsBuffer = device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateGizmoSettings();
+
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
         {binding: 2, resource: {buffer: this.gizmoSettingsBuffer}}
       ]
     });
-    const shaderModule = this.device.createShaderModule({code: gizmoEffect});
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'gizmo',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {arrayStride: 3 * 4, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 3 * 4, attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]}
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
-              alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-            }
-          },
-          {format: 'rgba16float'},
-          {format: 'rgba16float'}
-        ]
-      },
-      primitive: {topology: "line-list"},
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "always",
-        format: "depth24plus"
-      }
-    });
+
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200)
   }
 
   _createTranslateGizmo() {
@@ -435,7 +471,7 @@ export class GizmoEffect {
   draw(pass, cameraMatrix) {
     if(!this.enabled) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
+    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);

@@ -138,6 +138,7 @@ export class FlameEffect {
     this.indexCount = geo.indices.length;
     this.indexFormat = geo.indices instanceof Uint16Array ? "uint16" : "uint32";
   }
+
   _initPipeline() {
     const device = this.device;
 
@@ -187,7 +188,7 @@ export class FlameEffect {
         depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"},
       });
 
-      // ========== CACHE THEM ==========
+      
       FlameEffect._pipelineCache.set(device, {
         pipeline: this.pipeline,
         bindGroupLayout: this.bindGroupLayout,
@@ -196,7 +197,7 @@ export class FlameEffect {
       });
     }
 
-    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+    
     this.modelBuffer = device.createBuffer({
       size: 112,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -209,6 +210,8 @@ export class FlameEffect {
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
+
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200)
   }
 
   async morphTo(type, size = 40, duration = 200) {
@@ -285,13 +288,13 @@ export class FlameEffect {
 
   draw(pass, cameraMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setIndexBuffer(this.indexBuffer, this.indexFormat);
     pass.drawIndexed(this.indexCount);
   }
+
   render(pass, mesh, viewProjMatrix) {
     this.time += 0.016;
     this.draw(pass, viewProjMatrix);

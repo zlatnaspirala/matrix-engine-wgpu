@@ -8,9 +8,7 @@ import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
  * procedural kaleidoscope particles with vertex animation.
  */
 export class KaleidoscopeEmitter {
-  // Static cache - one pipeline per device
   static _pipelineCache = new WeakMap();
-
   constructor(device, format, maxParticles = 20, cameraBuffer, initSwap = [0, 1, 2], baseRotation = [0, 0, 0]) {
     this.device = device;
     this.format = format;
@@ -142,15 +140,13 @@ export class KaleidoscopeEmitter {
   }
 
   _initPipeline() {
-    // Check cache first - if pipeline already built for this device, reuse it
-    if (KaleidoscopeEmitter._pipelineCache.has(this.device)) {
+    if(KaleidoscopeEmitter._pipelineCache.has(this.device)) {
       const cached = KaleidoscopeEmitter._pipelineCache.get(this.device);
       this.pipeline = cached.pipeline;
       this.bindGroupLayout = cached.bindGroupLayout;
       this.pipelineLayout = cached.pipelineLayout;
       this.shaderModule = cached.shaderModule;
     } else {
-      // Build pipeline only once per device
       this.bindGroupLayout = this.device.createBindGroupLayout({
         label: 'kale-emitter layout',
         entries: [
@@ -206,21 +202,20 @@ export class KaleidoscopeEmitter {
       });
     }
 
-    // Each emitter gets own buffers (not cached)
     const vertexData = this.recreateVertexDataRND(1);
     this.vertexBuffer = this.device.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
-    
+
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     this.uvBuffer = this.device.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
-    
+
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.indexBuffer = this.device.createBuffer({
       size: Math.ceil(indexData.byteLength / 4) * 4,
@@ -228,13 +223,13 @@ export class KaleidoscopeEmitter {
     });
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    
+
     this.modelBuffer = this.device.createBuffer({
       label: 'kale-emitter modelBuffer',
       size: this.maxParticles * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    
+
     this.bindGroup = this.device.createBindGroup({
       label: 'kaleidoscope-emitter bindGroup',
       layout: this.bindGroupLayout,
@@ -244,7 +239,6 @@ export class KaleidoscopeEmitter {
       ]
     });
 
-    // Trigger effect reorganization in main loop
     setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
   }
 

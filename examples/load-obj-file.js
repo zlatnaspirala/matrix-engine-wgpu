@@ -7,6 +7,10 @@ import {FlameEmitter} from "../src/engine/effects/flame-emmiter.js";
 import {HPBarEffect} from "../src/engine/effects/energy-bar.js";
 import {FlameEffect} from "../src/engine/effects/flame.js";
 import {GenGeoTexture} from "../src/engine/effects/gen-tex.js";
+import {GenGeo} from "../src/engine/effects/gen.js";
+import {KaleidoscopeEffect} from "../src/engine/effects/KaleidoscopeEffect.js";
+import {LaserProjectile} from "../src/engine/effects/laser.js";
+import {MANABarEffect} from "../src/engine/effects/mana-bar.js";
 
 export var loadObjFile = function() {
 
@@ -94,7 +98,8 @@ export var loadObjFile = function() {
         pointerEffect: {
           enabled: true,
           flameEmitter: true,
-          bloodBurst: true
+          // bloodBurst: true
+          flameEffect: true
         }
       })
 
@@ -111,7 +116,72 @@ export var loadObjFile = function() {
 
       setTimeout(() => {
         app.MYCUBE = MYCUBE;
-        MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
+        // MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
+        // MYCUBE.effects.circle  = new GenGeo(loadObjFile.device, 'rgba16float', 'sphere', 2, loadObjFile.cameraBuffer);
+
+        app.MYCUBE.effects.mana = new MANABarEffect(app.device, 'rgba16float', app.cameraBuffer);
+
+        // app.MYCUBE.effects.laser.fireBeam([0,3,0], [0,3, -10])
+
+        // Configuration for the spiral laser animation
+        const center = [0, 10, -20]; // Center point of the spiral structure
+        let time = 0;
+        const totalBeams = 25;       // Number of active segments making up the spiral contour
+        const spiralRadius = 8;      // Maximum spread of the spiral
+        const heightStep = 0.6;      // Vertical distance between spiral loops
+
+        function animateSpiralLasers() {
+          // Advance time/phase to rotate and crawl the spiral
+          time += 0.03;
+
+          for(let i = 0;i < totalBeams;i++) {
+            setTimeout(() => {
+              // Calculate fractional position along the spiral (0 to 1)
+              const t = i / totalBeams;
+
+              // Angle and radius calculation for a 3D spiral contour (Helix)
+              const angle = time + (t * Math.PI * 6); // 3 full twists
+              const currentRadius = spiralRadius * t;   // Expands outward from center
+
+              // "From" position (inner/bottom start of the segment)
+              const fromX = center[0] + Math.cos(angle) * currentRadius;
+              const fromY = center[1] + (i * heightStep);
+              const fromZ = center[2] + Math.sin(angle) * currentRadius;
+
+              // "To" position (connects to the next step up/out to form the contour chain)
+              const nextAngle = angle + 0.4;
+              const nextRadius = spiralRadius * (t + 0.05);
+              const toX = center[0] + Math.cos(nextAngle) * nextRadius;
+              const toY = center[1] + ((i + 1) * heightStep);
+              const toZ = center[2] + Math.sin(nextAngle) * nextRadius;
+
+              // Psychedelic color shifting tied to the time loop
+              const hueShift = (time * 50 + i * 10) % 360;
+
+
+              // Fire the beam with a short life (0.08s) so it disappears quickly and slides seamlessly
+              app.MYCUBE.effects.laser.fireBeam(
+                [fromX, fromY, fromZ],
+                [toX, toY, toZ],
+                0.08, // Short lifespan guarantees lasers disappear and update instantly
+                {
+                  colorA: [255, Math.floor(Math.abs(Math.sin(time + t) * 255)), 100],
+                  colorB: [0, 200, 255],
+                  width: 0.6,
+                  intensity: 1.5,
+                  scrollSpeed: 8.0 // Fast texture scroll along the laser body
+                }
+              );
+            }, 100 * i)
+
+          }
+
+          // Loop continuously
+          setTimeout(() => {animateSpiralLasers()}, 1000);
+        }
+
+        // Kick off the animation loop
+        // animateSpiralLasers();
 
         MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile.device, "rgba16float", 20, loadObjFile.cameraBuffer);
 
