@@ -117,7 +117,6 @@ export class GizmoEffect {
         }
       });
 
-      
       GizmoEffect._pipelineCache.set(device, {
         pipeline: this.pipeline,
         bindGroupLayout: this.bindGroupLayout,
@@ -126,7 +125,6 @@ export class GizmoEffect {
       });
     }
 
-    
     this._createTranslateGizmo();
 
     this.modelBuffer = device.createBuffer({
@@ -187,6 +185,31 @@ export class GizmoEffect {
   }
 
   _setupEventListeners() {
+    // --- STANDALONE GIZMO SCREEN-SPACE HIT TEST ON MOUSDOWN ---
+    app.canvas.addEventListener("mousedown", (e) => {
+      if (!this.enabled || !this.parentMesh) return;
+
+      // Check if mouse click hits the gizmo in 2D screen space (tolerance box/rect around handles)
+      const clickedAxis = this._checkScreenSpaceGizmoHit(e);
+      if (clickedAxis > 0) {
+        // Stop event from propagating to the scene raycaster so it doesn't switch objects!
+        e.stopImmediatePropagation();
+        e.preventDefault();
+
+        this.selectedAxis = clickedAxis;
+        this.dragAxis = clickedAxis;
+        this.initialPositionCache.x = this.parentMesh.position.x;
+        this.initialPositionCache.y = this.parentMesh.position.y;
+        this.initialPositionCache.z = this.parentMesh.position.z;
+
+        this._updateGizmoSettings();
+        this.isDragging = true;
+        window.__isDragging = true;
+         setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {})) }, 10)
+        console.log('Gizmo standalone screen-space hit! Axis:', clickedAxis);
+      }
+    }, true); // Use capture phase to intercept before scene raycaster
+
     app.canvas.addEventListener("ray.hit.mousedown", (e) => {
       const detail = e.detail;
       if(detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
@@ -205,14 +228,11 @@ export class GizmoEffect {
     app.canvas.addEventListener("mousemove", (e) => {
       if(this.isDragging && e.buttons === 1) {
         this._handleDrag(e);
-        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = true;
       } else if(this.isDragging && e.buttons === 0) {
         this.isDragging = false;
         window.__isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-      } else {
-        // if(app.cameras.WASD) app.cameras.WASD.suspendDrag = false;
       }
     });
 
@@ -238,7 +258,6 @@ export class GizmoEffect {
           this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
           document.dispatchEvent(this.editorUpdateScaleEvent);
         }
-        console.log('this.isDragging = false');
         this.isDragging = false;
         window.__isDragging = false;
         this.selectedAxis = 0;
@@ -247,13 +266,77 @@ export class GizmoEffect {
     });
   }
 
+  // --- Screen-Space Hit Rect Check (Like Professional Engines) ---
+  _checkScreenSpaceGizmoHit(mouseEvent) {
+    if (!app.getCamera() || !this.parentMesh) return 0;
+
+    const rect = app.canvas.getBoundingClientRect();
+    const mouseX = mouseEvent.clientX - rect.left;
+    const mouseY = mouseEvent.clientY - rect.top;
+
+    const viewMatrix = app.getCamera().view;
+    const projMatrix = app.getCamera().projectionMatrix;
+    const origin3D = this.parentMesh.position;
+
+    // Project gizmo center (origin) to screen
+    const screenOrigin = this._worldToScreen(origin3D, viewMatrix, projMatrix);
+    const axisLengthWorld = 1.0 * (this.size * 0.3); // Scale with gizmo size
+
+    // Check each axis (1: X-Axis, 2: Y-Axis, 3: Z-Axis)
+    for (let i = 1; i <= 3; i++) {
+      let end3D = {
+        x: origin3D.x + (i === 1 ? axisLengthWorld : 0),
+        y: origin3D.y + (i === 2 ? axisLengthWorld : 0),
+        z: origin3D.z + (i === 3 ? axisLengthWorld : 0)
+      };
+
+      const screenEnd = this._worldToScreen(end3D, viewMatrix, projMatrix);
+
+      // Distance from mouse point to the line segment (screen space) with a 15-pixel hit threshold rect/area
+      const dist = this._pointToSegmentDistance(mouseX, mouseY, screenOrigin.x, screenOrigin.y, screenEnd.x, screenEnd.y);
+      
+      // 15 pixels tolerance rectangle area around the gizmo handle line
+      if (dist < 15.0) {
+        return i;
+      }
+    }
+
+    return 0;
+  }
+
+  _pointToSegmentDistance(x, y, x1, y1, x2, y2) {
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+    if (lenSq !== 0) param = dot / lenSq;
+
+    let xx, yy;
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    } else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    } else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+
+    const dx = x - xx;
+    const dy = y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
   _handleRayHit(detail) {
     const {rayOrigin, rayDirection, hitPoint} = detail;
     const axis = this._raycastAxis(rayOrigin, rayDirection, detail.hitObject);
     if(axis > 0) {
       this.selectedAxis = axis;
-
-      // Zero allocations write to tracking buffers
       this.dragStartPointCache[0] = hitPoint[0];
       this.dragStartPointCache[1] = hitPoint[1];
       this.dragStartPointCache[2] = hitPoint[2];
@@ -264,14 +347,13 @@ export class GizmoEffect {
 
       this.dragAxis = axis;
       this._updateGizmoSettings();
-      console.log('this.isDragging = true;')
       this.isDragging = true;
+      setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {})) }, 10)
       window.__isDragging = true;
     }
   }
 
   _getAxisScreenDirection(axisIndex) {
-    // Perform manual mapping instead of initializing structural inner lists
     let xDir = 0, yDir = 0, zDir = 0;
     if(axisIndex === 0) xDir = 1;
     else if(axisIndex === 1) yDir = 1;
@@ -281,13 +363,12 @@ export class GizmoEffect {
     const projMatrix = app.getCamera().projectionMatrix;
     const p1 = this.parentMesh.position;
 
-    // Write directly to reusable object memory
     this._p2Cache.x = p1.x + xDir;
     this._p2Cache.y = p1.y + yDir;
     this._p2Cache.z = p1.z + zDir;
 
     const screen1 = this._worldToScreen(p1, viewMatrix, projMatrix);
-    const s1X = screen1.x, s1Y = screen1.y; // Copy out primitive fields
+    const s1X = screen1.x, s1Y = screen1.y;
 
     const screen2 = this._worldToScreen(this._p2Cache, viewMatrix, projMatrix);
 
@@ -302,16 +383,7 @@ export class GizmoEffect {
   }
 
   _worldToScreen(worldPos, viewMatrix, projMatrix) {
-    // const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
-    // const ndcX = clipPos.x / clipPos.w;
-    // const ndcY = clipPos.y / clipPos.w;
-
-    // // Use a single returned local mutable coordinate representation to avoid heap footprint
-    // this._p2Cache.x = (ndcX + 1) * 0.5 * app.canvas.width;
-    // this._p2Cache.y = (1 - ndcY) * 0.5 * app.canvas.height;
-    // return this._p2Cache;
     const clipPos = this._transformPoint(worldPos, viewMatrix, projMatrix);
-
     const ndcX = clipPos.x / clipPos.w;
     const ndcY = clipPos.y / clipPos.w;
 
@@ -335,9 +407,39 @@ export class GizmoEffect {
     return this._p2Cache;
   }
 
+  _multiplyMatrices(a, b) {
+    let out = this.matrixResultCache;
+    let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+    let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+    let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+    let a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+
+    let b00 = b[0], b01 = b[1], b02 = b[2], b03 = b[3];
+    let b10 = b[4], b11 = b[5], b12 = b[6], b13 = b[7];
+    let b20 = b[8], b21 = b[9], b22 = b[10], b23 = b[11];
+    let b30 = b[12], b31 = b[13], b32 = b[14], b33 = b[15];
+
+    out[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
+    out[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
+    out[2] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
+    out[3] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
+    out[4] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
+    out[5] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
+    out[6] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
+    out[7] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
+    out[8] = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
+    out[9] = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
+    out[10] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
+    out[11] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
+    out[12] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
+    out[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
+    out[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
+    out[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
+    return out;
+  }
+
   _handleDrag(mouseEvent) {
     if(!this.parentMesh || !this.isDragging) return;
-    if(this.parentMesh.dontDrag && byId('graph-status').innerText === "🔴") return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -346,11 +448,7 @@ export class GizmoEffect {
         switch(this.dragAxis) {
           case 1: this.parentMesh.position.x += deltaX * this.movementScale; break;
           case 2: this.parentMesh.position.y -= deltaY * this.movementScale; break;
-          case 3:
-            // const zAxisScreenDir = this._getAxisScreenDirection(2);
-            // const movement = (deltaX * zAxisScreenDir.x + (-deltaY) * zAxisScreenDir.y);
-            // this.parentMesh.position.z += movement * this.movementScale;
-            this.parentMesh.position.z -= (deltaX - deltaY) * this.movementScale;
+          case 3: this.parentMesh.position.z -= (deltaX - deltaY) * this.movementScale; break;
         }
         break;
       case 1:
@@ -377,23 +475,17 @@ export class GizmoEffect {
     const threshold = 0.1 * this.size;
     const ext = 2 * this.size;
 
-    // Direct initialization into primitive values instead of wrapper tracking structures
-    // const start = this._rayIntersectsCache.ro; // reuse array pointers
     const start = this._rayIntersectsCache.lineStart;
     start[0] = mX; start[1] = mY; start[2] = mZ;
 
-    // const end = this._rayIntersectsCache.rd;
     const end = this._rayIntersectsCache.lineEnd;
 
-    // X Axis check
     end[0] = mX + ext; end[1] = mY; end[2] = mZ;
     if(this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 1;
 
-    // Y Axis check
     end[0] = mX; end[1] = mY + ext; end[2] = mZ;
     if(this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold)) return 2;
 
-    // Z Axis check
     end[0] = mX; end[1] = mY; end[2] = mZ + ext;
     if(this._rayIntersectsLine(rayOrigin, rayDirection, start, end, threshold * 2)) return 3;
 
@@ -427,7 +519,6 @@ export class GizmoEffect {
     const e = cache.line[0] * cache.w[0] + cache.line[1] * cache.w[1] + cache.line[2] * cache.w[2];
 
     const denom = a * c - b * b;
-    // if(Math.abs(denom) < 0.0001) return false;
     if(Math.abs(denom) < 0.0000001) return false;
 
     const sc = (b * e - c * d) / denom;
@@ -450,7 +541,6 @@ export class GizmoEffect {
     return dist < threshold;
   }
 
-  // Lifecycle cleanup method to completely eliminate global memory retention loops
   destroy() {
     removeEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
@@ -463,7 +553,6 @@ export class GizmoEffect {
     this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, this.gizmoSettingsCache);
   }
 
-  // ... rest of structural binding configurations unchanged ...
   updateInstanceData(baseModelMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
   }
@@ -471,7 +560,6 @@ export class GizmoEffect {
   draw(pass, cameraMatrix) {
     if(!this.enabled) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);
@@ -479,7 +567,6 @@ export class GizmoEffect {
   }
 
   render(pass, mesh, viewProjMatrix) {
-    // this.parentMesh = mesh;
     if(mesh !== this.parentMesh) return;
     this.draw(pass, viewProjMatrix);
   }

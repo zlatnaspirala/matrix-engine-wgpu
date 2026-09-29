@@ -1358,7 +1358,7 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            effect.simulate?.(commandEncoder);
+            if (effect) effect.simulate?.(commandEncoder);
           }
         }
       }

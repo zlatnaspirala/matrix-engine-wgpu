@@ -151,6 +151,10 @@ export class WASDCamera {
       }, {passive: false});
 
       canvas.addEventListener('pointermove', e => {
+        if(window.__isDragging === true) {
+          console.log('prevent dragging')
+          return;
+        }
         if(e.pointerType === 'mouse' && this._mouseDown) {
           if(this._lookDisabled) {return;}
           const dx = e.movementX * this.MOUSE_SENS;
@@ -239,7 +243,6 @@ export class WASDCamera {
     this._recalculateViewVP();
     this._dirtyAngle = false;
   }
-
 
   setX = (x) => {this.position[0] = x; this._dirtyAngle = true;}
   setY = (y) => {this.position[1] = y; this._dirtyAngle = true;}
@@ -886,7 +889,8 @@ export class FirstPersonCamera {
 
     if(isMobile() === false) canvas.addEventListener('pointermove', e => {
       if(e.pointerType === 'mouse') {
-        if(window.__isDragging === true) {return }
+        console.log('prevent dragging')
+        if(window.__isDragging === true) {return;}
         const dx = e.movementX * this.MOUSE_SENS;
         const dy = e.movementY * this.MOUSE_SENS;
         this.yaw -= dx * this.rotationSpeed;

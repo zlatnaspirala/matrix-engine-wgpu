@@ -16,6 +16,7 @@ import {VERTEX_ANIM_FLAGS} from '../literals';
 import {MEConfig} from '../../me-config';
 import {buildPipelineKey, PipelineManager} from '../pipelineManager';
 import {PointEffect} from '../effects/topology-point';
+import {GizmoEffect} from '../effects/gizmo';
 
 export default class MEMeshObjInstances extends MaterialsInstanced {
   constructor(canvas, device, context, o, inputHandler, globalAmbient, _glbFile = null, primitiveIndex = null, skinnedNodeIndex = null, cameraBuffer) {
@@ -766,6 +767,10 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           this.effects.energyBar = new HPBarEffect(device, pf, this.cameraBuffer);
           this.effects.manaBar = new MANABarEffect(device, pf, this.cameraBuffer);
         }
+        if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true ||
+          (app && app.editor.methodsManager && app.editor.methodsManager.editorType === 'created from editor')) {
+          this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float', this.cameraBuffer);
+        } 
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
           this.effects.flameEffect = new FlameEffect(device, pf, pf, undefined, this.cameraBuffer);
         }
