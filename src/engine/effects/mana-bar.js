@@ -145,7 +145,6 @@ export class MANABarEffect {
     this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
     this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
 
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);

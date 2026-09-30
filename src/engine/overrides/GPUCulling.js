@@ -135,15 +135,22 @@ export async function GPUIndirectDraws() {
       }
     }
 
-    for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if(mesh.effects) {
-        for(const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if(effect === null || effect.enabled === false) continue;
+    for(const className in this.effectsByType) {
+      const pile = this.effectsByType[className];
+      if(pile.length === 0) continue;
+      if(className === '_WaterSimEffect' || className === '_DepthWebcamVoxelEffect' || className === '_WaterSimSphereEffect') {
+        for(const {effect, mesh} of pile) {
+          if(effect.enabled === false) continue;
           if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
           effect.render(pass, mesh, camera.VP);
         }
+        continue;
+      }
+      pass.setPipeline(pile[0].effect.pipeline);
+      for(const {effect, mesh} of pile) {
+        if(effect.enabled === false) continue;
+        if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+        effect.render(pass, mesh, camera.VP, 0.016);
       }
     }
     pass.end();

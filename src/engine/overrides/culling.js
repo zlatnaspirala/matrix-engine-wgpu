@@ -55,7 +55,7 @@ export let cullingPass = function() {
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];
-      if (!mesh) continue;
+      if(!mesh) continue;
       mesh.updateInstanceData?.(mesh.modelMatrix);
       if(mesh.vertexAnim?.active) mesh.updateTime(this.now);
       mesh.position.update();
@@ -94,15 +94,33 @@ export let cullingPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if(mesh.effects) {
-        for(const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if(effect === null || effect.enabled === false) continue;
+    // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
+    //   const mesh = this.mainRenderBundle[meshIndex];
+    //   if(mesh.effects) {
+    //     for(const effectName in mesh.effects) {
+    //       const effect = mesh.effects[effectName];
+    //       if(effect === null || effect.enabled === false) continue;
+    //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+    //       effect.render(pass, mesh, camera.VP);
+    //     }
+    //   }
+    // }
+    for(const className in this.effectsByType) {
+      const pile = this.effectsByType[className];
+      if(pile.length === 0) continue;
+      if(className === '_WaterSimEffect' || className === '_DepthWebcamVoxelEffect' || className === '_WaterSimSphereEffect') {
+        for(const {effect, mesh} of pile) {
+          if(effect.enabled === false) continue;
           if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
           effect.render(pass, mesh, camera.VP);
         }
+        continue;
+      }
+      pass.setPipeline(pile[0].effect.pipeline);
+      for(const {effect, mesh} of pile) {
+        if(effect.enabled === false) continue;
+        if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+        effect.render(pass, mesh, camera.VP, 0.016);
       }
     }
     pass.end();
@@ -220,15 +238,33 @@ export let noShadowPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if(mesh.effects) {
-        for(const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if(effect === null || effect.enabled === false) continue;
+    // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
+    //   const mesh = this.mainRenderBundle[meshIndex];
+    //   if(mesh.effects) {
+    //     for(const effectName in mesh.effects) {
+    //       const effect = mesh.effects[effectName];
+    //       if(effect === null || effect.enabled === false) continue;
+    //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+    //       effect.render(pass, mesh, camera.VP);
+    //     }
+    //   }
+    // }
+    for(const className in this.effectsByType) {
+      const pile = this.effectsByType[className];
+      if(pile.length === 0) continue;
+      if(className === '_WaterSimEffect' || className === '_DepthWebcamVoxelEffect' || className === '_WaterSimSphereEffect') {
+        for(const {effect, mesh} of pile) {
+          if(effect.enabled === false) continue;
           if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
           effect.render(pass, mesh, camera.VP);
         }
+        continue;
+      }
+      pass.setPipeline(pile[0].effect.pipeline);
+      for(const {effect, mesh} of pile) {
+        if(effect.enabled === false) continue;
+        if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+        effect.render(pass, mesh, camera.VP, 0.016);
       }
     }
     pass.end();

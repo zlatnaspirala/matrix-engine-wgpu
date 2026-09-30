@@ -169,7 +169,6 @@ export class WaterSimEffect {
   }
 
   _initCachedPipelines() {
-    // Check if pipelines already cached for this device
     if (WaterSimEffect._pipelineCache.has(this.device)) {
       const cached = WaterSimEffect._pipelineCache.get(this.device);
       this.dropPipeline = cached.dropPipeline;
@@ -181,7 +180,6 @@ export class WaterSimEffect {
       this.causticsPipeline = cached.causticsPipeline;
       this.surfaceBindGroupLayout = cached.surfaceBindGroupLayout;
     } else {
-      // Build all pipelines once per device
       this.dropPipeline = this._buildSimPipeline('Drop', dropFragShader, 32);
       this.updatePipeline = this._buildSimPipeline('Update', updateFragShader, 16);
       this.normalPipeline = this._buildSimPipeline('Normal', normalFragShader, 16);

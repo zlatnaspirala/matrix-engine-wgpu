@@ -74,7 +74,7 @@ export class GenGeo {
         depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'}
       });
 
-      
+
       GenGeo._pipelineCache.set(device, {
         pipeline: this.pipeline,
         bindGroupLayout: this.bindGroupLayout,
@@ -83,7 +83,6 @@ export class GenGeo {
       });
     }
 
-    
     this.vertexBuffer = device.createBuffer({
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
@@ -133,6 +132,8 @@ export class GenGeo {
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
+
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
   }
 
   updateInstanceData = (baseModelMatrix) => {

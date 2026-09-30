@@ -7135,6 +7135,10 @@ var WASDCamera = class _WASDCamera {
         }
       }, { passive: false });
       canvas.addEventListener("pointermove", (e2) => {
+        if (window.__isDragging === true) {
+          console.log("prevent dragging");
+          return;
+        }
         if (e2.pointerType === "mouse" && this._mouseDown) {
           if (this._lookDisabled) {
             return;
@@ -7780,6 +7784,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
     }, { passive: false });
     if (isMobile() === false) canvas.addEventListener("pointermove", (e2) => {
       if (e2.pointerType === "mouse") {
+        console.log("prevent dragging");
         if (window.__isDragging === true) {
           return;
         }
@@ -14020,6 +14025,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 
 // src/engine/effects/topology-point.js
 var PointEffect = class {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -14030,71 +14036,86 @@ var PointEffect = class {
     this._initPipeline();
   }
   _initPipeline() {
-    this.modelBuffer = this.device.createBuffer({
+    const device2 = this.device;
+    if (TopologyEffect._pipelineCache.has(device2)) {
+      const cached = TopologyEffect._pipelineCache.get(device2);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {} }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: pointEffectShader });
+      this.pipelineLayout = device2.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
+        label: "Topology Pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 3 * 4,
+              stepMode: "instance",
+              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+            },
+            {
+              arrayStride: 3 * 4,
+              stepMode: "instance",
+              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          }, { format: "rgba16float" }, { format: "rgba16float" }]
+        },
+        primitive: { topology: "triangle-strip" },
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: "less-equal",
+          format: "depth24plus"
+        }
+      });
+      TopologyEffect._pipelineCache.set(device2, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+    this.modelBuffer = device2.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.pointSettingsBuffer = this.device.createBuffer({
+    this.pointSettingsBuffer = device2.createBuffer({
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this._pointSettingsScratch[0] = this.pointSize;
-    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    device2.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } },
         { binding: 2, resource: { buffer: this.pointSettingsBuffer } }
       ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: pointEffectShader });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "Topology Pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 3 * 4,
-            stepMode: "instance",
-            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-          },
-          {
-            arrayStride: 3 * 4,
-            stepMode: "instance",
-            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-          }
-        }, { format: "rgba16float" }, { format: "rgba16float" }]
-      },
-      primitive: { topology: "triangle-strip" },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "less-equal",
-        format: "depth24plus"
-      }
     });
   }
   updateInstanceData(baseModelMatrix) {
@@ -14107,7 +14128,6 @@ var PointEffect = class {
       return;
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, vertexBuffer);
     pass.setVertexBuffer(1, colorBuffer);
@@ -14538,6 +14558,26 @@ var GizmoEffect = class _GizmoEffect {
     this.vertexCount = positions.length / 3;
   }
   _setupEventListeners() {
+    app.canvas.addEventListener("mousedown", (e2) => {
+      if (!this.enabled || !this.parentMesh) return;
+      const clickedAxis = this._checkScreenSpaceGizmoHit(e2);
+      if (clickedAxis > 0) {
+        e2.stopImmediatePropagation();
+        e2.preventDefault();
+        this.selectedAxis = clickedAxis;
+        this.dragAxis = clickedAxis;
+        this.initialPositionCache.x = this.parentMesh.position.x;
+        this.initialPositionCache.y = this.parentMesh.position.y;
+        this.initialPositionCache.z = this.parentMesh.position.z;
+        this._updateGizmoSettings();
+        this.isDragging = true;
+        window.__isDragging = true;
+        setTimeout(() => {
+          dispatchEvent(new CustomEvent("update-effects", {}));
+        }, 10);
+        console.log("Gizmo standalone screen-space hit! Axis:", clickedAxis);
+      }
+    }, true);
     app.canvas.addEventListener("ray.hit.mousedown", (e2) => {
       const detail = e2.detail;
       if (detail.hitObject === this.parentMesh && detail.hitObject.name === this.parentMesh.name) {
@@ -14560,7 +14600,6 @@ var GizmoEffect = class _GizmoEffect {
         window.__isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
-      } else {
       }
     });
     app.canvas.addEventListener("mouseup", () => {
@@ -14585,13 +14624,61 @@ var GizmoEffect = class _GizmoEffect {
           this.editorUpdateScaleEvent.detail.value = this.selectedAxis == 1 ? this.parentMesh.rotation.x : this.selectedAxis == 2 ? this.parentMesh.rotation.y : this.parentMesh.rotation.z;
           document.dispatchEvent(this.editorUpdateScaleEvent);
         }
-        console.log("this.isDragging = false");
         this.isDragging = false;
         window.__isDragging = false;
         this.selectedAxis = 0;
         this._updateGizmoSettings();
       }
     });
+  }
+  // --- Screen-Space Hit Rect Check (Like Professional Engines) ---
+  _checkScreenSpaceGizmoHit(mouseEvent) {
+    if (!app.getCamera() || !this.parentMesh) return 0;
+    const rect = app.canvas.getBoundingClientRect();
+    const mouseX = mouseEvent.clientX - rect.left;
+    const mouseY = mouseEvent.clientY - rect.top;
+    const viewMatrix = app.getCamera().view;
+    const projMatrix = app.getCamera().projectionMatrix;
+    const origin3D = this.parentMesh.position;
+    const screenOrigin = this._worldToScreen(origin3D, viewMatrix, projMatrix);
+    const axisLengthWorld = 1 * (this.size * 0.3);
+    for (let i2 = 1; i2 <= 3; i2++) {
+      let end3D = {
+        x: origin3D.x + (i2 === 1 ? axisLengthWorld : 0),
+        y: origin3D.y + (i2 === 2 ? axisLengthWorld : 0),
+        z: origin3D.z + (i2 === 3 ? axisLengthWorld : 0)
+      };
+      const screenEnd = this._worldToScreen(end3D, viewMatrix, projMatrix);
+      const dist2 = this._pointToSegmentDistance(mouseX, mouseY, screenOrigin.x, screenOrigin.y, screenEnd.x, screenEnd.y);
+      if (dist2 < 15) {
+        return i2;
+      }
+    }
+    return 0;
+  }
+  _pointToSegmentDistance(x3, y3, x1, y1, x22, y22) {
+    const A2 = x3 - x1;
+    const B2 = y3 - y1;
+    const C2 = x22 - x1;
+    const D2 = y22 - y1;
+    const dot2 = A2 * C2 + B2 * D2;
+    const lenSq2 = C2 * C2 + D2 * D2;
+    let param = -1;
+    if (lenSq2 !== 0) param = dot2 / lenSq2;
+    let xx, yy;
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    } else if (param > 1) {
+      xx = x22;
+      yy = y22;
+    } else {
+      xx = x1 + param * C2;
+      yy = y1 + param * D2;
+    }
+    const dx = x3 - xx;
+    const dy = y3 - yy;
+    return Math.sqrt(dx * dx + dy * dy);
   }
   _handleRayHit(detail) {
     const { rayOrigin, rayDirection, hitPoint } = detail;
@@ -14606,8 +14693,10 @@ var GizmoEffect = class _GizmoEffect {
       this.initialPositionCache.z = this.parentMesh.position.z;
       this.dragAxis = axis;
       this._updateGizmoSettings();
-      console.log("this.isDragging = true;");
       this.isDragging = true;
+      setTimeout(() => {
+        dispatchEvent(new CustomEvent("update-effects", {}));
+      }, 10);
       window.__isDragging = true;
     }
   }
@@ -14653,9 +14742,36 @@ var GizmoEffect = class _GizmoEffect {
     this._p2Cache.w = w2;
     return this._p2Cache;
   }
+  _multiplyMatrices(a2, b2) {
+    let out = this.matrixResultCache;
+    let a00 = a2[0], a01 = a2[1], a02 = a2[2], a03 = a2[3];
+    let a10 = a2[4], a11 = a2[5], a12 = a2[6], a13 = a2[7];
+    let a20 = a2[8], a21 = a2[9], a22 = a2[10], a23 = a2[11];
+    let a30 = a2[12], a31 = a2[13], a32 = a2[14], a33 = a2[15];
+    let b00 = b2[0], b01 = b2[1], b02 = b2[2], b03 = b2[3];
+    let b10 = b2[4], b11 = b2[5], b12 = b2[6], b13 = b2[7];
+    let b20 = b2[8], b21 = b2[9], b22 = b2[10], b23 = b2[11];
+    let b30 = b2[12], b31 = b2[13], b32 = b2[14], b33 = b2[15];
+    out[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
+    out[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
+    out[2] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
+    out[3] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
+    out[4] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
+    out[5] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
+    out[6] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
+    out[7] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
+    out[8] = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
+    out[9] = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
+    out[10] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
+    out[11] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
+    out[12] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
+    out[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
+    out[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
+    out[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
+    return out;
+  }
   _handleDrag(mouseEvent) {
     if (!this.parentMesh || !this.isDragging) return;
-    if (this.parentMesh.dontDrag && byId2("graph-status").innerText === "\u{1F534}") return;
     const deltaX = mouseEvent.movementX;
     const deltaY = mouseEvent.movementY;
     const direction = deltaX > Math.abs(deltaY) ? deltaX : -deltaY;
@@ -14670,6 +14786,7 @@ var GizmoEffect = class _GizmoEffect {
             break;
           case 3:
             this.parentMesh.position.z -= (deltaX - deltaY) * this.movementScale;
+            break;
         }
         break;
       case 1:
@@ -14763,7 +14880,6 @@ var GizmoEffect = class _GizmoEffect {
     const dist2 = Math.sqrt(dX * dX + dY * dY + dZ * dZ);
     return dist2 < threshold;
   }
-  // Lifecycle cleanup method to completely eliminate global memory retention loops
   destroy() {
     removeEventListener("editor-set-gizmo-mode", this._onGizmoModeChange);
   }
@@ -14774,7 +14890,6 @@ var GizmoEffect = class _GizmoEffect {
     this.gizmoSettingsCache[3] = 1;
     this.device.queue.writeBuffer(this.gizmoSettingsBuffer, 0, this.gizmoSettingsCache);
   }
-  // ... rest of structural binding configurations unchanged ...
   updateInstanceData(baseModelMatrix) {
     this.device.queue.writeBuffer(this.modelBuffer, 0, baseModelMatrix);
   }
@@ -15253,7 +15368,6 @@ var DestructionEffect2 = class _DestructionEffect {
   draw(pass, cameraMatrix) {
     if (!this.enabled) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -15261,29 +15375,17 @@ var DestructionEffect2 = class _DestructionEffect {
     pass.setIndexBuffer(this.indexBuffer, "uint16");
     pass.drawIndexed(this.indexCount, this.particleCount);
   }
-  /**
-   * Main render method (called by parent)
-   */
   render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
     if (!this.enabled) return;
     this.update(dt2);
     this.draw(pass, viewProjMatrix);
   }
-  /**
-   * Set effect intensity
-   */
   setIntensity(v2) {
     this.intensity = v2;
   }
-  /**
-   * Check if effect is still active
-   */
   isActive() {
     return this.enabled;
   }
-  /**
-   * Reset effect
-   */
   reset() {
     this.enabled = false;
     this.time = 0;
@@ -17584,7 +17686,6 @@ var FlameEmitter = class _FlameEmitter {
       p2.rotation += dt2 * this.rotSpeed;
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -17831,7 +17932,6 @@ var PointerEffect = class {
   draw(pass, cameraMatrix, modelMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -17949,6 +18049,7 @@ fn fsMain(input: VertexOutput) -> FragmentOutput {
 
 // src/engine/effects/msdfText.js
 var MSDFTextEffect = class {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, msdfTexture, sampler, cameraBuffer, font, options2 = {}) {
     this.device = device2;
     this.format = format;
@@ -18201,7 +18302,6 @@ var MSDFTextEffect = class {
     if (!this.enabled || this.glyphCount === 0) {
       return;
     }
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -18264,7 +18364,7 @@ var BMFontParser = class {
   }
   getCharMetrics(charCode) {
     if (!this.chars[charCode]) {
-      console.warn(`Character ${charCode} not found in font`);
+      console.warn(`Character ${charCode} not found in font.`);
       return null;
     }
     const char = this.chars[charCode];
@@ -18272,10 +18372,8 @@ var BMFontParser = class {
     const atlasH = this.common.scaleH;
     return {
       char: char.char,
-      // UV coordinates (normalized 0-1)
       uvOffset: [char.x / atlasW, char.y / atlasH],
       uvScale: [char.width / atlasW, char.height / atlasH],
-      // Dimensions in pixels
       width: char.width,
       height: char.height,
       xoffset: char.xoffset,
@@ -18421,7 +18519,6 @@ fn fsMain(input : VSOut) -> FragOut {
 
 // src/engine/effects/blood-target.js
 var BloodBurst = class _BloodBurst {
-  // Static cache - one pipeline per device
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, maxParticles = 64, cameraBuffer) {
     this.device = device2;
@@ -18449,7 +18546,6 @@ var BloodBurst = class _BloodBurst {
     this._finalMatrix = mat4Impl.create();
     this._initPipeline();
   }
-  // one-shot burst spawn — hook this at your hitscan/animationEnd impact point
   spawn(origin, baseModelMatrix, count = 20, speed = 6) {
     let spawned = 0;
     for (const p2 of this.pool) {
@@ -18539,7 +18635,6 @@ var BloodBurst = class _BloodBurst {
     }
     if (!this.activeCount) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -19267,7 +19362,7 @@ var MEMeshObj = class extends Materials {
         if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
           this.effects.pointEffect = new PointEffect(device2, "rgba16float", this.cameraBuffer);
         }
-        if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
+        if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true || app && app.editor && app.editor.methodsManager && app.editor.methodsManager.editorType === "created from editor") {
           this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float", this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
@@ -26799,6 +26894,9 @@ var GenGeo = class _GenGeo {
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceCount, this.maxInstances);
@@ -27193,7 +27291,6 @@ var MANABarEffect = class _MANABarEffect {
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
     this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -28480,6 +28577,9 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
         if (typeof this.pointerEffect.energyBar !== "undefined" && this.pointerEffect.energyBar == true) {
           this.effects.energyBar = new HPBarEffect(device2, pf, this.cameraBuffer);
           this.effects.manaBar = new MANABarEffect(device2, pf, this.cameraBuffer);
+        }
+        if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true || app && app.editor && app.editor.methodsManager && app.editor.methodsManager.editorType === "created from editor") {
+          this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float", this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
           this.effects.flameEffect = new FlameEffect(device2, pf, pf, void 0, this.cameraBuffer);
@@ -40427,7 +40527,7 @@ var ProceduralMeshObj = class extends Materials {
       if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
         this.effects.pointEffect = new PointEffect(this.device, "rgba16float", this.cameraBuffer);
       }
-      if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true) {
+      if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true || app && app.editor && app.editor.methodsManager && app.editor.methodsManager.editorType === "created from editor") {
         this.effects.gizmoEffect = new GizmoEffect(this.device, "rgba16float", this.cameraBuffer);
       }
       if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
@@ -42930,15 +43030,22 @@ var cullingPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if (mesh.effects) {
-        for (const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if (effect === null || effect.enabled === false) continue;
+    for (const className in this.effectsByType) {
+      const pile = this.effectsByType[className];
+      if (pile.length === 0) continue;
+      if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+        for (const { effect, mesh } of pile) {
+          if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
           effect.render(pass, mesh, camera.VP);
         }
+        continue;
+      }
+      pass.setPipeline(pile[0].effect.pipeline);
+      for (const { effect, mesh } of pile) {
+        if (effect.enabled === false) continue;
+        if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+        effect.render(pass, mesh, camera.VP, 0.016);
       }
     }
     pass.end();
@@ -43050,15 +43157,22 @@ var noShadowPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if (mesh.effects) {
-        for (const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if (effect === null || effect.enabled === false) continue;
+    for (const className in this.effectsByType) {
+      const pile = this.effectsByType[className];
+      if (pile.length === 0) continue;
+      if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+        for (const { effect, mesh } of pile) {
+          if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
           effect.render(pass, mesh, camera.VP);
         }
+        continue;
+      }
+      pass.setPipeline(pile[0].effect.pipeline);
+      for (const { effect, mesh } of pile) {
+        if (effect.enabled === false) continue;
+        if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+        effect.render(pass, mesh, camera.VP, 0.016);
       }
     }
     pass.end();
@@ -44651,6 +44765,9 @@ var KaleidoscopeEffect = class _KaleidoscopeEffect {
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   _uploadVertex(data) {
     const buf = this.device.createBuffer({
@@ -45249,15 +45366,22 @@ async function GPUIndirectDraws() {
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
     }
-    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if (mesh.effects) {
-        for (const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if (effect === null || effect.enabled === false) continue;
+    for (const className in this.effectsByType) {
+      const pile = this.effectsByType[className];
+      if (pile.length === 0) continue;
+      if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+        for (const { effect, mesh } of pile) {
+          if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
           effect.render(pass, mesh, camera.VP);
         }
+        continue;
+      }
+      pass.setPipeline(pile[0].effect.pipeline);
+      for (const { effect, mesh } of pile) {
+        if (effect.enabled === false) continue;
+        if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+        effect.render(pass, mesh, camera.VP, 0.016);
       }
     }
     pass.end();
@@ -47219,7 +47343,7 @@ var MatrixEngineWGPU = class {
         if (mesh.effects) {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            effect.simulate?.(commandEncoder);
+            if (effect) effect.simulate?.(commandEncoder);
           }
         }
       }
@@ -47253,7 +47377,7 @@ var MatrixEngineWGPU = class {
       for (const className in this.effectsByType) {
         const pile = this.effectsByType[className];
         if (pile.length === 0) continue;
-        if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect") {
+        if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
           for (const { effect, mesh } of pile) {
             if (effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -52069,7 +52193,6 @@ var KaleidoscopeEmitter = class _KaleidoscopeEmitter {
       p2.rotation += dt2 * this.rotSpeed;
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -53162,7 +53285,6 @@ var SpriteInstance = class {
     this.spinning = false;
   }
   draw(pass) {
-    pass.setPipeline(this.shared.pipeline);
     pass.setBindGroup(0, this.cameraBindGroup);
     pass.setBindGroup(1, this.spriteBindGroup);
     pass.setVertexBuffer(0, this.shared.vertexBuffer);
@@ -54905,6 +55027,7 @@ var loadDrumCannon = function() {
 
 // src/engine/effects/splat.js
 var GaussianSplatLayer = class {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer, topology = "point-list") {
     this.device = device2;
     this.format = format;
@@ -54940,7 +55063,7 @@ var GaussianSplatLayer = class {
       this.splatData = this._parsePLY(arrayBuffer);
       this.vertexCount = this.splatData.positions.length / 3;
       console.info(`\u2713 Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] \u2192 [${this.aabbMax}]`);
-      await this._initializeGPU();
+      await this.initPipeline();
       return this;
     } catch (err) {
       console.error("Splat load error:", err);
@@ -55038,7 +55161,103 @@ var GaussianSplatLayer = class {
   _sigmoid(x3) {
     return 1 / (1 + Math.exp(-x3));
   }
-  async _initializeGPU() {
+  async initPipeline() {
+    const device2 = this.device;
+    if (SplatEffect._pipelineCache.has(device2)) {
+      const cached = SplatEffect._pipelineCache.get(device2);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.renderPipeline = cached.renderPipeline;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        ]
+      });
+      const shaderCode = this._getRenderShaderCode();
+      this.shaderModule = device2.createShaderModule({
+        label: "Splat shader",
+        code: shaderCode
+      });
+      this.pipelineLayout = device2.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.renderPipeline = device2.createRenderPipeline({
+        label: "Splat render pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vs_main",
+          buffers: [
+            {
+              // slot 0: static — scale + rotation only (position slot skipped)
+              arrayStride: 56,
+              stepMode: "vertex",
+              attributes: [
+                // shaderLocation 0 = position now comes from slot 2
+                { shaderLocation: 2, offset: 28, format: "float32x3" },
+                // scale
+                { shaderLocation: 3, offset: 40, format: "float32x4" }
+                // rotation
+              ]
+            },
+            {
+              // slot 1: animated rgba color (SplatColorAnimator)
+              arrayStride: 16,
+              stepMode: "vertex",
+              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }]
+            },
+            {
+              // slot 2: dynamic position (SplatPositionAnimator)
+              arrayStride: 12,
+              stepMode: "vertex",
+              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fs_main",
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: {
+                  srcFactor: "src-alpha",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add"
+                }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: {
+          topology: this.topology,
+          cullMode: "none"
+        },
+        depthStencil: {
+          format: "depth24plus",
+          depthWriteEnabled: false,
+          depthCompare: "less"
+        }
+      });
+      SplatEffect._pipelineCache.set(device2, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        renderPipeline: this.renderPipeline
+      });
+    }
     const vertexData = new Float32Array(this.vertexCount * 14);
     for (let i2 = 0; i2 < this.vertexCount; i2++) {
       let idx = i2 * 14;
@@ -55057,7 +55276,7 @@ var GaussianSplatLayer = class {
       vertexData[idx++] = this.splatData.rotations[i2 * 4 + 2];
       vertexData[idx++] = this.splatData.rotations[i2 * 4 + 3];
     }
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device2.createBuffer({
       label: "Splat vertex buffer",
       size: vertexData.byteLength,
       mappedAtCreation: true,
@@ -55067,7 +55286,7 @@ var GaussianSplatLayer = class {
     this.vertexBuffer.unmap();
     const dummyPosData = new Float32Array(this.vertexCount * 3);
     dummyPosData.set(this.splatData.positions);
-    this.dummyPosBuffer = this.device.createBuffer({
+    this.dummyPosBuffer = device2.createBuffer({
       label: "splat-dummy-pos",
       size: dummyPosData.byteLength,
       mappedAtCreation: true,
@@ -55083,7 +55302,7 @@ var GaussianSplatLayer = class {
       initialColors[i2 * 4 + 2] = this.splatData.splatColors[i2 * 4 + 2];
       initialColors[i2 * 4 + 3] = this.splatData.splatColors[i2 * 4 + 3];
     }
-    this.colorBuffer = this.device.createBuffer({
+    this.colorBuffer = device2.createBuffer({
       label: "splat-color",
       size: initialColors.byteLength,
       mappedAtCreation: true,
@@ -55093,33 +55312,7 @@ var GaussianSplatLayer = class {
     this.colorBuffer.unmap();
     this.positions = this.splatData.positions;
     this.vertexCount = this.splatData.vertexCount;
-    this.vertexBufferLayout = [
-      {
-        // slot 0: static — scale + rotation only (position slot skipped)
-        arrayStride: 56,
-        stepMode: "vertex",
-        attributes: [
-          // shaderLocation 0 = position now comes from slot 2
-          { shaderLocation: 2, offset: 28, format: "float32x3" },
-          // scale
-          { shaderLocation: 3, offset: 40, format: "float32x4" }
-          // rotation
-        ]
-      },
-      {
-        // slot 1: animated rgba color (SplatColorAnimator)
-        arrayStride: 16,
-        stepMode: "vertex",
-        attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }]
-      },
-      {
-        // slot 2: dynamic position (SplatPositionAnimator)
-        arrayStride: 12,
-        stepMode: "vertex",
-        attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-      }
-    ];
-    this.scaleBuffer = this.device.createBuffer({
+    this.scaleBuffer = device2.createBuffer({
       label: "Splat scale buffer",
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -55127,71 +55320,21 @@ var GaussianSplatLayer = class {
     });
     new Float32Array(this.scaleBuffer.getMappedRange()).set([this.splatScale, 0, 0, 0]);
     this.scaleBuffer.unmap();
-    this.modelBuffer = this.device.createBuffer({ size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-      ]
+    this.modelBuffer = device2.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } },
         { binding: 2, resource: { buffer: this.scaleBuffer } }
       ]
     });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    const shaderCode = this._getRenderShaderCode();
-    const shaderModule = this.device.createShaderModule({
-      label: "Splat shader",
-      code: shaderCode
-    });
-    this.renderPipeline = this.device.createRenderPipeline({
-      label: "Splat render pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vs_main",
-        buffers: this.vertexBufferLayout
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fs_main",
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: {
-                srcFactor: "src-alpha",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              },
-              alpha: {
-                srcFactor: "one",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              }
-            }
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: {
-        topology: this.topology,
-        cullMode: "none"
-      },
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "less"
-      }
-    });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   _getRenderShaderCode() {
     return `struct Camera {
@@ -55320,7 +55463,6 @@ fn fs_main(in: VertexOutput) -> FragOut {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     this.device.queue.writeBuffer(this.scaleBuffer, 0, this._scaleData);
-    pass.setPipeline(this.renderPipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);
@@ -64783,7 +64925,8 @@ fn fsMain(input : VSOut) -> FragOut {
 `;
 
 // src/engine/effects/datagrams.js
-var ChartsEffect = class {
+var ChartsEffect = class _ChartsEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, maxInstances = 64, cameraBuffer, options2 = {}) {
     this.device = device2;
     this.format = format;
@@ -65129,6 +65272,74 @@ var ChartsEffect = class {
     return { vertices: new Float32Array(p2), indices: new Uint16Array(idx) };
   }
   _initPipeline() {
+    const device2 = this.device;
+    if (_ChartsEffect._pipelineCache.has(device2)) {
+      const cached = _ChartsEffect._pipelineCache.get(device2);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: { type: "read-only-storage" }
+          },
+          {
+            binding: 2,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: {}
+          }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({
+        code: cryptoGridShader
+      });
+      this.pipelineLayout = device2.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 12,
+              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+            },
+            {
+              arrayStride: 12,
+              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            { format: this.format },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "triangle-list", cullMode: "none" },
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: "less",
+          format: "depth24plus"
+        }
+      });
+      _ChartsEffect._pipelineCache.set(device2, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
     const cube = this._buildCubeGeometry();
     const posData = new Float32Array(cube.vertices.length / 2);
     const normData = new Float32Array(cube.vertices.length / 2);
@@ -65139,81 +65350,29 @@ var ChartsEffect = class {
     this.vertexBuffer = this._upload(posData, GPUBufferUsage.VERTEX);
     this.normalBuffer = this._upload(normData, GPUBufferUsage.VERTEX);
     const padded = Math.ceil(cube.indices.byteLength / 4) * 4;
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device2.createBuffer({
       size: padded,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, cube.indices);
+    device2.queue.writeBuffer(this.indexBuffer, 0, cube.indices);
     this.indexCount = cube.indices.length;
-    this.instanceBuffer = this.device.createBuffer({
+    this.instanceBuffer = device2.createBuffer({
       label: "crypto-grid instanceBuffer",
       size: this.maxInstances * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    this.gridUniformBuffer = this.device.createBuffer({
+    this.gridUniformBuffer = device2.createBuffer({
       label: "crypto-grid gridUniformBuffer",
       size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: { type: "read-only-storage" }
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {}
-        }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.instanceBuffer } },
         { binding: 2, resource: { buffer: this.gridUniformBuffer } }
       ]
-    });
-    const shaderModule = this.device.createShaderModule({
-      code: cryptoGridShader
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout]
-      }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 12,
-            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-          },
-          {
-            arrayStride: 12,
-            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          { format: this.format },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: { topology: "triangle-list", cullMode: "none" },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus"
-      }
     });
   }
   _upload(data, usage) {
@@ -65285,7 +65444,6 @@ var ChartsEffect = class {
   render(pass, mesh, viewProjMatrix) {
     if (this.timeSteps === 0) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.normalBuffer);
@@ -65576,7 +65734,8 @@ var DragRotateController = class {
 
 // src/engine/effects/waterSimEffectSphere.js
 var SIM_RES2 = 512;
-var WaterSimSphereEffect = class {
+var WaterSimSphereEffect = class _WaterSimSphereEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, options2 = {}) {
     this.device = device2;
     this.format = format;
@@ -65608,6 +65767,124 @@ var WaterSimSphereEffect = class {
     this.data2 = new Float32Array(12);
     this._idleFrames = 0;
     this._idleThreshold = 90;
+    this.vertexCount = 0;
+    this.initPipeline();
+  }
+  destroy() {
+    if (this.textureA) this.textureA.destroy();
+    if (this.textureB) this.textureB.destroy();
+    if (this.causticsTexture) this.causticsTexture.destroy();
+    if (this.floorTexture) this.floorTexture.destroy();
+    if (this.vertexBuffer) this.vertexBuffer.destroy();
+    if (this.indexBuffer) this.indexBuffer.destroy();
+    if (this.dummyPosBuffer) this.dummyPosBuffer.destroy();
+    if (this.colorBuffer) this.colorBuffer.destroy();
+    if (this.scaleBuffer) this.scaleBuffer.destroy();
+    if (this.modelBuffer) this.modelBuffer.destroy();
+    if (this.commonUniformBuffer) this.commonUniformBuffer.destroy();
+    if (this.lightUniformBuffer) this.lightUniformBuffer.destroy();
+    if (this.waterUniformBuffer) this.waterUniformBuffer.destroy();
+    if (this.dropPipeline?.uniformBuffer) this.dropPipeline.uniformBuffer.destroy();
+    if (this.updatePipeline?.uniformBuffer) this.updatePipeline.uniformBuffer.destroy();
+    if (this.normalPipeline?.uniformBuffer) this.normalPipeline.uniformBuffer.destroy();
+    if (this.spherePipeline?.uniformBuffer) this.spherePipeline.uniformBuffer.destroy();
+  }
+  initPipeline() {
+    const device2 = this.device;
+    if (_WaterSimSphereEffect._pipelineCache.has(device2)) {
+      const cached = _WaterSimSphereEffect._pipelineCache.get(device2);
+      this.surfaceBindGroupLayout = cached.surfaceBindGroupLayout;
+      this.surfacePipelineLayout = cached.surfacePipelineLayout;
+      this.surfacePipelineAbove = cached.surfacePipelineAbove;
+      this.surfacePipelineUnder = cached.surfacePipelineUnder;
+      this._cachedSimPipelines = cached.simPipelines;
+      this.causticsPipeline = cached.causticsPipeline;
+    } else {
+      this.surfaceBindGroupLayout = device2.createBindGroupLayout({
+        label: "WaterSim Surface BGL",
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+          { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+          { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
+          { binding: 4, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, sampler: {} },
+          { binding: 5, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: {} },
+          { binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+          { binding: 7, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+          { binding: 8, visibility: GPUShaderStage.FRAGMENT, texture: {} }
+        ]
+      });
+      this.surfacePipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.surfaceBindGroupLayout] });
+      const surfaceVSModule = device2.createShaderModule({ label: "WaterSim S VS", code: surfaceVertShaderSphere });
+      const surfaceFSModule = device2.createShaderModule({ label: "WaterSim S FS", code: surfaceFragShaderSphere });
+      const baseDesc = {
+        layout: this.surfacePipelineLayout,
+        vertex: {
+          module: surfaceVSModule,
+          entryPoint: "vs_main",
+          buffers: [{ arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] }]
+        },
+        fragment: {
+          module: surfaceFSModule,
+          entryPoint: "fs_main",
+          targets: [
+            { format: this.format, blend: this.gpuBlend },
+            { format: this.format },
+            { format: this.format }
+          ]
+        },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { depthWriteEnabled: true, depthCompare: "less", format: "depth24plus" }
+      };
+      this.surfacePipelineAbove = device2.createRenderPipeline({
+        ...baseDesc,
+        label: "WaterSim S Above",
+        primitive: { topology: "triangle-list", cullMode: "back" }
+      });
+      this.surfacePipelineUnder = device2.createRenderPipeline({
+        ...baseDesc,
+        label: "WaterSim S Under",
+        depthStencil: { depthWriteEnabled: false, depthCompare: "less-equal", format: "depth24plus" },
+        primitive: { topology: "triangle-list", cullMode: "front" }
+      });
+      this._cachedSimPipelines = {
+        drop: this._buildSimPipelineShaderAndPipeline("Drop", dropFragShader),
+        update: this._buildSimPipelineShaderAndPipeline("Update", updateFragShaderSphere),
+        normal: this._buildSimPipelineShaderAndPipeline("Normal", normalFragShaderSphere),
+        sphere: this._buildSimPipelineShaderAndPipeline("Sphere", sphereFragShader)
+      };
+      const causticsVSModule = device2.createShaderModule({ label: "WaterSim Caustics VS", code: causticsVertShader });
+      const causticsFSModule = device2.createShaderModule({ label: "WaterSim Caustics FS", code: causticsFragShader });
+      this.causticsPipeline = device2.createRenderPipeline({
+        label: "WaterSim Caustics",
+        layout: "auto",
+        vertex: {
+          module: causticsVSModule,
+          entryPoint: "vs_main",
+          buffers: [{ arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] }]
+        },
+        fragment: {
+          module: causticsFSModule,
+          entryPoint: "fs_main",
+          targets: [{
+            format: "rgba8unorm",
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          }]
+        },
+        primitive: { topology: "triangle-list" }
+      });
+      _WaterSimSphereEffect._pipelineCache.set(device2, {
+        surfaceBindGroupLayout: this.surfaceBindGroupLayout,
+        surfacePipelineLayout: this.surfacePipelineLayout,
+        surfacePipelineAbove: this.surfacePipelineAbove,
+        surfacePipelineUnder: this.surfacePipelineUnder,
+        simPipelines: this._cachedSimPipelines,
+        causticsPipeline: this.causticsPipeline
+      });
+    }
     this._createTextures();
     this._simPassDescs = [
       { colorAttachments: [{ view: this._physViews[0], loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }] },
@@ -65622,11 +65899,88 @@ var WaterSimSphereEffect = class {
     this._deltaUniform = new Float32Array([1 / this.width, 1 / this.height]);
     this._defaultEye = [0, 5, 5];
     this._createSampler();
-    this._createUniformBuffers(options2);
-    this._createSimPipelines();
+    this._createUniformBuffers(this.constructor.options ?? {});
+    this._createSimPipelineBG();
     this._createSurfaceMesh();
-    this._createSurfacePipelines();
-    this._createCausticsPipeline();
+    this._createSurfaceBindGroups();
+    this._createCausticsBindGroups();
+  }
+  // Helper: create just the shader module and pipeline for sim (no uniform buffer or bind groups)
+  _buildSimPipelineShaderAndPipeline(label, fragCode) {
+    const module = this.device.createShaderModule({
+      label: label + " Sim Module",
+      code: fullscreenVertShader + fragCode
+    });
+    const pipeline = this.device.createRenderPipeline({
+      label: label + " Sim Pipeline",
+      layout: "auto",
+      vertex: { module, entryPoint: "vs_main" },
+      fragment: { module, entryPoint: "fs_main", targets: [{ format: this._simFormat }] },
+      primitive: { topology: "triangle-list" }
+    });
+    return pipeline;
+  }
+  // Helper: create per-instance uniform buffers and bind groups for cached sim pipelines
+  _createSimPipelineBG() {
+    const createSimPipelineObj = (pipeline, uniformSize) => {
+      const uniformBuffer = this.device.createBuffer({
+        size: uniformSize,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      const makeBG = (readView) => this.device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: readView },
+          { binding: 1, resource: this.sampler },
+          { binding: 2, resource: { buffer: uniformBuffer } }
+        ]
+      });
+      return {
+        pipeline,
+        uniformBuffer,
+        bindGroups: [makeBG(this._physViews[0]), makeBG(this._physViews[1])]
+      };
+    };
+    this.dropPipeline = createSimPipelineObj(this._cachedSimPipelines.drop, 32);
+    this.updatePipeline = createSimPipelineObj(this._cachedSimPipelines.update, 16);
+    this.normalPipeline = createSimPipelineObj(this._cachedSimPipelines.normal, 16);
+    this.spherePipeline = createSimPipelineObj(this._cachedSimPipelines.sphere, 32);
+  }
+  // Helper: create per-instance surface bind groups (uses cached pipelines/layouts)
+  _createSurfaceBindGroups() {
+    this.modelBuffer = this.device.createBuffer({
+      label: "WaterSim Model Buff",
+      size: 96,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const makeBG = (waterView) => this.device.createBindGroup({
+      layout: this.surfaceBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.commonUniformBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } },
+        { binding: 2, resource: { buffer: this.lightUniformBuffer } },
+        { binding: 3, resource: { buffer: this.waterUniformBuffer } },
+        { binding: 4, resource: this.sampler },
+        { binding: 5, resource: waterView },
+        { binding: 6, resource: this.floorSampler },
+        { binding: 7, resource: this.floorTexture.createView() },
+        { binding: 8, resource: this.causticsTexture.createView() }
+      ]
+    });
+    this._surfaceBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
+  }
+  // Helper: create per-instance caustics bind groups (uses cached pipeline)
+  _createCausticsBindGroups() {
+    const makeBG = (waterView) => this.device.createBindGroup({
+      layout: this.causticsPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this.lightUniformBuffer } },
+        { binding: 1, resource: { buffer: this.waterUniformBuffer } },
+        { binding: 2, resource: this.sampler },
+        { binding: 3, resource: waterView }
+      ]
+    });
+    this._causticsBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
   }
   useExternalGeometry(positionBuffer, indexBuffer, indexCount, indexFormat = "uint32") {
     this.positionBuffer = positionBuffer;
@@ -66116,7 +66470,8 @@ var EarthquakePresets = {
     enabled: true
   }
 };
-var EarthquakeEffect = class {
+var EarthquakeEffect = class _EarthquakeEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, colorFormat, params = {}, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -66247,48 +66602,70 @@ var EarthquakeEffect = class {
     return buffer;
   }
   _initPipeline() {
-    this.modelBuffer = this.device.createBuffer({ size: 160, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
-      ]
+    const device2 = this.device;
+    if (_EarthquakeEffect._pipelineCache.has(device2)) {
+      const cached = _EarthquakeEffect._pipelineCache.get(device2);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: earthquakeEffectShader });
+      this.pipelineLayout = device2.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.colorFormat,
+              blend: this.blend
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "triangle-list", cullMode: "back" },
+        depthStencil: { depthWriteEnabled: false, depthCompare: "greater", format: "depth24plus" }
+      });
+      _EarthquakeEffect._pipelineCache.set(device2, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+    this.modelBuffer = device2.createBuffer({
+      size: 160,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
-    const shaderModule = this.device.createShaderModule({ code: earthquakeEffectShader });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout]
-      }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.colorFormat,
-            blend: this.blend
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: { topology: "triangle-list", cullMode: "back" },
-      depthStencil: { depthWriteEnabled: false, depthCompare: "greater", format: "depth24plus" }
-    });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   updateInstanceData(baseModelMatrix) {
     if (!this.enabled) {
@@ -66338,7 +66715,6 @@ var EarthquakeEffect = class {
     this.device.queue.writeBuffer(this.modelBuffer, 0, this._uniformData);
   }
   draw(pass, viewProjMatrix) {
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -67201,7 +67577,7 @@ var loadCameraDepth = function() {
 };
 
 // src/engine/effects/reacte-audio.js
-var AudioSplatFieldEffect = class {
+var AudioSplatFieldEffect = class _AudioSplatFieldEffect {
   /**
    * @param {GPUDevice} device
    * @param {object} [opts]
@@ -67213,6 +67589,7 @@ var AudioSplatFieldEffect = class {
    * @param {string} [opts.format]  color target format, required only for standalone render()
    * @param {GPUBuffer} [opts.cameraBuffer]  required only for standalone render()
    */
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, opts = {}) {
     this.device = device2;
     this.pointCount = opts.pointCount ?? isMobile() ? 1200 : 3500;
@@ -67264,9 +67641,8 @@ var AudioSplatFieldEffect = class {
     });
     this._seedColors();
     device2.queue.writeBuffer(this.colorBuffer, 0, this._colorCPU);
-    if (this.format && this.cameraBuffer) this._buildStandalonePipeline();
+    if (this.format && this.cameraBuffer) this.initPipeline();
   }
-  // ─── Setup helpers ─────────────────────────────────────────────────────
   _generateBasePositions(n3) {
     const out = new Float32Array(n3 * 3);
     if (this.mode === "waveformRibbon") {
@@ -67304,7 +67680,6 @@ var AudioSplatFieldEffect = class {
       this._colorCPU[i2 * 4 + 3] = 1;
     }
   }
-  // ─── Public API ─────────────────────────────────────────────────────────
   setMode(mode) {
     this.mode = mode;
     if (mode === "waveformRibbon") {
@@ -67457,30 +67832,24 @@ var AudioSplatFieldEffect = class {
     if (ra2._beatCooldown > 0) ra2._beatCooldown--;
     this.updateAudio(low, mid, high, energy, beat, dt2, elapsed);
   }
-  _buildStandalonePipeline() {
-    this.modelBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    const identity4 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, identity4);
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.modelBuffer } }
-      ]
-    });
-    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
-    const shaderModule = this.device.createShaderModule({
-      label: "audio-splat-field-shader",
-      code: `
+  initPipeline() {
+    const device2 = this.device;
+    if (_AudioSplatFieldEffect._pipelineCache.has(device2)) {
+      const cached = _AudioSplatFieldEffect._pipelineCache.get(device2);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({
+        label: "audio-splat-field-shader",
+        code: `
 struct Camera { mvp: mat4x4<f32> };
 struct Model { matrix: mat4x4<f32> };
 @group(0) @binding(0) var<uniform> camera: Camera;
@@ -67526,42 +67895,65 @@ fn fs_main(in: VertexOutput) -> FragOut {
   );
 }
 `
+      });
+      this.pipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+      this.pipeline = device2.createRenderPipeline({
+        label: "audio-splat-field-pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vs_main",
+          buffers: [
+            { arrayStride: 12, stepMode: "vertex", attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 16, stepMode: "vertex", attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }] }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fs_main",
+          targets: [{
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one", operation: "add" }
+            }
+          }, { format: "rgba16float" }, { format: "rgba16float" }]
+        },
+        primitive: { topology: "point-list" },
+        depthStencil: {
+          format: "depth24plus",
+          depthWriteEnabled: false,
+          depthCompare: "less"
+        }
+      });
+      _AudioSplatFieldEffect._pipelineCache.set(device2, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+    this.modelBuffer = device2.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.renderPipeline = this.device.createRenderPipeline({
-      label: "audio-splat-field-pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vs_main",
-        buffers: [
-          { arrayStride: 12, stepMode: "vertex", attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-          { arrayStride: 16, stepMode: "vertex", attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }] }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fs_main",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
-            alpha: { srcFactor: "one", dstFactor: "one", operation: "add" }
-          }
-        }, { format: "rgba16float" }, { format: "rgba16float" }]
-      },
-      primitive: { topology: "point-list" },
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "less"
-      }
+    const identity4 = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    device2.queue.writeBuffer(this.modelBuffer, 0, identity4);
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
+      ]
     });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   /** Only meaningful if constructed with {format, cameraBuffer} and NOT attached to a splat layer. */
   render(pass, mesh, viewProjMatrix) {
-    if (this._attachedLayer || !this.renderPipeline) return;
+    if (this._attachedLayer || !this.pipeline) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.renderPipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.posBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);
@@ -68434,11 +68826,6 @@ var SplatFaceEffect = class {
       this._offsetZ[p2] = oz;
     }
   }
-  // ── Public API ────────────────────────────────────────────────────────────
-  /**
-   * Feed raw FaceLandmarker results directly.
-   * Call from PipeCommander.onResults()
-   */
   setFaceData(results) {
     if (!results?.faceLandmarks?.length) {
       this._landmarks = null;
@@ -68455,7 +68842,6 @@ var SplatFaceEffect = class {
   setOrigin(x3, y3, z2) {
     this.origin = [x3, y3, z2];
   }
-  // ── Effect interface ──────────────────────────────────────────────────────
   updateInstanceData(baseModelMatrix) {
     if (!this.enabled) return;
     if (!this._landmarks) {
@@ -69806,7 +70192,6 @@ var SacredGeometryEffect = class _SacredGeometryEffect {
     floatView[offset + 20] = this.lineWidth;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData, 0, 24);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setIndexBuffer(this.indexBuffer, "uint32");

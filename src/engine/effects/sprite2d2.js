@@ -480,7 +480,7 @@ class SpriteInstance {
   }
 
   draw(pass) {
-    pass.setPipeline(this.shared.pipeline);
+    // pass.setPipeline(this.shared.pipeline);
     pass.setBindGroup(0, this.cameraBindGroup);
     pass.setBindGroup(1, this.spriteBindGroup);
     pass.setVertexBuffer(0, this.shared.vertexBuffer);

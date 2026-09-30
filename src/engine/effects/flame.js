@@ -141,8 +141,6 @@ export class FlameEffect {
 
   _initPipeline() {
     const device = this.device;
-
-    // ========== CACHE CHECK ==========
     if(FlameEffect._pipelineCache.has(device)) {
       const cached = FlameEffect._pipelineCache.get(device);
       this.pipeline = cached.pipeline;
@@ -150,7 +148,6 @@ export class FlameEffect {
       this.pipelineLayout = cached.pipelineLayout;
       this.shaderModule = cached.shaderModule;
     } else {
-      // ========== BUILD PIPELINE ONCE ==========
       this.bindGroupLayout = device.createBindGroupLayout({
         entries: [
           {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
@@ -210,7 +207,6 @@ export class FlameEffect {
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
-
     setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200)
   }
 

@@ -2,6 +2,7 @@ import {mat4} from "wgpu-matrix";
 import {MSDFFRAG} from "../../shaders/msdf/msdf.fragment.js";
 
 export class MSDFTextEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, msdfTexture, sampler, cameraBuffer, font, options = {}) {
     this.device = device;
     this.format = format;
@@ -11,7 +12,6 @@ export class MSDFTextEffect {
     this.font = font;
     this.enabled = true;
     this.scale = options.scale ?? 0.0015;
-    // this.typeText = "";
     this.glyphXOffsetFix = {
       "I": + 8,
       // "J": -3,
@@ -275,11 +275,8 @@ export class MSDFTextEffect {
   }
 
   render(pass, mesh, viewProjMatrix) {
-    if(!this.enabled || this.glyphCount === 0) {
-      return;
-    }
-    // this.device.queue.writeBuffer(      this.cameraBuffer,      0,      viewProjMatrix    );
-    pass.setPipeline(this.pipeline);
+    if(!this.enabled || this.glyphCount === 0) {return;}
+    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -347,7 +344,7 @@ export class BMFontParser {
 
   getCharMetrics(charCode) {
     if(!this.chars[charCode]) {
-      console.warn(`Character ${charCode} not found in font`);
+      console.warn(`Character ${charCode} not found in font.`);
       return null;
     }
     const char = this.chars[charCode];
@@ -355,10 +352,8 @@ export class BMFontParser {
     const atlasH = this.common.scaleH;
     return {
       char: char.char,
-      // UV coordinates (normalized 0-1)
       uvOffset: [char.x / atlasW, char.y / atlasH],
       uvScale: [char.width / atlasW, char.height / atlasH],
-      // Dimensions in pixels
       width: char.width,
       height: char.height,
       xoffset: char.xoffset,
@@ -400,7 +395,6 @@ export function loadAtlasFONT(device, PATH = './res/3d-fonts/stormfaze.fnt', ATL
         GPUTextureUsage.TEXTURE_BINDING |
         GPUTextureUsage.COPY_DST
     });
-    // UPLOAD ATLAS TO GPU
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
     const ctx = canvas.getContext('2d');
     ctx.drawImage(bitmap, 0, 0);

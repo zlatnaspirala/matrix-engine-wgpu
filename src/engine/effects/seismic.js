@@ -22,6 +22,7 @@ export const EarthquakePresets = {
 };
 
 export class EarthquakeEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, colorFormat, params = {}, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -137,47 +138,78 @@ export class EarthquakeEffect {
   }
 
   _initPipeline() {
-    this.modelBuffer = this.device.createBuffer({size: 160, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}}
-      ],
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(EarthquakeEffect._pipelineCache.has(device)) {
+      const cached = EarthquakeEffect._pipelineCache.get(device);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}}
+        ],
+      });
+
+      this.shaderModule = device.createShaderModule({code: earthquakeEffectShader});
+
+      this.pipelineLayout = device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout],
+      });
+
+      this.pipeline = device.createRenderPipeline({
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2", }]},
+          ],
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.colorFormat,
+              blend: this.blend
+            },
+            {format: "rgba16float"}, {format: "rgba16float"}
+          ]
+        },
+        primitive: {topology: "triangle-list", cullMode: "back", },
+        depthStencil: {depthWriteEnabled: false, depthCompare: "greater", format: "depth24plus", },
+      });
+
+      // ========== CACHE THEM ==========
+      EarthquakeEffect._pipelineCache.set(device, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+    this.modelBuffer = device.createBuffer({
+      size: 160,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}}
       ]
     });
-    const shaderModule = this.device.createShaderModule({code: earthquakeEffectShader});
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
-      }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2", }]},
-        ],
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.colorFormat,
-            blend: this.blend
-          },
-          {format: "rgba16float"}, {format: "rgba16float"}
-        ]
-      },
-      primitive: {topology: "triangle-list", cullMode: "back", },
-      depthStencil: {depthWriteEnabled: false, depthCompare: "greater", format: "depth24plus", },
-    });
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200)
   }
 
   updateInstanceData(baseModelMatrix) {
@@ -190,7 +222,7 @@ export class EarthquakeEffect {
     // Calibration
     const lat = this.latitude * Math.PI / 180.0;
     const lonOffset = 75;
-    const lon = -(this.longitude-lonOffset) * Math.PI / 180.0;
+    const lon = -(this.longitude - lonOffset) * Math.PI / 180.0;
     const cosLat = Math.cos(lat);
     this._epicenter[0] = cosLat * Math.sin(lon);
     this._epicenter[1] = Math.sin(lat);
@@ -228,7 +260,6 @@ export class EarthquakeEffect {
   }
 
   draw(pass, viewProjMatrix) {
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);

@@ -128,8 +128,7 @@ export class DestructionEffect {
     }
 
     // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
-    // Single quad for billboarded particles
-    const S = 1.0; // Base particle size
+    const S = 1.0;
     const vertexData = new Float32Array([
       -0.5 * S, 0.5 * S, 0,  // Top-left
       0.5 * S, 0.5 * S, 0,   // Top-right
@@ -191,7 +190,7 @@ export class DestructionEffect {
       ]
     });
 
-     setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {})) }, 200)
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200)
   }
 
   _initParticles() {
@@ -369,47 +368,26 @@ export class DestructionEffect {
    */
   draw(pass, cameraMatrix) {
     if(!this.enabled) return;
-
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-
-    pass.setPipeline(this.pipeline);
+    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
     pass.setVertexBuffer(2, this.instanceBuffer);
     pass.setIndexBuffer(this.indexBuffer, "uint16");
-
-    // Draw instanced (one quad per particle)
     pass.drawIndexed(this.indexCount, this.particleCount);
   }
 
-  /**
-   * Main render method (called by parent)
-   */
   render(pass, mesh, viewProjMatrix, dt = 0.016) {
     if(!this.enabled) return;
-
     this.update(dt);
     this.draw(pass, viewProjMatrix);
   }
 
-  /**
-   * Set effect intensity
-   */
-  setIntensity(v) {
-    this.intensity = v;
-  }
+  setIntensity(v) {this.intensity = v;}
 
-  /**
-   * Check if effect is still active
-   */
-  isActive() {
-    return this.enabled;
-  }
+  isActive() {return this.enabled;}
 
-  /**
-   * Reset effect
-   */
   reset() {
     this.enabled = false;
     this.time = 0;

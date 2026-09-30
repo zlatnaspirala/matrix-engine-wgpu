@@ -395,15 +395,12 @@ export class SacredGeometryEffect {
 
   render(pass, mesh, viewProjMatrix, dt = 0.016) {
     if(!this.enabled) return;
-
     this.time += dt;
     this.renderCount++;
-
     // Log every 60 frames
     if(this.renderCount % 60 === 0) {
       console.log(`%c[render] Frame ${this.renderCount}, time: ${this.time.toFixed(2)}s`, 'color: orange;');
     }
-
     const offset = 0;
     const floatView = this.instanceData;
     floatView.set(this._baseModelMatrix, offset);
@@ -412,10 +409,8 @@ export class SacredGeometryEffect {
     floatView[offset + 18] = this.pulseSpeed;
     floatView[offset + 19] = this.glowIntensity;
     floatView[offset + 20] = this.lineWidth;
-
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData, 0, 24);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint32');

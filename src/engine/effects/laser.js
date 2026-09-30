@@ -191,8 +191,6 @@ export class LaserProjectile {
     setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
   }
 
-  // ── Public API ────────────────────────────────────────────────────────────
-
   /**
    * Fire a beam from pointA to pointB.
    * @param {number[]} from    [x,y,z] world position
@@ -358,8 +356,6 @@ export class LaserProjectile {
     pass.setIndexBuffer(this.indexBuffer, 'uint16');
     pass.drawIndexed(this.indexCount, count);
   }
-
-  // ── Splat impact enhancement (optional) ──────────────────────────────────
 
   _updateSplatImpact(beam) {
     const n = this.splatLayer.vertexCount;

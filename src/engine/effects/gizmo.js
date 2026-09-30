@@ -60,8 +60,6 @@ export class GizmoEffect {
 
   _initPipeline() {
     const device = this.device;
-
-    // ========== CACHE CHECK ==========
     if(GizmoEffect._pipelineCache.has(device)) {
       const cached = GizmoEffect._pipelineCache.get(device);
       this.pipeline = cached.pipeline;
@@ -69,7 +67,6 @@ export class GizmoEffect {
       this.pipelineLayout = cached.pipelineLayout;
       this.shaderModule = cached.shaderModule;
     } else {
-      // ========== BUILD PIPELINE ONCE ==========
       this.bindGroupLayout = device.createBindGroupLayout({
         entries: [
           {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},

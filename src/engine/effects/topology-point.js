@@ -1,6 +1,7 @@
 import {pointEffectShader} from "../../shaders/topology-point/pointEffect";
 
 export class PointEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -12,29 +13,89 @@ export class PointEffect {
   }
 
   _initPipeline() {
-    this.modelBuffer = this.device.createBuffer({
+    const device = this.device;
+    if(TopologyEffect._pipelineCache.has(device)) {
+      const cached = TopologyEffect._pipelineCache.get(device);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {}},
+        ]
+      });
+      this.shaderModule = device.createShaderModule({code: pointEffectShader});
+      this.pipelineLayout = device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+
+      this.pipeline = device.createRenderPipeline({
+        label: 'Topology Pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 3 * 4,
+              stepMode: 'instance',
+              attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]
+            },
+            {
+              arrayStride: 3 * 4,
+              stepMode: 'instance',
+              attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{
+            format: this.format,
+            blend: {
+              color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
+              alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
+            }
+          }, {format: 'rgba16float'}, {format: 'rgba16float'}]
+        },
+        primitive: {topology: "triangle-strip"},
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: "less-equal",
+          format: "depth24plus"
+        }
+      });
+
+      // ========== CACHE THEM ==========
+      TopologyEffect._pipelineCache.set(device, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+    this.modelBuffer = device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    this.pointSettingsBuffer = this.device.createBuffer({
+    this.pointSettingsBuffer = device.createBuffer({
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
     this._pointSettingsScratch[0] = this.pointSize;
-    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
+    device.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {}},
-      ]
-    });
-
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
@@ -42,48 +103,6 @@ export class PointEffect {
       ]
     });
 
-    const shaderModule = this.device.createShaderModule({code: pointEffectShader});
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'Topology Pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 3 * 4,
-            stepMode: 'instance',
-            attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]
-          },
-          {
-            arrayStride: 3 * 4,
-            stepMode: 'instance',
-            attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},
-            alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
-          }
-        }, {format: 'rgba16float'}, {format: 'rgba16float'}]
-      },
-      primitive: {topology: "triangle-strip"},
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "less-equal",
-        format: "depth24plus"
-      }
-    });
   }
 
   updateInstanceData(baseModelMatrix) {
@@ -99,7 +118,7 @@ export class PointEffect {
       return;
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
+    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, vertexBuffer);
     pass.setVertexBuffer(1, colorBuffer);

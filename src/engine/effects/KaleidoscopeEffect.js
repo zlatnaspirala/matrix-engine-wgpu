@@ -207,7 +207,6 @@ export class KaleidoscopeEffect {
       });
     }
 
-
     this.modelBuffer = device.createBuffer({
       size: 128,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -220,6 +219,7 @@ export class KaleidoscopeEffect {
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
   }
 
   _uploadVertex(data) {

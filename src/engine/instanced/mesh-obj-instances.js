@@ -768,9 +768,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
           this.effects.manaBar = new MANABarEffect(device, pf, this.cameraBuffer);
         }
         if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true ||
-          (app && app.editor.methodsManager && app.editor.methodsManager.editorType === 'created from editor')) {
+          (app && app.editor && app.editor.methodsManager && app.editor.methodsManager.editorType === 'created from editor')) {
           this.effects.gizmoEffect = new GizmoEffect(device, 'rgba16float', this.cameraBuffer);
-        } 
+        }
         if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {
           this.effects.flameEffect = new FlameEffect(device, pf, pf, undefined, this.cameraBuffer);
         }

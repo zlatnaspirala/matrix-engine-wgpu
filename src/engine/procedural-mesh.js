@@ -351,7 +351,7 @@ export default class ProceduralMeshObj extends Materials {
         this.effects.pointEffect = new PointEffect(this.device, 'rgba16float', this.cameraBuffer);
       }
       if(typeof this.pointerEffect.gizmoEffect !== 'undefined' && this.pointerEffect.gizmoEffect == true ||
-        (app && app.editor.methodsManager && app.editor.methodsManager.editorType === 'created from editor')) {
+        (app && app.editor && app.editor.methodsManager && app.editor.methodsManager.editorType === 'created from editor')) {
         this.effects.gizmoEffect = new GizmoEffect(this.device, 'rgba16float', this.cameraBuffer);
       }
       if(typeof this.pointerEffect.flameEffect !== 'undefined' && this.pointerEffect.flameEffect == true) {

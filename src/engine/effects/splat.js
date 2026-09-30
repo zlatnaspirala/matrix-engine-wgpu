@@ -16,6 +16,7 @@
  * Copyright (c) 2026 Nikola Lukić zlatnaspirala@gmail.com
  */
 export class GaussianSplatLayer {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer, topology = "point-list") {
     this.device = device;
     this.format = format;
@@ -52,7 +53,7 @@ export class GaussianSplatLayer {
       this.splatData = this._parsePLY(arrayBuffer);
       this.vertexCount = this.splatData.positions.length / 3;
       console.info(`✓ Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] → [${this.aabbMax}]`);
-      await this._initializeGPU();
+      await this.initPipeline();
       return this;
     } catch(err) {
       console.error('Splat load error:', err);
@@ -161,7 +162,109 @@ export class GaussianSplatLayer {
 
   _sigmoid(x) {return 1.0 / (1.0 + Math.exp(-x));}
 
-  async _initializeGPU() {
+  async initPipeline() {
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(SplatEffect._pipelineCache.has(device)) {
+      const cached = SplatEffect._pipelineCache.get(device);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.renderPipeline = cached.renderPipeline;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
+        ]
+      });
+
+      const shaderCode = this._getRenderShaderCode();
+      this.shaderModule = device.createShaderModule({
+        label: 'Splat shader',
+        code: shaderCode
+      });
+
+      this.pipelineLayout = device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+
+      this.renderPipeline = device.createRenderPipeline({
+        label: 'Splat render pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: 'vs_main',
+          buffers: [
+            {
+              // slot 0: static — scale + rotation only (position slot skipped)
+              arrayStride: 56,
+              stepMode: 'vertex',
+              attributes: [
+                // shaderLocation 0 = position now comes from slot 2
+                {shaderLocation: 2, offset: 28, format: 'float32x3'}, // scale
+                {shaderLocation: 3, offset: 40, format: 'float32x4'}, // rotation
+              ]
+            },
+            {
+              // slot 1: animated rgba color (SplatColorAnimator)
+              arrayStride: 16, stepMode: 'vertex',
+              attributes: [{shaderLocation: 1, offset: 0, format: 'float32x4'}]
+            },
+            {
+              // slot 2: dynamic position (SplatPositionAnimator)
+              arrayStride: 12, stepMode: 'vertex',
+              attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: 'fs_main',
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: {
+                  srcFactor: 'src-alpha',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add'
+                },
+                alpha: {
+                  srcFactor: 'one',
+                  dstFactor: 'one-minus-src-alpha',
+                  operation: 'add'
+                }
+              }
+            },
+            {format: 'rgba16float'},
+            {format: 'rgba16float'}
+          ]
+        },
+        primitive: {
+          topology: this.topology,
+          cullMode: 'none'
+        },
+        depthStencil: {
+          format: 'depth24plus',
+          depthWriteEnabled: false,
+          depthCompare: 'less'
+        }
+      });
+
+      // ========== CACHE THEM ==========
+      SplatEffect._pipelineCache.set(device, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        renderPipeline: this.renderPipeline
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
     // Vertex buffer: interleaved position + color + scale + rotation
     const vertexData = new Float32Array(this.vertexCount * 14);
     for(let i = 0;i < this.vertexCount;i++) {
@@ -182,7 +285,7 @@ export class GaussianSplatLayer {
       vertexData[idx++] = this.splatData.rotations[i * 4 + 3];
     }
 
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device.createBuffer({
       label: 'Splat vertex buffer',
       size: vertexData.byteLength,
       mappedAtCreation: true,
@@ -195,7 +298,7 @@ export class GaussianSplatLayer {
     // is attached, so render() never crashes on missing dynamic position data.
     const dummyPosData = new Float32Array(this.vertexCount * 3);
     dummyPosData.set(this.splatData.positions);
-    this.dummyPosBuffer = this.device.createBuffer({
+    this.dummyPosBuffer = device.createBuffer({
       label: 'splat-dummy-pos',
       size: dummyPosData.byteLength,
       mappedAtCreation: true,
@@ -214,40 +317,19 @@ export class GaussianSplatLayer {
       initialColors[i * 4 + 3] = this.splatData.splatColors[i * 4 + 3];
     }
 
-    this.colorBuffer = this.device.createBuffer({
+    this.colorBuffer = device.createBuffer({
       label: 'splat-color',
       size: initialColors.byteLength,
       mappedAtCreation: true,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
     new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
-    this.colorBuffer.unmap()
+    this.colorBuffer.unmap();
+
     this.positions = this.splatData.positions;
     this.vertexCount = this.splatData.vertexCount;
-    this.vertexBufferLayout = [
-      {
-        // slot 0: static — scale + rotation only (position slot skipped)
-        arrayStride: 56,
-        stepMode: 'vertex',
-        attributes: [
-          // shaderLocation 0 = position now comes from slot 2
-          {shaderLocation: 2, offset: 28, format: 'float32x3'}, // scale
-          {shaderLocation: 3, offset: 40, format: 'float32x4'}, // rotation
-        ]
-      },
-      {
-        // slot 1: animated rgba color (SplatColorAnimator)
-        arrayStride: 16, stepMode: 'vertex',
-        attributes: [{shaderLocation: 1, offset: 0, format: 'float32x4'}]
-      },
-      {
-        // slot 2: dynamic position (SplatPositionAnimator)
-        arrayStride: 12, stepMode: 'vertex',
-        attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]
-      }
-    ];
 
-    this.scaleBuffer = this.device.createBuffer({
+    this.scaleBuffer = device.createBuffer({
       label: 'Splat scale buffer',
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -256,76 +338,20 @@ export class GaussianSplatLayer {
     new Float32Array(this.scaleBuffer.getMappedRange()).set([this.splatScale, 0, 0, 0]);
     this.scaleBuffer.unmap();
 
-    this.modelBuffer = this.device.createBuffer({size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
-      ]
+    this.modelBuffer = device.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
         {binding: 2, resource: {buffer: this.scaleBuffer}}
       ]
     });
-
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-
-    const shaderCode = this._getRenderShaderCode();
-    const shaderModule = this.device.createShaderModule({
-      label: 'Splat shader',
-      code: shaderCode
-    });
-
-    this.renderPipeline = this.device.createRenderPipeline({
-      label: 'Splat render pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vs_main',
-        buffers: this.vertexBufferLayout
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fs_main',
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: {
-                srcFactor: 'src-alpha',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add'
-              },
-              alpha: {
-                srcFactor: 'one',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add'
-              }
-            }
-          },
-          {format: 'rgba16float'},
-          {format: 'rgba16float'}
-        ]
-      },
-      primitive: {
-        topology: this.topology,
-        cullMode: 'none'
-      },
-      depthStencil: {
-        format: 'depth24plus',
-        depthWriteEnabled: false,
-        depthCompare: 'less'
-      }
-    });
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200)
   }
 
   _getRenderShaderCode() {
@@ -470,7 +496,6 @@ fn fs_main(in: VertexOutput) -> FragOut {
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     this.device.queue.writeBuffer(this.scaleBuffer, 0, this._scaleData);
-    pass.setPipeline(this.renderPipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);

@@ -8,19 +8,16 @@ import {bloodBurstShader} from "../../shaders/blood/blood-target";
  * one-shot particle pool, gravity+drag integration, alpha fade lifetime
  */
 export class BloodBurst {
-  // Static cache - one pipeline per device
   static _pipelineCache = new WeakMap();
-
   constructor(device, format, maxParticles = 64, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.maxParticles = maxParticles;
-    this.floatsPerInstance = 24; // mat4(16) + life/maxLife/pad/pad(4) + color(4)
+    this.floatsPerInstance = 24;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
     this.gravity = -9.8;
     this.drag = 0.98;
     this.cameraBuffer = cameraBuffer;
-
     this.pool = [];
     for(let i = 0;i < maxParticles;i++) {
       this.pool.push({
@@ -39,7 +36,6 @@ export class BloodBurst {
     this._initPipeline();
   }
 
-  // one-shot burst spawn — hook this at your hitscan/animationEnd impact point
   spawn(origin, baseModelMatrix, count = 20, speed = 6.0) {
     let spawned = 0;
     for(const p of this.pool) {
@@ -142,7 +138,6 @@ export class BloodBurst {
 
     if(!this.activeCount) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);

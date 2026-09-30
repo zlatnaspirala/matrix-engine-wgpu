@@ -20,7 +20,6 @@ export class SplatFaceEffect {
    * @param {boolean} opts.mirrorX      flip X for webcam (default true)
    */
   constructor(device, format, cameraBuffer, splatLayer, opts = {}) {
-
     this.device = device;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
@@ -212,12 +211,6 @@ export class SplatFaceEffect {
     }
   }
 
-  // ── Public API ────────────────────────────────────────────────────────────
-
-  /**
-   * Feed raw FaceLandmarker results directly.
-   * Call from PipeCommander.onResults()
-   */
   setFaceData(results) {
     if(!results?.faceLandmarks?.length) {
       this._landmarks = null;
@@ -230,10 +223,8 @@ export class SplatFaceEffect {
   setClusterRadius(r) {this.clusterRadius = r;}
   setOrigin(x, y, z) {this.origin = [x, y, z];}
 
-  // ── Effect interface ──────────────────────────────────────────────────────
   updateInstanceData(baseModelMatrix) {
     if(!this.enabled) return;
-
     if(!this._landmarks) {
       this._posCPU.fill(0);
       this.device.queue.writeBuffer(

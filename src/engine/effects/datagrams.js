@@ -3,6 +3,7 @@ import {LOG_FUNNY_ARCADE} from "../utils";
 import {cryptoGridShader} from "../../shaders/diagrams/crypto-grid";
 
 export class ChartsEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, maxInstances = 64, cameraBuffer, options = {}) {
     this.device = device;
     this.format = format;
@@ -253,6 +254,84 @@ export class ChartsEffect {
   }
 
   _initPipeline() {
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(ChartsEffect._pipelineCache.has(device)) {
+      const cached = ChartsEffect._pipelineCache.get(device);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {
+            binding: 1,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: {type: "read-only-storage"},
+          },
+          {
+            binding: 2,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: {},
+          },
+        ],
+      });
+
+      this.shaderModule = device.createShaderModule({
+        code: cryptoGridShader,
+      });
+
+      this.pipelineLayout = device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout],
+      });
+
+      this.pipeline = device.createRenderPipeline({
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 12,
+              attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}],
+            },
+            {
+              arrayStride: 12,
+              attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}],
+            },
+          ],
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {format: this.format},
+            {format: "rgba16float"},
+            {format: "rgba16float"},
+          ],
+        },
+        primitive: {topology: "triangle-list", cullMode: "none"},
+        depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: "less",
+          format: "depth24plus",
+        },
+      });
+
+      // ========== CACHE THEM ==========
+      ChartsEffect._pipelineCache.set(device, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
     const cube = this._buildCubeGeometry();
     const posData = new Float32Array(cube.vertices.length / 2);
     const normData = new Float32Array(cube.vertices.length / 2);
@@ -260,85 +339,37 @@ export class ChartsEffect {
       posData.set(cube.vertices.subarray(i, i + 3), v);
       normData.set(cube.vertices.subarray(i + 3, i + 6), v);
     }
+
     this.vertexBuffer = this._upload(posData, GPUBufferUsage.VERTEX);
     this.normalBuffer = this._upload(normData, GPUBufferUsage.VERTEX);
+
     const padded = Math.ceil(cube.indices.byteLength / 4) * 4;
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device.createBuffer({
       size: padded,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
     });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, cube.indices);
+    device.queue.writeBuffer(this.indexBuffer, 0, cube.indices);
     this.indexCount = cube.indices.length;
-    this.instanceBuffer = this.device.createBuffer({
+
+    this.instanceBuffer = device.createBuffer({
       label: "crypto-grid instanceBuffer",
       size: this.maxInstances * this.floatsPerInstance * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-    this.gridUniformBuffer = this.device.createBuffer({
+
+    this.gridUniformBuffer = device.createBuffer({
       label: "crypto-grid gridUniformBuffer",
       size: 96,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {
-          binding: 1,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {type: "read-only-storage"},
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-          buffer: {},
-        },
-      ],
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.instanceBuffer}},
         {binding: 2, resource: {buffer: this.gridUniformBuffer}},
       ],
-    });
-
-    const shaderModule = this.device.createShaderModule({
-      code: cryptoGridShader,
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
-      }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 12,
-            attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}],
-          },
-          {
-            arrayStride: 12,
-            attributes: [{shaderLocation: 1, offset: 0, format: "float32x3"}],
-          },
-        ],
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {format: this.format},
-          {format: "rgba16float"},
-          {format: "rgba16float"},
-        ],
-      },
-      primitive: {topology: "triangle-list", cullMode: "none"},
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus",
-      },
     });
   }
 
@@ -415,7 +446,7 @@ export class ChartsEffect {
   render(pass, mesh, viewProjMatrix) {
     if(this.timeSteps === 0) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
+    // pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.normalBuffer);
