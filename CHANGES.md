@@ -2,6 +2,9 @@
 
 [2.0.0]
 
+- Effects system render part use from now cache pipelinf per effect type.
+  `Effects system` is full standalone bonus render principe thats why better per  effect caching.
+
 - MSDF text preview effect
 - added dev tool `npm install --save-dev msdf-bmfont-xml` ]
   but to fix env paths quick solution
@@ -28,7 +31,28 @@ msdf-bmfont --reuse -o public/res/3d-fonts/atlas.png -m 512,256 -s 42 -r 3 -p 1 
   "webp-to-dds1": "cd public/res/textures/env-maps/ && for %f in (*.webp) do magick \"%f\" \"%~nf.dds\""
   ```
 
-- GPUCapabilities
+- GPUCapabilities test.
+
+```js
+export var mazeGame = function() {
+  let maze = new MatrixEngineWGPU({
+    canvasSize: 'fullscreen',
+    fastRender: 0.9,
+    // render: 'culling', <<<--- CPU CULLING
+    render: 'GPUInstancedDraw',  <<<--- GPU CULLING
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: 'firstPersonCamera',
+      // type: 'WASD',
+      responseCoef: 1000
+    },
+    clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
+  }, () => {
+...
+```
+
 
 ```
 const gpuSettings = {

@@ -49202,28 +49202,20 @@ var CollisionSystem = class {
   register(id2, positionInstance, radius = 1, group = "default") {
     this.entries.push({ id: id2, pos: positionInstance, radius, group });
   }
-  registerStatic(id2, positionInstance, radius = 1, group = "default", halfExtents = null) {
-    const entry = {
-      id: id2,
-      pos: positionInstance,
-      radius,
-      group,
-      // store actual box dimensions if provided, else assume unit cube
-      half: halfExtents ?? { x: radius, y: radius, z: radius }
-    };
-    const h2 = entry.half;
-    if (!h2) {
-      console.warn("entry missing half:", entry.id);
-      return false;
-    }
+  registerStatic(id2, pos2, radius = 1, group = "default", half = null) {
+    const h2 = half ?? { x: radius, y: radius, z: radius };
+    const entry = { id: id2, pos: pos2, radius, group, half: h2 };
     this.staticEntries.push(entry);
-    const key = this._cellKey(positionInstance.x, positionInstance.y ?? 0, positionInstance.z);
-    let cell = this._staticGrid.get(key);
-    if (!cell) {
-      cell = [];
-      this._staticGrid.set(key, cell);
-    }
-    cell.push(entry);
+    const cs2 = this.cellSize, y3 = pos2.y ?? 0;
+    for (let cx = Math.floor((pos2.x - h2.x) / cs2); cx <= Math.floor((pos2.x + h2.x) / cs2); cx++)
+      for (let cy = Math.floor((y3 - h2.y) / cs2); cy <= Math.floor((y3 + h2.y) / cs2); cy++)
+        for (let cz = Math.floor((pos2.z - h2.z) / cs2); cz <= Math.floor((pos2.z + h2.z) / cs2); cz++) {
+          const key = `${cx},${cy},${cz}`;
+          let cell = this._staticGrid.get(key);
+          if (!cell) this._staticGrid.set(key, cell = []);
+          cell.push(entry);
+        }
+    return entry;
   }
   unregister(id2) {
     this.entries = this.entries.filter((e2) => e2.id !== id2);
@@ -49367,7 +49359,7 @@ var CollisionSystem = class {
       for (let j2 = 0; j2 < this._neighbors.length; j2++) {
         const B2 = this._neighbors[j2];
         if (A2 === B2) continue;
-        const minDist = (A2.radius + B2.radius) * 0.5;
+        const minDist = A2.radius + B2.radius;
         if (A2.group === B2.group) {
           resolvePairRepulsion3D(A2.pos, B2.pos, minDist, 1);
           continue;
@@ -49433,6 +49425,7 @@ var mazeGame = function() {
         });
         floor2.changeTexture(checker2, samplerTest);
         floor2.setUVScale(12, 12);
+        maze.collisionSystem.registerStatic("floor", floor2.position, 1, "floor", { x: 80, y: 0.1, z: 80 });
       }, 500);
     }, { scale: [1, 1, 1] });
     function generateMazeLogic(meshes) {
@@ -49484,7 +49477,7 @@ var mazeGame = function() {
       light.setPosition(0, 200, 0);
       light.setIntensity(8.5);
       maze.cameras.firstPersonCamera.movementSpeed = 0.1;
-      maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1);
+      maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 0.6);
       maze.cameras.firstPersonCamera.setPosition(-49, 10.4, -49);
       let test2 = maze.addMeshObj({
         shadowsCast: false,

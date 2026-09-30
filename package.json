@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "examples": "esbuild examples.js --bundle --outfile=public/examples.js --format=esm --watch",
+    "build:examples": "esbuild examples.js --bundle --minify --sourcemap --drop:console --target=es2022 --format=esm --outfile=public/examples.min.js",
     "android-tv-cast": "esbuild android-tv-cast.js --bundle --outfile=public/android-tv-cast.js --format=esm --watch",
     "jamb": "watchify ./examples/games/jamb/jamb.js -p [esmify --noImplicitAny] -o public/yacht.js",
     "demo1": "watchify demo1.js -p [esmify --noImplicitAny] -o public/app.js",

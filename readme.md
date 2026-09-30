@@ -257,6 +257,17 @@ https://maximumroulette.com/apps/webgpu/api-docs/
   app.destroyProgram();
   ```
 
+
+#### Culling
+
+```js
+var mazeGame = function() {
+  let maze = new MatrixEngineWGPU({
+    canvasSize: 'fullscreen',
+    // render: 'culling', <<<--- CPU Culling
+    render: 'GPUInstancedDraw', <<<--- GPU Culling (+indirectDraws)
+```
+
 ---
 
 ### Camera Options
@@ -748,6 +759,7 @@ export let application = new MatrixEngineWGPU(
 window.app = application;
 ```
 
+
 ### 🔁 Load OBJ Sequence Animation
 
 This example shows how to load and animate a sequence of .obj files to simulate mesh-based animation (e.g. walking character).
@@ -1144,12 +1156,6 @@ new MatrixEngineWGPU({
 Exclude (for example floor/ground) from culling: `floor.ignoreCulling = true;`
 ---
 
-## About `empty.js`
-
-
-
----
-
 
 ## Android TV or any other supported device render stream receiver
 
@@ -1423,5 +1429,6 @@ Top level main.js instance (Jamb 3d deluxe)
 
 ## 📘 Learning Resource:
 
-[WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
-- ChatGPT, claude and Gemini.
+- https://webgpufundamentals.org
+- [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
+- For assist not whole code writing - ChatGPT, claude and Gemini.
