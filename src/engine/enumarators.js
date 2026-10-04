@@ -1,5 +1,4 @@
 // webGPU enumerators and literal cases.
-
 export const targetBlending = {
   StandardAlphaBlending: {
     color: {srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add"},

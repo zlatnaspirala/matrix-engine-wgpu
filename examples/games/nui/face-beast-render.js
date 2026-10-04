@@ -68,7 +68,7 @@ export var loadFaceBeast = function() {
     }, () => {}, arg4);
 
     loadFace.addLight();
-    loadFace.addLight();
+    // loadFace.addLight();
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
     addRaycastsAABBListener('canvas1', 'click');
@@ -195,8 +195,8 @@ export var loadFaceBeast = function() {
       loadFace.lightContainer[0].setTarget(0, 0, -20);
 
 
-      loadFace.lightContainer[1].setPosition(0, 5, -10);
-      loadFace.lightContainer[1].setTarget(0, 5, 20);
+      // loadFace.lightContainer[1].setPosition(0, 5, -10);
+      // loadFace.lightContainer[1].setTarget(0, 5, 20);
 
       const sampler = loadFace.device.createSampler({
         magFilter: 'linear',
@@ -280,7 +280,7 @@ export var loadFaceBeast = function() {
 
         // Important for face uv view!
         MYCUBE.effects.faceEffect.setMode('mesh');
-        MYCUBE.position.translateByY(12)
+        MYCUBE.position.translateByY(14)
 
         let cam = app.getCamera();
         cam.setYaw(0);

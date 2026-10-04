@@ -9331,6 +9331,7 @@ var MEConfig = {
   SHADOW_RES: isMobile() == true ? 256 : 512,
   MAX_BONES: isMobile() == true ? 70 : 100,
   MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
+  GPUCullingRad: 200,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
@@ -9374,6 +9375,13 @@ var MEConfig = {
       this.MAX_BONES = options2.MAX_BONES;
     }
     console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+    if (urlQ["GPUCullingRad"]) {
+      this.GPUCullingRad = parseInt(urlQ["GPUCullingRad"]);
+    }
+    if (options2.GPUCullingRad) {
+      this.GPUCullingRad = options2.GPUCullingRad;
+    }
+    console.log(`%cGPUCullingRad : ${this.GPUCullingRad}`, LOG_FUNNY_ARCADE);
     if (urlQ["TOUCH_SENS"]) {
       this.TOUCH_SENS = parseInt(urlQ["TOUCH_SENS"]);
     }
@@ -50873,9 +50881,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
-    this.effectsByType = {
-      FlameEmitter: []
-    };
+    this.effectsByType = { FlameEmitter: [] };
     addEventListener("update-effects", (e2) => {
       for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
@@ -73890,7 +73896,6 @@ var loadFaceBeast = function() {
     }, () => {
     }, arg4);
     loadFace.addLight();
-    loadFace.addLight();
     downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
@@ -73984,8 +73989,6 @@ var loadFaceBeast = function() {
       app.lightContainer[0].setColorB(1);
       loadFace.lightContainer[0].setPosition(0, 65, 0);
       loadFace.lightContainer[0].setTarget(0, 0, -20);
-      loadFace.lightContainer[1].setPosition(0, 5, -10);
-      loadFace.lightContainer[1].setTarget(0, 5, 20);
       const sampler = loadFace.device.createSampler({
         magFilter: "linear",
         minFilter: "linear",
@@ -74035,7 +74038,7 @@ var loadFaceBeast = function() {
         };
         loadFace.activateHZB();
         MYCUBE.effects.faceEffect.setMode("mesh");
-        MYCUBE.position.translateByY(12);
+        MYCUBE.position.translateByY(14);
         let cam2 = app.getCamera();
         cam2.setYaw(0);
         cam2.setPitch(0);

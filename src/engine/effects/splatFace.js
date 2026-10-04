@@ -100,25 +100,18 @@ export class SplatFaceEffect {
   _buildRadiusMap() {
     // Default tight radius for all 478 landmarks
     const r = new Float32Array(478).fill(0.005);
-
     // Jaw outline (0-16) — wider, structural
     for(let i = 0;i <= 16;i++) r[i] = 0.010;
-
     // Eyebrows (17-26) — medium
     for(let i = 17;i <= 26;i++) r[i] = 0.007;
-
     // Nose bridge + tip (27-35) — medium
     for(let i = 27;i <= 35;i++) r[i] = 0.007;
-
     // Eyes (36-47 right, 42-47 left) — tighter, detailed
     for(let i = 36;i <= 47;i++) r[i] = 0.005;
-
     // Lips outer (48-59) — wider, expressive
     for(let i = 48;i <= 59;i++) r[i] = 0.008;
-
     // Lips inner (60-67) — medium
     for(let i = 60;i <= 67;i++) r[i] = 0.006;
-
     // Key anchor points — extra wide for visibility
     // Nose tip
     r[1] = 0.010;
@@ -193,25 +186,20 @@ export class SplatFaceEffect {
     for(let i = 17;i <= 26;i++) w[i] = 1.2;
     // Nose
     for(let i = 27;i <= 35;i++) w[i] = 1.2;
-
     // Eyes — very important perceptually
     for(let i = 36;i <= 47;i++) w[i] = 1.8;
-
     // Lips — most expressive, heaviest weight
     for(let i = 48;i <= 67;i++) w[i] = 2.0;
-
     // Key anchor landmarks — extra heavy
     [1, 4, 10, 33, 61, 133, 152, 234, 263, 291, 362, 454].forEach(i => {
       w[i] = 2.5;
     });
-
     return w;
   }
 
   _precompute(n) {
     const weights = this._buildWeights();
     const TOTAL_LM = 478;
-
     let total = 0;
     for(let i = 0;i < TOTAL_LM;i++) total += weights[i];
     const cdf = new Float32Array(TOTAL_LM);
@@ -221,7 +209,6 @@ export class SplatFaceEffect {
       cdf[i] = run;
     }
     cdf[TOTAL_LM - 1] = 1.0;
-
     for(let p = 0;p < n;p++) {
       const r = Math.random();
       // Binary search CDF — faster than linear for 478 entries
@@ -232,7 +219,6 @@ export class SplatFaceEffect {
         else hi = mid;
       }
       this._clusterIdx[p] = lo;
-
       // Uniform point inside unit sphere
       let ox, oy, oz;
       do {
@@ -362,36 +348,25 @@ export class SplatFaceEffect {
 
   _updateColors() {
     if(!this._videoCanvas || !this._landmarks) return;
-
     const ctx = this._videoCanvas.getContext('2d', {willReadFrequently: true});
     const c = this._colorCPU;
     const n = this.splatLayer.vertexCount;
     const lm = this._landmarks;
-
-    // Draw current video frame to canvas
     const video = this._videoElement;
     ctx.drawImage(video, 0, 0, this._videoCanvas.width, this._videoCanvas.height);
-
     const imageData = ctx.getImageData(0, 0, this._videoCanvas.width, this._videoCanvas.height);
     const data = imageData.data;
     const w = this._videoCanvas.width;
     const h = this._videoCanvas.height;
-
     for(let i = 0;i < n;i++) {
       const ci = this._clusterIdx[i];
       const joint = lm[ci];
-
-      // Normalized coords → pixel coords
       const px = Math.floor(joint.x * w);
       const py = Math.floor(joint.y * h);
       const idx = (py * w + px) * 4;
-
-      // Sample actual pixel
       const r = data[idx] / 255;
       const g = data[idx + 1] / 255;
       const b = data[idx + 2] / 255;
-
-      // Optional: mix with original landmark color for stability
       const orig = this._landmarkColors;
       const blend = 0.7; // 70% video, 30% base color
       c[i * 4] = r * blend + orig[ci * 3] * (1 - blend);
@@ -399,7 +374,6 @@ export class SplatFaceEffect {
       c[i * 4 + 2] = b * blend + orig[ci * 3 + 2] * (1 - blend);
       c[i * 4 + 3] = 1.0;
     }
-
     this.device.queue.writeBuffer(this.splatLayer.colorBuffer, 0, c);
   }
 }

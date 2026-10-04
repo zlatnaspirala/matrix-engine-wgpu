@@ -150,9 +150,8 @@ export default class MatrixEngineWGPU {
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
 
-    this.effectsByType = {
-      FlameEmitter: [],
-    };
+    this.effectsByType = {FlameEmitter: [], };
+
     addEventListener('update-effects', (e) => {
       for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
@@ -160,10 +159,8 @@ export default class MatrixEngineWGPU {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if(effect === null) continue;
-
             // Group by CLASS name, not property key!
             const className = effect.constructor.name;
-
             if(!this.effectsByType[className]) this.effectsByType[className] = [];
             this.effectsByType[className].push({effect, mesh});
           }
@@ -1358,7 +1355,7 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            if (effect) effect.simulate?.(commandEncoder);
+            if(effect) effect.simulate?.(commandEncoder);
           }
         }
       }

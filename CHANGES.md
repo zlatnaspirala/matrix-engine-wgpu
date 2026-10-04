@@ -2,6 +2,7 @@
 
 [2.0.0]
 
+- New main arg also config property `GPUCullingRad` GPU culling radius.
 - New dep:  npm install @mediapipe/face_mesh
   for face pipe.
   
