@@ -112,9 +112,8 @@ export class GaussianSplatLayer {
     else this.pipeline = this.pipelines.points;
   }
 
-
   setRenderMode(mode, meshTriangles = null) {
-     console.log('>>>>>>>>>', meshTriangles);
+    console.log('>>>>>setRenderMode>>>>', meshTriangles);
     this.renderMode = mode;
     if(mode === 'mesh' && meshTriangles) {
       console.log('>>>>>>>>>', meshTriangles);
@@ -454,49 +453,96 @@ struct FragOut {
   @location(2) worldPos: vec4<f32>,
 };
 
+
 @vertex
-fn vs_main(
-  @builtin(vertex_index) vertexIdx: u32,
-  in: VertexInput
-) -> VertexOutput {
+fn vs_main(in: VertexInput) -> VertexOutput {
   var out: VertexOutput;
 
-  var pos = in.position * scale.factor;
-
-  // Quads / Billboard expansion logic
-  if (scale.renderMode > 0.5) {
-    var quadCorners = array<vec2<f32>, 6>(
-      vec2<f32>(-0.5, -0.5),
-      vec2<f32>( 0.5, -0.5),
-      vec2<f32>(-0.5,  0.5),
-      vec2<f32>(-0.5,  0.5),
-      vec2<f32>( 0.5, -0.5),
-      vec2<f32>( 0.5,  0.5)
-    );
-    let corner = quadCorners[vertexIdx];
-    pos += vec3<f32>(corner * scale.splatSize, 0.0);
-  }
-
-  let worldPos = model.matrix * vec4<f32>(pos, 1.0);
+  let worldPos = model.matrix * vec4<f32>(in.position, 1.0);
   out.clipPos = camera.mvp * worldPos;
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
   out.worldPos = worldPos.xyz;
+
+  // Pass UV directly through to Fragment Shader
   out.uv = in.uv;
+
   return out;
 }
+
+// @vertex
+// fn vs_main(
+//   @builtin(vertex_index) vertexIdx: u32,  in: VertexInput) -> VertexOutput {
+//   var out: VertexOutput;
+
+//   var pos = in.position * scale.factor;
+
+//   // Quads / Billboard expansion logic
+//   if (scale.renderMode > 0.5) {
+//     var quadCorners = array<vec2<f32>, 6>(
+//       vec2<f32>(-0.5, -0.5),
+//       vec2<f32>( 0.5, -0.5),
+//       vec2<f32>(-0.5,  0.5),
+//       vec2<f32>(-0.5,  0.5),
+//       vec2<f32>( 0.5, -0.5),
+//       vec2<f32>( 0.5,  0.5)
+//     );
+//     let corner = quadCorners[vertexIdx];
+//     pos += vec3<f32>(corner * scale.splatSize, 0.0);
+//   }
+
+//   let worldPos = model.matrix * vec4<f32>(pos, 1.0);
+//   out.clipPos = camera.mvp * worldPos;
+//   out.color = in.colorOpacity.rgb;
+//   out.opacity = in.colorOpacity.a;
+//   out.worldPos = worldPos.xyz;
+//   out.uv = in.uv;
+//   return out;
+// }
+
+
+// ORIGIN
+// @fragment
+// fn fs_main(in: VertexOutput) -> FragOut {
+//   var out: FragOut;
+//   let videoColor = textureSampleBaseClampToEdge(videoTexture, videoSampler, in.uv);
+//   let finalColor = mix(in.color, videoColor.rgb, 0.85);
+
+//   out.color = vec4<f32>(finalColor, in.opacity);
+//   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+//   out.worldPos = vec4<f32>(in.worldPos, 1.0);
+//   return out;
+// }
+
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragOut {
   var out: FragOut;
-  let videoColor = textureSampleBaseClampToEdge(videoTexture, videoSampler, in.uv);
-  let finalColor = mix(in.color, videoColor.rgb, 0.85);
 
-  out.color = vec4<f32>(finalColor, in.opacity);
+  // Sample external texture using vertex UV
+  let videoColor = textureSampleBaseClampToEdge(videoTexture, videoSampler, in.uv);
+
+  out.color = vec4<f32>(videoColor.rgb, in.opacity);
   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
   out.worldPos = vec4<f32>(in.worldPos, 1.0);
   return out;
-}`;
+}
+
+
+// @fragment
+// fn fs_main(in: VertexOutput) -> FragOut {
+//   var out: FragOut;
+  
+//   // Debug mode: visualize UV space directly
+//   // Red = U (horizontal), Green = V (vertical)
+//   out.color = vec4<f32>(in.uv.x, in.uv.y, 0.0, 1.0);
+  
+//   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+//   out.worldPos = vec4<f32>(in.worldPos, 1.0);
+//   return out;
+// }
+
+`;
   }
 
   attachPositionAnimator(animator) {

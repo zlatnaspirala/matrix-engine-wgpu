@@ -59810,7 +59810,7 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
     else this.pipeline = this.pipelines.points;
   }
   setRenderMode(mode, meshTriangles = null) {
-    console.log(">>>>>>>>>", meshTriangles);
+    console.log(">>>>>setRenderMode>>>>", meshTriangles);
     this.renderMode = mode;
     if (mode === "mesh" && meshTriangles) {
       console.log(">>>>>>>>>", meshTriangles);
@@ -60120,49 +60120,96 @@ struct FragOut {
   @location(2) worldPos: vec4<f32>,
 };
 
+
 @vertex
-fn vs_main(
-  @builtin(vertex_index) vertexIdx: u32,
-  in: VertexInput
-) -> VertexOutput {
+fn vs_main(in: VertexInput) -> VertexOutput {
   var out: VertexOutput;
 
-  var pos = in.position * scale.factor;
-
-  // Quads / Billboard expansion logic
-  if (scale.renderMode > 0.5) {
-    var quadCorners = array<vec2<f32>, 6>(
-      vec2<f32>(-0.5, -0.5),
-      vec2<f32>( 0.5, -0.5),
-      vec2<f32>(-0.5,  0.5),
-      vec2<f32>(-0.5,  0.5),
-      vec2<f32>( 0.5, -0.5),
-      vec2<f32>( 0.5,  0.5)
-    );
-    let corner = quadCorners[vertexIdx];
-    pos += vec3<f32>(corner * scale.splatSize, 0.0);
-  }
-
-  let worldPos = model.matrix * vec4<f32>(pos, 1.0);
+  let worldPos = model.matrix * vec4<f32>(in.position, 1.0);
   out.clipPos = camera.mvp * worldPos;
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
   out.worldPos = worldPos.xyz;
+
+  // Pass UV directly through to Fragment Shader
   out.uv = in.uv;
+
   return out;
 }
+
+// @vertex
+// fn vs_main(
+//   @builtin(vertex_index) vertexIdx: u32,  in: VertexInput) -> VertexOutput {
+//   var out: VertexOutput;
+
+//   var pos = in.position * scale.factor;
+
+//   // Quads / Billboard expansion logic
+//   if (scale.renderMode > 0.5) {
+//     var quadCorners = array<vec2<f32>, 6>(
+//       vec2<f32>(-0.5, -0.5),
+//       vec2<f32>( 0.5, -0.5),
+//       vec2<f32>(-0.5,  0.5),
+//       vec2<f32>(-0.5,  0.5),
+//       vec2<f32>( 0.5, -0.5),
+//       vec2<f32>( 0.5,  0.5)
+//     );
+//     let corner = quadCorners[vertexIdx];
+//     pos += vec3<f32>(corner * scale.splatSize, 0.0);
+//   }
+
+//   let worldPos = model.matrix * vec4<f32>(pos, 1.0);
+//   out.clipPos = camera.mvp * worldPos;
+//   out.color = in.colorOpacity.rgb;
+//   out.opacity = in.colorOpacity.a;
+//   out.worldPos = worldPos.xyz;
+//   out.uv = in.uv;
+//   return out;
+// }
+
+
+// ORIGIN
+// @fragment
+// fn fs_main(in: VertexOutput) -> FragOut {
+//   var out: FragOut;
+//   let videoColor = textureSampleBaseClampToEdge(videoTexture, videoSampler, in.uv);
+//   let finalColor = mix(in.color, videoColor.rgb, 0.85);
+
+//   out.color = vec4<f32>(finalColor, in.opacity);
+//   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+//   out.worldPos = vec4<f32>(in.worldPos, 1.0);
+//   return out;
+// }
+
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragOut {
   var out: FragOut;
-  let videoColor = textureSampleBaseClampToEdge(videoTexture, videoSampler, in.uv);
-  let finalColor = mix(in.color, videoColor.rgb, 0.85);
 
-  out.color = vec4<f32>(finalColor, in.opacity);
+  // Sample external texture using vertex UV
+  let videoColor = textureSampleBaseClampToEdge(videoTexture, videoSampler, in.uv);
+
+  out.color = vec4<f32>(videoColor.rgb, in.opacity);
   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
   out.worldPos = vec4<f32>(in.worldPos, 1.0);
   return out;
-}`;
+}
+
+
+// @fragment
+// fn fs_main(in: VertexOutput) -> FragOut {
+//   var out: FragOut;
+  
+//   // Debug mode: visualize UV space directly
+//   // Red = U (horizontal), Green = V (vertical)
+//   out.color = vec4<f32>(in.uv.x, in.uv.y, 0.0, 1.0);
+  
+//   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+//   out.worldPos = vec4<f32>(in.worldPos, 1.0);
+//   return out;
+// }
+
+`;
   }
   attachPositionAnimator(animator2) {
     this.positionAnimator = animator2;
@@ -73483,7 +73530,7 @@ var loadHandBeast = function() {
 };
 
 // src/engine/effects/splatFace.js
-var import_face_mesh = __toESM(require_face_mesh());
+var faceMeshModule = __toESM(require_face_mesh());
 var SplatFaceEffect = class {
   /**
    * @param {GPUDevice} device
@@ -73508,7 +73555,10 @@ var SplatFaceEffect = class {
     this.mirrorX = opts.mirrorX ?? true;
     this._videoElement = byId2("auto-video");
     this._landmarks = null;
-    console.log("splatLayer.pipeline::::", splatLayer.pipeline);
+    console.log("FACEMESH_TESSELLATION::::");
+    const TESSELLATION_EDGES = faceMeshModule.FACEMESH_TESSELATION || faceMeshModule.FACEMESH_TESSELLATION || faceMeshModule.default?.FACEMESH_TESSELATION || faceMeshModule.default?.FACEMESH_TESSELLATION;
+    console.log("Tessellation edges:", TESSELLATION_EDGES);
+    this.FACE_TRIANGLES = this.extractTrianglesFromTessellation(TESSELLATION_EDGES);
     this.pipeline = splatLayer.pipeline;
     const n3 = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n3 * 3);
@@ -73528,13 +73578,36 @@ var SplatFaceEffect = class {
       magFilter: "linear",
       minFilter: "linear"
     });
+    this.updateInstanceData = this.updateInstanceDataPoints;
+    this.render = this.renderPoint;
+  }
+  extractTrianglesFromTessellation(tessellationPairs) {
+    if (!tessellationPairs || !tessellationPairs.length) {
+      console.warn("No tessellation pairs provided.");
+      return new Uint16Array(0);
+    }
+    const triangleCount = Math.floor(tessellationPairs.length / 3);
+    const indices = new Uint16Array(triangleCount * 3);
+    for (let i2 = 0; i2 < triangleCount; i2++) {
+      const pair0 = tessellationPairs[i2 * 3];
+      const pair1 = tessellationPairs[i2 * 3 + 1];
+      indices[i2 * 3 + 0] = pair0[0];
+      indices[i2 * 3 + 1] = pair0[1];
+      indices[i2 * 3 + 2] = pair1[1];
+    }
+    return indices;
   }
   setMode(mode, meshTriangles = null) {
-    console.log(">>>>>setMode>>>>", meshTriangles);
-    console.log(">>>>>FACEMESH_TESSELLATION>>>>", import_face_mesh.FACEMESH_TESSELLATION);
+    if (mode === "mesh") {
+      this.updateInstanceData = this.updateInstanceDataFace;
+      this.render = this.renderFace;
+    } else {
+      this.updateInstanceData = this.updateInstanceDataPoints;
+      this.render = renderPoint;
+    }
     this.splatLayer.setRenderMode(
       mode,
-      meshTriangles === null ? import_face_mesh.FACEMESH_TESSELLATION : meshTriangles
+      meshTriangles === null ? this.FACE_TRIANGLES : meshTriangles
     );
     this.pipeline = this.splatLayer.pipeline;
   }
@@ -73646,7 +73719,7 @@ var SplatFaceEffect = class {
   setOrigin(x3, y3, z2) {
     this.origin = [x3, y3, z2];
   }
-  updateInstanceData(baseModelMatrix) {
+  updateInstanceDataPoints(baseModelMatrix) {
     if (!this.enabled || !this._landmarks) return;
     const lm = this._landmarks;
     const sc2 = this.scale;
@@ -73676,7 +73749,29 @@ var SplatFaceEffect = class {
     this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, p2);
     this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
-  render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
+  updateInstanceDataFace(baseModelMatrix) {
+    if (!this.enabled || !this._landmarks) return;
+    const lm = this._landmarks;
+    const sc2 = this.scale;
+    const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
+    const mx = this.mirrorX ? -1 : 1;
+    const landmarkCount = Math.min(lm.length, 478);
+    const posData = new Float32Array(landmarkCount * 3);
+    const uvData = new Float32Array(landmarkCount * 2);
+    for (let i2 = 0; i2 < landmarkCount; i2++) {
+      const joint = lm[i2];
+      posData[i2 * 3 + 0] = (joint.x - 0.5) * mx * sc2 + ox;
+      posData[i2 * 3 + 1] = -(joint.y - 0.5) * sc2 + oy;
+      posData[i2 * 3 + 2] = -joint.z * sc2 + oz;
+      const rawU = this.mirrorX ? 1 - joint.x : joint.x;
+      const rawV = joint.y;
+      uvData[i2 * 2 + 0] = Math.max(0, Math.min(1, rawU));
+      uvData[i2 * 2 + 1] = Math.max(0, Math.min(1, rawV));
+    }
+    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, posData);
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+  }
+  renderPoint(pass, mesh, viewProjMatrix, dt2 = 0.016) {
     this.time += dt2;
     if (!this._videoElement || this._videoElement.readyState < 2) {
       return;
@@ -73739,6 +73834,27 @@ var SplatFaceEffect = class {
       0,
       0
     );
+  }
+  renderFace(pass, mesh, viewProjMatrix, dt2 = 0.016) {
+    if (this._videoElement.readyState < 2) return;
+    const externalTexture = this.device.importExternalTexture({ source: this._videoElement });
+    const bindGroup = this.device.createBindGroup({
+      layout: this.splatLayer.bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.splatLayer.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.splatLayer.modelBuffer } },
+        { binding: 2, resource: { buffer: this.splatLayer.scaleBuffer } },
+        { binding: 3, resource: externalTexture },
+        { binding: 4, resource: this.sampler }
+      ]
+    });
+    pass.setBindGroup(0, bindGroup);
+    pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
+    pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
+    pass.setVertexBuffer(2, this.splatLayer.positionAnimator.posBuffer);
+    pass.setVertexBuffer(3, this.uvBuffer);
+    pass.setIndexBuffer(this.splatLayer.meshIndexBuffer, "uint16");
+    pass.drawIndexed(2556, 1, 0, 0, 0);
   }
   /**
    * Sample pixel color from video at each landmark position
@@ -73925,7 +74041,7 @@ var loadFaceBeast = function() {
       });
       setTimeout(async () => {
         MYCUBE.setBlend(0);
-        const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast-text.ply", 6, "point-list");
+        const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast-text.ply", 6, "triangle-list");
         console.log(".........................", layer);
         window.layer = layer;
         let positionAnimator = new SplatPositionAnimator(

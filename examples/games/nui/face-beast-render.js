@@ -201,8 +201,8 @@ export var loadFaceBeast = function() {
       // text
       setTimeout(async () => {
         MYCUBE.setBlend(0);
-        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "point-list");
-        // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "triangle-list");
+        // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "point-list"); triangle-strip
+        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "triangle-list");
         console.log('.........................', layer)
         window.layer = layer
 
