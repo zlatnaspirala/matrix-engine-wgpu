@@ -59735,7 +59735,79 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
     this.renderMode = "points";
     this.meshIndexBuffer = null;
     this.meshIndexCount = 0;
-    this.splatSize = 0.015;
+    this.splatSize = 0.15;
+  }
+  _createPipeline(label, topology, stepMode) {
+    const device2 = this.device;
+    return device2.createRenderPipeline({
+      label,
+      layout: this.pipelineLayout,
+      vertex: {
+        module: this.shaderModule,
+        entryPoint: "vs_main",
+        buffers: [
+          {
+            // Slot 0: Static scale + rotation
+            arrayStride: 56,
+            stepMode,
+            attributes: [
+              { shaderLocation: 2, offset: 28, format: "float32x3" },
+              // scale
+              { shaderLocation: 3, offset: 40, format: "float32x4" }
+              // rotation
+            ]
+          },
+          {
+            // Slot 1: Color
+            arrayStride: 16,
+            stepMode,
+            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }]
+          },
+          {
+            // Slot 2: Position
+            arrayStride: 12,
+            stepMode,
+            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+          },
+          {
+            // Slot 3: UV coordinates (always per-vertex)
+            arrayStride: 8,
+            stepMode: "vertex",
+            attributes: [{ shaderLocation: 4, offset: 0, format: "float32x2" }]
+          }
+        ]
+      },
+      fragment: {
+        module: this.shaderModule,
+        entryPoint: "fs_main",
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
+      },
+      primitive: {
+        topology,
+        cullMode: "none"
+      },
+      depthStencil: {
+        format: "depth24plus",
+        depthWriteEnabled: false,
+        depthCompare: "less"
+      }
+    });
+  }
+  _selectPipeline() {
+    if (!this.pipelines) return;
+    if (this.renderMode === "quads") this.pipeline = this.pipelines.quads;
+    else if (this.renderMode === "mesh" && this.meshIndexBuffer) this.pipeline = this.pipelines.mesh;
+    else this.pipeline = this.pipelines.points;
   }
   setRenderMode(mode, meshTriangles = null) {
     this.renderMode = mode;
@@ -59743,13 +59815,15 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
       this.meshIndexCount = meshTriangles.length;
       this.meshIndexBuffer = this.device.createBuffer({
         label: "splat-mesh-index-buffer",
-        size: meshTriangles.byteLength,
+        size: Math.ceil(meshTriangles.byteLength / 4) * 4,
+        // mapped size must be multiple of 4
         usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
       new Uint16Array(this.meshIndexBuffer.getMappedRange()).set(meshTriangles);
       this.meshIndexBuffer.unmap();
     }
+    this._selectPipeline();
   }
   async loadPLY(source) {
     try {
@@ -59871,7 +59945,7 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
       this.bindGroupLayout = cached.bindGroupLayout;
       this.shaderModule = cached.shaderModule;
       this.pipelineLayout = cached.pipelineLayout;
-      this.pipeline = cached.pipeline;
+      this.pipelines = cached.pipelines;
     } else {
       this.bindGroupLayout = device2.createBindGroupLayout({
         entries: [
@@ -59879,7 +59953,6 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
           { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
           { binding: 3, visibility: GPUShaderStage.FRAGMENT, externalTexture: {} },
-          // <--- Fixes Entry 3 error
           { binding: 4, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
         ]
       });
@@ -59891,85 +59964,31 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
       this.pipelineLayout = device2.createPipelineLayout({
         bindGroupLayouts: [this.bindGroupLayout]
       });
-      this.pipeline = device2.createRenderPipeline({
-        label: "Splat render pipeline",
-        layout: this.pipelineLayout,
-        vertex: {
-          module: this.shaderModule,
-          entryPoint: "vs_main",
-          buffers: [
-            {
-              // Slot 0: Static scale + rotation
-              arrayStride: 56,
-              stepMode: "vertex",
-              attributes: [
-                { shaderLocation: 2, offset: 28, format: "float32x3" },
-                // scale
-                { shaderLocation: 3, offset: 40, format: "float32x4" }
-                // rotation
-              ]
-            },
-            {
-              // Slot 1: Color
-              arrayStride: 16,
-              stepMode: "vertex",
-              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }]
-            },
-            {
-              // Slot 2: Position
-              arrayStride: 12,
-              stepMode: "vertex",
-              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-            },
-            {
-              // Slot 3: UV coordinates <--- Fixes "Slot 4 location not present in VertexState"
-              arrayStride: 8,
-              stepMode: "vertex",
-              attributes: [{ shaderLocation: 4, offset: 0, format: "float32x2" }]
-            }
-          ]
-        },
-        fragment: {
-          module: this.shaderModule,
-          entryPoint: "fs_main",
-          targets: [
-            {
-              format: this.format,
-              blend: {
-                color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-              }
-            },
-            { format: "rgba16float" },
-            { format: "rgba16float" }
-          ]
-        },
-        primitive: {
-          topology: this.topology,
-          cullMode: "none"
-        },
-        depthStencil: {
-          format: "depth24plus",
-          depthWriteEnabled: false,
-          depthCompare: "less"
-        }
-      });
+      this.pipelines = {
+        // original: one vertex per splat, point primitives
+        points: this._createPipeline("Splat render pipeline", this.topology, "vertex"),
+        // 6 vertices per instance, per-splat data steps per instance
+        quads: this._createPipeline("Splat quad pipeline", "triangle-list", "instance"),
+        // indexed triangles over per-vertex data
+        mesh: this._createPipeline("Splat mesh pipeline", "triangle-list", "vertex")
+      };
       _GaussianSplatLayer._pipelineCache.set(device2, {
         bindGroupLayout: this.bindGroupLayout,
         shaderModule: this.shaderModule,
         pipelineLayout: this.pipelineLayout,
-        pipeline: this.pipeline
+        pipelines: this.pipelines
       });
-      const dummyUVData = new Float32Array(this.vertexCount * 2);
-      this.dummyUVBuffer = device2.createBuffer({
-        label: "splat-dummy-uv",
-        size: dummyUVData.byteLength,
-        mappedAtCreation: true,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-      });
-      new Float32Array(this.dummyUVBuffer.getMappedRange()).set(dummyUVData);
-      this.dummyUVBuffer.unmap();
     }
+    this._selectPipeline();
+    const dummyUVData = new Float32Array(Math.max(this.vertexCount, 6) * 2);
+    this.dummyUVBuffer = device2.createBuffer({
+      label: "splat-dummy-uv",
+      size: dummyUVData.byteLength,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    new Float32Array(this.dummyUVBuffer.getMappedRange()).set(dummyUVData);
+    this.dummyUVBuffer.unmap();
     const vertexData = new Float32Array(this.vertexCount * 14);
     for (let i2 = 0; i2 < this.vertexCount; i2++) {
       let idx = i2 * 14;
@@ -60108,6 +60127,7 @@ fn vs_main(
   var out: VertexOutput;
 
   var pos = in.position * scale.factor;
+  var uvOut = in.uv;
 
   // Quads / Billboard expansion logic
   if (scale.renderMode > 0.5) {
@@ -60121,6 +60141,7 @@ fn vs_main(
     );
     let corner = quadCorners[vertexIdx];
     pos += vec3<f32>(corner * scale.splatSize, 0.0);
+    uvOut = corner + vec2<f32>(0.5, 0.5);
   }
 
   let worldPos = model.matrix * vec4<f32>(pos, 1.0);
@@ -60128,7 +60149,7 @@ fn vs_main(
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
   out.worldPos = worldPos.xyz;
-  out.uv = in.uv;
+  out.uv = uvOut;
   return out;
 }
 
@@ -73649,21 +73670,6 @@ var SplatFaceEffect = class {
   render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
     this.time += dt2;
     if (!this._videoElement || this._videoElement.readyState < 2) return;
-    const externalTexture = this.device.importExternalTexture({
-      source: this._videoElement
-    });
-    const bindGroup = this.device.createBindGroup({
-      layout: this.splatLayer.bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.splatLayer.cameraBuffer } },
-        { binding: 1, resource: { buffer: this.splatLayer.modelBuffer } },
-        { binding: 2, resource: { buffer: this.splatLayer.scaleBuffer } },
-        { binding: 3, resource: externalTexture },
-        { binding: 4, resource: this.sampler }
-      ]
-    });
-    pass.setBindGroup(0, bindGroup);
-    pass.setVertexBuffer(3, this.uvBuffer);
   }
   /**
    * Sample pixel color from video at each landmark position

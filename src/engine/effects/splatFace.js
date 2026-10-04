@@ -268,24 +268,24 @@ export class SplatFaceEffect {
     this.time += dt;
     if(!this._videoElement || this._videoElement.readyState < 2) return;
 
-    // Zero-copy GPU External Texture Frame
-    const externalTexture = this.device.importExternalTexture({
-      source: this._videoElement
-    });
+    // // Zero-copy GPU External Texture Frame
+    // const externalTexture = this.device.importExternalTexture({
+    //   source: this._videoElement
+    // });
 
-    const bindGroup = this.device.createBindGroup({
-      layout: this.splatLayer.bindGroupLayout,
-      entries: [
-        {binding: 0, resource: {buffer: this.splatLayer.cameraBuffer}},
-        {binding: 1, resource: {buffer: this.splatLayer.modelBuffer}},
-        {binding: 2, resource: {buffer: this.splatLayer.scaleBuffer}},
-        {binding: 3, resource: externalTexture},
-        {binding: 4, resource: this.sampler}
-      ]
-    });
+    // const bindGroup = this.device.createBindGroup({
+    //   layout: this.splatLayer.bindGroupLayout,
+    //   entries: [
+    //     {binding: 0, resource: {buffer: this.splatLayer.cameraBuffer}},
+    //     {binding: 1, resource: {buffer: this.splatLayer.modelBuffer}},
+    //     {binding: 2, resource: {buffer: this.splatLayer.scaleBuffer}},
+    //     {binding: 3, resource: externalTexture},
+    //     {binding: 4, resource: this.sampler}
+    //   ]
+    // });
 
-    pass.setBindGroup(0, bindGroup);
-    pass.setVertexBuffer(3, this.uvBuffer);
+    // pass.setBindGroup(0, bindGroup);
+    // pass.setVertexBuffer(3, this.uvBuffer);
   }
 
 
