@@ -40,7 +40,7 @@ export class GaussianSplatLayer {
     this.renderMode = 'points'; // Options: 'points' | 'quads' | 'mesh'
     this.meshIndexBuffer = null;
     this.meshIndexCount = 0;
-    this.splatSize = 0.15; // Size of quads in 'quads' mode
+    this.splatSize = 0.015; // Size of quads in 'quads' mode
   }
 
   _createPipeline(label, topology, stepMode) {
@@ -114,19 +114,21 @@ export class GaussianSplatLayer {
 
 
   setRenderMode(mode, meshTriangles = null) {
+     console.log('>>>>>>>>>', meshTriangles);
     this.renderMode = mode;
     if(mode === 'mesh' && meshTriangles) {
+      console.log('>>>>>>>>>', meshTriangles);
       this.meshIndexCount = meshTriangles.length;
       this.meshIndexBuffer = this.device.createBuffer({
         label: 'splat-mesh-index-buffer',
-        size: Math.ceil(meshTriangles.byteLength / 4) * 4, // mapped size must be multiple of 4
+        size: Math.ceil(meshTriangles.byteLength / 4) * 4,
         usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true,
       });
       new Uint16Array(this.meshIndexBuffer.getMappedRange()).set(meshTriangles);
       this.meshIndexBuffer.unmap();
     }
-    this._selectPipeline(); // swaps this.pipeline, main loop does setPipeline(this.pipeline)
+    this._selectPipeline();
   }
 
   async loadPLY(source) {
@@ -460,7 +462,6 @@ fn vs_main(
   var out: VertexOutput;
 
   var pos = in.position * scale.factor;
-  var uvOut = in.uv;
 
   // Quads / Billboard expansion logic
   if (scale.renderMode > 0.5) {
@@ -474,7 +475,6 @@ fn vs_main(
     );
     let corner = quadCorners[vertexIdx];
     pos += vec3<f32>(corner * scale.splatSize, 0.0);
-    uvOut = corner + vec2<f32>(0.5, 0.5);
   }
 
   let worldPos = model.matrix * vec4<f32>(pos, 1.0);
@@ -482,7 +482,7 @@ fn vs_main(
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
   out.worldPos = worldPos.xyz;
-  out.uv = uvOut;
+  out.uv = in.uv;
   return out;
 }
 
@@ -617,8 +617,6 @@ fn fs_main(in: VertexOutput) -> FragOut {
       pass.draw(this.vertexCount, 1, 0, 0);
     }
   }
-
-
   setScale(scale) {
     this.splatScale = scale;
     this._scaleData[0] = scale;

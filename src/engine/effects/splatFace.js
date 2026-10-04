@@ -1,5 +1,5 @@
 import {byId} from "../utils";
-import { FACEMESH_TESSELLATION } from '@mediapipe/face_mesh';
+import {FACEMESH_TESSELLATION} from '@mediapipe/face_mesh';
 
 /**
  * SplatFaceEffect
@@ -39,7 +39,7 @@ export class SplatFaceEffect {
     this.pipeline = splatLayer.pipeline;
     const n = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n * 3);
-    this._uvCPU = new Float32Array(n * 2);
+    this._uvCPU = new Float32Array(n * 6 * 2);
 
     this._clusterIdx = new Uint16Array(n);
     this._offsetX = new Float32Array(n);
@@ -49,10 +49,9 @@ export class SplatFaceEffect {
     this._jointRadius = this._buildRadiusMap();
     this._precompute(n);
 
-    // Create GPU Buffer for dynamic UVs
     this.uvBuffer = device.createBuffer({
       label: 'splat-face-uv',
-      size: n * 2 * 4,
+      size: n * 6 * 2 * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
 
@@ -64,9 +63,14 @@ export class SplatFaceEffect {
   }
 
   setMode(mode, meshTriangles = null) {
+         console.log('>>>>>setMode>>>>', meshTriangles);
+             console.log('>>>>>FACEMESH_TESSELLATION>>>>', FACEMESH_TESSELLATION);
+    this.splatLayer.setRenderMode(
+      mode,
+      meshTriangles === null ? FACEMESH_TESSELLATION : meshTriangles
+    );
 
-    console.log('FACEMESH_TESSELLATION', FACEMESH_TESSELLATION)
-    this.splatLayer.setRenderMode(mode, meshTriangles === null ? FACEMESH_TESSELLATION : meshTriangles );
+    this.pipeline = this.splatLayer.pipeline;
   }
 
   _buildRadiusMap() {
@@ -256,8 +260,15 @@ export class SplatFaceEffect {
       p[i * 3 + 2] = jz + this._offsetZ[i] * r;
 
       // Direct UV mapping from MediaPipe 0..1 coordinates
-      uv[i * 2] = this.mirrorX ? (1.0 - joint.x) : joint.x;
-      uv[i * 2 + 1] = joint.y;
+      const ux = this.mirrorX ? (1.0 - joint.x) : joint.x;
+      const uy = joint.y;
+
+      const uvi = i * 12;
+
+      for(let v = 0;v < 6;v++) {
+        this._uvCPU[uvi + v * 2] = ux;
+        this._uvCPU[uvi + v * 2 + 1] = uy;
+      }
     }
 
     this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, p);
@@ -266,26 +277,81 @@ export class SplatFaceEffect {
 
   render(pass, mesh, viewProjMatrix, dt = 0.016) {
     this.time += dt;
-    if(!this._videoElement || this._videoElement.readyState < 2) return;
 
-    // // Zero-copy GPU External Texture Frame
-    // const externalTexture = this.device.importExternalTexture({
-    //   source: this._videoElement
-    // });
+    if(!this._videoElement ||
+      this._videoElement.readyState < 2) {
+      return;
+    }
 
-    // const bindGroup = this.device.createBindGroup({
-    //   layout: this.splatLayer.bindGroupLayout,
-    //   entries: [
-    //     {binding: 0, resource: {buffer: this.splatLayer.cameraBuffer}},
-    //     {binding: 1, resource: {buffer: this.splatLayer.modelBuffer}},
-    //     {binding: 2, resource: {buffer: this.splatLayer.scaleBuffer}},
-    //     {binding: 3, resource: externalTexture},
-    //     {binding: 4, resource: this.sampler}
-    //   ]
-    // });
+    this.splatLayer.device.queue.writeBuffer(
+      this.splatLayer.modelBuffer,
+      0,
+      mesh.modelMatrix
+    );
 
-    // pass.setBindGroup(0, bindGroup);
-    // pass.setVertexBuffer(3, this.uvBuffer);
+    this.splatLayer.device.queue.writeBuffer(
+      this.splatLayer.cameraBuffer,
+      0,
+      viewProjMatrix
+    );
+
+    const externalTexture =
+      this.device.importExternalTexture({
+        source: this._videoElement
+      });
+
+    const bindGroup = this.device.createBindGroup({
+      layout: this.splatLayer.bindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            buffer: this.splatLayer.cameraBuffer
+          }
+        },
+        {
+          binding: 1,
+          resource: {
+            buffer: this.splatLayer.modelBuffer
+          }
+        },
+        {
+          binding: 2,
+          resource: {
+            buffer: this.splatLayer.scaleBuffer
+          }
+        },
+        {
+          binding: 3,
+          resource: externalTexture
+        },
+        {
+          binding: 4,
+          resource: this.sampler
+        }
+      ]
+    });
+
+    pass.setBindGroup(0, bindGroup);
+
+    pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
+    pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
+
+    pass.setVertexBuffer(
+      2,
+      this.splatLayer.positionAnimator
+        ? this.splatLayer.positionAnimator.posBuffer
+        : this.splatLayer.dummyPosBuffer
+    );
+
+    pass.setVertexBuffer(3, this.uvBuffer);
+
+    pass.draw(
+      6,
+      this.splatLayer.vertexCount,
+      0,
+      0
+    );
   }
 
 

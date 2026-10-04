@@ -200,31 +200,27 @@ export var loadFaceBeast = function() {
       });
       // text
       setTimeout(async () => {
-
-
         MYCUBE.setBlend(0);
-
-      
         const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "point-list");
-
-        
+        // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "triangle-list");
         console.log('.........................', layer)
         window.layer = layer
 
         // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "triangle-list");
-        animator = new SplatColorAnimator(
-          loadFace.device,
-          layer.positions,
-          layer.vertexCount,
-          layer.colorBuffer
-        );
-        animator.setMode('pulse');
-        animator.setScale(0.8);
-        animator.setSpeed(0.8);
-        layer.colorBuffer = animator.colorBuffer;
-        loadFace.autoUpdate.push(animator);
 
-        loadFace.animator = animator;
+        // animator = new SplatColorAnimator(
+        //   loadFace.device,
+        //   layer.positions,
+        //   layer.vertexCount,
+        //   layer.colorBuffer
+        // );
+        // animator.setMode('pulse');
+        // animator.setScale(0.8);
+        // animator.setSpeed(0.8);
+        // layer.colorBuffer = animator.colorBuffer;
+        // loadFace.autoUpdate.push(animator);
+
+        // loadFace.animator = animator;
 
         let positionAnimator = new SplatPositionAnimator(
           loadFace.device,
@@ -253,6 +249,8 @@ export var loadFaceBeast = function() {
           }
         );
 
+
+ 
         MYCUBE.effects.faceEffect = faceEffect;
         app.MYCUBE = MYCUBE; // denug
         loadFace.MYCUBE.position.thrust = 0.1;

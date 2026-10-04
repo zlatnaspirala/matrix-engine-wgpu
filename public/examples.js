@@ -59735,7 +59735,7 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
     this.renderMode = "points";
     this.meshIndexBuffer = null;
     this.meshIndexCount = 0;
-    this.splatSize = 0.15;
+    this.splatSize = 0.015;
   }
   _createPipeline(label, topology, stepMode) {
     const device2 = this.device;
@@ -59810,13 +59810,14 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
     else this.pipeline = this.pipelines.points;
   }
   setRenderMode(mode, meshTriangles = null) {
+    console.log(">>>>>>>>>", meshTriangles);
     this.renderMode = mode;
     if (mode === "mesh" && meshTriangles) {
+      console.log(">>>>>>>>>", meshTriangles);
       this.meshIndexCount = meshTriangles.length;
       this.meshIndexBuffer = this.device.createBuffer({
         label: "splat-mesh-index-buffer",
         size: Math.ceil(meshTriangles.byteLength / 4) * 4,
-        // mapped size must be multiple of 4
         usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
         mappedAtCreation: true
       });
@@ -60127,7 +60128,6 @@ fn vs_main(
   var out: VertexOutput;
 
   var pos = in.position * scale.factor;
-  var uvOut = in.uv;
 
   // Quads / Billboard expansion logic
   if (scale.renderMode > 0.5) {
@@ -60141,7 +60141,6 @@ fn vs_main(
     );
     let corner = quadCorners[vertexIdx];
     pos += vec3<f32>(corner * scale.splatSize, 0.0);
-    uvOut = corner + vec2<f32>(0.5, 0.5);
   }
 
   let worldPos = model.matrix * vec4<f32>(pos, 1.0);
@@ -60149,7 +60148,7 @@ fn vs_main(
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
   out.worldPos = worldPos.xyz;
-  out.uv = uvOut;
+  out.uv = in.uv;
   return out;
 }
 
@@ -73513,7 +73512,7 @@ var SplatFaceEffect = class {
     this.pipeline = splatLayer.pipeline;
     const n3 = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n3 * 3);
-    this._uvCPU = new Float32Array(n3 * 2);
+    this._uvCPU = new Float32Array(n3 * 6 * 2);
     this._clusterIdx = new Uint16Array(n3);
     this._offsetX = new Float32Array(n3);
     this._offsetY = new Float32Array(n3);
@@ -73522,7 +73521,7 @@ var SplatFaceEffect = class {
     this._precompute(n3);
     this.uvBuffer = device2.createBuffer({
       label: "splat-face-uv",
-      size: n3 * 2 * 4,
+      size: n3 * 6 * 2 * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
     this.sampler = device2.createSampler({
@@ -73531,8 +73530,13 @@ var SplatFaceEffect = class {
     });
   }
   setMode(mode, meshTriangles = null) {
-    console.log("FACEMESH_TESSELLATION", import_face_mesh.FACEMESH_TESSELLATION);
-    this.splatLayer.setRenderMode(mode, meshTriangles === null ? import_face_mesh.FACEMESH_TESSELLATION : meshTriangles);
+    console.log(">>>>>setMode>>>>", meshTriangles);
+    console.log(">>>>>FACEMESH_TESSELLATION>>>>", import_face_mesh.FACEMESH_TESSELLATION);
+    this.splatLayer.setRenderMode(
+      mode,
+      meshTriangles === null ? import_face_mesh.FACEMESH_TESSELLATION : meshTriangles
+    );
+    this.pipeline = this.splatLayer.pipeline;
   }
   _buildRadiusMap() {
     const r3 = new Float32Array(478).fill(5e-3);
@@ -73661,15 +73665,80 @@ var SplatFaceEffect = class {
       p2[i2 * 3] = jx + this._offsetX[i2] * r3;
       p2[i2 * 3 + 1] = jy + this._offsetY[i2] * r3;
       p2[i2 * 3 + 2] = jz + this._offsetZ[i2] * r3;
-      uv[i2 * 2] = this.mirrorX ? 1 - joint.x : joint.x;
-      uv[i2 * 2 + 1] = joint.y;
+      const ux = this.mirrorX ? 1 - joint.x : joint.x;
+      const uy = joint.y;
+      const uvi = i2 * 12;
+      for (let v2 = 0; v2 < 6; v2++) {
+        this._uvCPU[uvi + v2 * 2] = ux;
+        this._uvCPU[uvi + v2 * 2 + 1] = uy;
+      }
     }
     this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, p2);
     this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
   render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
     this.time += dt2;
-    if (!this._videoElement || this._videoElement.readyState < 2) return;
+    if (!this._videoElement || this._videoElement.readyState < 2) {
+      return;
+    }
+    this.splatLayer.device.queue.writeBuffer(
+      this.splatLayer.modelBuffer,
+      0,
+      mesh.modelMatrix
+    );
+    this.splatLayer.device.queue.writeBuffer(
+      this.splatLayer.cameraBuffer,
+      0,
+      viewProjMatrix
+    );
+    const externalTexture = this.device.importExternalTexture({
+      source: this._videoElement
+    });
+    const bindGroup = this.device.createBindGroup({
+      layout: this.splatLayer.bindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            buffer: this.splatLayer.cameraBuffer
+          }
+        },
+        {
+          binding: 1,
+          resource: {
+            buffer: this.splatLayer.modelBuffer
+          }
+        },
+        {
+          binding: 2,
+          resource: {
+            buffer: this.splatLayer.scaleBuffer
+          }
+        },
+        {
+          binding: 3,
+          resource: externalTexture
+        },
+        {
+          binding: 4,
+          resource: this.sampler
+        }
+      ]
+    });
+    pass.setBindGroup(0, bindGroup);
+    pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
+    pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
+    pass.setVertexBuffer(
+      2,
+      this.splatLayer.positionAnimator ? this.splatLayer.positionAnimator.posBuffer : this.splatLayer.dummyPosBuffer
+    );
+    pass.setVertexBuffer(3, this.uvBuffer);
+    pass.draw(
+      6,
+      this.splatLayer.vertexCount,
+      0,
+      0
+    );
   }
   /**
    * Sample pixel color from video at each landmark position
@@ -73859,18 +73928,6 @@ var loadFaceBeast = function() {
         const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast-text.ply", 6, "point-list");
         console.log(".........................", layer);
         window.layer = layer;
-        animator2 = new SplatColorAnimator(
-          loadFace.device,
-          layer.positions,
-          layer.vertexCount,
-          layer.colorBuffer
-        );
-        animator2.setMode("pulse");
-        animator2.setScale(0.8);
-        animator2.setSpeed(0.8);
-        layer.colorBuffer = animator2.colorBuffer;
-        loadFace.autoUpdate.push(animator2);
-        loadFace.animator = animator2;
         let positionAnimator = new SplatPositionAnimator(
           loadFace.device,
           MYCUBE.effects.splat.splatLayers[0].positions,
