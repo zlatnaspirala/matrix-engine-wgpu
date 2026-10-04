@@ -8,34 +8,19 @@ import * as faceMeshModule from '@mediapipe/face_mesh';
  *   render(pass, mesh, viewProjMatrix, dt) — no-op, splat renders itself
  */
 export class SplatFaceEffect {
-  /**
-   * @param {GPUDevice} device
-   * @param {string} format
-   * @param {GPUBuffer} cameraBuffer
-   * @param {GaussianSplatLayer} splatLayer
-   * @param {object} opts
-   * @param {number} opts.scale          world-space scale (default 2.5)
-   * @param {number} opts.clusterRadius  global radius multiplier (default 1.0)
-   * @param {number[]} opts.origin       world offset [x,y,z] (default [0,1.6,0])
-   * @param {boolean} opts.mirrorX      flip X for webcam (default true)
-   */
   static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer, splatLayer, opts = {}) {
     this.device = device;
     this.splatLayer = splatLayer;
     this.enabled = true;
     this.time = 0;
-
     this.scale = opts.scale ?? 2.5;
     this.clusterRadius = opts.clusterRadius ?? 1.0;
     this.origin = opts.origin ?? [0, 1.6, 0];
     this.mirrorX = opts.mirrorX ?? true;
-
     this._videoElement = byId('auto-video');
     this._landmarks = null;
-
     console.log('FACEMESH_TESSELLATION::::')
-    // Handle single 'L' vs double 'L' spelling dynamically
     const TESSELLATION_EDGES =
       faceMeshModule.FACEMESH_TESSELATION ||
       faceMeshModule.FACEMESH_TESSELLATION ||
@@ -53,27 +38,19 @@ export class SplatFaceEffect {
     this._offsetX = new Float32Array(n);
     this._offsetY = new Float32Array(n);
     this._offsetZ = new Float32Array(n);
-
     this._jointRadius = this._buildRadiusMap();
     this._precompute(n);
-
     this.uvBuffer = device.createBuffer({
       label: 'splat-face-uv',
       size: n * 6 * 2 * 4,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
-
-    // Create Sampler for Video Texture
-    this.sampler = device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear',
-    });
-
+    this.sampler = device.createSampler({magFilter: 'linear', minFilter: 'linear', });
     this.updateInstanceData = this.updateInstanceDataPoints;
     this.render = this.renderPoint;
   }
 
-  extractTrianglesFromTessellation(tessellationPairs) {
+  extractTrianglesFromTessellation2(tessellationPairs) {
     if(!tessellationPairs || !tessellationPairs.length) {
       console.warn("No tessellation pairs provided.");
       return new Uint16Array(0);
@@ -95,13 +72,40 @@ export class SplatFaceEffect {
     return indices;
   }
 
+  extractTrianglesFromTessellation(edges) {
+    if(!edges?.length) return new Uint16Array(0);
+
+    const adj = new Map();
+    const add = (a, b) => {
+      if(!adj.has(a)) adj.set(a, new Set());
+      adj.get(a).add(b);
+    };
+    for(const e of edges) {
+      const a = Array.isArray(e) ? e[0] : e.start;
+      const b = Array.isArray(e) ? e[1] : e.end;
+      add(a, b); add(b, a);
+    }
+
+    const tris = [];
+    for(const [a, na] of adj) {
+      for(const b of na) {
+        if(b <= a) continue;
+        for(const c of adj.get(b)) {
+          if(c <= b) continue;
+          if(na.has(c)) tris.push(a, b, c);
+        }
+      }
+    }
+    return new Uint16Array(tris);
+  }
+
   setMode(mode, meshTriangles = null) {
     if(mode === 'mesh') {
       this.updateInstanceData = this.updateInstanceDataFace;
       this.render = this.renderFace;
     } else {
       this.updateInstanceData = this.updateInstanceDataPoints;
-      this.render = renderPoint;
+      this.render = this.renderPoint;
     }
     this.splatLayer.setRenderMode(mode,
       meshTriangles === null ? this.FACE_TRIANGLES : meshTriangles
@@ -324,35 +328,38 @@ export class SplatFaceEffect {
     const posData = new Float32Array(landmarkCount * 3);
     const uvData = new Float32Array(landmarkCount * 2);
 
-    // for (let i = 0; i < landmarkCount; i++) {
-    //   const joint = lm[i];
-
-    //   // 1. Position mapping for landmark index i
-    //   posData[i * 3 + 0] = (joint.x - 0.5) * mx * sc + ox;
-    //   posData[i * 3 + 1] = -(joint.y - 0.5) * sc + oy;
-    //   posData[i * 3 + 2] = -joint.z * sc + oz;
-
-    //   // 2. Direct UV mapping for video frame sampling
-    //   const u = this.mirrorX ? (1.0 - joint.x) : joint.x;
-    //   const v = joint.y; // If upside down, use (1.0 - joint.y)
-
-    //   uvData[i * 2 + 0] = u;
-    //   uvData[i * 2 + 1] = v;
-    // }
     for(let i = 0;i < landmarkCount;i++) {
       const joint = lm[i];
 
+      // 1. Position mapping for landmark index i
       posData[i * 3 + 0] = (joint.x - 0.5) * mx * sc + ox;
       posData[i * 3 + 1] = -(joint.y - 0.5) * sc + oy;
       posData[i * 3 + 2] = -joint.z * sc + oz;
 
-      // Clamp UVs strictly to [0.0, 1.0]
-      const rawU = this.mirrorX ? (1.0 - joint.x) : joint.x;
-      const rawV = joint.y;
+      // 2. Direct UV mapping for video frame sampling
+      // const u = this.mirrorX ? (1.0 - joint.x) : joint.x;
+      // const v = joint.y; // If upside down, use (1.0 - joint.y)
+      // UV: never mirrored
+      uvData[i * 2 + 0] = joint.x;
+      uvData[i * 2 + 1] = joint.y;
 
-      uvData[i * 2 + 0] = Math.max(0.0, Math.min(1.0, rawU));
-      uvData[i * 2 + 1] = Math.max(0.0, Math.min(1.0, rawV));
+      // uvData[i * 2 + 0] = u;
+      // uvData[i * 2 + 1] = v;
     }
+    // for(let i = 0;i < landmarkCount;i++) {
+    //   const joint = lm[i];
+
+    //   posData[i * 3 + 0] = (joint.x - 0.5) * mx * sc + ox;
+    //   posData[i * 3 + 1] = -(joint.y - 0.5) * sc + oy;
+    //   posData[i * 3 + 2] = -joint.z * sc + oz;
+
+    //   // Clamp UVs strictly to [0.0, 1.0]
+    //   const rawU = this.mirrorX ? (1.0 - joint.x) : joint.x;
+    //   const rawV = joint.y;
+
+    //   uvData[i * 2 + 0] = Math.max(0.0, Math.min(1.0, rawU));
+    //   uvData[i * 2 + 1] = Math.max(0.0, Math.min(1.0, rawV));
+    // }
 
     // Upload per-landmark positions and UVs
     this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, posData);
@@ -361,81 +368,26 @@ export class SplatFaceEffect {
 
   renderPoint(pass, mesh, viewProjMatrix, dt = 0.016) {
     this.time += dt;
-
-    if(!this._videoElement ||
-      this._videoElement.readyState < 2) {
-      return;
-    }
-
-    this.splatLayer.device.queue.writeBuffer(
-      this.splatLayer.modelBuffer,
-      0,
-      mesh.modelMatrix
-    );
-
-    this.splatLayer.device.queue.writeBuffer(
-      this.splatLayer.cameraBuffer,
-      0,
-      viewProjMatrix
-    );
-
-    const externalTexture =
-      this.device.importExternalTexture({
-        source: this._videoElement
-      });
-
+    if(this._videoElement.readyState < 2) {return;}
+    this.splatLayer.device.queue.writeBuffer(this.splatLayer.modelBuffer, 0, mesh.modelMatrix);
+    this.splatLayer.device.queue.writeBuffer(this.splatLayer.cameraBuffer, 0, viewProjMatrix);
+    const externalTexture = this.device.importExternalTexture({source: this._videoElement});
     const bindGroup = this.device.createBindGroup({
       layout: this.splatLayer.bindGroupLayout,
       entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: this.splatLayer.cameraBuffer
-          }
-        },
-        {
-          binding: 1,
-          resource: {
-            buffer: this.splatLayer.modelBuffer
-          }
-        },
-        {
-          binding: 2,
-          resource: {
-            buffer: this.splatLayer.scaleBuffer
-          }
-        },
-        {
-          binding: 3,
-          resource: externalTexture
-        },
-        {
-          binding: 4,
-          resource: this.sampler
-        }
+        {binding: 0, resource: {buffer: this.splatLayer.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.splatLayer.modelBuffer}},
+        {binding: 2, resource: {buffer: this.splatLayer.scaleBuffer}},
+        {binding: 3, resource: externalTexture}, {binding: 4, resource: this.sampler}
       ]
     });
 
     pass.setBindGroup(0, bindGroup);
-
     pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
     pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
-
-    pass.setVertexBuffer(
-      2,
-      this.splatLayer.positionAnimator
-        ? this.splatLayer.positionAnimator.posBuffer
-        : this.splatLayer.dummyPosBuffer
-    );
-
+    pass.setVertexBuffer(2, this.splatLayer.positionAnimator ? this.splatLayer.positionAnimator.posBuffer : this.splatLayer.dummyPosBuffer);
     pass.setVertexBuffer(3, this.uvBuffer);
-
-    pass.draw(
-      6,
-      this.splatLayer.vertexCount,
-      0,
-      0
-    );
+    pass.draw(6, this.splatLayer.vertexCount, 0, 0);
   }
 
   renderFace(pass, mesh, viewProjMatrix, dt = 0.016) {
@@ -462,10 +414,6 @@ export class SplatFaceEffect {
     pass.drawIndexed(2556, 1, 0, 0, 0);
   }
 
-  /**
-   * Sample pixel color from video at each landmark position
-   * and apply to splat colors
-   */
   _updateColors() {
     if(!this._videoCanvas || !this._landmarks) return;
 
@@ -509,7 +457,5 @@ export class SplatFaceEffect {
     this.device.queue.writeBuffer(this.splatLayer.colorBuffer, 0, c);
   }
 
-  destroy() {
-    // buffers owned by splatLayer — don't destroy here
-  }
+  destroy() {}
 }

@@ -202,7 +202,7 @@ export var loadFaceBeast = function() {
       setTimeout(async () => {
         MYCUBE.setBlend(0);
         // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "point-list"); triangle-strip
-        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "triangle-list");
+        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "point-list");
         console.log('.........................', layer)
         window.layer = layer
 
@@ -262,7 +262,7 @@ export var loadFaceBeast = function() {
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
 
-        loadFace.activateHZB();
+        // loadFace.activateHZB();
         // MYCUBE.effects.circle = new GenGeoTexture2(loadFace.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         let cam = app.getCamera();
@@ -272,7 +272,7 @@ export var loadFaceBeast = function() {
         cam.setY(17);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 6000);
+      }, 7000);
     }
 
 

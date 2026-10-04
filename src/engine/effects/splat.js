@@ -36,7 +36,6 @@ export class GaussianSplatLayer {
     this.splatScale = 2.0;
     this._scaleData = new Float32Array([this.splatScale, 0, 0, 0]);
     this.depthTest = true;
-
     this.renderMode = 'points'; // Options: 'points' | 'quads' | 'mesh'
     this.meshIndexBuffer = null;
     this.meshIndexCount = 0;
@@ -113,10 +112,9 @@ export class GaussianSplatLayer {
   }
 
   setRenderMode(mode, meshTriangles = null) {
-    console.log('>>>>>setRenderMode>>>>', meshTriangles);
     this.renderMode = mode;
     if(mode === 'mesh' && meshTriangles) {
-      console.log('>>>>>>>>>', meshTriangles);
+      // console.log('>>>>>>>>>', meshTriangles);
       this.meshIndexCount = meshTriangles.length;
       this.meshIndexBuffer = this.device.createBuffer({
         label: 'splat-mesh-index-buffer',
@@ -553,11 +551,6 @@ fn fs_main(in: VertexOutput) -> FragOut {
     this.positionAnimator = null;
   }
 
-  /**
- * Builds a target array of exactly `sampleCount` points by directly
- * sampling the mesh's own vertex positions (no triangle interpolation).
- * If sampleCount > mesh vertex count, vertices repeat.
- */
   sampleMeshVertices(positions, sampleCount) {
     const meshVertCount = positions.length / 3;
     const out = new Float32Array(sampleCount * 3);
@@ -570,17 +563,6 @@ fn fs_main(in: VertexOutput) -> FragOut {
     return out;
   }
 
-  /**
-   * Remaps a flat xyz array between axis conventions.
-   * Default: identity (no change).
-   *
-   * @param {Float32Array} positions  flat xyz triplets
-   * @param {object} [opts]
-   * @param {'Y_UP'|'Z_UP'} [opts.from='Y_UP']  source convention
-   * @param {'Y_UP'|'Z_UP'} [opts.to='Y_UP']    target convention
-   * @param {boolean} [opts.flipZ=false]        negate Z (e.g. glTF +Z forward → engine -Z forward)
-   * @returns {Float32Array}  new remapped array (does not mutate input)
-   */
   remapAxes(positions, opts = {}) {
     const {from = 'Y_UP', to = 'Z_UP', flipZ = false} = opts;
     const n = positions.length / 3;
@@ -620,22 +602,7 @@ fn fs_main(in: VertexOutput) -> FragOut {
     return out;
   }
 
-  // render(pass, mesh, viewProjMatrix) {
-  //   this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
-  //   this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-  //   this.device.queue.writeBuffer(this.scaleBuffer, 0, this._scaleData);
-  //   pass.setBindGroup(0, this.bindGroup);
-  //   pass.setVertexBuffer(0, this.vertexBuffer);
-  //   pass.setVertexBuffer(1, this.colorBuffer);
-  //   pass.setVertexBuffer(2, this.positionAnimator ? this.positionAnimator.posBuffer : this.dummyPosBuffer);
-
-  //   pass.setVertexBuffer(3, this.dummyUVBuffer);
-
-  //   pass.draw(this.vertexCount, 1, 0, 0);
-  // }
-
   render(pass, mesh, viewProjMatrix) {
-    // Pack mode uniform: [scaleFactor, splatSize, renderMode, padding]
     const modeFlag = this.renderMode === 'quads' ? 1.0 : 0.0;
     this._scaleData[0] = this.splatScale;
     this._scaleData[1] = this.splatSize;
