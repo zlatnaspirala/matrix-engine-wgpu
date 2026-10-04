@@ -59739,11 +59739,6 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
   }
   setRenderMode(mode, meshTriangles = null) {
     this.renderMode = mode;
-    if (mode === "quads") {
-      this.pipeline = this.pipelineInstance;
-    } else {
-      this.pipeline = this.pipelineVertex;
-    }
     if (mode === "mesh" && meshTriangles) {
       this.meshIndexCount = meshTriangles.length;
       this.meshIndexBuffer = this.device.createBuffer({
@@ -59770,51 +59765,8 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
       }
       this.splatData = this._parsePLY(arrayBuffer);
       this.vertexCount = this.splatData.positions.length / 3;
-      const initialColors = new Float32Array(this.vertexCount * 4);
-      for (let i2 = 0; i2 < this.vertexCount; i2++) {
-        initialColors[i2 * 4 + 0] = this.splatData.splatColors[i2 * 4 + 0];
-        initialColors[i2 * 4 + 1] = this.splatData.splatColors[i2 * 4 + 1];
-        initialColors[i2 * 4 + 2] = this.splatData.splatColors[i2 * 4 + 2];
-        initialColors[i2 * 4 + 3] = 1;
-      }
-      this.colorBuffer = this.device.createBuffer({
-        label: "splat-color-buffer",
-        size: initialColors.byteLength,
-        mappedAtCreation: true,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-      });
-      new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
-      this.colorBuffer.unmap();
-      const n3 = this.vertexCount;
-      this.dummyUVBuffer = this.device.createBuffer({
-        label: "splat-dummy-uv",
-        size: Math.max(n3, 1) * 2 * 4,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-      });
-      if (!this.dummyCanvas) {
-        this.dummyCanvas = document.createElement("canvas");
-        this.dummyCanvas.width = 1;
-        this.dummyCanvas.height = 1;
-        const ctx = this.dummyCanvas.getContext("2d");
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(0, 0, 1, 1);
-      }
-      this.dummySampler = this.device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear"
-      });
-      this.positions = this.splatData.positions;
-      this.vertexCount = this.splatData.vertexCount;
-      this.scaleBuffer = this.device.createBuffer({
-        label: "Splat scale buffer",
-        size: 16,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true
-      });
-      new Float32Array(this.scaleBuffer.getMappedRange()).set([this.splatScale, 0, 0, 0]);
-      this.scaleBuffer.unmap();
       console.info(`\u2713 Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] \u2192 [${this.aabbMax}]`);
-      await this.initPipeline(this.device);
+      await this.initPipeline();
       return this;
     } catch (err) {
       console.error("Splat load error:", err);
@@ -59912,15 +59864,14 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
   _sigmoid(x3) {
     return 1 / (1 + Math.exp(-x3));
   }
-  initPipeline(device2, format = "rgba16float") {
-    this.modelBuffer = this.device.createBuffer({ size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  async initPipeline() {
+    const device2 = this.device;
     if (_GaussianSplatLayer._pipelineCache.has(device2)) {
       const cached = _GaussianSplatLayer._pipelineCache.get(device2);
       this.bindGroupLayout = cached.bindGroupLayout;
       this.shaderModule = cached.shaderModule;
       this.pipelineLayout = cached.pipelineLayout;
-      this.pipelineVertex = cached.pipelineVertex;
-      this.pipelineInstance = cached.pipelineInstance;
+      this.pipeline = cached.pipeline;
     } else {
       this.bindGroupLayout = device2.createBindGroupLayout({
         entries: [
@@ -59928,87 +59879,167 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
           { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
           { binding: 3, visibility: GPUShaderStage.FRAGMENT, externalTexture: {} },
+          // <--- Fixes Entry 3 error
           { binding: 4, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
         ]
       });
+      const shaderCode = this._getRenderShaderCode();
       this.shaderModule = device2.createShaderModule({
         label: "Splat shader",
-        code: this._getRenderShaderCode()
+        code: shaderCode
       });
       this.pipelineLayout = device2.createPipelineLayout({
         bindGroupLayouts: [this.bindGroupLayout]
       });
-      const commonFragment = {
-        module: this.shaderModule,
-        entryPoint: "fs_main",
-        targets: [
-          {
-            format,
-            blend: {
-              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-            }
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      };
-      const commonDepthStencil = {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "less"
-      };
-      this.pipelineVertex = device2.createRenderPipeline({
-        label: "Splat render pipeline (vertex mode)",
+      this.pipeline = device2.createRenderPipeline({
+        label: "Splat render pipeline",
         layout: this.pipelineLayout,
         vertex: {
           module: this.shaderModule,
           entryPoint: "vs_main",
           buffers: [
             {
+              // Slot 0: Static scale + rotation
               arrayStride: 56,
               stepMode: "vertex",
               attributes: [
                 { shaderLocation: 2, offset: 28, format: "float32x3" },
+                // scale
                 { shaderLocation: 3, offset: 40, format: "float32x4" }
+                // rotation
               ]
             },
-            { arrayStride: 16, stepMode: "vertex", attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }] },
-            { arrayStride: 12, stepMode: "vertex", attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-            { arrayStride: 8, stepMode: "vertex", attributes: [{ shaderLocation: 4, offset: 0, format: "float32x2" }] }
+            {
+              // Slot 1: Color
+              arrayStride: 16,
+              stepMode: "vertex",
+              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }]
+            },
+            {
+              // Slot 2: Position
+              arrayStride: 12,
+              stepMode: "vertex",
+              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+            },
+            {
+              // Slot 3: UV coordinates <--- Fixes "Slot 4 location not present in VertexState"
+              arrayStride: 8,
+              stepMode: "vertex",
+              attributes: [{ shaderLocation: 4, offset: 0, format: "float32x2" }]
+            }
           ]
         },
-        fragment: commonFragment,
-        primitive: { topology: "triangle-list", cullMode: "none" },
-        depthStencil: commonDepthStencil
-      });
-      this.pipelineInstance = device2.createRenderPipeline({
-        label: "Splat render pipeline (instance mode)",
-        layout: this.pipelineLayout,
-        vertex: {
+        fragment: {
           module: this.shaderModule,
-          entryPoint: "vs_main",
-          buffers: [
-            { arrayStride: 56, stepMode: "instance", attributes: [{ shaderLocation: 2, offset: 28, format: "float32x3" }, { shaderLocation: 3, offset: 40, format: "float32x4" }] },
-            { arrayStride: 16, stepMode: "instance", attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }] },
-            { arrayStride: 12, stepMode: "instance", attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
-            { arrayStride: 8, stepMode: "instance", attributes: [{ shaderLocation: 4, offset: 0, format: "float32x2" }] }
+          entryPoint: "fs_main",
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
           ]
         },
-        fragment: commonFragment,
-        primitive: { topology: "triangle-list", cullMode: "none" },
-        depthStencil: commonDepthStencil
+        primitive: {
+          topology: this.topology,
+          cullMode: "none"
+        },
+        depthStencil: {
+          format: "depth24plus",
+          depthWriteEnabled: false,
+          depthCompare: "less"
+        }
       });
       _GaussianSplatLayer._pipelineCache.set(device2, {
         bindGroupLayout: this.bindGroupLayout,
         shaderModule: this.shaderModule,
         pipelineLayout: this.pipelineLayout,
-        pipelineVertex: this.pipelineVertex,
-        pipelineInstance: this.pipelineInstance
+        pipeline: this.pipeline
       });
+      const dummyUVData = new Float32Array(this.vertexCount * 2);
+      this.dummyUVBuffer = device2.createBuffer({
+        label: "splat-dummy-uv",
+        size: dummyUVData.byteLength,
+        mappedAtCreation: true,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      });
+      new Float32Array(this.dummyUVBuffer.getMappedRange()).set(dummyUVData);
+      this.dummyUVBuffer.unmap();
     }
-    const externalTexture = device2.importExternalTexture({
-      source: this.dummyCanvas
+    const vertexData = new Float32Array(this.vertexCount * 14);
+    for (let i2 = 0; i2 < this.vertexCount; i2++) {
+      let idx = i2 * 14;
+      vertexData[idx++] = this.splatData.positions[i2 * 3 + 0];
+      vertexData[idx++] = this.splatData.positions[i2 * 3 + 1];
+      vertexData[idx++] = this.splatData.positions[i2 * 3 + 2];
+      vertexData[idx++] = this.splatData.splatColors[i2 * 4 + 0];
+      vertexData[idx++] = this.splatData.splatColors[i2 * 4 + 1];
+      vertexData[idx++] = this.splatData.splatColors[i2 * 4 + 2];
+      vertexData[idx++] = this.splatData.opacities[i2] / 255;
+      vertexData[idx++] = this.splatData.scales[i2 * 3 + 0];
+      vertexData[idx++] = this.splatData.scales[i2 * 3 + 1];
+      vertexData[idx++] = this.splatData.scales[i2 * 3 + 2];
+      vertexData[idx++] = this.splatData.rotations[i2 * 4 + 0];
+      vertexData[idx++] = this.splatData.rotations[i2 * 4 + 1];
+      vertexData[idx++] = this.splatData.rotations[i2 * 4 + 2];
+      vertexData[idx++] = this.splatData.rotations[i2 * 4 + 3];
+    }
+    this.vertexBuffer = device2.createBuffer({
+      label: "Splat vertex buffer",
+      size: vertexData.byteLength,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
+    this.vertexBuffer.unmap();
+    const dummyPosData = new Float32Array(this.vertexCount * 3);
+    dummyPosData.set(this.splatData.positions);
+    this.dummyPosBuffer = device2.createBuffer({
+      label: "splat-dummy-pos",
+      size: dummyPosData.byteLength,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    new Float32Array(this.dummyPosBuffer.getMappedRange()).set(dummyPosData);
+    this.dummyPosBuffer.unmap();
+    this.positionAnimator = null;
+    const initialColors = new Float32Array(this.vertexCount * 4);
+    for (let i2 = 0; i2 < this.vertexCount; i2++) {
+      initialColors[i2 * 4 + 0] = this.splatData.splatColors[i2 * 4 + 0];
+      initialColors[i2 * 4 + 1] = this.splatData.splatColors[i2 * 4 + 1];
+      initialColors[i2 * 4 + 2] = this.splatData.splatColors[i2 * 4 + 2];
+      initialColors[i2 * 4 + 3] = this.splatData.splatColors[i2 * 4 + 3];
+    }
+    this.colorBuffer = device2.createBuffer({
+      label: "splat-color",
+      size: initialColors.byteLength,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
+    this.colorBuffer.unmap();
+    this.positions = this.splatData.positions;
+    this.vertexCount = this.splatData.vertexCount;
+    this.scaleBuffer = device2.createBuffer({
+      label: "Splat scale buffer",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true
+    });
+    new Float32Array(this.scaleBuffer.getMappedRange()).set([this.splatScale, 0, 0, 0]);
+    this.scaleBuffer.unmap();
+    this.modelBuffer = device2.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    const dummyTexture = device2.createTexture({
+      size: [1, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING
     });
     this.bindGroup = device2.createBindGroup({
       layout: this.bindGroupLayout,
@@ -60016,11 +60047,11 @@ var GaussianSplatLayer = class _GaussianSplatLayer {
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } },
         { binding: 2, resource: { buffer: this.scaleBuffer } },
-        { binding: 3, resource: externalTexture },
-        { binding: 4, resource: this.dummySampler }
+        { binding: 3, resource: dummyTexture.createView() },
+        // Fallback frame
+        { binding: 4, resource: device2.createSampler() }
       ]
     });
-    this.pipeline = this.pipelineVertex;
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
     }, 200);
@@ -60230,7 +60261,6 @@ var GaussianSplatScene = class {
   updateInstanceData(baseModelMatrix) {
   }
   async initialize(plyPath, scale4 = 1, topology = "point-list") {
-    console.log("NNNNNN");
     const splatLayer = new GaussianSplatLayer(this.device, this.format, this.cameraBuffer, topology);
     try {
       if (scale4) splatLayer.setScale(scale4);
