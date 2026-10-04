@@ -1,4 +1,5 @@
 import {byId} from "../utils";
+import { FACEMESH_TESSELLATION } from '@mediapipe/face_mesh';
 
 /**
  * SplatFaceEffect
@@ -19,10 +20,9 @@ export class SplatFaceEffect {
    * @param {number[]} opts.origin       world offset [x,y,z] (default [0,1.6,0])
    * @param {boolean} opts.mirrorX      flip X for webcam (default true)
    */
+  static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer, splatLayer, opts = {}) {
     this.device = device;
-    this.format = format;
-    this.cameraBuffer = cameraBuffer;
     this.splatLayer = splatLayer;
     this.enabled = true;
     this.time = 0;
@@ -33,34 +33,41 @@ export class SplatFaceEffect {
     this.mirrorX = opts.mirrorX ?? true;
 
     this._videoElement = byId('auto-video');
-    this._videoCanvas = document.createElement('canvas');
-    this._videoCanvas.width = this._videoElement.videoWidth || 640;
-    this._videoCanvas.height = this._videoElement.videoHeight || 480;
-
     this._landmarks = null;
 
+    console.log('splatLayer.pipeline::::', splatLayer.pipeline)
+    this.pipeline = splatLayer.pipeline;
     const n = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n * 3);
-    this._colorCPU = new Float32Array(n * 4);
+    this._uvCPU = new Float32Array(n * 2);
 
-    this._clusterIdx = new Uint16Array(n); // 478 landmarks, needs Uint16
+    this._clusterIdx = new Uint16Array(n);
     this._offsetX = new Float32Array(n);
     this._offsetY = new Float32Array(n);
     this._offsetZ = new Float32Array(n);
 
-    // Per-landmark radius (tight on flat areas, wider on key features)
     this._jointRadius = this._buildRadiusMap();
-
-    // Per-landmark color (478 entries, grouped by facial region)
-    this._landmarkColors = this._buildColorMap();
-
     this._precompute(n);
 
-    this._posCPU.fill(0);
-    device.queue.writeBuffer(splatLayer.positionAnimator.posBuffer, 0, this._posCPU);
+    // Create GPU Buffer for dynamic UVs
+    this.uvBuffer = device.createBuffer({
+      label: 'splat-face-uv',
+      size: n * 2 * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+
+    // Create Sampler for Video Texture
+    this.sampler = device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+    });
   }
 
-  // ── Radius map — key facial landmarks get wider clusters ──────────────────
+  setMode(mode, meshTriangles = null) {
+
+    console.log('FACEMESH_TESSELLATION', FACEMESH_TESSELLATION)
+    this.splatLayer.setRenderMode(mode, meshTriangles === null ? FACEMESH_TESSELLATION : meshTriangles );
+  }
 
   _buildRadiusMap() {
     // Default tight radius for all 478 landmarks
@@ -224,57 +231,63 @@ export class SplatFaceEffect {
   setOrigin(x, y, z) {this.origin = [x, y, z];}
 
   updateInstanceData(baseModelMatrix) {
-    if(!this.enabled) return;
-    if(!this._landmarks) {
-      this._posCPU.fill(0);
-      this.device.queue.writeBuffer(
-        this.splatLayer.positionAnimator.posBuffer, 0, this._posCPU
-      );
-      return;
-    }
+    if(!this.enabled || !this._landmarks) return;
 
     const lm = this._landmarks;
     const sc = this.scale;
-    const ox = this.origin[0];
-    const oy = this.origin[1];
-    const oz = this.origin[2];
+    const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
     const mx = this.mirrorX ? -1 : 1;
     const n = this.splatLayer.vertexCount;
     const p = this._posCPU;
-
-    // Subtle breathing pulse
-    const breathe = Math.sin(this.time * 2.0) * 0.003;
+    const uv = this._uvCPU;
 
     for(let i = 0;i < n;i++) {
       const ci = this._clusterIdx[i];
       const joint = lm[ci];
 
-      // FaceLandmarker normalized coords (0..1):
-      // x: 0=left edge, 1=right edge of image
-      // y: 0=top, 1=bottom
-      // z: depth, negative = closer to camera
-      // → Engine: Y up, -Z forward
+      // 3D position offset
       const jx = (joint.x - 0.5) * mx * sc + ox;
       const jy = -(joint.y - 0.5) * sc + oy;
       const jz = -joint.z * sc + oz;
 
-      const r = this._jointRadius[ci] * sc * this.clusterRadius + breathe;
+      const r = this._jointRadius[ci] * sc * this.clusterRadius;
       p[i * 3] = jx + this._offsetX[i] * r;
       p[i * 3 + 1] = jy + this._offsetY[i] * r;
       p[i * 3 + 2] = jz + this._offsetZ[i] * r;
+
+      // Direct UV mapping from MediaPipe 0..1 coordinates
+      uv[i * 2] = this.mirrorX ? (1.0 - joint.x) : joint.x;
+      uv[i * 2 + 1] = joint.y;
     }
 
-    this.device.queue.writeBuffer(
-      this.splatLayer.positionAnimator.posBuffer, 0, p
-    );
-
-    this._updateColors();
+    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, p);
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
 
   render(pass, mesh, viewProjMatrix, dt = 0.016) {
-    // No-op — GaussianSplatScene renders itself
     this.time += dt;
+    if(!this._videoElement || this._videoElement.readyState < 2) return;
+
+    // Zero-copy GPU External Texture Frame
+    const externalTexture = this.device.importExternalTexture({
+      source: this._videoElement
+    });
+
+    const bindGroup = this.device.createBindGroup({
+      layout: this.splatLayer.bindGroupLayout,
+      entries: [
+        {binding: 0, resource: {buffer: this.splatLayer.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.splatLayer.modelBuffer}},
+        {binding: 2, resource: {buffer: this.splatLayer.scaleBuffer}},
+        {binding: 3, resource: externalTexture},
+        {binding: 4, resource: this.sampler}
+      ]
+    });
+
+    pass.setBindGroup(0, bindGroup);
+    pass.setVertexBuffer(3, this.uvBuffer);
   }
+
 
   /**
    * Sample pixel color from video at each landmark position

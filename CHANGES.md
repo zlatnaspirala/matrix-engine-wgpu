@@ -2,6 +2,9 @@
 
 [2.0.0]
 
+- New dep:  npm install @mediapipe/face_mesh
+  for face pipe.
+  
 - Effects system render part use from now cache pipelinf per effect type.
   `Effects system` is full standalone bonus render principe thats why better per  effect caching.
 

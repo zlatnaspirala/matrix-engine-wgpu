@@ -193,6 +193,9 @@ export var loadFaceBeast = function() {
 
         loadFace.floor.effects.gpuText.typeText(TEXT, 200, () => {
           console.log('Typing complete!');
+
+            MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);
+
         });
       });
       // text
@@ -201,8 +204,13 @@ export var loadFaceBeast = function() {
 
         MYCUBE.setBlend(0);
 
-        MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);
-        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "point-list");
+      
+        const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "point-list");
+
+        
+        console.log('.........................', layer)
+        window.layer = layer
+
         // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "triangle-list");
         animator = new SplatColorAnimator(
           loadFace.device,
@@ -223,6 +231,7 @@ export var loadFaceBeast = function() {
           MYCUBE.effects.splat.splatLayers[0].positions,
           MYCUBE.effects.splat.splatLayers[0].vertexCount
         );
+
 
         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator)
         loadFace.autoUpdate.push(positionAnimator);

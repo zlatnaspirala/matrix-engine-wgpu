@@ -37,11 +37,22 @@ export var loadObjFile = function() {
 
     function onGround(m) {
       loadObjFile.addMeshObj({
-        material: {type: 'standard', share: true},
+        material: {type: 'mirror', share: true},
+        envMapParams: {
+          baseColorMix: 0.6,                // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
+          reflectivity: 0.75,               // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
+          illuminateStrength: 1.5,          // Gentle rim
+          illuminatePulse: 0.1,             // No pulse (static)
+          fresnelPower: 5,                  // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false,       // Must be false - WIP
+        },
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        texturesPaths: ['./res/textures/floor1.webp'], //, './res/textures/env-maps/sky1_lod_mid.webp'],
+        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
         name: 'floor',
         mesh: m.cube,
         physics: {
@@ -53,21 +64,6 @@ export var loadObjFile = function() {
     }
 
     async function onLoadObj(m) {
-      // loadObjFile.addMeshObj({
-      //   material: {type: 'standard', share: true},
-      //   position: {x: 0, y: -1, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [100, 100, 100],
-      //   rotationSpeed: {x: 0, y: 0.01, z: 0},
-      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-      //   name: 'sky',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   }
-      // });
-
       // material: {type: 'mirror', share: true }, share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
         material: {type: 'mirror'},
@@ -118,13 +114,10 @@ export var loadObjFile = function() {
         app.MYCUBE = MYCUBE;
         // MYCUBE.effects.circle = new GenGeoTexture2(loadObjFile.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         // MYCUBE.effects.circle  = new GenGeo(loadObjFile.device, 'rgba16float', 'sphere', 2, loadObjFile.cameraBuffer);
-
-        app.MYCUBE.effects.mana = new MANABarEffect(app.device, 'rgba16float', app.cameraBuffer);
-
+        // app.MYCUBE.effects.laser = new LaserProjectile(app.device, 'rgba16float', app.cameraBuffer);
         // app.MYCUBE.effects.laser.fireBeam([0,3,0], [0,3, -10])
-
         // Configuration for the spiral laser animation
-        const center = [0, 10, -20]; // Center point of the spiral structure
+        const center = [0, 2, -20]; // Center point of the spiral structure
         let time = 0;
         const totalBeams = 25;       // Number of active segments making up the spiral contour
         const spiralRadius = 8;      // Maximum spread of the spiral
@@ -163,13 +156,13 @@ export var loadObjFile = function() {
               app.MYCUBE.effects.laser.fireBeam(
                 [fromX, fromY, fromZ],
                 [toX, toY, toZ],
-                0.08, // Short lifespan guarantees lasers disappear and update instantly
+                0.8, // Short lifespan guarantees lasers disappear and update instantly
                 {
-                  colorA: [255, Math.floor(Math.abs(Math.sin(time + t) * 255)), 100],
-                  colorB: [0, 200, 255],
-                  width: 0.6,
+                  colorA: [Math.floor(Math.abs(Math.sin(time + t) * 255)), Math.floor(Math.abs(Math.sin(time + t) * 255)), 100],
+                  colorB: [randomIntFromTo(150, 200), randomIntFromTo(50, 100), randomIntFromTo(50, 100)],
+                  width: 1.6,
                   intensity: 1.5,
-                  scrollSpeed: 8.0 // Fast texture scroll along the laser body
+                  scrollSpeed: 1.0 // Fast texture scroll along the laser body
                 }
               );
             }, 100 * i)
@@ -182,14 +175,7 @@ export var loadObjFile = function() {
 
         // Kick off the animation loop
         // animateSpiralLasers();
-
         MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile.device, "rgba16float", 20, loadObjFile.cameraBuffer);
-
-
-        // MYCUBE.effects.GenGeoTexture = new GenGeoTexture(loadObjFile.device,
-        //   "rgba16float", undefined, './res/textures/star1.png', 12, loadObjFile.cameraBuffer)
-
-        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
 
         // Nice fire tourch effect, data from test case logs.

@@ -3,6 +3,7 @@ import {MSDFFRAG} from "../../shaders/msdf/msdf.fragment.js";
 
 export class MSDFTextEffect {
   static _pipelineCache = new WeakMap();
+
   constructor(device, format, msdfTexture, sampler, cameraBuffer, font, options = {}) {
     this.device = device;
     this.format = format;
@@ -14,11 +15,7 @@ export class MSDFTextEffect {
     this.scale = options.scale ?? 0.0015;
     this.glyphXOffsetFix = {
       "I": + 8,
-      // "J": -3,
-      // "T": -2
     };
-    // 40 means every character occupies 40 font pixels
-    // horizontally, regardless of xadvance.
     this.fixedAdvancePx = options.fixedAdvancePx ?? 40;
     this.trackingPx = options.trackingPx ?? 0;
     this.color = options.color ?? [1, 1, 1, 1];
@@ -27,38 +24,30 @@ export class MSDFTextEffect {
     this.glyphCount = 0;
     this.floatsPerGlyph = 8;
     this.instanceData = new Float32Array(this.maxGlyphs * this.floatsPerGlyph);
-    this.parentMatrixBuffer = device.createBuffer({size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-    this.colorBuffer =
-      device.createBuffer({
-        size: 16,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-    this.device.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
+    this.parentMatrixBuffer = device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.colorBuffer = device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    device.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
     this._identity = mat4.create();
     this._init();
   }
 
-  // TYPING ANIMATION - character by character
   typeText(text, delayMs = 100, onComplete = null) {
-    // Stop any existing animation
     if(this.isTyping) {
       clearInterval(this.typeInterval);
     }
-
     this.isTyping = true;
-    // this.typeText = text;
     this.typeIndex = 0;
     this.onTypeComplete = onComplete;
-
-    // Show first character immediately
     this.setText(text.substring(0, 1));
-
-    // Then animate the rest
     this.typeInterval = setInterval(() => {
       this.typeIndex++;
-
       if(this.typeIndex >= text.length) {
-        // Animation complete
         clearInterval(this.typeInterval);
         this.isTyping = false;
         if(this.onTypeComplete) {
@@ -66,13 +55,10 @@ export class MSDFTextEffect {
         }
         return;
       }
-
-      // Update text with characters up to current index
       this.setText(text.substring(0, this.typeIndex + 1));
     }, delayMs);
   }
 
-  // Stop typing animation
   stopTyping() {
     if(this.typeInterval) {
       clearInterval(this.typeInterval);
@@ -81,6 +67,79 @@ export class MSDFTextEffect {
   }
 
   _init() {
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if (MSDFTextEffect._pipelineCache.has(device)) {
+      const cached = MSDFTextEffect._pipelineCache.get(device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
+          {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {}},
+          {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
+          {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: {}}
+        ]
+      });
+
+      const shaderModule = device.createShaderModule({code: MSDFFRAG});
+      const pipelineLayout = device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+
+      this.pipeline = device.createRenderPipeline({
+        layout: pipelineLayout,
+        vertex: {
+          module: shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 8,
+              attributes: [
+                {shaderLocation: 0, format: "float32x2", offset: 0}
+              ]
+            },
+            {
+              arrayStride: 8,
+              attributes: [
+                {shaderLocation: 1, format: "float32x2", offset: 0}
+              ]
+            }
+          ]
+        },
+        fragment: {
+          module: shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {format: this.format},
+            {format: "rgba16float"},
+            {format: "rgba16float"}
+          ]
+        },
+        primitive: {
+          topology: "triangle-list",
+          cullMode: "none"
+        },
+        depthStencil: {
+          format: "depth24plus",
+          depthWriteEnabled: false,
+          depthCompare: "less"
+        }
+      });
+
+      // ========== CACHE THEM ==========
+      MSDFTextEffect._pipelineCache.set(device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
     const vertexData = new Float32Array([
       -0.5, 0.5,
       0.5, 0.5,
@@ -100,52 +159,39 @@ export class MSDFTextEffect {
       1, 2, 3
     ]);
 
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device.createBuffer({
       label: "vb_msdf",
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
-
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
 
-    this.uvBuffer = this.device.createBuffer({
+    this.uvBuffer = device.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
-
     new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
     this.uvBuffer.unmap();
 
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device.createBuffer({
       size: indexData.byteLength,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
-
     new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
     this.indexBuffer.unmap();
     this.indexCount = indexData.length;
-    this.glyphBuffer = this.device.createBuffer({
+
+    this.glyphBuffer = device.createBuffer({
       size: this.maxGlyphs * this.floatsPerGlyph * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
-        {binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {}},
-        {binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
-        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: {}}
-      ]
-    });
-
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.glyphBuffer}},
@@ -154,58 +200,6 @@ export class MSDFTextEffect {
         {binding: 4, resource: {buffer: this.parentMatrixBuffer}},
         {binding: 5, resource: {buffer: this.colorBuffer}}
       ]
-    });
-
-    const shaderModule = this.device.createShaderModule({code: MSDFFRAG});
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 0,
-                format: "float32x2",
-                offset: 0
-              }
-            ]
-          },
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 1,
-                format: "float32x2",
-                offset: 0
-              }
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {format: this.format},
-          {format: "rgba16float"},
-          {format: "rgba16float"}
-        ]
-      },
-      primitive: {
-        topology: "triangle-list",
-        cullMode: "none"
-      },
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "less"
-      }
     });
   }
 
@@ -225,9 +219,8 @@ export class MSDFTextEffect {
     const text = this.text;
     let cursorX = 0;
     let count = 0;
-    for(let i = 0;i < text.length;i++) {
-      if(count >= this.maxGlyphs)
-        break;
+    for(let i = 0; i < text.length; i++) {
+      if(count >= this.maxGlyphs) break;
       const charCode = text.charCodeAt(i);
       const metrics = font.getCharMetrics(charCode);
       if(!metrics) continue;
@@ -242,10 +235,8 @@ export class MSDFTextEffect {
       this.instanceData[offset + 1] = y;
       this.instanceData[offset + 2] = width;
       this.instanceData[offset + 3] = height;
-      // UV OFFSET
       this.instanceData[offset + 4] = metrics.uvOffset[0];
       this.instanceData[offset + 5] = metrics.uvOffset[1];
-      // UV SCALE
       this.instanceData[offset + 6] = metrics.uvScale[0];
       this.instanceData[offset + 7] = metrics.uvScale[1];
       let advancePx;
@@ -267,16 +258,12 @@ export class MSDFTextEffect {
   }
 
   updateInstanceData(baseModelMatrix) {
-    this.device.queue.writeBuffer(
-      this.parentMatrixBuffer,
-      0,
-      baseModelMatrix
-    );
+    this.device.queue.writeBuffer(this.parentMatrixBuffer, 0, baseModelMatrix);
   }
 
   render(pass, mesh, viewProjMatrix) {
-    if(!this.enabled || this.glyphCount === 0) {return;}
-    // pass.setPipeline(this.pipeline);
+    if(!this.enabled || this.glyphCount === 0) return;
+    // ← render() does NOT call pass.setPipeline() — main loop does it!
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);

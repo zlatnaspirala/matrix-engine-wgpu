@@ -137,8 +137,8 @@ export class PipeCommander {
     const startTimeMs = performance.now();
     if(this.lastVideoTime !== this.video.currentTime) {
       this.lastVideoTime = this.video.currentTime;
-
       if(this.mode === 'face') {
+        // console.log('>>>>>>>>>>>>>>>>>>> ', this.faceLandmarker.FACE_LANDMARKS_TESSELATION)
         this.results = this.faceLandmarker.detectForVideo(this.video, startTimeMs, {
           imageSize: {
             width: this.video.videoWidth || 640,

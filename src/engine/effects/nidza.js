@@ -1,11 +1,3 @@
-/**
- * SacredGeometryEffect - DIAGNOSTIC & VISIBLE
- * 
- * Shows what's actually being drawn
- * Scales up the plane geometry to be more visible
- * Adds explicit console output for each render call
- */
-
 import {mat4} from 'wgpu-matrix';
 
 const sacredGeometryShader = `
@@ -17,7 +9,8 @@ struct Camera {
 
 struct ModelData {
   model       : mat4x4<f32>,
-  uniforms    : vec4<f32>,
+  uniforms    : vec4<f32>,   // x: time, y: modeShape, z: pulseSpeed, w: glowIntensity
+  customColor : vec4<f32>,   // xyz: color RGB (or RGBA), w: unused/extra
   lineWidth   : f32,
   pad1        : f32,
   pad2        : f32,
@@ -39,7 +32,8 @@ struct VSOut {
   @location(1) normal : vec3<f32>,
   @location(2) fragPos : vec3<f32>,
   @location(3) data0 : vec4<f32>,
-  @location(4) lineWidth : f32,
+  @location(4) customColor : vec4<f32>,
+  @location(5) lineWidth : f32,
 };
 
 @vertex
@@ -61,6 +55,7 @@ fn vsMain(input : VSIn) -> VSOut {
   output.normal = normalMatrix * input.normal;
   
   output.data0 = modelData.uniforms;
+  output.customColor = modelData.customColor;
   output.lineWidth = modelData.lineWidth;
 
   return output;
@@ -69,14 +64,13 @@ fn vsMain(input : VSIn) -> VSOut {
 fn distanceToPentagram(p : vec2<f32>) -> f32 {
   var minDist = 1e6;
   let tau = 6.28318530718;
-  
   for (var i = 0u; i < 5u; i = i + 1u) {
     let angle = f32(i) * tau / 5.0;
     let p1 = vec2<f32>(cos(angle), sin(angle));
     let angle2 = angle + tau / 10.0;
+    // let p2 = vec2<f32>(cos(angle2), sin(angle2)) * 0.4;
     let p2 = vec2<f32>(cos(angle2), sin(angle2)) * 0.4;
-    
-    let v = p2 - p1;
+    let v = (p2 - p1) * 2;
     let w = p - p1;
     let c1 = dot(w, v);
     if (c1 <= 0.0) { minDist = min(minDist, length(w)); continue; }
@@ -167,25 +161,24 @@ fn fsMain(input : VSOut) -> FragOut {
   let pulseSpeed = input.data0.z;
   let glowIntensity = input.data0.w;
   let lineWidth = input.lineWidth;
-  
   let modeShape = u32(modeShapeF);
-  
   let uv = input.uv * 2.0 - 1.0;
   let dist = getDistanceField(uv, modeShape);
-  
   let pulse = 0.5 + 0.5 * sin(time * pulseSpeed);
   let lineThickness = lineWidth * (0.8 + 0.2 * pulse);
-  
   let line = smoothstep(lineThickness + 0.02, lineThickness, dist);
   
-  var neonColor = vec3<f32>(0.0);
-  switch(modeShape) {
-    case 0u: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
-    case 1u: { neonColor = vec3<f32>(1.0, 0.0, 1.0); }
-    case 2u: { neonColor = vec3<f32>(0.0, 1.0, 0.0); }
-    case 3u: { neonColor = vec3<f32>(1.0, 1.0, 0.0); }
-    case 4u: { neonColor = vec3<f32>(1.0, 0.0, 0.0); }
-    default: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
+  // Use custom CPU color if non-zero, otherwise default to shape presets
+  var neonColor = input.customColor.rgb;
+  if (length(neonColor) == 0.0) {
+    switch(modeShape) {
+      case 0u: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
+      case 1u: { neonColor = vec3<f32>(1.0, 0.0, 1.0); }
+      case 2u: { neonColor = vec3<f32>(0.0, 1.0, 0.0); }
+      case 3u: { neonColor = vec3<f32>(1.0, 1.0, 0.0); }
+      case 4u: { neonColor = vec3<f32>(1.0, 0.0, 0.0); }
+      default: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
+    }
   }
   
   let finalIntensity = line * glowIntensity * pulse;
@@ -225,8 +218,11 @@ export class SacredGeometryEffect {
 
     this.currentMode = this.SHAPE_MODES.PENTAGRAM;
     this.pulseSpeed = 3.0;
-    this.glowIntensity = 2.5;  // Increased for visibility
-    this.lineWidth = 0.08;     // Increased for visibility
+    this.glowIntensity = 2.5;
+    this.lineWidth = 0.08;
+    
+    // Default color set to [0, 0, 0] so it falls back to preset mode colors unless updated
+    this.color = [0.0, 0.0, 0.0];
 
     this.pipeline = null;
     this.bindGroup = null;
@@ -236,7 +232,8 @@ export class SacredGeometryEffect {
     this.indexCount = 0;
 
     this.maxInstances = 1;
-    this.floatsPerInstance = 24;
+    // Updated float count to align with 28 floats (112 bytes) per instance struct
+    this.floatsPerInstance = 28;
     this.instanceData = new Float32Array(this.maxInstances * this.floatsPerInstance);
     this._baseModelMatrix = mat4.create();
 
@@ -247,8 +244,6 @@ export class SacredGeometryEffect {
 
   _initPipeline() {
     const device = this.device;
-
-    // ========== CACHE CHECK ==========
     if(SacredGeometryEffect._pipelineCache.has(device)) {
       const cached = SacredGeometryEffect._pipelineCache.get(device);
       this.bindGroupLayout = cached.bindGroupLayout;
@@ -256,7 +251,6 @@ export class SacredGeometryEffect {
       this.pipelineLayout = cached.pipelineLayout;
       this.pipeline = cached.pipeline;
     } else {
-      // ========== BUILD PIPELINE ONCE ==========
       this.bindGroupLayout = device.createBindGroupLayout({
         label: 'sacred-geometry-layout',
         entries: [
@@ -325,7 +319,6 @@ export class SacredGeometryEffect {
         },
       });
 
-      // ========== CACHE THEM ==========
       SacredGeometryEffect._pipelineCache.set(device, {
         bindGroupLayout: this.bindGroupLayout,
         shaderModule: this.shaderModule,
@@ -334,8 +327,6 @@ export class SacredGeometryEffect {
       });
     }
 
-    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
-    // Plane geometry - LARGER SCALE (4x4 instead of 2x2)
     const vertexData = new Float32Array([
       -2, -2, 0, 0, 0, 1, 0, 0,
       2, -2, 0, 0, 0, 1, 1, 0,
@@ -375,18 +366,11 @@ export class SacredGeometryEffect {
       label: 'sacred-geometry-bindgroup',
       layout: this.bindGroupLayout,
       entries: [
-        {
-          binding: 0,
-          resource: {buffer: this.cameraBuffer},
-        },
-        {
-          binding: 1,
-          resource: {buffer: this.modelBuffer},
-        },
-      ],
+        {binding: 0, resource: {buffer: this.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.modelBuffer}}
+      ]
     });
-
-    console.log('%c[SacredGeometryEffect] ✓ Initialized - Plane: 4x4 units, Glow: 2.5, LineWidth: 0.08', 'color: lime; font-weight: bold;');
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
   }
 
   updateInstanceData(baseModelMatrix) {
@@ -397,24 +381,51 @@ export class SacredGeometryEffect {
     if(!this.enabled) return;
     this.time += dt;
     this.renderCount++;
-    // Log every 60 frames
     if(this.renderCount % 60 === 0) {
       console.log(`%c[render] Frame ${this.renderCount}, time: ${this.time.toFixed(2)}s`, 'color: orange;');
     }
     const offset = 0;
     const floatView = this.instanceData;
+    
+    // Mat4 (16 floats): 0..15
     floatView.set(this._baseModelMatrix, offset);
+    
+    // Uniforms vec4 (4 floats): 16..19
     floatView[offset + 16] = this.time;
     floatView[offset + 17] = this.currentMode;
     floatView[offset + 18] = this.pulseSpeed;
     floatView[offset + 19] = this.glowIntensity;
-    floatView[offset + 20] = this.lineWidth;
+    
+    // customColor vec4 (4 floats): 20..23
+    floatView[offset + 20] = this.color[0];
+    floatView[offset + 21] = this.color[1];
+    floatView[offset + 22] = this.color[2];
+    floatView[offset + 23] = 1.0; // Extra alpha / unused padding slot
+    
+    // lineWidth & padding (4 floats): 24..27
+    floatView[offset + 24] = this.lineWidth;
+    floatView[offset + 25] = 0.0;
+    floatView[offset + 26] = 0.0;
+    floatView[offset + 27] = 0.0;
+
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData, 0, 24);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData, 0, this.floatsPerInstance);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setIndexBuffer(this.indexBuffer, 'uint32');
     pass.drawIndexed(this.indexCount, 1);
+  }
+
+  setColor(r, g, b) {
+    if (Array.isArray(r)) {
+      this.color = [r[0], r[1], r[2]];
+    } else {
+      this.color = [r, g, b];
+    }
+  }
+
+  resetColor() {
+    this.color = [0.0, 0.0, 0.0];
   }
 
   setShape(mode) {

@@ -1,12 +1,35 @@
+var __create = Object.create;
 var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn2, res) => function __init() {
   return fn2 && (res = (0, fn2[__getOwnPropNames(fn2)[0]])(fn2 = 0)), res;
+};
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 var __export = (target, all) => {
   for (var name2 in all)
     __defProp(target, name2, { get: all[name2], enumerable: true });
 };
+var __copyProps = (to2, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to2, key) && key !== except)
+        __defProp(to2, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to2;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 
 // node_modules/@mediapipe/tasks-vision/vision_bundle.mjs
 var vision_bundle_exports = {};
@@ -1197,7 +1220,7 @@ function Zr(t3, e2, n3) {
           return t5[e3] = n4;
         }
       })(n3, t4);
-      i2 ? i2(e2, r3, t4) : t4 < 500 || U(K, 3);
+      i2 ? i2(e2, r3, t4) : t4 < 500 || U(K2, 3);
     }
   })), (t3 = ke(t3)) && Se(t3, ((t4, n4, r3) => {
     for (ur(e2, e2.g.end()), t4 = 0; t4 < r3.length; t4++) ur(e2, I(r3[t4]) || new Uint8Array(0));
@@ -1837,7 +1860,7 @@ function Jc(t3) {
     da(t3);
   }
 }
-var t2, i, s, o2, a, c, l, f, d, g, y2, _, w, T, A, b, L, F, M, P, B, j, V, X, H, W, z, K, Y, q, $2, J, Z, Q, tt, et, ot, ct, ut, lt, dt, mt, yt, _t, vt, wt, Tt, At, bt, kt, xt, Lt, Rt, It, Xt, Ht, Wt, zt, Kt, Yt, Qt, pe, ge, me, ye, Ee, Ae, xe, Le, Pe, Ce, Ye, qe, Mn, Xn, Zn, Qn, er, nr, ir, sr, yr, _r, vr, Er, wr, Tr, Ar, br, kr, Sr, Lr, Rr, Mr, Pr, Cr, Or, Nr, Ur, Dr, Br, Gr, Qr, ii, pi, gi, mi, yi, _i, vi, Ei, wi, Ti, Ai, bi, ki, Si, xi, Li, Ri, Ii, Fi, Mi, Pi, Ci, Oi, Bi, Gi, ji, Vi, Wi, zi, Ki, Yi, qi, $i, Ji, Zi, Qi, ts, es, is, ss, os, as, ls, fs, ds, ps, gs, ms, ys, _s, vs, Es, ws, Ts, As, bs, ks, Ss, xs, Ls, Rs, Is, Fs, Ms, Ps, Cs, Os, Ns, Us, Ds, Bs, Gs, js, Vs, Xs, Hs, Ws, zs, Ks, Ys, qs, $s, Js, Zs, Qs, to, eo, no, ro, io, so, oo, ao, co, ho, uo, lo, fo, po, go, mo, yo, _o, vo, Eo, wo, To, Ao, bo, ko, So, xo, Lo, Ro, Io, Fo, Mo, Po, Co, Oo, No, Uo, Do, Yo, qo, Zo, pa, ma, ba, ka, Sa, Oa, Na, Ua, Da, Ka, nc, rc, sc, oc, ac, dc, pc, gc, mc, yc, _c, vc, Ec, wc, Tc, Ac, bc, Sc, xc, Fc, Pc, Cc, Dc, Bc, Gc, jc, Wc, zc, Kc, Yc, qc, Zc;
+var t2, i, s, o2, a, c, l, f, d, g, y2, _, w, T, A, b, L, F, M, P, B, j, V, X, H, W, z, K2, Y, q, $2, J, Z, Q, tt, et, ot, ct, ut, lt, dt, mt, yt, _t, vt, wt, Tt, At, bt, kt, xt, Lt, Rt, It, Xt, Ht, Wt, zt, Kt, Yt, Qt, pe, ge, me, ye, Ee, Ae, xe, Le, Pe, Ce, Ye, qe, Mn, Xn, Zn, Qn, er, nr, ir, sr, yr, _r, vr, Er, wr, Tr, Ar, br, kr, Sr, Lr, Rr, Mr, Pr, Cr, Or, Nr, Ur, Dr, Br, Gr, Qr, ii, pi, gi, mi, yi, _i, vi, Ei, wi, Ti, Ai, bi, ki, Si, xi, Li, Ri, Ii, Fi, Mi, Pi, Ci, Oi, Bi, Gi, ji, Vi, Wi, zi, Ki, Yi, qi, $i, Ji, Zi, Qi, ts, es, is, ss, os, as, ls, fs, ds, ps, gs, ms, ys, _s, vs, Es, ws, Ts, As, bs, ks, Ss, xs, Ls, Rs, Is, Fs, Ms, Ps, Cs, Os, Ns, Us, Ds, Bs, Gs, js, Vs, Xs, Hs, Ws, zs, Ks, Ys, qs, $s, Js, Zs, Qs, to, eo, no, ro, io, so, oo, ao, co, ho, uo, lo, fo, po, go, mo, yo, _o, vo, Eo, wo, To, Ao, bo, ko, So, xo, Lo, Ro, Io, Fo, Mo, Po, Co, Oo, No, Uo, Do, Yo, qo, Zo, pa, ma, ba, ka, Sa, Oa, Na, Ua, Da, Ka, nc, rc, sc, oc, ac, dc, pc, gc, mc, yc, _c, vc, Ec, wc, Tc, Ac, bc, Sc, xc, Fc, Pc, Cc, Dc, Bc, Gc, jc, Wc, zc, Kc, Yc, qc, Zc;
 var init_vision_bundle = __esm({
   "node_modules/@mediapipe/tasks-vision/vision_bundle.mjs"() {
     t2 = "undefined" != typeof self ? self : {};
@@ -1870,7 +1893,7 @@ var init_vision_bundle = __esm({
     H = G(void 0, /* @__PURE__ */ Symbol());
     W = G(void 0, "0ub");
     z = G(void 0, "0ubs");
-    K = G(void 0, "0ubsb");
+    K2 = G(void 0, "0ubsb");
     Y = G(void 0, "0actk");
     q = G("m_m", "Pa", true);
     $2 = G();
@@ -2282,9 +2305,9 @@ var init_vision_bundle = __esm({
       if (null != e2) {
         if (e2 instanceof Lr) {
           const r3 = e2.Ra;
-          return void (r3 ? (e2 = r3(e2), null != e2 && pr(t3, n3, Pn(e2, true).buffer)) : U(K, 3));
+          return void (r3 ? (e2 = r3(e2), null != e2 && pr(t3, n3, Pn(e2, true).buffer)) : U(K2, 3));
         }
-        if (Array.isArray(e2)) return void U(K, 3);
+        if (Array.isArray(e2)) return void U(K2, 3);
       }
       li(t3, e2, n3);
     }), kr)];
@@ -4018,6 +4041,4655 @@ var init_vision_bundle = __esm({
     }, Zc.createFromOptions = function(t3, e2) {
       return cc(Zc, t3, e2);
     }, Zc.POSE_CONNECTIONS = Cc;
+  }
+});
+
+// node_modules/@mediapipe/face_mesh/face_mesh.js
+var require_face_mesh = __commonJS({
+  "node_modules/@mediapipe/face_mesh/face_mesh.js"(exports) {
+    (function() {
+      "use strict";
+      var v2;
+      function aa2(a2) {
+        var b2 = 0;
+        return function() {
+          return b2 < a2.length ? { done: false, value: a2[b2++] } : { done: true };
+        };
+      }
+      var ba2 = "function" == typeof Object.defineProperties ? Object.defineProperty : function(a2, b2, c2) {
+        if (a2 == Array.prototype || a2 == Object.prototype) return a2;
+        a2[b2] = c2.value;
+        return a2;
+      };
+      function ca2(a2) {
+        a2 = ["object" == typeof globalThis && globalThis, a2, "object" == typeof window && window, "object" == typeof self && self, "object" == typeof global && global];
+        for (var b2 = 0; b2 < a2.length; ++b2) {
+          var c2 = a2[b2];
+          if (c2 && c2.Math == Math) return c2;
+        }
+        throw Error("Cannot find global object");
+      }
+      var G2 = ca2(this);
+      function J2(a2, b2) {
+        if (b2) a: {
+          var c2 = G2;
+          a2 = a2.split(".");
+          for (var d2 = 0; d2 < a2.length - 1; d2++) {
+            var e2 = a2[d2];
+            if (!(e2 in c2)) break a;
+            c2 = c2[e2];
+          }
+          a2 = a2[a2.length - 1];
+          d2 = c2[a2];
+          b2 = b2(d2);
+          b2 != d2 && null != b2 && ba2(c2, a2, { configurable: true, writable: true, value: b2 });
+        }
+      }
+      J2("Symbol", function(a2) {
+        function b2(g2) {
+          if (this instanceof b2) throw new TypeError("Symbol is not a constructor");
+          return new c2(d2 + (g2 || "") + "_" + e2++, g2);
+        }
+        function c2(g2, f2) {
+          this.g = g2;
+          ba2(this, "description", { configurable: true, writable: true, value: f2 });
+        }
+        if (a2) return a2;
+        c2.prototype.toString = function() {
+          return this.g;
+        };
+        var d2 = "jscomp_symbol_" + (1e9 * Math.random() >>> 0) + "_", e2 = 0;
+        return b2;
+      });
+      J2("Symbol.iterator", function(a2) {
+        if (a2) return a2;
+        a2 = /* @__PURE__ */ Symbol("Symbol.iterator");
+        for (var b2 = "Array Int8Array Uint8Array Uint8ClampedArray Int16Array Uint16Array Int32Array Uint32Array Float32Array Float64Array".split(" "), c2 = 0; c2 < b2.length; c2++) {
+          var d2 = G2[b2[c2]];
+          "function" === typeof d2 && "function" != typeof d2.prototype[a2] && ba2(d2.prototype, a2, { configurable: true, writable: true, value: function() {
+            return da2(aa2(this));
+          } });
+        }
+        return a2;
+      });
+      function da2(a2) {
+        a2 = { next: a2 };
+        a2[Symbol.iterator] = function() {
+          return this;
+        };
+        return a2;
+      }
+      function K3(a2) {
+        var b2 = "undefined" != typeof Symbol && Symbol.iterator && a2[Symbol.iterator];
+        return b2 ? b2.call(a2) : { next: aa2(a2) };
+      }
+      function L2(a2) {
+        if (!(a2 instanceof Array)) {
+          a2 = K3(a2);
+          for (var b2, c2 = []; !(b2 = a2.next()).done; ) c2.push(b2.value);
+          a2 = c2;
+        }
+        return a2;
+      }
+      var ea2 = "function" == typeof Object.create ? Object.create : function(a2) {
+        function b2() {
+        }
+        b2.prototype = a2;
+        return new b2();
+      }, fa2;
+      if ("function" == typeof Object.setPrototypeOf) fa2 = Object.setPrototypeOf;
+      else {
+        var ha2;
+        a: {
+          var ia2 = { a: true }, ja2 = {};
+          try {
+            ja2.__proto__ = ia2;
+            ha2 = ja2.a;
+            break a;
+          } catch (a2) {
+          }
+          ha2 = false;
+        }
+        fa2 = ha2 ? function(a2, b2) {
+          a2.__proto__ = b2;
+          if (a2.__proto__ !== b2) throw new TypeError(a2 + " is not extensible");
+          return a2;
+        } : null;
+      }
+      var ka2 = fa2;
+      function M2(a2, b2) {
+        a2.prototype = ea2(b2.prototype);
+        a2.prototype.constructor = a2;
+        if (ka2) ka2(a2, b2);
+        else for (var c2 in b2) if ("prototype" != c2) if (Object.defineProperties) {
+          var d2 = Object.getOwnPropertyDescriptor(b2, c2);
+          d2 && Object.defineProperty(a2, c2, d2);
+        } else a2[c2] = b2[c2];
+        a2.ea = b2.prototype;
+      }
+      function ma2() {
+        this.l = false;
+        this.i = null;
+        this.h = void 0;
+        this.g = 1;
+        this.s = this.m = 0;
+        this.j = null;
+      }
+      function na2(a2) {
+        if (a2.l) throw new TypeError("Generator is already running");
+        a2.l = true;
+      }
+      ma2.prototype.o = function(a2) {
+        this.h = a2;
+      };
+      function oa2(a2, b2) {
+        a2.j = { U: b2, V: true };
+        a2.g = a2.m || a2.s;
+      }
+      ma2.prototype.return = function(a2) {
+        this.j = { return: a2 };
+        this.g = this.s;
+      };
+      function N2(a2, b2, c2) {
+        a2.g = c2;
+        return { value: b2 };
+      }
+      function pa2(a2) {
+        this.g = new ma2();
+        this.h = a2;
+      }
+      function qa2(a2, b2) {
+        na2(a2.g);
+        var c2 = a2.g.i;
+        if (c2) return ra2(a2, "return" in c2 ? c2["return"] : function(d2) {
+          return { value: d2, done: true };
+        }, b2, a2.g.return);
+        a2.g.return(b2);
+        return sa2(a2);
+      }
+      function ra2(a2, b2, c2, d2) {
+        try {
+          var e2 = b2.call(a2.g.i, c2);
+          if (!(e2 instanceof Object)) throw new TypeError("Iterator result " + e2 + " is not an object");
+          if (!e2.done) return a2.g.l = false, e2;
+          var g2 = e2.value;
+        } catch (f2) {
+          return a2.g.i = null, oa2(a2.g, f2), sa2(a2);
+        }
+        a2.g.i = null;
+        d2.call(a2.g, g2);
+        return sa2(a2);
+      }
+      function sa2(a2) {
+        for (; a2.g.g; ) try {
+          var b2 = a2.h(a2.g);
+          if (b2) return a2.g.l = false, { value: b2.value, done: false };
+        } catch (c2) {
+          a2.g.h = void 0, oa2(a2.g, c2);
+        }
+        a2.g.l = false;
+        if (a2.g.j) {
+          b2 = a2.g.j;
+          a2.g.j = null;
+          if (b2.V) throw b2.U;
+          return { value: b2.return, done: true };
+        }
+        return { value: void 0, done: true };
+      }
+      function ta2(a2) {
+        this.next = function(b2) {
+          na2(a2.g);
+          a2.g.i ? b2 = ra2(a2, a2.g.i.next, b2, a2.g.o) : (a2.g.o(b2), b2 = sa2(a2));
+          return b2;
+        };
+        this.throw = function(b2) {
+          na2(a2.g);
+          a2.g.i ? b2 = ra2(a2, a2.g.i["throw"], b2, a2.g.o) : (oa2(a2.g, b2), b2 = sa2(a2));
+          return b2;
+        };
+        this.return = function(b2) {
+          return qa2(a2, b2);
+        };
+        this[Symbol.iterator] = function() {
+          return this;
+        };
+      }
+      function O2(a2, b2) {
+        b2 = new ta2(new pa2(b2));
+        ka2 && a2.prototype && ka2(b2, a2.prototype);
+        return b2;
+      }
+      function ua2(a2, b2) {
+        a2 instanceof String && (a2 += "");
+        var c2 = 0, d2 = false, e2 = { next: function() {
+          if (!d2 && c2 < a2.length) {
+            var g2 = c2++;
+            return { value: b2(g2, a2[g2]), done: false };
+          }
+          d2 = true;
+          return { done: true, value: void 0 };
+        } };
+        e2[Symbol.iterator] = function() {
+          return e2;
+        };
+        return e2;
+      }
+      var va2 = "function" == typeof Object.assign ? Object.assign : function(a2, b2) {
+        for (var c2 = 1; c2 < arguments.length; c2++) {
+          var d2 = arguments[c2];
+          if (d2) for (var e2 in d2) Object.prototype.hasOwnProperty.call(d2, e2) && (a2[e2] = d2[e2]);
+        }
+        return a2;
+      };
+      J2("Object.assign", function(a2) {
+        return a2 || va2;
+      });
+      J2("Promise", function(a2) {
+        function b2(f2) {
+          this.h = 0;
+          this.i = void 0;
+          this.g = [];
+          this.o = false;
+          var h2 = this.j();
+          try {
+            f2(h2.resolve, h2.reject);
+          } catch (k2) {
+            h2.reject(k2);
+          }
+        }
+        function c2() {
+          this.g = null;
+        }
+        function d2(f2) {
+          return f2 instanceof b2 ? f2 : new b2(function(h2) {
+            h2(f2);
+          });
+        }
+        if (a2) return a2;
+        c2.prototype.h = function(f2) {
+          if (null == this.g) {
+            this.g = [];
+            var h2 = this;
+            this.i(function() {
+              h2.l();
+            });
+          }
+          this.g.push(f2);
+        };
+        var e2 = G2.setTimeout;
+        c2.prototype.i = function(f2) {
+          e2(f2, 0);
+        };
+        c2.prototype.l = function() {
+          for (; this.g && this.g.length; ) {
+            var f2 = this.g;
+            this.g = [];
+            for (var h2 = 0; h2 < f2.length; ++h2) {
+              var k2 = f2[h2];
+              f2[h2] = null;
+              try {
+                k2();
+              } catch (l2) {
+                this.j(l2);
+              }
+            }
+          }
+          this.g = null;
+        };
+        c2.prototype.j = function(f2) {
+          this.i(function() {
+            throw f2;
+          });
+        };
+        b2.prototype.j = function() {
+          function f2(l2) {
+            return function(n3) {
+              k2 || (k2 = true, l2.call(h2, n3));
+            };
+          }
+          var h2 = this, k2 = false;
+          return { resolve: f2(this.C), reject: f2(this.l) };
+        };
+        b2.prototype.C = function(f2) {
+          if (f2 === this) this.l(new TypeError("A Promise cannot resolve to itself"));
+          else if (f2 instanceof b2) this.F(f2);
+          else {
+            a: switch (typeof f2) {
+              case "object":
+                var h2 = null != f2;
+                break a;
+              case "function":
+                h2 = true;
+                break a;
+              default:
+                h2 = false;
+            }
+            h2 ? this.u(f2) : this.m(f2);
+          }
+        };
+        b2.prototype.u = function(f2) {
+          var h2 = void 0;
+          try {
+            h2 = f2.then;
+          } catch (k2) {
+            this.l(k2);
+            return;
+          }
+          "function" == typeof h2 ? this.G(h2, f2) : this.m(f2);
+        };
+        b2.prototype.l = function(f2) {
+          this.s(2, f2);
+        };
+        b2.prototype.m = function(f2) {
+          this.s(1, f2);
+        };
+        b2.prototype.s = function(f2, h2) {
+          if (0 != this.h) throw Error("Cannot settle(" + f2 + ", " + h2 + "): Promise already settled in state" + this.h);
+          this.h = f2;
+          this.i = h2;
+          2 === this.h && this.D();
+          this.A();
+        };
+        b2.prototype.D = function() {
+          var f2 = this;
+          e2(function() {
+            if (f2.B()) {
+              var h2 = G2.console;
+              "undefined" !== typeof h2 && h2.error(f2.i);
+            }
+          }, 1);
+        };
+        b2.prototype.B = function() {
+          if (this.o) return false;
+          var f2 = G2.CustomEvent, h2 = G2.Event, k2 = G2.dispatchEvent;
+          if ("undefined" === typeof k2) return true;
+          "function" === typeof f2 ? f2 = new f2("unhandledrejection", { cancelable: true }) : "function" === typeof h2 ? f2 = new h2("unhandledrejection", { cancelable: true }) : (f2 = G2.document.createEvent("CustomEvent"), f2.initCustomEvent("unhandledrejection", false, true, f2));
+          f2.promise = this;
+          f2.reason = this.i;
+          return k2(f2);
+        };
+        b2.prototype.A = function() {
+          if (null != this.g) {
+            for (var f2 = 0; f2 < this.g.length; ++f2) g2.h(this.g[f2]);
+            this.g = null;
+          }
+        };
+        var g2 = new c2();
+        b2.prototype.F = function(f2) {
+          var h2 = this.j();
+          f2.J(h2.resolve, h2.reject);
+        };
+        b2.prototype.G = function(f2, h2) {
+          var k2 = this.j();
+          try {
+            f2.call(h2, k2.resolve, k2.reject);
+          } catch (l2) {
+            k2.reject(l2);
+          }
+        };
+        b2.prototype.then = function(f2, h2) {
+          function k2(w2, r3) {
+            return "function" == typeof w2 ? function(y3) {
+              try {
+                l2(w2(y3));
+              } catch (m2) {
+                n3(m2);
+              }
+            } : r3;
+          }
+          var l2, n3, u2 = new b2(function(w2, r3) {
+            l2 = w2;
+            n3 = r3;
+          });
+          this.J(k2(f2, l2), k2(h2, n3));
+          return u2;
+        };
+        b2.prototype.catch = function(f2) {
+          return this.then(void 0, f2);
+        };
+        b2.prototype.J = function(f2, h2) {
+          function k2() {
+            switch (l2.h) {
+              case 1:
+                f2(l2.i);
+                break;
+              case 2:
+                h2(l2.i);
+                break;
+              default:
+                throw Error("Unexpected state: " + l2.h);
+            }
+          }
+          var l2 = this;
+          null == this.g ? g2.h(k2) : this.g.push(k2);
+          this.o = true;
+        };
+        b2.resolve = d2;
+        b2.reject = function(f2) {
+          return new b2(function(h2, k2) {
+            k2(f2);
+          });
+        };
+        b2.race = function(f2) {
+          return new b2(function(h2, k2) {
+            for (var l2 = K3(f2), n3 = l2.next(); !n3.done; n3 = l2.next()) d2(n3.value).J(h2, k2);
+          });
+        };
+        b2.all = function(f2) {
+          var h2 = K3(f2), k2 = h2.next();
+          return k2.done ? d2([]) : new b2(function(l2, n3) {
+            function u2(y3) {
+              return function(m2) {
+                w2[y3] = m2;
+                r3--;
+                0 == r3 && l2(w2);
+              };
+            }
+            var w2 = [], r3 = 0;
+            do
+              w2.push(void 0), r3++, d2(k2.value).J(u2(w2.length - 1), n3), k2 = h2.next();
+            while (!k2.done);
+          });
+        };
+        return b2;
+      });
+      J2("Object.is", function(a2) {
+        return a2 ? a2 : function(b2, c2) {
+          return b2 === c2 ? 0 !== b2 || 1 / b2 === 1 / c2 : b2 !== b2 && c2 !== c2;
+        };
+      });
+      J2("Array.prototype.includes", function(a2) {
+        return a2 ? a2 : function(b2, c2) {
+          var d2 = this;
+          d2 instanceof String && (d2 = String(d2));
+          var e2 = d2.length;
+          c2 = c2 || 0;
+          for (0 > c2 && (c2 = Math.max(c2 + e2, 0)); c2 < e2; c2++) {
+            var g2 = d2[c2];
+            if (g2 === b2 || Object.is(g2, b2)) return true;
+          }
+          return false;
+        };
+      });
+      J2("String.prototype.includes", function(a2) {
+        return a2 ? a2 : function(b2, c2) {
+          if (null == this) throw new TypeError("The 'this' value for String.prototype.includes must not be null or undefined");
+          if (b2 instanceof RegExp) throw new TypeError("First argument to String.prototype.includes must not be a regular expression");
+          return -1 !== this.indexOf(b2, c2 || 0);
+        };
+      });
+      J2("Array.prototype.keys", function(a2) {
+        return a2 ? a2 : function() {
+          return ua2(this, function(b2) {
+            return b2;
+          });
+        };
+      });
+      var wa2 = this || self;
+      function P2(a2, b2) {
+        a2 = a2.split(".");
+        var c2 = wa2;
+        a2[0] in c2 || "undefined" == typeof c2.execScript || c2.execScript("var " + a2[0]);
+        for (var d2; a2.length && (d2 = a2.shift()); ) a2.length || void 0 === b2 ? c2[d2] && c2[d2] !== Object.prototype[d2] ? c2 = c2[d2] : c2 = c2[d2] = {} : c2[d2] = b2;
+      }
+      ;
+      function xa2(a2, b2) {
+        b2 = String.fromCharCode.apply(null, b2);
+        return null == a2 ? b2 : a2 + b2;
+      }
+      var ya2, za2 = "undefined" !== typeof TextDecoder, Aa2, Ba2 = "undefined" !== typeof TextEncoder;
+      function Ca2(a2) {
+        if (Ba2) a2 = (Aa2 || (Aa2 = new TextEncoder())).encode(a2);
+        else {
+          var b2 = void 0;
+          b2 = void 0 === b2 ? false : b2;
+          for (var c2 = 0, d2 = new Uint8Array(3 * a2.length), e2 = 0; e2 < a2.length; e2++) {
+            var g2 = a2.charCodeAt(e2);
+            if (128 > g2) d2[c2++] = g2;
+            else {
+              if (2048 > g2) d2[c2++] = g2 >> 6 | 192;
+              else {
+                if (55296 <= g2 && 57343 >= g2) {
+                  if (56319 >= g2 && e2 < a2.length) {
+                    var f2 = a2.charCodeAt(++e2);
+                    if (56320 <= f2 && 57343 >= f2) {
+                      g2 = 1024 * (g2 - 55296) + f2 - 56320 + 65536;
+                      d2[c2++] = g2 >> 18 | 240;
+                      d2[c2++] = g2 >> 12 & 63 | 128;
+                      d2[c2++] = g2 >> 6 & 63 | 128;
+                      d2[c2++] = g2 & 63 | 128;
+                      continue;
+                    } else e2--;
+                  }
+                  if (b2) throw Error("Found an unpaired surrogate");
+                  g2 = 65533;
+                }
+                d2[c2++] = g2 >> 12 | 224;
+                d2[c2++] = g2 >> 6 & 63 | 128;
+              }
+              d2[c2++] = g2 & 63 | 128;
+            }
+          }
+          a2 = d2.subarray(0, c2);
+        }
+        return a2;
+      }
+      ;
+      var Da2 = {}, Ea2 = null;
+      function Fa2(a2, b2) {
+        void 0 === b2 && (b2 = 0);
+        Ga2();
+        b2 = Da2[b2];
+        for (var c2 = Array(Math.floor(a2.length / 3)), d2 = b2[64] || "", e2 = 0, g2 = 0; e2 < a2.length - 2; e2 += 3) {
+          var f2 = a2[e2], h2 = a2[e2 + 1], k2 = a2[e2 + 2], l2 = b2[f2 >> 2];
+          f2 = b2[(f2 & 3) << 4 | h2 >> 4];
+          h2 = b2[(h2 & 15) << 2 | k2 >> 6];
+          k2 = b2[k2 & 63];
+          c2[g2++] = l2 + f2 + h2 + k2;
+        }
+        l2 = 0;
+        k2 = d2;
+        switch (a2.length - e2) {
+          case 2:
+            l2 = a2[e2 + 1], k2 = b2[(l2 & 15) << 2] || d2;
+          case 1:
+            a2 = a2[e2], c2[g2] = b2[a2 >> 2] + b2[(a2 & 3) << 4 | l2 >> 4] + k2 + d2;
+        }
+        return c2.join("");
+      }
+      function Ha2(a2) {
+        var b2 = a2.length, c2 = 3 * b2 / 4;
+        c2 % 3 ? c2 = Math.floor(c2) : -1 != "=.".indexOf(a2[b2 - 1]) && (c2 = -1 != "=.".indexOf(a2[b2 - 2]) ? c2 - 2 : c2 - 1);
+        var d2 = new Uint8Array(c2), e2 = 0;
+        Ia2(a2, function(g2) {
+          d2[e2++] = g2;
+        });
+        return d2.subarray(0, e2);
+      }
+      function Ia2(a2, b2) {
+        function c2(k2) {
+          for (; d2 < a2.length; ) {
+            var l2 = a2.charAt(d2++), n3 = Ea2[l2];
+            if (null != n3) return n3;
+            if (!/^[\s\xa0]*$/.test(l2)) throw Error("Unknown base64 encoding at char: " + l2);
+          }
+          return k2;
+        }
+        Ga2();
+        for (var d2 = 0; ; ) {
+          var e2 = c2(-1), g2 = c2(0), f2 = c2(64), h2 = c2(64);
+          if (64 === h2 && -1 === e2) break;
+          b2(e2 << 2 | g2 >> 4);
+          64 != f2 && (b2(g2 << 4 & 240 | f2 >> 2), 64 != h2 && b2(f2 << 6 & 192 | h2));
+        }
+      }
+      function Ga2() {
+        if (!Ea2) {
+          Ea2 = {};
+          for (var a2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".split(""), b2 = ["+/=", "+/", "-_=", "-_.", "-_"], c2 = 0; 5 > c2; c2++) {
+            var d2 = a2.concat(b2[c2].split(""));
+            Da2[c2] = d2;
+            for (var e2 = 0; e2 < d2.length; e2++) {
+              var g2 = d2[e2];
+              void 0 === Ea2[g2] && (Ea2[g2] = e2);
+            }
+          }
+        }
+      }
+      ;
+      var Ja2 = "function" === typeof Uint8Array.prototype.slice, Ka2;
+      function La2(a2, b2, c2) {
+        return b2 === c2 ? Ka2 || (Ka2 = new Uint8Array(0)) : Ja2 ? a2.slice(b2, c2) : new Uint8Array(a2.subarray(b2, c2));
+      }
+      var Q2 = 0, R2 = 0;
+      function Ma2(a2, b2) {
+        b2 = void 0 === b2 ? {} : b2;
+        b2 = void 0 === b2.v ? false : b2.v;
+        this.h = null;
+        this.g = this.j = this.l = 0;
+        this.m = false;
+        this.v = b2;
+        a2 && Na2(this, a2);
+      }
+      function Na2(a2, b2) {
+        b2 = b2.constructor === Uint8Array ? b2 : b2.constructor === ArrayBuffer ? new Uint8Array(b2) : b2.constructor === Array ? new Uint8Array(b2) : b2.constructor === String ? Ha2(b2) : b2 instanceof Uint8Array ? new Uint8Array(b2.buffer, b2.byteOffset, b2.byteLength) : new Uint8Array(0);
+        a2.h = b2;
+        a2.l = 0;
+        a2.j = a2.h.length;
+        a2.g = a2.l;
+      }
+      Ma2.prototype.reset = function() {
+        this.g = this.l;
+      };
+      function Oa2(a2) {
+        for (var b2 = 128, c2 = 0, d2 = 0, e2 = 0; 4 > e2 && 128 <= b2; e2++) b2 = a2.h[a2.g++], c2 |= (b2 & 127) << 7 * e2;
+        128 <= b2 && (b2 = a2.h[a2.g++], c2 |= (b2 & 127) << 28, d2 |= (b2 & 127) >> 4);
+        if (128 <= b2) for (e2 = 0; 5 > e2 && 128 <= b2; e2++) b2 = a2.h[a2.g++], d2 |= (b2 & 127) << 7 * e2 + 3;
+        if (128 > b2) {
+          a2 = c2 >>> 0;
+          b2 = d2 >>> 0;
+          if (d2 = b2 & 2147483648) a2 = ~a2 + 1 >>> 0, b2 = ~b2 >>> 0, 0 == a2 && (b2 = b2 + 1 >>> 0);
+          a2 = 4294967296 * b2 + (a2 >>> 0);
+          return d2 ? -a2 : a2;
+        }
+        a2.m = true;
+      }
+      Ma2.prototype.i = function() {
+        var a2 = this.h, b2 = a2[this.g], c2 = b2 & 127;
+        if (128 > b2) return this.g += 1, c2;
+        b2 = a2[this.g + 1];
+        c2 |= (b2 & 127) << 7;
+        if (128 > b2) return this.g += 2, c2;
+        b2 = a2[this.g + 2];
+        c2 |= (b2 & 127) << 14;
+        if (128 > b2) return this.g += 3, c2;
+        b2 = a2[this.g + 3];
+        c2 |= (b2 & 127) << 21;
+        if (128 > b2) return this.g += 4, c2;
+        b2 = a2[this.g + 4];
+        c2 |= (b2 & 15) << 28;
+        if (128 > b2) return this.g += 5, c2 >>> 0;
+        this.g += 5;
+        128 <= a2[this.g++] && 128 <= a2[this.g++] && 128 <= a2[this.g++] && 128 <= a2[this.g++] && this.g++;
+        return c2;
+      };
+      Ma2.prototype.o = function() {
+        var a2 = this.h[this.g], b2 = this.h[this.g + 1];
+        var c2 = this.h[this.g + 2];
+        var d2 = this.h[this.g + 3];
+        this.g += 4;
+        c2 = (a2 << 0 | b2 << 8 | c2 << 16 | d2 << 24) >>> 0;
+        a2 = 2 * (c2 >> 31) + 1;
+        b2 = c2 >>> 23 & 255;
+        c2 &= 8388607;
+        return 255 == b2 ? c2 ? NaN : Infinity * a2 : 0 == b2 ? a2 * Math.pow(2, -149) * c2 : a2 * Math.pow(2, b2 - 150) * (c2 + Math.pow(2, 23));
+      };
+      var Pa2 = [];
+      function Qa2() {
+        this.g = new Uint8Array(64);
+        this.h = 0;
+      }
+      Qa2.prototype.push = function(a2) {
+        if (!(this.h + 1 < this.g.length)) {
+          var b2 = this.g;
+          this.g = new Uint8Array(Math.ceil(1 + 2 * this.g.length));
+          this.g.set(b2);
+        }
+        this.g[this.h++] = a2;
+      };
+      Qa2.prototype.length = function() {
+        return this.h;
+      };
+      Qa2.prototype.end = function() {
+        var a2 = this.g, b2 = this.h;
+        this.h = 0;
+        return La2(a2, 0, b2);
+      };
+      function Ra2(a2, b2) {
+        for (; 127 < b2; ) a2.push(b2 & 127 | 128), b2 >>>= 7;
+        a2.push(b2);
+      }
+      ;
+      function Sa2(a2) {
+        var b2 = {}, c2 = void 0 === b2.N ? false : b2.N;
+        this.o = { v: void 0 === b2.v ? false : b2.v };
+        this.N = c2;
+        b2 = this.o;
+        Pa2.length ? (c2 = Pa2.pop(), b2 && (c2.v = b2.v), a2 && Na2(c2, a2), a2 = c2) : a2 = new Ma2(a2, b2);
+        this.g = a2;
+        this.m = this.g.g;
+        this.h = this.i = this.l = -1;
+        this.j = false;
+      }
+      Sa2.prototype.reset = function() {
+        this.g.reset();
+        this.h = this.l = -1;
+      };
+      function S2(a2) {
+        var b2 = a2.g;
+        (b2 = b2.g == b2.j) || (b2 = a2.j) || (b2 = a2.g, b2 = b2.m || 0 > b2.g || b2.g > b2.j);
+        if (b2) return false;
+        a2.m = a2.g.g;
+        b2 = a2.g.i();
+        var c2 = b2 & 7;
+        if (0 != c2 && 5 != c2 && 1 != c2 && 2 != c2 && 3 != c2 && 4 != c2) return a2.j = true, false;
+        a2.i = b2;
+        a2.l = b2 >>> 3;
+        a2.h = c2;
+        return true;
+      }
+      function Ta2(a2) {
+        switch (a2.h) {
+          case 0:
+            if (0 != a2.h) Ta2(a2);
+            else {
+              for (a2 = a2.g; a2.h[a2.g] & 128; ) a2.g++;
+              a2.g++;
+            }
+            break;
+          case 1:
+            1 != a2.h ? Ta2(a2) : (a2 = a2.g, a2.g += 8);
+            break;
+          case 2:
+            if (2 != a2.h) Ta2(a2);
+            else {
+              var b2 = a2.g.i();
+              a2 = a2.g;
+              a2.g += b2;
+            }
+            break;
+          case 5:
+            5 != a2.h ? Ta2(a2) : (a2 = a2.g, a2.g += 4);
+            break;
+          case 3:
+            b2 = a2.l;
+            do {
+              if (!S2(a2)) {
+                a2.j = true;
+                break;
+              }
+              if (4 == a2.h) {
+                a2.l != b2 && (a2.j = true);
+                break;
+              }
+              Ta2(a2);
+            } while (1);
+            break;
+          default:
+            a2.j = true;
+        }
+      }
+      function Ua2(a2, b2, c2) {
+        var d2 = a2.g.j, e2 = a2.g.i(), g2 = a2.g.g + e2;
+        a2.g.j = g2;
+        c2(b2, a2);
+        c2 = g2 - a2.g.g;
+        if (0 !== c2) throw Error("Message parsing ended unexpectedly. Expected to read " + e2 + " bytes, instead read " + (e2 - c2) + " bytes, either the data ended unexpectedly or the message misreported its own length");
+        a2.g.g = g2;
+        a2.g.j = d2;
+        return b2;
+      }
+      function T2(a2) {
+        return a2.g.o();
+      }
+      function Va2(a2) {
+        var b2 = a2.g.i();
+        a2 = a2.g;
+        var c2 = a2.g;
+        a2.g += b2;
+        a2 = a2.h;
+        var d2;
+        if (za2) (d2 = ya2) || (d2 = ya2 = new TextDecoder("utf-8", { fatal: false })), d2 = d2.decode(a2.subarray(c2, c2 + b2));
+        else {
+          b2 = c2 + b2;
+          for (var e2 = [], g2 = null, f2, h2, k2; c2 < b2; ) f2 = a2[c2++], 128 > f2 ? e2.push(f2) : 224 > f2 ? c2 >= b2 ? e2.push(65533) : (h2 = a2[c2++], 194 > f2 || 128 !== (h2 & 192) ? (c2--, e2.push(65533)) : e2.push((f2 & 31) << 6 | h2 & 63)) : 240 > f2 ? c2 >= b2 - 1 ? e2.push(65533) : (h2 = a2[c2++], 128 !== (h2 & 192) || 224 === f2 && 160 > h2 || 237 === f2 && 160 <= h2 || 128 !== ((d2 = a2[c2++]) & 192) ? (c2--, e2.push(65533)) : e2.push((f2 & 15) << 12 | (h2 & 63) << 6 | d2 & 63)) : 244 >= f2 ? c2 >= b2 - 2 ? e2.push(65533) : (h2 = a2[c2++], 128 !== (h2 & 192) || 0 !== (f2 << 28) + (h2 - 144) >> 30 || 128 !== ((d2 = a2[c2++]) & 192) || 128 !== ((k2 = a2[c2++]) & 192) ? (c2--, e2.push(65533)) : (f2 = (f2 & 7) << 18 | (h2 & 63) << 12 | (d2 & 63) << 6 | k2 & 63, f2 -= 65536, e2.push((f2 >> 10 & 1023) + 55296, (f2 & 1023) + 56320))) : e2.push(65533), 8192 <= e2.length && (g2 = xa2(g2, e2), e2.length = 0);
+          d2 = xa2(g2, e2);
+        }
+        return d2;
+      }
+      function Wa2(a2, b2, c2) {
+        var d2 = a2.g.i();
+        for (d2 = a2.g.g + d2; a2.g.g < d2; ) c2.push(b2.call(a2.g));
+      }
+      function Xa2(a2, b2) {
+        2 == a2.h ? Wa2(a2, Ma2.prototype.o, b2) : b2.push(T2(a2));
+      }
+      ;
+      function Ya2() {
+        this.h = [];
+        this.i = 0;
+        this.g = new Qa2();
+      }
+      function Za2(a2, b2) {
+        0 !== b2.length && (a2.h.push(b2), a2.i += b2.length);
+      }
+      function $a2(a2) {
+        var b2 = a2.i + a2.g.length();
+        if (0 === b2) return new Uint8Array(0);
+        b2 = new Uint8Array(b2);
+        for (var c2 = a2.h, d2 = c2.length, e2 = 0, g2 = 0; g2 < d2; g2++) {
+          var f2 = c2[g2];
+          0 !== f2.length && (b2.set(f2, e2), e2 += f2.length);
+        }
+        c2 = a2.g;
+        d2 = c2.h;
+        0 !== d2 && (b2.set(c2.g.subarray(0, d2), e2), c2.h = 0);
+        a2.h = [b2];
+        return b2;
+      }
+      function U2(a2, b2, c2) {
+        if (null != c2) {
+          Ra2(a2.g, 8 * b2 + 5);
+          a2 = a2.g;
+          var d2 = c2;
+          d2 = (c2 = 0 > d2 ? 1 : 0) ? -d2 : d2;
+          0 === d2 ? 0 < 1 / d2 ? Q2 = R2 = 0 : (R2 = 0, Q2 = 2147483648) : isNaN(d2) ? (R2 = 0, Q2 = 2147483647) : 34028234663852886e22 < d2 ? (R2 = 0, Q2 = (c2 << 31 | 2139095040) >>> 0) : 11754943508222875e-54 > d2 ? (d2 = Math.round(d2 / Math.pow(2, -149)), R2 = 0, Q2 = (c2 << 31 | d2) >>> 0) : (b2 = Math.floor(Math.log(d2) / Math.LN2), d2 *= Math.pow(2, -b2), d2 = Math.round(8388608 * d2), 16777216 <= d2 && ++b2, R2 = 0, Q2 = (c2 << 31 | b2 + 127 << 23 | d2 & 8388607) >>> 0);
+          c2 = Q2;
+          a2.push(c2 >>> 0 & 255);
+          a2.push(c2 >>> 8 & 255);
+          a2.push(c2 >>> 16 & 255);
+          a2.push(c2 >>> 24 & 255);
+        }
+      }
+      ;
+      var ab = "function" === typeof Uint8Array;
+      function bb(a2, b2, c2) {
+        if (null != a2) return "object" === typeof a2 ? ab && a2 instanceof Uint8Array ? c2(a2) : cb(a2, b2, c2) : b2(a2);
+      }
+      function cb(a2, b2, c2) {
+        if (Array.isArray(a2)) {
+          for (var d2 = Array(a2.length), e2 = 0; e2 < a2.length; e2++) d2[e2] = bb(a2[e2], b2, c2);
+          Array.isArray(a2) && a2.W && db(d2);
+          return d2;
+        }
+        d2 = {};
+        for (e2 in a2) d2[e2] = bb(a2[e2], b2, c2);
+        return d2;
+      }
+      function eb(a2) {
+        return "number" === typeof a2 ? isFinite(a2) ? a2 : String(a2) : a2;
+      }
+      var fb = { W: { value: true, configurable: true } };
+      function db(a2) {
+        Array.isArray(a2) && !Object.isFrozen(a2) && Object.defineProperties(a2, fb);
+        return a2;
+      }
+      ;
+      var gb;
+      function V2(a2, b2, c2) {
+        var d2 = gb;
+        gb = null;
+        a2 || (a2 = d2);
+        d2 = this.constructor.ca;
+        a2 || (a2 = d2 ? [d2] : []);
+        this.j = d2 ? 0 : -1;
+        this.m = this.g = null;
+        this.h = a2;
+        a: {
+          d2 = this.h.length;
+          a2 = d2 - 1;
+          if (d2 && (d2 = this.h[a2], !(null === d2 || "object" != typeof d2 || Array.isArray(d2) || ab && d2 instanceof Uint8Array))) {
+            this.l = a2 - this.j;
+            this.i = d2;
+            break a;
+          }
+          void 0 !== b2 && -1 < b2 ? (this.l = Math.max(b2, a2 + 1 - this.j), this.i = null) : this.l = Number.MAX_VALUE;
+        }
+        if (c2) for (b2 = 0; b2 < c2.length; b2++) a2 = c2[b2], a2 < this.l ? (a2 += this.j, (d2 = this.h[a2]) ? db(d2) : this.h[a2] = hb) : (ib(this), (d2 = this.i[a2]) ? db(d2) : this.i[a2] = hb);
+      }
+      var hb = Object.freeze(db([]));
+      function ib(a2) {
+        var b2 = a2.l + a2.j;
+        a2.h[b2] || (a2.i = a2.h[b2] = {});
+      }
+      function W2(a2, b2, c2) {
+        return -1 === b2 ? null : (void 0 === c2 ? 0 : c2) || b2 >= a2.l ? a2.i ? a2.i[b2] : void 0 : a2.h[b2 + a2.j];
+      }
+      function jb(a2, b2) {
+        var c2 = void 0 === c2 ? false : c2;
+        var d2 = W2(a2, b2, c2);
+        null == d2 && (d2 = hb);
+        d2 === hb && (d2 = db([]), X2(a2, b2, d2, c2));
+        return d2;
+      }
+      function kb(a2) {
+        var b2 = jb(a2, 3);
+        a2.m || (a2.m = {});
+        if (!a2.m[3]) {
+          for (var c2 = 0; c2 < b2.length; c2++) b2[c2] = +b2[c2];
+          a2.m[3] = true;
+        }
+        return b2;
+      }
+      function lb(a2, b2, c2) {
+        a2 = W2(a2, b2);
+        return null == a2 ? c2 : a2;
+      }
+      function Y2(a2, b2, c2) {
+        a2 = W2(a2, b2);
+        a2 = null == a2 ? a2 : +a2;
+        return null == a2 ? void 0 === c2 ? 0 : c2 : a2;
+      }
+      function X2(a2, b2, c2, d2) {
+        (void 0 === d2 ? 0 : d2) || b2 >= a2.l ? (ib(a2), a2.i[b2] = c2) : a2.h[b2 + a2.j] = c2;
+      }
+      function mb2(a2, b2, c2) {
+        if (-1 === c2) return null;
+        a2.g || (a2.g = {});
+        if (!a2.g[c2]) {
+          var d2 = W2(a2, c2, false);
+          d2 && (a2.g[c2] = new b2(d2));
+        }
+        return a2.g[c2];
+      }
+      function nb(a2, b2) {
+        a2.g || (a2.g = {});
+        var c2 = a2.g[1];
+        if (!c2) {
+          var d2 = jb(a2, 1);
+          c2 = [];
+          for (var e2 = 0; e2 < d2.length; e2++) c2[e2] = new b2(d2[e2]);
+          a2.g[1] = c2;
+        }
+        return c2;
+      }
+      function ob(a2, b2, c2) {
+        var d2 = void 0 === d2 ? false : d2;
+        a2.g || (a2.g = {});
+        var e2 = c2 ? pb(c2, false) : c2;
+        a2.g[b2] = c2;
+        X2(a2, b2, e2, d2);
+      }
+      function qb(a2, b2, c2, d2) {
+        var e2 = nb(a2, c2);
+        b2 = b2 ? b2 : new c2();
+        a2 = jb(a2, 1);
+        void 0 != d2 ? (e2.splice(d2, 0, b2), a2.splice(d2, 0, pb(b2, false))) : (e2.push(b2), a2.push(pb(b2, false)));
+      }
+      V2.prototype.toJSON = function() {
+        var a2 = pb(this, false);
+        return cb(a2, eb, Fa2);
+      };
+      function pb(a2, b2) {
+        if (a2.g) for (var c2 in a2.g) {
+          var d2 = a2.g[c2];
+          if (Array.isArray(d2)) for (var e2 = 0; e2 < d2.length; e2++) d2[e2] && pb(d2[e2], b2);
+          else d2 && pb(d2, b2);
+        }
+        return a2.h;
+      }
+      V2.prototype.toString = function() {
+        return pb(this, false).toString();
+      };
+      function rb(a2, b2) {
+        if (a2 = a2.o) {
+          Za2(b2, b2.g.end());
+          for (var c2 = 0; c2 < a2.length; c2++) Za2(b2, a2[c2]);
+        }
+      }
+      function sb(a2, b2) {
+        if (4 == b2.h) return false;
+        var c2 = b2.m;
+        Ta2(b2);
+        b2.N || (b2 = La2(b2.g.h, c2, b2.g.g), (c2 = a2.o) ? c2.push(b2) : a2.o = [b2]);
+        return true;
+      }
+      ;
+      function tb(a2) {
+        V2.call(this, a2, -1, ub);
+      }
+      M2(tb, V2);
+      tb.prototype.getRows = function() {
+        return W2(this, 1);
+      };
+      tb.prototype.getCols = function() {
+        return W2(this, 2);
+      };
+      tb.prototype.getPackedDataList = function() {
+        return kb(this);
+      };
+      tb.prototype.getLayout = function() {
+        return lb(this, 4, 0);
+      };
+      function vb(a2, b2) {
+        for (; S2(b2); ) switch (b2.i) {
+          case 8:
+            var c2 = b2.g.i();
+            X2(a2, 1, c2);
+            break;
+          case 16:
+            c2 = b2.g.i();
+            X2(a2, 2, c2);
+            break;
+          case 29:
+          case 26:
+            Xa2(b2, a2.getPackedDataList());
+            break;
+          case 32:
+            c2 = Oa2(b2.g);
+            X2(a2, 4, c2);
+            break;
+          default:
+            if (!sb(a2, b2)) return a2;
+        }
+        return a2;
+      }
+      var ub = [3];
+      function Z2(a2, b2) {
+        var c2 = void 0;
+        return new (c2 || (c2 = Promise))(function(d2, e2) {
+          function g2(k2) {
+            try {
+              h2(b2.next(k2));
+            } catch (l2) {
+              e2(l2);
+            }
+          }
+          function f2(k2) {
+            try {
+              h2(b2["throw"](k2));
+            } catch (l2) {
+              e2(l2);
+            }
+          }
+          function h2(k2) {
+            k2.done ? d2(k2.value) : new c2(function(l2) {
+              l2(k2.value);
+            }).then(g2, f2);
+          }
+          h2((b2 = b2.apply(a2, void 0)).next());
+        });
+      }
+      ;
+      function wb(a2) {
+        V2.call(this, a2);
+      }
+      M2(wb, V2);
+      function xb(a2, b2) {
+        for (; S2(b2); ) switch (b2.i) {
+          case 8:
+            var c2 = b2.g.i();
+            X2(a2, 1, c2);
+            break;
+          case 21:
+            c2 = T2(b2);
+            X2(a2, 2, c2);
+            break;
+          case 26:
+            c2 = Va2(b2);
+            X2(a2, 3, c2);
+            break;
+          case 34:
+            c2 = Va2(b2);
+            X2(a2, 4, c2);
+            break;
+          default:
+            if (!sb(a2, b2)) return a2;
+        }
+        return a2;
+      }
+      ;
+      function yb(a2) {
+        V2.call(this, a2, -1, zb);
+      }
+      M2(yb, V2);
+      yb.prototype.addClassification = function(a2, b2) {
+        qb(this, a2, wb, b2);
+        return this;
+      };
+      var zb = [1];
+      function Ab(a2) {
+        V2.call(this, a2);
+      }
+      M2(Ab, V2);
+      function Bb(a2, b2) {
+        for (; S2(b2); ) switch (b2.i) {
+          case 13:
+            var c2 = T2(b2);
+            X2(a2, 1, c2);
+            break;
+          case 21:
+            c2 = T2(b2);
+            X2(a2, 2, c2);
+            break;
+          case 29:
+            c2 = T2(b2);
+            X2(a2, 3, c2);
+            break;
+          case 37:
+            c2 = T2(b2);
+            X2(a2, 4, c2);
+            break;
+          case 45:
+            c2 = T2(b2);
+            X2(a2, 5, c2);
+            break;
+          default:
+            if (!sb(a2, b2)) return a2;
+        }
+        return a2;
+      }
+      ;
+      function Cb(a2) {
+        V2.call(this, a2, -1, Db);
+      }
+      M2(Cb, V2);
+      function Eb(a2) {
+        a: {
+          var b2 = new Cb();
+          for (a2 = new Sa2(a2); S2(a2); ) switch (a2.i) {
+            case 10:
+              var c2 = Ua2(a2, new Ab(), Bb);
+              qb(b2, c2, Ab, void 0);
+              break;
+            default:
+              if (!sb(b2, a2)) break a;
+          }
+        }
+        return b2;
+      }
+      var Db = [1];
+      function Fb(a2) {
+        V2.call(this, a2);
+      }
+      M2(Fb, V2);
+      function Gb(a2) {
+        V2.call(this, a2, -1, Hb);
+      }
+      M2(Gb, V2);
+      Gb.prototype.getVertexType = function() {
+        return lb(this, 1, 0);
+      };
+      Gb.prototype.getPrimitiveType = function() {
+        return lb(this, 2, 0);
+      };
+      Gb.prototype.getVertexBufferList = function() {
+        return kb(this);
+      };
+      Gb.prototype.getIndexBufferList = function() {
+        return jb(this, 4);
+      };
+      function Ib(a2, b2) {
+        for (; S2(b2); ) switch (b2.i) {
+          case 8:
+            var c2 = Oa2(b2.g);
+            X2(a2, 1, c2);
+            break;
+          case 16:
+            c2 = Oa2(b2.g);
+            X2(a2, 2, c2);
+            break;
+          case 29:
+          case 26:
+            Xa2(b2, a2.getVertexBufferList());
+            break;
+          case 32:
+          case 34:
+            c2 = b2;
+            var d2 = a2.getIndexBufferList();
+            2 == c2.h ? Wa2(c2, Ma2.prototype.i, d2) : d2.push(c2.g.i());
+            break;
+          default:
+            if (!sb(a2, b2)) return a2;
+        }
+        return a2;
+      }
+      var Hb = [3, 4];
+      function Jb(a2) {
+        V2.call(this, a2);
+      }
+      M2(Jb, V2);
+      Jb.prototype.getMesh = function() {
+        return mb2(this, Gb, 1);
+      };
+      Jb.prototype.getPoseTransformMatrix = function() {
+        return mb2(this, tb, 2);
+      };
+      function Kb(a2) {
+        a: {
+          var b2 = new Jb();
+          for (a2 = new Sa2(a2); S2(a2); ) switch (a2.i) {
+            case 10:
+              var c2 = Ua2(a2, new Gb(), Ib);
+              ob(b2, 1, c2);
+              break;
+            case 18:
+              c2 = Ua2(a2, new tb(), vb);
+              ob(b2, 2, c2);
+              break;
+            default:
+              if (!sb(b2, a2)) break a;
+          }
+        }
+        return b2;
+      }
+      ;
+      function Lb(a2, b2, c2) {
+        c2 = a2.createShader(0 === c2 ? a2.VERTEX_SHADER : a2.FRAGMENT_SHADER);
+        a2.shaderSource(c2, b2);
+        a2.compileShader(c2);
+        if (!a2.getShaderParameter(c2, a2.COMPILE_STATUS)) throw Error("Could not compile WebGL shader.\n\n" + a2.getShaderInfoLog(c2));
+        return c2;
+      }
+      ;
+      function Mb(a2) {
+        return nb(a2, wb).map(function(b2) {
+          return { index: lb(b2, 1, 0), Y: Y2(b2, 2), label: null != W2(b2, 3) ? lb(b2, 3, "") : void 0, displayName: null != W2(b2, 4) ? lb(b2, 4, "") : void 0 };
+        });
+      }
+      ;
+      function Nb(a2) {
+        return { x: Y2(a2, 1), y: Y2(a2, 2), z: Y2(a2, 3), visibility: null != W2(a2, 4) ? Y2(a2, 4) : void 0 };
+      }
+      ;
+      function Ob(a2, b2) {
+        this.h = a2;
+        this.g = b2;
+        this.l = 0;
+      }
+      function Pb(a2, b2, c2) {
+        Qb(a2, b2);
+        if ("function" === typeof a2.g.canvas.transferToImageBitmap) return Promise.resolve(a2.g.canvas.transferToImageBitmap());
+        if (c2) return Promise.resolve(a2.g.canvas);
+        if ("function" === typeof createImageBitmap) return createImageBitmap(a2.g.canvas);
+        void 0 === a2.i && (a2.i = document.createElement("canvas"));
+        return new Promise(function(d2) {
+          a2.i.height = a2.g.canvas.height;
+          a2.i.width = a2.g.canvas.width;
+          a2.i.getContext("2d", {}).drawImage(a2.g.canvas, 0, 0, a2.g.canvas.width, a2.g.canvas.height);
+          d2(a2.i);
+        });
+      }
+      function Qb(a2, b2) {
+        var c2 = a2.g;
+        if (void 0 === a2.m) {
+          var d2 = Lb(c2, "\n  attribute vec2 aVertex;\n  attribute vec2 aTex;\n  varying vec2 vTex;\n  void main(void) {\n    gl_Position = vec4(aVertex, 0.0, 1.0);\n    vTex = aTex;\n  }", 0), e2 = Lb(c2, "\n  precision mediump float;\n  varying vec2 vTex;\n  uniform sampler2D sampler0;\n  void main(){\n    gl_FragColor = texture2D(sampler0, vTex);\n  }", 1), g2 = c2.createProgram();
+          c2.attachShader(g2, d2);
+          c2.attachShader(g2, e2);
+          c2.linkProgram(g2);
+          if (!c2.getProgramParameter(g2, c2.LINK_STATUS)) throw Error("Could not compile WebGL program.\n\n" + c2.getProgramInfoLog(g2));
+          d2 = a2.m = g2;
+          c2.useProgram(d2);
+          e2 = c2.getUniformLocation(d2, "sampler0");
+          a2.j = { I: c2.getAttribLocation(d2, "aVertex"), H: c2.getAttribLocation(d2, "aTex"), da: e2 };
+          a2.s = c2.createBuffer();
+          c2.bindBuffer(c2.ARRAY_BUFFER, a2.s);
+          c2.enableVertexAttribArray(a2.j.I);
+          c2.vertexAttribPointer(a2.j.I, 2, c2.FLOAT, false, 0, 0);
+          c2.bufferData(c2.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), c2.STATIC_DRAW);
+          c2.bindBuffer(c2.ARRAY_BUFFER, null);
+          a2.o = c2.createBuffer();
+          c2.bindBuffer(c2.ARRAY_BUFFER, a2.o);
+          c2.enableVertexAttribArray(a2.j.H);
+          c2.vertexAttribPointer(
+            a2.j.H,
+            2,
+            c2.FLOAT,
+            false,
+            0,
+            0
+          );
+          c2.bufferData(c2.ARRAY_BUFFER, new Float32Array([0, 1, 0, 0, 1, 0, 1, 1]), c2.STATIC_DRAW);
+          c2.bindBuffer(c2.ARRAY_BUFFER, null);
+          c2.uniform1i(e2, 0);
+        }
+        d2 = a2.j;
+        c2.useProgram(a2.m);
+        c2.canvas.width = b2.width;
+        c2.canvas.height = b2.height;
+        c2.viewport(0, 0, b2.width, b2.height);
+        c2.activeTexture(c2.TEXTURE0);
+        a2.h.bindTexture2d(b2.glName);
+        c2.enableVertexAttribArray(d2.I);
+        c2.bindBuffer(c2.ARRAY_BUFFER, a2.s);
+        c2.vertexAttribPointer(d2.I, 2, c2.FLOAT, false, 0, 0);
+        c2.enableVertexAttribArray(d2.H);
+        c2.bindBuffer(c2.ARRAY_BUFFER, a2.o);
+        c2.vertexAttribPointer(
+          d2.H,
+          2,
+          c2.FLOAT,
+          false,
+          0,
+          0
+        );
+        c2.bindFramebuffer(c2.DRAW_FRAMEBUFFER ? c2.DRAW_FRAMEBUFFER : c2.FRAMEBUFFER, null);
+        c2.clearColor(0, 0, 0, 0);
+        c2.clear(c2.COLOR_BUFFER_BIT);
+        c2.colorMask(true, true, true, true);
+        c2.drawArrays(c2.TRIANGLE_FAN, 0, 4);
+        c2.disableVertexAttribArray(d2.I);
+        c2.disableVertexAttribArray(d2.H);
+        c2.bindBuffer(c2.ARRAY_BUFFER, null);
+        a2.h.bindTexture2d(0);
+      }
+      function Rb(a2) {
+        this.g = a2;
+      }
+      ;
+      var Sb = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 3, 2, 1, 0, 10, 9, 1, 7, 0, 65, 0, 253, 15, 26, 11]);
+      function Tb(a2, b2) {
+        return b2 + a2;
+      }
+      function Ub(a2, b2) {
+        window[a2] = b2;
+      }
+      function Vb(a2) {
+        var b2 = document.createElement("script");
+        b2.setAttribute("src", a2);
+        b2.setAttribute("crossorigin", "anonymous");
+        return new Promise(function(c2) {
+          b2.addEventListener("load", function() {
+            c2();
+          }, false);
+          b2.addEventListener("error", function() {
+            c2();
+          }, false);
+          document.body.appendChild(b2);
+        });
+      }
+      function Wb() {
+        return Z2(this, function b2() {
+          return O2(b2, function(c2) {
+            switch (c2.g) {
+              case 1:
+                return c2.m = 2, N2(c2, WebAssembly.instantiate(Sb), 4);
+              case 4:
+                c2.g = 3;
+                c2.m = 0;
+                break;
+              case 2:
+                return c2.m = 0, c2.j = null, c2.return(false);
+              case 3:
+                return c2.return(true);
+            }
+          });
+        });
+      }
+      function Xb(a2) {
+        this.g = a2;
+        this.listeners = {};
+        this.j = {};
+        this.F = {};
+        this.m = {};
+        this.s = {};
+        this.G = this.o = this.R = true;
+        this.C = Promise.resolve();
+        this.P = "";
+        this.B = {};
+        this.locateFile = a2 && a2.locateFile || Tb;
+        if ("object" === typeof window) var b2 = window.location.pathname.toString().substring(0, window.location.pathname.toString().lastIndexOf("/")) + "/";
+        else if ("undefined" !== typeof location) b2 = location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf("/")) + "/";
+        else throw Error("solutions can only be loaded on a web page or in a web worker");
+        this.S = b2;
+        if (a2.options) {
+          b2 = K3(Object.keys(a2.options));
+          for (var c2 = b2.next(); !c2.done; c2 = b2.next()) {
+            c2 = c2.value;
+            var d2 = a2.options[c2].default;
+            void 0 !== d2 && (this.j[c2] = "function" === typeof d2 ? d2() : d2);
+          }
+        }
+      }
+      v2 = Xb.prototype;
+      v2.close = function() {
+        this.i && this.i.delete();
+        return Promise.resolve();
+      };
+      function Yb(a2, b2) {
+        return void 0 === a2.g.files ? [] : "function" === typeof a2.g.files ? a2.g.files(b2) : a2.g.files;
+      }
+      function Zb(a2) {
+        return Z2(a2, function c2() {
+          var d2 = this, e2, g2, f2, h2, k2, l2, n3, u2, w2, r3, y3;
+          return O2(c2, function(m2) {
+            switch (m2.g) {
+              case 1:
+                e2 = d2;
+                if (!d2.R) return m2.return();
+                g2 = Yb(d2, d2.j);
+                return N2(m2, Wb(), 2);
+              case 2:
+                f2 = m2.h;
+                if ("object" === typeof window) return Ub("createMediapipeSolutionsWasm", { locateFile: d2.locateFile }), Ub("createMediapipeSolutionsPackedAssets", { locateFile: d2.locateFile }), l2 = g2.filter(function(t3) {
+                  return void 0 !== t3.data;
+                }), n3 = g2.filter(function(t3) {
+                  return void 0 === t3.data;
+                }), u2 = Promise.all(l2.map(function(t3) {
+                  var x3 = $b(e2, t3.url);
+                  if (void 0 !== t3.path) {
+                    var z2 = t3.path;
+                    x3 = x3.then(function(E2) {
+                      e2.overrideFile(z2, E2);
+                      return Promise.resolve(E2);
+                    });
+                  }
+                  return x3;
+                })), w2 = Promise.all(n3.map(function(t3) {
+                  return void 0 === t3.simd || t3.simd && f2 || !t3.simd && !f2 ? Vb(e2.locateFile(t3.url, e2.S)) : Promise.resolve();
+                })).then(function() {
+                  return Z2(e2, function x3() {
+                    var z2, E2, F2 = this;
+                    return O2(x3, function(I2) {
+                      if (1 == I2.g) return z2 = window.createMediapipeSolutionsWasm, E2 = window.createMediapipeSolutionsPackedAssets, N2(I2, z2(E2), 2);
+                      F2.h = I2.h;
+                      I2.g = 0;
+                    });
+                  });
+                }), r3 = (function() {
+                  return Z2(e2, function x3() {
+                    var z2 = this;
+                    return O2(x3, function(E2) {
+                      z2.g.graph && z2.g.graph.url ? E2 = N2(E2, $b(z2, z2.g.graph.url), 0) : (E2.g = 0, E2 = void 0);
+                      return E2;
+                    });
+                  });
+                })(), N2(m2, Promise.all([w2, u2, r3]), 7);
+                if ("function" !== typeof importScripts) throw Error("solutions can only be loaded on a web page or in a web worker");
+                h2 = g2.filter(function(t3) {
+                  return void 0 === t3.simd || t3.simd && f2 || !t3.simd && !f2;
+                }).map(function(t3) {
+                  return e2.locateFile(t3.url, e2.S);
+                });
+                importScripts.apply(null, L2(h2));
+                return N2(m2, createMediapipeSolutionsWasm(Module), 6);
+              case 6:
+                d2.h = m2.h;
+                d2.l = new OffscreenCanvas(1, 1);
+                d2.h.canvas = d2.l;
+                k2 = d2.h.GL.createContext(
+                  d2.l,
+                  { antialias: false, alpha: false, ba: "undefined" !== typeof WebGL2RenderingContext ? 2 : 1 }
+                );
+                d2.h.GL.makeContextCurrent(k2);
+                m2.g = 4;
+                break;
+              case 7:
+                d2.l = document.createElement("canvas");
+                y3 = d2.l.getContext("webgl2", {});
+                if (!y3 && (y3 = d2.l.getContext("webgl", {}), !y3)) return alert("Failed to create WebGL canvas context when passing video frame."), m2.return();
+                d2.D = y3;
+                d2.h.canvas = d2.l;
+                d2.h.createContext(d2.l, true, true, {});
+              case 4:
+                d2.i = new d2.h.SolutionWasm(), d2.R = false, m2.g = 0;
+            }
+          });
+        });
+      }
+      function ac2(a2) {
+        return Z2(a2, function c2() {
+          var d2 = this, e2, g2, f2, h2, k2, l2, n3, u2;
+          return O2(c2, function(w2) {
+            if (1 == w2.g) {
+              if (d2.g.graph && d2.g.graph.url && d2.P === d2.g.graph.url) return w2.return();
+              d2.o = true;
+              if (!d2.g.graph || !d2.g.graph.url) {
+                w2.g = 2;
+                return;
+              }
+              d2.P = d2.g.graph.url;
+              return N2(w2, $b(d2, d2.g.graph.url), 3);
+            }
+            2 != w2.g && (e2 = w2.h, d2.i.loadGraph(e2));
+            g2 = K3(Object.keys(d2.B));
+            for (f2 = g2.next(); !f2.done; f2 = g2.next()) h2 = f2.value, d2.i.overrideFile(h2, d2.B[h2]);
+            d2.B = {};
+            if (d2.g.listeners) for (k2 = K3(d2.g.listeners), l2 = k2.next(); !l2.done; l2 = k2.next()) n3 = l2.value, bc2(d2, n3);
+            u2 = d2.j;
+            d2.j = {};
+            d2.setOptions(u2);
+            w2.g = 0;
+          });
+        });
+      }
+      v2.reset = function() {
+        return Z2(this, function b2() {
+          var c2 = this;
+          return O2(b2, function(d2) {
+            c2.i && (c2.i.reset(), c2.m = {}, c2.s = {});
+            d2.g = 0;
+          });
+        });
+      };
+      v2.setOptions = function(a2, b2) {
+        var c2 = this;
+        if (b2 = b2 || this.g.options) {
+          for (var d2 = [], e2 = [], g2 = {}, f2 = K3(Object.keys(a2)), h2 = f2.next(); !h2.done; g2 = { K: g2.K, L: g2.L }, h2 = f2.next()) {
+            var k2 = h2.value;
+            k2 in this.j && this.j[k2] === a2[k2] || (this.j[k2] = a2[k2], h2 = b2[k2], void 0 !== h2 && (h2.onChange && (g2.K = h2.onChange, g2.L = a2[k2], d2.push(/* @__PURE__ */ (function(l2) {
+              return function() {
+                return Z2(c2, function u2() {
+                  var w2, r3 = this;
+                  return O2(u2, function(y3) {
+                    if (1 == y3.g) return N2(y3, l2.K(l2.L), 2);
+                    w2 = y3.h;
+                    true === w2 && (r3.o = true);
+                    y3.g = 0;
+                  });
+                });
+              };
+            })(g2))), h2.graphOptionXref && (k2 = { valueNumber: 1 === h2.type ? a2[k2] : 0, valueBoolean: 0 === h2.type ? a2[k2] : false, valueString: 2 === h2.type ? a2[k2] : "" }, h2 = Object.assign(Object.assign(Object.assign({}, { calculatorName: "", calculatorIndex: 0 }), h2.graphOptionXref), k2), e2.push(h2))));
+          }
+          if (0 !== d2.length || 0 !== e2.length) this.o = true, this.A = (void 0 === this.A ? [] : this.A).concat(e2), this.u = (void 0 === this.u ? [] : this.u).concat(d2);
+        }
+      };
+      function cc2(a2) {
+        return Z2(a2, function c2() {
+          var d2 = this, e2, g2, f2, h2, k2, l2, n3;
+          return O2(c2, function(u2) {
+            switch (u2.g) {
+              case 1:
+                if (!d2.o) return u2.return();
+                if (!d2.u) {
+                  u2.g = 2;
+                  break;
+                }
+                e2 = K3(d2.u);
+                g2 = e2.next();
+              case 3:
+                if (g2.done) {
+                  u2.g = 5;
+                  break;
+                }
+                f2 = g2.value;
+                return N2(u2, f2(), 4);
+              case 4:
+                g2 = e2.next();
+                u2.g = 3;
+                break;
+              case 5:
+                d2.u = void 0;
+              case 2:
+                if (d2.A) {
+                  h2 = new d2.h.GraphOptionChangeRequestList();
+                  k2 = K3(d2.A);
+                  for (l2 = k2.next(); !l2.done; l2 = k2.next()) n3 = l2.value, h2.push_back(n3);
+                  d2.i.changeOptions(h2);
+                  h2.delete();
+                  d2.A = void 0;
+                }
+                d2.o = false;
+                u2.g = 0;
+            }
+          });
+        });
+      }
+      v2.initialize = function() {
+        return Z2(this, function b2() {
+          var c2 = this;
+          return O2(b2, function(d2) {
+            return 1 == d2.g ? N2(d2, Zb(c2), 2) : 3 != d2.g ? N2(d2, ac2(c2), 3) : N2(d2, cc2(c2), 0);
+          });
+        });
+      };
+      function $b(a2, b2) {
+        return Z2(a2, function d2() {
+          var e2 = this, g2, f2;
+          return O2(d2, function(h2) {
+            if (b2 in e2.F) return h2.return(e2.F[b2]);
+            g2 = e2.locateFile(b2, "");
+            f2 = fetch(g2).then(function(k2) {
+              return k2.arrayBuffer();
+            });
+            e2.F[b2] = f2;
+            return h2.return(f2);
+          });
+        });
+      }
+      v2.overrideFile = function(a2, b2) {
+        this.i ? this.i.overrideFile(a2, b2) : this.B[a2] = b2;
+      };
+      v2.clearOverriddenFiles = function() {
+        this.B = {};
+        this.i && this.i.clearOverriddenFiles();
+      };
+      v2.send = function(a2, b2) {
+        return Z2(this, function d2() {
+          var e2 = this, g2, f2, h2, k2, l2, n3, u2, w2, r3;
+          return O2(d2, function(y3) {
+            switch (y3.g) {
+              case 1:
+                if (!e2.g.inputs) return y3.return();
+                g2 = 1e3 * (void 0 === b2 || null === b2 ? performance.now() : b2);
+                return N2(y3, e2.C, 2);
+              case 2:
+                return N2(y3, e2.initialize(), 3);
+              case 3:
+                f2 = new e2.h.PacketDataList();
+                h2 = K3(Object.keys(a2));
+                for (k2 = h2.next(); !k2.done; k2 = h2.next()) if (l2 = k2.value, n3 = e2.g.inputs[l2]) {
+                  a: {
+                    var m2 = e2;
+                    var t3 = a2[l2];
+                    switch (n3.type) {
+                      case "video":
+                        var x3 = m2.m[n3.stream];
+                        x3 || (x3 = new Ob(m2.h, m2.D), m2.m[n3.stream] = x3);
+                        m2 = x3;
+                        0 === m2.l && (m2.l = m2.h.createTexture());
+                        if ("undefined" !== typeof HTMLVideoElement && t3 instanceof HTMLVideoElement) {
+                          var z2 = t3.videoWidth;
+                          x3 = t3.videoHeight;
+                        } else "undefined" !== typeof HTMLImageElement && t3 instanceof HTMLImageElement ? (z2 = t3.naturalWidth, x3 = t3.naturalHeight) : (z2 = t3.width, x3 = t3.height);
+                        x3 = { glName: m2.l, width: z2, height: x3 };
+                        z2 = m2.g;
+                        z2.canvas.width = x3.width;
+                        z2.canvas.height = x3.height;
+                        z2.activeTexture(z2.TEXTURE0);
+                        m2.h.bindTexture2d(m2.l);
+                        z2.texImage2D(z2.TEXTURE_2D, 0, z2.RGBA, z2.RGBA, z2.UNSIGNED_BYTE, t3);
+                        m2.h.bindTexture2d(0);
+                        m2 = x3;
+                        break a;
+                      case "detections":
+                        x3 = m2.m[n3.stream];
+                        x3 || (x3 = new Rb(m2.h), m2.m[n3.stream] = x3);
+                        m2 = x3;
+                        m2.data || (m2.data = new m2.g.DetectionListData());
+                        m2.data.reset(t3.length);
+                        for (x3 = 0; x3 < t3.length; ++x3) {
+                          z2 = t3[x3];
+                          var E2 = m2.data, F2 = E2.setBoundingBox, I2 = x3;
+                          var H2 = z2.T;
+                          var p2 = new Fb();
+                          X2(p2, 1, H2.Z);
+                          X2(p2, 2, H2.$);
+                          X2(p2, 3, H2.height);
+                          X2(p2, 4, H2.width);
+                          X2(p2, 5, H2.rotation);
+                          X2(p2, 6, H2.X);
+                          var A2 = H2 = new Ya2();
+                          U2(A2, 1, W2(p2, 1));
+                          U2(A2, 2, W2(p2, 2));
+                          U2(A2, 3, W2(p2, 3));
+                          U2(A2, 4, W2(p2, 4));
+                          U2(A2, 5, W2(p2, 5));
+                          var C2 = W2(p2, 6);
+                          if (null != C2 && null != C2) {
+                            Ra2(A2.g, 48);
+                            var q2 = A2.g, B2 = C2;
+                            C2 = 0 > B2;
+                            B2 = Math.abs(B2);
+                            var D2 = B2 >>> 0;
+                            B2 = Math.floor((B2 - D2) / 4294967296);
+                            B2 >>>= 0;
+                            C2 && (B2 = ~B2 >>> 0, D2 = (~D2 >>> 0) + 1, 4294967295 < D2 && (D2 = 0, B2++, 4294967295 < B2 && (B2 = 0)));
+                            Q2 = D2;
+                            R2 = B2;
+                            C2 = Q2;
+                            for (D2 = R2; 0 < D2 || 127 < C2; ) q2.push(C2 & 127 | 128), C2 = (C2 >>> 7 | D2 << 25) >>> 0, D2 >>>= 7;
+                            q2.push(C2);
+                          }
+                          rb(p2, A2);
+                          H2 = $a2(H2);
+                          F2.call(E2, I2, H2);
+                          if (z2.O) for (E2 = 0; E2 < z2.O.length; ++E2) p2 = z2.O[E2], A2 = p2.visibility ? true : false, F2 = m2.data, I2 = F2.addNormalizedLandmark, H2 = x3, p2 = Object.assign(Object.assign({}, p2), { visibility: A2 ? p2.visibility : 0 }), A2 = new Ab(), X2(A2, 1, p2.x), X2(A2, 2, p2.y), X2(A2, 3, p2.z), p2.visibility && X2(A2, 4, p2.visibility), q2 = p2 = new Ya2(), U2(q2, 1, W2(A2, 1)), U2(q2, 2, W2(A2, 2)), U2(q2, 3, W2(A2, 3)), U2(q2, 4, W2(A2, 4)), U2(q2, 5, W2(A2, 5)), rb(A2, q2), p2 = $a2(p2), I2.call(F2, H2, p2);
+                          if (z2.M) for (E2 = 0; E2 < z2.M.length; ++E2) {
+                            F2 = m2.data;
+                            I2 = F2.addClassification;
+                            H2 = x3;
+                            p2 = z2.M[E2];
+                            A2 = new wb();
+                            X2(A2, 2, p2.Y);
+                            p2.index && X2(A2, 1, p2.index);
+                            p2.label && X2(A2, 3, p2.label);
+                            p2.displayName && X2(A2, 4, p2.displayName);
+                            q2 = p2 = new Ya2();
+                            D2 = W2(A2, 1);
+                            if (null != D2 && null != D2) if (Ra2(q2.g, 8), C2 = q2.g, 0 <= D2) Ra2(C2, D2);
+                            else {
+                              for (B2 = 0; 9 > B2; B2++) C2.push(D2 & 127 | 128), D2 >>= 7;
+                              C2.push(1);
+                            }
+                            U2(q2, 2, W2(A2, 2));
+                            C2 = W2(A2, 3);
+                            null != C2 && (C2 = Ca2(C2), Ra2(q2.g, 26), Ra2(q2.g, C2.length), Za2(q2, q2.g.end()), Za2(q2, C2));
+                            C2 = W2(A2, 4);
+                            null != C2 && (C2 = Ca2(C2), Ra2(q2.g, 34), Ra2(q2.g, C2.length), Za2(q2, q2.g.end()), Za2(q2, C2));
+                            rb(A2, q2);
+                            p2 = $a2(p2);
+                            I2.call(F2, H2, p2);
+                          }
+                        }
+                        m2 = m2.data;
+                        break a;
+                      default:
+                        m2 = {};
+                    }
+                  }
+                  u2 = m2;
+                  w2 = n3.stream;
+                  switch (n3.type) {
+                    case "video":
+                      f2.pushTexture2d(Object.assign(Object.assign({}, u2), { stream: w2, timestamp: g2 }));
+                      break;
+                    case "detections":
+                      r3 = u2;
+                      r3.stream = w2;
+                      r3.timestamp = g2;
+                      f2.pushDetectionList(r3);
+                      break;
+                    default:
+                      throw Error("Unknown input config type: '" + n3.type + "'");
+                  }
+                }
+                e2.i.send(f2);
+                return N2(y3, e2.C, 4);
+              case 4:
+                f2.delete(), y3.g = 0;
+            }
+          });
+        });
+      };
+      function dc2(a2, b2, c2) {
+        return Z2(a2, function e2() {
+          var g2, f2, h2, k2, l2, n3, u2 = this, w2, r3, y3, m2, t3, x3, z2, E2;
+          return O2(e2, function(F2) {
+            switch (F2.g) {
+              case 1:
+                if (!c2) return F2.return(b2);
+                g2 = {};
+                f2 = 0;
+                h2 = K3(Object.keys(c2));
+                for (k2 = h2.next(); !k2.done; k2 = h2.next()) l2 = k2.value, n3 = c2[l2], "string" !== typeof n3 && "texture" === n3.type && void 0 !== b2[n3.stream] && ++f2;
+                1 < f2 && (u2.G = false);
+                w2 = K3(Object.keys(c2));
+                k2 = w2.next();
+              case 2:
+                if (k2.done) {
+                  F2.g = 4;
+                  break;
+                }
+                r3 = k2.value;
+                y3 = c2[r3];
+                if ("string" === typeof y3) return z2 = g2, E2 = r3, N2(F2, ec2(u2, r3, b2[y3]), 14);
+                m2 = b2[y3.stream];
+                if ("detection_list" === y3.type) {
+                  if (m2) {
+                    var I2 = m2.getRectList();
+                    for (var H2 = m2.getLandmarksList(), p2 = m2.getClassificationsList(), A2 = [], C2 = 0; C2 < I2.size(); ++C2) {
+                      var q2 = I2.get(C2);
+                      a: {
+                        var B2 = new Fb();
+                        for (q2 = new Sa2(q2); S2(q2); ) switch (q2.i) {
+                          case 13:
+                            var D2 = T2(q2);
+                            X2(B2, 1, D2);
+                            break;
+                          case 21:
+                            D2 = T2(q2);
+                            X2(B2, 2, D2);
+                            break;
+                          case 29:
+                            D2 = T2(q2);
+                            X2(B2, 3, D2);
+                            break;
+                          case 37:
+                            D2 = T2(q2);
+                            X2(B2, 4, D2);
+                            break;
+                          case 45:
+                            D2 = T2(q2);
+                            X2(B2, 5, D2);
+                            break;
+                          case 48:
+                            D2 = Oa2(q2.g);
+                            X2(B2, 6, D2);
+                            break;
+                          default:
+                            if (!sb(B2, q2)) break a;
+                        }
+                      }
+                      B2 = { Z: Y2(B2, 1), $: Y2(B2, 2), height: Y2(B2, 3), width: Y2(B2, 4), rotation: Y2(B2, 5, 0), X: lb(B2, 6, 0) };
+                      q2 = nb(Eb(H2.get(C2)), Ab).map(Nb);
+                      var la2 = p2.get(C2);
+                      a: for (D2 = new yb(), la2 = new Sa2(la2); S2(la2); ) switch (la2.i) {
+                        case 10:
+                          D2.addClassification(Ua2(la2, new wb(), xb));
+                          break;
+                        default:
+                          if (!sb(D2, la2)) break a;
+                      }
+                      B2 = { T: B2, O: q2, M: Mb(D2) };
+                      A2.push(B2);
+                    }
+                    I2 = A2;
+                  } else I2 = [];
+                  g2[r3] = I2;
+                  F2.g = 7;
+                  break;
+                }
+                if ("proto_list" === y3.type) {
+                  if (m2) {
+                    I2 = Array(m2.size());
+                    for (H2 = 0; H2 < m2.size(); H2++) I2[H2] = m2.get(H2);
+                    m2.delete();
+                  } else I2 = [];
+                  g2[r3] = I2;
+                  F2.g = 7;
+                  break;
+                }
+                if (void 0 === m2) {
+                  F2.g = 3;
+                  break;
+                }
+                if ("float_list" === y3.type) {
+                  g2[r3] = m2;
+                  F2.g = 7;
+                  break;
+                }
+                if ("proto" === y3.type) {
+                  g2[r3] = m2;
+                  F2.g = 7;
+                  break;
+                }
+                if ("texture" !== y3.type) throw Error("Unknown output config type: '" + y3.type + "'");
+                t3 = u2.s[r3];
+                t3 || (t3 = new Ob(u2.h, u2.D), u2.s[r3] = t3);
+                return N2(F2, Pb(t3, m2, u2.G), 13);
+              case 13:
+                x3 = F2.h, g2[r3] = x3;
+              case 7:
+                y3.transform && g2[r3] && (g2[r3] = y3.transform(g2[r3]));
+                F2.g = 3;
+                break;
+              case 14:
+                z2[E2] = F2.h;
+              case 3:
+                k2 = w2.next();
+                F2.g = 2;
+                break;
+              case 4:
+                return F2.return(g2);
+            }
+          });
+        });
+      }
+      function ec2(a2, b2, c2) {
+        return Z2(a2, function e2() {
+          var g2 = this, f2;
+          return O2(e2, function(h2) {
+            return "number" === typeof c2 || c2 instanceof Uint8Array || c2 instanceof g2.h.Uint8BlobList ? h2.return(c2) : c2 instanceof g2.h.Texture2dDataOut ? (f2 = g2.s[b2], f2 || (f2 = new Ob(g2.h, g2.D), g2.s[b2] = f2), h2.return(Pb(f2, c2, g2.G))) : h2.return(void 0);
+          });
+        });
+      }
+      function bc2(a2, b2) {
+        for (var c2 = b2.name || "$", d2 = [].concat(L2(b2.wants)), e2 = new a2.h.StringList(), g2 = K3(b2.wants), f2 = g2.next(); !f2.done; f2 = g2.next()) e2.push_back(f2.value);
+        g2 = a2.h.PacketListener.implement({ onResults: function(h2) {
+          for (var k2 = {}, l2 = 0; l2 < b2.wants.length; ++l2) k2[d2[l2]] = h2.get(l2);
+          var n3 = a2.listeners[c2];
+          n3 && (a2.C = dc2(a2, k2, b2.outs).then(function(u2) {
+            u2 = n3(u2);
+            for (var w2 = 0; w2 < b2.wants.length; ++w2) {
+              var r3 = k2[d2[w2]];
+              "object" === typeof r3 && r3.hasOwnProperty && r3.hasOwnProperty("delete") && r3.delete();
+            }
+            u2 && (a2.C = u2);
+          }));
+        } });
+        a2.i.attachMultiListener(e2, g2);
+        e2.delete();
+      }
+      v2.onResults = function(a2, b2) {
+        this.listeners[b2 || "$"] = a2;
+      };
+      P2("Solution", Xb);
+      P2("OptionType", { BOOL: 0, NUMBER: 1, aa: 2, 0: "BOOL", 1: "NUMBER", 2: "STRING" });
+      function fc2(a2) {
+        a2 = Kb(a2);
+        var b2 = a2.getMesh();
+        if (!b2) return a2;
+        var c2 = new Float32Array(b2.getVertexBufferList());
+        b2.getVertexBufferList = function() {
+          return c2;
+        };
+        var d2 = new Uint32Array(b2.getIndexBufferList());
+        b2.getIndexBufferList = function() {
+          return d2;
+        };
+        return a2;
+      }
+      ;
+      var gc2 = { files: [{ url: "face_mesh_solution_packed_assets_loader.js" }, { simd: true, url: "face_mesh_solution_simd_wasm_bin.js" }, { simd: false, url: "face_mesh_solution_wasm_bin.js" }], graph: { url: "face_mesh.binarypb" }, listeners: [{ wants: ["multi_face_geometry", "image_transformed", "multi_face_landmarks"], outs: { image: "image_transformed", multiFaceGeometry: { type: "proto_list", stream: "multi_face_geometry", transform: function(a2) {
+        return a2.map(fc2);
+      } }, multiFaceLandmarks: { type: "proto_list", stream: "multi_face_landmarks", transform: function(a2) {
+        return a2.map(function(b2) {
+          return nb(
+            Eb(b2),
+            Ab
+          ).map(Nb);
+        });
+      } } } }], inputs: { image: { type: "video", stream: "input_frames_gpu" } }, options: { useCpuInference: { type: 0, graphOptionXref: { calculatorType: "InferenceCalculator", fieldName: "use_cpu_inference" }, default: "iPad Simulator;iPhone Simulator;iPod Simulator;iPad;iPhone;iPod".split(";").includes(navigator.platform) || navigator.userAgent.includes("Mac") && "ontouchend" in document }, enableFaceGeometry: { type: 0, graphOptionXref: {
+        calculatorName: "EnableFaceGeometryConstant",
+        calculatorType: "ConstantSidePacketCalculator",
+        fieldName: "bool_value"
+      } }, selfieMode: { type: 0, graphOptionXref: { calculatorType: "GlScalerCalculator", calculatorIndex: 1, fieldName: "flip_horizontal" } }, maxNumFaces: { type: 1, graphOptionXref: { calculatorType: "ConstantSidePacketCalculator", calculatorName: "ConstantSidePacketCalculatorNumFaces", fieldName: "int_value" } }, refineLandmarks: { type: 0, graphOptionXref: { calculatorType: "ConstantSidePacketCalculator", calculatorName: "ConstantSidePacketCalculatorRefineLandmarks", fieldName: "bool_value" } }, minDetectionConfidence: {
+        type: 1,
+        graphOptionXref: { calculatorType: "TensorsToDetectionsCalculator", calculatorName: "facelandmarkfrontgpu__facedetectionshortrangegpu__facedetectionshortrangecommon__TensorsToDetectionsCalculator", fieldName: "min_score_thresh" }
+      }, minTrackingConfidence: { type: 1, graphOptionXref: { calculatorType: "ThresholdingCalculator", calculatorName: "facelandmarkfrontgpu__facelandmarkgpu__ThresholdingCalculator", fieldName: "threshold" } }, cameraNear: { type: 1, graphOptionXref: {
+        calculatorType: "FaceGeometryEnvGeneratorCalculator",
+        fieldName: "near"
+      } }, cameraFar: { type: 1, graphOptionXref: { calculatorType: "FaceGeometryEnvGeneratorCalculator", fieldName: "far" } }, cameraVerticalFovDegrees: { type: 1, graphOptionXref: { calculatorType: "FaceGeometryEnvGeneratorCalculator", fieldName: "vertical_fov_degrees" } } } };
+      var hc2 = [[61, 146], [146, 91], [91, 181], [181, 84], [84, 17], [17, 314], [314, 405], [405, 321], [321, 375], [375, 291], [61, 185], [185, 40], [40, 39], [39, 37], [37, 0], [0, 267], [267, 269], [269, 270], [270, 409], [409, 291], [78, 95], [95, 88], [88, 178], [178, 87], [87, 14], [14, 317], [317, 402], [402, 318], [318, 324], [324, 308], [78, 191], [191, 80], [80, 81], [81, 82], [82, 13], [13, 312], [312, 311], [311, 310], [310, 415], [415, 308]], ic2 = [[263, 249], [249, 390], [390, 373], [373, 374], [374, 380], [380, 381], [381, 382], [382, 362], [263, 466], [466, 388], [388, 387], [387, 386], [
+        386,
+        385
+      ], [385, 384], [384, 398], [398, 362]], jc2 = [[276, 283], [283, 282], [282, 295], [295, 285], [300, 293], [293, 334], [334, 296], [296, 336]], kc2 = [[33, 7], [7, 163], [163, 144], [144, 145], [145, 153], [153, 154], [154, 155], [155, 133], [33, 246], [246, 161], [161, 160], [160, 159], [159, 158], [158, 157], [157, 173], [173, 133]], lc2 = [[46, 53], [53, 52], [52, 65], [65, 55], [70, 63], [63, 105], [105, 66], [66, 107]], mc2 = [
+        [10, 338],
+        [338, 297],
+        [297, 332],
+        [332, 284],
+        [284, 251],
+        [251, 389],
+        [389, 356],
+        [356, 454],
+        [454, 323],
+        [323, 361],
+        [361, 288],
+        [288, 397],
+        [397, 365],
+        [365, 379],
+        [379, 378],
+        [378, 400],
+        [400, 377],
+        [377, 152],
+        [152, 148],
+        [148, 176],
+        [176, 149],
+        [149, 150],
+        [150, 136],
+        [136, 172],
+        [172, 58],
+        [58, 132],
+        [132, 93],
+        [93, 234],
+        [234, 127],
+        [127, 162],
+        [162, 21],
+        [21, 54],
+        [54, 103],
+        [103, 67],
+        [67, 109],
+        [109, 10]
+      ], nc2 = [].concat(L2(hc2), L2(ic2), L2(jc2), L2(kc2), L2(lc2), L2(mc2));
+      function oc2(a2) {
+        a2 = a2 || {};
+        a2 = Object.assign(Object.assign({}, gc2), a2);
+        this.g = new Xb(a2);
+      }
+      v2 = oc2.prototype;
+      v2.close = function() {
+        this.g.close();
+        return Promise.resolve();
+      };
+      v2.onResults = function(a2) {
+        this.g.onResults(a2);
+      };
+      v2.initialize = function() {
+        return Z2(this, function b2() {
+          var c2 = this;
+          return O2(b2, function(d2) {
+            return N2(d2, c2.g.initialize(), 0);
+          });
+        });
+      };
+      v2.reset = function() {
+        this.g.reset();
+      };
+      v2.send = function(a2) {
+        return Z2(this, function c2() {
+          var d2 = this;
+          return O2(c2, function(e2) {
+            return N2(e2, d2.g.send(a2), 0);
+          });
+        });
+      };
+      v2.setOptions = function(a2) {
+        this.g.setOptions(a2);
+      };
+      P2("FACE_GEOMETRY", { Layout: { COLUMN_MAJOR: 0, ROW_MAJOR: 1, 0: "COLUMN_MAJOR", 1: "ROW_MAJOR" }, PrimitiveType: { TRIANGLE: 0, 0: "TRIANGLE" }, VertexType: { VERTEX_PT: 0, 0: "VERTEX_PT" }, DEFAULT_CAMERA_PARAMS: { verticalFovDegrees: 63, near: 1, far: 1e4 } });
+      P2("FaceMesh", oc2);
+      P2("FACEMESH_LIPS", hc2);
+      P2("FACEMESH_LEFT_EYE", ic2);
+      P2("FACEMESH_LEFT_EYEBROW", jc2);
+      P2("FACEMESH_LEFT_IRIS", [[474, 475], [475, 476], [476, 477], [477, 474]]);
+      P2("FACEMESH_RIGHT_EYE", kc2);
+      P2("FACEMESH_RIGHT_EYEBROW", lc2);
+      P2("FACEMESH_RIGHT_IRIS", [[469, 470], [470, 471], [471, 472], [472, 469]]);
+      P2("FACEMESH_FACE_OVAL", mc2);
+      P2("FACEMESH_CONTOURS", nc2);
+      P2("FACEMESH_TESSELATION", [
+        [127, 34],
+        [34, 139],
+        [139, 127],
+        [11, 0],
+        [0, 37],
+        [37, 11],
+        [232, 231],
+        [231, 120],
+        [120, 232],
+        [72, 37],
+        [37, 39],
+        [39, 72],
+        [128, 121],
+        [121, 47],
+        [47, 128],
+        [232, 121],
+        [121, 128],
+        [128, 232],
+        [104, 69],
+        [69, 67],
+        [67, 104],
+        [175, 171],
+        [171, 148],
+        [148, 175],
+        [118, 50],
+        [50, 101],
+        [101, 118],
+        [73, 39],
+        [39, 40],
+        [40, 73],
+        [9, 151],
+        [151, 108],
+        [108, 9],
+        [48, 115],
+        [115, 131],
+        [131, 48],
+        [194, 204],
+        [204, 211],
+        [211, 194],
+        [74, 40],
+        [40, 185],
+        [185, 74],
+        [80, 42],
+        [42, 183],
+        [183, 80],
+        [40, 92],
+        [92, 186],
+        [186, 40],
+        [230, 229],
+        [229, 118],
+        [118, 230],
+        [202, 212],
+        [
+          212,
+          214
+        ],
+        [214, 202],
+        [83, 18],
+        [18, 17],
+        [17, 83],
+        [76, 61],
+        [61, 146],
+        [146, 76],
+        [160, 29],
+        [29, 30],
+        [30, 160],
+        [56, 157],
+        [157, 173],
+        [173, 56],
+        [106, 204],
+        [204, 194],
+        [194, 106],
+        [135, 214],
+        [214, 192],
+        [192, 135],
+        [203, 165],
+        [165, 98],
+        [98, 203],
+        [21, 71],
+        [71, 68],
+        [68, 21],
+        [51, 45],
+        [45, 4],
+        [4, 51],
+        [144, 24],
+        [24, 23],
+        [23, 144],
+        [77, 146],
+        [146, 91],
+        [91, 77],
+        [205, 50],
+        [50, 187],
+        [187, 205],
+        [201, 200],
+        [200, 18],
+        [18, 201],
+        [91, 106],
+        [106, 182],
+        [182, 91],
+        [90, 91],
+        [91, 181],
+        [181, 90],
+        [85, 84],
+        [84, 17],
+        [17, 85],
+        [206, 203],
+        [203, 36],
+        [36, 206],
+        [148, 171],
+        [171, 140],
+        [140, 148],
+        [
+          92,
+          40
+        ],
+        [40, 39],
+        [39, 92],
+        [193, 189],
+        [189, 244],
+        [244, 193],
+        [159, 158],
+        [158, 28],
+        [28, 159],
+        [247, 246],
+        [246, 161],
+        [161, 247],
+        [236, 3],
+        [3, 196],
+        [196, 236],
+        [54, 68],
+        [68, 104],
+        [104, 54],
+        [193, 168],
+        [168, 8],
+        [8, 193],
+        [117, 228],
+        [228, 31],
+        [31, 117],
+        [189, 193],
+        [193, 55],
+        [55, 189],
+        [98, 97],
+        [97, 99],
+        [99, 98],
+        [126, 47],
+        [47, 100],
+        [100, 126],
+        [166, 79],
+        [79, 218],
+        [218, 166],
+        [155, 154],
+        [154, 26],
+        [26, 155],
+        [209, 49],
+        [49, 131],
+        [131, 209],
+        [135, 136],
+        [136, 150],
+        [150, 135],
+        [47, 126],
+        [126, 217],
+        [217, 47],
+        [223, 52],
+        [52, 53],
+        [53, 223],
+        [45, 51],
+        [51, 134],
+        [134, 45],
+        [211, 170],
+        [
+          170,
+          140
+        ],
+        [140, 211],
+        [67, 69],
+        [69, 108],
+        [108, 67],
+        [43, 106],
+        [106, 91],
+        [91, 43],
+        [230, 119],
+        [119, 120],
+        [120, 230],
+        [226, 130],
+        [130, 247],
+        [247, 226],
+        [63, 53],
+        [53, 52],
+        [52, 63],
+        [238, 20],
+        [20, 242],
+        [242, 238],
+        [46, 70],
+        [70, 156],
+        [156, 46],
+        [78, 62],
+        [62, 96],
+        [96, 78],
+        [46, 53],
+        [53, 63],
+        [63, 46],
+        [143, 34],
+        [34, 227],
+        [227, 143],
+        [123, 117],
+        [117, 111],
+        [111, 123],
+        [44, 125],
+        [125, 19],
+        [19, 44],
+        [236, 134],
+        [134, 51],
+        [51, 236],
+        [216, 206],
+        [206, 205],
+        [205, 216],
+        [154, 153],
+        [153, 22],
+        [22, 154],
+        [39, 37],
+        [37, 167],
+        [167, 39],
+        [200, 201],
+        [201, 208],
+        [208, 200],
+        [36, 142],
+        [142, 100],
+        [
+          100,
+          36
+        ],
+        [57, 212],
+        [212, 202],
+        [202, 57],
+        [20, 60],
+        [60, 99],
+        [99, 20],
+        [28, 158],
+        [158, 157],
+        [157, 28],
+        [35, 226],
+        [226, 113],
+        [113, 35],
+        [160, 159],
+        [159, 27],
+        [27, 160],
+        [204, 202],
+        [202, 210],
+        [210, 204],
+        [113, 225],
+        [225, 46],
+        [46, 113],
+        [43, 202],
+        [202, 204],
+        [204, 43],
+        [62, 76],
+        [76, 77],
+        [77, 62],
+        [137, 123],
+        [123, 116],
+        [116, 137],
+        [41, 38],
+        [38, 72],
+        [72, 41],
+        [203, 129],
+        [129, 142],
+        [142, 203],
+        [64, 98],
+        [98, 240],
+        [240, 64],
+        [49, 102],
+        [102, 64],
+        [64, 49],
+        [41, 73],
+        [73, 74],
+        [74, 41],
+        [212, 216],
+        [216, 207],
+        [207, 212],
+        [42, 74],
+        [74, 184],
+        [184, 42],
+        [169, 170],
+        [170, 211],
+        [211, 169],
+        [
+          170,
+          149
+        ],
+        [149, 176],
+        [176, 170],
+        [105, 66],
+        [66, 69],
+        [69, 105],
+        [122, 6],
+        [6, 168],
+        [168, 122],
+        [123, 147],
+        [147, 187],
+        [187, 123],
+        [96, 77],
+        [77, 90],
+        [90, 96],
+        [65, 55],
+        [55, 107],
+        [107, 65],
+        [89, 90],
+        [90, 180],
+        [180, 89],
+        [101, 100],
+        [100, 120],
+        [120, 101],
+        [63, 105],
+        [105, 104],
+        [104, 63],
+        [93, 137],
+        [137, 227],
+        [227, 93],
+        [15, 86],
+        [86, 85],
+        [85, 15],
+        [129, 102],
+        [102, 49],
+        [49, 129],
+        [14, 87],
+        [87, 86],
+        [86, 14],
+        [55, 8],
+        [8, 9],
+        [9, 55],
+        [100, 47],
+        [47, 121],
+        [121, 100],
+        [145, 23],
+        [23, 22],
+        [22, 145],
+        [88, 89],
+        [89, 179],
+        [179, 88],
+        [6, 122],
+        [122, 196],
+        [196, 6],
+        [88, 95],
+        [95, 96],
+        [96, 88],
+        [138, 172],
+        [172, 136],
+        [136, 138],
+        [215, 58],
+        [58, 172],
+        [172, 215],
+        [115, 48],
+        [48, 219],
+        [219, 115],
+        [42, 80],
+        [80, 81],
+        [81, 42],
+        [195, 3],
+        [3, 51],
+        [51, 195],
+        [43, 146],
+        [146, 61],
+        [61, 43],
+        [171, 175],
+        [175, 199],
+        [199, 171],
+        [81, 82],
+        [82, 38],
+        [38, 81],
+        [53, 46],
+        [46, 225],
+        [225, 53],
+        [144, 163],
+        [163, 110],
+        [110, 144],
+        [52, 65],
+        [65, 66],
+        [66, 52],
+        [229, 228],
+        [228, 117],
+        [117, 229],
+        [34, 127],
+        [127, 234],
+        [234, 34],
+        [107, 108],
+        [108, 69],
+        [69, 107],
+        [109, 108],
+        [108, 151],
+        [151, 109],
+        [48, 64],
+        [64, 235],
+        [235, 48],
+        [62, 78],
+        [78, 191],
+        [191, 62],
+        [129, 209],
+        [209, 126],
+        [126, 129],
+        [111, 35],
+        [35, 143],
+        [
+          143,
+          111
+        ],
+        [117, 123],
+        [123, 50],
+        [50, 117],
+        [222, 65],
+        [65, 52],
+        [52, 222],
+        [19, 125],
+        [125, 141],
+        [141, 19],
+        [221, 55],
+        [55, 65],
+        [65, 221],
+        [3, 195],
+        [195, 197],
+        [197, 3],
+        [25, 7],
+        [7, 33],
+        [33, 25],
+        [220, 237],
+        [237, 44],
+        [44, 220],
+        [70, 71],
+        [71, 139],
+        [139, 70],
+        [122, 193],
+        [193, 245],
+        [245, 122],
+        [247, 130],
+        [130, 33],
+        [33, 247],
+        [71, 21],
+        [21, 162],
+        [162, 71],
+        [170, 169],
+        [169, 150],
+        [150, 170],
+        [188, 174],
+        [174, 196],
+        [196, 188],
+        [216, 186],
+        [186, 92],
+        [92, 216],
+        [2, 97],
+        [97, 167],
+        [167, 2],
+        [141, 125],
+        [125, 241],
+        [241, 141],
+        [164, 167],
+        [167, 37],
+        [37, 164],
+        [72, 38],
+        [38, 12],
+        [12, 72],
+        [38, 82],
+        [82, 13],
+        [13, 38],
+        [63, 68],
+        [68, 71],
+        [71, 63],
+        [226, 35],
+        [35, 111],
+        [111, 226],
+        [101, 50],
+        [50, 205],
+        [205, 101],
+        [206, 92],
+        [92, 165],
+        [165, 206],
+        [209, 198],
+        [198, 217],
+        [217, 209],
+        [165, 167],
+        [167, 97],
+        [97, 165],
+        [220, 115],
+        [115, 218],
+        [218, 220],
+        [133, 112],
+        [112, 243],
+        [243, 133],
+        [239, 238],
+        [238, 241],
+        [241, 239],
+        [214, 135],
+        [135, 169],
+        [169, 214],
+        [190, 173],
+        [173, 133],
+        [133, 190],
+        [171, 208],
+        [208, 32],
+        [32, 171],
+        [125, 44],
+        [44, 237],
+        [237, 125],
+        [86, 87],
+        [87, 178],
+        [178, 86],
+        [85, 86],
+        [86, 179],
+        [179, 85],
+        [84, 85],
+        [85, 180],
+        [180, 84],
+        [83, 84],
+        [84, 181],
+        [181, 83],
+        [201, 83],
+        [83, 182],
+        [182, 201],
+        [137, 93],
+        [93, 132],
+        [132, 137],
+        [76, 62],
+        [62, 183],
+        [183, 76],
+        [61, 76],
+        [76, 184],
+        [184, 61],
+        [57, 61],
+        [61, 185],
+        [185, 57],
+        [212, 57],
+        [57, 186],
+        [186, 212],
+        [214, 207],
+        [207, 187],
+        [187, 214],
+        [34, 143],
+        [143, 156],
+        [156, 34],
+        [79, 239],
+        [239, 237],
+        [237, 79],
+        [123, 137],
+        [137, 177],
+        [177, 123],
+        [44, 1],
+        [1, 4],
+        [4, 44],
+        [201, 194],
+        [194, 32],
+        [32, 201],
+        [64, 102],
+        [102, 129],
+        [129, 64],
+        [213, 215],
+        [215, 138],
+        [138, 213],
+        [59, 166],
+        [166, 219],
+        [219, 59],
+        [242, 99],
+        [99, 97],
+        [97, 242],
+        [2, 94],
+        [94, 141],
+        [141, 2],
+        [75, 59],
+        [59, 235],
+        [235, 75],
+        [24, 110],
+        [110, 228],
+        [
+          228,
+          24
+        ],
+        [25, 130],
+        [130, 226],
+        [226, 25],
+        [23, 24],
+        [24, 229],
+        [229, 23],
+        [22, 23],
+        [23, 230],
+        [230, 22],
+        [26, 22],
+        [22, 231],
+        [231, 26],
+        [112, 26],
+        [26, 232],
+        [232, 112],
+        [189, 190],
+        [190, 243],
+        [243, 189],
+        [221, 56],
+        [56, 190],
+        [190, 221],
+        [28, 56],
+        [56, 221],
+        [221, 28],
+        [27, 28],
+        [28, 222],
+        [222, 27],
+        [29, 27],
+        [27, 223],
+        [223, 29],
+        [30, 29],
+        [29, 224],
+        [224, 30],
+        [247, 30],
+        [30, 225],
+        [225, 247],
+        [238, 79],
+        [79, 20],
+        [20, 238],
+        [166, 59],
+        [59, 75],
+        [75, 166],
+        [60, 75],
+        [75, 240],
+        [240, 60],
+        [147, 177],
+        [177, 215],
+        [215, 147],
+        [20, 79],
+        [79, 166],
+        [166, 20],
+        [187, 147],
+        [147, 213],
+        [213, 187],
+        [112, 233],
+        [233, 244],
+        [244, 112],
+        [233, 128],
+        [128, 245],
+        [245, 233],
+        [128, 114],
+        [114, 188],
+        [188, 128],
+        [114, 217],
+        [217, 174],
+        [174, 114],
+        [131, 115],
+        [115, 220],
+        [220, 131],
+        [217, 198],
+        [198, 236],
+        [236, 217],
+        [198, 131],
+        [131, 134],
+        [134, 198],
+        [177, 132],
+        [132, 58],
+        [58, 177],
+        [143, 35],
+        [35, 124],
+        [124, 143],
+        [110, 163],
+        [163, 7],
+        [7, 110],
+        [228, 110],
+        [110, 25],
+        [25, 228],
+        [356, 389],
+        [389, 368],
+        [368, 356],
+        [11, 302],
+        [302, 267],
+        [267, 11],
+        [452, 350],
+        [350, 349],
+        [349, 452],
+        [302, 303],
+        [303, 269],
+        [269, 302],
+        [357, 343],
+        [343, 277],
+        [277, 357],
+        [452, 453],
+        [453, 357],
+        [357, 452],
+        [333, 332],
+        [
+          332,
+          297
+        ],
+        [297, 333],
+        [175, 152],
+        [152, 377],
+        [377, 175],
+        [347, 348],
+        [348, 330],
+        [330, 347],
+        [303, 304],
+        [304, 270],
+        [270, 303],
+        [9, 336],
+        [336, 337],
+        [337, 9],
+        [278, 279],
+        [279, 360],
+        [360, 278],
+        [418, 262],
+        [262, 431],
+        [431, 418],
+        [304, 408],
+        [408, 409],
+        [409, 304],
+        [310, 415],
+        [415, 407],
+        [407, 310],
+        [270, 409],
+        [409, 410],
+        [410, 270],
+        [450, 348],
+        [348, 347],
+        [347, 450],
+        [422, 430],
+        [430, 434],
+        [434, 422],
+        [313, 314],
+        [314, 17],
+        [17, 313],
+        [306, 307],
+        [307, 375],
+        [375, 306],
+        [387, 388],
+        [388, 260],
+        [260, 387],
+        [286, 414],
+        [414, 398],
+        [398, 286],
+        [335, 406],
+        [406, 418],
+        [418, 335],
+        [364, 367],
+        [
+          367,
+          416
+        ],
+        [416, 364],
+        [423, 358],
+        [358, 327],
+        [327, 423],
+        [251, 284],
+        [284, 298],
+        [298, 251],
+        [281, 5],
+        [5, 4],
+        [4, 281],
+        [373, 374],
+        [374, 253],
+        [253, 373],
+        [307, 320],
+        [320, 321],
+        [321, 307],
+        [425, 427],
+        [427, 411],
+        [411, 425],
+        [421, 313],
+        [313, 18],
+        [18, 421],
+        [321, 405],
+        [405, 406],
+        [406, 321],
+        [320, 404],
+        [404, 405],
+        [405, 320],
+        [315, 16],
+        [16, 17],
+        [17, 315],
+        [426, 425],
+        [425, 266],
+        [266, 426],
+        [377, 400],
+        [400, 369],
+        [369, 377],
+        [322, 391],
+        [391, 269],
+        [269, 322],
+        [417, 465],
+        [465, 464],
+        [464, 417],
+        [386, 257],
+        [257, 258],
+        [258, 386],
+        [466, 260],
+        [260, 388],
+        [388, 466],
+        [456, 399],
+        [399, 419],
+        [419, 456],
+        [284, 332],
+        [332, 333],
+        [333, 284],
+        [417, 285],
+        [285, 8],
+        [8, 417],
+        [346, 340],
+        [340, 261],
+        [261, 346],
+        [413, 441],
+        [441, 285],
+        [285, 413],
+        [327, 460],
+        [460, 328],
+        [328, 327],
+        [355, 371],
+        [371, 329],
+        [329, 355],
+        [392, 439],
+        [439, 438],
+        [438, 392],
+        [382, 341],
+        [341, 256],
+        [256, 382],
+        [429, 420],
+        [420, 360],
+        [360, 429],
+        [364, 394],
+        [394, 379],
+        [379, 364],
+        [277, 343],
+        [343, 437],
+        [437, 277],
+        [443, 444],
+        [444, 283],
+        [283, 443],
+        [275, 440],
+        [440, 363],
+        [363, 275],
+        [431, 262],
+        [262, 369],
+        [369, 431],
+        [297, 338],
+        [338, 337],
+        [337, 297],
+        [273, 375],
+        [375, 321],
+        [321, 273],
+        [450, 451],
+        [
+          451,
+          349
+        ],
+        [349, 450],
+        [446, 342],
+        [342, 467],
+        [467, 446],
+        [293, 334],
+        [334, 282],
+        [282, 293],
+        [458, 461],
+        [461, 462],
+        [462, 458],
+        [276, 353],
+        [353, 383],
+        [383, 276],
+        [308, 324],
+        [324, 325],
+        [325, 308],
+        [276, 300],
+        [300, 293],
+        [293, 276],
+        [372, 345],
+        [345, 447],
+        [447, 372],
+        [352, 345],
+        [345, 340],
+        [340, 352],
+        [274, 1],
+        [1, 19],
+        [19, 274],
+        [456, 248],
+        [248, 281],
+        [281, 456],
+        [436, 427],
+        [427, 425],
+        [425, 436],
+        [381, 256],
+        [256, 252],
+        [252, 381],
+        [269, 391],
+        [391, 393],
+        [393, 269],
+        [200, 199],
+        [199, 428],
+        [428, 200],
+        [266, 330],
+        [330, 329],
+        [329, 266],
+        [287, 273],
+        [273, 422],
+        [422, 287],
+        [250, 462],
+        [
+          462,
+          328
+        ],
+        [328, 250],
+        [258, 286],
+        [286, 384],
+        [384, 258],
+        [265, 353],
+        [353, 342],
+        [342, 265],
+        [387, 259],
+        [259, 257],
+        [257, 387],
+        [424, 431],
+        [431, 430],
+        [430, 424],
+        [342, 353],
+        [353, 276],
+        [276, 342],
+        [273, 335],
+        [335, 424],
+        [424, 273],
+        [292, 325],
+        [325, 307],
+        [307, 292],
+        [366, 447],
+        [447, 345],
+        [345, 366],
+        [271, 303],
+        [303, 302],
+        [302, 271],
+        [423, 266],
+        [266, 371],
+        [371, 423],
+        [294, 455],
+        [455, 460],
+        [460, 294],
+        [279, 278],
+        [278, 294],
+        [294, 279],
+        [271, 272],
+        [272, 304],
+        [304, 271],
+        [432, 434],
+        [434, 427],
+        [427, 432],
+        [272, 407],
+        [407, 408],
+        [408, 272],
+        [394, 430],
+        [430, 431],
+        [431, 394],
+        [395, 369],
+        [369, 400],
+        [400, 395],
+        [334, 333],
+        [333, 299],
+        [299, 334],
+        [351, 417],
+        [417, 168],
+        [168, 351],
+        [352, 280],
+        [280, 411],
+        [411, 352],
+        [325, 319],
+        [319, 320],
+        [320, 325],
+        [295, 296],
+        [296, 336],
+        [336, 295],
+        [319, 403],
+        [403, 404],
+        [404, 319],
+        [330, 348],
+        [348, 349],
+        [349, 330],
+        [293, 298],
+        [298, 333],
+        [333, 293],
+        [323, 454],
+        [454, 447],
+        [447, 323],
+        [15, 16],
+        [16, 315],
+        [315, 15],
+        [358, 429],
+        [429, 279],
+        [279, 358],
+        [14, 15],
+        [15, 316],
+        [316, 14],
+        [285, 336],
+        [336, 9],
+        [9, 285],
+        [329, 349],
+        [349, 350],
+        [350, 329],
+        [374, 380],
+        [380, 252],
+        [252, 374],
+        [318, 402],
+        [402, 403],
+        [403, 318],
+        [6, 197],
+        [
+          197,
+          419
+        ],
+        [419, 6],
+        [318, 319],
+        [319, 325],
+        [325, 318],
+        [367, 364],
+        [364, 365],
+        [365, 367],
+        [435, 367],
+        [367, 397],
+        [397, 435],
+        [344, 438],
+        [438, 439],
+        [439, 344],
+        [272, 271],
+        [271, 311],
+        [311, 272],
+        [195, 5],
+        [5, 281],
+        [281, 195],
+        [273, 287],
+        [287, 291],
+        [291, 273],
+        [396, 428],
+        [428, 199],
+        [199, 396],
+        [311, 271],
+        [271, 268],
+        [268, 311],
+        [283, 444],
+        [444, 445],
+        [445, 283],
+        [373, 254],
+        [254, 339],
+        [339, 373],
+        [282, 334],
+        [334, 296],
+        [296, 282],
+        [449, 347],
+        [347, 346],
+        [346, 449],
+        [264, 447],
+        [447, 454],
+        [454, 264],
+        [336, 296],
+        [296, 299],
+        [299, 336],
+        [338, 10],
+        [10, 151],
+        [151, 338],
+        [278, 439],
+        [
+          439,
+          455
+        ],
+        [455, 278],
+        [292, 407],
+        [407, 415],
+        [415, 292],
+        [358, 371],
+        [371, 355],
+        [355, 358],
+        [340, 345],
+        [345, 372],
+        [372, 340],
+        [346, 347],
+        [347, 280],
+        [280, 346],
+        [442, 443],
+        [443, 282],
+        [282, 442],
+        [19, 94],
+        [94, 370],
+        [370, 19],
+        [441, 442],
+        [442, 295],
+        [295, 441],
+        [248, 419],
+        [419, 197],
+        [197, 248],
+        [263, 255],
+        [255, 359],
+        [359, 263],
+        [440, 275],
+        [275, 274],
+        [274, 440],
+        [300, 383],
+        [383, 368],
+        [368, 300],
+        [351, 412],
+        [412, 465],
+        [465, 351],
+        [263, 467],
+        [467, 466],
+        [466, 263],
+        [301, 368],
+        [368, 389],
+        [389, 301],
+        [395, 378],
+        [378, 379],
+        [379, 395],
+        [412, 351],
+        [351, 419],
+        [419, 412],
+        [436, 426],
+        [426, 322],
+        [322, 436],
+        [2, 164],
+        [164, 393],
+        [393, 2],
+        [370, 462],
+        [462, 461],
+        [461, 370],
+        [164, 0],
+        [0, 267],
+        [267, 164],
+        [302, 11],
+        [11, 12],
+        [12, 302],
+        [268, 12],
+        [12, 13],
+        [13, 268],
+        [293, 300],
+        [300, 301],
+        [301, 293],
+        [446, 261],
+        [261, 340],
+        [340, 446],
+        [330, 266],
+        [266, 425],
+        [425, 330],
+        [426, 423],
+        [423, 391],
+        [391, 426],
+        [429, 355],
+        [355, 437],
+        [437, 429],
+        [391, 327],
+        [327, 326],
+        [326, 391],
+        [440, 457],
+        [457, 438],
+        [438, 440],
+        [341, 382],
+        [382, 362],
+        [362, 341],
+        [459, 457],
+        [457, 461],
+        [461, 459],
+        [434, 430],
+        [430, 394],
+        [394, 434],
+        [414, 463],
+        [463, 362],
+        [362, 414],
+        [396, 369],
+        [369, 262],
+        [262, 396],
+        [354, 461],
+        [461, 457],
+        [457, 354],
+        [316, 403],
+        [403, 402],
+        [402, 316],
+        [315, 404],
+        [404, 403],
+        [403, 315],
+        [314, 405],
+        [405, 404],
+        [404, 314],
+        [313, 406],
+        [406, 405],
+        [405, 313],
+        [421, 418],
+        [418, 406],
+        [406, 421],
+        [366, 401],
+        [401, 361],
+        [361, 366],
+        [306, 408],
+        [408, 407],
+        [407, 306],
+        [291, 409],
+        [409, 408],
+        [408, 291],
+        [287, 410],
+        [410, 409],
+        [409, 287],
+        [432, 436],
+        [436, 410],
+        [410, 432],
+        [434, 416],
+        [416, 411],
+        [411, 434],
+        [264, 368],
+        [368, 383],
+        [383, 264],
+        [309, 438],
+        [438, 457],
+        [457, 309],
+        [352, 376],
+        [376, 401],
+        [401, 352],
+        [274, 275],
+        [275, 4],
+        [4, 274],
+        [421, 428],
+        [
+          428,
+          262
+        ],
+        [262, 421],
+        [294, 327],
+        [327, 358],
+        [358, 294],
+        [433, 416],
+        [416, 367],
+        [367, 433],
+        [289, 455],
+        [455, 439],
+        [439, 289],
+        [462, 370],
+        [370, 326],
+        [326, 462],
+        [2, 326],
+        [326, 370],
+        [370, 2],
+        [305, 460],
+        [460, 455],
+        [455, 305],
+        [254, 449],
+        [449, 448],
+        [448, 254],
+        [255, 261],
+        [261, 446],
+        [446, 255],
+        [253, 450],
+        [450, 449],
+        [449, 253],
+        [252, 451],
+        [451, 450],
+        [450, 252],
+        [256, 452],
+        [452, 451],
+        [451, 256],
+        [341, 453],
+        [453, 452],
+        [452, 341],
+        [413, 464],
+        [464, 463],
+        [463, 413],
+        [441, 413],
+        [413, 414],
+        [414, 441],
+        [258, 442],
+        [442, 441],
+        [441, 258],
+        [257, 443],
+        [443, 442],
+        [442, 257],
+        [259, 444],
+        [444, 443],
+        [443, 259],
+        [260, 445],
+        [445, 444],
+        [444, 260],
+        [467, 342],
+        [342, 445],
+        [445, 467],
+        [459, 458],
+        [458, 250],
+        [250, 459],
+        [289, 392],
+        [392, 290],
+        [290, 289],
+        [290, 328],
+        [328, 460],
+        [460, 290],
+        [376, 433],
+        [433, 435],
+        [435, 376],
+        [250, 290],
+        [290, 392],
+        [392, 250],
+        [411, 416],
+        [416, 433],
+        [433, 411],
+        [341, 463],
+        [463, 464],
+        [464, 341],
+        [453, 464],
+        [464, 465],
+        [465, 453],
+        [357, 465],
+        [465, 412],
+        [412, 357],
+        [343, 412],
+        [412, 399],
+        [399, 343],
+        [360, 363],
+        [363, 440],
+        [440, 360],
+        [437, 399],
+        [399, 456],
+        [456, 437],
+        [420, 456],
+        [456, 363],
+        [363, 420],
+        [401, 435],
+        [435, 288],
+        [288, 401],
+        [
+          372,
+          383
+        ],
+        [383, 353],
+        [353, 372],
+        [339, 255],
+        [255, 249],
+        [249, 339],
+        [448, 261],
+        [261, 255],
+        [255, 448],
+        [133, 243],
+        [243, 190],
+        [190, 133],
+        [133, 155],
+        [155, 112],
+        [112, 133],
+        [33, 246],
+        [246, 247],
+        [247, 33],
+        [33, 130],
+        [130, 25],
+        [25, 33],
+        [398, 384],
+        [384, 286],
+        [286, 398],
+        [362, 398],
+        [398, 414],
+        [414, 362],
+        [362, 463],
+        [463, 341],
+        [341, 362],
+        [263, 359],
+        [359, 467],
+        [467, 263],
+        [263, 249],
+        [249, 255],
+        [255, 263],
+        [466, 467],
+        [467, 260],
+        [260, 466],
+        [75, 60],
+        [60, 166],
+        [166, 75],
+        [238, 239],
+        [239, 79],
+        [79, 238],
+        [162, 127],
+        [127, 139],
+        [139, 162],
+        [72, 11],
+        [11, 37],
+        [37, 72],
+        [121, 232],
+        [
+          232,
+          120
+        ],
+        [120, 121],
+        [73, 72],
+        [72, 39],
+        [39, 73],
+        [114, 128],
+        [128, 47],
+        [47, 114],
+        [233, 232],
+        [232, 128],
+        [128, 233],
+        [103, 104],
+        [104, 67],
+        [67, 103],
+        [152, 175],
+        [175, 148],
+        [148, 152],
+        [119, 118],
+        [118, 101],
+        [101, 119],
+        [74, 73],
+        [73, 40],
+        [40, 74],
+        [107, 9],
+        [9, 108],
+        [108, 107],
+        [49, 48],
+        [48, 131],
+        [131, 49],
+        [32, 194],
+        [194, 211],
+        [211, 32],
+        [184, 74],
+        [74, 185],
+        [185, 184],
+        [191, 80],
+        [80, 183],
+        [183, 191],
+        [185, 40],
+        [40, 186],
+        [186, 185],
+        [119, 230],
+        [230, 118],
+        [118, 119],
+        [210, 202],
+        [202, 214],
+        [214, 210],
+        [84, 83],
+        [83, 17],
+        [17, 84],
+        [77, 76],
+        [76, 146],
+        [146, 77],
+        [161, 160],
+        [160, 30],
+        [30, 161],
+        [190, 56],
+        [56, 173],
+        [173, 190],
+        [182, 106],
+        [106, 194],
+        [194, 182],
+        [138, 135],
+        [135, 192],
+        [192, 138],
+        [129, 203],
+        [203, 98],
+        [98, 129],
+        [54, 21],
+        [21, 68],
+        [68, 54],
+        [5, 51],
+        [51, 4],
+        [4, 5],
+        [145, 144],
+        [144, 23],
+        [23, 145],
+        [90, 77],
+        [77, 91],
+        [91, 90],
+        [207, 205],
+        [205, 187],
+        [187, 207],
+        [83, 201],
+        [201, 18],
+        [18, 83],
+        [181, 91],
+        [91, 182],
+        [182, 181],
+        [180, 90],
+        [90, 181],
+        [181, 180],
+        [16, 85],
+        [85, 17],
+        [17, 16],
+        [205, 206],
+        [206, 36],
+        [36, 205],
+        [176, 148],
+        [148, 140],
+        [140, 176],
+        [165, 92],
+        [92, 39],
+        [39, 165],
+        [245, 193],
+        [193, 244],
+        [244, 245],
+        [27, 159],
+        [159, 28],
+        [28, 27],
+        [
+          30,
+          247
+        ],
+        [247, 161],
+        [161, 30],
+        [174, 236],
+        [236, 196],
+        [196, 174],
+        [103, 54],
+        [54, 104],
+        [104, 103],
+        [55, 193],
+        [193, 8],
+        [8, 55],
+        [111, 117],
+        [117, 31],
+        [31, 111],
+        [221, 189],
+        [189, 55],
+        [55, 221],
+        [240, 98],
+        [98, 99],
+        [99, 240],
+        [142, 126],
+        [126, 100],
+        [100, 142],
+        [219, 166],
+        [166, 218],
+        [218, 219],
+        [112, 155],
+        [155, 26],
+        [26, 112],
+        [198, 209],
+        [209, 131],
+        [131, 198],
+        [169, 135],
+        [135, 150],
+        [150, 169],
+        [114, 47],
+        [47, 217],
+        [217, 114],
+        [224, 223],
+        [223, 53],
+        [53, 224],
+        [220, 45],
+        [45, 134],
+        [134, 220],
+        [32, 211],
+        [211, 140],
+        [140, 32],
+        [109, 67],
+        [67, 108],
+        [108, 109],
+        [146, 43],
+        [43, 91],
+        [91, 146],
+        [231, 230],
+        [230, 120],
+        [120, 231],
+        [113, 226],
+        [226, 247],
+        [247, 113],
+        [105, 63],
+        [63, 52],
+        [52, 105],
+        [241, 238],
+        [238, 242],
+        [242, 241],
+        [124, 46],
+        [46, 156],
+        [156, 124],
+        [95, 78],
+        [78, 96],
+        [96, 95],
+        [70, 46],
+        [46, 63],
+        [63, 70],
+        [116, 143],
+        [143, 227],
+        [227, 116],
+        [116, 123],
+        [123, 111],
+        [111, 116],
+        [1, 44],
+        [44, 19],
+        [19, 1],
+        [3, 236],
+        [236, 51],
+        [51, 3],
+        [207, 216],
+        [216, 205],
+        [205, 207],
+        [26, 154],
+        [154, 22],
+        [22, 26],
+        [165, 39],
+        [39, 167],
+        [167, 165],
+        [199, 200],
+        [200, 208],
+        [208, 199],
+        [101, 36],
+        [36, 100],
+        [100, 101],
+        [43, 57],
+        [57, 202],
+        [202, 43],
+        [242, 20],
+        [20, 99],
+        [99, 242],
+        [56, 28],
+        [
+          28,
+          157
+        ],
+        [157, 56],
+        [124, 35],
+        [35, 113],
+        [113, 124],
+        [29, 160],
+        [160, 27],
+        [27, 29],
+        [211, 204],
+        [204, 210],
+        [210, 211],
+        [124, 113],
+        [113, 46],
+        [46, 124],
+        [106, 43],
+        [43, 204],
+        [204, 106],
+        [96, 62],
+        [62, 77],
+        [77, 96],
+        [227, 137],
+        [137, 116],
+        [116, 227],
+        [73, 41],
+        [41, 72],
+        [72, 73],
+        [36, 203],
+        [203, 142],
+        [142, 36],
+        [235, 64],
+        [64, 240],
+        [240, 235],
+        [48, 49],
+        [49, 64],
+        [64, 48],
+        [42, 41],
+        [41, 74],
+        [74, 42],
+        [214, 212],
+        [212, 207],
+        [207, 214],
+        [183, 42],
+        [42, 184],
+        [184, 183],
+        [210, 169],
+        [169, 211],
+        [211, 210],
+        [140, 170],
+        [170, 176],
+        [176, 140],
+        [104, 105],
+        [105, 69],
+        [69, 104],
+        [193, 122],
+        [122, 168],
+        [168, 193],
+        [50, 123],
+        [123, 187],
+        [187, 50],
+        [89, 96],
+        [96, 90],
+        [90, 89],
+        [66, 65],
+        [65, 107],
+        [107, 66],
+        [179, 89],
+        [89, 180],
+        [180, 179],
+        [119, 101],
+        [101, 120],
+        [120, 119],
+        [68, 63],
+        [63, 104],
+        [104, 68],
+        [234, 93],
+        [93, 227],
+        [227, 234],
+        [16, 15],
+        [15, 85],
+        [85, 16],
+        [209, 129],
+        [129, 49],
+        [49, 209],
+        [15, 14],
+        [14, 86],
+        [86, 15],
+        [107, 55],
+        [55, 9],
+        [9, 107],
+        [120, 100],
+        [100, 121],
+        [121, 120],
+        [153, 145],
+        [145, 22],
+        [22, 153],
+        [178, 88],
+        [88, 179],
+        [179, 178],
+        [197, 6],
+        [6, 196],
+        [196, 197],
+        [89, 88],
+        [88, 96],
+        [96, 89],
+        [135, 138],
+        [138, 136],
+        [136, 135],
+        [138, 215],
+        [215, 172],
+        [172, 138],
+        [
+          218,
+          115
+        ],
+        [115, 219],
+        [219, 218],
+        [41, 42],
+        [42, 81],
+        [81, 41],
+        [5, 195],
+        [195, 51],
+        [51, 5],
+        [57, 43],
+        [43, 61],
+        [61, 57],
+        [208, 171],
+        [171, 199],
+        [199, 208],
+        [41, 81],
+        [81, 38],
+        [38, 41],
+        [224, 53],
+        [53, 225],
+        [225, 224],
+        [24, 144],
+        [144, 110],
+        [110, 24],
+        [105, 52],
+        [52, 66],
+        [66, 105],
+        [118, 229],
+        [229, 117],
+        [117, 118],
+        [227, 34],
+        [34, 234],
+        [234, 227],
+        [66, 107],
+        [107, 69],
+        [69, 66],
+        [10, 109],
+        [109, 151],
+        [151, 10],
+        [219, 48],
+        [48, 235],
+        [235, 219],
+        [183, 62],
+        [62, 191],
+        [191, 183],
+        [142, 129],
+        [129, 126],
+        [126, 142],
+        [116, 111],
+        [111, 143],
+        [143, 116],
+        [118, 117],
+        [117, 50],
+        [50, 118],
+        [223, 222],
+        [
+          222,
+          52
+        ],
+        [52, 223],
+        [94, 19],
+        [19, 141],
+        [141, 94],
+        [222, 221],
+        [221, 65],
+        [65, 222],
+        [196, 3],
+        [3, 197],
+        [197, 196],
+        [45, 220],
+        [220, 44],
+        [44, 45],
+        [156, 70],
+        [70, 139],
+        [139, 156],
+        [188, 122],
+        [122, 245],
+        [245, 188],
+        [139, 71],
+        [71, 162],
+        [162, 139],
+        [149, 170],
+        [170, 150],
+        [150, 149],
+        [122, 188],
+        [188, 196],
+        [196, 122],
+        [206, 216],
+        [216, 92],
+        [92, 206],
+        [164, 2],
+        [2, 167],
+        [167, 164],
+        [242, 141],
+        [141, 241],
+        [241, 242],
+        [0, 164],
+        [164, 37],
+        [37, 0],
+        [11, 72],
+        [72, 12],
+        [12, 11],
+        [12, 38],
+        [38, 13],
+        [13, 12],
+        [70, 63],
+        [63, 71],
+        [71, 70],
+        [31, 226],
+        [226, 111],
+        [111, 31],
+        [36, 101],
+        [101, 205],
+        [205, 36],
+        [203, 206],
+        [206, 165],
+        [165, 203],
+        [126, 209],
+        [209, 217],
+        [217, 126],
+        [98, 165],
+        [165, 97],
+        [97, 98],
+        [237, 220],
+        [220, 218],
+        [218, 237],
+        [237, 239],
+        [239, 241],
+        [241, 237],
+        [210, 214],
+        [214, 169],
+        [169, 210],
+        [140, 171],
+        [171, 32],
+        [32, 140],
+        [241, 125],
+        [125, 237],
+        [237, 241],
+        [179, 86],
+        [86, 178],
+        [178, 179],
+        [180, 85],
+        [85, 179],
+        [179, 180],
+        [181, 84],
+        [84, 180],
+        [180, 181],
+        [182, 83],
+        [83, 181],
+        [181, 182],
+        [194, 201],
+        [201, 182],
+        [182, 194],
+        [177, 137],
+        [137, 132],
+        [132, 177],
+        [184, 76],
+        [76, 183],
+        [183, 184],
+        [185, 61],
+        [61, 184],
+        [184, 185],
+        [186, 57],
+        [57, 185],
+        [185, 186],
+        [216, 212],
+        [
+          212,
+          186
+        ],
+        [186, 216],
+        [192, 214],
+        [214, 187],
+        [187, 192],
+        [139, 34],
+        [34, 156],
+        [156, 139],
+        [218, 79],
+        [79, 237],
+        [237, 218],
+        [147, 123],
+        [123, 177],
+        [177, 147],
+        [45, 44],
+        [44, 4],
+        [4, 45],
+        [208, 201],
+        [201, 32],
+        [32, 208],
+        [98, 64],
+        [64, 129],
+        [129, 98],
+        [192, 213],
+        [213, 138],
+        [138, 192],
+        [235, 59],
+        [59, 219],
+        [219, 235],
+        [141, 242],
+        [242, 97],
+        [97, 141],
+        [97, 2],
+        [2, 141],
+        [141, 97],
+        [240, 75],
+        [75, 235],
+        [235, 240],
+        [229, 24],
+        [24, 228],
+        [228, 229],
+        [31, 25],
+        [25, 226],
+        [226, 31],
+        [230, 23],
+        [23, 229],
+        [229, 230],
+        [231, 22],
+        [22, 230],
+        [230, 231],
+        [232, 26],
+        [26, 231],
+        [231, 232],
+        [233, 112],
+        [112, 232],
+        [232, 233],
+        [244, 189],
+        [189, 243],
+        [243, 244],
+        [189, 221],
+        [221, 190],
+        [190, 189],
+        [222, 28],
+        [28, 221],
+        [221, 222],
+        [223, 27],
+        [27, 222],
+        [222, 223],
+        [224, 29],
+        [29, 223],
+        [223, 224],
+        [225, 30],
+        [30, 224],
+        [224, 225],
+        [113, 247],
+        [247, 225],
+        [225, 113],
+        [99, 60],
+        [60, 240],
+        [240, 99],
+        [213, 147],
+        [147, 215],
+        [215, 213],
+        [60, 20],
+        [20, 166],
+        [166, 60],
+        [192, 187],
+        [187, 213],
+        [213, 192],
+        [243, 112],
+        [112, 244],
+        [244, 243],
+        [244, 233],
+        [233, 245],
+        [245, 244],
+        [245, 128],
+        [128, 188],
+        [188, 245],
+        [188, 114],
+        [114, 174],
+        [174, 188],
+        [134, 131],
+        [131, 220],
+        [220, 134],
+        [174, 217],
+        [217, 236],
+        [236, 174],
+        [236, 198],
+        [198, 134],
+        [134, 236],
+        [215, 177],
+        [177, 58],
+        [58, 215],
+        [156, 143],
+        [143, 124],
+        [124, 156],
+        [25, 110],
+        [110, 7],
+        [7, 25],
+        [31, 228],
+        [228, 25],
+        [25, 31],
+        [264, 356],
+        [356, 368],
+        [368, 264],
+        [0, 11],
+        [11, 267],
+        [267, 0],
+        [451, 452],
+        [452, 349],
+        [349, 451],
+        [267, 302],
+        [302, 269],
+        [269, 267],
+        [350, 357],
+        [357, 277],
+        [277, 350],
+        [350, 452],
+        [452, 357],
+        [357, 350],
+        [299, 333],
+        [333, 297],
+        [297, 299],
+        [396, 175],
+        [175, 377],
+        [377, 396],
+        [280, 347],
+        [347, 330],
+        [330, 280],
+        [269, 303],
+        [303, 270],
+        [270, 269],
+        [151, 9],
+        [9, 337],
+        [337, 151],
+        [344, 278],
+        [278, 360],
+        [360, 344],
+        [424, 418],
+        [
+          418,
+          431
+        ],
+        [431, 424],
+        [270, 304],
+        [304, 409],
+        [409, 270],
+        [272, 310],
+        [310, 407],
+        [407, 272],
+        [322, 270],
+        [270, 410],
+        [410, 322],
+        [449, 450],
+        [450, 347],
+        [347, 449],
+        [432, 422],
+        [422, 434],
+        [434, 432],
+        [18, 313],
+        [313, 17],
+        [17, 18],
+        [291, 306],
+        [306, 375],
+        [375, 291],
+        [259, 387],
+        [387, 260],
+        [260, 259],
+        [424, 335],
+        [335, 418],
+        [418, 424],
+        [434, 364],
+        [364, 416],
+        [416, 434],
+        [391, 423],
+        [423, 327],
+        [327, 391],
+        [301, 251],
+        [251, 298],
+        [298, 301],
+        [275, 281],
+        [281, 4],
+        [4, 275],
+        [254, 373],
+        [373, 253],
+        [253, 254],
+        [375, 307],
+        [307, 321],
+        [321, 375],
+        [280, 425],
+        [425, 411],
+        [411, 280],
+        [200, 421],
+        [
+          421,
+          18
+        ],
+        [18, 200],
+        [335, 321],
+        [321, 406],
+        [406, 335],
+        [321, 320],
+        [320, 405],
+        [405, 321],
+        [314, 315],
+        [315, 17],
+        [17, 314],
+        [423, 426],
+        [426, 266],
+        [266, 423],
+        [396, 377],
+        [377, 369],
+        [369, 396],
+        [270, 322],
+        [322, 269],
+        [269, 270],
+        [413, 417],
+        [417, 464],
+        [464, 413],
+        [385, 386],
+        [386, 258],
+        [258, 385],
+        [248, 456],
+        [456, 419],
+        [419, 248],
+        [298, 284],
+        [284, 333],
+        [333, 298],
+        [168, 417],
+        [417, 8],
+        [8, 168],
+        [448, 346],
+        [346, 261],
+        [261, 448],
+        [417, 413],
+        [413, 285],
+        [285, 417],
+        [326, 327],
+        [327, 328],
+        [328, 326],
+        [277, 355],
+        [355, 329],
+        [329, 277],
+        [309, 392],
+        [392, 438],
+        [438, 309],
+        [381, 382],
+        [
+          382,
+          256
+        ],
+        [256, 381],
+        [279, 429],
+        [429, 360],
+        [360, 279],
+        [365, 364],
+        [364, 379],
+        [379, 365],
+        [355, 277],
+        [277, 437],
+        [437, 355],
+        [282, 443],
+        [443, 283],
+        [283, 282],
+        [281, 275],
+        [275, 363],
+        [363, 281],
+        [395, 431],
+        [431, 369],
+        [369, 395],
+        [299, 297],
+        [297, 337],
+        [337, 299],
+        [335, 273],
+        [273, 321],
+        [321, 335],
+        [348, 450],
+        [450, 349],
+        [349, 348],
+        [359, 446],
+        [446, 467],
+        [467, 359],
+        [283, 293],
+        [293, 282],
+        [282, 283],
+        [250, 458],
+        [458, 462],
+        [462, 250],
+        [300, 276],
+        [276, 383],
+        [383, 300],
+        [292, 308],
+        [308, 325],
+        [325, 292],
+        [283, 276],
+        [276, 293],
+        [293, 283],
+        [264, 372],
+        [372, 447],
+        [447, 264],
+        [346, 352],
+        [352, 340],
+        [340, 346],
+        [354, 274],
+        [274, 19],
+        [19, 354],
+        [363, 456],
+        [456, 281],
+        [281, 363],
+        [426, 436],
+        [436, 425],
+        [425, 426],
+        [380, 381],
+        [381, 252],
+        [252, 380],
+        [267, 269],
+        [269, 393],
+        [393, 267],
+        [421, 200],
+        [200, 428],
+        [428, 421],
+        [371, 266],
+        [266, 329],
+        [329, 371],
+        [432, 287],
+        [287, 422],
+        [422, 432],
+        [290, 250],
+        [250, 328],
+        [328, 290],
+        [385, 258],
+        [258, 384],
+        [384, 385],
+        [446, 265],
+        [265, 342],
+        [342, 446],
+        [386, 387],
+        [387, 257],
+        [257, 386],
+        [422, 424],
+        [424, 430],
+        [430, 422],
+        [445, 342],
+        [342, 276],
+        [276, 445],
+        [422, 273],
+        [273, 424],
+        [424, 422],
+        [306, 292],
+        [292, 307],
+        [307, 306],
+        [
+          352,
+          366
+        ],
+        [366, 345],
+        [345, 352],
+        [268, 271],
+        [271, 302],
+        [302, 268],
+        [358, 423],
+        [423, 371],
+        [371, 358],
+        [327, 294],
+        [294, 460],
+        [460, 327],
+        [331, 279],
+        [279, 294],
+        [294, 331],
+        [303, 271],
+        [271, 304],
+        [304, 303],
+        [436, 432],
+        [432, 427],
+        [427, 436],
+        [304, 272],
+        [272, 408],
+        [408, 304],
+        [395, 394],
+        [394, 431],
+        [431, 395],
+        [378, 395],
+        [395, 400],
+        [400, 378],
+        [296, 334],
+        [334, 299],
+        [299, 296],
+        [6, 351],
+        [351, 168],
+        [168, 6],
+        [376, 352],
+        [352, 411],
+        [411, 376],
+        [307, 325],
+        [325, 320],
+        [320, 307],
+        [285, 295],
+        [295, 336],
+        [336, 285],
+        [320, 319],
+        [319, 404],
+        [404, 320],
+        [329, 330],
+        [330, 349],
+        [349, 329],
+        [334, 293],
+        [293, 333],
+        [333, 334],
+        [366, 323],
+        [323, 447],
+        [447, 366],
+        [316, 15],
+        [15, 315],
+        [315, 316],
+        [331, 358],
+        [358, 279],
+        [279, 331],
+        [317, 14],
+        [14, 316],
+        [316, 317],
+        [8, 285],
+        [285, 9],
+        [9, 8],
+        [277, 329],
+        [329, 350],
+        [350, 277],
+        [253, 374],
+        [374, 252],
+        [252, 253],
+        [319, 318],
+        [318, 403],
+        [403, 319],
+        [351, 6],
+        [6, 419],
+        [419, 351],
+        [324, 318],
+        [318, 325],
+        [325, 324],
+        [397, 367],
+        [367, 365],
+        [365, 397],
+        [288, 435],
+        [435, 397],
+        [397, 288],
+        [278, 344],
+        [344, 439],
+        [439, 278],
+        [310, 272],
+        [272, 311],
+        [311, 310],
+        [248, 195],
+        [195, 281],
+        [281, 248],
+        [375, 273],
+        [273, 291],
+        [291, 375],
+        [175, 396],
+        [396, 199],
+        [199, 175],
+        [312, 311],
+        [311, 268],
+        [268, 312],
+        [276, 283],
+        [283, 445],
+        [445, 276],
+        [390, 373],
+        [373, 339],
+        [339, 390],
+        [295, 282],
+        [282, 296],
+        [296, 295],
+        [448, 449],
+        [449, 346],
+        [346, 448],
+        [356, 264],
+        [264, 454],
+        [454, 356],
+        [337, 336],
+        [336, 299],
+        [299, 337],
+        [337, 338],
+        [338, 151],
+        [151, 337],
+        [294, 278],
+        [278, 455],
+        [455, 294],
+        [308, 292],
+        [292, 415],
+        [415, 308],
+        [429, 358],
+        [358, 355],
+        [355, 429],
+        [265, 340],
+        [340, 372],
+        [372, 265],
+        [352, 346],
+        [346, 280],
+        [280, 352],
+        [295, 442],
+        [442, 282],
+        [282, 295],
+        [354, 19],
+        [19, 370],
+        [370, 354],
+        [285, 441],
+        [441, 295],
+        [295, 285],
+        [
+          195,
+          248
+        ],
+        [248, 197],
+        [197, 195],
+        [457, 440],
+        [440, 274],
+        [274, 457],
+        [301, 300],
+        [300, 368],
+        [368, 301],
+        [417, 351],
+        [351, 465],
+        [465, 417],
+        [251, 301],
+        [301, 389],
+        [389, 251],
+        [394, 395],
+        [395, 379],
+        [379, 394],
+        [399, 412],
+        [412, 419],
+        [419, 399],
+        [410, 436],
+        [436, 322],
+        [322, 410],
+        [326, 2],
+        [2, 393],
+        [393, 326],
+        [354, 370],
+        [370, 461],
+        [461, 354],
+        [393, 164],
+        [164, 267],
+        [267, 393],
+        [268, 302],
+        [302, 12],
+        [12, 268],
+        [312, 268],
+        [268, 13],
+        [13, 312],
+        [298, 293],
+        [293, 301],
+        [301, 298],
+        [265, 446],
+        [446, 340],
+        [340, 265],
+        [280, 330],
+        [330, 425],
+        [425, 280],
+        [322, 426],
+        [426, 391],
+        [391, 322],
+        [
+          420,
+          429
+        ],
+        [429, 437],
+        [437, 420],
+        [393, 391],
+        [391, 326],
+        [326, 393],
+        [344, 440],
+        [440, 438],
+        [438, 344],
+        [458, 459],
+        [459, 461],
+        [461, 458],
+        [364, 434],
+        [434, 394],
+        [394, 364],
+        [428, 396],
+        [396, 262],
+        [262, 428],
+        [274, 354],
+        [354, 457],
+        [457, 274],
+        [317, 316],
+        [316, 402],
+        [402, 317],
+        [316, 315],
+        [315, 403],
+        [403, 316],
+        [315, 314],
+        [314, 404],
+        [404, 315],
+        [314, 313],
+        [313, 405],
+        [405, 314],
+        [313, 421],
+        [421, 406],
+        [406, 313],
+        [323, 366],
+        [366, 361],
+        [361, 323],
+        [292, 306],
+        [306, 407],
+        [407, 292],
+        [306, 291],
+        [291, 408],
+        [408, 306],
+        [291, 287],
+        [287, 409],
+        [409, 291],
+        [287, 432],
+        [432, 410],
+        [410, 287],
+        [427, 434],
+        [434, 411],
+        [411, 427],
+        [372, 264],
+        [264, 383],
+        [383, 372],
+        [459, 309],
+        [309, 457],
+        [457, 459],
+        [366, 352],
+        [352, 401],
+        [401, 366],
+        [1, 274],
+        [274, 4],
+        [4, 1],
+        [418, 421],
+        [421, 262],
+        [262, 418],
+        [331, 294],
+        [294, 358],
+        [358, 331],
+        [435, 433],
+        [433, 367],
+        [367, 435],
+        [392, 289],
+        [289, 439],
+        [439, 392],
+        [328, 462],
+        [462, 326],
+        [326, 328],
+        [94, 2],
+        [2, 370],
+        [370, 94],
+        [289, 305],
+        [305, 455],
+        [455, 289],
+        [339, 254],
+        [254, 448],
+        [448, 339],
+        [359, 255],
+        [255, 446],
+        [446, 359],
+        [254, 253],
+        [253, 449],
+        [449, 254],
+        [253, 252],
+        [252, 450],
+        [450, 253],
+        [252, 256],
+        [256, 451],
+        [451, 252],
+        [
+          256,
+          341
+        ],
+        [341, 452],
+        [452, 256],
+        [414, 413],
+        [413, 463],
+        [463, 414],
+        [286, 441],
+        [441, 414],
+        [414, 286],
+        [286, 258],
+        [258, 441],
+        [441, 286],
+        [258, 257],
+        [257, 442],
+        [442, 258],
+        [257, 259],
+        [259, 443],
+        [443, 257],
+        [259, 260],
+        [260, 444],
+        [444, 259],
+        [260, 467],
+        [467, 445],
+        [445, 260],
+        [309, 459],
+        [459, 250],
+        [250, 309],
+        [305, 289],
+        [289, 290],
+        [290, 305],
+        [305, 290],
+        [290, 460],
+        [460, 305],
+        [401, 376],
+        [376, 435],
+        [435, 401],
+        [309, 250],
+        [250, 392],
+        [392, 309],
+        [376, 411],
+        [411, 433],
+        [433, 376],
+        [453, 341],
+        [341, 464],
+        [464, 453],
+        [357, 453],
+        [453, 465],
+        [465, 357],
+        [343, 357],
+        [357, 412],
+        [412, 343],
+        [437, 343],
+        [343, 399],
+        [399, 437],
+        [344, 360],
+        [360, 440],
+        [440, 344],
+        [420, 437],
+        [437, 456],
+        [456, 420],
+        [360, 420],
+        [420, 363],
+        [363, 360],
+        [361, 401],
+        [401, 288],
+        [288, 361],
+        [265, 372],
+        [372, 353],
+        [353, 265],
+        [390, 339],
+        [339, 249],
+        [249, 390],
+        [339, 448],
+        [448, 255],
+        [255, 339]
+      ]);
+      P2("matrixDataToMatrix", function(a2) {
+        for (var b2 = a2.getCols(), c2 = a2.getRows(), d2 = a2.getPackedDataList(), e2 = [], g2 = 0; g2 < c2; g2++) e2.push(Array(b2));
+        for (g2 = 0; g2 < c2; g2++) for (var f2 = 0; f2 < b2; f2++) {
+          var h2 = 1 === a2.getLayout() ? g2 * b2 + f2 : f2 * c2 + g2;
+          e2[g2][f2] = d2[h2];
+        }
+        return e2;
+      });
+      P2("VERSION", "0.4.1633559619");
+    }).call(exports);
   }
 });
 
@@ -17432,7 +22104,6 @@ fn fsMain(input : VSOut) -> FragOut {
 
 // src/engine/effects/flame-emmiter.js
 var FlameEmitter = class _FlameEmitter {
-  // Static cache - one pipeline per device
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, maxParticles = 20, cameraBuffer) {
     this.device = device2;
@@ -17556,27 +22227,30 @@ var FlameEmitter = class _FlameEmitter {
     return vertexData;
   }
   _initPipeline() {
-    if (_FlameEmitter._pipelineCache.has(this.device)) {
-      const cached = _FlameEmitter._pipelineCache.get(this.device);
+    const device2 = this.device;
+    if (_FlameEmitter._pipelineCache.has(device2)) {
+      const cached = _FlameEmitter._pipelineCache.get(device2);
       this.pipeline = cached.pipeline;
       this.bindGroupLayout = cached.bindGroupLayout;
-      this.pipelineLayout = cached.pipelineLayout;
-      this.shaderModule = cached.shaderModule;
     } else {
-      this.bindGroupLayout = this.device.createBindGroupLayout({
+      this.bindGroupLayout = device2.createBindGroupLayout({
         label: "flame-emmiter bindGroupLayout",
         entries: [
           { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          // { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: 'uniform' } },
           { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
         ]
       });
-      this.shaderModule = this.device.createShaderModule({ code: flameEffectInstance });
-      this.pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
-      this.pipeline = this.device.createRenderPipeline({
+      const shaderModule = device2.createShaderModule({ code: flameEffectInstance });
+      const pipelineLayout = device2.createPipelineLayout({
+        label: "flame-emmiter pipelineLayout",
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
         label: "flame-emmiter pipeline",
-        layout: this.pipelineLayout,
+        layout: pipelineLayout,
         vertex: {
-          module: this.shaderModule,
+          module: shaderModule,
           entryPoint: "vsMain",
           buffers: [
             { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
@@ -17584,22 +22258,14 @@ var FlameEmitter = class _FlameEmitter {
           ]
         },
         fragment: {
-          module: this.shaderModule,
+          module: shaderModule,
           entryPoint: "fsMain",
           targets: [
             {
               format: this.format,
               blend: {
-                color: {
-                  srcFactor: "src-alpha",
-                  dstFactor: "one",
-                  operation: "add"
-                },
-                alpha: {
-                  srcFactor: "one",
-                  dstFactor: "one-minus-src-alpha",
-                  operation: "add"
-                }
+                color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
               }
             },
             { format: "rgba16float" },
@@ -17609,25 +22275,37 @@ var FlameEmitter = class _FlameEmitter {
         primitive: { topology: "triangle-list" },
         depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
       });
-      _FlameEmitter._pipelineCache.set(this.device, {
+      _FlameEmitter._pipelineCache.set(device2, {
         pipeline: this.pipeline,
-        bindGroupLayout: this.bindGroupLayout,
-        pipelineLayout: this.pipelineLayout,
-        shaderModule: this.shaderModule
+        bindGroupLayout: this.bindGroupLayout
       });
     }
     const vertexData = this.recreateVertexDataRND(1);
-    this.vertexBuffer = this.device.createBuffer({ size: vertexData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.vertexBuffer = device2.createBuffer({
+      label: "flame-emmiter vertexBuffer",
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    this.uvBuffer = this.device.createBuffer({ size: uvData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.uvBuffer = device2.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.uvBuffer, 0, uvData);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.indexBuffer = this.device.createBuffer({ size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexBuffer = device2.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.modelBuffer = this.device.createBuffer({ label: "flame-emmiter modeBuffer", size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
-    this.bindGroup = this.device.createBindGroup({
+    this.modelBuffer = device2.createBuffer({
+      label: "flame-emmiter modelBuffer",
+      size: this.maxParticles * this.floatsPerInstance * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    this.bindGroup = device2.createBindGroup({
       label: "flame-emmiter bindGroup",
       layout: this.bindGroupLayout,
       entries: [
@@ -18048,7 +22726,7 @@ fn fsMain(input: VertexOutput) -> FragmentOutput {
 `;
 
 // src/engine/effects/msdfText.js
-var MSDFTextEffect = class {
+var MSDFTextEffect = class _MSDFTextEffect {
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, msdfTexture, sampler, cameraBuffer, font, options2 = {}) {
     this.device = device2;
@@ -18061,8 +22739,6 @@ var MSDFTextEffect = class {
     this.scale = options2.scale ?? 15e-4;
     this.glyphXOffsetFix = {
       "I": 8
-      // "J": -3,
-      // "T": -2
     };
     this.fixedAdvancePx = options2.fixedAdvancePx ?? 40;
     this.trackingPx = options2.trackingPx ?? 0;
@@ -18072,16 +22748,18 @@ var MSDFTextEffect = class {
     this.glyphCount = 0;
     this.floatsPerGlyph = 8;
     this.instanceData = new Float32Array(this.maxGlyphs * this.floatsPerGlyph);
-    this.parentMatrixBuffer = device2.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.parentMatrixBuffer = device2.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
     this.colorBuffer = device2.createBuffer({
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
+    device2.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
     this._identity = mat4Impl.create();
     this._init();
   }
-  // TYPING ANIMATION - character by character
   typeText(text, delayMs = 100, onComplete = null) {
     if (this.isTyping) {
       clearInterval(this.typeInterval);
@@ -18103,7 +22781,6 @@ var MSDFTextEffect = class {
       this.setText(text.substring(0, this.typeIndex + 1));
     }, delayMs);
   }
-  // Stop typing animation
   stopTyping() {
     if (this.typeInterval) {
       clearInterval(this.typeInterval);
@@ -18111,6 +22788,70 @@ var MSDFTextEffect = class {
     }
   }
   _init() {
+    const device2 = this.device;
+    if (_MSDFTextEffect._pipelineCache.has(device2)) {
+      const cached = _MSDFTextEffect._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
+          { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+          { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+          { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
+        ]
+      });
+      const shaderModule = device2.createShaderModule({ code: MSDFFRAG });
+      const pipelineLayout = device2.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
+        layout: pipelineLayout,
+        vertex: {
+          module: shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 8,
+              attributes: [
+                { shaderLocation: 0, format: "float32x2", offset: 0 }
+              ]
+            },
+            {
+              arrayStride: 8,
+              attributes: [
+                { shaderLocation: 1, format: "float32x2", offset: 0 }
+              ]
+            }
+          ]
+        },
+        fragment: {
+          module: shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            { format: this.format },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: {
+          topology: "triangle-list",
+          cullMode: "none"
+        },
+        depthStencil: {
+          format: "depth24plus",
+          depthWriteEnabled: false,
+          depthCompare: "less"
+        }
+      });
+      _MSDFTextEffect._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout
+      });
+    }
     const vertexData = new Float32Array([
       -0.5,
       0.5,
@@ -18139,7 +22880,7 @@ var MSDFTextEffect = class {
       2,
       3
     ]);
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device2.createBuffer({
       label: "vb_msdf",
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -18147,14 +22888,14 @@ var MSDFTextEffect = class {
     });
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
-    this.uvBuffer = this.device.createBuffer({
+    this.uvBuffer = device2.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
     new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
     this.uvBuffer.unmap();
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device2.createBuffer({
       size: indexData.byteLength,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
@@ -18162,22 +22903,12 @@ var MSDFTextEffect = class {
     new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
     this.indexBuffer.unmap();
     this.indexCount = indexData.length;
-    this.glyphBuffer = this.device.createBuffer({
+    this.glyphBuffer = device2.createBuffer({
       size: this.maxGlyphs * this.floatsPerGlyph * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {} },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
-        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.glyphBuffer } },
@@ -18186,57 +22917,6 @@ var MSDFTextEffect = class {
         { binding: 4, resource: { buffer: this.parentMatrixBuffer } },
         { binding: 5, resource: { buffer: this.colorBuffer } }
       ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: MSDFFRAG });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 0,
-                format: "float32x2",
-                offset: 0
-              }
-            ]
-          },
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 1,
-                format: "float32x2",
-                offset: 0
-              }
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          { format: this.format },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: {
-        topology: "triangle-list",
-        cullMode: "none"
-      },
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "less"
-      }
     });
   }
   setText(text) {
@@ -18255,8 +22935,7 @@ var MSDFTextEffect = class {
     let cursorX = 0;
     let count = 0;
     for (let i2 = 0; i2 < text.length; i2++) {
-      if (count >= this.maxGlyphs)
-        break;
+      if (count >= this.maxGlyphs) break;
       const charCode = text.charCodeAt(i2);
       const metrics = font.getCharMetrics(charCode);
       if (!metrics) continue;
@@ -18292,16 +22971,10 @@ var MSDFTextEffect = class {
     this.device.queue.writeBuffer(this.glyphBuffer, 0, this.instanceData.buffer, 0, floatCount * 4);
   }
   updateInstanceData(baseModelMatrix) {
-    this.device.queue.writeBuffer(
-      this.parentMatrixBuffer,
-      0,
-      baseModelMatrix
-    );
+    this.device.queue.writeBuffer(this.parentMatrixBuffer, 0, baseModelMatrix);
   }
   render(pass, mesh, viewProjMatrix) {
-    if (!this.enabled || this.glyphCount === 0) {
-      return;
-    }
+    if (!this.enabled || this.glyphCount === 0) return;
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -48147,12 +52820,30 @@ var loadObjFile = function() {
     addRaycastsAABBListener("canvas1", "click");
     function onGround(m2) {
       loadObjFile2.addMeshObj({
-        material: { type: "standard", share: true },
+        material: { type: "mirror", share: true },
+        envMapParams: {
+          baseColorMix: 0.6,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
         position: { x: 0, y: -5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        texturesPaths: ["./res/textures/floor1.webp"],
-        //, './res/textures/env-maps/sky1_lod_mid.webp'],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
         name: "floor",
         mesh: m2.cube,
         physics: {
@@ -48216,8 +52907,7 @@ var loadObjFile = function() {
       loadObjFile2.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         app.MYCUBE = MYCUBE;
-        app.MYCUBE.effects.mana = new MANABarEffect(app.device, "rgba16float", app.cameraBuffer);
-        const center = [0, 10, -20];
+        const center = [0, 2, -20];
         let time = 0;
         const totalBeams = 25;
         const spiralRadius = 8;
@@ -48241,14 +52931,14 @@ var loadObjFile = function() {
               app.MYCUBE.effects.laser.fireBeam(
                 [fromX, fromY, fromZ],
                 [toX, toY, toZ],
-                0.08,
+                0.8,
                 // Short lifespan guarantees lasers disappear and update instantly
                 {
-                  colorA: [255, Math.floor(Math.abs(Math.sin(time + t3) * 255)), 100],
-                  colorB: [0, 200, 255],
-                  width: 0.6,
+                  colorA: [Math.floor(Math.abs(Math.sin(time + t3) * 255)), Math.floor(Math.abs(Math.sin(time + t3) * 255)), 100],
+                  colorB: [randomIntFromTo(150, 200), randomIntFromTo(50, 100), randomIntFromTo(50, 100)],
+                  width: 1.6,
                   intensity: 1.5,
-                  scrollSpeed: 8
+                  scrollSpeed: 1
                   // Fast texture scroll along the laser body
                 }
               );
@@ -49385,7 +54075,8 @@ var mazeGame = function() {
   let maze = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
-    render: "culling",
+    // render: 'culling',
+    render: "GPUInstancedDraw",
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -49451,6 +54142,7 @@ var mazeGame = function() {
       }
       grid[1][0] = 1;
       grid[mazeSize - 2][mazeSize - 1] = 1;
+      const wallScale = [1, 3, 1];
       for (let y3 = 0; y3 < mazeSize; y3++) {
         for (let x3 = 0; x3 < mazeSize; x3++) {
           if (grid[y3][x3] === 0) {
@@ -49463,13 +54155,13 @@ var mazeGame = function() {
                 y: 0,
                 z: y3 * spacing2 - mazeSize * spacing2 / 2
               },
-              scale: [1, 3, 1],
+              scale: wallScale,
               texturesPaths: ["./res/textures/blankgray2.webp"],
               name: wallName,
               mesh: meshes.cube,
               physics: { enabled: false, mass: 0, geometry: "Cube" }
             });
-            maze.collisionSystem.registerStatic(test.name, test.position, 1.1, "walls");
+            maze.collisionSystem.registerStatic(test.name, test.position, 1, "walls", { x: wallScale[0] * K, y: wallScale[1] * K, z: wallScale[2] * K });
           }
         }
       }
@@ -55019,7 +59711,7 @@ var loadDrumCannon = function() {
 };
 
 // src/engine/effects/splat.js
-var GaussianSplatLayer = class {
+var GaussianSplatLayer = class _GaussianSplatLayer {
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer, topology = "point-list") {
     this.device = device2;
@@ -55035,11 +59727,34 @@ var GaussianSplatLayer = class {
     this.indexBuffer = null;
     this.vertexBufferLayout = null;
     this.bindGroup = null;
-    this.renderPipeline = null;
+    this.pipeline = null;
     this.indexCount = 0;
     this.splatScale = 2;
     this._scaleData = new Float32Array([this.splatScale, 0, 0, 0]);
     this.depthTest = true;
+    this.renderMode = "points";
+    this.meshIndexBuffer = null;
+    this.meshIndexCount = 0;
+    this.splatSize = 0.015;
+  }
+  setRenderMode(mode, meshTriangles = null) {
+    this.renderMode = mode;
+    if (mode === "quads") {
+      this.pipeline = this.pipelineInstance;
+    } else {
+      this.pipeline = this.pipelineVertex;
+    }
+    if (mode === "mesh" && meshTriangles) {
+      this.meshIndexCount = meshTriangles.length;
+      this.meshIndexBuffer = this.device.createBuffer({
+        label: "splat-mesh-index-buffer",
+        size: meshTriangles.byteLength,
+        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Uint16Array(this.meshIndexBuffer.getMappedRange()).set(meshTriangles);
+      this.meshIndexBuffer.unmap();
+    }
   }
   async loadPLY(source) {
     try {
@@ -55055,8 +59770,51 @@ var GaussianSplatLayer = class {
       }
       this.splatData = this._parsePLY(arrayBuffer);
       this.vertexCount = this.splatData.positions.length / 3;
+      const initialColors = new Float32Array(this.vertexCount * 4);
+      for (let i2 = 0; i2 < this.vertexCount; i2++) {
+        initialColors[i2 * 4 + 0] = this.splatData.splatColors[i2 * 4 + 0];
+        initialColors[i2 * 4 + 1] = this.splatData.splatColors[i2 * 4 + 1];
+        initialColors[i2 * 4 + 2] = this.splatData.splatColors[i2 * 4 + 2];
+        initialColors[i2 * 4 + 3] = 1;
+      }
+      this.colorBuffer = this.device.createBuffer({
+        label: "splat-color-buffer",
+        size: initialColors.byteLength,
+        mappedAtCreation: true,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      });
+      new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
+      this.colorBuffer.unmap();
+      const n3 = this.vertexCount;
+      this.dummyUVBuffer = this.device.createBuffer({
+        label: "splat-dummy-uv",
+        size: Math.max(n3, 1) * 2 * 4,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+      });
+      if (!this.dummyCanvas) {
+        this.dummyCanvas = document.createElement("canvas");
+        this.dummyCanvas.width = 1;
+        this.dummyCanvas.height = 1;
+        const ctx = this.dummyCanvas.getContext("2d");
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, 1, 1);
+      }
+      this.dummySampler = this.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear"
+      });
+      this.positions = this.splatData.positions;
+      this.vertexCount = this.splatData.vertexCount;
+      this.scaleBuffer = this.device.createBuffer({
+        label: "Splat scale buffer",
+        size: 16,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true
+      });
+      new Float32Array(this.scaleBuffer.getMappedRange()).set([this.splatScale, 0, 0, 0]);
+      this.scaleBuffer.unmap();
       console.info(`\u2713 Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] \u2192 [${this.aabbMax}]`);
-      await this.initPipeline();
+      await this.initPipeline(this.device);
       return this;
     } catch (err) {
       console.error("Splat load error:", err);
@@ -55154,184 +59912,122 @@ var GaussianSplatLayer = class {
   _sigmoid(x3) {
     return 1 / (1 + Math.exp(-x3));
   }
-  async initPipeline() {
-    const device2 = this.device;
-    if (SplatEffect._pipelineCache.has(device2)) {
-      const cached = SplatEffect._pipelineCache.get(device2);
+  initPipeline(device2, format = "rgba16float") {
+    this.modelBuffer = this.device.createBuffer({ size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    if (_GaussianSplatLayer._pipelineCache.has(device2)) {
+      const cached = _GaussianSplatLayer._pipelineCache.get(device2);
       this.bindGroupLayout = cached.bindGroupLayout;
       this.shaderModule = cached.shaderModule;
       this.pipelineLayout = cached.pipelineLayout;
-      this.renderPipeline = cached.renderPipeline;
+      this.pipelineVertex = cached.pipelineVertex;
+      this.pipelineInstance = cached.pipelineInstance;
     } else {
       this.bindGroupLayout = device2.createBindGroupLayout({
         entries: [
           { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
           { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-          { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }
+          { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 3, visibility: GPUShaderStage.FRAGMENT, externalTexture: {} },
+          { binding: 4, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
         ]
       });
-      const shaderCode = this._getRenderShaderCode();
       this.shaderModule = device2.createShaderModule({
         label: "Splat shader",
-        code: shaderCode
+        code: this._getRenderShaderCode()
       });
       this.pipelineLayout = device2.createPipelineLayout({
         bindGroupLayouts: [this.bindGroupLayout]
       });
-      this.renderPipeline = device2.createRenderPipeline({
-        label: "Splat render pipeline",
+      const commonFragment = {
+        module: this.shaderModule,
+        entryPoint: "fs_main",
+        targets: [
+          {
+            format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          },
+          { format: "rgba16float" },
+          { format: "rgba16float" }
+        ]
+      };
+      const commonDepthStencil = {
+        format: "depth24plus",
+        depthWriteEnabled: false,
+        depthCompare: "less"
+      };
+      this.pipelineVertex = device2.createRenderPipeline({
+        label: "Splat render pipeline (vertex mode)",
         layout: this.pipelineLayout,
         vertex: {
           module: this.shaderModule,
           entryPoint: "vs_main",
           buffers: [
             {
-              // slot 0: static — scale + rotation only (position slot skipped)
               arrayStride: 56,
               stepMode: "vertex",
               attributes: [
-                // shaderLocation 0 = position now comes from slot 2
                 { shaderLocation: 2, offset: 28, format: "float32x3" },
-                // scale
                 { shaderLocation: 3, offset: 40, format: "float32x4" }
-                // rotation
               ]
             },
-            {
-              // slot 1: animated rgba color (SplatColorAnimator)
-              arrayStride: 16,
-              stepMode: "vertex",
-              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }]
-            },
-            {
-              // slot 2: dynamic position (SplatPositionAnimator)
-              arrayStride: 12,
-              stepMode: "vertex",
-              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-            }
+            { arrayStride: 16, stepMode: "vertex", attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }] },
+            { arrayStride: 12, stepMode: "vertex", attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, stepMode: "vertex", attributes: [{ shaderLocation: 4, offset: 0, format: "float32x2" }] }
           ]
         },
-        fragment: {
-          module: this.shaderModule,
-          entryPoint: "fs_main",
-          targets: [
-            {
-              format: this.format,
-              blend: {
-                color: {
-                  srcFactor: "src-alpha",
-                  dstFactor: "one-minus-src-alpha",
-                  operation: "add"
-                },
-                alpha: {
-                  srcFactor: "one",
-                  dstFactor: "one-minus-src-alpha",
-                  operation: "add"
-                }
-              }
-            },
-            { format: "rgba16float" },
-            { format: "rgba16float" }
-          ]
-        },
-        primitive: {
-          topology: this.topology,
-          cullMode: "none"
-        },
-        depthStencil: {
-          format: "depth24plus",
-          depthWriteEnabled: false,
-          depthCompare: "less"
-        }
+        fragment: commonFragment,
+        primitive: { topology: "triangle-list", cullMode: "none" },
+        depthStencil: commonDepthStencil
       });
-      SplatEffect._pipelineCache.set(device2, {
+      this.pipelineInstance = device2.createRenderPipeline({
+        label: "Splat render pipeline (instance mode)",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vs_main",
+          buffers: [
+            { arrayStride: 56, stepMode: "instance", attributes: [{ shaderLocation: 2, offset: 28, format: "float32x3" }, { shaderLocation: 3, offset: 40, format: "float32x4" }] },
+            { arrayStride: 16, stepMode: "instance", attributes: [{ shaderLocation: 1, offset: 0, format: "float32x4" }] },
+            { arrayStride: 12, stepMode: "instance", attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, stepMode: "instance", attributes: [{ shaderLocation: 4, offset: 0, format: "float32x2" }] }
+          ]
+        },
+        fragment: commonFragment,
+        primitive: { topology: "triangle-list", cullMode: "none" },
+        depthStencil: commonDepthStencil
+      });
+      _GaussianSplatLayer._pipelineCache.set(device2, {
         bindGroupLayout: this.bindGroupLayout,
         shaderModule: this.shaderModule,
         pipelineLayout: this.pipelineLayout,
-        renderPipeline: this.renderPipeline
+        pipelineVertex: this.pipelineVertex,
+        pipelineInstance: this.pipelineInstance
       });
     }
-    const vertexData = new Float32Array(this.vertexCount * 14);
-    for (let i2 = 0; i2 < this.vertexCount; i2++) {
-      let idx = i2 * 14;
-      vertexData[idx++] = this.splatData.positions[i2 * 3 + 0];
-      vertexData[idx++] = this.splatData.positions[i2 * 3 + 1];
-      vertexData[idx++] = this.splatData.positions[i2 * 3 + 2];
-      vertexData[idx++] = this.splatData.splatColors[i2 * 4 + 0];
-      vertexData[idx++] = this.splatData.splatColors[i2 * 4 + 1];
-      vertexData[idx++] = this.splatData.splatColors[i2 * 4 + 2];
-      vertexData[idx++] = this.splatData.opacities[i2] / 255;
-      vertexData[idx++] = this.splatData.scales[i2 * 3 + 0];
-      vertexData[idx++] = this.splatData.scales[i2 * 3 + 1];
-      vertexData[idx++] = this.splatData.scales[i2 * 3 + 2];
-      vertexData[idx++] = this.splatData.rotations[i2 * 4 + 0];
-      vertexData[idx++] = this.splatData.rotations[i2 * 4 + 1];
-      vertexData[idx++] = this.splatData.rotations[i2 * 4 + 2];
-      vertexData[idx++] = this.splatData.rotations[i2 * 4 + 3];
-    }
-    this.vertexBuffer = device2.createBuffer({
-      label: "Splat vertex buffer",
-      size: vertexData.byteLength,
-      mappedAtCreation: true,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
-    this.vertexBuffer.unmap();
-    const dummyPosData = new Float32Array(this.vertexCount * 3);
-    dummyPosData.set(this.splatData.positions);
-    this.dummyPosBuffer = device2.createBuffer({
-      label: "splat-dummy-pos",
-      size: dummyPosData.byteLength,
-      mappedAtCreation: true,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    new Float32Array(this.dummyPosBuffer.getMappedRange()).set(dummyPosData);
-    this.dummyPosBuffer.unmap();
-    this.positionAnimator = null;
-    const initialColors = new Float32Array(this.vertexCount * 4);
-    for (let i2 = 0; i2 < this.vertexCount; i2++) {
-      initialColors[i2 * 4 + 0] = this.splatData.splatColors[i2 * 4 + 0];
-      initialColors[i2 * 4 + 1] = this.splatData.splatColors[i2 * 4 + 1];
-      initialColors[i2 * 4 + 2] = this.splatData.splatColors[i2 * 4 + 2];
-      initialColors[i2 * 4 + 3] = this.splatData.splatColors[i2 * 4 + 3];
-    }
-    this.colorBuffer = device2.createBuffer({
-      label: "splat-color",
-      size: initialColors.byteLength,
-      mappedAtCreation: true,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    });
-    new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
-    this.colorBuffer.unmap();
-    this.positions = this.splatData.positions;
-    this.vertexCount = this.splatData.vertexCount;
-    this.scaleBuffer = device2.createBuffer({
-      label: "Splat scale buffer",
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    new Float32Array(this.scaleBuffer.getMappedRange()).set([this.splatScale, 0, 0, 0]);
-    this.scaleBuffer.unmap();
-    this.modelBuffer = device2.createBuffer({
-      size: 112,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    const externalTexture = device2.importExternalTexture({
+      source: this.dummyCanvas
     });
     this.bindGroup = device2.createBindGroup({
       layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } },
-        { binding: 2, resource: { buffer: this.scaleBuffer } }
+        { binding: 2, resource: { buffer: this.scaleBuffer } },
+        { binding: 3, resource: externalTexture },
+        { binding: 4, resource: this.dummySampler }
       ]
     });
+    this.pipeline = this.pipelineVertex;
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
     }, 200);
   }
   _getRenderShaderCode() {
     return `struct Camera {
-  mvp: mat4x4<f32>
+  mvp: mat4x4<f32>,
 };
 
 struct Model {
@@ -55340,20 +60036,23 @@ struct Model {
 
 struct Scale {
   factor: f32,
+  splatSize: f32,
+  renderMode: f32, // 0.0 = points/mesh, 1.0 = quads
   pad0: f32,
-  pad1: f32,
-  pad2: f32,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;
 @group(0) @binding(1) var<uniform> model: Model;
 @group(0) @binding(2) var<uniform> scale: Scale;
+@group(0) @binding(3) var videoTexture: texture_external;
+@group(0) @binding(4) var videoSampler: sampler;
 
 struct VertexInput {
   @location(0) position: vec3<f32>,
   @location(1) colorOpacity: vec4<f32>,
   @location(2) scale: vec3<f32>,
   @location(3) rotation: vec4<f32>,
+  @location(4) uv: vec2<f32>,
 };
 
 struct VertexOutput {
@@ -55361,6 +60060,7 @@ struct VertexOutput {
   @location(0) color: vec3<f32>,
   @location(1) opacity: f32,
   @location(2) worldPos: vec3<f32>,
+  @location(3) uv: vec2<f32>,
 };
 
 struct FragOut {
@@ -55370,22 +60070,44 @@ struct FragOut {
 };
 
 @vertex
-fn vs_main(in: VertexInput) -> VertexOutput {
+fn vs_main(
+  @builtin(vertex_index) vertexIdx: u32,
+  in: VertexInput
+) -> VertexOutput {
   var out: VertexOutput;
-  let scaledPos = in.position * scale.factor;
-  let worldPos = model.matrix * vec4<f32>(scaledPos, 1.0);
-  let clipPos = camera.mvp * worldPos;
-  out.clipPos = clipPos;
+
+  var pos = in.position * scale.factor;
+
+  // Quads / Billboard expansion logic
+  if (scale.renderMode > 0.5) {
+    var quadCorners = array<vec2<f32>, 6>(
+      vec2<f32>(-0.5, -0.5),
+      vec2<f32>( 0.5, -0.5),
+      vec2<f32>(-0.5,  0.5),
+      vec2<f32>(-0.5,  0.5),
+      vec2<f32>( 0.5, -0.5),
+      vec2<f32>( 0.5,  0.5)
+    );
+    let corner = quadCorners[vertexIdx];
+    pos += vec3<f32>(corner * scale.splatSize, 0.0);
+  }
+
+  let worldPos = model.matrix * vec4<f32>(pos, 1.0);
+  out.clipPos = camera.mvp * worldPos;
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
   out.worldPos = worldPos.xyz;
+  out.uv = in.uv;
   return out;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragOut {
   var out: FragOut;
-  out.color = vec4<f32>(in.color, in.opacity);
+  let videoColor = textureSampleBaseClampToEdge(videoTexture, videoSampler, in.uv);
+  let finalColor = mix(in.color, videoColor.rgb, 0.85);
+
+  out.color = vec4<f32>(finalColor, in.opacity);
   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
   out.worldPos = vec4<f32>(in.worldPos, 1.0);
   return out;
@@ -55452,7 +60174,22 @@ fn fs_main(in: VertexOutput) -> FragOut {
     }
     return out;
   }
+  // render(pass, mesh, viewProjMatrix) {
+  //   this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
+  //   this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+  //   this.device.queue.writeBuffer(this.scaleBuffer, 0, this._scaleData);
+  //   pass.setBindGroup(0, this.bindGroup);
+  //   pass.setVertexBuffer(0, this.vertexBuffer);
+  //   pass.setVertexBuffer(1, this.colorBuffer);
+  //   pass.setVertexBuffer(2, this.positionAnimator ? this.positionAnimator.posBuffer : this.dummyPosBuffer);
+  //   pass.setVertexBuffer(3, this.dummyUVBuffer);
+  //   pass.draw(this.vertexCount, 1, 0, 0);
+  // }
   render(pass, mesh, viewProjMatrix) {
+    const modeFlag = this.renderMode === "quads" ? 1 : 0;
+    this._scaleData[0] = this.splatScale;
+    this._scaleData[1] = this.splatSize;
+    this._scaleData[2] = modeFlag;
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     this.device.queue.writeBuffer(this.scaleBuffer, 0, this._scaleData);
@@ -55460,7 +60197,15 @@ fn fs_main(in: VertexOutput) -> FragOut {
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);
     pass.setVertexBuffer(2, this.positionAnimator ? this.positionAnimator.posBuffer : this.dummyPosBuffer);
-    pass.draw(this.vertexCount, 1, 0, 0);
+    pass.setVertexBuffer(3, this.dummyUVBuffer);
+    if (this.renderMode === "mesh" && this.meshIndexBuffer) {
+      pass.setIndexBuffer(this.meshIndexBuffer, "uint16");
+      pass.drawIndexed(this.meshIndexCount, 1, 0, 0, 0);
+    } else if (this.renderMode === "quads") {
+      pass.draw(6, this.vertexCount, 0, 0);
+    } else {
+      pass.draw(this.vertexCount, 1, 0, 0);
+    }
   }
   setScale(scale4) {
     this.splatScale = scale4;
@@ -55480,15 +60225,18 @@ var GaussianSplatScene = class {
     this.format = format;
     this.cameraBuffer = cameraBuffer;
     this.splatLayers = [];
+    this.pipeline = null;
   }
   updateInstanceData(baseModelMatrix) {
   }
   async initialize(plyPath, scale4 = 1, topology = "point-list") {
+    console.log("NNNNNN");
     const splatLayer = new GaussianSplatLayer(this.device, this.format, this.cameraBuffer, topology);
     try {
       if (scale4) splatLayer.setScale(scale4);
       await splatLayer.loadPLY(plyPath);
       this.splatLayers.push(splatLayer);
+      this.pipeline = splatLayer.pipeline;
     } catch (err) {
       console.error("Failed to load splat:", err);
       return false;
@@ -68685,6 +73433,7 @@ var loadHandBeast = function() {
 };
 
 // src/engine/effects/splatFace.js
+var import_face_mesh = __toESM(require_face_mesh());
 var SplatFaceEffect = class {
   /**
    * @param {GPUDevice} device
@@ -68697,10 +73446,9 @@ var SplatFaceEffect = class {
    * @param {number[]} opts.origin       world offset [x,y,z] (default [0,1.6,0])
    * @param {boolean} opts.mirrorX      flip X for webcam (default true)
    */
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer, splatLayer, opts = {}) {
     this.device = device2;
-    this.format = format;
-    this.cameraBuffer = cameraBuffer;
     this.splatLayer = splatLayer;
     this.enabled = true;
     this.time = 0;
@@ -68709,24 +73457,32 @@ var SplatFaceEffect = class {
     this.origin = opts.origin ?? [0, 1.6, 0];
     this.mirrorX = opts.mirrorX ?? true;
     this._videoElement = byId2("auto-video");
-    this._videoCanvas = document.createElement("canvas");
-    this._videoCanvas.width = this._videoElement.videoWidth || 640;
-    this._videoCanvas.height = this._videoElement.videoHeight || 480;
     this._landmarks = null;
+    console.log("splatLayer.pipeline::::", splatLayer.pipeline);
+    this.pipeline = splatLayer.pipeline;
     const n3 = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n3 * 3);
-    this._colorCPU = new Float32Array(n3 * 4);
+    this._uvCPU = new Float32Array(n3 * 2);
     this._clusterIdx = new Uint16Array(n3);
     this._offsetX = new Float32Array(n3);
     this._offsetY = new Float32Array(n3);
     this._offsetZ = new Float32Array(n3);
     this._jointRadius = this._buildRadiusMap();
-    this._landmarkColors = this._buildColorMap();
     this._precompute(n3);
-    this._posCPU.fill(0);
-    device2.queue.writeBuffer(splatLayer.positionAnimator.posBuffer, 0, this._posCPU);
+    this.uvBuffer = device2.createBuffer({
+      label: "splat-face-uv",
+      size: n3 * 2 * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.sampler = device2.createSampler({
+      magFilter: "linear",
+      minFilter: "linear"
+    });
   }
-  // ── Radius map — key facial landmarks get wider clusters ──────────────────
+  setMode(mode, meshTriangles = null) {
+    console.log("FACEMESH_TESSELLATION", import_face_mesh.FACEMESH_TESSELLATION);
+    this.splatLayer.setRenderMode(mode, meshTriangles === null ? import_face_mesh.FACEMESH_TESSELLATION : meshTriangles);
+  }
   _buildRadiusMap() {
     const r3 = new Float32Array(478).fill(5e-3);
     for (let i2 = 0; i2 <= 16; i2++) r3[i2] = 0.01;
@@ -68836,45 +73592,48 @@ var SplatFaceEffect = class {
     this.origin = [x3, y3, z2];
   }
   updateInstanceData(baseModelMatrix) {
-    if (!this.enabled) return;
-    if (!this._landmarks) {
-      this._posCPU.fill(0);
-      this.device.queue.writeBuffer(
-        this.splatLayer.positionAnimator.posBuffer,
-        0,
-        this._posCPU
-      );
-      return;
-    }
+    if (!this.enabled || !this._landmarks) return;
     const lm = this._landmarks;
     const sc2 = this.scale;
-    const ox = this.origin[0];
-    const oy = this.origin[1];
-    const oz = this.origin[2];
+    const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
     const mx = this.mirrorX ? -1 : 1;
     const n3 = this.splatLayer.vertexCount;
     const p2 = this._posCPU;
-    const breathe = Math.sin(this.time * 2) * 3e-3;
+    const uv = this._uvCPU;
     for (let i2 = 0; i2 < n3; i2++) {
       const ci2 = this._clusterIdx[i2];
       const joint = lm[ci2];
       const jx = (joint.x - 0.5) * mx * sc2 + ox;
       const jy = -(joint.y - 0.5) * sc2 + oy;
       const jz = -joint.z * sc2 + oz;
-      const r3 = this._jointRadius[ci2] * sc2 * this.clusterRadius + breathe;
+      const r3 = this._jointRadius[ci2] * sc2 * this.clusterRadius;
       p2[i2 * 3] = jx + this._offsetX[i2] * r3;
       p2[i2 * 3 + 1] = jy + this._offsetY[i2] * r3;
       p2[i2 * 3 + 2] = jz + this._offsetZ[i2] * r3;
+      uv[i2 * 2] = this.mirrorX ? 1 - joint.x : joint.x;
+      uv[i2 * 2 + 1] = joint.y;
     }
-    this.device.queue.writeBuffer(
-      this.splatLayer.positionAnimator.posBuffer,
-      0,
-      p2
-    );
-    this._updateColors();
+    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, p2);
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
   render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
     this.time += dt2;
+    if (!this._videoElement || this._videoElement.readyState < 2) return;
+    const externalTexture = this.device.importExternalTexture({
+      source: this._videoElement
+    });
+    const bindGroup = this.device.createBindGroup({
+      layout: this.splatLayer.bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.splatLayer.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.splatLayer.modelBuffer } },
+        { binding: 2, resource: { buffer: this.splatLayer.scaleBuffer } },
+        { binding: 3, resource: externalTexture },
+        { binding: 4, resource: this.sampler }
+      ]
+    });
+    pass.setBindGroup(0, bindGroup);
+    pass.setVertexBuffer(3, this.uvBuffer);
   }
   /**
    * Sample pixel color from video at each landmark position
@@ -69056,12 +73815,14 @@ var loadFaceBeast = function() {
         );
         loadFace.floor.effects.gpuText.typeText(TEXT, 200, () => {
           console.log("Typing complete!");
+          MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
         });
       });
       setTimeout(async () => {
         MYCUBE.setBlend(0);
-        MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
-        const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast.ply", 6, "point-list");
+        const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast-text.ply", 6, "point-list");
+        console.log(".........................", layer);
+        window.layer = layer;
         animator2 = new SplatColorAnimator(
           loadFace.device,
           layer.positions,
@@ -69783,7 +74544,7 @@ var loadMSDFText = function() {
   window.app = msdfText;
 };
 
-// src/engine/effects/facemask.js
+// src/engine/effects/nidza.js
 var sacredGeometryShader = `
 struct Camera {
   viewProj : mat4x4<f32>
@@ -69793,7 +74554,8 @@ struct Camera {
 
 struct ModelData {
   model       : mat4x4<f32>,
-  uniforms    : vec4<f32>,
+  uniforms    : vec4<f32>,   // x: time, y: modeShape, z: pulseSpeed, w: glowIntensity
+  customColor : vec4<f32>,   // xyz: color RGB (or RGBA), w: unused/extra
   lineWidth   : f32,
   pad1        : f32,
   pad2        : f32,
@@ -69815,7 +74577,8 @@ struct VSOut {
   @location(1) normal : vec3<f32>,
   @location(2) fragPos : vec3<f32>,
   @location(3) data0 : vec4<f32>,
-  @location(4) lineWidth : f32,
+  @location(4) customColor : vec4<f32>,
+  @location(5) lineWidth : f32,
 };
 
 @vertex
@@ -69837,6 +74600,7 @@ fn vsMain(input : VSIn) -> VSOut {
   output.normal = normalMatrix * input.normal;
   
   output.data0 = modelData.uniforms;
+  output.customColor = modelData.customColor;
   output.lineWidth = modelData.lineWidth;
 
   return output;
@@ -69845,14 +74609,13 @@ fn vsMain(input : VSIn) -> VSOut {
 fn distanceToPentagram(p : vec2<f32>) -> f32 {
   var minDist = 1e6;
   let tau = 6.28318530718;
-  
   for (var i = 0u; i < 5u; i = i + 1u) {
     let angle = f32(i) * tau / 5.0;
     let p1 = vec2<f32>(cos(angle), sin(angle));
     let angle2 = angle + tau / 10.0;
+    // let p2 = vec2<f32>(cos(angle2), sin(angle2)) * 0.4;
     let p2 = vec2<f32>(cos(angle2), sin(angle2)) * 0.4;
-    
-    let v = p2 - p1;
+    let v = (p2 - p1) * 2;
     let w = p - p1;
     let c1 = dot(w, v);
     if (c1 <= 0.0) { minDist = min(minDist, length(w)); continue; }
@@ -69943,25 +74706,24 @@ fn fsMain(input : VSOut) -> FragOut {
   let pulseSpeed = input.data0.z;
   let glowIntensity = input.data0.w;
   let lineWidth = input.lineWidth;
-  
   let modeShape = u32(modeShapeF);
-  
   let uv = input.uv * 2.0 - 1.0;
   let dist = getDistanceField(uv, modeShape);
-  
   let pulse = 0.5 + 0.5 * sin(time * pulseSpeed);
   let lineThickness = lineWidth * (0.8 + 0.2 * pulse);
-  
   let line = smoothstep(lineThickness + 0.02, lineThickness, dist);
   
-  var neonColor = vec3<f32>(0.0);
-  switch(modeShape) {
-    case 0u: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
-    case 1u: { neonColor = vec3<f32>(1.0, 0.0, 1.0); }
-    case 2u: { neonColor = vec3<f32>(0.0, 1.0, 0.0); }
-    case 3u: { neonColor = vec3<f32>(1.0, 1.0, 0.0); }
-    case 4u: { neonColor = vec3<f32>(1.0, 0.0, 0.0); }
-    default: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
+  // Use custom CPU color if non-zero, otherwise default to shape presets
+  var neonColor = input.customColor.rgb;
+  if (length(neonColor) == 0.0) {
+    switch(modeShape) {
+      case 0u: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
+      case 1u: { neonColor = vec3<f32>(1.0, 0.0, 1.0); }
+      case 2u: { neonColor = vec3<f32>(0.0, 1.0, 0.0); }
+      case 3u: { neonColor = vec3<f32>(1.0, 1.0, 0.0); }
+      case 4u: { neonColor = vec3<f32>(1.0, 0.0, 0.0); }
+      default: { neonColor = vec3<f32>(0.0, 1.0, 1.0); }
+    }
   }
   
   let finalIntensity = line * glowIntensity * pulse;
@@ -69998,6 +74760,7 @@ var SacredGeometryEffect = class _SacredGeometryEffect {
     this.pulseSpeed = 3;
     this.glowIntensity = 2.5;
     this.lineWidth = 0.08;
+    this.color = [0, 0, 0];
     this.pipeline = null;
     this.bindGroup = null;
     this.modelBuffer = null;
@@ -70005,7 +74768,7 @@ var SacredGeometryEffect = class _SacredGeometryEffect {
     this.indexBuffer = null;
     this.indexCount = 0;
     this.maxInstances = 1;
-    this.floatsPerInstance = 24;
+    this.floatsPerInstance = 28;
     this.instanceData = new Float32Array(this.maxInstances * this.floatsPerInstance);
     this._baseModelMatrix = mat4Impl.create();
     this._initPipeline();
@@ -70153,17 +74916,13 @@ var SacredGeometryEffect = class _SacredGeometryEffect {
       label: "sacred-geometry-bindgroup",
       layout: this.bindGroupLayout,
       entries: [
-        {
-          binding: 0,
-          resource: { buffer: this.cameraBuffer }
-        },
-        {
-          binding: 1,
-          resource: { buffer: this.modelBuffer }
-        }
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
-    console.log("%c[SacredGeometryEffect] \u2713 Initialized - Plane: 4x4 units, Glow: 2.5, LineWidth: 0.08", "color: lime; font-weight: bold;");
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
   }
   updateInstanceData(baseModelMatrix) {
     mat4Impl.copy(baseModelMatrix, this._baseModelMatrix);
@@ -70182,13 +74941,30 @@ var SacredGeometryEffect = class _SacredGeometryEffect {
     floatView[offset + 17] = this.currentMode;
     floatView[offset + 18] = this.pulseSpeed;
     floatView[offset + 19] = this.glowIntensity;
-    floatView[offset + 20] = this.lineWidth;
+    floatView[offset + 20] = this.color[0];
+    floatView[offset + 21] = this.color[1];
+    floatView[offset + 22] = this.color[2];
+    floatView[offset + 23] = 1;
+    floatView[offset + 24] = this.lineWidth;
+    floatView[offset + 25] = 0;
+    floatView[offset + 26] = 0;
+    floatView[offset + 27] = 0;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData, 0, 24);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this.instanceData, 0, this.floatsPerInstance);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setIndexBuffer(this.indexBuffer, "uint32");
     pass.drawIndexed(this.indexCount, 1);
+  }
+  setColor(r3, g2, b2) {
+    if (Array.isArray(r3)) {
+      this.color = [r3[0], r3[1], r3[2]];
+    } else {
+      this.color = [r3, g2, b2];
+    }
+  }
+  resetColor() {
+    this.color = [0, 0, 0];
   }
   setShape(mode) {
     if (typeof mode === "string") {
@@ -70223,7 +74999,7 @@ var loadFaceMask = function() {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_BONES: 0,
-    MAX_SPOTLIGHTS: 1,
+    MAX_SPOTLIGHTS: 2,
     mainCameraParams: {
       type: "WASD",
       responseCoef: 1e3
@@ -70231,7 +75007,6 @@ var loadFaceMask = function() {
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
     FACEMASK.addLight();
-    FACEMASK.buildLightShadowBuckets();
     touchCoordinate.stopOnFirstDetectedHit = true;
     downloadMeshes(
       {
@@ -70248,6 +75023,8 @@ var loadFaceMask = function() {
     let completedCubesCount = 0;
     const totalCubesInGrid = 9;
     function onGround(m2) {
+      FACEMASK.addLight();
+      FACEMASK.buildLightShadowBuckets();
       FACEMASK.addMeshObj({
         material: { type: "standard", share: true },
         position: { x: 0, y: -1.1, z: -10 },
