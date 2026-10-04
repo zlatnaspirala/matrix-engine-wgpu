@@ -1400,17 +1400,6 @@ export default class MatrixEngineWGPU {
         }
       }
 
-      // for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-      //   const mesh = this.mainRenderBundle[meshIndex];
-      //   if(mesh.effects) {
-      //     for(const effectName in mesh.effects) {
-      //       const effect = mesh.effects[effectName];
-      //       if(effect === null || effect.enabled === false) continue;
-      //       if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
-      //       effect.render(pass, mesh, camera.VP);
-      //     }
-      //   }
-      // }
       for(const className in this.effectsByType) {
         const pile = this.effectsByType[className];
         if(pile.length === 0) continue;

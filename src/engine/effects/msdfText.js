@@ -13,6 +13,14 @@ export class MSDFTextEffect {
     this.font = font;
     this.enabled = true;
     this.scale = options.scale ?? 0.0015;
+
+    this.localOffset = options.localOffset ?? [0, 0, 0];
+    this.localRotation = options.localRotation ?? [0, 0, 0];
+    this.localScale = options.localScale ?? [1, 1, 1];
+    this._localMat = mat4.identity();
+    this._finalMat = mat4.identity();
+    this._parentMat = mat4.identity();
+
     this.glyphXOffsetFix = {
       "I": + 8,
     };
@@ -70,7 +78,7 @@ export class MSDFTextEffect {
     const device = this.device;
 
     // ========== CACHE CHECK ==========
-    if (MSDFTextEffect._pipelineCache.has(device)) {
+    if(MSDFTextEffect._pipelineCache.has(device)) {
       const cached = MSDFTextEffect._pipelineCache.get(device);
       this.pipeline = cached.pipeline;
       this.bindGroupLayout = cached.bindGroupLayout;
@@ -219,7 +227,7 @@ export class MSDFTextEffect {
     const text = this.text;
     let cursorX = 0;
     let count = 0;
-    for(let i = 0; i < text.length; i++) {
+    for(let i = 0;i < text.length;i++) {
       if(count >= this.maxGlyphs) break;
       const charCode = text.charCodeAt(i);
       const metrics = font.getCharMetrics(charCode);
@@ -257,13 +265,33 @@ export class MSDFTextEffect {
     this.device.queue.writeBuffer(this.glyphBuffer, 0, this.instanceData.buffer, 0, floatCount * 4);
   }
 
+  _buildLocalMatrix() {
+    const m = this._localMat;
+    mat4.identity(m);
+    mat4.translate(m, this.localOffset, m);
+    mat4.rotateX(m, this.localRotation[0], m);
+    mat4.rotateY(m, this.localRotation[1], m);
+    mat4.rotateZ(m, this.localRotation[2], m);
+    mat4.scale(m, this.localScale, m);
+    return m;
+  }
+  setLocalOffset(x, y, z) {
+    this.localOffset[0] = x; this.localOffset[1] = y; this.localOffset[2] = z;
+  }
+
+  setLocalRotation(rx, ry, rz) {
+    this.localRotation[0] = rx; this.localRotation[1] = ry; this.localRotation[2] = rz;
+  }
+
   updateInstanceData(baseModelMatrix) {
-    this.device.queue.writeBuffer(this.parentMatrixBuffer, 0, baseModelMatrix);
+    // if(baseModelMatrix) mat4.copy(baseModelMatrix, this._parentMat);      // copy(src, dst)
+    const local = this._buildLocalMatrix();
+    mat4.multiply(baseModelMatrix, local, this._finalMat);                // multiply(a, b, dst)
+    this.device.queue.writeBuffer(this.parentMatrixBuffer, 0, this._finalMat);
   }
 
   render(pass, mesh, viewProjMatrix) {
     if(!this.enabled || this.glyphCount === 0) return;
-    // ← render() does NOT call pass.setPipeline() — main loop does it!
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);

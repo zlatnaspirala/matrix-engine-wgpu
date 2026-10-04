@@ -10,17 +10,18 @@ import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "../
 import {SplatFaceEffect} from "../../../src/engine/effects/splatFace.js";
 import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfText.js";
 import {MatrixTTS} from "../../../src/engine/tts.js";
+import {MeshMorpher} from "../../../src/engine/procedural-mesh.js";
 
-const TEXT = `The Beast`;
+const TEXT = `The Beast Render`;
 
 export var loadFaceBeast = function() {
 
   let loadFace = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
-    dontUsePhysics: true,
+    // dontUsePhysics: true,
     useCannon: true,
-    MAX_SPOTLIGHTS: 1,
+    MAX_SPOTLIGHTS: 2,
     MAX_BONES: 0,
     mainCameraParams: {
       type: 'WASD',
@@ -29,7 +30,6 @@ export var loadFaceBeast = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
-
     // MatrixTTS
     // loadFace.tts = new MatrixTTS();
     let MYCUBE, animator;
@@ -38,8 +38,6 @@ export var loadFaceBeast = function() {
       enableVisual: false,
       mode: 'face'
     });
-
-
     // Dom
     let bloomRadius = 0.1;
     let bloomIntesity = 0.1;
@@ -69,6 +67,7 @@ export var loadFaceBeast = function() {
       if((bloomIntesity - 10 > 0)) bloomIntesity = bloomIntesity - 10;
     }, () => {}, arg4);
 
+    loadFace.addLight();
     loadFace.addLight();
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
@@ -137,6 +136,29 @@ export var loadFaceBeast = function() {
 
     async function onLoadObj(m) {
 
+      loadFace.addProceduralMeshObj({
+        material: {type: 'standard'},
+        position: {x: 1, y: 3, z: -7},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [2, 2, 2],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_cone`,
+        physics: {
+          enabled: true,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1,
+        },
+        raycast: {enabled: true, radius: 1}
+      });
+
+
       MYCUBE = loadFace.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: 5, z: -10},
@@ -159,18 +181,22 @@ export var loadFaceBeast = function() {
       const pillar3 = createPillar(loadFace, m, -20, 6, 20, "pil3");
       const pillar4 = createPillar(loadFace, m, 20, 6, 20, "pil4");
 
-      loadFace.lightContainer[0].setIntensity(0.7);
-      app.lightContainer[0].setColorB(100)
       loadFace.activateBloomEffect();
       // app.activateVolumetricEffect({
-      //   density: 0.5,
+      //   density: 0.05,
       //   steps: 30,
-      //   scatterStrength: 2,
+      //   scatterStrength: 0.5,
       //   heightFalloff: 0.2,
-      //   lightColor: [0, 1.8, 10]
-      // })
-      loadFace.lightContainer[0].setPosition(0, 55, 0);
+      //   lightColor: [0, 1, 5]
+      // });
+      loadFace.lightContainer[0].setIntensity(1000);
+      app.lightContainer[0].setColorB(1)
+      loadFace.lightContainer[0].setPosition(0, 65, 0);
       loadFace.lightContainer[0].setTarget(0, 0, -20);
+
+
+      loadFace.lightContainer[1].setPosition(0, 5, -10);
+      loadFace.lightContainer[1].setTarget(0, 5, 20);
 
       const sampler = loadFace.device.createSampler({
         magFilter: 'linear',
@@ -181,31 +207,27 @@ export var loadFaceBeast = function() {
       });
 
       loadAtlasFONT(loadFace.device).then((OUTPUT) => {
-        // console.log("FONT ", OUTPUT)
         loadFace.floor.effects.gpuText = new MSDFTextEffect(
           loadFace.device,
           'rgba16float',
           OUTPUT.msdfTexture,
           sampler,
           loadFace.cameraBuffer,
-          OUTPUT.font, {scale: 0.1}
+          OUTPUT.font, {scale: 0.05, localOffset: [-15 ,1,0]}
         );
 
+        // app.floor.effects.gpuText.setLocalOffset( -15 ,1,0)
+
         loadFace.floor.effects.gpuText.typeText(TEXT, 200, () => {
-          console.log('Typing complete!');
-
-            MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);
-
+          // console.log('Typing complete!');
+          MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);
         });
       });
       // text
       setTimeout(async () => {
         MYCUBE.setBlend(0);
-        // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "point-list"); triangle-strip
+        // 
         const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "point-list");
-        console.log('.........................', layer)
-        window.layer = layer
-
         // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "triangle-list");
 
         // animator = new SplatColorAnimator(
@@ -240,51 +262,41 @@ export var loadFaceBeast = function() {
           'rgba16float',
           loadFace.cameraBuffer,
           MYCUBE.effects.splat.splatLayers[0],
-
-          {
-            scale: 5,
-            clusterRadius: 1.0,
-            origin: [0, 0, 0],
-            mirrorX: true
-          }
+          {scale: 5, clusterRadius: 1.0, origin: [0, 0, 0], mirrorX: true}
         );
 
-
- 
         MYCUBE.effects.faceEffect = faceEffect;
-        app.MYCUBE = MYCUBE; // denug
+        MYCUBE.effects.faceEffect.setScale(32);
+
+        app.MYCUBE = MYCUBE;
+
         loadFace.MYCUBE.position.thrust = 0.1;
         // app.MYCUBE.position.translateByX(-10)
-
         // Hook mediapipe into it
         nui.onResults = (results) => {
-          // console.log('face detected:', results?.landmarks?.length ?? 0);
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
+        loadFace.activateHZB();
 
-        // loadFace.activateHZB();
-        // MYCUBE.effects.circle = new GenGeoTexture2(loadFace.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
-        // app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+        // Important for face uv view!
+        MYCUBE.effects.faceEffect.setMode('mesh');
+        MYCUBE.position.translateByY(12)
+
         let cam = app.getCamera();
         cam.setYaw(0);
-        cam.setPitch(-0.1);
-        cam.setZ(0);
-        cam.setY(17);
+        cam.setPitch(0);
+        cam.setZ(4);
+        cam.setY(6);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 7000);
     }
 
-
     loadFace.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       // if you wanna disable
-      // nui.onResults = (results) => {
-      //   // MYCUBE.effects.faceEffect.setFaceData(results);
-      // };
-      MYCUBE.effects.splat.splatLayers[0].positionAnimator.setMode('dust');
-      // app.MYCUBE.position.translateByX(-5000)
-      // if(e.detail.hitObject.name.startsWith('cube')) {      }
+      // nui.onResults = (results) => {};
+      // MYCUBE.effects.splat.splatLayers[0].positionAnimator.setMode('dust');
     });
 
   })

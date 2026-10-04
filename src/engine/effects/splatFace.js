@@ -1,11 +1,23 @@
 import {byId} from "../utils";
 import * as faceMeshModule from '@mediapipe/face_mesh';
 /**
+ * @description
  * SplatFaceEffect
  * Maps MediaPipe FaceLandmarker 478 landmarks into a splat point cloud.
  * Follows FlameEmitter interface:
  *   updateInstanceData(baseModelMatrix) — called automatically by main loop
  *   render(pass, mesh, viewProjMatrix, dt) — no-op, splat renders itself
+ * 
+ * @filename
+ * splatFace.js
+ *
+ * @Licence
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file,
+ * You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (c) 2026 Nikola Lukić zlatnaspirala@gmail.com
  */
 export class SplatFaceEffect {
   static _pipelineCache = new WeakMap();
@@ -20,20 +32,16 @@ export class SplatFaceEffect {
     this.mirrorX = opts.mirrorX ?? true;
     this._videoElement = byId('auto-video');
     this._landmarks = null;
-    console.log('FACEMESH_TESSELLATION::::')
     const TESSELLATION_EDGES =
       faceMeshModule.FACEMESH_TESSELATION ||
       faceMeshModule.FACEMESH_TESSELLATION ||
       faceMeshModule.default?.FACEMESH_TESSELATION ||
       faceMeshModule.default?.FACEMESH_TESSELLATION;
-    console.log('Tessellation edges:', TESSELLATION_EDGES);
     this.FACE_TRIANGLES = this.extractTrianglesFromTessellation(TESSELLATION_EDGES);
-
     this.pipeline = splatLayer.pipeline;
     const n = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n * 3);
     this._uvCPU = new Float32Array(n * 6 * 2);
-
     this._clusterIdx = new Uint16Array(n);
     this._offsetX = new Float32Array(n);
     this._offsetY = new Float32Array(n);
@@ -50,31 +58,8 @@ export class SplatFaceEffect {
     this.render = this.renderPoint;
   }
 
-  extractTrianglesFromTessellation2(tessellationPairs) {
-    if(!tessellationPairs || !tessellationPairs.length) {
-      console.warn("No tessellation pairs provided.");
-      return new Uint16Array(0);
-    }
-
-    // Every 3 pairs in TESSELATION form 1 triangle (3 vertices)
-    const triangleCount = Math.floor(tessellationPairs.length / 3);
-    const indices = new Uint16Array(triangleCount * 3);
-
-    for(let i = 0;i < triangleCount;i++) {
-      const pair0 = tessellationPairs[i * 3];     // e.g. [127, 34]
-      const pair1 = tessellationPairs[i * 3 + 1]; // e.g. [34, 139]
-
-      indices[i * 3 + 0] = pair0[0]; // 127
-      indices[i * 3 + 1] = pair0[1]; // 34
-      indices[i * 3 + 2] = pair1[1]; // 139
-    }
-
-    return indices;
-  }
-
   extractTrianglesFromTessellation(edges) {
     if(!edges?.length) return new Uint16Array(0);
-
     const adj = new Map();
     const add = (a, b) => {
       if(!adj.has(a)) adj.set(a, new Set());
@@ -85,7 +70,6 @@ export class SplatFaceEffect {
       const b = Array.isArray(e) ? e[1] : e.end;
       add(a, b); add(b, a);
     }
-
     const tris = [];
     for(const [a, na] of adj) {
       for(const b of na) {
@@ -276,7 +260,6 @@ export class SplatFaceEffect {
 
   updateInstanceDataPoints(baseModelMatrix) {
     if(!this.enabled || !this._landmarks) return;
-
     const lm = this._landmarks;
     const sc = this.scale;
     const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
@@ -284,84 +267,48 @@ export class SplatFaceEffect {
     const n = this.splatLayer.vertexCount;
     const p = this._posCPU;
     const uv = this._uvCPU;
-
     for(let i = 0;i < n;i++) {
       const ci = this._clusterIdx[i];
       const joint = lm[ci];
-
       // 3D position offset
       const jx = (joint.x - 0.5) * mx * sc + ox;
       const jy = -(joint.y - 0.5) * sc + oy;
       const jz = -joint.z * sc + oz;
-
       const r = this._jointRadius[ci] * sc * this.clusterRadius;
       p[i * 3] = jx + this._offsetX[i] * r;
       p[i * 3 + 1] = jy + this._offsetY[i] * r;
       p[i * 3 + 2] = jz + this._offsetZ[i] * r;
-
       // Direct UV mapping from MediaPipe 0..1 coordinates
       const ux = this.mirrorX ? (1.0 - joint.x) : joint.x;
       const uy = joint.y;
-
       const uvi = i * 12;
-
       for(let v = 0;v < 6;v++) {
         this._uvCPU[uvi + v * 2] = ux;
         this._uvCPU[uvi + v * 2 + 1] = uy;
       }
     }
-
     this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, p);
     this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
 
   updateInstanceDataFace(baseModelMatrix) {
     if(!this.enabled || !this._landmarks) return;
-
     const lm = this._landmarks;
     const sc = this.scale;
     const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
     const mx = this.mirrorX ? -1 : 1;
-
     // Landmark mesh only has 478 vertices!
     const landmarkCount = Math.min(lm.length, 478);
     const posData = new Float32Array(landmarkCount * 3);
     const uvData = new Float32Array(landmarkCount * 2);
-
     for(let i = 0;i < landmarkCount;i++) {
       const joint = lm[i];
-
-      // 1. Position mapping for landmark index i
       posData[i * 3 + 0] = (joint.x - 0.5) * mx * sc + ox;
       posData[i * 3 + 1] = -(joint.y - 0.5) * sc + oy;
       posData[i * 3 + 2] = -joint.z * sc + oz;
-
-      // 2. Direct UV mapping for video frame sampling
-      // const u = this.mirrorX ? (1.0 - joint.x) : joint.x;
-      // const v = joint.y; // If upside down, use (1.0 - joint.y)
-      // UV: never mirrored
       uvData[i * 2 + 0] = joint.x;
       uvData[i * 2 + 1] = joint.y;
-
-      // uvData[i * 2 + 0] = u;
-      // uvData[i * 2 + 1] = v;
     }
-    // for(let i = 0;i < landmarkCount;i++) {
-    //   const joint = lm[i];
-
-    //   posData[i * 3 + 0] = (joint.x - 0.5) * mx * sc + ox;
-    //   posData[i * 3 + 1] = -(joint.y - 0.5) * sc + oy;
-    //   posData[i * 3 + 2] = -joint.z * sc + oz;
-
-    //   // Clamp UVs strictly to [0.0, 1.0]
-    //   const rawU = this.mirrorX ? (1.0 - joint.x) : joint.x;
-    //   const rawV = joint.y;
-
-    //   uvData[i * 2 + 0] = Math.max(0.0, Math.min(1.0, rawU));
-    //   uvData[i * 2 + 1] = Math.max(0.0, Math.min(1.0, rawV));
-    // }
-
-    // Upload per-landmark positions and UVs
     this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, posData);
     this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
   }
@@ -381,7 +328,6 @@ export class SplatFaceEffect {
         {binding: 3, resource: externalTexture}, {binding: 4, resource: this.sampler}
       ]
     });
-
     pass.setBindGroup(0, bindGroup);
     pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
     pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
@@ -407,10 +353,10 @@ export class SplatFaceEffect {
     pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
     pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
     pass.setVertexBuffer(2, this.splatLayer.positionAnimator.posBuffer);
-    // Slot 3: UVs (MUST BE PER-LANDMARK UVs!)
+    // UVs PER-LANDMARK
     pass.setVertexBuffer(3, this.uvBuffer);
-    // 3. Draw Indexed Mesh (852 triangles = 2556 indices)
     pass.setIndexBuffer(this.splatLayer.meshIndexBuffer, 'uint16');
+    // HC ! next update !
     pass.drawIndexed(2556, 1, 0, 0, 0);
   }
 
@@ -456,6 +402,4 @@ export class SplatFaceEffect {
 
     this.device.queue.writeBuffer(this.splatLayer.colorBuffer, 0, c);
   }
-
-  destroy() {}
 }
