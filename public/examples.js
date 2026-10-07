@@ -69999,7 +69999,7 @@ var loadRunner = function() {
       return { base, top };
     }
     async function onLoadObj(m2) {
-      function ambientFromColor2(color) {
+      function ambientFromColor(color) {
         return { r: color.r, g: color.g, b: color.b };
       }
       function determinateType() {
@@ -70020,7 +70020,7 @@ var loadRunner = function() {
         }
         return { r: r3, g: g2, b: b2 };
       }
-      function damageFromColor2(color, baseDamage = 15) {
+      function damageFromColor(color, baseDamage = 15) {
         if (color.r > color.b && color.r > color.g) {
           return baseDamage * 1.5;
         }
@@ -70029,7 +70029,7 @@ var loadRunner = function() {
         }
         return baseDamage * 0.5;
       }
-      function slowFromColor2(color) {
+      function slowFromColor(color) {
         return color.g;
       }
       let hitEvent = new CustomEvent("player-hit", { detail: { obstacleId: 0 } });
@@ -70080,9 +70080,9 @@ var loadRunner = function() {
           obj2._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
           obj2._runnerCfg = cfg;
           obj2._runnerColor = determinateType();
-          obj2._runnerDamage = damageFromColor2(obj2._runnerColor);
-          obj2._runnerSlow = slowFromColor2(obj2._runnerColor);
-          const amb = ambientFromColor2(obj2._runnerColor);
+          obj2._runnerDamage = damageFromColor(obj2._runnerColor);
+          obj2._runnerSlow = slowFromColor(obj2._runnerColor);
+          const amb = ambientFromColor(obj2._runnerColor);
           obj2.setAmbient(amb.r, amb.g, amb.b);
           runners.push(obj2);
           const rRadius = Math.max(s2) || s2;
@@ -70143,9 +70143,9 @@ var loadRunner = function() {
             obj2.position.x = Math.random() * (obj2._runnerCfg.maxX - obj2._runnerCfg.minX) + obj2._runnerCfg.minX;
             obj2.position.y = Math.random() * (obj2._runnerCfg.maxY - obj2._runnerCfg.minY) + obj2._runnerCfg.minY;
             obj2._runnerColor = determinateType();
-            obj2._runnerDamage = damageFromColor2(obj2._runnerColor);
-            obj2._runnerSlow = slowFromColor2(obj2._runnerColor);
-            const amb = ambientFromColor2(obj2._runnerColor);
+            obj2._runnerDamage = damageFromColor(obj2._runnerColor);
+            obj2._runnerSlow = slowFromColor(obj2._runnerColor);
+            const amb = ambientFromColor(obj2._runnerColor);
             obj2.setAmbient(amb.r, amb.g, amb.b);
             hitEvent.detail.obstacleId = obstacle.id;
             hitEvent.detail.damage = damage;
@@ -74674,6 +74674,9 @@ var loadFaceBeast = function() {
     }
     let isRunning = false;
     let runnerSet;
+    function ambientFromColor(color) {
+      return { r: color.r, g: color.g, b: color.b };
+    }
     function determinateType() {
       const chooseType = randomIntFromTo(1, 3);
       let r3, b2, g2;
@@ -74692,6 +74695,19 @@ var loadFaceBeast = function() {
       }
       return { r: r3, g: g2, b: b2 };
     }
+    function damageFromColor(color, baseDamage = 15) {
+      if (color.r > color.b && color.r > color.g) {
+        return baseDamage * 1.5;
+      }
+      if (color.g > color.r && color.g > color.b) {
+        return -baseDamage * 0.8;
+      }
+      return baseDamage * 0.5;
+    }
+    function slowFromColor(color) {
+      return color.g;
+    }
+    let hitEvent = new CustomEvent("player-hit", { detail: { obstacleId: 0 } });
     function spawnRunners(menuBeast, mesh, opts = {}) {
       const cfg = Object.assign({
         count: 12,

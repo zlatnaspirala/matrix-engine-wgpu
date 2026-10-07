@@ -321,6 +321,8 @@ export var loadFaceBeast = function() {
     let isRunning = false;
     let runnerSet;
 
+    function ambientFromColor(color) {return {r: color.r, g: color.g, b: color.b};}
+
     function determinateType() {
       const chooseType = randomIntFromTo(1, 3);
       let r, b, g;
@@ -329,6 +331,16 @@ export var loadFaceBeast = function() {
       else if(chooseType === 3) {r = 0.5; b = 0.5; g = 70;}
       return {r, g, b};
     }
+
+    function damageFromColor(color, baseDamage = 15) {
+      if(color.r > color.b && color.r > color.g) {return baseDamage * 1.5;}
+      if(color.g > color.r && color.g > color.b) {return -baseDamage * 0.8;}
+      return baseDamage * 0.5;
+    }
+
+    function slowFromColor(color) {return color.g;}
+
+    let hitEvent = new CustomEvent('player-hit', {detail: {obstacleId: 0}});
 
     function spawnRunners(menuBeast, mesh, opts = {}) {
       const cfg = Object.assign({
