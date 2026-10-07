@@ -56,6 +56,81 @@ export class SplatFaceEffect {
     this.sampler = device.createSampler({magFilter: 'linear', minFilter: 'linear', });
     this.updateInstanceData = this.updateInstanceDataPoints;
     this.render = this.renderPoint;
+
+
+    this.anchors = {
+      rightEye: [0, 0, 0], leftEye: [0, 0, 0],   // world positions
+      forward: [0, 0, 1],                       // where the face points (unit)
+      up: [0, 1, 0],
+      right: [1, 0, 0],
+      mouthOpen: 0,                              // 0..1
+      valid: false,
+    };
+    this.anchorSmoothing = opts.anchorSmoothing ?? 0.5; // 0 = raw, 0.9 = very smooth
+  }
+
+  _toWorld(j, out = [0, 0, 0]) {
+    const mx = this.mirrorX ? -1 : 1;
+    const v = this._videoElement;
+    const aspect = (v.videoWidth / v.videoHeight) || 1;
+    out[0] = (j.x - 0.5) * mx * this.scale * aspect + this.origin[0];
+    out[1] = -(j.y - 0.5) * this.scale + this.origin[1];
+    out[2] = -j.z * this.scale * aspect + this.origin[2];
+    return out;
+  }
+
+  _updateAnchors(lm) {
+    const A = this.anchors;
+    const mx = this.mirrorX ? -1 : 1;
+    const P = i => this._toWorld(lm[i]);
+    const mid = (a, b) => a.map((v, k) => (v + b[k]) * 0.5);
+
+    // iris centers exist only with 478 landmarks, else use eye corners
+    const hasIris = lm.length >= 478;
+    const rEye = hasIris ? P(468) : mid(P(33), P(133));
+    const lEye = hasIris ? P(473) : mid(P(362), P(263));
+
+    // head orientation from cheeks (234 -> 454) and chin -> forehead (152 -> 10)
+    const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    const norm = v => {const l = Math.hypot(...v) || 1; return v.map(x => x / l);};
+    const cross = (a, b) => [
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0],
+    ];
+
+    const right = norm(sub(P(454), P(234)));
+    const up = norm(sub(P(10), P(152)));
+    // mirroring flips handedness, so multiply by mx to keep "forward" correct
+    const forward = norm(cross(right, up).map(x => x * mx));
+
+    // mouth open ratio (inner lips 13/14) relative to face height
+    const faceH = Math.hypot(...sub(P(10), P(152))) || 1;
+    const mouth = Math.hypot(...sub(P(13), P(14))) / faceH;
+    const mouthOpen = Math.min(1, Math.max(0, (mouth - 0.02) / 0.10));
+
+    const s = this.anchorSmoothing, k = 1 - s;
+    const lerp = (dst, src) => {for(let i = 0;i < dst.length;i++) dst[i] = dst[i] * s + src[i] * k;};
+
+    if(!A.valid) { // first frame: snap
+      A.rightEye = rEye; A.leftEye = lEye; A.forward = forward; A.up = up; A.right = right; A.mouthOpen = mouthOpen;
+    } else {
+      lerp(A.rightEye, rEye); lerp(A.leftEye, lEye);
+      lerp(A.forward, forward); lerp(A.up, up); lerp(A.right, right);
+      A.mouthOpen = A.mouthOpen * s + mouthOpen * k;
+    }
+    A.forward = norm(A.forward);
+    A.valid = true;
+  }
+
+  // public API
+  getEyeRay(side = 'right', length = 10) {
+    const A = this.anchors;
+    const o = side === 'right' ? A.rightEye : A.leftEye;
+    return {
+      origin: o.slice(), dir: A.forward.slice(),
+      end: [o[0] + A.forward[0] * length, o[1] + A.forward[1] * length, o[2] + A.forward[2] * length]
+    };
   }
 
   extractTrianglesFromTessellation(edges) {
@@ -235,9 +310,11 @@ export class SplatFaceEffect {
   setFaceData(results) {
     if(!results?.faceLandmarks?.length) {
       this._landmarks = null;
+      this.anchors.valid = false;
       return;
     }
     this._landmarks = results.faceLandmarks[0];
+    this._updateAnchors(this._landmarks);
   }
 
   setScale(s) {this.scale = s;}

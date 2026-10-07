@@ -8936,7 +8936,7 @@ var byId2 = function(id2) {
 function randomFloatFromTo(min2, max2) {
   return Math.random() * (max2 - min2) + min2;
 }
-function randomIntFromTo(min2, max2) {
+function randomIntFromTo2(min2, max2) {
   if (typeof min2 === "object" || typeof max2 === "object") {
     console.log(
       "SYS : warning Desciption : Replace object with string , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
@@ -52830,6 +52830,527 @@ var myLights = function() {
   window.app = myLights2;
 };
 
+// src/shaders/laser/laser.js
+var laserShaderCode = `
+struct Camera {
+  mvp: mat4x4<f32>
+};
+
+struct LaserInstance {
+  matrix:     mat4x4<f32>,   // offset 0,  16 floats
+  colorA:     vec4<f32>,     // offset 16, 4 floats  \u2014 core color
+  colorB:     vec4<f32>,     // offset 20, 4 floats  \u2014 glow color
+  params:     vec4<f32>,     // offset 24, 4 floats  \u2014 time, length, width, mode
+  extra:      vec4<f32>,     // offset 28, 4 floats  \u2014 intensity, pulseFreq, scroll, unused
+};
+
+@group(0) @binding(0) var<uniform>            camera:    Camera;
+@group(0) @binding(1) var<storage, read>      instances: array<LaserInstance>;
+
+struct VertOut {
+  @builtin(position) clip:      vec4<f32>,
+  @location(0)       uv:        vec2<f32>,
+  @location(1)       colorA:    vec4<f32>,
+  @location(2)       colorB:    vec4<f32>,
+  @location(3)       params:    vec4<f32>,
+  @location(4)       extra:     vec4<f32>,
+};
+
+@vertex
+fn vsMain(
+  @location(0) pos: vec3<f32>,
+  @location(1) uv:  vec2<f32>,
+  @builtin(instance_index) iIdx: u32
+) -> VertOut {
+  let inst = instances[iIdx];
+  let world = inst.matrix * vec4<f32>(pos, 1.0);
+  var out: VertOut;
+  out.clip   = camera.mvp * world;
+  out.uv     = uv;
+  out.colorA = inst.colorA;
+  out.colorB = inst.colorB;
+  out.params = inst.params;
+  out.extra  = inst.extra;
+  return out;
+}
+
+// \u2500\u2500 Helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+fn softGlow(dist: f32, width: f32) -> f32 {
+  return exp(-dist * dist / (width * width));
+}
+
+fn hash(n: f32) -> f32 {
+  return fract(sin(n) * 43758.5453);
+}
+
+fn noise(x: f32) -> f32 {
+  let i = floor(x);
+  let f = fract(x);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(hash(i), hash(i + 1.0), u);
+}
+
+struct FragOut {
+  @location(0) color:    vec4<f32>,
+  @location(1) normal:   vec4<f32>,
+  @location(2) worldPos: vec4<f32>,
+};
+
+@fragment
+fn fsMain(in: VertOut) -> FragOut {
+  let t       = in.params.x;   // time
+  let length  = in.params.y;   // beam length (unused in UV, handled by matrix)
+  let width   = in.params.z;   // beam width 0..1
+  let mode    = in.params.w;   // 0=solid 1=pulse 2=helix 3=disintegrate 4=plasma
+
+  let intensity  = in.extra.x;
+  let pulseFreq  = in.extra.y;
+  let scroll     = in.extra.z;
+
+  let u = in.uv.x;  // 0..1 along beam length
+  let v = in.uv.y;  // -1..1 across beam width (centered)
+
+  // \u2500\u2500 Core radial falloff \u2014 always present \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  let dist      = abs(v);
+  let coreFall  = softGlow(dist, 0.15);   // tight bright core
+  let glowFall  = softGlow(dist, 0.55);   // wide soft glow
+
+  var alpha = 0.0;
+  var col   = vec3<f32>(0.0);
+
+  // \u2500\u2500 Mode 0: Solid beam \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  if (mode < 0.5) {
+    let scrollU = fract(u - t * scroll);
+    let edge    = smoothstep(0.0, 0.05, u) * smoothstep(0.0, 0.05, 1.0 - u);
+    alpha = (coreFall * 0.8 + glowFall * 0.4) * edge * intensity;
+    col   = mix(in.colorB.rgb, in.colorA.rgb, coreFall) * alpha;
+  }
+
+  // \u2500\u2500 Mode 1: Pulse \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  else if (mode < 1.5) {
+    let scrollU  = fract(u - t * scroll);
+    let pulse    = sin(scrollU * 3.14159 * pulseFreq - t * 4.0) * 0.5 + 0.5;
+    let edge     = smoothstep(0.0, 0.06, u) * smoothstep(0.0, 0.06, 1.0 - u);
+    alpha = (coreFall * pulse + glowFall * 0.3) * edge * intensity;
+    col   = mix(in.colorB.rgb, in.colorA.rgb * pulse, coreFall);
+  }
+
+  // \u2500\u2500 Mode 2: Helix \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  else if (mode < 2.5) {
+    let scrollU = fract(u - t * scroll);
+    // Two helical strands offset by pi
+    let strand1 = sin(scrollU * 3.14159 * 6.0 - t * 5.0);
+    let strand2 = sin(scrollU * 3.14159 * 6.0 - t * 5.0 + 3.14159);
+    let helix   = max(
+      softGlow(v - strand1 * 0.4, 0.12),
+      softGlow(v - strand2 * 0.4, 0.12)
+    );
+    let edge  = smoothstep(0.0, 0.04, u) * smoothstep(0.0, 0.04, 1.0 - u);
+    alpha = (helix * 0.9 + glowFall * 0.2) * edge * intensity;
+    col   = mix(in.colorB.rgb, in.colorA.rgb, helix);
+  }
+
+  // \u2500\u2500 Mode 3: Disintegrate \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  else if (mode < 3.5) {
+    let scrollU  = fract(u + t * scroll);
+    // Noisy particle breakup toward tip
+    let n1       = noise(scrollU * 20.0 + t * 2.0);
+    let n2       = noise(scrollU * 40.0 - t * 3.0);
+    let breakup  = n1 * n2;
+    let tipFade  = smoothstep(0.0, 0.3, 1.0 - u); // fade toward tip
+    let edge     = smoothstep(0.0, 0.05, u);
+    alpha = coreFall * breakup * tipFade * edge * intensity;
+    col   = mix(in.colorA.rgb, in.colorB.rgb, 1.0 - tipFade) * (breakup + 0.3);
+  }
+
+  // \u2500\u2500 Mode 4: Plasma \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  else {
+    let scrollU  = fract(u - t * scroll);
+    let n1       = noise(scrollU * 8.0  + t * 1.5);
+    let n2       = noise(v      * 6.0  + t * 2.0);
+    let plasma   = n1 * n2;
+    let warp     = softGlow(v + sin(scrollU * 12.0 - t * 6.0) * 0.3, 0.25);
+    let edge     = smoothstep(0.0, 0.05, u) * smoothstep(0.0, 0.05, 1.0 - u);
+    alpha = (warp * 0.7 + plasma * 0.5 + glowFall * 0.2) * edge * intensity;
+    col   = mix(in.colorB.rgb, in.colorA.rgb, warp + plasma * 0.5);
+  }
+
+  alpha = clamp(alpha, 0.0, 1.0);
+
+  var out: FragOut;
+  out.color    = vec4<f32>(col * intensity, alpha);
+  out.normal   = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+  out.worldPos = vec4<f32>(0.0);
+  return out;
+}
+`;
+
+// src/engine/effects/laser.js
+var LaserProjectile = class _LaserProjectile {
+  /**
+   * @param {GPUDevice} device
+   * @param {string}    format
+   * @param {GPUBuffer} cameraBuffer
+   * @param {object}    opts
+   * @param {number}    opts.maxBeams       max simultaneous beams (default 8)
+   * @param {number}    opts.mode           visual mode 0-4 (default 0)
+   * @param {number[]}  opts.colorA         core color rgba (default cyan)
+   * @param {number[]}  opts.colorB         glow color rgba (default blue)
+   * @param {number}    opts.width          beam width (default 0.05)
+   * @param {number}    opts.intensity      brightness (default 2.0)
+   * @param {number}    opts.pulseFreq      pulse frequency for mode 1 (default 4.0)
+   * @param {number}    opts.scrollSpeed    UV scroll speed (default 1.0)
+   * @param {GaussianSplatLayer} opts.splatLayer  optional splat enhancement
+   */
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
+  constructor(device2, format, cameraBuffer, opts = {}) {
+    this.device = device2;
+    this.format = format;
+    this.cameraBuffer = cameraBuffer;
+    this.enabled = true;
+    this.time = 0;
+    this.maxBeams = opts.maxBeams ?? 8;
+    this.mode = opts.mode ?? 0;
+    this.colorA = opts.colorA ?? [0, 1, 1, 1];
+    this.colorB = opts.colorB ?? [0, 0.2, 1, 1];
+    this.width = opts.width ?? 0.05;
+    this.intensity = opts.intensity ?? 2;
+    this.pulseFreq = opts.pulseFreq ?? 4;
+    this.scrollSpeed = opts.scrollSpeed ?? 1;
+    this.splatLayer = opts.splatLayer ?? null;
+    this.floatsPerInstance = 32;
+    this._beams = [];
+    this._beamIdCounter = 0;
+    this._instanceData = new Float32Array(this.maxBeams * this.floatsPerInstance);
+    this._localMatrix = mat4Impl.create();
+    this._finalMatrix = mat4Impl.create();
+    this._scratchVec = new Float32Array(3);
+    this._initPipeline();
+    if (this.splatLayer) {
+      this._splatPosCPU = new Float32Array(this.splatLayer.vertexCount * 3);
+      this._splatColorCPU = new Float32Array(this.splatLayer.vertexCount * 4);
+      this._splatPhase = new Float32Array(this.splatLayer.vertexCount).map(() => Math.random() * Math.PI * 2);
+    }
+  }
+  _initPipeline() {
+    const device2 = this.device;
+    if (_LaserProjectile._pipelineCache.has(device2)) {
+      const cached = _LaserProjectile._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        label: "laser-bgl",
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: { type: "read-only-storage" }
+          }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({
+        label: "laser-shader",
+        code: laserShaderCode
+      });
+      this.pipelineLayout = device2.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+      this.pipeline = device2.createRenderPipeline({
+        label: "laser-pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 20,
+              // 5 floats * 4
+              attributes: [
+                { shaderLocation: 0, offset: 0, format: "float32x3" },
+                // pos
+                { shaderLocation: 1, offset: 12, format: "float32x2" }
+                // uv
+              ]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.format,
+              blend: {
+                color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "triangle-list", cullMode: "none" },
+        depthStencil: {
+          format: "depth24plus",
+          depthWriteEnabled: false,
+          depthCompare: "less"
+        }
+      });
+      _LaserProjectile._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+    const verts = new Float32Array([
+      //  x      y      z     u     v
+      0,
+      -1,
+      0,
+      0,
+      -1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      -1,
+      0,
+      1,
+      -1,
+      1,
+      1,
+      0,
+      1,
+      1
+    ]);
+    const indices = new Uint16Array([0, 1, 2, 1, 3, 2]);
+    this.vertexBuffer = device2.createBuffer({
+      label: "laser-verts",
+      size: verts.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.vertexBuffer, 0, verts);
+    this.indexBuffer = device2.createBuffer({
+      label: "laser-idx",
+      size: Math.ceil(indices.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.indexBuffer, 0, indices);
+    this.indexCount = indices.length;
+    this.instanceBuffer = device2.createBuffer({
+      label: "laser-instances",
+      size: this.maxBeams * this.floatsPerInstance * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    this.bindGroup = device2.createBindGroup({
+      label: "laser-bg",
+      layout: this.bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.instanceBuffer } }
+      ]
+    });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 200);
+  }
+  /**
+   * Fire a beam from pointA to pointB.
+   * @param {number[]} from    [x,y,z] world position
+   * @param {number[]} to      [x,y,z] world position
+   * @param {number}   life    duration in seconds (0 = permanent until cancelBeam)
+   * @param {object}   overrides  per-beam color/mode/width/intensity overrides
+   * @returns {number}  beamId — use to cancel or update
+   */
+  fireBeam(from, to2, life = 0, overrides = {}) {
+    if (this._beams.length >= this.maxBeams) {
+      const expired = this._beams.findIndex((b2) => !b2.active);
+      if (expired !== -1) this._beams.splice(expired, 1);
+      else this._beams.shift();
+    }
+    const id2 = this._beamIdCounter++;
+    this._beams.push({
+      id: id2,
+      from: [...from],
+      to: [...to2],
+      life,
+      maxLife: life,
+      age: 0,
+      active: true,
+      colorA: overrides.colorA ?? [...this.colorA],
+      colorB: overrides.colorB ?? [...this.colorB],
+      mode: overrides.mode ?? this.mode,
+      width: overrides.width ?? this.width,
+      intensity: overrides.intensity ?? this.intensity,
+      pulseFreq: overrides.pulseFreq ?? this.pulseFreq,
+      scroll: overrides.scrollSpeed ?? this.scrollSpeed
+    });
+    return id2;
+  }
+  /**
+   * Update a live beam's target (for tracking effects).
+   */
+  updateBeam(id2, from, to2) {
+    const b2 = this._beams.find((b3) => b3.id === id2);
+    if (!b2) return;
+    if (from) b2.from = [...from];
+    if (to2) b2.to = [...to2];
+  }
+  cancelBeam(id2) {
+    const b2 = this._beams.find((b3) => b3.id === id2);
+    if (b2) b2.active = false;
+  }
+  cancelAll() {
+    this._beams = [];
+  }
+  setMode(mode) {
+    this.mode = mode;
+  }
+  setColorA(r3, g2, b2, a2) {
+    this.colorA = [r3, g2, b2, a2 ?? 1];
+  }
+  setColorB(r3, g2, b2, a2) {
+    this.colorB = [r3, g2, b2, a2 ?? 1];
+  }
+  setWidth(w2) {
+    this.width = w2;
+  }
+  setIntensity(v2) {
+    this.intensity = v2;
+  }
+  updateInstanceData(baseModelMatrix) {
+    if (!this.enabled) return;
+    for (const b2 of this._beams) {
+      if (b2.life > 0 && b2.age >= b2.life) b2.active = false;
+    }
+    const active = this._beams.filter((b2) => b2.active);
+    const count = Math.min(active.length, this.maxBeams);
+    if (count === 0) return;
+    for (let i2 = 0; i2 < count; i2++) {
+      const b2 = active[i2];
+      const dx = b2.to[0] - b2.from[0];
+      const dy = b2.to[1] - b2.from[1];
+      const dz = b2.to[2] - b2.from[2];
+      const len2 = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-3;
+      const forward = [dx / len2, dy / len2, dz / len2];
+      const up = Math.abs(forward[1]) < 0.99 ? [0, 1, 0] : [1, 0, 0];
+      const right2 = _cross(forward, up);
+      _normalize(right2);
+      const realUp = _cross(right2, forward);
+      const m2 = this._localMatrix;
+      mat4Impl.identity(m2);
+      m2[0] = forward[0] * len2;
+      m2[1] = forward[1] * len2;
+      m2[2] = forward[2] * len2;
+      m2[3] = 0;
+      m2[4] = realUp[0] * b2.width;
+      m2[5] = realUp[1] * b2.width;
+      m2[6] = realUp[2] * b2.width;
+      m2[7] = 0;
+      m2[8] = right2[0] * b2.width;
+      m2[9] = right2[1] * b2.width;
+      m2[10] = right2[2] * b2.width;
+      m2[11] = 0;
+      m2[12] = b2.from[0];
+      m2[13] = b2.from[1];
+      m2[14] = b2.from[2];
+      m2[15] = 1;
+      mat4Impl.multiply(baseModelMatrix, m2, this._finalMatrix);
+      const off = i2 * this.floatsPerInstance;
+      this._instanceData.set(this._finalMatrix, off);
+      this._instanceData[off + 16] = b2.colorA[0];
+      this._instanceData[off + 17] = b2.colorA[1];
+      this._instanceData[off + 18] = b2.colorA[2];
+      this._instanceData[off + 19] = b2.colorA[3];
+      this._instanceData[off + 20] = b2.colorB[0];
+      this._instanceData[off + 21] = b2.colorB[1];
+      this._instanceData[off + 22] = b2.colorB[2];
+      this._instanceData[off + 23] = b2.colorB[3];
+      this._instanceData[off + 24] = this.time;
+      this._instanceData[off + 25] = len2;
+      this._instanceData[off + 26] = b2.width;
+      this._instanceData[off + 27] = b2.mode;
+      this._instanceData[off + 28] = b2.intensity;
+      this._instanceData[off + 29] = b2.pulseFreq;
+      this._instanceData[off + 30] = b2.scroll;
+      this._instanceData[off + 31] = 0;
+    }
+    this.device.queue.writeBuffer(
+      this.instanceBuffer,
+      0,
+      this._instanceData.subarray(0, count * this.floatsPerInstance)
+    );
+    if (this.splatLayer && active.length > 0) {
+      this._updateSplatImpact(active[0]);
+    }
+  }
+  render(pass, mesh, viewProjMatrix, dt2 = 0.016) {
+    this.time += dt2;
+    for (const b2 of this._beams) {
+      if (b2.life > 0) b2.age += dt2;
+    }
+    const count = Math.min(this._beams.filter((b2) => b2.active).length, this.maxBeams);
+    if (count === 0) return;
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint16");
+    pass.drawIndexed(this.indexCount, count);
+  }
+  _updateSplatImpact(beam) {
+    const n3 = this.splatLayer.vertexCount;
+    const p2 = this._splatPosCPU;
+    const c2 = this._splatColorCPU;
+    const ph = this._splatPhase;
+    const t3 = this.time;
+    const tip = beam.to;
+    const r3 = 0.3 + Math.sin(t3 * 8) * 0.1;
+    for (let i2 = 0; i2 < n3; i2++) {
+      const angle2 = i2 / n3 * Math.PI * 2 + t3 * 3 + ph[i2];
+      const ri2 = r3 * (0.7 + Math.sin(ph[i2] + t3 * 5) * 0.3);
+      p2[i2 * 3] = tip[0] + Math.cos(angle2) * ri2;
+      p2[i2 * 3 + 1] = tip[1] + Math.sin(ph[i2] * 2 + t3) * 0.1;
+      p2[i2 * 3 + 2] = tip[2] + Math.sin(angle2) * ri2;
+      const pulse = Math.sin(t3 * 6 + ph[i2]) * 0.5 + 0.5;
+      c2[i2 * 4] = beam.colorA[0] * pulse;
+      c2[i2 * 4 + 1] = beam.colorA[1] * pulse;
+      c2[i2 * 4 + 2] = beam.colorA[2] * pulse;
+      c2[i2 * 4 + 3] = 1;
+    }
+    this.device.queue.writeBuffer(
+      this.splatLayer.positionAnimator.posBuffer,
+      0,
+      p2
+    );
+    this.device.queue.writeBuffer(this.splatLayer.colorBuffer, 0, c2);
+  }
+  destroy() {
+    this.vertexBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.instanceBuffer?.destroy();
+  }
+};
+function _cross(a2, b2) {
+  return [
+    a2[1] * b2[2] - a2[2] * b2[1],
+    a2[2] * b2[0] - a2[0] * b2[2],
+    a2[0] * b2[1] - a2[1] * b2[0]
+  ];
+}
+function _normalize(v2) {
+  const len2 = Math.sqrt(v2[0] * v2[0] + v2[1] * v2[1] + v2[2] * v2[2]) || 1;
+  v2[0] /= len2;
+  v2[1] /= len2;
+  v2[2] /= len2;
+  return v2;
+}
+
 // examples/load-obj-file.js
 var loadObjFile = function() {
   let loadObjFile2 = new MatrixEngineWGPU({
@@ -52969,7 +53490,7 @@ var loadObjFile = function() {
                 // Short lifespan guarantees lasers disappear and update instantly
                 {
                   colorA: [Math.floor(Math.abs(Math.sin(time + t3) * 255)), Math.floor(Math.abs(Math.sin(time + t3) * 255)), 100],
-                  colorB: [randomIntFromTo(150, 200), randomIntFromTo(50, 100), randomIntFromTo(50, 100)],
+                  colorB: [randomIntFromTo2(150, 200), randomIntFromTo2(50, 100), randomIntFromTo2(50, 100)],
                   width: 1.6,
                   intensity: 1.5,
                   scrollSpeed: 1
@@ -53008,20 +53529,20 @@ var loadObjFile = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
         e2.detail.hitObject.effects.flameEmitterBlue.recreateVertexDataCrazzy(5);
         app.MYCUBE.effects.flameEmitterBlue.instanceTargets.forEach((ins) => {
-          ins.color[0] = randomIntFromTo(0, 1);
-          ins.color[1] = randomIntFromTo(0, 1);
-          ins.color[2] = randomIntFromTo(1e3, 2e3);
+          ins.color[0] = randomIntFromTo2(0, 1);
+          ins.color[1] = randomIntFromTo2(0, 1);
+          ins.color[2] = randomIntFromTo2(1e3, 2e3);
         });
         app.MYCUBE.effects.flameEmitter.instanceTargets.forEach((ins) => {
-          ins.color[0] = randomIntFromTo(1, 10);
-          ins.color[1] = randomIntFromTo(1, 10);
+          ins.color[0] = randomIntFromTo2(1, 10);
+          ins.color[1] = randomIntFromTo2(1, 10);
           ins.color[2] = 0;
         });
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
       }
     });
   });
@@ -53545,7 +54066,7 @@ var snakeLightsInstanced = function() {
           monster.instanceTargets[prevIdx].color[1] = 0.5;
           monster.instanceTargets[prevIdx].color[2] = 0.5;
           monster.instanceTargets[scaleIdx].scale = [2, 2, 2];
-          monster.instanceTargets[scaleIdx].color[randomIntFromTo(0, 2)] = randomIntFromTo(2, 20);
+          monster.instanceTargets[scaleIdx].color[randomIntFromTo2(0, 2)] = randomIntFromTo2(2, 20);
           scaleIdx++;
           if (scaleIdx > totalInstances) scaleIdx = 1;
         }, 750);
@@ -54292,7 +54813,7 @@ var flipperJolt = function() {
           }
           flipper.matrixPhysics.applyImpulse(
             ball,
-            new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2))
+            new PVector(0, 0.2, -randomIntFromTo2(0.8, 1.2))
           );
           flipper.matrixSounds.play("push");
           MYFLIPPER.BALLS--;
@@ -55197,7 +55718,7 @@ var flipperAmmo = function() {
       const pos2 = await app.matrixPhysics.getPosition(ball);
       if (pos2.x > 5 && pos2.z > -6.6) flipper.matrixPhysics.applyImpulse(
         ball,
-        new PVector(0, 2, -randomIntFromTo(11, 15))
+        new PVector(0, 2, -randomIntFromTo2(11, 15))
       );
     }, () => {
     }, { left: "80", bottom: "50" });
@@ -55628,7 +56149,7 @@ var flipperAmmo = function() {
             const pos2 = await app.matrixPhysics.getPosition(ball2);
             if (pos2.x > 4.7 && pos2.z < -6) flipper.matrixPhysics.applyImpulse(
               ball2,
-              new PVector(0, 0.1, -randomIntFromTo(1, 2))
+              new PVector(0, 0.1, -randomIntFromTo2(1, 2))
             );
           }
         });
@@ -55726,7 +56247,7 @@ var flipperAmmo = function() {
           const pos2 = await app.matrixPhysics.getPosition(ball);
           if (pos2.x > 5 && pos2.z > -6.6) flipper.matrixPhysics.applyImpulse(
             ball,
-            new PVector(0, 2, -randomIntFromTo(11, 15))
+            new PVector(0, 2, -randomIntFromTo2(11, 15))
           );
         }
       });
@@ -56476,9 +56997,9 @@ var loadCinematicCamera = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
       }
     });
   });
@@ -56621,9 +57142,9 @@ var loadDestructionProcedural = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
         e2.detail.hitObject.morphTo(1, 2e3);
       }
     });
@@ -57185,22 +57706,22 @@ var loadKale = function() {
     ray.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
         if (app.volumetricPass.enabled == false) app.activateVolumetricEffect();
         e2.detail.hitObject.setupMaterialPBR(
-          [randomIntFromTo(1, 10), randomIntFromTo(1, 10), randomIntFromTo(1, 10)],
-          [randomIntFromTo(1, 10), randomIntFromTo(1, 10), randomIntFromTo(1, 10)]
+          [randomIntFromTo2(1, 10), randomIntFromTo2(1, 10), randomIntFromTo2(1, 10)],
+          [randomIntFromTo2(1, 10), randomIntFromTo2(1, 10), randomIntFromTo2(1, 10)]
         );
       } else if (e2.detail.hitObject.name.startsWith("ball")) {
         e2.detail.hitObject.setupMaterialPBR(
-          [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)],
-          [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)]
+          [randomIntFromTo2(1, 100), randomIntFromTo2(1, 100), randomIntFromTo2(1, 100)],
+          [randomIntFromTo2(1, 100), randomIntFromTo2(1, 100), randomIntFromTo2(1, 100)]
         );
-        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
-        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(0, 45));
+        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
+        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(0, 45));
       }
     });
   });
@@ -57390,8 +57911,8 @@ var loadHZB = function() {
     }
     HZB.canvas.addEventListener("ray.hit.event", (e2) => {
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
       }
     });
   });
@@ -57582,8 +58103,8 @@ var loadKinematicCollision = function() {
     }
     collision.canvas.addEventListener("ray.hit.event", (e2) => {
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
       }
     });
   });
@@ -58907,7 +59428,7 @@ var loadSprite1 = function() {
               const yDeg = angle2 * (180 / Math.PI);
               const FIX = 90;
               sprite.pause();
-              sprite.goToFrame(randomIntFromTo(0, 8));
+              sprite.goToFrame(randomIntFromTo2(0, 8));
               sprite.setTargetRotation(90, yDeg - FIX, FIX);
               if (index === myReel1.length - 1) {
                 animateRotationY(MYCUBE.rotation, 90, 1e3);
@@ -58925,7 +59446,7 @@ var loadSprite1 = function() {
               const yDeg = angle2 * (180 / Math.PI);
               const FIX = 90;
               sprite.pause();
-              sprite.goToFrame(randomIntFromTo(0, 8));
+              sprite.goToFrame(randomIntFromTo2(0, 8));
               sprite.setTargetRotation(90, yDeg - FIX, FIX);
               if (index === myReel2.length - 1) {
                 animateRotationY(MYCUBE2.rotation, 90, 1e3);
@@ -58943,7 +59464,7 @@ var loadSprite1 = function() {
               const yDeg = angle2 * (180 / Math.PI);
               const FIX = 90;
               sprite.pause();
-              sprite.goToFrame(randomIntFromTo(0, 8));
+              sprite.goToFrame(randomIntFromTo2(0, 8));
               sprite.setTargetRotation(90, yDeg - FIX, FIX);
               if (index === myReel3.length - 1) {
                 animateRotationY(MYCUBE3.rotation, 90, 1e3);
@@ -58966,8 +59487,8 @@ var loadSprite1 = function() {
     world2D.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cubeeffect")) {
-        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
-        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
+        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
       }
     });
   });
@@ -60959,12 +61480,12 @@ var loadGaussianSplat = function() {
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
         setInterval(() => {
-          const memoI = randomIntFromTo(90, 150);
+          const memoI = randomIntFromTo2(90, 150);
           MYCUBE.effects.flameEmitter.setIntensity(memoI);
-          const memoCONFIG = randomIntFromTo(5, 15);
+          const memoCONFIG = randomIntFromTo2(5, 15);
           MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
-          let memoS = [randomIntFromTo(90, 150), randomIntFromTo(90, 150), randomIntFromTo(90, 150)];
-          let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
+          let memoS = [randomIntFromTo2(90, 150), randomIntFromTo2(90, 150), randomIntFromTo2(90, 150)];
+          let memoC = [randomIntFromTo2(0, 100), randomIntFromTo2(0, 100), randomIntFromTo2(0, 100)];
           MYCUBE.effects.flameEmitter.instanceTargets.forEach((e2) => {
             e2.currentScale = memoS;
             e2.color = memoC;
@@ -61138,14 +61659,14 @@ var loadGaussianSplatVertAnim = function() {
         }, arg4);
         let arg5 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 46 } : { left: "37" };
         MobileDOM.addButton("Flame effect random", function() {
-          let memoS = [randomIntFromTo(10, 150), randomIntFromTo(10, 150), randomIntFromTo(10, 150)];
-          let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
+          let memoS = [randomIntFromTo2(10, 150), randomIntFromTo2(10, 150), randomIntFromTo2(10, 150)];
+          let memoC = [randomIntFromTo2(0, 100), randomIntFromTo2(0, 100), randomIntFromTo2(0, 100)];
           MYCUBE.effects.flameEmitter.instanceTargets.forEach((e2) => {
             e2.currentScale = memoS;
             e2.color = memoC;
           }, void 0, { size: isMobile() === true ? 30 : void 0 });
-          MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
-          MYCUBE.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+          MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
+          MYCUBE.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
         }, () => {
         }, arg5);
         let arg6 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 37 } : { left: "45" };
@@ -62465,9 +62986,9 @@ var loadStreamRenderHost = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
       }
     });
     streamRender.net = new MatrixStream({
@@ -62617,12 +63138,12 @@ var MapCreator = class {
         obj2.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
         obj2.effects.flameEmitter.recreateVertexDataCrazzy(1);
         obj2.effects.flameEmitter.rotSpeed = 0.1;
-        obj2.effects.flameEmitter.setIntensity(randomIntFromTo(5, 10));
+        obj2.effects.flameEmitter.setIntensity(randomIntFromTo2(5, 10));
         obj2.effects.flameEmitter.instanceTargets.forEach((e2) => {
           e2.currentScale = [0.5, 4, 0.5];
         });
         obj2.effects.flameEmitter.instanceTargets.forEach((p2, i2, array) => {
-          array[i2].color = [randomIntFromTo(7, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 1];
+          array[i2].color = [randomIntFromTo2(7, 20), randomIntFromTo2(0, 2), randomIntFromTo2(0, 2), 1];
         });
       }, 250);
     }
@@ -62978,7 +63499,7 @@ var MapCreator = class {
           void 0,
           this.pillarsFlame
         ));
-        if (this._pDecorationEnabled === true && randomIntFromTo(0, 10) < _MAX) results.pillars.push(this._pillarDecoration(
+        if (this._pDecorationEnabled === true && randomIntFromTo2(0, 10) < _MAX) results.pillars.push(this._pillarDecoration(
           this._id(`${tag}_pillarDec`),
           { x: px, y: y3 + 2.6, z: pz + 0.4 },
           [0.6, 0.6, 0.6],
@@ -63945,9 +64466,9 @@ var Zombi = class {
           return;
         }
         let bPos;
-        const delta_ = randomIntFromTo(0, 150);
+        const delta_ = randomIntFromTo2(0, 150);
         this.zombie_bodies.forEach((subMesh, idx) => {
-          subMesh.setAmbient(randomIntFromTo(0, 2), randomIntFromTo(0, 2), randomIntFromTo(0, 2));
+          subMesh.setAmbient(randomIntFromTo2(0, 2), randomIntFromTo2(0, 2), randomIntFromTo2(0, 2));
           subMesh.position.thrust = this.zombieSpeedWalk;
           subMesh.animationSpeed = 450 + delta_;
           subMesh.animationIndex = 0;
@@ -64055,7 +64576,7 @@ var Zombi = class {
     if (this.isDead) return;
     this.hp = Math.max(0, this.hp - amount);
     this.updateEnergyBar();
-    app.matrixSounds.play("zombie" + randomIntFromTo(1, 3));
+    app.matrixSounds.play("zombie" + randomIntFromTo2(1, 3));
     if (this.hp <= 0) {
       this.die();
       app.matrixSounds.play("zombiedead");
@@ -64068,7 +64589,7 @@ var Zombi = class {
     this.core.collisionSystem.unregister?.(this.name);
     dispatchEvent(this.zombiDieEvent);
     setTimeout(() => {
-      this.spawnPosZombie(randomIntFromTo(1, 3));
+      this.spawnPosZombie(randomIntFromTo2(1, 3));
       this.setIdle();
     }, 600);
   }
@@ -64162,7 +64683,7 @@ var Zombi = class {
         this.aiState = "attack";
         this.setAttack();
       }
-      app.matrixSounds.play("zombie" + randomIntFromTo(1, 4));
+      app.matrixSounds.play("zombie" + randomIntFromTo2(1, 4));
       this.resolveAttack();
       return;
     }
@@ -64202,8 +64723,8 @@ var Zombi = class {
         app.energy.setValue(app.player.energy);
         return;
       }
-      if (randomIntFromTo(0, 50) < 1) {
-        app.matrixSounds.play("zombie" + randomIntFromTo(1, 4));
+      if (randomIntFromTo2(0, 50) < 1) {
+        app.matrixSounds.play("zombie" + randomIntFromTo2(1, 4));
       }
     });
   }
@@ -66336,8 +66857,8 @@ var loadBVHRawExample = function() {
       console.log("ray.hit.event detected :", e2.detail.hitObject.name);
       let t3 = BVHRawExample.ALL_SKELETALS.filter((O2) => e2.detail.hitObject.name.indexOf(O2.myName) !== -1);
       if (t3.length > 0) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo(0, 1), randomIntFromTo(10, 20), randomIntFromTo(10, 20));
-        e2.detail.hitObject.setupMaterialPBR([randomIntFromTo(10, 20), randomIntFromTo(10, 20), 1], 2, 0.1, 0.1);
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(0, 1), randomIntFromTo2(10, 20), randomIntFromTo2(10, 20));
+        e2.detail.hitObject.setupMaterialPBR([randomIntFromTo2(10, 20), randomIntFromTo2(10, 20), 1], 2, 0.1, 0.1);
         t3[0].THICKNESS = t3[0].THICKNESS + 0.2;
         t3[0].setupScale();
       }
@@ -66489,9 +67010,9 @@ var loadBVHRawExampleShared = function() {
       console.log("ray.hit.event detected :", e2.detail.hitObject.name);
       let t3 = BVHRawExample.ALL_SKELETALS.filter((O2) => e2.detail.hitObject.name.indexOf(O2.myName) !== -1);
       if (t3.length > 0) {
-        app.lightContainer[0].setColorR(randomIntFromTo(1, 30));
-        app.lightContainer[0].setColorG(randomIntFromTo(1, 30));
-        app.lightContainer[0].setColorB(randomIntFromTo(1, 30));
+        app.lightContainer[0].setColorR(randomIntFromTo2(1, 30));
+        app.lightContainer[0].setColorG(randomIntFromTo2(1, 30));
+        app.lightContainer[0].setColorB(randomIntFromTo2(1, 30));
         t3[0].THICKNESS = t3[0].THICKNESS + 0.2;
         t3[0].setupScale();
       }
@@ -68671,7 +69192,7 @@ var ParticleActionEmitter = class _ParticleActionEmitter {
         alpha: 0,
         age: 0,
         life: 1,
-        radius: randomIntFromTo(1, 20),
+        radius: randomIntFromTo2(1, 20),
         phase: 0,
         orbitSpeed: 1,
         height: 0,
@@ -69273,8 +69794,8 @@ var loadParticles = function() {
       app.birds.effects.particles3.setAction("spiral");
       app.birds.effects.particles4.setAction("bloodSplat", { separationRadius: 1.2 });
       app.birds.effects.particles4.burst();
-      app.birds.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
-      app.birds.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+      app.birds.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
+      app.birds.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
       const start = [app.MONSTER.position.x, app.MONSTER.position.y, app.MONSTER.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       app.MONSTER.playAnimationByName("walk");
@@ -69382,8 +69903,8 @@ var loadRunner = function() {
     app.matrixSounds.createAudio("scoreClip", "res/audios/feel.mp3", 2);
     app.matrixSounds.audios.music.loop = true;
     app.matrixSounds.audios.music.volume = 0.2;
-    const collisionSystem = new CollisionSystem();
-    app.collisionSystem = collisionSystem;
+    const collisionSystem2 = new CollisionSystem();
+    app.collisionSystem = collisionSystem2;
     menuBeast.addLight();
     downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
@@ -69447,7 +69968,7 @@ var loadRunner = function() {
       app.beast.energy = 100;
       app.runStartTime = performance.now();
       app.beast.setAmbient(1, 2, 1);
-      collisionSystem.register("player", app.beast.position, 5, "player");
+      collisionSystem2.register("player", app.beast.position, 5, "player");
       app.beast.playAnimationByName("walk");
     }
     function createPillar(menuBeast2, m2, x3, y3, z2, name2) {
@@ -69478,11 +69999,11 @@ var loadRunner = function() {
       return { base, top };
     }
     async function onLoadObj(m2) {
-      function ambientFromColor(color) {
+      function ambientFromColor2(color) {
         return { r: color.r, g: color.g, b: color.b };
       }
       function determinateType() {
-        const chooseType = randomIntFromTo(1, 3);
+        const chooseType = randomIntFromTo2(1, 3);
         let r3, b2, g2;
         if (chooseType === 1) {
           r3 = 70;
@@ -69499,7 +70020,7 @@ var loadRunner = function() {
         }
         return { r: r3, g: g2, b: b2 };
       }
-      function damageFromColor(color, baseDamage = 15) {
+      function damageFromColor2(color, baseDamage = 15) {
         if (color.r > color.b && color.r > color.g) {
           return baseDamage * 1.5;
         }
@@ -69508,7 +70029,7 @@ var loadRunner = function() {
         }
         return baseDamage * 0.5;
       }
-      function slowFromColor(color) {
+      function slowFromColor2(color) {
         return color.g;
       }
       let hitEvent = new CustomEvent("player-hit", { detail: { obstacleId: 0 } });
@@ -69559,14 +70080,14 @@ var loadRunner = function() {
           obj2._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
           obj2._runnerCfg = cfg;
           obj2._runnerColor = determinateType();
-          obj2._runnerDamage = damageFromColor(obj2._runnerColor);
-          obj2._runnerSlow = slowFromColor(obj2._runnerColor);
-          const amb = ambientFromColor(obj2._runnerColor);
+          obj2._runnerDamage = damageFromColor2(obj2._runnerColor);
+          obj2._runnerSlow = slowFromColor2(obj2._runnerColor);
+          const amb = ambientFromColor2(obj2._runnerColor);
           obj2.setAmbient(amb.r, amb.g, amb.b);
           runners.push(obj2);
           const rRadius = Math.max(s2) || s2;
           try {
-            collisionSystem.register(obj2.name, obj2.position, s2 * 1.25, "obstacle");
+            collisionSystem2.register(obj2.name, obj2.position, s2 * 1.25, "obstacle");
           } catch (err) {
             console.warn("collision register failed", err);
           }
@@ -69622,9 +70143,9 @@ var loadRunner = function() {
             obj2.position.x = Math.random() * (obj2._runnerCfg.maxX - obj2._runnerCfg.minX) + obj2._runnerCfg.minX;
             obj2.position.y = Math.random() * (obj2._runnerCfg.maxY - obj2._runnerCfg.minY) + obj2._runnerCfg.minY;
             obj2._runnerColor = determinateType();
-            obj2._runnerDamage = damageFromColor(obj2._runnerColor);
-            obj2._runnerSlow = slowFromColor(obj2._runnerColor);
-            const amb = ambientFromColor(obj2._runnerColor);
+            obj2._runnerDamage = damageFromColor2(obj2._runnerColor);
+            obj2._runnerSlow = slowFromColor2(obj2._runnerColor);
+            const amb = ambientFromColor2(obj2._runnerColor);
             obj2.setAmbient(amb.r, amb.g, amb.b);
             hitEvent.detail.obstacleId = obstacle.id;
             hitEvent.detail.damage = damage;
@@ -71285,8 +71806,8 @@ var loadCryptoGrid = function() {
       console.log("ray.hit.event detected");
       const { hitObject, hitPoint } = e2.detail;
       if (e2.detail.hitObject.name.startsWith("earth")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
       }
     });
   });
@@ -71910,8 +72431,8 @@ var loadEarth = function() {
       const v2 = 0.5 - Math.asin(dir[1]) / Math.PI;
       water.addDrop(u2, v2, 0.03, 0.01);
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
       }
     });
   });
@@ -72410,9 +72931,9 @@ var loadCameraDepth = function() {
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.bloodBurst.spawn([0, 0, 0], null, 60, 2);
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
       }
     });
   });
@@ -72919,7 +73440,7 @@ var loadReactiveAudio = function() {
     reactiveAudio.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
       }
     });
   });
@@ -73085,7 +73606,7 @@ var snakeLightsInstancedMAX = function() {
             monster.instanceTargets[prevIdx].color[1] = 0.5;
             monster.instanceTargets[prevIdx].color[2] = 0.5;
             monster.instanceTargets[scaleIdx].scale = [2, 2, 2];
-            monster.instanceTargets[scaleIdx].color[randomIntFromTo(0, 2)] = randomIntFromTo(2, 20);
+            monster.instanceTargets[scaleIdx].color[randomIntFromTo2(0, 2)] = randomIntFromTo2(2, 20);
             scaleIdx++;
             if (scaleIdx > totalInstances) scaleIdx = 1;
           }
@@ -73569,6 +74090,84 @@ var SplatFaceEffect = class {
     this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear" });
     this.updateInstanceData = this.updateInstanceDataPoints;
     this.render = this.renderPoint;
+    this.anchors = {
+      rightEye: [0, 0, 0],
+      leftEye: [0, 0, 0],
+      // world positions
+      forward: [0, 0, 1],
+      // where the face points (unit)
+      up: [0, 1, 0],
+      right: [1, 0, 0],
+      mouthOpen: 0,
+      // 0..1
+      valid: false
+    };
+    this.anchorSmoothing = opts.anchorSmoothing ?? 0.5;
+  }
+  _toWorld(j2, out = [0, 0, 0]) {
+    const mx = this.mirrorX ? -1 : 1;
+    const v2 = this._videoElement;
+    const aspect = v2.videoWidth / v2.videoHeight || 1;
+    out[0] = (j2.x - 0.5) * mx * this.scale * aspect + this.origin[0];
+    out[1] = -(j2.y - 0.5) * this.scale + this.origin[1];
+    out[2] = -j2.z * this.scale * aspect + this.origin[2];
+    return out;
+  }
+  _updateAnchors(lm) {
+    const A2 = this.anchors;
+    const mx = this.mirrorX ? -1 : 1;
+    const P2 = (i2) => this._toWorld(lm[i2]);
+    const mid = (a2, b2) => a2.map((v2, k3) => (v2 + b2[k3]) * 0.5);
+    const hasIris = lm.length >= 478;
+    const rEye = hasIris ? P2(468) : mid(P2(33), P2(133));
+    const lEye = hasIris ? P2(473) : mid(P2(362), P2(263));
+    const sub3 = (a2, b2) => [a2[0] - b2[0], a2[1] - b2[1], a2[2] - b2[2]];
+    const norm = (v2) => {
+      const l2 = Math.hypot(...v2) || 1;
+      return v2.map((x3) => x3 / l2);
+    };
+    const cross3 = (a2, b2) => [
+      a2[1] * b2[2] - a2[2] * b2[1],
+      a2[2] * b2[0] - a2[0] * b2[2],
+      a2[0] * b2[1] - a2[1] * b2[0]
+    ];
+    const right2 = norm(sub3(P2(454), P2(234)));
+    const up = norm(sub3(P2(10), P2(152)));
+    const forward = norm(cross3(right2, up).map((x3) => x3 * mx));
+    const faceH = Math.hypot(...sub3(P2(10), P2(152))) || 1;
+    const mouth = Math.hypot(...sub3(P2(13), P2(14))) / faceH;
+    const mouthOpen = Math.min(1, Math.max(0, (mouth - 0.02) / 0.1));
+    const s2 = this.anchorSmoothing, k2 = 1 - s2;
+    const lerp2 = (dst, src) => {
+      for (let i2 = 0; i2 < dst.length; i2++) dst[i2] = dst[i2] * s2 + src[i2] * k2;
+    };
+    if (!A2.valid) {
+      A2.rightEye = rEye;
+      A2.leftEye = lEye;
+      A2.forward = forward;
+      A2.up = up;
+      A2.right = right2;
+      A2.mouthOpen = mouthOpen;
+    } else {
+      lerp2(A2.rightEye, rEye);
+      lerp2(A2.leftEye, lEye);
+      lerp2(A2.forward, forward);
+      lerp2(A2.up, up);
+      lerp2(A2.right, right2);
+      A2.mouthOpen = A2.mouthOpen * s2 + mouthOpen * k2;
+    }
+    A2.forward = norm(A2.forward);
+    A2.valid = true;
+  }
+  // public API
+  getEyeRay(side = "right", length2 = 10) {
+    const A2 = this.anchors;
+    const o3 = side === "right" ? A2.rightEye : A2.leftEye;
+    return {
+      origin: o3.slice(),
+      dir: A2.forward.slice(),
+      end: [o3[0] + A2.forward[0] * length2, o3[1] + A2.forward[1] * length2, o3[2] + A2.forward[2] * length2]
+    };
   }
   extractTrianglesFromTessellation(edges) {
     if (!edges?.length) return new Uint16Array(0);
@@ -73704,9 +74303,11 @@ var SplatFaceEffect = class {
   setFaceData(results) {
     if (!results?.faceLandmarks?.length) {
       this._landmarks = null;
+      this.anchors.valid = false;
       return;
     }
     this._landmarks = results.faceLandmarks[0];
+    this._updateAnchors(this._landmarks);
   }
   setScale(s2) {
     this.scale = s2;
@@ -73980,6 +74581,7 @@ var loadFaceBeast = function() {
         },
         pointerEffect: { enabled: true }
       });
+      loadFace.SAVE_CUBE = m2.cube;
       const pillar1 = createPillar(loadFace, m2, -20, 6, -30, "pil1");
       const pillar2 = createPillar(loadFace, m2, 20, 6, -30, "pil2");
       const pillar3 = createPillar(loadFace, m2, -20, 6, 20, "pil3");
@@ -74031,6 +74633,28 @@ var loadFaceBeast = function() {
         );
         MYCUBE.effects.faceEffect = faceEffect;
         MYCUBE.effects.faceEffect.setScale(32);
+        const laser = MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer);
+        const LASER_LENGTH = 12;
+        const FIRE_INTERVAL = 0.08;
+        const FIRE_DIRECTION = 1;
+        let lastFire = 0;
+        function updateLasers(nowSec) {
+          const A2 = faceEffect.anchors;
+          if (!A2.valid) return;
+          if (A2.mouthOpen < 0.5) return;
+          if (nowSec - lastFire < FIRE_INTERVAL) return;
+          lastFire = nowSec;
+          for (const side of ["right", "left"]) {
+            const eye = side === "right" ? A2.rightEye : A2.leftEye;
+            const end = [
+              eye[0] + A2.forward[0] * LASER_LENGTH * FIRE_DIRECTION,
+              eye[1] + A2.forward[1] * LASER_LENGTH * FIRE_DIRECTION,
+              eye[2] + A2.forward[2] * LASER_LENGTH * FIRE_DIRECTION
+            ];
+            laser.fireBeam(eye, end, 0.2);
+          }
+        }
+        app.autoUpdate.push({ update: updateLasers });
         app.MYCUBE = MYCUBE;
         loadFace.MYCUBE.position.thrust = 0.1;
         nui.onResults = (results) => {
@@ -74048,8 +74672,103 @@ var loadFaceBeast = function() {
         cam2._dirtyAngle = true;
       }, 7e3);
     }
+    let isRunning = false;
+    let runnerSet;
+    function determinateType() {
+      const chooseType = randomIntFromTo(1, 3);
+      let r3, b2, g2;
+      if (chooseType === 1) {
+        r3 = 70;
+        b2 = 0.5;
+        g2 = 0.5;
+      } else if (chooseType === 2) {
+        r3 = 70;
+        b2 = 0.5;
+        g2 = 0.5;
+      } else if (chooseType === 3) {
+        r3 = 0.5;
+        b2 = 0.5;
+        g2 = 70;
+      }
+      return { r: r3, g: g2, b: b2 };
+    }
+    function spawnRunners(menuBeast, mesh, opts = {}) {
+      const cfg = Object.assign({
+        count: 12,
+        minX: -18,
+        maxX: 18,
+        minY: 1,
+        maxY: 2,
+        startZ: 60,
+        endZ: -40,
+        speedMin: 0.6,
+        speedMax: 1.6,
+        scaleMin: 0.8,
+        scaleMax: 1.8
+      }, opts);
+      const runners = [];
+      function rand(a2, b2) {
+        return a2 + Math.random() * (b2 - a2);
+      }
+      for (let i2 = 0; i2 < cfg.count; i2++) {
+        const x3 = rand(cfg.minX, cfg.maxX);
+        const y3 = rand(cfg.minY, cfg.maxY);
+        const z2 = cfg.startZ + Math.random() * 30;
+        const s2 = rand(cfg.scaleMin, cfg.scaleMax);
+        const obj2 = menuBeast.addMeshObj({
+          material: { type: "standard", share: false },
+          position: { x: x3, y: y3, z: z2 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 15, y: 0, z: 0 },
+          scale: [s2, s2, s2],
+          texturesPaths: ["./res/textures/matrix1.webp"],
+          name: "runner" + i2,
+          mesh,
+          raycast: { enabled: true, radius: 1 },
+          physics: { enabled: false, mass: 0, geometry: "Cube" }
+        });
+        obj2._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
+        obj2._runnerCfg = cfg;
+        obj2._runnerColor = determinateType();
+        obj2._runnerDamage = damageFromColor(obj2._runnerColor);
+        obj2._runnerSlow = slowFromColor(obj2._runnerColor);
+        const amb = ambientFromColor(obj2._runnerColor);
+        obj2.setAmbient(amb.r, amb.g, amb.b);
+        runners.push(obj2);
+        const rRadius = Math.max(s2) || s2;
+        try {
+          collisionSystem.register(obj2.name, obj2.position, s2 * 1.25, "obstacle");
+        } catch (err) {
+          console.warn("collision register failed", err);
+        }
+      }
+      const updater = {
+        update: function() {
+          for (let i2 = 0; i2 < runners.length; i2++) {
+            const r3 = runners[i2];
+            if (!r3.position) continue;
+            r3.position.z -= r3._runnerSpeed;
+            if (r3.rotation) r3.rotation.y += 0.01 + r3._runnerSpeed * 0.01;
+            if (r3.position.z < r3._runnerCfg.endZ) {
+              r3.position.z = r3._runnerCfg.startZ + Math.random() * 30;
+              r3.position.x = rand(r3._runnerCfg.minX, r3._runnerCfg.maxX);
+              r3.position.y = rand(r3._runnerCfg.minY, r3._runnerCfg.maxY);
+              r3._runnerSpeed = rand(r3._runnerCfg.speedMin, r3._runnerCfg.speedMax);
+              const s2 = rand(r3._runnerCfg.scaleMin, r3._runnerCfg.scaleMax);
+              if (r3.scale) r3.scale = [s2, s2, s2];
+            }
+          }
+        }
+      };
+      app.autoUpdate.push(updater);
+      return { runners, updater };
+    }
     loadFace.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
+      if (isRunning === false) {
+        runnerSet = spawnRunners(loadFace, loadFace.SAVE_CUBE, { count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5 });
+        isRunning = true;
+      }
     });
   });
   window.app = loadFace;
@@ -74212,14 +74931,14 @@ var loadGaussianSplatVertAnim2 = function() {
         }, arg4);
         let arg5 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 46 } : { left: "37" };
         MobileDOM.addButton("Flame effect random", function() {
-          let memoS = [randomIntFromTo(10, 150), randomIntFromTo(10, 150), randomIntFromTo(10, 150)];
-          let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
+          let memoS = [randomIntFromTo2(10, 150), randomIntFromTo2(10, 150), randomIntFromTo2(10, 150)];
+          let memoC = [randomIntFromTo2(0, 100), randomIntFromTo2(0, 100), randomIntFromTo2(0, 100)];
           MYCUBE.effects.flameEmitter.instanceTargets.forEach((e2) => {
             e2.currentScale = memoS;
             e2.color = memoC;
           }, void 0, { size: isMobile() === true ? 30 : void 0 });
-          MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
-          MYCUBE.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+          MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
+          MYCUBE.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
         }, () => {
         }, arg5);
         let arg6 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 37 } : { left: "45" };
@@ -74352,7 +75071,7 @@ var loadRoulette = function() {
         }
         roulette.matrixPhysics.applyImpulse(
           ball,
-          new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2))
+          new PVector(0, 0.2, -randomIntFromTo2(0.8, 1.2))
         );
         roulette.matrixSounds.play("push");
       }
@@ -74693,7 +75412,7 @@ var loadMSDFText = function() {
             ins.scale[0] = (index + 1) * 3;
             ins.scale[1] = (index + 1) * 3;
             ins.scale[2] = (index + 1) * 3;
-            app.MYCUBE.effects.circle.instanceTargets[index].color = [100 * (index + 1), randomIntFromTo(0, 1), randomIntFromTo(0, 1), 0.5];
+            app.MYCUBE.effects.circle.instanceTargets[index].color = [100 * (index + 1), randomIntFromTo2(0, 1), randomIntFromTo2(0, 1), 0.5];
           });
         };
         MYCUBE.setAmbient(2, 3, 0.5);
@@ -74710,9 +75429,9 @@ var loadMSDFText = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
       }
     });
   });
