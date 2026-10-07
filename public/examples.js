@@ -8936,7 +8936,7 @@ var byId2 = function(id2) {
 function randomFloatFromTo(min2, max2) {
   return Math.random() * (max2 - min2) + min2;
 }
-function randomIntFromTo2(min2, max2) {
+function randomIntFromTo(min2, max2) {
   if (typeof min2 === "object" || typeof max2 === "object") {
     console.log(
       "SYS : warning Desciption : Replace object with string , this >> " + typeof min2 + " and " + typeof min2 + " << must be string or number."
@@ -53490,7 +53490,7 @@ var loadObjFile = function() {
                 // Short lifespan guarantees lasers disappear and update instantly
                 {
                   colorA: [Math.floor(Math.abs(Math.sin(time + t3) * 255)), Math.floor(Math.abs(Math.sin(time + t3) * 255)), 100],
-                  colorB: [randomIntFromTo2(150, 200), randomIntFromTo2(50, 100), randomIntFromTo2(50, 100)],
+                  colorB: [randomIntFromTo(150, 200), randomIntFromTo(50, 100), randomIntFromTo(50, 100)],
                   width: 1.6,
                   intensity: 1.5,
                   scrollSpeed: 1
@@ -53529,20 +53529,20 @@ var loadObjFile = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
         e2.detail.hitObject.effects.flameEmitterBlue.recreateVertexDataCrazzy(5);
         app.MYCUBE.effects.flameEmitterBlue.instanceTargets.forEach((ins) => {
-          ins.color[0] = randomIntFromTo2(0, 1);
-          ins.color[1] = randomIntFromTo2(0, 1);
-          ins.color[2] = randomIntFromTo2(1e3, 2e3);
+          ins.color[0] = randomIntFromTo(0, 1);
+          ins.color[1] = randomIntFromTo(0, 1);
+          ins.color[2] = randomIntFromTo(1e3, 2e3);
         });
         app.MYCUBE.effects.flameEmitter.instanceTargets.forEach((ins) => {
-          ins.color[0] = randomIntFromTo2(1, 10);
-          ins.color[1] = randomIntFromTo2(1, 10);
+          ins.color[0] = randomIntFromTo(1, 10);
+          ins.color[1] = randomIntFromTo(1, 10);
           ins.color[2] = 0;
         });
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });
@@ -54066,7 +54066,7 @@ var snakeLightsInstanced = function() {
           monster.instanceTargets[prevIdx].color[1] = 0.5;
           monster.instanceTargets[prevIdx].color[2] = 0.5;
           monster.instanceTargets[scaleIdx].scale = [2, 2, 2];
-          monster.instanceTargets[scaleIdx].color[randomIntFromTo2(0, 2)] = randomIntFromTo2(2, 20);
+          monster.instanceTargets[scaleIdx].color[randomIntFromTo(0, 2)] = randomIntFromTo(2, 20);
           scaleIdx++;
           if (scaleIdx > totalInstances) scaleIdx = 1;
         }, 750);
@@ -54813,7 +54813,7 @@ var flipperJolt = function() {
           }
           flipper.matrixPhysics.applyImpulse(
             ball,
-            new PVector(0, 0.2, -randomIntFromTo2(0.8, 1.2))
+            new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2))
           );
           flipper.matrixSounds.play("push");
           MYFLIPPER.BALLS--;
@@ -55718,7 +55718,7 @@ var flipperAmmo = function() {
       const pos2 = await app.matrixPhysics.getPosition(ball);
       if (pos2.x > 5 && pos2.z > -6.6) flipper.matrixPhysics.applyImpulse(
         ball,
-        new PVector(0, 2, -randomIntFromTo2(11, 15))
+        new PVector(0, 2, -randomIntFromTo(11, 15))
       );
     }, () => {
     }, { left: "80", bottom: "50" });
@@ -56149,7 +56149,7 @@ var flipperAmmo = function() {
             const pos2 = await app.matrixPhysics.getPosition(ball2);
             if (pos2.x > 4.7 && pos2.z < -6) flipper.matrixPhysics.applyImpulse(
               ball2,
-              new PVector(0, 0.1, -randomIntFromTo2(1, 2))
+              new PVector(0, 0.1, -randomIntFromTo(1, 2))
             );
           }
         });
@@ -56247,7 +56247,7 @@ var flipperAmmo = function() {
           const pos2 = await app.matrixPhysics.getPosition(ball);
           if (pos2.x > 5 && pos2.z > -6.6) flipper.matrixPhysics.applyImpulse(
             ball,
-            new PVector(0, 2, -randomIntFromTo2(11, 15))
+            new PVector(0, 2, -randomIntFromTo(11, 15))
           );
         }
       });
@@ -56997,9 +56997,9 @@ var loadCinematicCamera = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });
@@ -57142,9 +57142,9 @@ var loadDestructionProcedural = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
         e2.detail.hitObject.morphTo(1, 2e3);
       }
     });
@@ -57706,22 +57706,22 @@ var loadKale = function() {
     ray.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
         if (app.volumetricPass.enabled == false) app.activateVolumetricEffect();
         e2.detail.hitObject.setupMaterialPBR(
-          [randomIntFromTo2(1, 10), randomIntFromTo2(1, 10), randomIntFromTo2(1, 10)],
-          [randomIntFromTo2(1, 10), randomIntFromTo2(1, 10), randomIntFromTo2(1, 10)]
+          [randomIntFromTo(1, 10), randomIntFromTo(1, 10), randomIntFromTo(1, 10)],
+          [randomIntFromTo(1, 10), randomIntFromTo(1, 10), randomIntFromTo(1, 10)]
         );
       } else if (e2.detail.hitObject.name.startsWith("ball")) {
         e2.detail.hitObject.setupMaterialPBR(
-          [randomIntFromTo2(1, 100), randomIntFromTo2(1, 100), randomIntFromTo2(1, 100)],
-          [randomIntFromTo2(1, 100), randomIntFromTo2(1, 100), randomIntFromTo2(1, 100)]
+          [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)],
+          [randomIntFromTo(1, 100), randomIntFromTo(1, 100), randomIntFromTo(1, 100)]
         );
-        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
-        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(0, 45));
+        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(0, 45));
       }
     });
   });
@@ -57911,8 +57911,8 @@ var loadHZB = function() {
     }
     HZB.canvas.addEventListener("ray.hit.event", (e2) => {
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });
@@ -58103,8 +58103,8 @@ var loadKinematicCollision = function() {
     }
     collision.canvas.addEventListener("ray.hit.event", (e2) => {
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });
@@ -59428,7 +59428,7 @@ var loadSprite1 = function() {
               const yDeg = angle2 * (180 / Math.PI);
               const FIX = 90;
               sprite.pause();
-              sprite.goToFrame(randomIntFromTo2(0, 8));
+              sprite.goToFrame(randomIntFromTo(0, 8));
               sprite.setTargetRotation(90, yDeg - FIX, FIX);
               if (index === myReel1.length - 1) {
                 animateRotationY(MYCUBE.rotation, 90, 1e3);
@@ -59446,7 +59446,7 @@ var loadSprite1 = function() {
               const yDeg = angle2 * (180 / Math.PI);
               const FIX = 90;
               sprite.pause();
-              sprite.goToFrame(randomIntFromTo2(0, 8));
+              sprite.goToFrame(randomIntFromTo(0, 8));
               sprite.setTargetRotation(90, yDeg - FIX, FIX);
               if (index === myReel2.length - 1) {
                 animateRotationY(MYCUBE2.rotation, 90, 1e3);
@@ -59464,7 +59464,7 @@ var loadSprite1 = function() {
               const yDeg = angle2 * (180 / Math.PI);
               const FIX = 90;
               sprite.pause();
-              sprite.goToFrame(randomIntFromTo2(0, 8));
+              sprite.goToFrame(randomIntFromTo(0, 8));
               sprite.setTargetRotation(90, yDeg - FIX, FIX);
               if (index === myReel3.length - 1) {
                 animateRotationY(MYCUBE3.rotation, 90, 1e3);
@@ -59487,8 +59487,8 @@ var loadSprite1 = function() {
     world2D.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cubeeffect")) {
-        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
-        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
+        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
       }
     });
   });
@@ -61480,12 +61480,12 @@ var loadGaussianSplat = function() {
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
         setInterval(() => {
-          const memoI = randomIntFromTo2(90, 150);
+          const memoI = randomIntFromTo(90, 150);
           MYCUBE.effects.flameEmitter.setIntensity(memoI);
-          const memoCONFIG = randomIntFromTo2(5, 15);
+          const memoCONFIG = randomIntFromTo(5, 15);
           MYCUBE.effects.flameEmitter.recreateVertexDataCrazzy(memoCONFIG);
-          let memoS = [randomIntFromTo2(90, 150), randomIntFromTo2(90, 150), randomIntFromTo2(90, 150)];
-          let memoC = [randomIntFromTo2(0, 100), randomIntFromTo2(0, 100), randomIntFromTo2(0, 100)];
+          let memoS = [randomIntFromTo(90, 150), randomIntFromTo(90, 150), randomIntFromTo(90, 150)];
+          let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
           MYCUBE.effects.flameEmitter.instanceTargets.forEach((e2) => {
             e2.currentScale = memoS;
             e2.color = memoC;
@@ -61659,14 +61659,14 @@ var loadGaussianSplatVertAnim = function() {
         }, arg4);
         let arg5 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 46 } : { left: "37" };
         MobileDOM.addButton("Flame effect random", function() {
-          let memoS = [randomIntFromTo2(10, 150), randomIntFromTo2(10, 150), randomIntFromTo2(10, 150)];
-          let memoC = [randomIntFromTo2(0, 100), randomIntFromTo2(0, 100), randomIntFromTo2(0, 100)];
+          let memoS = [randomIntFromTo(10, 150), randomIntFromTo(10, 150), randomIntFromTo(10, 150)];
+          let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
           MYCUBE.effects.flameEmitter.instanceTargets.forEach((e2) => {
             e2.currentScale = memoS;
             e2.color = memoC;
           }, void 0, { size: isMobile() === true ? 30 : void 0 });
-          MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
-          MYCUBE.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
+          MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+          MYCUBE.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
         }, () => {
         }, arg5);
         let arg6 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 37 } : { left: "45" };
@@ -62986,9 +62986,9 @@ var loadStreamRenderHost = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
     streamRender.net = new MatrixStream({
@@ -63138,12 +63138,12 @@ var MapCreator = class {
         obj2.effects.flameEmitter = new FlameEmitter(app.device, "rgba16float", 20, app.cameraBuffer);
         obj2.effects.flameEmitter.recreateVertexDataCrazzy(1);
         obj2.effects.flameEmitter.rotSpeed = 0.1;
-        obj2.effects.flameEmitter.setIntensity(randomIntFromTo2(5, 10));
+        obj2.effects.flameEmitter.setIntensity(randomIntFromTo(5, 10));
         obj2.effects.flameEmitter.instanceTargets.forEach((e2) => {
           e2.currentScale = [0.5, 4, 0.5];
         });
         obj2.effects.flameEmitter.instanceTargets.forEach((p2, i2, array) => {
-          array[i2].color = [randomIntFromTo2(7, 20), randomIntFromTo2(0, 2), randomIntFromTo2(0, 2), 1];
+          array[i2].color = [randomIntFromTo(7, 20), randomIntFromTo(0, 2), randomIntFromTo(0, 2), 1];
         });
       }, 250);
     }
@@ -63499,7 +63499,7 @@ var MapCreator = class {
           void 0,
           this.pillarsFlame
         ));
-        if (this._pDecorationEnabled === true && randomIntFromTo2(0, 10) < _MAX) results.pillars.push(this._pillarDecoration(
+        if (this._pDecorationEnabled === true && randomIntFromTo(0, 10) < _MAX) results.pillars.push(this._pillarDecoration(
           this._id(`${tag}_pillarDec`),
           { x: px, y: y3 + 2.6, z: pz + 0.4 },
           [0.6, 0.6, 0.6],
@@ -64466,9 +64466,9 @@ var Zombi = class {
           return;
         }
         let bPos;
-        const delta_ = randomIntFromTo2(0, 150);
+        const delta_ = randomIntFromTo(0, 150);
         this.zombie_bodies.forEach((subMesh, idx) => {
-          subMesh.setAmbient(randomIntFromTo2(0, 2), randomIntFromTo2(0, 2), randomIntFromTo2(0, 2));
+          subMesh.setAmbient(randomIntFromTo(0, 2), randomIntFromTo(0, 2), randomIntFromTo(0, 2));
           subMesh.position.thrust = this.zombieSpeedWalk;
           subMesh.animationSpeed = 450 + delta_;
           subMesh.animationIndex = 0;
@@ -64576,7 +64576,7 @@ var Zombi = class {
     if (this.isDead) return;
     this.hp = Math.max(0, this.hp - amount);
     this.updateEnergyBar();
-    app.matrixSounds.play("zombie" + randomIntFromTo2(1, 3));
+    app.matrixSounds.play("zombie" + randomIntFromTo(1, 3));
     if (this.hp <= 0) {
       this.die();
       app.matrixSounds.play("zombiedead");
@@ -64589,7 +64589,7 @@ var Zombi = class {
     this.core.collisionSystem.unregister?.(this.name);
     dispatchEvent(this.zombiDieEvent);
     setTimeout(() => {
-      this.spawnPosZombie(randomIntFromTo2(1, 3));
+      this.spawnPosZombie(randomIntFromTo(1, 3));
       this.setIdle();
     }, 600);
   }
@@ -64683,7 +64683,7 @@ var Zombi = class {
         this.aiState = "attack";
         this.setAttack();
       }
-      app.matrixSounds.play("zombie" + randomIntFromTo2(1, 4));
+      app.matrixSounds.play("zombie" + randomIntFromTo(1, 4));
       this.resolveAttack();
       return;
     }
@@ -64723,8 +64723,8 @@ var Zombi = class {
         app.energy.setValue(app.player.energy);
         return;
       }
-      if (randomIntFromTo2(0, 50) < 1) {
-        app.matrixSounds.play("zombie" + randomIntFromTo2(1, 4));
+      if (randomIntFromTo(0, 50) < 1) {
+        app.matrixSounds.play("zombie" + randomIntFromTo(1, 4));
       }
     });
   }
@@ -66857,8 +66857,8 @@ var loadBVHRawExample = function() {
       console.log("ray.hit.event detected :", e2.detail.hitObject.name);
       let t3 = BVHRawExample.ALL_SKELETALS.filter((O2) => e2.detail.hitObject.name.indexOf(O2.myName) !== -1);
       if (t3.length > 0) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(0, 1), randomIntFromTo2(10, 20), randomIntFromTo2(10, 20));
-        e2.detail.hitObject.setupMaterialPBR([randomIntFromTo2(10, 20), randomIntFromTo2(10, 20), 1], 2, 0.1, 0.1);
+        e2.detail.hitObject.setAmbient(randomIntFromTo(0, 1), randomIntFromTo(10, 20), randomIntFromTo(10, 20));
+        e2.detail.hitObject.setupMaterialPBR([randomIntFromTo(10, 20), randomIntFromTo(10, 20), 1], 2, 0.1, 0.1);
         t3[0].THICKNESS = t3[0].THICKNESS + 0.2;
         t3[0].setupScale();
       }
@@ -67010,9 +67010,9 @@ var loadBVHRawExampleShared = function() {
       console.log("ray.hit.event detected :", e2.detail.hitObject.name);
       let t3 = BVHRawExample.ALL_SKELETALS.filter((O2) => e2.detail.hitObject.name.indexOf(O2.myName) !== -1);
       if (t3.length > 0) {
-        app.lightContainer[0].setColorR(randomIntFromTo2(1, 30));
-        app.lightContainer[0].setColorG(randomIntFromTo2(1, 30));
-        app.lightContainer[0].setColorB(randomIntFromTo2(1, 30));
+        app.lightContainer[0].setColorR(randomIntFromTo(1, 30));
+        app.lightContainer[0].setColorG(randomIntFromTo(1, 30));
+        app.lightContainer[0].setColorB(randomIntFromTo(1, 30));
         t3[0].THICKNESS = t3[0].THICKNESS + 0.2;
         t3[0].setupScale();
       }
@@ -69192,7 +69192,7 @@ var ParticleActionEmitter = class _ParticleActionEmitter {
         alpha: 0,
         age: 0,
         life: 1,
-        radius: randomIntFromTo2(1, 20),
+        radius: randomIntFromTo(1, 20),
         phase: 0,
         orbitSpeed: 1,
         height: 0,
@@ -69794,8 +69794,8 @@ var loadParticles = function() {
       app.birds.effects.particles3.setAction("spiral");
       app.birds.effects.particles4.setAction("bloodSplat", { separationRadius: 1.2 });
       app.birds.effects.particles4.burst();
-      app.birds.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
-      app.birds.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
+      app.birds.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+      app.birds.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
       const start = [app.MONSTER.position.x, app.MONSTER.position.y, app.MONSTER.position.z];
       const end = [hitPoint[0], hitPoint[1], hitPoint[2]];
       app.MONSTER.playAnimationByName("walk");
@@ -70003,7 +70003,7 @@ var loadRunner = function() {
         return { r: color.r, g: color.g, b: color.b };
       }
       function determinateType() {
-        const chooseType = randomIntFromTo2(1, 3);
+        const chooseType = randomIntFromTo(1, 3);
         let r3, b2, g2;
         if (chooseType === 1) {
           r3 = 70;
@@ -71806,8 +71806,8 @@ var loadCryptoGrid = function() {
       console.log("ray.hit.event detected");
       const { hitObject, hitPoint } = e2.detail;
       if (e2.detail.hitObject.name.startsWith("earth")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });
@@ -72431,8 +72431,8 @@ var loadEarth = function() {
       const v2 = 0.5 - Math.asin(dir[1]) / Math.PI;
       water.addDrop(u2, v2, 0.03, 0.01);
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });
@@ -72931,9 +72931,9 @@ var loadCameraDepth = function() {
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.bloodBurst.spawn([0, 0, 0], null, 60, 2);
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });
@@ -73440,7 +73440,7 @@ var loadReactiveAudio = function() {
     reactiveAudio.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
       }
     });
   });
@@ -73606,7 +73606,7 @@ var snakeLightsInstancedMAX = function() {
             monster.instanceTargets[prevIdx].color[1] = 0.5;
             monster.instanceTargets[prevIdx].color[2] = 0.5;
             monster.instanceTargets[scaleIdx].scale = [2, 2, 2];
-            monster.instanceTargets[scaleIdx].color[randomIntFromTo2(0, 2)] = randomIntFromTo2(2, 20);
+            monster.instanceTargets[scaleIdx].color[randomIntFromTo(0, 2)] = randomIntFromTo(2, 20);
             scaleIdx++;
             if (scaleIdx > totalInstances) scaleIdx = 1;
           }
@@ -74931,14 +74931,14 @@ var loadGaussianSplatVertAnim2 = function() {
         }, arg4);
         let arg5 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 46 } : { left: "37" };
         MobileDOM.addButton("Flame effect random", function() {
-          let memoS = [randomIntFromTo2(10, 150), randomIntFromTo2(10, 150), randomIntFromTo2(10, 150)];
-          let memoC = [randomIntFromTo2(0, 100), randomIntFromTo2(0, 100), randomIntFromTo2(0, 100)];
+          let memoS = [randomIntFromTo(10, 150), randomIntFromTo(10, 150), randomIntFromTo(10, 150)];
+          let memoC = [randomIntFromTo(0, 100), randomIntFromTo(0, 100), randomIntFromTo(0, 100)];
           MYCUBE.effects.flameEmitter.instanceTargets.forEach((e2) => {
             e2.currentScale = memoS;
             e2.color = memoC;
           }, void 0, { size: isMobile() === true ? 30 : void 0 });
-          MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo2(6, 36));
-          MYCUBE.effects.keeffect.setIntensity(randomIntFromTo2(3, 23));
+          MYCUBE.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+          MYCUBE.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
         }, () => {
         }, arg5);
         let arg6 = isMobile() && getOrientation2() === "portrait" ? { left: "84", bottom: 37 } : { left: "45" };
@@ -75071,7 +75071,7 @@ var loadRoulette = function() {
         }
         roulette.matrixPhysics.applyImpulse(
           ball,
-          new PVector(0, 0.2, -randomIntFromTo2(0.8, 1.2))
+          new PVector(0, 0.2, -randomIntFromTo(0.8, 1.2))
         );
         roulette.matrixSounds.play("push");
       }
@@ -75412,7 +75412,7 @@ var loadMSDFText = function() {
             ins.scale[0] = (index + 1) * 3;
             ins.scale[1] = (index + 1) * 3;
             ins.scale[2] = (index + 1) * 3;
-            app.MYCUBE.effects.circle.instanceTargets[index].color = [100 * (index + 1), randomIntFromTo2(0, 1), randomIntFromTo2(0, 1), 0.5];
+            app.MYCUBE.effects.circle.instanceTargets[index].color = [100 * (index + 1), randomIntFromTo(0, 1), randomIntFromTo(0, 1), 0.5];
           });
         };
         MYCUBE.setAmbient(2, 3, 0.5);
@@ -75429,9 +75429,9 @@ var loadMSDFText = function() {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
         e2.detail.hitObject.effects.flameEmitter.recreateVertexDataCrazzy(5);
-        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo2(1, 200));
-        e2.detail.hitObject.setAmbient(randomIntFromTo2(1, 7), randomIntFromTo2(1, 2), randomIntFromTo2(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo2(1, 5));
+        e2.detail.hitObject.effects.flameEmitter.setIntensity(randomIntFromTo(1, 200));
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });

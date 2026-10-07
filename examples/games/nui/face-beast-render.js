@@ -2,7 +2,7 @@
 import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
-import {byId, isMobile} from "../../../src/engine/utils.js";
+import {byId, isMobile, randomIntFromTo} from "../../../src/engine/utils.js";
 import {PipeCommander, PipeGestureResolver} from "../../../src/engine/buildin/nui-pipe.js";
 import {MobileDOM} from "../../../src/engine/cameras.js";
 // import {SplatHandEffect} from "../../../src/engine/effects/splat-mediapipe.js";
