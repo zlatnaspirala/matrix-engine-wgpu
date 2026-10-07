@@ -11672,23 +11672,32 @@ var WASDCamera = class _WASDCamera {
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   invProj = new Float32Array(16);
-  _moveVelScratch = new Float32Array(3);
-  _dirty = true;
   right = vec3Impl.fromValues(1, 0, 0);
   up = vec3Impl.fromValues(0, 1, 0);
   back = vec3Impl.fromValues(0, 0, 1);
   _rotYScratch = mat4Impl.create();
   _rotXScratch = mat4Impl.create();
   _viewScratch = mat4Impl.create();
-  _digital = { forward: false, backward: false, left: false, right: false, up: false, down: false };
+  // Bitmask:
+  // 1  = forward / W / ArrowUp
+  // 2  = backward / S / ArrowDown
+  // 4  = left / A / ArrowLeft
+  // 8  = right / D / ArrowRight
+  // 16 = up / V
+  // 32 = down / C
+  _digital = 0;
   _mouseDown = false;
   _lookDisabled = false;
-  // when true, pointer drag no longer rotates the camera
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
-  _dirtyAngle = false;
+  // IMPORTANT:
+  // This is the ONLY dirty flag.
+  _dirtyAngle = true;
+  // Classic mouse events are the default.
+  usePointerEvents = false;
+  static HALF_PI = Math.PI * 0.5;
   constructor(options2 = {}) {
     if (options2.position) {
       this.position[0] = options2.position[0];
@@ -11699,20 +11708,36 @@ var WASDCamera = class _WASDCamera {
     if (options2.yaw) this.yaw = options2.yaw;
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
-    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1e3);
+    this.setProjection(
+      2 * Math.PI / 5,
+      this.aspect,
+      1,
+      1e3
+    );
     if (options2.noEvents) {
       this.noEvent = true;
     } else {
       this.noEvent = false;
     }
-    if (this.canvas) this._setupInput(this.canvas);
+    if (this.canvas) {
+      this._setupInput(this.canvas);
+    }
     this._recalculateViewVP();
-    if (isMobile() == true && options2.isActive == "init active cam") {
-      MobileDOM.createWASD(this, { marginR: 0, marginD: 0 });
+    if (isMobile() === true && options2.isActive == "init active cam") {
+      MobileDOM.createWASD(this, {
+        marginR: 0,
+        marginD: 0
+      });
     }
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
-    mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
+    mat4Impl.perspective(
+      fov,
+      aspect,
+      near,
+      far,
+      this.projectionMatrix
+    );
     this._recalculateViewVP();
   }
   static mat4MultiplySafe(a2, b2, out) {
@@ -11743,19 +11768,26 @@ var WASDCamera = class _WASDCamera {
     return out;
   }
   _recalculateViewVP() {
-    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
-    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
-    this.right[0] = cy;
-    this.right[1] = 0;
-    this.right[2] = -sy;
-    this.up[0] = sy * sp;
-    this.up[1] = cp;
-    this.up[2] = cy * sp;
-    this.back[0] = sy * cp;
-    this.back[1] = -sp;
-    this.back[2] = cy * cp;
-    const rx = this.right, uy = this.up, bz = this.back, p2 = this.position;
+    const yaw = this.yaw;
+    const pitch = this.pitch;
+    const cy = Math.cos(yaw);
+    const sy = Math.sin(yaw);
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const rx = this.right;
+    const uy = this.up;
+    const bz = this.back;
+    const p2 = this.position;
     const vs2 = this.view;
+    rx[0] = cy;
+    rx[1] = 0;
+    rx[2] = -sy;
+    uy[0] = sy * sp;
+    uy[1] = cp;
+    uy[2] = cy * sp;
+    bz[0] = sy * cp;
+    bz[1] = -sp;
+    bz[2] = cy * cp;
     vs2[0] = rx[0];
     vs2[4] = rx[1];
     vs2[8] = rx[2];
@@ -11772,172 +11804,267 @@ var WASDCamera = class _WASDCamera {
     vs2[7] = 0;
     vs2[11] = 0;
     vs2[15] = 1;
-    _WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+    _WASDCamera.mat4MultiplySafe(
+      this.projectionMatrix,
+      this.view,
+      this.VP
+    );
   }
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
-    let touchStartX = 0, touchStartY = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
     if (isMobile() === true) {
-      canvas.addEventListener("touchstart", (e2) => {
-        if (e2.touches.length > 0) {
-          touchStartX = e2.touches[0].clientX;
-          touchStartY = e2.touches[0].clientY;
-        }
-      }, { passive: false });
-      canvas.addEventListener("touchmove", (e2) => {
-        if (this._lookDisabled) return;
-        if (e2.touches.length > 0) {
-          const touch = e2.touches[0];
-          const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
-          const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
-          this.yaw -= dx * this.rotationSpeed;
-          this.pitch -= dy * this.rotationSpeed;
-          this.yaw %= Math.PI * 2;
-          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-          this._dirtyAngle = true;
-          touchStartX = touch.clientX;
-          touchStartY = touch.clientY;
-        }
-        e2.preventDefault();
-      }, { passive: false });
+      canvas.addEventListener(
+        "touchstart",
+        (e2) => {
+          if (e2.touches.length > 0) {
+            const touch = e2.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+          }
+        },
+        { passive: false }
+      );
+      canvas.addEventListener(
+        "touchmove",
+        (e2) => {
+          if (this._lookDisabled) return;
+          if (e2.touches.length > 0) {
+            const touch = e2.touches[0];
+            const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+            const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+            this.yaw -= dx * this.rotationSpeed;
+            this.pitch -= dy * this.rotationSpeed;
+            const HALF_PI = _WASDCamera.HALF_PI;
+            if (this.pitch > HALF_PI) {
+              this.pitch = HALF_PI;
+            } else if (this.pitch < -HALF_PI) {
+              this.pitch = -HALF_PI;
+            }
+            this._dirtyAngle = true;
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+          }
+          e2.preventDefault();
+        },
+        { passive: false }
+      );
     }
     if (isMobile() === false) {
-      canvas.addEventListener("contextmenu", (e2) => {
+      canvas.oncontextmenu = (e2) => {
         e2.preventDefault();
-      });
-      canvas.addEventListener("pointerdown", (e2) => {
-        if (e2.pointerType === "mouse") {
-          this._mouseDown = true;
-          if (canvas.requestPointerLock) {
-          } else {
-            canvas.setPointerCapture(e2.pointerId);
+      };
+      if (this.usePointerEvents === true) {
+        this._setupPointerEvents(canvas);
+      } else {
+        this._setupMouseEvents(canvas);
+      }
+    }
+    if (this.noEvent !== true) {
+      window.addEventListener(
+        "keydown",
+        (e2) => {
+          if (e2.repeat) return;
+          let bit = 0;
+          switch (e2.code) {
+            case "ArrowUp":
+            case "KeyW":
+              bit = 1;
+              break;
+            case "ArrowDown":
+            case "KeyS":
+              bit = 2;
+              break;
+            case "ArrowLeft":
+            case "KeyA":
+              bit = 4;
+              break;
+            case "ArrowRight":
+            case "KeyD":
+              bit = 8;
+              break;
+            case "KeyV":
+              bit = 16;
+              break;
+            case "KeyC":
+              bit = 32;
+              break;
+            default:
+              return;
           }
-        }
-      }, { passive: false });
-      canvas.addEventListener("pointermove", (e2) => {
-        if (window.__isDragging === true) {
-          console.log("prevent dragging");
-          return;
-        }
-        if (e2.pointerType === "mouse" && this._mouseDown) {
-          if (this._lookDisabled) {
-            return;
+          this._digital |= bit;
+        },
+        { passive: true }
+      );
+      window.addEventListener(
+        "keyup",
+        (e2) => {
+          let bit = 0;
+          switch (e2.code) {
+            case "ArrowUp":
+            case "KeyW":
+              bit = 1;
+              break;
+            case "ArrowDown":
+            case "KeyS":
+              bit = 2;
+              break;
+            case "ArrowLeft":
+            case "KeyA":
+              bit = 4;
+              break;
+            case "ArrowRight":
+            case "KeyD":
+              bit = 8;
+              break;
+            case "KeyV":
+              bit = 16;
+              break;
+            case "KeyC":
+              bit = 32;
+              break;
+            default:
+              return;
           }
-          const dx = e2.movementX * this.MOUSE_SENS;
-          const dy = e2.movementY * this.MOUSE_SENS;
-          this.yaw -= dx * this.rotationSpeed;
-          this.pitch -= dy * this.rotationSpeed;
-          this.yaw %= Math.PI * 2;
-          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-          this._dirtyAngle = true;
+          this._digital &= ~bit;
+        },
+        { passive: true }
+      );
+    }
+  }
+  // ------------------------------------------------------------
+  // CLASSIC MOUSE EVENTS
+  // ------------------------------------------------------------
+  _setupMouseEvents(canvas) {
+    canvas.onmousedown = (e2) => {
+      if (e2.button !== 0) return;
+      this._mouseDown = true;
+    };
+    canvas.onmousemove = (e2) => {
+      if (window.__isDragging === true) return;
+      if (!this._mouseDown) return;
+      if (this._lookDisabled) return;
+      const dx = e2.movementX;
+      const dy = e2.movementY;
+      this.yaw -= dx * this.MOUSE_SENS * this.rotationSpeed;
+      this.pitch -= dy * this.MOUSE_SENS * this.rotationSpeed;
+      const HALF_PI = _WASDCamera.HALF_PI;
+      if (this.pitch > HALF_PI) {
+        this.pitch = HALF_PI;
+      } else if (this.pitch < -HALF_PI) {
+        this.pitch = -HALF_PI;
+      }
+      this._dirtyAngle = true;
+    };
+    canvas.onmouseup = () => {
+      this._mouseDown = false;
+    };
+    canvas.onmouseleave = () => {
+      this._mouseDown = false;
+    };
+  }
+  // ------------------------------------------------------------
+  // POINTER EVENTS
+  // ------------------------------------------------------------
+  _setupPointerEvents(canvas) {
+    canvas.addEventListener(
+      "pointerdown",
+      (e2) => {
+        if (e2.pointerType !== "mouse") return;
+        this._mouseDown = true;
+        if (canvas.setPointerCapture) {
+          canvas.setPointerCapture(e2.pointerId);
         }
-      }, { passive: true });
-      canvas.addEventListener("pointerup", (e2) => {
+      },
+      { passive: true }
+    );
+    canvas.addEventListener(
+      "pointermove",
+      (e2) => {
+        if (window.__isDragging === true) return;
+        if (e2.pointerType !== "mouse") return;
+        if (!this._mouseDown) return;
+        if (this._lookDisabled) return;
+        const dx = e2.movementX;
+        const dy = e2.movementY;
+        this.yaw -= dx * this.MOUSE_SENS * this.rotationSpeed;
+        this.pitch -= dy * this.MOUSE_SENS * this.rotationSpeed;
+        const HALF_PI = _WASDCamera.HALF_PI;
+        if (this.pitch > HALF_PI) {
+          this.pitch = HALF_PI;
+        } else if (this.pitch < -HALF_PI) {
+          this.pitch = -HALF_PI;
+        }
+        this._dirtyAngle = true;
+      },
+      { passive: true }
+    );
+    canvas.addEventListener(
+      "pointerup",
+      (e2) => {
         if (e2.pointerType === "mouse") {
           this._mouseDown = false;
         }
-      }, { passive: true });
-    }
-    this._keyInterval = null;
-    const setDigital = (e2, value) => {
-      switch (e2.code) {
-        case "ArrowUp":
-          this._digital.forward = value;
-          break;
-        case "ArrowDown":
-          this._digital.backward = value;
-          break;
-        case "ArrowLeft":
-          this._digital.left = value;
-          break;
-        case "ArrowRight":
-          this._digital.right = value;
-          break;
-        case "KeyW":
-          this._digital.forward = value;
-          break;
-        case "KeyS":
-          this._digital.backward = value;
-          break;
-        case "KeyA":
-          this._digital.left = value;
-          break;
-        case "KeyD":
-          this._digital.right = value;
-          break;
-        case "KeyV":
-          this._digital.up = value;
-          break;
-        case "KeyC":
-          this._digital.down = value;
-          break;
-      }
-      if (value == true && this._keyInterval === null) {
-        this._keyInterval = setInterval(() => {
-          this._dirty = true;
-          this._dirtyAngle = true;
-          this._applyDigitalMovement();
-        }, 16);
-      } else {
-        const d2 = this._digital;
-        if (!d2.forward && !d2.backward && !d2.left && !d2.right && !d2.up && !d2.down) {
-          clearInterval(this._keyInterval);
-          this._keyInterval = null;
-          this._dirty = false;
-          this._dirtyAngle = false;
+      },
+      { passive: true }
+    );
+    canvas.addEventListener(
+      "pointercancel",
+      (e2) => {
+        if (e2.pointerType === "mouse") {
+          this._mouseDown = false;
         }
-      }
-    };
-    if (this.noEvent !== true) {
-      window.addEventListener("keydown", (e2) => setDigital(e2, true), { passive: true });
-      window.addEventListener("keyup", (e2) => setDigital(e2, false), { passive: true });
-    }
+      },
+      { passive: true }
+    );
   }
+  // WASD MOVEMENT
   _applyDigitalMovement() {
     const d2 = this._digital;
-    let vx = 0, vy = 0, vz = 0;
-    if (d2.forward) {
-      vx -= this.back[0];
-      vy -= this.back[1];
-      vz -= this.back[2];
+    if (d2 === 0) return;
+    const right2 = this.right;
+    const up = this.up;
+    const back = this.back;
+    const p2 = this.position;
+    let vx = 0;
+    let vy = 0;
+    let vz = 0;
+    if (d2 & 1) {
+      vx -= back[0];
+      vy -= back[1];
+      vz -= back[2];
     }
-    if (d2.backward) {
-      vx += this.back[0];
-      vy += this.back[1];
-      vz += this.back[2];
+    if (d2 & 2) {
+      vx += back[0];
+      vy += back[1];
+      vz += back[2];
     }
-    if (d2.right) {
-      vx += this.right[0];
-      vy += this.right[1];
-      vz += this.right[2];
+    if (d2 & 4) {
+      vx -= right2[0];
+      vy -= right2[1];
+      vz -= right2[2];
     }
-    if (d2.left) {
-      vx -= this.right[0];
-      vy -= this.right[1];
-      vz -= this.right[2];
+    if (d2 & 8) {
+      vx += right2[0];
+      vy += right2[1];
+      vz += right2[2];
     }
-    if (d2.up) {
-      vx += this.up[0];
-      vy += this.up[1];
-      vz += this.up[2];
+    if (d2 & 16) {
+      vx += up[0];
+      vy += up[1];
+      vz += up[2];
     }
-    if (d2.down) {
-      vx -= this.up[0];
-      vy -= this.up[1];
-      vz -= this.up[2];
+    if (d2 & 32) {
+      vx -= up[0];
+      vy -= up[1];
+      vz -= up[2];
     }
-    const len2 = Math.sqrt(vx * vx + vy * vy + vz * vz);
-    if (len2 < 1e-4) return;
     const s2 = this.movementSpeed;
-    this.position[0] += vx * s2;
-    this.position[1] += vy * s2;
-    this.position[2] += vz * s2;
-    const rx = this.right, uy = this.up, bz = this.back, p2 = this.position;
-    this.view[12] = -(rx[0] * p2[0] + rx[1] * p2[1] + rx[2] * p2[2]);
-    this.view[13] = -(uy[0] * p2[0] + uy[1] * p2[1] + uy[2] * p2[2]);
-    this.view[14] = -(bz[0] * p2[0] + bz[1] * p2[1] + bz[2] * p2[2]);
-    _WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
-    this._dirty = false;
+    p2[0] += vx * s2;
+    p2[1] += vy * s2;
+    p2[2] += vz * s2;
+    this._dirtyAngle = true;
   }
   update() {
     if (!this._dirtyAngle) return;
@@ -11970,7 +12097,7 @@ var WASDCamera = class _WASDCamera {
     this.yaw = y3;
     this._dirtyAngle = true;
   };
-  // new: clean on/off toggle for camera look, replaces window.__isDragging hack
+  // LOOK CONTROL
   setLookEnabled = (enabled) => {
     this._lookDisabled = !enabled;
   };
@@ -52003,7 +52130,10 @@ var MatrixEngineWGPU = class {
       this.updateLights();
       this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if (camera._dirtyAngle || camera._dirty) {
+      if (camera._digital) {
+        camera._applyDigitalMovement();
+      }
+      if (camera._dirtyAngle) {
         this.getTransformationMatrix(camera, now2);
         camera.update();
       }
