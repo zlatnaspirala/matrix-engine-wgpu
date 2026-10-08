@@ -27,7 +27,7 @@ export class PipeCommander {
     this.webcamRunning = false;
     this.lastVideoTime = -1;
     this.results = undefined;
-    // 'hand' | 'face'
+    // 'hand' | 'face' | 'pose'
     this.mode = opts.mode ?? 'hand';
     this.enableVisual = opts.enableVisual ?? true;
 
@@ -71,13 +71,14 @@ export class PipeCommander {
 
   async init() {
     const visionModule = await import("@mediapipe/tasks-vision");
-    const {HandLandmarker, FaceLandmarker, FilesetResolver, DrawingUtils} = visionModule;
-    this.HandLandmarker = HandLandmarker;
-    this.FaceLandmarker = FaceLandmarker;
-
+    // const {HandLandmarker, FaceLandmarker, PoseLandmarker, FilesetResolver, DrawingUtils} = visionModule;
+    // this.HandLandmarker = HandLandmarker;
+    // this.FaceLandmarker = FaceLandmarker;
+    // this.PoseLandmarker = PoseLandmarker;
     const vision = await FilesetResolver.forVisionTasks("./mediapipe/wasm");
-
     if(this.mode === 'face') {
+      const {FaceLandmarker, FilesetResolver, DrawingUtils} = visionModule;
+      this.FaceLandmarker = FaceLandmarker;
       this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
@@ -88,7 +89,20 @@ export class PipeCommander {
         outputFaceBlendshapes: false,
         outputFacialTransformationMatrixes: false
       });
+    } else if(this.mode === 'pose') {
+      const {PoseLandmarker, FilesetResolver, DrawingUtils} = visionModule;
+      this.PoseLandmarker = PoseLandmarker;
+      this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+          delegate: "GPU"
+        },
+        runningMode: this.runningMode,
+        numPoses: opts.numPoses ?? 1   // pass opts into init if you want this configurable
+      });
     } else {
+      const {HandLandmarker, FilesetResolver, DrawingUtils} = visionModule;
+      this.HandLandmarker = HandLandmarker;
       this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
@@ -125,6 +139,12 @@ export class PipeCommander {
 
     this.webcamRunning = true;
     this.predictWebcam();
+  }
+
+  get landmarker() {
+    return this.mode === 'face' ? this.faceLandmarker
+      : this.mode === 'pose' ? this.poseLandmarker
+        : this.handLandmarker;
   }
 
   async predictWebcam() {
@@ -180,6 +200,17 @@ export class PipeCommander {
               {color: "#E0E0E0"}
             );
           }
+        } else if(this.mode === 'pose') {
+          for(const landmarks of this.results.landmarks) {
+            this.drawingUtils.drawConnectors(
+              landmarks, this.PoseLandmarker.POSE_CONNECTIONS,
+              {color: "#00ffcc", lineWidth: 3}
+            );
+            this.drawingUtils.drawLandmarks(landmarks, {
+              color: "#ff0066",
+              radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+            });
+          }
         } else {
           for(const landmarks of this.results.landmarks) {
             this.drawingUtils.drawConnectors(
@@ -199,7 +230,7 @@ export class PipeCommander {
       window.requestAnimationFrame(() => this.predictWebcam());
     }
   }
-  
+
   onResults(results) {}
 
   disableWebcam() {

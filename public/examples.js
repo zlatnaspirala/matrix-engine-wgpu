@@ -18094,7 +18094,7 @@ var Materials = class {
     this.setupMaterialPBR([r3, g2, b2, alpha]);
     if (app) app.buildLightShadowBuckets();
   };
-  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
+  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts2) {
     const defaults = {
       mirrorTint: [0.9, 0.95, 1],
       // Slight cool tint
@@ -18111,7 +18111,7 @@ var Materials = class {
       envLodBias: 1.5
       // Slightly blurred env
     };
-    const cfg = { ...defaults, ...opts };
+    const cfg = { ...defaults, ...opts2 };
     const PARAMS_SIZE = 80;
     const paramsBuffer = this.device.createBuffer({
       label: "MirrorIlluminateParams",
@@ -30880,7 +30880,7 @@ var MaterialsInstanced = class {
       device.queue.writeBuffer(waterParamsBuffer, 0, data);
     };
   };
-  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts) {
+  createMirrorIlluminateBindGroup(mirrorBindGroupLayout, opts2) {
     const defaults = {
       mirrorTint: [0.9, 0.95, 1],
       // Slight cool tint
@@ -30897,7 +30897,7 @@ var MaterialsInstanced = class {
       envLodBias: 1.5
       // Slightly blurred env
     };
-    const cfg = { ...defaults, ...opts };
+    const cfg = { ...defaults, ...opts2 };
     const PARAMS_SIZE = 80;
     const paramsBuffer = this.device.createBuffer({
       label: "MirrorIlluminateParams",
@@ -51023,7 +51023,7 @@ var MatrixEngineWGPU = class {
         }
       }
     });
-    this.GPUCullingRad = 200;
+    this.GPUCullingRad = MEConfig.GPUCullingRad;
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
@@ -53134,21 +53134,21 @@ var LaserProjectile = class _LaserProjectile {
    * @param {GaussianSplatLayer} opts.splatLayer  optional splat enhancement
    */
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
-  constructor(device2, format, cameraBuffer, opts = {}) {
+  constructor(device2, format, cameraBuffer, opts2 = {}) {
     this.device = device2;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
     this.enabled = true;
     this.time = 0;
-    this.maxBeams = opts.maxBeams ?? 8;
-    this.mode = opts.mode ?? 0;
-    this.colorA = opts.colorA ?? [0, 1, 1, 1];
-    this.colorB = opts.colorB ?? [0, 0.2, 1, 1];
-    this.width = opts.width ?? 0.05;
-    this.intensity = opts.intensity ?? 2;
-    this.pulseFreq = opts.pulseFreq ?? 4;
-    this.scrollSpeed = opts.scrollSpeed ?? 1;
-    this.splatLayer = opts.splatLayer ?? null;
+    this.maxBeams = opts2.maxBeams ?? 8;
+    this.mode = opts2.mode ?? 0;
+    this.colorA = opts2.colorA ?? [0, 1, 1, 1];
+    this.colorB = opts2.colorB ?? [0, 0.2, 1, 1];
+    this.width = opts2.width ?? 0.05;
+    this.intensity = opts2.intensity ?? 2;
+    this.pulseFreq = opts2.pulseFreq ?? 4;
+    this.scrollSpeed = opts2.scrollSpeed ?? 1;
+    this.splatLayer = opts2.splatLayer ?? null;
     this.floatsPerInstance = 32;
     this._beams = [];
     this._beamIdCounter = 0;
@@ -60244,8 +60244,8 @@ var loadDrumCannon = function() {
           frame++;
         }, 1e3 / 60);
       };
-      DRUM.animateSpiral = (idx, delay2, opts) => {
-        const { radius, height, rotations, centerX, centerZ, startY, duration = 5 } = opts;
+      DRUM.animateSpiral = (idx, delay2, opts2) => {
+        const { radius, height, rotations, centerX, centerZ, startY, duration = 5 } = opts2;
         const totalFrames = Math.round(duration * 60);
         let frame = 0;
         setTimeout(() => {
@@ -60911,8 +60911,8 @@ fn fs_main(in: VertexOutput) -> FragOut {
     }
     return out;
   }
-  remapAxes(positions, opts = {}) {
-    const { from = "Y_UP", to: to2 = "Z_UP", flipZ = false } = opts;
+  remapAxes(positions, opts2 = {}) {
+    const { from = "Y_UP", to: to2 = "Z_UP", flipZ = false } = opts2;
     const n3 = positions.length / 3;
     const out = new Float32Array(positions.length);
     const needsSwap = from === "Z_UP" && to2 === "Y_UP";
@@ -61873,15 +61873,15 @@ var loadGaussianSplatVertAnim = function() {
 
 // src/engine/buildin/nui-pipe.js
 var PipeCommander = class {
-  constructor(autostart = true, videoElementId, canvasElementId, opts = {}) {
+  constructor(autostart = true, videoElementId, canvasElementId, opts2 = {}) {
     this.autostart = autostart;
     this.handLandmarker = void 0;
     this.runningMode = "IMAGE";
     this.webcamRunning = false;
     this.lastVideoTime = -1;
     this.results = void 0;
-    this.mode = opts.mode ?? "hand";
-    this.enableVisual = opts.enableVisual ?? true;
+    this.mode = opts2.mode ?? "hand";
+    this.enableVisual = opts2.enableVisual ?? true;
     if (videoElementId) {
       this.video = document.getElementById(videoElementId);
     }
@@ -61929,11 +61929,10 @@ var PipeCommander = class {
   }
   async init() {
     const visionModule = await Promise.resolve().then(() => (init_vision_bundle(), vision_bundle_exports));
-    const { HandLandmarker, FaceLandmarker, FilesetResolver, DrawingUtils } = visionModule;
-    this.HandLandmarker = HandLandmarker;
-    this.FaceLandmarker = FaceLandmarker;
     const vision = await FilesetResolver.forVisionTasks("./mediapipe/wasm");
     if (this.mode === "face") {
+      const { FaceLandmarker, FilesetResolver: FilesetResolver2, DrawingUtils: DrawingUtils2 } = visionModule;
+      this.FaceLandmarker = FaceLandmarker;
       this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
@@ -61944,7 +61943,21 @@ var PipeCommander = class {
         outputFaceBlendshapes: false,
         outputFacialTransformationMatrixes: false
       });
+    } else if (this.mode === "pose") {
+      const { PoseLandmarker: PoseLandmarker2, FilesetResolver: FilesetResolver2, DrawingUtils: DrawingUtils2 } = visionModule;
+      this.PoseLandmarker = PoseLandmarker2;
+      this.poseLandmarker = await PoseLandmarker2.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+          delegate: "GPU"
+        },
+        runningMode: this.runningMode,
+        numPoses: opts.numPoses ?? 1
+        // pass opts into init if you want this configurable
+      });
     } else {
+      const { HandLandmarker, FilesetResolver: FilesetResolver2, DrawingUtils: DrawingUtils2 } = visionModule;
+      this.HandLandmarker = HandLandmarker;
       this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
@@ -61976,6 +61989,9 @@ var PipeCommander = class {
     this.video.style.aspectRatio = `${w2}/${h2}`;
     this.webcamRunning = true;
     this.predictWebcam();
+  }
+  get landmarker() {
+    return this.mode === "face" ? this.faceLandmarker : this.mode === "pose" ? this.poseLandmarker : this.handLandmarker;
   }
   async predictWebcam() {
     if (this.runningMode === "IMAGE") {
@@ -62029,6 +62045,18 @@ var PipeCommander = class {
               this.FaceLandmarker.FACE_LANDMARKS_LIPS,
               { color: "#E0E0E0" }
             );
+          }
+        } else if (this.mode === "pose") {
+          for (const landmarks of this.results.landmarks) {
+            this.drawingUtils.drawConnectors(
+              landmarks,
+              this.PoseLandmarker.POSE_CONNECTIONS,
+              { color: "#00ffcc", lineWidth: 3 }
+            );
+            this.drawingUtils.drawLandmarks(landmarks, {
+              color: "#ff0066",
+              radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+            });
           }
         } else {
           for (const landmarks of this.results.landmarks) {
@@ -63164,7 +63192,7 @@ var MapCreator = class {
    * @param {string} [opts.floorTexture]  — path to floor texture
    * @param {string} [opts.ceilTexture]   — path to ceiling texture
    */
-  constructor(engine, m2, collision, opts = {}, mapParams2 = {
+  constructor(engine, m2, collision, opts2 = {}, mapParams2 = {
     zombie: {
       startUpPositions: {
         south: [-20, 0.2, 20],
@@ -63179,13 +63207,13 @@ var MapCreator = class {
     this.engine = engine;
     this.meshes = m2;
     this.collision = collision;
-    this._wallTex = opts.wallTexture || "./res/textures/blankgray2.webp";
-    this._floorTex = opts.floorTexture || "./res/textures/blankgray2.webp";
-    this._ceilTex = opts.ceilTexture || "./res/textures/blankgray2.webp";
-    this._pillarDecorationTex = opts.pillarDecorationTex || "./res/meshes/obj/modelpack19/hang2/512/hang2.webp";
-    this._pDecorationEnabled = opts.pillarDecoration || false;
-    this.pillarsFlame = opts.pillarsFlame || false;
-    this.shadowsCast = opts.shadowsCast || true;
+    this._wallTex = opts2.wallTexture || "./res/textures/blankgray2.webp";
+    this._floorTex = opts2.floorTexture || "./res/textures/blankgray2.webp";
+    this._ceilTex = opts2.ceilTexture || "./res/textures/blankgray2.webp";
+    this._pillarDecorationTex = opts2.pillarDecorationTex || "./res/meshes/obj/modelpack19/hang2/512/hang2.webp";
+    this._pDecorationEnabled = opts2.pillarDecoration || false;
+    this.pillarsFlame = opts2.pillarsFlame || false;
+    this.shadowsCast = opts2.shadowsCast || true;
     this._uid = 0;
     this.mapParams = mapParams2;
     this.addMapItems();
@@ -63295,7 +63323,7 @@ var MapCreator = class {
    * @param {string}  [opts.tag='room']
    * @returns {{ walls: object[], floor: object|null, ceil: object|null }}
    */
-  createRoom(opts) {
+  createRoom(opts2) {
     const {
       origin,
       width,
@@ -63307,8 +63335,8 @@ var MapCreator = class {
       doors = [],
       doorWidth = 2,
       tag = "room"
-    } = opts;
-    let { uvShema = false } = opts;
+    } = opts2;
+    let { uvShema = false } = opts2;
     const { x: x3, y: y3, z: z2 } = origin;
     const hw = width / 2;
     const hd = depth / 2;
@@ -63446,8 +63474,8 @@ var MapCreator = class {
    * @param {string}  [opts.tag='tunnel']
    * @returns {{ walls: object[] }}
    */
-  createTunnel(opts) {
-    const { from, to: to2, width, height, roof = true, tag = "tunnel" } = opts;
+  createTunnel(opts2) {
+    const { from, to: to2, width, height, roof = true, tag = "tunnel" } = opts2;
     const dx = to2.x - from.x;
     const dz = to2.z - from.z;
     const dy = to2.y - from.y;
@@ -63506,7 +63534,7 @@ var MapCreator = class {
    * @param {string}  [opts.tag='stair']
    * @returns {{ steps: object[], walls: object[] }}
    */
-  createStairs(opts) {
+  createStairs(opts2) {
     const {
       origin,
       steps,
@@ -63517,8 +63545,8 @@ var MapCreator = class {
       walls = true,
       roof = false,
       tag = "stair"
-    } = opts;
-    let { uvShema = false } = opts;
+    } = opts2;
+    let { uvShema = false } = opts2;
     const results = { steps: [], walls: [] };
     let { x: x3, y: y3, z: z2 } = origin;
     for (let i2 = 0; i2 < steps; i2++) {
@@ -63581,7 +63609,7 @@ var MapCreator = class {
    * @param {string[]} [opts.doors=['+x','-x','+z','-z']]
    * @param {string}  [opts.tag='arena']
    */
-  createFightArena(opts) {
+  createFightArena(opts2) {
     const {
       origin,
       width,
@@ -63594,8 +63622,8 @@ var MapCreator = class {
       roof = false,
       doors = ["+x", "-z"],
       tag = "arena"
-    } = opts;
-    let { uvShema = false } = opts;
+    } = opts2;
+    let { uvShema = false } = opts2;
     const roomResult = this.createRoom({
       origin,
       width,
@@ -63672,7 +63700,7 @@ var MapCreator = class {
    * @param {string}  [opts.tag='maze']
    * @returns {{ walls: object[], entrance: {x,z}, exit: {x,z} }}
    */
-  createMazeLayer(opts) {
+  createMazeLayer(opts2) {
     let {
       origin,
       mazeSize,
@@ -63680,7 +63708,7 @@ var MapCreator = class {
       wallHeight = 3,
       roof = false,
       tag = "maze"
-    } = opts;
+    } = opts2;
     if (mazeSize % 2 === 0) mazeSize += 1;
     const { x: ox, y: oy, z: oz } = origin;
     const grid = Array(mazeSize).fill(null).map(() => Array(mazeSize).fill(0));
@@ -63762,7 +63790,7 @@ var MapCreator = class {
    * @param {boolean} [opts.roofLevels=false] — put a ceiling on each level except top
    * @returns {{ layers: object[], stairs: object[] }}
    */
-  createMultiLevelMaze(opts) {
+  createMultiLevelMaze(opts2) {
     const {
       origin,
       levels: levels2 = 3,
@@ -63772,7 +63800,7 @@ var MapCreator = class {
       levelGap = 1,
       stairSteps = 6,
       roofLevels = false
-    } = opts;
+    } = opts2;
     const results = { layers: [], stairs: [] };
     const stepH = 0.4;
     const layerH = wallHeight + levelGap;
@@ -63821,13 +63849,13 @@ var MapCreator = class {
    * @param {number}  [opts.mazeSize=19]
    * @returns {object}  all created geometry groups
    */
-  createFPSMapCompound(opts = {}) {
+  createFPSMapCompound(opts2 = {}) {
     const {
       origin = { x: 0, y: 0, z: 0 },
       multiLevel = true,
       mazeLevels = 2,
       mazeSize = 19
-    } = opts;
+    } = opts2;
     const all = {};
     all.entranceTunnel = this.createTunnel({
       from: { x: origin.x - 10, y: origin.y, z: origin.z },
@@ -64049,23 +64077,23 @@ var ProjectileSystem = class {
    * @param {Function} [opts.onHitscanHit]    — callback(hitPoint, normal, reflect, entry)
    * @param {Function} [opts.onProjectileHit] — callback(hitPoint, normal, entry)
    */
-  constructor(engine, mesh, collision, opts = {}) {
+  constructor(engine, mesh, collision, opts2 = {}) {
     this.engine = engine;
     this.mesh = mesh;
     this.collision = collision;
     this.cam = this.engine.getCamera();
-    this._speed = opts.projectileSpeed ?? 1;
-    this._lifetime = opts.projectileLifetime ?? 4e3;
-    this._scale = opts.projectileScale ?? 0.25;
-    this._tex = opts.projectileTex ?? "https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/shooter/decal.webp";
-    this._decalTex = opts.decalTex ?? "https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/shooter/decal.webp";
-    this._decalSize = opts.decalSize ?? 0.2;
-    this._decalLifetime = opts.decalLifetime ?? 2e3;
-    this.onHitscanHit = opts.onHitscanHit ?? null;
-    this.onProjectileHit = opts.onProjectileHit ?? null;
+    this._speed = opts2.projectileSpeed ?? 1;
+    this._lifetime = opts2.projectileLifetime ?? 4e3;
+    this._scale = opts2.projectileScale ?? 0.25;
+    this._tex = opts2.projectileTex ?? "https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/shooter/decal.webp";
+    this._decalTex = opts2.decalTex ?? "https://unpkg.com/matrix-engine-wgpu@latest/public/res/textures/shooter/decal.webp";
+    this._decalSize = opts2.decalSize ?? 0.2;
+    this._decalLifetime = opts2.decalLifetime ?? 2e3;
+    this.onHitscanHit = opts2.onHitscanHit ?? null;
+    this.onProjectileHit = opts2.onProjectileHit ?? null;
     this._projectiles = [];
     this._uid = 0;
-    this._maxDecals = opts.maxDecals ?? 40;
+    this._maxDecals = opts2.maxDecals ?? 40;
     this._decals = [];
     this.pArg = { name: null, obj: null, dir: null };
   }
@@ -70172,7 +70200,7 @@ var loadRunner = function() {
       menuBeast.activateBloomEffect();
       menuBeast.lightContainer[0].setPosition(0, 35, 0);
       menuBeast.lightContainer[0].setTarget(0, 0, -20);
-      function spawnRunners(menuBeast2, mesh, opts = {}) {
+      function spawnRunners(menuBeast2, mesh, opts2 = {}) {
         const cfg = Object.assign({
           count: 12,
           minX: -18,
@@ -70185,7 +70213,7 @@ var loadRunner = function() {
           speedMax: 1.6,
           scaleMin: 0.8,
           scaleMax: 1.8
-        }, opts);
+        }, opts2);
         const runners = [];
         function rand(a2, b2) {
           return a2 + Math.random() * (b2 - a2);
@@ -72703,17 +72731,17 @@ fn fs_main(vin: VertexOut) -> FragOut {
 );
 var DepthWebcamVoxelEffect = class _DepthWebcamVoxelEffect {
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
-  constructor(device2, opts = {}) {
+  constructor(device2, opts2 = {}) {
     this.device = device2;
-    this.cols = opts.cols ?? 64;
-    this.rows = opts.rows ?? 48;
-    this.spacing = opts.spacing ?? 0.09;
-    this.voxelScale = opts.voxelScale ?? 0.06;
-    this.heightScale = opts.heightScale ?? 2;
-    this.smoothing = opts.smoothing ?? 0.6;
-    this.normalFormat = opts.normalFormat ?? "rgba16float";
-    this.worldPosFormat = opts.worldPosFormat ?? "rgba16float";
-    this.colorFormat = opts.colorFormat ?? "rgba16float";
+    this.cols = opts2.cols ?? 64;
+    this.rows = opts2.rows ?? 48;
+    this.spacing = opts2.spacing ?? 0.09;
+    this.voxelScale = opts2.voxelScale ?? 0.06;
+    this.heightScale = opts2.heightScale ?? 2;
+    this.smoothing = opts2.smoothing ?? 0.6;
+    this.normalFormat = opts2.normalFormat ?? "rgba16float";
+    this.worldPosFormat = opts2.worldPosFormat ?? "rgba16float";
+    this.colorFormat = opts2.colorFormat ?? "rgba16float";
     this.instanceCount = this.cols * this.rows;
     this.video = null;
     this.videoReady = false;
@@ -73084,14 +73112,14 @@ var AudioSplatFieldEffect = class _AudioSplatFieldEffect {
    * @param {GPUBuffer} [opts.cameraBuffer]  required only for standalone render()
    */
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
-  constructor(device2, opts = {}) {
+  constructor(device2, opts2 = {}) {
     this.device = device2;
-    this.pointCount = opts.pointCount ?? isMobile() ? 1200 : 3500;
-    this.mode = opts.mode ?? "spectrumShell";
-    this.format = opts.format ?? null;
-    this.cameraBuffer = opts.cameraBuffer ?? null;
+    this.pointCount = opts2.pointCount ?? isMobile() ? 1200 : 3500;
+    this.mode = opts2.mode ?? "spectrumShell";
+    this.format = opts2.format ?? null;
+    this.cameraBuffer = opts2.cameraBuffer ?? null;
     this._attachedLayer = null;
-    this._basePos = opts.basePositions ? new Float32Array(opts.basePositions) : this._generateBasePositions(this.pointCount);
+    this._basePos = opts2.basePositions ? new Float32Array(opts2.basePositions) : this._generateBasePositions(this.pointCount);
     this._posCPU = new Float32Array(this.pointCount * 3);
     this._posCPU.set(this._basePos);
     this._colorCPU = new Float32Array(this.pointCount * 4);
@@ -73100,7 +73128,7 @@ var AudioSplatFieldEffect = class _AudioSplatFieldEffect {
     this._phase = new Float32Array(this.pointCount);
     this._delay = new Float32Array(this.pointCount);
     this._ribbonHistSlot = new Float32Array(this.pointCount);
-    this.reactiveAudio = opts.reactiveAudio ?? null;
+    this.reactiveAudio = opts2.reactiveAudio ?? null;
     for (let i2 = 0; i2 < this.pointCount; i2++) {
       this._shell[i2] = i2 % 3;
       this._phase[i2] = Math.random() * Math.PI * 2;
@@ -73766,17 +73794,17 @@ var SplatHandEffect = class {
    * @param {number[]} opts.origin       world offset [x,y,z] (default [0,1.2,0])
    * @param {boolean} opts.mirrorX      flip X (webcam mirror) (default true)
    */
-  constructor(device2, format, cameraBuffer, splatLayer, opts = {}) {
+  constructor(device2, format, cameraBuffer, splatLayer, opts2 = {}) {
     this.device = device2;
     this.format = format;
     this.cameraBuffer = cameraBuffer;
     this.splatLayer = splatLayer;
     this.enabled = true;
     this.time = 0;
-    this.scale = opts.scale ?? 3;
-    this.clusterRadius = opts.clusterRadius ?? 1;
-    this.origin = opts.origin ?? [0, 1.2, 0];
-    this.mirrorX = opts.mirrorX ?? true;
+    this.scale = opts2.scale ?? 3;
+    this.clusterRadius = opts2.clusterRadius ?? 1;
+    this.origin = opts2.origin ?? [0, 1.2, 0];
+    this.mirrorX = opts2.mirrorX ?? true;
     this._landmarks = null;
     const n3 = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n3 * 3);
@@ -74189,15 +74217,15 @@ var loadHandBeast = function() {
 var faceMeshModule = __toESM(require_face_mesh());
 var SplatFaceEffect = class {
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
-  constructor(device2, format, cameraBuffer, splatLayer, opts = {}) {
+  constructor(device2, format, cameraBuffer, splatLayer, opts2 = {}) {
     this.device = device2;
     this.splatLayer = splatLayer;
     this.enabled = true;
     this.time = 0;
-    this.scale = opts.scale ?? 2.5;
-    this.clusterRadius = opts.clusterRadius ?? 1;
-    this.origin = opts.origin ?? [0, 1.6, 0];
-    this.mirrorX = opts.mirrorX ?? true;
+    this.scale = opts2.scale ?? 2.5;
+    this.clusterRadius = opts2.clusterRadius ?? 1;
+    this.origin = opts2.origin ?? [0, 1.6, 0];
+    this.mirrorX = opts2.mirrorX ?? true;
     this._videoElement = byId2("auto-video");
     this._landmarks = null;
     const TESSELLATION_EDGES = faceMeshModule.FACEMESH_TESSELATION || faceMeshModule.FACEMESH_TESSELLATION || faceMeshModule.default?.FACEMESH_TESSELATION || faceMeshModule.default?.FACEMESH_TESSELLATION;
@@ -74232,7 +74260,7 @@ var SplatFaceEffect = class {
       // 0..1
       valid: false
     };
-    this.anchorSmoothing = opts.anchorSmoothing ?? 0.5;
+    this.anchorSmoothing = opts2.anchorSmoothing ?? 0.5;
   }
   _toWorld(j2, out = [0, 0, 0]) {
     const mx = this.mirrorX ? -1 : 1;
@@ -74838,7 +74866,7 @@ var loadFaceBeast = function() {
       return color.g;
     }
     let hitEvent = new CustomEvent("player-hit", { detail: { obstacleId: 0 } });
-    function spawnRunners(menuBeast, mesh, opts = {}) {
+    function spawnRunners(menuBeast, mesh, opts2 = {}) {
       const cfg = Object.assign({
         count: 12,
         minX: -18,
@@ -74851,7 +74879,7 @@ var loadFaceBeast = function() {
         speedMax: 1.6,
         scaleMin: 0.8,
         scaleMax: 1.8
-      }, opts);
+      }, opts2);
       const runners = [];
       function rand(a2, b2) {
         return a2 + Math.random() * (b2 - a2);
@@ -74912,7 +74940,7 @@ var loadFaceBeast = function() {
     loadFace.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (isRunning === false) {
-        runnerSet = spawnRunners(loadFace, loadFace.SAVE_CUBE, { count: 14, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5 });
+        runnerSet = spawnRunners(loadFace, loadFace.SAVE_CUBE, { count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5 });
         isRunning = true;
       }
     });
@@ -76225,6 +76253,724 @@ var loadFaceMask = function() {
   window.app = FACEMASK;
 };
 
+// src/engine/effects/splatPose.js
+var faceMeshModule2 = __toESM(require_face_mesh());
+var SplatPoseEffect = class {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
+  constructor(device2, format, cameraBuffer, splatLayer, opts2 = {}) {
+    this.device = device2;
+    this.splatLayer = splatLayer;
+    this.enabled = true;
+    this.time = 0;
+    this.scale = opts2.scale ?? 3;
+    this.clusterRadius = opts2.clusterRadius ?? 1;
+    this.origin = opts2.origin ?? [0, 1.6, 0];
+    this.mirrorX = opts2.mirrorX ?? true;
+    this._videoElement = byId2("auto-video");
+    this._landmarks = null;
+    const POSE_EDGES = faceMeshModule2.POSE_CONNECTIONS || faceMeshModule2.PoseLandmarker?.POSE_CONNECTIONS || faceMeshModule2.default?.POSE_CONNECTIONS || faceMeshModule2.default?.PoseLandmarker?.POSE_CONNECTIONS;
+    const FILL_EDGES = opts2.fillEdges ?? [[11, 24], [12, 23]];
+    this.POSE_TRIANGLES = this.extractTrianglesFromTessellation([...POSE_EDGES || [], ...FILL_EDGES]);
+    this.pipeline = splatLayer.pipeline;
+    const n3 = splatLayer.vertexCount;
+    this._posCPU = new Float32Array(n3 * 3);
+    this._uvCPU = new Float32Array(n3 * 6 * 2);
+    this._clusterIdx = new Uint16Array(n3);
+    this._offsetX = new Float32Array(n3);
+    this._offsetY = new Float32Array(n3);
+    this._offsetZ = new Float32Array(n3);
+    this._jointRadius = this._buildRadiusMap();
+    this._precompute(n3);
+    this.uvBuffer = device2.createBuffer({
+      label: "splat-pose-uv",
+      size: n3 * 6 * 2 * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear" });
+    this.updateInstanceData = this.updateInstanceDataPoints;
+    this.render = this.renderPoint;
+    this.anchors = {
+      rightHand: [0, 0, 0],
+      leftHand: [0, 0, 0],
+      // world positions (wrists 16 / 15)
+      head: [0, 0, 0],
+      // nose (0)
+      chest: [0, 0, 0],
+      // shoulders midpoint
+      hips: [0, 0, 0],
+      // hips midpoint
+      forward: [0, 0, 1],
+      // where the body points (unit)
+      up: [0, 1, 0],
+      right: [1, 0, 0],
+      valid: false
+    };
+    this.anchorSmoothing = opts2.anchorSmoothing ?? 0.5;
+  }
+  _toWorld(j2, out = [0, 0, 0]) {
+    const mx = this.mirrorX ? -1 : 1;
+    const v2 = this._videoElement;
+    const aspect = v2.videoWidth / v2.videoHeight || 1;
+    out[0] = (j2.x - 0.5) * mx * this.scale * aspect + this.origin[0];
+    out[1] = -(j2.y - 0.5) * this.scale + this.origin[1];
+    out[2] = -j2.z * this.scale * aspect + this.origin[2];
+    return out;
+  }
+  _updateAnchors(lm) {
+    const A2 = this.anchors;
+    const mx = this.mirrorX ? -1 : 1;
+    const P2 = (i2) => this._toWorld(lm[i2]);
+    const mid = (a2, b2) => a2.map((v2, k3) => (v2 + b2[k3]) * 0.5);
+    const rHand = P2(16);
+    const lHand = P2(15);
+    const head = P2(0);
+    const chest = mid(P2(11), P2(12));
+    const hips = mid(P2(23), P2(24));
+    const sub3 = (a2, b2) => [a2[0] - b2[0], a2[1] - b2[1], a2[2] - b2[2]];
+    const norm = (v2) => {
+      const l2 = Math.hypot(...v2) || 1;
+      return v2.map((x3) => x3 / l2);
+    };
+    const cross3 = (a2, b2) => [
+      a2[1] * b2[2] - a2[2] * b2[1],
+      a2[2] * b2[0] - a2[0] * b2[2],
+      a2[0] * b2[1] - a2[1] * b2[0]
+    ];
+    const right2 = norm(sub3(P2(12), P2(11)));
+    const up = norm(sub3(chest, hips));
+    const forward = norm(cross3(right2, up).map((x3) => x3 * mx));
+    const s2 = this.anchorSmoothing, k2 = 1 - s2;
+    const lerp2 = (dst, src) => {
+      for (let i2 = 0; i2 < dst.length; i2++) dst[i2] = dst[i2] * s2 + src[i2] * k2;
+    };
+    if (!A2.valid) {
+      A2.rightHand = rHand;
+      A2.leftHand = lHand;
+      A2.head = head;
+      A2.chest = chest;
+      A2.hips = hips;
+      A2.forward = forward;
+      A2.up = up;
+      A2.right = right2;
+    } else {
+      lerp2(A2.rightHand, rHand);
+      lerp2(A2.leftHand, lHand);
+      lerp2(A2.head, head);
+      lerp2(A2.chest, chest);
+      lerp2(A2.hips, hips);
+      lerp2(A2.forward, forward);
+      lerp2(A2.up, up);
+      lerp2(A2.right, right2);
+    }
+    A2.forward = norm(A2.forward);
+    A2.valid = true;
+  }
+  // public API
+  getHandRay(side = "right", length2 = 10) {
+    const A2 = this.anchors;
+    const o3 = side === "right" ? A2.rightHand : A2.leftHand;
+    return {
+      origin: o3.slice(),
+      dir: A2.forward.slice(),
+      end: [o3[0] + A2.forward[0] * length2, o3[1] + A2.forward[1] * length2, o3[2] + A2.forward[2] * length2]
+    };
+  }
+  extractTrianglesFromTessellation(edges) {
+    if (!edges?.length) return new Uint16Array(0);
+    const adj = /* @__PURE__ */ new Map();
+    const add3 = (a2, b2) => {
+      if (!adj.has(a2)) adj.set(a2, /* @__PURE__ */ new Set());
+      adj.get(a2).add(b2);
+    };
+    for (const e2 of edges) {
+      const a2 = Array.isArray(e2) ? e2[0] : e2.start;
+      const b2 = Array.isArray(e2) ? e2[1] : e2.end;
+      add3(a2, b2);
+      add3(b2, a2);
+    }
+    const tris = [];
+    for (const [a2, na2] of adj) {
+      for (const b2 of na2) {
+        if (b2 <= a2) continue;
+        for (const c2 of adj.get(b2)) {
+          if (c2 <= b2) continue;
+          if (na2.has(c2)) tris.push(a2, b2, c2);
+        }
+      }
+    }
+    return new Uint16Array(tris);
+  }
+  setMode(mode, meshTriangles = null) {
+    if (mode === "mesh") {
+      this.updateInstanceData = this.updateInstanceDataMesh;
+      this.render = this.renderMesh;
+    } else {
+      this.updateInstanceData = this.updateInstanceDataPoints;
+      this.render = this.renderPoint;
+    }
+    this.splatLayer.setRenderMode(
+      mode,
+      meshTriangles === null ? this.POSE_TRIANGLES : meshTriangles
+    );
+    this.pipeline = this.splatLayer.pipeline;
+  }
+  _buildRadiusMap() {
+    const r3 = new Float32Array(33).fill(0.02);
+    for (let i2 = 0; i2 <= 10; i2++) r3[i2] = 0.015;
+    r3[0] = 0.03;
+    r3[11] = 0.045;
+    r3[12] = 0.045;
+    r3[13] = 0.03;
+    r3[14] = 0.03;
+    r3[15] = 0.025;
+    r3[16] = 0.025;
+    for (let i2 = 17; i2 <= 22; i2++) r3[i2] = 0.012;
+    r3[23] = 0.05;
+    r3[24] = 0.05;
+    r3[25] = 0.035;
+    r3[26] = 0.035;
+    r3[27] = 0.03;
+    r3[28] = 0.03;
+    for (let i2 = 29; i2 <= 32; i2++) r3[i2] = 0.015;
+    return r3;
+  }
+  _buildColorMap() {
+    const colors = new Float32Array(33 * 3);
+    const setRange = (from, to2, r3, g2, b2) => {
+      for (let i2 = from; i2 <= to2; i2++) {
+        colors[i2 * 3] = r3;
+        colors[i2 * 3 + 1] = g2;
+        colors[i2 * 3 + 2] = b2;
+      }
+    };
+    setRange(0, 32, 0.9, 0.7, 0.5);
+    setRange(0, 10, 1, 0.8, 0.2);
+    setRange(11, 12, 0.2, 1, 1);
+    setRange(13, 16, 0.4, 0.6, 1);
+    setRange(17, 22, 0.2, 1, 0.3);
+    setRange(23, 24, 1, 0.2, 0.4);
+    setRange(25, 28, 0.3, 0.5, 1);
+    setRange(29, 32, 1, 0.1, 0.2);
+    [0, 11, 12, 15, 16, 23, 24, 27, 28].forEach((i2) => {
+      colors[i2 * 3] = 1;
+      colors[i2 * 3 + 1] = 1;
+      colors[i2 * 3 + 2] = 1;
+    });
+    return colors;
+  }
+  _buildWeights() {
+    const w2 = new Float32Array(33).fill(1);
+    for (let i2 = 0; i2 <= 10; i2++) w2[i2] = 0.6;
+    w2[0] = 1.5;
+    w2[11] = 3;
+    w2[12] = 3;
+    w2[23] = 3;
+    w2[24] = 3;
+    w2[13] = 2;
+    w2[14] = 2;
+    w2[25] = 2;
+    w2[26] = 2;
+    w2[15] = 1.8;
+    w2[16] = 1.8;
+    w2[27] = 1.8;
+    w2[28] = 1.8;
+    for (let i2 = 17; i2 <= 22; i2++) w2[i2] = 0.5;
+    for (let i2 = 29; i2 <= 32; i2++) w2[i2] = 0.5;
+    return w2;
+  }
+  _precompute(n3) {
+    const weights = this._buildWeights();
+    const TOTAL_LM = 33;
+    let total = 0;
+    for (let i2 = 0; i2 < TOTAL_LM; i2++) total += weights[i2];
+    const cdf = new Float32Array(TOTAL_LM);
+    let run = 0;
+    for (let i2 = 0; i2 < TOTAL_LM; i2++) {
+      run += weights[i2] / total;
+      cdf[i2] = run;
+    }
+    cdf[TOTAL_LM - 1] = 1;
+    for (let p2 = 0; p2 < n3; p2++) {
+      const r3 = Math.random();
+      let lo2 = 0, hi2 = TOTAL_LM - 1;
+      while (lo2 < hi2) {
+        const mid = lo2 + hi2 >>> 1;
+        if (cdf[mid] < r3) lo2 = mid + 1;
+        else hi2 = mid;
+      }
+      this._clusterIdx[p2] = lo2;
+      let ox, oy, oz;
+      do {
+        ox = (Math.random() - 0.5) * 2;
+        oy = (Math.random() - 0.5) * 2;
+        oz = (Math.random() - 0.5) * 2;
+      } while (ox * ox + oy * oy + oz * oz > 1);
+      this._offsetX[p2] = ox;
+      this._offsetY[p2] = oy;
+      this._offsetZ[p2] = oz;
+    }
+  }
+  // PipeCommander in 'pose' mode returns results.landmarks
+  setPoseData(results) {
+    if (!results?.landmarks?.length) {
+      this._landmarks = null;
+      this.anchors.valid = false;
+      return;
+    }
+    this._landmarks = results.landmarks[0];
+    this._updateAnchors(this._landmarks);
+  }
+  setScale(s2) {
+    this.scale = s2;
+  }
+  setClusterRadius(r3) {
+    this.clusterRadius = r3;
+  }
+  setOrigin(x3, y3, z2) {
+    this.origin = [x3, y3, z2];
+  }
+  updateInstanceDataPoints(baseModelMatrix) {
+    if (!this.enabled || !this._landmarks) return;
+    const lm = this._landmarks;
+    const sc2 = this.scale;
+    const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
+    const mx = this.mirrorX ? -1 : 1;
+    const n3 = this.splatLayer.vertexCount;
+    const p2 = this._posCPU;
+    const uv = this._uvCPU;
+    for (let i2 = 0; i2 < n3; i2++) {
+      const ci2 = this._clusterIdx[i2];
+      const joint = lm[ci2];
+      const jx = (joint.x - 0.5) * mx * sc2 + ox;
+      const jy = -(joint.y - 0.5) * sc2 + oy;
+      const jz = -joint.z * sc2 + oz;
+      const r3 = this._jointRadius[ci2] * sc2 * this.clusterRadius;
+      p2[i2 * 3] = jx + this._offsetX[i2] * r3;
+      p2[i2 * 3 + 1] = jy + this._offsetY[i2] * r3;
+      p2[i2 * 3 + 2] = jz + this._offsetZ[i2] * r3;
+      const ux = this.mirrorX ? 1 - joint.x : joint.x;
+      const uy = joint.y;
+      const uvi = i2 * 12;
+      for (let v2 = 0; v2 < 6; v2++) {
+        this._uvCPU[uvi + v2 * 2] = ux;
+        this._uvCPU[uvi + v2 * 2 + 1] = uy;
+      }
+    }
+    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, p2);
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
+  }
+  updateInstanceDataMesh(baseModelMatrix) {
+    if (!this.enabled || !this._landmarks) return;
+    const lm = this._landmarks;
+    const sc2 = this.scale;
+    const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
+    const mx = this.mirrorX ? -1 : 1;
+    const landmarkCount = Math.min(lm.length, 33);
+    const posData = new Float32Array(landmarkCount * 3);
+    const uvData = new Float32Array(landmarkCount * 2);
+    for (let i2 = 0; i2 < landmarkCount; i2++) {
+      const joint = lm[i2];
+      posData[i2 * 3 + 0] = (joint.x - 0.5) * mx * sc2 + ox;
+      posData[i2 * 3 + 1] = -(joint.y - 0.5) * sc2 + oy;
+      posData[i2 * 3 + 2] = -joint.z * sc2 + oz;
+      uvData[i2 * 2 + 0] = joint.x;
+      uvData[i2 * 2 + 1] = joint.y;
+    }
+    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, posData);
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+  }
+  renderPoint(pass, mesh, viewProjMatrix, dt2 = 0.016) {
+    this.time += dt2;
+    if (this._videoElement.readyState < 2) {
+      return;
+    }
+    this.splatLayer.device.queue.writeBuffer(this.splatLayer.modelBuffer, 0, mesh.modelMatrix);
+    this.splatLayer.device.queue.writeBuffer(this.splatLayer.cameraBuffer, 0, viewProjMatrix);
+    const externalTexture = this.device.importExternalTexture({ source: this._videoElement });
+    const bindGroup = this.device.createBindGroup({
+      layout: this.splatLayer.bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.splatLayer.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.splatLayer.modelBuffer } },
+        { binding: 2, resource: { buffer: this.splatLayer.scaleBuffer } },
+        { binding: 3, resource: externalTexture },
+        { binding: 4, resource: this.sampler }
+      ]
+    });
+    pass.setBindGroup(0, bindGroup);
+    pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
+    pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
+    pass.setVertexBuffer(2, this.splatLayer.positionAnimator ? this.splatLayer.positionAnimator.posBuffer : this.splatLayer.dummyPosBuffer);
+    pass.setVertexBuffer(3, this.uvBuffer);
+    pass.draw(6, this.splatLayer.vertexCount, 0, 0);
+  }
+  renderMesh(pass, mesh, viewProjMatrix, dt2 = 0.016) {
+    if (this._videoElement.readyState < 2) return;
+    const externalTexture = this.device.importExternalTexture({ source: this._videoElement });
+    const bindGroup = this.device.createBindGroup({
+      layout: this.splatLayer.bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.splatLayer.cameraBuffer } },
+        { binding: 1, resource: { buffer: this.splatLayer.modelBuffer } },
+        { binding: 2, resource: { buffer: this.splatLayer.scaleBuffer } },
+        { binding: 3, resource: externalTexture },
+        { binding: 4, resource: this.sampler }
+      ]
+    });
+    pass.setBindGroup(0, bindGroup);
+    pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
+    pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
+    pass.setVertexBuffer(2, this.splatLayer.positionAnimator.posBuffer);
+    pass.setVertexBuffer(3, this.uvBuffer);
+    pass.setIndexBuffer(this.splatLayer.meshIndexBuffer, "uint16");
+    pass.drawIndexed(this.POSE_TRIANGLES.length, 1, 0, 0, 0);
+  }
+};
+
+// examples/games/nui/pose-beast-render.js
+var TEXT2 = `The Beast Render`;
+var loadPoseBeast = function() {
+  let loadPose = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    // dontUsePhysics: true,
+    useCannon: true,
+    MAX_SPOTLIGHTS: 2,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      // noEvents: true,
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    let MYCUBE, animator2;
+    const pipe = new PipeGestureResolver();
+    const nui = new PipeCommander(true, null, null, {
+      enableVisual: false,
+      mode: "pose"
+    });
+    let bloomRadius = 0.1;
+    let bloomIntesity = 0.1;
+    let glbAnimation = 0;
+    let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 82 } : { left: "5" };
+    MobileDOM.addButton("Bloom radius +", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      bloomRadius++;
+    }, () => {
+    }, arg1);
+    let arg2 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 73 } : { left: "13" };
+    MobileDOM.addButton("Bloom radius -", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      if (bloomRadius - 1 > 0) bloomRadius--;
+    }, () => {
+    }, arg2);
+    let arg3 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 64 } : { left: "21" };
+    MobileDOM.addButton("Bloom intesity +", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      bloomIntesity = bloomIntesity + 20;
+    }, () => {
+    }, arg3);
+    let arg4 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 55 } : { left: "29" };
+    MobileDOM.addButton("Bloom intesity -", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      if (bloomIntesity - 10 > 0) bloomIntesity = bloomIntesity - 10;
+    }, () => {
+    }, arg4);
+    loadPose.addLight();
+    downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    async function onGround(m2) {
+      loadPose.floor = loadPose.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: 0, y: -1, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    function createPillar(loadPose2, m2, x3, y3, z2, name2) {
+      const base = loadPose2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 10, 1],
+        texturesPaths: ["./res/textures/white-metal2.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      const top = loadPose2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3 + 6, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1.8, 3, 1.8],
+        texturesPaths: ["./res/textures/matrix1.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      return { base, top };
+    }
+    async function onLoadObj(m2) {
+      loadPose.addProceduralMeshObj({
+        material: { type: "standard" },
+        position: { x: 1, y: 3, z: -7 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [2, 2, 2],
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1_low.webp"],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_cone`,
+        physics: {
+          enabled: true,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      MYCUBE = loadPose.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: 5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 1, 1],
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "MYCUBE",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: { enabled: true }
+      });
+      loadPose.SAVE_CUBE = m2.cube;
+      const pillar1 = createPillar(loadPose, m2, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(loadPose, m2, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(loadPose, m2, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(loadPose, m2, 20, 6, 20, "pil4");
+      loadPose.activateBloomEffect();
+      loadPose.lightContainer[0].setIntensity(1e3);
+      app.lightContainer[0].setColorB(1);
+      loadPose.lightContainer[0].setPosition(0, 65, 0);
+      loadPose.lightContainer[0].setTarget(0, 0, -20);
+      const sampler = loadPose.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+        mipmapFilter: "nearest",
+        addressModeU: "clamp-to-edge",
+        addressModeV: "clamp-to-edge"
+      });
+      loadAtlasFONT(loadPose.device).then((OUTPUT) => {
+        loadPose.floor.effects.gpuText = new MSDFTextEffect(
+          loadPose.device,
+          "rgba16float",
+          OUTPUT.msdfTexture,
+          sampler,
+          loadPose.cameraBuffer,
+          OUTPUT.font,
+          { scale: 0.05, localOffset: [-15, 1, 0] }
+        );
+        loadPose.floor.effects.gpuText.typeText(TEXT2, 200, () => {
+          MYCUBE.effects.splat = new GaussianSplatScene(loadPose.device, "rgba16float", loadPose.cameraBuffer);
+        });
+      });
+      setTimeout(async () => {
+        MYCUBE.setBlend(0);
+        const layer = await MYCUBE.effects.splat.initialize("./res/meshes/ply/beast-text.ply", 6, "point-list");
+        let positionAnimator = new SplatPositionAnimator(
+          loadPose.device,
+          MYCUBE.effects.splat.splatLayers[0].positions,
+          MYCUBE.effects.splat.splatLayers[0].vertexCount
+        );
+        MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator);
+        loadPose.autoUpdate.push(positionAnimator);
+        positionAnimator.setMode("hold");
+        loadPose.positionAnimator = positionAnimator;
+        const faceEffect = new SplatPoseEffect(
+          loadPose.device,
+          "rgba16float",
+          loadPose.cameraBuffer,
+          MYCUBE.effects.splat.splatLayers[0],
+          { scale: 5, clusterRadius: 1, origin: [0, 0, 0], mirrorX: true }
+        );
+        MYCUBE.effects.faceEffect = faceEffect;
+        MYCUBE.effects.faceEffect.setScale(32);
+        const laser = MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer);
+        const LASER_LENGTH = 12;
+        const FIRE_INTERVAL = 0.08;
+        const FIRE_DIRECTION = 1;
+        let lastFire = 0;
+        function updateLasers(nowSec) {
+          const A2 = faceEffect.anchors;
+          if (!A2.valid) return;
+          if (A2.mouthOpen < 0.5) return;
+          if (nowSec - lastFire < FIRE_INTERVAL) return;
+          lastFire = nowSec;
+          for (const side of ["right", "left"]) {
+            const eye = side === "right" ? A2.rightEye : A2.leftEye;
+            const end = [
+              eye[0] + A2.forward[0] * LASER_LENGTH * FIRE_DIRECTION,
+              eye[1] + A2.forward[1] * LASER_LENGTH * FIRE_DIRECTION,
+              eye[2] + A2.forward[2] * LASER_LENGTH * FIRE_DIRECTION
+            ];
+            laser.fireBeam(eye, end, 0.2);
+          }
+        }
+        app.autoUpdate.push({ update: updateLasers });
+        app.MYCUBE = MYCUBE;
+        loadPose.MYCUBE.position.thrust = 0.1;
+        nui.onResults = (results) => {
+          MYCUBE.effects.faceEffect.setFaceData(results);
+        };
+        loadPose.activateHZB();
+        MYCUBE.effects.faceEffect.setMode("mesh");
+        MYCUBE.position.translateByY(14);
+        let cam2 = app.getCamera();
+        cam2.setYaw(0);
+        cam2.setPitch(0);
+        cam2.setZ(4);
+        cam2.setY(6);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 7e3);
+    }
+    let isRunning = false;
+    let runnerSet;
+    function ambientFromColor(color) {
+      return { r: color.r, g: color.g, b: color.b };
+    }
+    function determinateType() {
+      const chooseType = randomIntFromTo(1, 3);
+      let r3, b2, g2;
+      if (chooseType === 1) {
+        r3 = 70;
+        b2 = 0.5;
+        g2 = 0.5;
+      } else if (chooseType === 2) {
+        r3 = 70;
+        b2 = 0.5;
+        g2 = 0.5;
+      } else if (chooseType === 3) {
+        r3 = 0.5;
+        b2 = 0.5;
+        g2 = 70;
+      }
+      return { r: r3, g: g2, b: b2 };
+    }
+    function damageFromColor(color, baseDamage = 15) {
+      if (color.r > color.b && color.r > color.g) {
+        return baseDamage * 1.5;
+      }
+      if (color.g > color.r && color.g > color.b) {
+        return -baseDamage * 0.8;
+      }
+      return baseDamage * 0.5;
+    }
+    function slowFromColor(color) {
+      return color.g;
+    }
+    let hitEvent = new CustomEvent("player-hit", { detail: { obstacleId: 0 } });
+    function spawnRunners(menuBeast, mesh, opts2 = {}) {
+      const cfg = Object.assign({
+        count: 12,
+        minX: -18,
+        maxX: 18,
+        minY: 1,
+        maxY: 2,
+        startZ: 60,
+        endZ: -40,
+        speedMin: 0.6,
+        speedMax: 1.6,
+        scaleMin: 0.8,
+        scaleMax: 1.8
+      }, opts2);
+      const runners = [];
+      function rand(a2, b2) {
+        return a2 + Math.random() * (b2 - a2);
+      }
+      for (let i2 = 0; i2 < cfg.count; i2++) {
+        const x3 = rand(cfg.minX, cfg.maxX);
+        const y3 = rand(cfg.minY, cfg.maxY);
+        const z2 = cfg.startZ + Math.random() * 30;
+        const s2 = rand(cfg.scaleMin, cfg.scaleMax);
+        const obj2 = menuBeast.addMeshObj({
+          material: { type: "standard", share: false },
+          position: { x: x3, y: y3, z: z2 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 15, y: 0, z: 0 },
+          scale: [s2, s2, s2],
+          texturesPaths: ["./res/textures/matrix1.webp"],
+          name: "runner" + i2,
+          mesh,
+          raycast: { enabled: true, radius: 1 },
+          physics: { enabled: false, mass: 0, geometry: "Cube" }
+        });
+        obj2._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
+        obj2._runnerCfg = cfg;
+        obj2._runnerColor = determinateType();
+        obj2._runnerDamage = damageFromColor(obj2._runnerColor);
+        obj2._runnerSlow = slowFromColor(obj2._runnerColor);
+        const amb = ambientFromColor(obj2._runnerColor);
+        obj2.setAmbient(amb.r, amb.g, amb.b);
+        runners.push(obj2);
+        const rRadius = Math.max(s2) || s2;
+        try {
+          collisionSystem.register(obj2.name, obj2.position, s2 * 1.25, "obstacle");
+        } catch (err) {
+          console.warn("collision register failed", err);
+        }
+      }
+      const updater = {
+        update: function() {
+          for (let i2 = 0; i2 < runners.length; i2++) {
+            const r3 = runners[i2];
+            if (!r3.position) continue;
+            r3.position.z -= r3._runnerSpeed;
+            if (r3.rotation) r3.rotation.y += 0.01 + r3._runnerSpeed * 0.01;
+            if (r3.position.z < r3._runnerCfg.endZ) {
+              r3.position.z = r3._runnerCfg.startZ + Math.random() * 30;
+              r3.position.x = rand(r3._runnerCfg.minX, r3._runnerCfg.maxX);
+              r3.position.y = rand(r3._runnerCfg.minY, r3._runnerCfg.maxY);
+              r3._runnerSpeed = rand(r3._runnerCfg.speedMin, r3._runnerCfg.speedMax);
+              const s2 = rand(r3._runnerCfg.scaleMin, r3._runnerCfg.scaleMax);
+              if (r3.scale) r3.scale = [s2, s2, s2];
+            }
+          }
+        }
+      };
+      app.autoUpdate.push(updater);
+      return { runners, updater };
+    }
+    loadPose.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (isRunning === false) {
+        runnerSet = spawnRunners(loadPose, loadPose.SAVE_CUBE, { count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5 });
+        isRunning = true;
+      }
+    });
+  });
+  window.app = loadPose;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -76290,6 +77036,7 @@ byId2("loadGaussianSplatVertAnim2").addEventListener("click", () => switchDemo("
 byId2("loadRoulette").addEventListener("click", () => switchDemo("45"));
 byId2("loadMSDFText").addEventListener("click", () => switchDemo("46"));
 byId2("loadFaceMask").addEventListener("click", () => switchDemo("47"));
+byId2("loadPoseMask").addEventListener("click", () => switchDemo("48"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -76387,6 +77134,8 @@ if (urlQuery["demo"] === "1") {
   loadMSDFText();
 } else if (urlQuery["demo"] === "47") {
   loadFaceMask();
+} else if (urlQuery["demo"] === "48") {
+  loadPoseBeast();
 } else {
   loadObjFile();
 }

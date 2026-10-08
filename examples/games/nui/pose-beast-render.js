@@ -12,12 +12,13 @@ import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfTex
 import {MatrixTTS} from "../../../src/engine/tts.js";
 import {MeshMorpher} from "../../../src/engine/procedural-mesh.js";
 import {LaserProjectile} from "../../../src/engine/effects/laser.js";
+import {SplatPoseEffect} from "../../../src/engine/effects/splatPose.js";
 
 const TEXT = `The Beast Render`;
 
-export var loadFaceBeast = function() {
+export var loadPoseBeast = function() {
 
-  let loadFace = new MatrixEngineWGPU({
+  let loadPose = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
     // dontUsePhysics: true,
@@ -32,12 +33,12 @@ export var loadFaceBeast = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
     // MatrixTTS
-    // loadFace.tts = new MatrixTTS();
+    // loadPose.tts = new MatrixTTS();
     let MYCUBE, animator;
     const pipe = new PipeGestureResolver();
     const nui = new PipeCommander(true, null, null, {
       enableVisual: false,
-      mode: 'face'
+      mode: 'pose'
     });
     // Dom
     let bloomRadius = 0.1;
@@ -68,8 +69,8 @@ export var loadFaceBeast = function() {
       if((bloomIntesity - 10 > 0)) bloomIntesity = bloomIntesity - 10;
     }, () => {}, arg4);
 
-    loadFace.addLight();
-    // loadFace.addLight();
+    loadPose.addLight();
+    // loadPose.addLight();
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj"}, onLoadObj, {scale: [1, 1, 1]})
     downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
     addRaycastsAABBListener('canvas1', 'click');
@@ -89,7 +90,7 @@ export var loadFaceBeast = function() {
       //   },
       //   () => {}, arg1);
 
-      loadFace.floor = loadFace.addMeshObj({
+      loadPose.floor = loadPose.addMeshObj({
         material: {type: 'dark', share: true},
         position: {x: 0, y: -1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -105,8 +106,8 @@ export var loadFaceBeast = function() {
       })
     }
 
-    function createPillar(loadFace, m, x, y, z, name) {
-      const base = loadFace.addMeshObj({
+    function createPillar(loadPose, m, x, y, z, name) {
+      const base = loadPose.addMeshObj({
         material: {type: 'dark', share: true},
         position: {x: x, y: y, z: z},
         rotation: {x: 0, y: 0, z: 0},
@@ -119,7 +120,7 @@ export var loadFaceBeast = function() {
         physics: {enabled: false, mass: 1, geometry: "Cube"}
       });
 
-      const top = loadFace.addMeshObj({
+      const top = loadPose.addMeshObj({
         material: {type: 'dark', share: true},
         position: {x: x, y: y + 6, z: z},
         rotation: {x: 0, y: 0, z: 0},
@@ -137,7 +138,7 @@ export var loadFaceBeast = function() {
 
     async function onLoadObj(m) {
 
-      loadFace.addProceduralMeshObj({
+      loadPose.addProceduralMeshObj({
         material: {type: 'standard'},
         position: {x: 1, y: 3, z: -7},
         rotation: {x: 0, y: 0, z: 0},
@@ -159,7 +160,7 @@ export var loadFaceBeast = function() {
         raycast: {enabled: true, radius: 1}
       });
 
-      MYCUBE = loadFace.addMeshObj({
+      MYCUBE = loadPose.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: 5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -176,14 +177,14 @@ export var loadFaceBeast = function() {
         pointerEffect: {enabled: true}
       });
 
-      loadFace.SAVE_CUBE = m.cube;
+      loadPose.SAVE_CUBE = m.cube;
 
-      const pillar1 = createPillar(loadFace, m, -20, 6, -30, "pil1");
-      const pillar2 = createPillar(loadFace, m, 20, 6, -30, "pil2");
-      const pillar3 = createPillar(loadFace, m, -20, 6, 20, "pil3");
-      const pillar4 = createPillar(loadFace, m, 20, 6, 20, "pil4");
+      const pillar1 = createPillar(loadPose, m, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(loadPose, m, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(loadPose, m, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(loadPose, m, 20, 6, 20, "pil4");
 
-      loadFace.activateBloomEffect();
+      loadPose.activateBloomEffect();
       // app.activateVolumetricEffect({
       //   density: 0.05,
       //   steps: 30,
@@ -191,15 +192,15 @@ export var loadFaceBeast = function() {
       //   heightFalloff: 0.2,
       //   lightColor: [0, 1, 5]
       // });
-      loadFace.lightContainer[0].setIntensity(1000);
+      loadPose.lightContainer[0].setIntensity(1000);
       app.lightContainer[0].setColorB(1)
-      loadFace.lightContainer[0].setPosition(0, 65, 0);
-      loadFace.lightContainer[0].setTarget(0, 0, -20);
+      loadPose.lightContainer[0].setPosition(0, 65, 0);
+      loadPose.lightContainer[0].setTarget(0, 0, -20);
 
-      // loadFace.lightContainer[1].setPosition(0, 5, -10);
-      // loadFace.lightContainer[1].setTarget(0, 5, 20);
+      // loadPose.lightContainer[1].setPosition(0, 5, -10);
+      // loadPose.lightContainer[1].setTarget(0, 5, 20);
 
-      const sampler = loadFace.device.createSampler({
+      const sampler = loadPose.device.createSampler({
         magFilter: 'linear',
         minFilter: 'linear',
         mipmapFilter: 'nearest',
@@ -207,21 +208,21 @@ export var loadFaceBeast = function() {
         addressModeV: 'clamp-to-edge'
       });
 
-      loadAtlasFONT(loadFace.device).then((OUTPUT) => {
-        loadFace.floor.effects.gpuText = new MSDFTextEffect(
-          loadFace.device,
+      loadAtlasFONT(loadPose.device).then((OUTPUT) => {
+        loadPose.floor.effects.gpuText = new MSDFTextEffect(
+          loadPose.device,
           'rgba16float',
           OUTPUT.msdfTexture,
           sampler,
-          loadFace.cameraBuffer,
+          loadPose.cameraBuffer,
           OUTPUT.font, {scale: 0.05, localOffset: [-15, 1, 0]}
         );
 
         // app.floor.effects.gpuText.setLocalOffset( -15 ,1,0)
 
-        loadFace.floor.effects.gpuText.typeText(TEXT, 200, () => {
+        loadPose.floor.effects.gpuText.typeText(TEXT, 200, () => {
           // console.log('Typing complete!');
-          MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);
+          MYCUBE.effects.splat = new GaussianSplatScene(loadPose.device, 'rgba16float', loadPose.cameraBuffer);
         });
       });
       // text
@@ -231,7 +232,7 @@ export var loadFaceBeast = function() {
         // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "triangle-list");
 
         // animator = new SplatColorAnimator(
-        //   loadFace.device,
+        //   loadPose.device,
         //   layer.positions,
         //   layer.vertexCount,
         //   layer.colorBuffer
@@ -240,23 +241,23 @@ export var loadFaceBeast = function() {
         // animator.setScale(0.8);
         // animator.setSpeed(0.8);
         // layer.colorBuffer = animator.colorBuffer;
-        // loadFace.autoUpdate.push(animator);
-        // loadFace.animator = animator;
+        // loadPose.autoUpdate.push(animator);
+        // loadPose.animator = animator;
         let positionAnimator = new SplatPositionAnimator(
-          loadFace.device,
+          loadPose.device,
           MYCUBE.effects.splat.splatLayers[0].positions,
           MYCUBE.effects.splat.splatLayers[0].vertexCount
         );
 
         MYCUBE.effects.splat.splatLayers[0].attachPositionAnimator(positionAnimator)
-        loadFace.autoUpdate.push(positionAnimator);
+        loadPose.autoUpdate.push(positionAnimator);
         positionAnimator.setMode('hold');
-        loadFace.positionAnimator = positionAnimator;
+        loadPose.positionAnimator = positionAnimator;
 
-        const faceEffect = new SplatFaceEffect(
-          loadFace.device,
+        const faceEffect = new SplatPoseEffect(
+          loadPose.device,
           'rgba16float',
-          loadFace.cameraBuffer,
+          loadPose.cameraBuffer,
           MYCUBE.effects.splat.splatLayers[0],
           {scale: 5, clusterRadius: 1.0, origin: [0, 0, 0], mirrorX: true}
         );
@@ -295,13 +296,13 @@ export var loadFaceBeast = function() {
         // just for dev console 
         app.MYCUBE = MYCUBE;
 
-        loadFace.MYCUBE.position.thrust = 0.1;
+        loadPose.MYCUBE.position.thrust = 0.1;
         // app.MYCUBE.position.translateByX(-10)
         // Hook mediapipe into it
         nui.onResults = (results) => {
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
-        loadFace.activateHZB();
+        loadPose.activateHZB();
 
         // Important for face uv view!
         MYCUBE.effects.faceEffect.setMode('mesh');
@@ -424,14 +425,14 @@ export var loadFaceBeast = function() {
       return {runners, updater};
     }
 
-    loadFace.canvas.addEventListener("ray.hit.event", (e) => {
+    loadPose.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(isRunning === false) {
-        runnerSet = spawnRunners(loadFace, loadFace.SAVE_CUBE, {count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5});
+        runnerSet = spawnRunners(loadPose, loadPose.SAVE_CUBE, {count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5});
         isRunning = true;
       }
     });
 
   })
-  window.app = loadFace;
+  window.app = loadPose;
 }

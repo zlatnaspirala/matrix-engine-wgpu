@@ -168,7 +168,7 @@ export default class MatrixEngineWGPU {
       }
     })
 
-    this.GPUCullingRad = 200;
+    this.GPUCullingRad = MEConfig.GPUCullingRad;
 
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
