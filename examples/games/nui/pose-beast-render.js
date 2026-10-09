@@ -221,12 +221,16 @@ export var loadPoseBeast = function() {
         // app.floor.effects.gpuText.setLocalOffset( -15 ,1,0)
 
         loadPose.floor.effects.gpuText.typeText(TEXT, 200, () => {
-          // console.log('Typing complete!');
+            console.log('Typing complete!');
           MYCUBE.effects.splat = new GaussianSplatScene(loadPose.device, 'rgba16float', loadPose.cameraBuffer);
+           setTimeout( loadRest, 1000)
         });
       });
       // text
-      setTimeout(async () => {
+
+    }
+
+    loadRest = async () => {
         MYCUBE.setBlend(0);
         const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast-text.ply', 6, "point-list");
         // const layer = await MYCUBE.effects.splat.initialize('./res/meshes/ply/beast.ply', 6, "triangle-list");
@@ -291,16 +295,17 @@ export var loadPoseBeast = function() {
           }
         }
 
-        app.autoUpdate.push({update: updateLasers})
+        // app.autoUpdate.push({update: updateLasers})
 
         // just for dev console 
-        app.MYCUBE = MYCUBE;
+        loadPose.MYCUBE = MYCUBE;
 
         loadPose.MYCUBE.position.thrust = 0.1;
         // app.MYCUBE.position.translateByX(-10)
         // Hook mediapipe into it
-        nui.onResults = (results) => {
-          MYCUBE.effects.faceEffect.setFaceData(results);
+        nui.onResults = (r) => {
+            // console.log(r.landmarks?.length, r.landmarks?.[0]?.[0]);
+          MYCUBE.effects.faceEffect.setPoseData(r);
         };
         loadPose.activateHZB();
 
@@ -316,8 +321,7 @@ export var loadPoseBeast = function() {
         cam.setY(6);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 7000);
-    }
+      }
 
     let isRunning = false;
     let runnerSet;

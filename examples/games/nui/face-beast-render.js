@@ -315,7 +315,7 @@ export var loadFaceBeast = function() {
         cam.setY(6);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
-      }, 7000);
+      }, 8000);
     }
 
     let isRunning = false;

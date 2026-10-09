@@ -439,8 +439,8 @@ export function quaternion_rotation_matrix(Q) {
 export const LOG_WARN = 'background: gray; color: yellow; font-size:10px';
 export const LOG_INFO = 'background: green; color: white; font-size:11px';
 export const LOG_MATRIX = "font-family: stormfaze;color: #lime; font-size:11px;text-shadow: 2px 2px 4px orangered;background: black;";
-export const LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:18px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
-export const LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
+export const LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:15px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background:linear-gradient(90deg,#111,#222);";
+export const LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background:linear-gradient(90deg,#111,#222); ";
 export const LOG_FUNNY_BIG_TERMINAL =
   "font-family: monospace; font-size:15px; font-weight:bold;" +
   "color:#33ff33;" +

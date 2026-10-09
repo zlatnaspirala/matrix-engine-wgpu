@@ -113,7 +113,7 @@ byId('loadGaussianSplatVertAnim2').addEventListener("click", () => switchDemo('4
 byId('loadRoulette').addEventListener("click", () => switchDemo('45'));
 byId('loadMSDFText').addEventListener("click", () => switchDemo('46'));
 byId('loadFaceMask').addEventListener("click", () => switchDemo('47'));
-byId('loadPoseMask').addEventListener("click", () => switchDemo('48'));
+byId('loadPoseBeast').addEventListener("click", () => switchDemo('48'));
 
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 // byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));

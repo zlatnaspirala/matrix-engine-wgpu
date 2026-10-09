@@ -66,18 +66,15 @@ export class PipeCommander {
       this.canvasCtx = this.canvasElement.getContext("2d");
     }
 
-    this.ready = this.init();
+    this.ready = this.init(opts);
   }
 
-  async init() {
+  async init(opts) {
     const visionModule = await import("@mediapipe/tasks-vision");
-    // const {HandLandmarker, FaceLandmarker, PoseLandmarker, FilesetResolver, DrawingUtils} = visionModule;
-    // this.HandLandmarker = HandLandmarker;
-    // this.FaceLandmarker = FaceLandmarker;
-    // this.PoseLandmarker = PoseLandmarker;
+    const {FilesetResolver} = visionModule;
     const vision = await FilesetResolver.forVisionTasks("./mediapipe/wasm");
     if(this.mode === 'face') {
-      const {FaceLandmarker, FilesetResolver, DrawingUtils} = visionModule;
+      const {FaceLandmarker, DrawingUtils} = visionModule;
       this.FaceLandmarker = FaceLandmarker;
       this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
@@ -90,7 +87,7 @@ export class PipeCommander {
         outputFacialTransformationMatrixes: false
       });
     } else if(this.mode === 'pose') {
-      const {PoseLandmarker, FilesetResolver, DrawingUtils} = visionModule;
+      const {PoseLandmarker, DrawingUtils} = visionModule;
       this.PoseLandmarker = PoseLandmarker;
       this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
         baseOptions: {
@@ -101,7 +98,7 @@ export class PipeCommander {
         numPoses: opts.numPoses ?? 1   // pass opts into init if you want this configurable
       });
     } else {
-      const {HandLandmarker, FilesetResolver, DrawingUtils} = visionModule;
+      const {HandLandmarker, DrawingUtils} = visionModule;
       this.HandLandmarker = HandLandmarker;
       this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
@@ -122,7 +119,9 @@ export class PipeCommander {
 
   async enableWebcam() {
     await this.ready;
-    const stream = await navigator.mediaDevices.getUserMedia({video: true});
+    const stream = await navigator.mediaDevices.getUserMedia({
+       video: {width: {ideal: 720}, height: {ideal: 720}}
+    });
     this.video.srcObject = stream;
     await this.video.play();
     const w = this.video.videoWidth;
@@ -141,7 +140,7 @@ export class PipeCommander {
     this.predictWebcam();
   }
 
-  get landmarker() {
+  getLandmarker() {
     return this.mode === 'face' ? this.faceLandmarker
       : this.mode === 'pose' ? this.poseLandmarker
         : this.handLandmarker;
@@ -150,7 +149,7 @@ export class PipeCommander {
   async predictWebcam() {
     if(this.runningMode === "IMAGE") {
       this.runningMode = "VIDEO";
-      const landmarker = this.mode === 'face' ? this.faceLandmarker : this.handLandmarker;
+      const landmarker = this.getLandmarker();
       await landmarker.setOptions({runningMode: "VIDEO"});
     }
 
@@ -164,6 +163,14 @@ export class PipeCommander {
             width: this.video.videoWidth || 640,
             height: this.video.videoHeight || 480
           }
+        });
+      } else if(this.mode === 'pose') {
+        // console.log('>>>>>>>>>>>>>>>>>>> ', this.faceLandmarker.FACE_LANDMARKS_TESSELATION)
+        this.results = this.poseLandmarker.detectForVideo(this.video, startTimeMs, {
+          // imageSize: {
+          //   width: this.video.videoWidth || 640,
+          //   height: this.video.videoHeight || 480
+          // }
         });
       } else {
         this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs, {

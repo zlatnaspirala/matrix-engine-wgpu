@@ -1,5 +1,5 @@
 import {byId} from "../utils";
-import * as faceMeshModule from '@mediapipe/face_mesh';
+import * as poseModule from '@mediapipe/pose';
 /**
  * @description
  * SplatFaceEffect
@@ -34,13 +34,12 @@ export class SplatPoseEffect {
     this._landmarks = null;
 
     const POSE_EDGES =
-      faceMeshModule.POSE_CONNECTIONS ||
-      faceMeshModule.PoseLandmarker?.POSE_CONNECTIONS ||
-      faceMeshModule.default?.POSE_CONNECTIONS ||
-      faceMeshModule.default?.PoseLandmarker?.POSE_CONNECTIONS;
+      poseModule.POSE_CONNECTIONS ||
+      poseModule.PoseLandmarker?.POSE_CONNECTIONS ||
+      poseModule.default?.POSE_CONNECTIONS ||
+      poseModule.default?.PoseLandmarker?.POSE_CONNECTIONS;
 
-    // POSE_CONNECTIONS is a skeleton, so it has few closed triangles.
-    // Extra edges close the torso (and anything else you pass through opts.fillEdges).
+    console.log('POSE_EDGES', POSE_EDGES)
     const FILL_EDGES = opts.fillEdges ?? [[11, 24], [12, 23]];
     this.POSE_TRIANGLES = this.extractTrianglesFromTessellation([...(POSE_EDGES || []), ...FILL_EDGES]);
 
