@@ -78596,6 +78596,44 @@ var SplatPoseEffect = class {
     console.log("POSE_EDGES", POSE_EDGES);
     const FILL_EDGES = opts.fillEdges ?? [[11, 24], [12, 23]];
     this.POSE_TRIANGLES = this.extractTrianglesFromTessellation([...POSE_EDGES || [], ...FILL_EDGES]);
+    console.log(this.POSE_TRIANGLES.length);
+    this.limbWidth = opts.limbWidth ?? 0.035;
+    this.zScale = opts.zScale ?? 0;
+    this._edges = (POSE_EDGES || []).map((e2) => Array.isArray(e2) ? e2 : [e2.start, e2.end]).filter(([a2, b2]) => a2 >= 11 && b2 >= 11);
+    const tris = Array.from(this.POSE_TRIANGLES);
+    this._edges.forEach((_2, k2) => {
+      const H2 = 33 + this._edges.length * 4;
+      tris.push(
+        7,
+        2,
+        0,
+        2,
+        5,
+        0,
+        5,
+        8,
+        0,
+        // eyes/ears fan around the nose
+        8,
+        10,
+        0,
+        10,
+        9,
+        0,
+        9,
+        7,
+        0,
+        // down to the mouth corners
+        7,
+        8,
+        H2 + 1,
+        7,
+        H2 + 1,
+        H2
+        // forehead quad
+      );
+    });
+    this.BODY_TRIANGLES = new Uint16Array(tris);
     this.pipeline = splatLayer.pipeline;
     const n3 = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n3 * 3);
@@ -78735,7 +78773,7 @@ var SplatPoseEffect = class {
     }
     this.splatLayer.setRenderMode(
       mode,
-      meshTriangles === null ? this.POSE_TRIANGLES : meshTriangles
+      meshTriangles === null ? this.BODY_TRIANGLES : meshTriangles
     );
     this.pipeline = this.splatLayer.pipeline;
   }
@@ -78887,22 +78925,41 @@ var SplatPoseEffect = class {
   updateInstanceDataMesh(baseModelMatrix) {
     if (!this.enabled || !this._landmarks) return;
     const lm = this._landmarks;
-    const sc2 = this.scale;
-    const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
+    const sc2 = this.scale, zs2 = this.zScale;
+    const [ox, oy, oz] = this.origin;
     const mx = this.mirrorX ? -1 : 1;
-    const landmarkCount = Math.min(lm.length, 33);
-    const posData = new Float32Array(landmarkCount * 3);
-    const uvData = new Float32Array(landmarkCount * 2);
-    for (let i2 = 0; i2 < landmarkCount; i2++) {
-      const joint = lm[i2];
-      posData[i2 * 3 + 0] = (joint.x - 0.5) * mx * sc2 + ox;
-      posData[i2 * 3 + 1] = -(joint.y - 0.5) * sc2 + oy;
-      posData[i2 * 3 + 2] = -joint.z * sc2 + oz;
-      uvData[i2 * 2 + 0] = joint.x;
-      uvData[i2 * 2 + 1] = joint.y;
-    }
-    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, posData);
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    const aspect = this._videoElement.videoWidth / this._videoElement.videoHeight || 1;
+    const total = 33 + this._edges.length * 4 + 2;
+    const pos2 = new Float32Array(total * 3);
+    const uv = new Float32Array(total * 2);
+    const put = (i2, x3, y3, z2) => {
+      pos2[i2 * 3] = (x3 - 0.5) * mx * sc2 * aspect + ox;
+      pos2[i2 * 3 + 1] = -(y3 - 0.5) * sc2 + oy;
+      pos2[i2 * 3 + 2] = -z2 * sc2 * zs2 + oz;
+      uv[i2 * 2] = x3;
+      uv[i2 * 2 + 1] = y3;
+    };
+    for (let i2 = 0; i2 < 33; i2++) put(i2, lm[i2].x, lm[i2].y, lm[i2].z);
+    this._edges.forEach(([a2, b2], k2) => {
+      const A2 = lm[a2], B2 = lm[b2];
+      let dx = (B2.x - A2.x) * aspect, dy = B2.y - A2.y;
+      const len2 = Math.hypot(dx, dy) || 1;
+      const px = -dy / len2 * this.limbWidth / aspect;
+      const py = dx / len2 * this.limbWidth;
+      const v2 = 33 + k2 * 4;
+      put(v2, A2.x + px, A2.y + py, A2.z);
+      put(v2 + 1, A2.x - px, A2.y - py, A2.z);
+      put(v2 + 2, B2.x + px, B2.y + py, B2.z);
+      put(v2 + 3, B2.x - px, B2.y - py, B2.z);
+    });
+    const H2 = 33 + this._edges.length * 4;
+    const upx = (lm[2].x + lm[5].x) / 2 - (lm[9].x + lm[10].x) / 2;
+    const upy = (lm[2].y + lm[5].y) / 2 - (lm[9].y + lm[10].y) / 2;
+    const foreheadK = 1.2;
+    put(H2, lm[7].x + upx * foreheadK, lm[7].y + upy * foreheadK, lm[7].z);
+    put(H2 + 1, lm[8].x + upx * foreheadK, lm[8].y + upy * foreheadK, lm[8].z);
+    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, pos2);
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
   renderPoint(pass, mesh, viewProjMatrix, dt2 = 0.016) {
     this.time += dt2;
@@ -78948,7 +79005,7 @@ var SplatPoseEffect = class {
     pass.setVertexBuffer(2, this.splatLayer.positionAnimator.posBuffer);
     pass.setVertexBuffer(3, this.uvBuffer);
     pass.setIndexBuffer(this.splatLayer.meshIndexBuffer, "uint16");
-    pass.drawIndexed(this.POSE_TRIANGLES.length, 1, 0, 0, 0);
+    pass.drawIndexed(this.BODY_TRIANGLES.length, 1, 0, 0, 0);
   }
 };
 

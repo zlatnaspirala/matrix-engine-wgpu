@@ -39,11 +39,33 @@ export class SplatPoseEffect {
       poseModule.default?.POSE_CONNECTIONS ||
       poseModule.default?.PoseLandmarker?.POSE_CONNECTIONS;
 
-    console.log(poseModule.POSE_CONNECTIONS?.length); 
+    console.log(poseModule.POSE_CONNECTIONS?.length);
 
     console.log('POSE_EDGES', POSE_EDGES)
     const FILL_EDGES = opts.fillEdges ?? [[11, 24], [12, 23]];
     this.POSE_TRIANGLES = this.extractTrianglesFromTessellation([...(POSE_EDGES || []), ...FILL_EDGES]);
+    console.log(this.POSE_TRIANGLES.length);
+
+    //
+    this.limbWidth = opts.limbWidth ?? 0.035;     // in video-normalized units
+    this.zScale = opts.zScale ?? 0.0;             // pose z is ~±1, flatten it
+    this._edges = (POSE_EDGES || [])
+      .map(e => Array.isArray(e) ? e : [e.start, e.end])
+      .filter(([a, b]) => a >= 11 && b >= 11);    // skip face-to-face lines, keep body
+
+    const tris = Array.from(this.POSE_TRIANGLES);
+    this._edges.forEach((_, k) => {
+      // const v = 33 + k * 4;                       // a+, a-, b+, b-
+      // tris.push(v, v + 1, v + 2, v + 1, v + 3, v + 2);
+      const H = 33 + this._edges.length * 4;    // two virtual vertices: H (above left ear), H+1 (above right ear)
+      tris.push(
+        7, 2, 0, 2, 5, 0, 5, 8, 0,          // eyes/ears fan around the nose
+        8, 10, 0, 10, 9, 0, 9, 7, 0,          // down to the mouth corners
+        7, 8, H + 1, 7, H + 1, H              // forehead quad
+      );
+    });
+    this.BODY_TRIANGLES = new Uint16Array(tris);
+    //
 
     this.pipeline = splatLayer.pipeline;
     const n = splatLayer.vertexCount;
@@ -173,7 +195,7 @@ export class SplatPoseEffect {
       this.render = this.renderPoint;
     }
     this.splatLayer.setRenderMode(mode,
-      meshTriangles === null ? this.POSE_TRIANGLES : meshTriangles
+      meshTriangles === null ? this.BODY_TRIANGLES : meshTriangles
     );
     this.pipeline = this.splatLayer.pipeline;
   }
@@ -343,23 +365,49 @@ export class SplatPoseEffect {
   updateInstanceDataMesh(baseModelMatrix) {
     if(!this.enabled || !this._landmarks) return;
     const lm = this._landmarks;
-    const sc = this.scale;
-    const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
+    const sc = this.scale, zs = this.zScale;
+    const [ox, oy, oz] = this.origin;
     const mx = this.mirrorX ? -1 : 1;
-    // Pose mesh only has 33 vertices!
-    const landmarkCount = Math.min(lm.length, 33);
-    const posData = new Float32Array(landmarkCount * 3);
-    const uvData = new Float32Array(landmarkCount * 2);
-    for(let i = 0;i < landmarkCount;i++) {
-      const joint = lm[i];
-      posData[i * 3 + 0] = (joint.x - 0.5) * mx * sc + ox;
-      posData[i * 3 + 1] = -(joint.y - 0.5) * sc + oy;
-      posData[i * 3 + 2] = -joint.z * sc + oz;
-      uvData[i * 2 + 0] = joint.x;
-      uvData[i * 2 + 1] = joint.y;
-    }
-    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, posData);
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    const aspect = (this._videoElement.videoWidth / this._videoElement.videoHeight) || 1;
+    // const total = 33 + this._edges.length * 4;
+    const total = 33 + this._edges.length * 4 + 2;
+    const pos = new Float32Array(total * 3);
+    const uv = new Float32Array(total * 2);
+
+    const put = (i, x, y, z) => {
+      pos[i * 3] = (x - 0.5) * mx * sc * aspect + ox;
+      pos[i * 3 + 1] = -(y - 0.5) * sc + oy;
+      pos[i * 3 + 2] = -z * sc * zs + oz;
+      uv[i * 2] = x;
+      uv[i * 2 + 1] = y;
+    };
+
+    for(let i = 0;i < 33;i++) put(i, lm[i].x, lm[i].y, lm[i].z);
+
+    this._edges.forEach(([a, b], k) => {
+      const A = lm[a], B = lm[b];
+      // perpendicular in video space (correct for aspect)
+      let dx = (B.x - A.x) * aspect, dy = B.y - A.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const px = (-dy / len) * this.limbWidth / aspect;
+      const py = (dx / len) * this.limbWidth;
+      const v = 33 + k * 4;
+      put(v, A.x + px, A.y + py, A.z);
+      put(v + 1, A.x - px, A.y - py, A.z);
+      put(v + 2, B.x + px, B.y + py, B.z);
+      put(v + 3, B.x - px, B.y - py, B.z);
+    });   // <-- loop ends here
+
+    // head: two virtual forehead vertices, AFTER the loop
+    const H = 33 + this._edges.length * 4;
+    const upx = (lm[2].x + lm[5].x) / 2 - (lm[9].x + lm[10].x) / 2;
+    const upy = (lm[2].y + lm[5].y) / 2 - (lm[9].y + lm[10].y) / 2;
+    const foreheadK = 1.2;                      // forehead height, tune it
+    put(H, lm[7].x + upx * foreheadK, lm[7].y + upy * foreheadK, lm[7].z);
+    put(H + 1, lm[8].x + upx * foreheadK, lm[8].y + upy * foreheadK, lm[8].z);
+
+    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, pos);
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
 
   renderPoint(pass, mesh, viewProjMatrix, dt = 0.016) {
@@ -405,6 +453,6 @@ export class SplatPoseEffect {
     // UVs PER-LANDMARK
     pass.setVertexBuffer(3, this.uvBuffer);
     pass.setIndexBuffer(this.splatLayer.meshIndexBuffer, 'uint16');
-    pass.drawIndexed(this.POSE_TRIANGLES.length, 1, 0, 0, 0);
+    pass.drawIndexed(this.BODY_TRIANGLES.length, 1, 0, 0, 0);
   }
 }
