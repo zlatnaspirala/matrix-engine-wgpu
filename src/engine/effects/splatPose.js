@@ -39,6 +39,8 @@ export class SplatPoseEffect {
       poseModule.default?.POSE_CONNECTIONS ||
       poseModule.default?.PoseLandmarker?.POSE_CONNECTIONS;
 
+    console.log(poseModule.POSE_CONNECTIONS?.length); 
+
     console.log('POSE_EDGES', POSE_EDGES)
     const FILL_EDGES = opts.fillEdges ?? [[11, 24], [12, 23]];
     this.POSE_TRIANGLES = this.extractTrianglesFromTessellation([...(POSE_EDGES || []), ...FILL_EDGES]);
