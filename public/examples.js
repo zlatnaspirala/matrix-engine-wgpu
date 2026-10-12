@@ -14247,9 +14247,7 @@ var WASDCamera = class _WASDCamera {
       );
     }
   }
-  // ------------------------------------------------------------
   // CLASSIC MOUSE EVENTS
-  // ------------------------------------------------------------
   _setupMouseEvents(canvas) {
     canvas.onmousedown = (e2) => {
       if (e2.button !== 0) return;
@@ -14278,9 +14276,7 @@ var WASDCamera = class _WASDCamera {
       this._mouseDown = false;
     };
   }
-  // ------------------------------------------------------------
   // POINTER EVENTS
-  // ------------------------------------------------------------
   _setupPointerEvents(canvas) {
     canvas.addEventListener(
       "pointerdown",
@@ -14721,24 +14717,27 @@ var FirstPersonCamera = class _FirstPersonCamera {
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   invProj = new Float32Array(16);
-  _moveVelScratch = new Float32Array(3);
-  _dirty = true;
   right = vec3Impl.fromValues(1, 0, 0);
   up = vec3Impl.fromValues(0, 1, 0);
   back = vec3Impl.fromValues(0, 0, 1);
   _rotYScratch = mat4Impl.create();
   _rotXScratch = mat4Impl.create();
   _viewScratch = mat4Impl.create();
-  _digital = { forward: false, backward: false, left: false, right: false };
-  _lastX = 0;
-  _lastY = 0;
+  // Bitmask:
+  // 1 = forward, 2 = backward, 4 = left, 8 = right
+  _digital = 0;
   _mouseDown = false;
-  _pointerLastScratch = { x: 0, y: 0 };
+  _lookDisabled = false;
+  _jumpVelocity = 0;
+  _isGrounded = false;
+  usePointerEvents = false;
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
-  _dirtyAngle = false;
+  _dirtyAngle = true;
+  static HALF_PI = Math.PI * 0.5;
+  static DIAG = 0.7071067811865476;
   constructor(options2 = {}) {
     if (options2.position) {
       this.position[0] = options2.position[0];
@@ -14750,43 +14749,25 @@ var FirstPersonCamera = class _FirstPersonCamera {
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
-    this._jumpVelocity = 0;
-    this._isGrounded = false;
-    if (this.canvas) this._setupInput(this.canvas);
+    this._onKeyDown = this._handleKeyDown.bind(this);
+    this._onKeyUp = this._handleKeyUp.bind(this);
+    if (this.canvas) {
+      this._setupInput(this.canvas);
+    }
     this._recalculateViewVP();
-    if (isMobile() == true && options2.isActive == "init active cam") {
-      MobileDOM.createWASD(this, { margin: 50, forMobileJoystick: true, color: "red" });
+    if (isMobile() === true && options2.isActive === "init active cam") {
+      MobileDOM.createWASD(this, {
+        margin: 50,
+        forMobileJoystick: true,
+        color: "red"
+      });
     }
   }
-  setPitch = (p2) => {
-    this.pitch = p2;
-    this._dirtyAngle = true;
-  };
-  setYaw = (y3) => {
-    this.yaw = y3;
-    this._dirtyAngle = true;
-  };
   setProjection = (fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) => {
     mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._dirtyAngle = true;
     this._recalculateViewVP();
-  };
-  setPosition = (x3, y3, z2) => {
-    this.position[0] = x3;
-    this.position[1] = y3;
-    this.position[2] = z2;
-    this._dirtyAngle = true;
-  };
-  setX = (x3) => {
-    this.position[0] = x3;
-    this._dirtyAngle = true;
-  };
-  setY = (y3) => {
-    this.position[1] = y3;
-    this._dirtyAngle = true;
-  };
-  setZ = (z2) => {
-    this.position[2] = z2;
-    this._dirtyAngle = true;
+    this._dirtyAngle = false;
   };
   static mat4MultiplySafe(a2, b2, out) {
     const a00 = a2[0], a01 = a2[4], a02 = a2[8], a03 = a2[12];
@@ -14816,19 +14797,26 @@ var FirstPersonCamera = class _FirstPersonCamera {
     return out;
   }
   _recalculateViewVP() {
-    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
-    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
-    this.right[0] = cy;
-    this.right[1] = 0;
-    this.right[2] = -sy;
-    this.up[0] = sy * sp;
-    this.up[1] = cp;
-    this.up[2] = cy * sp;
-    this.back[0] = sy * cp;
-    this.back[1] = -sp;
-    this.back[2] = cy * cp;
-    const rx = this.right, uy = this.up, bz = this.back, p2 = this.position;
+    const yaw = this.yaw;
+    const pitch = this.pitch;
+    const cy = Math.cos(yaw);
+    const sy = Math.sin(yaw);
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const rx = this.right;
+    const uy = this.up;
+    const bz = this.back;
+    const p2 = this.position;
     const vs2 = this.view;
+    rx[0] = cy;
+    rx[1] = 0;
+    rx[2] = -sy;
+    uy[0] = sy * sp;
+    uy[1] = cp;
+    uy[2] = cy * sp;
+    bz[0] = sy * cp;
+    bz[1] = -sp;
+    bz[2] = cy * cp;
     vs2[0] = rx[0];
     vs2[4] = rx[1];
     vs2[8] = rx[2];
@@ -14845,15 +14833,34 @@ var FirstPersonCamera = class _FirstPersonCamera {
     vs2[7] = 0;
     vs2[11] = 0;
     vs2[15] = 1;
-    _FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+    _FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, vs2, this.VP);
   }
+  // INPUT SETUP
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
+    const mobile = isMobile() === true;
+    if (mobile) {
+      this._setupTouchEvents(canvas);
+    } else {
+      canvas.oncontextmenu = (e2) => e2.preventDefault();
+      if (this.usePointerEvents) {
+        this._setupPointerEvents(canvas);
+      } else {
+        this._setupMouseEvents(canvas);
+      }
+    }
+    window.addEventListener("keydown", this._onKeyDown, { passive: true });
+    window.addEventListener("keyup", this._onKeyUp, { passive: true });
+  }
+  _setupTouchEvents(canvas) {
     let lookTouchId = null;
-    let touchStartX = 0, touchStartY = 0;
-    if (isMobile() === true) canvas.addEventListener("touchstart", (e2) => {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    canvas.addEventListener("touchstart", (e2) => {
       if (lookTouchId !== null) return;
-      for (const t3 of e2.changedTouches) {
+      const touches = e2.changedTouches;
+      for (let i2 = 0; i2 < touches.length; i2++) {
+        const t3 = touches[i2];
         if (t3.target === canvas) {
           lookTouchId = t3.identifier;
           touchStartX = t3.clientX;
@@ -14862,178 +14869,243 @@ var FirstPersonCamera = class _FirstPersonCamera {
         }
       }
     }, { passive: false });
-    if (isMobile() === true) canvas.addEventListener("touchmove", (e2) => {
-      if (lookTouchId === null) return;
+    canvas.addEventListener("touchmove", (e2) => {
+      if (lookTouchId === null || this._lookDisabled) return;
+      const touches = e2.touches;
       let touch = null;
-      for (const t3 of e2.touches) {
-        if (t3.identifier === lookTouchId) {
-          touch = t3;
+      for (let i2 = 0; i2 < touches.length; i2++) {
+        if (touches[i2].identifier === lookTouchId) {
+          touch = touches[i2];
           break;
         }
       }
-      if (!touch) return;
+      if (touch === null) return;
       const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
       const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
       this.yaw -= dx * this.rotationSpeed;
       this.pitch -= dy * this.rotationSpeed;
-      this.yaw %= Math.PI * 2;
-      this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+      this._clampPitch();
       this._dirtyAngle = true;
       touchStartX = touch.clientX;
       touchStartY = touch.clientY;
       e2.preventDefault();
     }, { passive: false });
     const clearLookTouch = (e2) => {
-      for (const t3 of e2.changedTouches) {
-        if (t3.identifier === lookTouchId) {
+      const touches = e2.changedTouches;
+      for (let i2 = 0; i2 < touches.length; i2++) {
+        if (touches[i2].identifier === lookTouchId) {
           lookTouchId = null;
           break;
         }
       }
     };
-    if (isMobile() === true) canvas.addEventListener("touchend", clearLookTouch, { passive: true });
-    if (isMobile() === true) canvas.addEventListener("touchcancel", clearLookTouch, { passive: true });
-    if (isMobile() === false) canvas.addEventListener("pointerdown", (e2) => {
-      if (e2.pointerType === "mouse") {
-        this._mouseDown = true;
-        if (canvas.requestPointerLock) {
-          canvas.requestPointerLock();
-        } else {
-          canvas.setPointerCapture(e2.pointerId);
-        }
-      }
-    }, { passive: false });
-    if (isMobile() === false) canvas.addEventListener("pointermove", (e2) => {
-      if (e2.pointerType === "mouse") {
-        console.log("prevent dragging");
-        if (window.__isDragging === true) {
-          return;
-        }
-        const dx = e2.movementX * this.MOUSE_SENS;
-        const dy = e2.movementY * this.MOUSE_SENS;
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
+    canvas.addEventListener("touchend", clearLookTouch, { passive: true });
+    canvas.addEventListener("touchcancel", clearLookTouch, { passive: true });
+  }
+  _clampPitch() {
+    const halfPi = _FirstPersonCamera.HALF_PI;
+    if (this.pitch > halfPi) {
+      this.pitch = halfPi;
+    } else if (this.pitch < -halfPi) {
+      this.pitch = -halfPi;
+    }
+  }
+  _setupMouseEvents(canvas) {
+    if (isMobile() === false) {
+      canvas.addEventListener("contextmenu", (e2) => {
+        e2.preventDefault();
+      });
+      const onMouseMove = (e2) => {
+        if (window.__isDragging === true) return;
+        this.yaw -= e2.movementX * this.MOUSE_SENS * this.rotationSpeed;
+        this.pitch -= e2.movementY * this.MOUSE_SENS * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this.pitch = Math.max(
+          -Math.PI / 2,
+          Math.min(Math.PI / 2, this.pitch)
+        );
         this._dirtyAngle = true;
+      };
+      canvas.addEventListener("mousemove", onMouseMove, { passive: true });
+    }
+  }
+  _setupPointerEvents(canvas) {
+    canvas.addEventListener("pointerdown", (e2) => {
+      if (e2.pointerType !== "mouse" || e2.button !== 0) return;
+      this._mouseDown = true;
+      if (canvas.requestPointerLock) {
+        canvas.requestPointerLock();
+      } else if (canvas.setPointerCapture) {
+        canvas.setPointerCapture(e2.pointerId);
       }
     }, { passive: true });
-    if (isMobile() === false) canvas.addEventListener("pointerup", (e2) => {
+    canvas.addEventListener("pointermove", (e2) => {
+      if (window.__isDragging === true) return;
+      if (e2.pointerType !== "mouse") return;
+      if (!this._mouseDown || this._lookDisabled) return;
+      this.yaw -= e2.movementX * this.MOUSE_SENS * this.rotationSpeed;
+      this.pitch -= e2.movementY * this.MOUSE_SENS * this.rotationSpeed;
+      this._clampPitch();
+      this._dirtyAngle = true;
+    }, { passive: true });
+    const stopLook = (e2) => {
       if (e2.pointerType === "mouse") {
         this._mouseDown = false;
       }
-    }, { passive: true });
-    this._keyInterval = null;
-    this.setDigital = (e2, value) => {
-      switch (e2.code) {
-        case "KeyW":
-          this._digital.forward = value;
-          break;
-        case "KeyS":
-          this._digital.backward = value;
-          break;
-        case "KeyA":
-          this._digital.left = value;
-          break;
-        case "KeyD":
-          this._digital.right = value;
-          break;
-        case "ArrowUp":
-          this._digital.forward = value;
-          break;
-        case "ArrowDown":
-          this._digital.backward = value;
-          break;
-        case "ArrowLeft":
-          this._digital.left = value;
-          break;
-        case "ArrowRight":
-          this._digital.right = value;
-          break;
-        case "Space":
-          if (value === true && window.app?.collisionSystem?._onGround) {
-            window.app.collisionSystem._gravityAcc = 0.22;
-            window.app.collisionSystem._onGround = false;
-            this._dirty = true;
-            this._dirtyAngle = true;
-          }
-          break;
-      }
-      if (value == true && this._keyInterval === null) {
-        this._keyInterval = setInterval(() => {
-          this._dirty = true;
-          this._dirtyAngle = true;
-          this._applyDigitalMovement();
-        }, 16);
-      } else {
-        const d2 = this._digital;
-        if (!d2.forward && !d2.backward && !d2.left && !d2.right) {
-          clearInterval(this._keyInterval);
-          this._keyInterval = null;
-          this._dirty = false;
-          this._dirtyAngle = false;
-        }
-      }
     };
-    this._onKeyDown = (e2) => this.setDigital(e2, true);
-    this._onKeyUp = (e2) => this.setDigital(e2, false);
-    window.addEventListener("keydown", this._onKeyDown, { passive: true });
-    window.addEventListener("keyup", this._onKeyUp, { passive: true });
+    canvas.addEventListener("pointerup", stopLook, { passive: true });
+    canvas.addEventListener("pointercancel", stopLook, { passive: true });
   }
-  removeKeyboard() {
-    clearInterval(this._keyInterval);
-    this._keyInterval = null;
-    window.removeEventListener("keydown", this._onKeyDown);
-    window.removeEventListener("keyup", this._onKeyUp);
-    this._onKeyDown = null;
-    this._onKeyUp = null;
-    this._dirty = false;
-    this._dirtyAngle = false;
+  _getKeyBit(code) {
+    switch (code) {
+      case "KeyW":
+      case "ArrowUp":
+        return 1;
+      case "KeyS":
+      case "ArrowDown":
+        return 2;
+      case "KeyA":
+      case "ArrowLeft":
+        return 4;
+      case "KeyD":
+      case "ArrowRight":
+        return 8;
+      default:
+        return 0;
+    }
   }
-  forceViewUpdate() {
-    this._dirtyAngle = true;
-    this._dirty = true;
-    this._recalculateViewVP();
+  _handleKeyDown(e2) {
+    console.log("key", e2.code, this._digital);
+    if (e2.code === "Space") {
+      if (window.app?.collisionSystem?._onGround) {
+        window.app.collisionSystem._gravityAcc = 0.22;
+        window.app.collisionSystem._onGround = false;
+        this._dirtyAngle = true;
+      }
+      return;
+    }
+    const bit = this._getKeyBit(e2.code);
+    if (bit !== 0) {
+      this._digital |= bit;
+    }
   }
-  _applyDigitalMovement() {
+  _handleKeyUp(e2) {
+    const bit = this._getKeyBit(e2.code);
+    if (bit !== 0) {
+      this._digital &= ~bit;
+    }
+  }
+  setDigital(e2, value) {
+    if (e2.code === "Space") {
+      if (value === true && window.app?.collisionSystem?._onGround) {
+        window.app.collisionSystem._gravityAcc = 0.22;
+        window.app.collisionSystem._onGround = false;
+        this._dirtyAngle = true;
+      }
+      return;
+    }
+    const bit = this._getKeyBit(e2.code);
+    if (bit === 0) return;
+    if (value) {
+      this._digital |= bit;
+    } else {
+      this._digital &= ~bit;
+    }
+  }
+  _applyDigitalMovement(sceneTime) {
     const d2 = this._digital;
-    let vx = 0, vz = 0;
+    if (d2 === 0) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    if (this._lastMoveSceneTime === void 0) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    let dt2 = sceneTime - this._lastMoveSceneTime;
+    this._lastMoveSceneTime = sceneTime;
+    if (dt2 <= 0) return;
+    if (dt2 > 0.1) dt2 = 0.1;
     const fx = -this.back[0];
     const fz = -this.back[2];
-    const flen = Math.sqrt(fx * fx + fz * fz);
-    const fnx = flen > 1e-4 ? fx / flen : 0;
-    const fnz = flen > 1e-4 ? fz / flen : 0;
-    if (d2.forward) {
-      vx += fnx;
-      vz += fnz;
+    let vx = 0;
+    let vz = 0;
+    if (d2 & 1) {
+      vx += fx;
+      vz += fz;
     }
-    if (d2.backward) {
-      vx -= fnx;
-      vz -= fnz;
+    if (d2 & 2) {
+      vx -= fx;
+      vz -= fz;
     }
-    if (d2.right) {
-      vx += this.right[0];
-      vz += this.right[2];
-    }
-    if (d2.left) {
+    if (d2 & 4) {
       vx -= this.right[0];
       vz -= this.right[2];
     }
+    if (d2 & 8) {
+      vx += this.right[0];
+      vz += this.right[2];
+    }
     const len2 = Math.sqrt(vx * vx + vz * vz);
-    if (len2 < 1e-4) return;
-    const s2 = this.movementSpeed / len2;
-    this.position[0] += vx * s2;
-    this.position[2] += vz * s2;
+    if (len2 > 1e-4) {
+      const speed = this.movementSpeed * (dt2 / 0.016) / len2;
+      this.position[0] += vx * speed;
+      this.position[2] += vz * speed;
+      this._dirtyAngle = true;
+    }
     if (this._jumpVelocity !== 0) {
       this.position[1] += this._jumpVelocity;
       this._jumpVelocity = 0;
+      this._dirtyAngle = true;
     }
-    const rx = this.right, uy = this.up, bz = this.back, p2 = this.position;
-    this.view[12] = -(rx[0] * p2[0] + rx[1] * p2[1] + rx[2] * p2[2]);
-    this.view[13] = -(uy[0] * p2[0] + uy[1] * p2[1] + uy[2] * p2[2]);
-    this.view[14] = -(bz[0] * p2[0] + bz[1] * p2[1] + bz[2] * p2[2]);
-    _FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
+  removeKeyboard() {
+    window.removeEventListener("keydown", this._onKeyDown);
+    window.removeEventListener("keyup", this._onKeyUp);
+    this._digital = 0;
+    this._onKeyDown = null;
+    this._onKeyUp = null;
+  }
+  forceViewUpdate() {
+    this._recalculateViewVP();
+    this._dirtyAngle = false;
+  }
+  setPitch = (p2) => {
+    this.pitch = p2;
+    this._clampPitch();
+    this._dirtyAngle = true;
+  };
+  setYaw = (y3) => {
+    this.yaw = y3;
+    this._dirtyAngle = true;
+  };
+  setPosition = (x3, y3, z2) => {
+    this.position[0] = x3;
+    this.position[1] = y3;
+    this.position[2] = z2;
+    this._dirtyAngle = true;
+  };
+  setX = (x3) => {
+    this.position[0] = x3;
+    this._dirtyAngle = true;
+  };
+  setY = (y3) => {
+    this.position[1] = y3;
+    this._dirtyAngle = true;
+  };
+  setZ = (z2) => {
+    this.position[2] = z2;
+    this._dirtyAngle = true;
+  };
+  setLookEnabled = (enabled) => {
+    this._lookDisabled = !enabled;
+  };
+  disableLook = () => {
+    this._lookDisabled = true;
+  };
+  enableLook = () => {
+    this._lookDisabled = false;
+  };
   update() {
     if (!this._dirtyAngle) return;
     this._recalculateViewVP();
@@ -15154,7 +15226,6 @@ var CinematicCamera = class _CinematicCamera {
     this._roll = r3;
     this._dirtyAngle = true;
   };
-  // ── path control ─────────────────────────────────────────────────────────────
   setPath = (path2) => {
     this._path = path2;
     this._t = 0;
@@ -15337,7 +15408,7 @@ var CinematicCamera = class _CinematicCamera {
     }
     if (!this._dirtyAngle) return;
     this._recalculateViewVP();
-    this._dirtyAngle = false;
+    this._dirtyAngle = this._playing || this._shake.active;
   }
   _applyPathSample() {
     const s2 = this._path.sample(this._t);
@@ -50027,8 +50098,13 @@ var zeroPass = function() {
     let commandEncoder = this.device.createCommandEncoder();
     this.updateLights();
     const camera = this.getCamera();
-    if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
-    camera.update();
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
+      camera.update();
+      this.getTransformationMatrix(camera, now2);
+    }
     const len2 = this.mainRenderBundle.length;
     for (let i2 = 0; i2 < len2; i2++) {
       const mesh = this.mainRenderBundle[i2];
@@ -50105,9 +50181,12 @@ var cullingPass = function() {
     const camera = this.getCamera();
     this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
     this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-    if (camera._dirtyAngle || camera._dirty) {
-      this.getTransformationMatrix(camera, now2);
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
       camera.update();
+      this.getTransformationMatrix(camera, now2);
     }
     for (let i2 = 0; i2 < this.lightContainer.length; i2++) {
       const light = this.lightContainer[i2];
@@ -50387,8 +50466,13 @@ var nanoPass = function() {
     let commandEncoder = this.device.createCommandEncoder();
     this.updateLights();
     const camera = this.getCamera();
-    this.getTransformationMatrix(camera, now2);
-    camera.update();
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
+      camera.update();
+      this.getTransformationMatrix(camera, now2);
+    }
     const len2 = this.mainRenderBundle.length;
     for (let i2 = 0; i2 < len2; i2++) {
       const mesh = this.mainRenderBundle[i2];
@@ -50874,8 +50958,13 @@ var mobile1 = function() {
     if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
     this.updateLights();
     const camera = this.getCamera();
-    if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
-    camera.update();
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
+      camera.update();
+      this.getTransformationMatrix(camera, now2);
+    }
     for (let i2 = 0; i2 < this.lightContainer.length; i2++) {
       const light = this.lightContainer[i2];
       const pass2 = commandEncoder.beginRenderPass(this._shadowPassDescs[i2]);
@@ -52429,9 +52518,12 @@ async function GPUIndirectDraws() {
     this.updateLights();
     this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
     this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-    if (camera._dirtyAngle || camera._dirty) {
-      this.getTransformationMatrix(camera, now2);
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
       camera.update();
+      this.getTransformationMatrix(camera, now2);
     }
     for (let i2 = 0; i2 < this.lightContainer.length; i2++) {
       const light = this.lightContainer[i2];
@@ -54444,11 +54536,11 @@ var MatrixEngineWGPU = class {
       this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
       if (camera._digital) {
-        camera._applyDigitalMovement();
+        camera._applyDigitalMovement(this.now);
       }
       if (camera._dirtyAngle) {
-        this.getTransformationMatrix(camera, now2);
         camera.update();
+        this.getTransformationMatrix(camera, now2);
       }
       for (let i2 = 0; i2 < this.lightContainer.length; i2++) {
         const light = this.lightContainer[i2];
@@ -64326,12 +64418,15 @@ var PipeCommander = class {
           }
         });
       } else if (this.mode === "pose") {
-        this.results = this.poseLandmarker.detectForVideo(this.video, startTimeMs, {
-          // imageSize: {
-          //   width: this.video.videoWidth || 640,
-          //   height: this.video.videoHeight || 480
-          // }
-        });
+        this.results = this.poseLandmarker.detectForVideo(this.video, startTimeMs, {});
+        const m2 = this.results.segmentationMasks?.[0];
+        if (m2) {
+          this.maskData = m2.getAsUint8Array().slice();
+          this.maskW = m2.width;
+          this.maskH = m2.height;
+          m2.close();
+        }
+        this.onResults(this.results);
       } else {
         this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs, {
           imageSize: {
@@ -78597,43 +78692,45 @@ var SplatPoseEffect = class {
     const FILL_EDGES = opts.fillEdges ?? [[11, 24], [12, 23]];
     this.POSE_TRIANGLES = this.extractTrianglesFromTessellation([...POSE_EDGES || [], ...FILL_EDGES]);
     console.log(this.POSE_TRIANGLES.length);
-    this.limbWidth = opts.limbWidth ?? 0.035;
-    this.zScale = opts.zScale ?? 0;
     this._edges = (POSE_EDGES || []).map((e2) => Array.isArray(e2) ? e2 : [e2.start, e2.end]).filter(([a2, b2]) => a2 >= 11 && b2 >= 11);
-    const tris = Array.from(this.POSE_TRIANGLES);
-    this._edges.forEach((_2, k2) => {
-      const H2 = 33 + this._edges.length * 4;
-      tris.push(
-        7,
-        2,
-        0,
-        2,
-        5,
-        0,
-        5,
-        8,
-        0,
-        // eyes/ears fan around the nose
-        8,
-        10,
-        0,
-        10,
-        9,
-        0,
-        9,
-        7,
-        0,
-        // down to the mouth corners
-        7,
-        8,
-        H2 + 1,
-        7,
-        H2 + 1,
-        H2
-        // forehead quad
-      );
-    });
+    this.sides = opts.sides ?? 8;
+    this._tubeEdges = this._edges;
+    const N2 = this.sides, E2 = this._tubeEdges.length;
+    const ST = 8, SL = 10;
+    this._headBase = E2 * 2 * N2;
+    this._vertexCount = this._headBase + (ST + 1) * (SL + 1);
+    const tris = [];
+    for (let e2 = 0; e2 < E2; e2++) {
+      const base = e2 * 2 * N2;
+      for (let j2 = 0; j2 < N2; j2++) {
+        const a0 = base + j2, a1 = base + (j2 + 1) % N2;
+        const b0 = base + N2 + j2, b1 = base + N2 + (j2 + 1) % N2;
+        tris.push(a0, b0, a1, a1, b0, b1);
+      }
+    }
+    for (let i2 = 0; i2 < ST; i2++) for (let j2 = 0; j2 < SL; j2++) {
+      const a2 = this._headBase + i2 * (SL + 1) + j2, b2 = a2 + SL + 1;
+      tris.push(a2, b2, a2 + 1, a2 + 1, b2, b2 + 1);
+    }
+    this._torsoBase = this._headBase + (ST + 1) * (SL + 1);
+    const T2 = this._torsoBase;
+    tris.push(T2, T2 + 1, T2 + 2, T2, T2 + 2, T2 + 3);
+    tris.push(T2, T2 + 2, T2 + 1, T2, T2 + 3, T2 + 2);
+    this._vertexCount = T2 + 4;
+    this.limbScale = opts.limbScale ?? 0.5;
+    this.zScale = opts.zScale ?? 0;
     this.BODY_TRIANGLES = new Uint16Array(tris);
+    this._meshPos = new Float32Array(this._vertexCount * 3);
+    this._meshUV = new Float32Array(this._vertexCount * 2);
+    this._ST = ST;
+    this._SL = SL;
+    this._boneR = new Float32Array(33).fill(0.03);
+    this._boneR[11] = this._boneR[12] = 0.07;
+    this._boneR[13] = this._boneR[14] = 0.045;
+    this._boneR[15] = this._boneR[16] = 0.035;
+    this._boneR[23] = this._boneR[24] = 0.09;
+    this._boneR[25] = this._boneR[26] = 0.06;
+    this._boneR[27] = this._boneR[28] = 0.045;
     this.pipeline = splatLayer.pipeline;
     const n3 = splatLayer.vertexCount;
     this._posCPU = new Float32Array(n3 * 3);
@@ -78882,6 +78979,7 @@ var SplatPoseEffect = class {
     }
     this._landmarks = results.landmarks[0];
     this._updateAnchors(this._landmarks);
+    this._world = results.worldLandmarks?.[0] ?? null;
   }
   setScale(s2) {
     this.scale = s2;
@@ -78922,42 +79020,64 @@ var SplatPoseEffect = class {
     this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, p2);
     this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
-  updateInstanceDataMesh(baseModelMatrix) {
+  updateInstanceDataMesh() {
     if (!this.enabled || !this._landmarks) return;
     const lm = this._landmarks;
     const sc2 = this.scale, zs2 = this.zScale;
     const [ox, oy, oz] = this.origin;
     const mx = this.mirrorX ? -1 : 1;
-    const aspect = this._videoElement.videoWidth / this._videoElement.videoHeight || 1;
-    const total = 33 + this._edges.length * 4 + 2;
-    const pos2 = new Float32Array(total * 3);
-    const uv = new Float32Array(total * 2);
-    const put = (i2, x3, y3, z2) => {
-      pos2[i2 * 3] = (x3 - 0.5) * mx * sc2 * aspect + ox;
-      pos2[i2 * 3 + 1] = -(y3 - 0.5) * sc2 + oy;
-      pos2[i2 * 3 + 2] = -z2 * sc2 * zs2 + oz;
-      uv[i2 * 2] = x3;
-      uv[i2 * 2 + 1] = y3;
+    const vid = this._videoElement;
+    const aspect = vid.videoWidth / vid.videoHeight || 1;
+    const pos2 = this._meshPos, uv = this._meshUV, N2 = this.sides;
+    const W2 = (i2) => [
+      (lm[i2].x - 0.5) * mx * sc2 * aspect + ox,
+      -(lm[i2].y - 0.5) * sc2 + oy,
+      -lm[i2].z * sc2 * zs2 + oz
+    ];
+    const setV = (vi2, p2) => {
+      pos2[vi2 * 3] = p2[0];
+      pos2[vi2 * 3 + 1] = p2[1];
+      pos2[vi2 * 3 + 2] = p2[2];
+      uv[vi2 * 2] = 0.5 + (p2[0] - ox) / (mx * sc2 * aspect);
+      uv[vi2 * 2 + 1] = 0.5 - (p2[1] - oy) / sc2;
     };
-    for (let i2 = 0; i2 < 33; i2++) put(i2, lm[i2].x, lm[i2].y, lm[i2].z);
-    this._edges.forEach(([a2, b2], k2) => {
-      const A2 = lm[a2], B2 = lm[b2];
-      let dx = (B2.x - A2.x) * aspect, dy = B2.y - A2.y;
-      const len2 = Math.hypot(dx, dy) || 1;
-      const px = -dy / len2 * this.limbWidth / aspect;
-      const py = dx / len2 * this.limbWidth;
-      const v2 = 33 + k2 * 4;
-      put(v2, A2.x + px, A2.y + py, A2.z);
-      put(v2 + 1, A2.x - px, A2.y - py, A2.z);
-      put(v2 + 2, B2.x + px, B2.y + py, B2.z);
-      put(v2 + 3, B2.x - px, B2.y - py, B2.z);
+    this._tubeEdges.forEach(([a2, b2], e2) => {
+      const A2 = W2(a2), B2 = W2(b2);
+      let d2 = [B2[0] - A2[0], B2[1] - A2[1], B2[2] - A2[2]];
+      const L2 = Math.hypot(...d2) || 1;
+      d2 = d2.map((x3) => x3 / L2);
+      const ref = Math.abs(d2[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+      let u2 = [d2[1] * ref[2] - d2[2] * ref[1], d2[2] * ref[0] - d2[0] * ref[2], d2[0] * ref[1] - d2[1] * ref[0]];
+      const ul = Math.hypot(...u2) || 1;
+      u2 = u2.map((x3) => x3 / ul);
+      const v2 = [d2[1] * u2[2] - d2[2] * u2[1], d2[2] * u2[0] - d2[0] * u2[2], d2[0] * u2[1] - d2[1] * u2[0]];
+      const ra2 = this._boneR[a2] * sc2 * this.limbScale;
+      const rb = this._boneR[b2] * sc2 * this.limbScale;
+      const base = e2 * 2 * N2;
+      for (let j2 = 0; j2 < N2; j2++) {
+        const t3 = j2 / N2 * Math.PI * 2, c3 = Math.cos(t3), s2 = Math.sin(t3);
+        const o3 = [u2[0] * c3 + v2[0] * s2, u2[1] * c3 + v2[1] * s2, u2[2] * c3 + v2[2] * s2];
+        setV(base + j2, [A2[0] + o3[0] * ra2, A2[1] + o3[1] * ra2, A2[2] + o3[2] * ra2]);
+        setV(base + N2 + j2, [B2[0] + o3[0] * rb, B2[1] + o3[1] * rb, B2[2] + o3[2] * rb]);
+      }
     });
-    const H2 = 33 + this._edges.length * 4;
-    const upx = (lm[2].x + lm[5].x) / 2 - (lm[9].x + lm[10].x) / 2;
-    const upy = (lm[2].y + lm[5].y) / 2 - (lm[9].y + lm[10].y) / 2;
-    const foreheadK = 1.2;
-    put(H2, lm[7].x + upx * foreheadK, lm[7].y + upy * foreheadK, lm[7].z);
-    put(H2 + 1, lm[8].x + upx * foreheadK, lm[8].y + upy * foreheadK, lm[8].z);
+    const E1 = W2(7), E2 = W2(8);
+    const R2 = Math.hypot(E1[0] - E2[0], E1[1] - E2[1]) * 0.75 * this.limbScale;
+    const c2 = [(E1[0] + E2[0]) / 2, (E1[1] + E2[1]) / 2 + R2 * 0.3, (E1[2] + E2[2]) / 2];
+    const ST = this._ST, SL = this._SL;
+    for (let i2 = 0; i2 <= ST; i2++) for (let j2 = 0; j2 <= SL; j2++) {
+      const th = i2 / ST * Math.PI, ph = j2 / SL * Math.PI * 2;
+      setV(this._headBase + i2 * (SL + 1) + j2, [
+        c2[0] + R2 * Math.sin(th) * Math.cos(ph),
+        c2[1] + R2 * Math.cos(th),
+        c2[2] + R2 * Math.sin(th) * Math.sin(ph)
+      ]);
+    }
+    const T2 = this._torsoBase;
+    setV(T2, W2(11));
+    setV(T2 + 1, W2(12));
+    setV(T2 + 2, W2(24));
+    setV(T2 + 3, W2(23));
     this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, pos2);
     this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
@@ -79195,7 +79315,7 @@ var loadPoseBeast = function() {
         "rgba16float",
         loadPose.cameraBuffer,
         MYCUBE.effects.splat.splatLayers[0],
-        { scale: 1, zScale: 0, clusterRadius: 1, origin: [0, 0, 0], mirrorX: true }
+        { scale: 1, zScale: 0, bodyScale: 0.1, clusterRadius: 1, origin: [0, 0, 0], mirrorX: true }
       );
       MYCUBE.effects.faceEffect = faceEffect;
       MYCUBE.effects.faceEffect.setScale(32);
@@ -79227,7 +79347,7 @@ var loadPoseBeast = function() {
       };
       loadPose.activateHZB();
       MYCUBE.effects.faceEffect.setMode("mesh");
-      MYCUBE.position.translateByY(14);
+      MYCUBE.position.translateByY(7);
       let cam2 = app.getCamera();
       cam2.setYaw(0);
       cam2.setPitch(0);

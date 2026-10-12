@@ -19,10 +19,10 @@ export let cullingPass = function() {
     const camera = this.getCamera();
     this._sceneData[44] = (performance.now() - this.startTime) / 1000;
     this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-    if(camera._dirtyAngle || camera._dirty) {
-      this.getTransformationMatrix(camera, now2);
-      camera.update();
-    }
+
+    if(camera._digital) {camera._applyDigitalMovement(this.now);}
+    if(camera._dirtyAngle) {camera.update(); this.getTransformationMatrix(camera, now2);}
+
     for(let i = 0;i < this.lightContainer.length;i++) {
       const light = this.lightContainer[i];
       const p = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);

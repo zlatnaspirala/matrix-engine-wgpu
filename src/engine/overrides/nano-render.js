@@ -10,9 +10,13 @@ export let nanoPass = function() {
     let commandEncoder = this.device.createCommandEncoder();
     this.updateLights();
     const camera = this.getCamera();
-    // if(camera._dirtyAngle || camera._dirty)
-    this.getTransformationMatrix(camera, now2);
-    camera.update();
+
+    if(camera._digital) {camera._applyDigitalMovement(this.now);}
+    if(camera._dirtyAngle) {
+      camera.update();
+      this.getTransformationMatrix(camera, now2);
+    }
+
     const len = this.mainRenderBundle.length;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];

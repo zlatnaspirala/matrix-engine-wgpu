@@ -263,7 +263,7 @@ export var loadPoseBeast = function() {
           'rgba16float',
           loadPose.cameraBuffer,
           MYCUBE.effects.splat.splatLayers[0],
-          {scale: 1, zScale: 0, clusterRadius: 1.0, origin: [0, 0, 0], mirrorX: true}
+          {scale: 1, zScale: 0, bodyScale: 0.1, clusterRadius: 1.0, origin: [0, 0, 0], mirrorX: true}
         );
 
         MYCUBE.effects.faceEffect = faceEffect;
@@ -311,7 +311,7 @@ export var loadPoseBeast = function() {
 
         // Important for face uv view!
         MYCUBE.effects.faceEffect.setMode('mesh');
-        MYCUBE.position.translateByY(14);
+        MYCUBE.position.translateByY(7);
 
 
         let cam = app.getCamera();

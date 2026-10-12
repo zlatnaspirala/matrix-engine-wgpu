@@ -46,26 +46,53 @@ export class SplatPoseEffect {
     this.POSE_TRIANGLES = this.extractTrianglesFromTessellation([...(POSE_EDGES || []), ...FILL_EDGES]);
     console.log(this.POSE_TRIANGLES.length);
 
-    //
-    this.limbWidth = opts.limbWidth ?? 0.035;     // in video-normalized units
-    this.zScale = opts.zScale ?? 0.0;             // pose z is ~±1, flatten it
     this._edges = (POSE_EDGES || [])
       .map(e => Array.isArray(e) ? e : [e.start, e.end])
-      .filter(([a, b]) => a >= 11 && b >= 11);    // skip face-to-face lines, keep body
+      .filter(([a, b]) => a >= 11 && b >= 11);    // body only, face lines skipped
 
-    const tris = Array.from(this.POSE_TRIANGLES);
-    this._edges.forEach((_, k) => {
-      // const v = 33 + k * 4;                       // a+, a-, b+, b-
-      // tris.push(v, v + 1, v + 2, v + 1, v + 3, v + 2);
-      const H = 33 + this._edges.length * 4;    // two virtual vertices: H (above left ear), H+1 (above right ear)
-      tris.push(
-        7, 2, 0, 2, 5, 0, 5, 8, 0,          // eyes/ears fan around the nose
-        8, 10, 0, 10, 9, 0, 9, 7, 0,          // down to the mouth corners
-        7, 8, H + 1, 7, H + 1, H              // forehead quad
-      );
-    });
-    this.BODY_TRIANGLES = new Uint16Array(tris);
     //
+    this.sides = opts.sides ?? 8;
+    this._tubeEdges = this._edges;                          // reuse the (a>=11) edges
+    const N = this.sides, E = this._tubeEdges.length;
+    const ST = 8, SL = 10;                                  // head sphere stacks / slices
+    this._headBase = E * 2 * N;
+    this._vertexCount = this._headBase + (ST + 1) * (SL + 1);
+
+    const tris = [];
+    for(let e = 0;e < E;e++) {
+      const base = e * 2 * N;
+      for(let j = 0;j < N;j++) {
+        const a0 = base + j, a1 = base + (j + 1) % N;
+        const b0 = base + N + j, b1 = base + N + (j + 1) % N;
+        tris.push(a0, b0, a1, a1, b0, b1);
+      }
+    }
+    for(let i = 0;i < ST;i++) for(let j = 0;j < SL;j++) {
+      const a = this._headBase + i * (SL + 1) + j, b = a + SL + 1;
+      tris.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+
+    this._torsoBase = this._headBase + (ST + 1) * (SL + 1);
+    const T = this._torsoBase;
+    tris.push(T, T + 1, T + 2, T, T + 2, T + 3);     // 11,12,24 / 11,24,23
+    tris.push(T, T + 2, T + 1, T, T + 3, T + 2);     // back face, in case of culling
+    this._vertexCount = T + 4;
+    this.limbScale = opts.limbScale ?? 0.50;
+    this.zScale = opts.zScale ?? 0.0;
+
+    this.BODY_TRIANGLES = new Uint16Array(tris);
+    this._meshPos = new Float32Array(this._vertexCount * 3);
+    this._meshUV = new Float32Array(this._vertexCount * 2);
+    this._ST = ST; this._SL = SL;
+
+    // radius in meters per landmark
+    this._boneR = new Float32Array(33).fill(0.03);
+    this._boneR[11] = this._boneR[12] = 0.07;
+    this._boneR[13] = this._boneR[14] = 0.045;
+    this._boneR[15] = this._boneR[16] = 0.035;
+    this._boneR[23] = this._boneR[24] = 0.09;
+    this._boneR[25] = this._boneR[26] = 0.06;
+    this._boneR[27] = this._boneR[28] = 0.045;
 
     this.pipeline = splatLayer.pipeline;
     const n = splatLayer.vertexCount;
@@ -323,6 +350,7 @@ export class SplatPoseEffect {
     }
     this._landmarks = results.landmarks[0];
     this._updateAnchors(this._landmarks);
+    this._world = results.worldLandmarks?.[0] ?? null;
   }
 
   setScale(s) {this.scale = s;}
@@ -362,49 +390,67 @@ export class SplatPoseEffect {
     this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
   }
 
-  updateInstanceDataMesh(baseModelMatrix) {
+  updateInstanceDataMesh() {
     if(!this.enabled || !this._landmarks) return;
     const lm = this._landmarks;
     const sc = this.scale, zs = this.zScale;
     const [ox, oy, oz] = this.origin;
     const mx = this.mirrorX ? -1 : 1;
-    const aspect = (this._videoElement.videoWidth / this._videoElement.videoHeight) || 1;
-    // const total = 33 + this._edges.length * 4;
-    const total = 33 + this._edges.length * 4 + 2;
-    const pos = new Float32Array(total * 3);
-    const uv = new Float32Array(total * 2);
+    const vid = this._videoElement;
+    const aspect = (vid.videoWidth / vid.videoHeight) || 1;
+    const pos = this._meshPos, uv = this._meshUV, N = this.sides;
 
-    const put = (i, x, y, z) => {
-      pos[i * 3] = (x - 0.5) * mx * sc * aspect + ox;
-      pos[i * 3 + 1] = -(y - 0.5) * sc + oy;
-      pos[i * 3 + 2] = -z * sc * zs + oz;
-      uv[i * 2] = x;
-      uv[i * 2 + 1] = y;
+    // same projection as the face class
+    const W = i => [
+      (lm[i].x - 0.5) * mx * sc * aspect + ox,
+      -(lm[i].y - 0.5) * sc + oy,
+      -lm[i].z * sc * zs + oz
+    ];
+    // position -> UV is the exact inverse, so texture always matches the vertex
+    const setV = (vi, p) => {
+      pos[vi * 3] = p[0]; pos[vi * 3 + 1] = p[1]; pos[vi * 3 + 2] = p[2];
+      uv[vi * 2] = 0.5 + (p[0] - ox) / (mx * sc * aspect);
+      uv[vi * 2 + 1] = 0.5 - (p[1] - oy) / sc;
     };
 
-    for(let i = 0;i < 33;i++) put(i, lm[i].x, lm[i].y, lm[i].z);
+    this._tubeEdges.forEach(([a, b], e) => {
+      const A = W(a), B = W(b);
+      let d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+      const L = Math.hypot(...d) || 1; d = d.map(x => x / L);
+      const ref = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+      let u = [d[1] * ref[2] - d[2] * ref[1], d[2] * ref[0] - d[0] * ref[2], d[0] * ref[1] - d[1] * ref[0]];
+      const ul = Math.hypot(...u) || 1; u = u.map(x => x / ul);
+      const v = [d[1] * u[2] - d[2] * u[1], d[2] * u[0] - d[0] * u[2], d[0] * u[1] - d[1] * u[0]];
+      // const ra = this._boneR[a] * sc * this.limbScale;
+      // const rb = this._boneR[b] * sc * this.limbScale;
+      const ra = this._boneR[a] * sc * this.limbScale;
+      const rb = this._boneR[b] * sc * this.limbScale;
+      const base = e * 2 * N;
+      for(let j = 0;j < N;j++) {
+        const t = j / N * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
+        const o = [u[0] * c + v[0] * s, u[1] * c + v[1] * s, u[2] * c + v[2] * s];
+        setV(base + j, [A[0] + o[0] * ra, A[1] + o[1] * ra, A[2] + o[2] * ra]);
+        setV(base + N + j, [B[0] + o[0] * rb, B[1] + o[1] * rb, B[2] + o[2] * rb]);
+      }
+    });
 
-    this._edges.forEach(([a, b], k) => {
-      const A = lm[a], B = lm[b];
-      // perpendicular in video space (correct for aspect)
-      let dx = (B.x - A.x) * aspect, dy = B.y - A.y;
-      const len = Math.hypot(dx, dy) || 1;
-      const px = (-dy / len) * this.limbWidth / aspect;
-      const py = (dx / len) * this.limbWidth;
-      const v = 33 + k * 4;
-      put(v, A.x + px, A.y + py, A.z);
-      put(v + 1, A.x - px, A.y - py, A.z);
-      put(v + 2, B.x + px, B.y + py, B.z);
-      put(v + 3, B.x - px, B.y - py, B.z);
-    });   // <-- loop ends here
+    // head sphere
+    const E1 = W(7), E2 = W(8);
+    const R = Math.hypot(E1[0] - E2[0], E1[1] - E2[1]) * 0.75 * this.limbScale;
+    const c = [(E1[0] + E2[0]) / 2, (E1[1] + E2[1]) / 2 + R * 0.3, (E1[2] + E2[2]) / 2];
+    const ST = this._ST, SL = this._SL;
+    for(let i = 0;i <= ST;i++) for(let j = 0;j <= SL;j++) {
+      const th = i / ST * Math.PI, ph = j / SL * Math.PI * 2;
+      setV(this._headBase + i * (SL + 1) + j, [
+        c[0] + R * Math.sin(th) * Math.cos(ph),
+        c[1] + R * Math.cos(th),
+        c[2] + R * Math.sin(th) * Math.sin(ph)
+      ]);
+    }
 
-    // head: two virtual forehead vertices, AFTER the loop
-    const H = 33 + this._edges.length * 4;
-    const upx = (lm[2].x + lm[5].x) / 2 - (lm[9].x + lm[10].x) / 2;
-    const upy = (lm[2].y + lm[5].y) / 2 - (lm[9].y + lm[10].y) / 2;
-    const foreheadK = 1.2;                      // forehead height, tune it
-    put(H, lm[7].x + upx * foreheadK, lm[7].y + upy * foreheadK, lm[7].z);
-    put(H + 1, lm[8].x + upx * foreheadK, lm[8].y + upy * foreheadK, lm[8].z);
+    // torso fill: 11, 12, 24, 23
+    const T = this._torsoBase;
+    setV(T, W(11)); setV(T + 1, W(12)); setV(T + 2, W(24)); setV(T + 3, W(23));
 
     this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, pos);
     this.device.queue.writeBuffer(this.uvBuffer, 0, uv);

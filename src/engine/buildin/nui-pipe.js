@@ -121,7 +121,7 @@ export class PipeCommander {
   async enableWebcam() {
     await this.ready;
     const stream = await navigator.mediaDevices.getUserMedia({
-       video: {width: {ideal: 720}, height: {ideal: 720}}
+      video: {width: {ideal: 720}, height: {ideal: 720}}
     });
     this.video.srcObject = stream;
     await this.video.play();
@@ -167,12 +167,18 @@ export class PipeCommander {
         });
       } else if(this.mode === 'pose') {
         // console.log('>>>>>>>>>>>>>>>>>>> ', this.faceLandmarker.FACE_LANDMARKS_TESSELATION)
-        this.results = this.poseLandmarker.detectForVideo(this.video, startTimeMs, {
-          // imageSize: {
-          //   width: this.video.videoWidth || 640,
-          //   height: this.video.videoHeight || 480
-          // }
-        });
+        this.results = this.poseLandmarker.detectForVideo(this.video, startTimeMs, {});
+
+        //
+        const m = this.results.segmentationMasks?.[0];
+        if(m) {
+          this.maskData = m.getAsUint8Array().slice();   // copy, 0..255
+          this.maskW = m.width; this.maskH = m.height;
+          m.close();
+        }
+        this.onResults(this.results);
+        //
+
       } else {
         this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs, {
           imageSize: {
