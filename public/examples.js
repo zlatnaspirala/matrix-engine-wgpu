@@ -14729,6 +14729,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
   _mouseDown = false;
   _lookDisabled = false;
   _jumpVelocity = 0;
+  _jumpVelocityAMP = 1;
   _isGrounded = false;
   usePointerEvents = false;
   MOUSE_SENS = MEConfig.MOUSE_SENS;
@@ -14995,6 +14996,9 @@ var FirstPersonCamera = class _FirstPersonCamera {
     }
   }
   _handleKeyUp(e2) {
+    if (e2.code === "Space") {
+      return;
+    }
     const bit = this._getKeyBit(e2.code);
     if (bit !== 0) {
       this._digital &= ~bit;
@@ -15061,6 +15065,8 @@ var FirstPersonCamera = class _FirstPersonCamera {
     if (this._jumpVelocity !== 0) {
       this.position[1] += this._jumpVelocity;
       this._jumpVelocity = 0;
+      this._dirtyAngle = true;
+    } else {
       this._dirtyAngle = true;
     }
   }

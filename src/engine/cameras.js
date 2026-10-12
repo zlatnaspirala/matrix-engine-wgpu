@@ -1029,6 +1029,7 @@ export class FirstPersonCamera {
   _mouseDown = false;
   _lookDisabled = false;
   _jumpVelocity = 0;
+  _jumpVelocityAMP = 1;
   _isGrounded = false;
   usePointerEvents = false;
   MOUSE_SENS = MEConfig.MOUSE_SENS;
@@ -1320,6 +1321,7 @@ export class FirstPersonCamera {
   }
 
   _handleKeyUp(e) {
+     if(e.code === 'Space') { return;}
     const bit = this._getKeyBit(e.code);
     if(bit !== 0) {
       this._digital &= ~bit;
@@ -1377,6 +1379,9 @@ export class FirstPersonCamera {
       this.position[1] += this._jumpVelocity;
       this._jumpVelocity = 0;
       this._dirtyAngle = true;
+    } else {
+      this._dirtyAngle = true;
+
     }
   }
 
