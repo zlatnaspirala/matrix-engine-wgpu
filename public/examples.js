@@ -64266,8 +64266,8 @@ var PipeCommander = class {
           delegate: "GPU"
         },
         runningMode: this.runningMode,
-        numPoses: opts.numPoses ?? 1
-        // pass opts into init if you want this configurable
+        numPoses: opts.numPoses ?? 1,
+        outputSegmentationMasks: true
       });
     } else {
       const { HandLandmarker, DrawingUtils: DrawingUtils2 } = visionModule;
@@ -79195,7 +79195,7 @@ var loadPoseBeast = function() {
         "rgba16float",
         loadPose.cameraBuffer,
         MYCUBE.effects.splat.splatLayers[0],
-        { scale: 5, clusterRadius: 1, origin: [0, 0, 0], mirrorX: true }
+        { scale: 1, zScale: 0, clusterRadius: 1, origin: [0, 0, 0], mirrorX: true }
       );
       MYCUBE.effects.faceEffect = faceEffect;
       MYCUBE.effects.faceEffect.setScale(32);

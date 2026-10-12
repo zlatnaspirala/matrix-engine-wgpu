@@ -95,7 +95,8 @@ export class PipeCommander {
           delegate: "GPU"
         },
         runningMode: this.runningMode,
-        numPoses: opts.numPoses ?? 1   // pass opts into init if you want this configurable
+        numPoses: opts.numPoses ?? 1,
+        outputSegmentationMasks: true
       });
     } else {
       const {HandLandmarker, DrawingUtils} = visionModule;
