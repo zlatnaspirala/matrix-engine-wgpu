@@ -1,6 +1,7 @@
 import {mat4} from "wgpu-matrix";
 
 export class SpritesPack2D {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, colorFormat, cameraBuffer) {
     this.device = device;
     this.format = format;
@@ -15,96 +16,41 @@ export class SpritesPack2D {
 
   _initSharedResources() {
     if(this.shared) return;
-    const shaderModule = this.device.createShaderModule({code: SpriteInstance._getShaderCode()});
-    // QUAD GEOMETRY
-    const positions = new Float32Array([
-      -1, -1, 0,
-      1, -1, 0,
-      1, 1, 0,
-      -1, 1, 0,
-    ]);
+    const device = this.device;
 
-    const uvs = new Float32Array([
-      0, 1,
-      1, 1,
-      1, 0,
-      0, 0
-    ]);
+    if(SpritesPack2D._pipelineCache.has(device)) {
+      const cached = SpritesPack2D._pipelineCache.get(device);
+      this.pipeline = cached.pipeline;
+      this.cameraBindGroupLayout = cached.cameraBindGroupLayout;
+      this.spriteBindGroupLayout = cached.spriteBindGroupLayout;
+    } else {
+      const shaderModule = device.createShaderModule({code: SpriteInstance._getShaderCode()});
 
-    const indices = new Uint16Array([
-      0, 1, 2,
-      0, 2, 3
-    ]);
-
-    const vertexBuffer =
-      this.device.createBuffer({
-        size: positions.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        mappedAtCreation: true,
-      });
-    new Float32Array(vertexBuffer.getMappedRange()).set(positions);
-    vertexBuffer.unmap();
-
-    const uvBuffer = this.device.createBuffer({
-      size: uvs.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
-    });
-
-    new Float32Array(uvBuffer.getMappedRange()).set(uvs);
-    uvBuffer.unmap();
-
-    const indexBuffer = this.device.createBuffer({
-      size: indices.byteLength,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
-    });
-
-    new Uint16Array(indexBuffer.getMappedRange()).set(indices);
-    indexBuffer.unmap();
-
-    // LAYOUTS
-    const cameraBindGroupLayout =
-      this.device.createBindGroupLayout({
+      // LAYOUTS
+      this.cameraBindGroupLayout = device.createBindGroupLayout({
         entries: [
-          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}, },
-          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}, }
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}}
         ],
       });
 
-    const spriteBindGroupLayout =
-      this.device.createBindGroupLayout({
+      this.spriteBindGroupLayout = device.createBindGroupLayout({
         entries: [
-          {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: "float"}, },
-          {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: "filtering"}, },
+          {binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {sampleType: "float"}},
+          {binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {type: "filtering"}},
         ],
       });
 
-    const pipeline =
-      this.device.createRenderPipeline({
-        layout:
-          this.device.createPipelineLayout({
-            bindGroupLayouts: [
-              cameraBindGroupLayout,
-              spriteBindGroupLayout
-            ]
-          }),
+      this.pipeline = device.createRenderPipeline({
+        layout: device.createPipelineLayout({
+          bindGroupLayouts: [this.cameraBindGroupLayout, this.spriteBindGroupLayout]
+        }),
         vertex: {
           module: shaderModule,
           entryPoint: "vsMain",
           buffers: [
-            {
-              arrayStride: 12,
-              attributes: [
-                {shaderLocation: 0, offset: 0, format: "float32x3"}
-              ]
-            },
-            {
-              arrayStride: 8,
-              attributes: [
-                {shaderLocation: 1, offset: 0, format: "float32x2"}
-              ]
-            }
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
           ]
         },
         fragment: {
@@ -114,42 +60,68 @@ export class SpritesPack2D {
             {
               format: this.colorFormat,
               blend: {
-                color: {
-                  srcFactor: 'one', //"src-alpha",
-                  dstFactor: "one-minus-src-alpha",
-                  operation: "add"
-                },
-                alpha: {
-                  srcFactor: "one",
-                  dstFactor: "one-minus-src-alpha",
-                  operation: "add"
-                }
+                color: {srcFactor: 'one', dstFactor: "one-minus-src-alpha", operation: "add"},
+                alpha: {srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add"}
               }
             },
             {format: "rgba16float"},
             {format: "rgba16float"}
           ]
         },
-
-        primitive: {
-          topology: "triangle-list"
-        },
-
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: "less-equal",
-          format: "depth24plus"
-        }
+        primitive: {topology: "triangle-list"},
+        depthStencil: {depthWriteEnabled: true, depthCompare: "less-equal", format: "depth24plus"}
       });
 
+      // ========== CACHE THEM ==========
+      SpritesPack2D._pipelineCache.set(device, {
+        pipeline: this.pipeline,
+        cameraBindGroupLayout: this.cameraBindGroupLayout,
+        spriteBindGroupLayout: this.spriteBindGroupLayout
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+    const positions = new Float32Array([
+      -1, -1, 0,
+      1, -1, 0,
+      1, 1, 0,
+      -1, 1, 0,
+    ]);
+    this.vertexBuffer = device.createBuffer({
+      size: positions.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device.queue.writeBuffer(this.vertexBuffer, 0, positions);
+
+    const uvs = new Float32Array([
+      0, 1,
+      1, 1,
+      1, 0,
+      0, 0
+    ]);
+    this.uvBuffer = device.createBuffer({
+      size: uvs.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device.queue.writeBuffer(this.uvBuffer, 0, uvs);
+
+    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+    this.indexBuffer = device.createBuffer({
+      size: Math.ceil(indices.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    device.queue.writeBuffer(this.indexBuffer, 0, indices);
+    this.indexCount = indices.length;
+
+    // Same shape SpriteInstance already expects
     this.shared = {
-      pipeline,
-      cameraBindGroupLayout,
-      spriteBindGroupLayout,
-      vertexBuffer,
-      uvBuffer,
-      indexBuffer,
-      indexCount: 6
+      pipeline: this.pipeline,
+      cameraBindGroupLayout: this.cameraBindGroupLayout,
+      spriteBindGroupLayout: this.spriteBindGroupLayout,
+      vertexBuffer: this.vertexBuffer,
+      uvBuffer: this.uvBuffer,
+      indexBuffer: this.indexBuffer,
+      indexCount: this.indexCount
     };
   }
 
@@ -241,11 +213,11 @@ export class SpritesPack2D {
     // 2. Sort sprites by distance from camera 
     // (You need to calculate distance based on camera position)
     const cameraPosition = app.getCamera().position;
-spriteArray.sort((a, b) => {
-    const distA = this._getDistance(a, cameraPosition);
-    const distB = this._getDistance(b, cameraPosition);
-    return distB - distA; 
-  });
+    spriteArray.sort((a, b) => {
+      const distA = this._getDistance(a, cameraPosition);
+      const distB = this._getDistance(b, cameraPosition);
+      return distB - distA;
+    });
     // 3. Draw in sorted order
     for(const sprite of spriteArray) {
       const sheet = this.spriteSheets.get(sprite.spritesheetName);
@@ -820,7 +792,7 @@ export function createCircularArray(batch, spritesheetName, count = 16, radius =
       }
     );
 
-    if (play === true) sprite.play(sprite.playbackSpeed, true);
+    if(play === true) sprite.play(sprite.playbackSpeed, true);
     sprites.push(sprite);
   }
 

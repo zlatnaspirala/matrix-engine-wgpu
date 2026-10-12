@@ -60647,7 +60647,8 @@ var loadKinematicCollision = function() {
 };
 
 // src/engine/effects/sprite2d2.js
-var SpritesPack2D = class {
+var SpritesPack2D = class _SpritesPack2D {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, colorFormat, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -60661,7 +60662,62 @@ var SpritesPack2D = class {
   }
   _initSharedResources() {
     if (this.shared) return;
-    const shaderModule = this.device.createShaderModule({ code: SpriteInstance._getShaderCode() });
+    const device2 = this.device;
+    if (_SpritesPack2D._pipelineCache.has(device2)) {
+      const cached = _SpritesPack2D._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.cameraBindGroupLayout = cached.cameraBindGroupLayout;
+      this.spriteBindGroupLayout = cached.spriteBindGroupLayout;
+    } else {
+      const shaderModule = device2.createShaderModule({ code: SpriteInstance._getShaderCode() });
+      this.cameraBindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+        ]
+      });
+      this.spriteBindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+          { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
+        ]
+      });
+      this.pipeline = device2.createRenderPipeline({
+        layout: device2.createPipelineLayout({
+          bindGroupLayouts: [this.cameraBindGroupLayout, this.spriteBindGroupLayout]
+        }),
+        vertex: {
+          module: shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 8, attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] }
+          ]
+        },
+        fragment: {
+          module: shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            {
+              format: this.colorFormat,
+              blend: {
+                color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+              }
+            },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: { topology: "triangle-list" },
+        depthStencil: { depthWriteEnabled: true, depthCompare: "less-equal", format: "depth24plus" }
+      });
+      _SpritesPack2D._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        cameraBindGroupLayout: this.cameraBindGroupLayout,
+        spriteBindGroupLayout: this.spriteBindGroupLayout
+      });
+    }
     const positions = new Float32Array([
       -1,
       -1,
@@ -60676,6 +60732,11 @@ var SpritesPack2D = class {
       1,
       0
     ]);
+    this.vertexBuffer = device2.createBuffer({
+      size: positions.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.vertexBuffer, 0, positions);
     const uvs = new Float32Array([
       0,
       1,
@@ -60686,113 +60747,26 @@ var SpritesPack2D = class {
       0,
       0
     ]);
-    const indices = new Uint16Array([
-      0,
-      1,
-      2,
-      0,
-      2,
-      3
-    ]);
-    const vertexBuffer = this.device.createBuffer({
-      size: positions.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    new Float32Array(vertexBuffer.getMappedRange()).set(positions);
-    vertexBuffer.unmap();
-    const uvBuffer = this.device.createBuffer({
+    this.uvBuffer = device2.createBuffer({
       size: uvs.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
     });
-    new Float32Array(uvBuffer.getMappedRange()).set(uvs);
-    uvBuffer.unmap();
-    const indexBuffer = this.device.createBuffer({
-      size: indices.byteLength,
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
+    device2.queue.writeBuffer(this.uvBuffer, 0, uvs);
+    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+    this.indexBuffer = device2.createBuffer({
+      size: Math.ceil(indices.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
     });
-    new Uint16Array(indexBuffer.getMappedRange()).set(indices);
-    indexBuffer.unmap();
-    const cameraBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
-        { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
-      ]
-    });
-    const spriteBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } }
-      ]
-    });
-    const pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [
-          cameraBindGroupLayout,
-          spriteBindGroupLayout
-        ]
-      }),
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 12,
-            attributes: [
-              { shaderLocation: 0, offset: 0, format: "float32x3" }
-            ]
-          },
-          {
-            arrayStride: 8,
-            attributes: [
-              { shaderLocation: 1, offset: 0, format: "float32x2" }
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          {
-            format: this.colorFormat,
-            blend: {
-              color: {
-                srcFactor: "one",
-                //"src-alpha",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              },
-              alpha: {
-                srcFactor: "one",
-                dstFactor: "one-minus-src-alpha",
-                operation: "add"
-              }
-            }
-          },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: {
-        topology: "triangle-list"
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less-equal",
-        format: "depth24plus"
-      }
-    });
+    device2.queue.writeBuffer(this.indexBuffer, 0, indices);
+    this.indexCount = indices.length;
     this.shared = {
-      pipeline,
-      cameraBindGroupLayout,
-      spriteBindGroupLayout,
-      vertexBuffer,
-      uvBuffer,
-      indexBuffer,
-      indexCount: 6
+      pipeline: this.pipeline,
+      cameraBindGroupLayout: this.cameraBindGroupLayout,
+      spriteBindGroupLayout: this.spriteBindGroupLayout,
+      vertexBuffer: this.vertexBuffer,
+      uvBuffer: this.uvBuffer,
+      indexBuffer: this.indexBuffer,
+      indexCount: this.indexCount
     };
   }
   /**
