@@ -14739,6 +14739,9 @@ var FirstPersonCamera = class _FirstPersonCamera {
   static HALF_PI = Math.PI * 0.5;
   static DIAG = 0.7071067811865476;
   constructor(options2 = {}) {
+    if (options2.usePointerEvents) {
+      this.usePointerEvents = options2.usePointerEvents;
+    }
     if (options2.position) {
       this.position[0] = options2.position[0];
       this.position[1] = options2.position[1];
@@ -14942,7 +14945,7 @@ var FirstPersonCamera = class _FirstPersonCamera {
     canvas.addEventListener("pointermove", (e2) => {
       if (window.__isDragging === true) return;
       if (e2.pointerType !== "mouse") return;
-      if (!this._mouseDown || this._lookDisabled) return;
+      if (this._lookDisabled) return;
       this.yaw -= e2.movementX * this.MOUSE_SENS * this.rotationSpeed;
       this.pitch -= e2.movementY * this.MOUSE_SENS * this.rotationSpeed;
       this._clampPitch();
@@ -14970,6 +14973,8 @@ var FirstPersonCamera = class _FirstPersonCamera {
       case "KeyD":
       case "ArrowRight":
         return 8;
+      case "Space":
+        return 16;
       default:
         return 0;
     }
@@ -14980,9 +14985,9 @@ var FirstPersonCamera = class _FirstPersonCamera {
       if (window.app?.collisionSystem?._onGround) {
         window.app.collisionSystem._gravityAcc = 0.22;
         window.app.collisionSystem._onGround = false;
+        this._jumpVelocity = 1;
         this._dirtyAngle = true;
       }
-      return;
     }
     const bit = this._getKeyBit(e2.code);
     if (bit !== 0) {
@@ -53599,7 +53604,7 @@ var MatrixEngineWGPU = class {
     if (MEConfig.SINGLE_CAMERA == true) {
       if ("firstPersonCamera" == this.options.mainCameraParams.type) {
         this.cameras = {
-          firstPersonCamera: new FirstPersonCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "firstPersonCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
+          firstPersonCamera: new FirstPersonCamera({ usePointerEvents: this.options.mainCameraParams.usePointerEvents, position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "firstPersonCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
         };
       } else if ("WASD" == this.options.mainCameraParams.type) {
         this.cameras = {
@@ -67424,6 +67429,7 @@ var loadHang3d = function() {
     TOUCH_SENS: 0.01,
     mainCameraParams: {
       type: "firstPersonCamera",
+      usePointerEvents: true,
       responseCoef: 1e3
     },
     clearColor: { r: 0, b: 0, g: 0, a: 1 }

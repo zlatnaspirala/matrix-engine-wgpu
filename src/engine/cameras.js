@@ -1008,7 +1008,6 @@ export class RPGCamera {
   }
 }
 
-
 export class FirstPersonCamera {
   pitch = 0;
   yaw = 0;
@@ -1040,6 +1039,9 @@ export class FirstPersonCamera {
   static HALF_PI = Math.PI * 0.5;
   static DIAG = 0.7071067811865476;
   constructor(options = {}) {
+    if (options.usePointerEvents) {
+      this.usePointerEvents = options.usePointerEvents;
+    }
     if(options.position) {
       this.position[0] = options.position[0];
       this.position[1] = options.position[1];
@@ -1264,7 +1266,7 @@ export class FirstPersonCamera {
     canvas.addEventListener('pointermove', (e) => {
       if(window.__isDragging === true) return;
       if(e.pointerType !== 'mouse') return;
-      if(!this._mouseDown || this._lookDisabled) return;
+      if(this._lookDisabled) return;
       this.yaw -= e.movementX * this.MOUSE_SENS * this.rotationSpeed;
       this.pitch -= e.movementY * this.MOUSE_SENS * this.rotationSpeed;
       this._clampPitch();
@@ -1295,6 +1297,8 @@ export class FirstPersonCamera {
       case 'KeyD':
       case 'ArrowRight':
         return 8;
+      case 'Space':
+        return 16;
       default:
         return 0;
     }
@@ -1306,9 +1310,10 @@ export class FirstPersonCamera {
       if(window.app?.collisionSystem?._onGround) {
         window.app.collisionSystem._gravityAcc = 0.22;
         window.app.collisionSystem._onGround = false;
+        this._jumpVelocity = 1;
         this._dirtyAngle = true;
       }
-      return;
+      // return;
     }
     const bit = this._getKeyBit(e.code);
     if(bit !== 0) {this._digital |= bit;}
@@ -2135,15 +2140,13 @@ export const MobileDOM = {
   eventDown: null,
   eventUp: null,
   eventCancel: null,
-
   createWASD(camera, options = {}) {
     const size = options.size ?? 60;
     const marginR = options.marginR ?? 0;
     const marginB = options.marginB ?? 0;
     const opacity = options.opacity ?? 0.35;
     const color = options.color ?? '#ffffff';
-    const forMobileJoystick = options.forMobileJoystick ?? false; // NEW: drag-over-pad instead of press/release
-
+    const forMobileJoystick = options.forMobileJoystick ?? false;
     const wrap = document.createElement('div');
     wrap.id = "mobileControls";
     Object.assign(wrap.style, {

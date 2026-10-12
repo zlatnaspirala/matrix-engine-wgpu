@@ -153,7 +153,6 @@ export class SpritesPack2D {
   createSprite(spriteName, spritesheetName, config = {}) {
     const sheet = this.spriteSheets.get(spritesheetName);
     if(!sheet) throw new Error(`Spritesheet "${spritesheetName}" not found`);
-
     const sprite = new SpriteInstance(
       this.device,
       this.format,
@@ -164,7 +163,6 @@ export class SpritesPack2D {
       config,
       this.shared
     );
-
     this.sprites.set(spriteName, sprite);
     return sprite;
   }
