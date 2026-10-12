@@ -370,7 +370,7 @@ export class SacredGeometryEffect {
         {binding: 1, resource: {buffer: this.modelBuffer}}
       ]
     });
-    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 30);
   }
 
   updateInstanceData(baseModelMatrix) {

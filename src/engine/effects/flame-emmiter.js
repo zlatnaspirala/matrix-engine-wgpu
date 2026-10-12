@@ -197,7 +197,7 @@ export class FlameEmitter {
       ]
     });
 
-    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 30);
   }
 
   updateInstanceData = (baseModelMatrix) => {
@@ -295,5 +295,25 @@ export class FlameEmitter {
         this.baseRotation = [0, 0, Math.PI / 2];
         break;
     }
+  }
+
+  destroy() {
+    if(!this.enabled) return;
+
+    this.enabled = false;
+
+    this.vertexBuffer?.destroy();
+    this.uvBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.modelBuffer?.destroy();
+
+    this.vertexBuffer = null;
+    this.uvBuffer = null;
+    this.indexBuffer = null;
+    this.modelBuffer = null;
+    this.bindGroup = null;
+
+    this.instanceTargets.length = 0;
+    this.instanceData = null;
   }
 }

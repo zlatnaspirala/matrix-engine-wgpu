@@ -188,7 +188,7 @@ export class LaserProjectile {
         {binding: 1, resource: {buffer: this.instanceBuffer}},
       ]
     });
-    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 30);
   }
 
   /**

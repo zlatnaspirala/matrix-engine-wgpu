@@ -203,7 +203,7 @@ export class DepthWebcamVoxelEffect {
       ],
     });
 
-    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 30);
   }
 
   _buildStaticResources() {

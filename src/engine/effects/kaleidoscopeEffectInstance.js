@@ -239,7 +239,7 @@ export class KaleidoscopeEmitter {
       ]
     });
 
-    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 30);
   }
 
   updateInstanceData = (baseModelMatrix) => {

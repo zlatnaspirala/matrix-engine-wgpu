@@ -58,7 +58,7 @@ export class WaterSimEffect {
     this._createSurfaceBindGroups();
     this._createCausticsBindGroups();
         // Trigger effect reorganization
-    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 30);
   }
 
   useExternalGeometry(positionBuffer, indexBuffer, indexCount, indexFormat = 'uint32') {

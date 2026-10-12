@@ -219,7 +219,7 @@ export class KaleidoscopeEffect {
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
-    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200);
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 30);
   }
 
   _uploadVertex(data) {

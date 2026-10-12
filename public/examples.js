@@ -24846,7 +24846,7 @@ var FlameEmitter = class _FlameEmitter {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
@@ -24946,6 +24946,21 @@ var FlameEmitter = class _FlameEmitter {
         this.baseRotation = [0, 0, Math.PI / 2];
         break;
     }
+  }
+  destroy() {
+    if (!this.enabled) return;
+    this.enabled = false;
+    this.vertexBuffer?.destroy();
+    this.uvBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.modelBuffer?.destroy();
+    this.vertexBuffer = null;
+    this.uvBuffer = null;
+    this.indexBuffer = null;
+    this.modelBuffer = null;
+    this.bindGroup = null;
+    this.instanceTargets.length = 0;
+    this.instanceData = null;
   }
 };
 
@@ -25960,7 +25975,7 @@ var BloodBurst = class _BloodBurst {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
 };
 
@@ -34128,7 +34143,7 @@ var GenGeo = class _GenGeo {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceCount, this.maxInstances);
@@ -52017,7 +52032,7 @@ var KaleidoscopeEffect = class _KaleidoscopeEffect {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   _uploadVertex(data) {
     const buf = this.device.createBuffer({
@@ -55704,7 +55719,7 @@ var LaserProjectile = class _LaserProjectile {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   /**
    * Fire a beam from pointA to pointB.
@@ -59927,7 +59942,7 @@ var KaleidoscopeEmitter = class _KaleidoscopeEmitter {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
@@ -66499,6 +66514,7 @@ var ProjectileSystem = class {
     this._maxDecals = opts.maxDecals ?? 40;
     this._decals = [];
     this.pArg = { name: null, obj: null, dir: null };
+    this.test = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
   }
   _getCameraState() {
     const ox = this.cam.position[0];
@@ -66555,7 +66571,8 @@ var ProjectileSystem = class {
     if (idx !== -1) this._projectiles.splice(idx, 1);
     let getObj = this.engine.getSceneObjectByName(name2);
     if (getObj) {
-      this.engine.removeSceneObjectByName(name2);
+      if (getObj.effects.kaleBullet) getObj.effects.kaleBullet.destroy();
+      getObj.destroy();
     } else {
       const obj2 = this.engine.mainRenderBundle?.find((o3) => o3.name === name2);
       if (obj2) {
@@ -70518,7 +70535,7 @@ var WaterSimEffect = class _WaterSimEffect {
     this._createCausticsBindGroups();
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   useExternalGeometry(positionBuffer, indexBuffer, indexCount, indexFormat = "uint32") {
     this.positionBuffer = positionBuffer;
@@ -71853,7 +71870,7 @@ var ParticleActionEmitter = class _ParticleActionEmitter {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   setAction(name2, overrides = {}) {
     const preset = ACTION_PRESETS[name2];
@@ -75199,7 +75216,7 @@ var DepthWebcamVoxelEffect = class _DepthWebcamVoxelEffect {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   _buildStaticResources() {
     const device2 = this.device;
@@ -78394,7 +78411,7 @@ var SacredGeometryEffect = class _SacredGeometryEffect {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   updateInstanceData(baseModelMatrix) {
     mat4Impl.copy(baseModelMatrix, this._baseModelMatrix);
