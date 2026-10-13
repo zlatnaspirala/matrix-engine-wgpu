@@ -258,16 +258,16 @@ export var loadPoseBeast = function() {
         positionAnimator.setMode('hold');
         loadPose.positionAnimator = positionAnimator;
 
-        const faceEffect = new SplatPoseEffect(
+        const poseEffect = new SplatPoseEffect(
           loadPose.device,
           'rgba16float',
           loadPose.cameraBuffer,
           MYCUBE.effects.splat.splatLayers[0],
-          {scale: 1, zScale: 0, bodyScale: 0.1, clusterRadius: 1.0, origin: [0, 0, 0], mirrorX: true}
+          {scale: 1, zScale: 0, limbScale: 1, clusterRadius: 1.0, origin: [0, 0, 0], mirrorX: true}
         );
 
-        MYCUBE.effects.faceEffect = faceEffect;
-        MYCUBE.effects.faceEffect.setScale(32);
+        MYCUBE.effects.poseEffect = poseEffect;
+        MYCUBE.effects.poseEffect.setScale(32);
 
         // Laser
         const laser = MYCUBE.effects.laser = new LaserProjectile(app.device, 'rgba16float', app.cameraBuffer);
@@ -277,7 +277,7 @@ export var loadPoseBeast = function() {
         let lastFire = 0;
 
         function updateLasers(nowSec) {
-          const A = faceEffect.anchors;
+          const A = poseEffect.anchors;
           if(!A.valid) return;
           // open your mouth to fire
           if(A.mouthOpen < 0.5) return;
@@ -305,12 +305,12 @@ export var loadPoseBeast = function() {
         // Hook mediapipe into it
         nui.onResults = (r) => {
             // console.log(r.landmarks?.length, r.landmarks?.[0]?.[0]);
-          MYCUBE.effects.faceEffect.setPoseData(r);
+          MYCUBE.effects.poseEffect.setPoseData(r);
         };
         loadPose.activateHZB();
 
         // Important for face uv view!
-        MYCUBE.effects.faceEffect.setMode('mesh');
+        MYCUBE.effects.poseEffect.setMode('mesh');
         MYCUBE.position.translateByY(7);
 
 

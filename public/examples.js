@@ -36465,6 +36465,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     out[15] = 1;
   }
   update(now) {
+    if (this._poseOn) this._solvePose();
     var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
@@ -36738,6 +36739,15 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       const tr2 = node2.translation;
       const sc2 = node2.scale;
       const rot2 = node2.rotation;
+      if (this._poseOn) {
+        const o3 = nodeIndex * 4, pl = this._poseLocal;
+        rot2[0] = pl[o3];
+        rot2[1] = pl[o3 + 1];
+        rot2[2] = pl[o3 + 2];
+        rot2[3] = pl[o3 + 3];
+        this.composeTRS(tr2, rot2, sc2, node2.transform);
+        continue;
+      }
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
@@ -36813,24 +36823,285 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     for (let j2 = 0; j2 < skeleton.length; j2++) {
       const jointNode = nodes[skeleton[j2]];
-      mat4Impl.multiply(
-        jointNode.worldMatrix,
-        jointNode.inverseBindMatrix,
-        this._tempMat
-      );
+      mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j2 * 16);
     }
     const byteOffset = instanceIndex * this.MAX_BONES * 64;
-    this.device.queue.writeBuffer(
-      this.bonesBuffer,
-      byteOffset,
-      boneMatrices.buffer,
-      boneMatrices.byteOffset,
-      boneMatrices.byteLength
-    );
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices.buffer, boneMatrices.byteOffset, boneMatrices.byteLength);
     return boneMatrices;
   }
+  enablePoseDrive(opts = {}) {
+    this._restFromBindPose();
+    const jn2 = this.glb.glbJsonData.nodes;
+    const n3 = this.nodes.length;
+    this._poseSmooth = opts.smooth ?? 0.4;
+    this._poseMirror = opts.mirror ?? false;
+    this._poseZSign = opts.zSign ?? -1;
+    this._poseMinVis = opts.minVisibility ?? 0.5;
+    this._poseWL = null;
+    this._poseLM = null;
+    this._poseRestLocal = new Float32Array(n3 * 4);
+    this._poseRestWorld = new Float32Array(n3 * 4);
+    this._poseNewWorld = new Float32Array(n3 * 4);
+    this._poseLocal = new Float32Array(n3 * 4);
+    this._poseFrom = new Int8Array(n3).fill(-1);
+    this._poseTo = new Int8Array(n3).fill(-1);
+    this._poseRestDir = new Float32Array(n3 * 3);
+    this._qTmp = new Float32Array(8);
+    const world = new Array(n3), L2 = mat4Impl.create();
+    const isJoint = new Set(this.skeleton);
+    for (const i2 of this._sortedNodes) {
+      const nd = this.nodes[i2], p2 = nd.parent;
+      if (isJoint.has(i2)) this.composeTRS(nd.translation, nd.rotation, nd.scale, L2);
+      else mat4Impl.copy(nd.transform, L2);
+      world[i2] = p2 != null ? mat4Impl.multiply(world[p2], L2) : mat4Impl.copy(L2);
+      const dl = this.decomposeMatrix(L2).rotation;
+      const dw = this.decomposeMatrix(world[i2]).rotation;
+      this._poseRestLocal.set(dl, i2 * 4);
+      this._poseLocal.set(dl, i2 * 4);
+      this._poseRestWorld.set(dw, i2 * 4);
+    }
+    const jointSet = new Set(this.skeleton);
+    const found = {};
+    for (const i2 of this.skeleton) {
+      const t3 = _poseTokens(jn2[i2].name);
+      const side = t3.includes("left") || t3.includes("l") ? "L" : t3.includes("right") || t3.includes("r") ? "R" : null;
+      if (!side) continue;
+      const part = t3.filter((x3) => x3 !== "left" && x3 !== "right" && x3 !== "l" && x3 !== "r").join("");
+      for (const key in _POSE_SLOTS) {
+        if (_POSE_SLOTS[key].names.includes(part) && !(key + side in found)) found[key + side] = i2;
+      }
+    }
+    if (opts.override) for (const id2 in opts.override) {
+      const i2 = jn2.findIndex((x3) => x3.name === opts.override[id2]);
+      if (i2 >= 0) found[id2] = i2;
+    }
+    const missing = [];
+    for (const key in _POSE_SLOTS) for (const side of ["L", "R"]) {
+      const i2 = found[key + side];
+      if (i2 === void 0) {
+        missing.push(key + side);
+        continue;
+      }
+      const nextId = _POSE_SLOTS[key].next ? _POSE_SLOTS[key].next + side : null;
+      let c2 = nextId && found[nextId] !== void 0 ? found[nextId] : -1;
+      if (c2 < 0) {
+        for (const ch of this.nodes[i2].children || []) if (jointSet.has(ch)) {
+          c2 = ch;
+          break;
+        }
+      }
+      if (c2 < 0) {
+        missing.push(key + side + "(no child)");
+        continue;
+      }
+      let dx = world[c2][12] - world[i2][12], dy = world[c2][13] - world[i2][13], dz = world[c2][14] - world[i2][14];
+      const l2 = Math.hypot(dx, dy, dz) || 1;
+      this._poseRestDir.set([dx / l2, dy / l2, dz / l2], i2 * 3);
+      this._poseFrom[i2] = _POSE_SLOTS[key][side][0];
+      this._poseTo[i2] = _POSE_SLOTS[key][side][1];
+    }
+    if (missing.length) console.warn(`[${this.name}] pose drive: unmapped`, missing, "-> use opts.override");
+    for (const inst of this.instanceNodes) {
+      for (let i2 = 0; i2 < n3; i2++) {
+        inst[i2].translation.set(this.nodes[i2].translation);
+        inst[i2].rotation.set(this.nodes[i2].rotation);
+        inst[i2].scale.set(this.nodes[i2].scale);
+      }
+    }
+    this._poseOn = true;
+  }
+  disablePoseDrive() {
+    this._poseOn = false;
+  }
+  // call from pipe.onResults
+  setPoseResults(results) {
+    this._poseWL = results?.worldLandmarks?.[0] ?? null;
+    this._poseLM = results?.landmarks?.[0] ?? null;
+  }
+  _solvePose() {
+    const wl = this._poseWL;
+    if (!wl) return;
+    const lm = this._poseLM, sorted = this._sortedNodes, nodes = this.nodes;
+    const rw = this._poseRestWorld, nw = this._poseNewWorld, pl = this._poseLocal, q2 = this._qTmp;
+    const from = this._poseFrom, to2 = this._poseTo, rd = this._poseRestDir;
+    const mx = this._poseMirror ? -1 : 1, zs2 = this._poseZSign, minVis = this._poseMinVis;
+    const k2 = 1 - this._poseSmooth;
+    for (let s2 = 0; s2 < sorted.length; s2++) {
+      const i2 = sorted[s2], p2 = nodes[i2].parent, f2 = from[i2];
+      if (f2 >= 0) {
+        const t3 = to2[i2];
+        const visOk = !lm || (lm[f2].visibility ?? 1) >= minVis && (lm[t3].visibility ?? 1) >= minVis;
+        if (visOk) {
+          const a2 = wl[f2], b2 = wl[t3];
+          let dx = mx * (b2.x - a2.x), dy = -(b2.y - a2.y), dz = zs2 * (b2.z - a2.z);
+          const l2 = Math.hypot(dx, dy, dz);
+          if (l2 > 1e-5) {
+            dx /= l2;
+            dy /= l2;
+            dz /= l2;
+            _qFromTo(rd[i2 * 3], rd[i2 * 3 + 1], rd[i2 * 3 + 2], dx, dy, dz, q2, 0);
+            _qmul(q2, 0, rw, i2 * 4, q2, 4);
+            if (p2 != null) _qmulConjA(nw, p2 * 4, q2, 4, q2, 0);
+            else {
+              q2[0] = q2[4];
+              q2[1] = q2[5];
+              q2[2] = q2[6];
+              q2[3] = q2[7];
+            }
+            _nlerp(pl, i2 * 4, q2, 0, k2);
+          }
+        }
+      }
+      if (p2 != null) _qmul(nw, p2 * 4, pl, i2 * 4, nw, i2 * 4);
+      else {
+        nw[i2 * 4] = pl[i2 * 4];
+        nw[i2 * 4 + 1] = pl[i2 * 4 + 1];
+        nw[i2 * 4 + 2] = pl[i2 * 4 + 2];
+        nw[i2 * 4 + 3] = pl[i2 * 4 + 3];
+      }
+    }
+  }
+  _restFromBindPose() {
+    const n3 = this.nodes.length, W2 = new Array(n3), tmp = mat4Impl.create(), L2 = mat4Impl.create();
+    const isJoint = new Set(this.skeleton);
+    for (const i2 of this._sortedNodes) {
+      const nd = this.nodes[i2], p2 = nd.parent;
+      if (isJoint.has(i2)) {
+        const k2 = this.skeleton.indexOf(i2);
+        W2[i2] = mat4Impl.inverse(this.inverseBindMatrices.subarray(k2 * 16, k2 * 16 + 16));
+        if (p2 != null) mat4Impl.multiply(mat4Impl.inverse(W2[p2]), W2[i2], L2);
+        else mat4Impl.copy(W2[i2], L2);
+        const d2 = this.decomposeMatrix(L2);
+        nd.translation.set(d2.translation);
+        nd.rotation.set(d2.rotation);
+        nd.scale.set(d2.scale);
+      } else {
+        W2[i2] = p2 != null ? mat4Impl.multiply(W2[p2], nd.transform) : mat4Impl.copy(nd.transform);
+      }
+    }
+  }
+  debugPoseRest() {
+    const nodes = this.instanceNodes[0];
+    let worst = 0, name2 = "";
+    for (const j2 of this.skeleton) {
+      const m2 = mat4Impl.multiply(nodes[j2].worldMatrix, nodes[j2].inverseBindMatrix);
+      let d2 = 0;
+      for (let k2 = 0; k2 < 16; k2++) d2 = Math.max(d2, Math.abs(m2[k2] - (k2 % 5 === 0 ? 1 : 0)));
+      if (d2 > worst) {
+        worst = d2;
+        name2 = this.glb.glbJsonData.nodes[j2].name;
+      }
+    }
+    console.log("pose rest error", worst, name2);
+  }
+  debugPoseRest2() {
+    const nodes = this.instanceNodes[0], jn2 = this.glb.glbJsonData.nodes;
+    const I2 = mat4Impl.create(), m2 = mat4Impl.create(), L2 = mat4Impl.create();
+    let shown = 0;
+    for (const i2 of this._sortedNodes) {
+      const k2 = this.skeleton.indexOf(i2);
+      if (k2 < 0) continue;
+      mat4Impl.multiply(nodes[i2].worldMatrix, nodes[i2].inverseBindMatrix, m2);
+      let err = 0;
+      for (let e2 = 0; e2 < 16; e2++) err = Math.max(err, Math.abs(m2[e2] - I2[e2]));
+      if (err > 0.01 && shown++ < 5) {
+        const n3 = nodes[i2];
+        this.composeTRS(n3.translation, n3.rotation, n3.scale, L2);
+        const det = L2[0] * (L2[5] * L2[10] - L2[6] * L2[9]) - L2[4] * (L2[1] * L2[10] - L2[2] * L2[9]) + L2[8] * (L2[1] * L2[6] - L2[2] * L2[5]);
+        console.log(
+          jn2[i2].name,
+          "err",
+          err.toFixed(4),
+          "scale",
+          Array.from(n3.scale).map((v2) => +v2.toFixed(3)),
+          "rotLen",
+          Math.hypot(...n3.rotation).toFixed(4),
+          "localDet",
+          det.toFixed(3),
+          "parent",
+          n3.parent != null ? jn2[n3.parent].name : null
+        );
+      }
+    }
+  }
 };
+var _POSE_NOISE = /* @__PURE__ */ new Set(["mixamorig", "j", "bip", "bip01", "def", "mch", "cc", "base", "rig", "armature", "c"]);
+var _POSE_SLOTS = {
+  upperArm: { L: [11, 13], R: [12, 14], names: ["arm", "upperarm"], next: "foreArm" },
+  foreArm: { L: [13, 15], R: [14, 16], names: ["forearm", "lowerarm"], next: null },
+  thigh: { L: [23, 25], R: [24, 26], names: ["upleg", "upperleg", "thigh"], next: "shin" },
+  shin: { L: [25, 27], R: [26, 28], names: ["leg", "lowerleg", "calf", "shin"], next: null }
+};
+function _poseTokens(name2) {
+  return (name2 || "").replace(/^.*[:|]/, "").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter((t3) => t3 && !_POSE_NOISE.has(t3));
+}
+function _qmul(a2, ao2, b2, bo2, o3, oo2) {
+  const ax = a2[ao2], ay = a2[ao2 + 1], az = a2[ao2 + 2], aw = a2[ao2 + 3];
+  const bx = b2[bo2], by = b2[bo2 + 1], bz = b2[bo2 + 2], bw = b2[bo2 + 3];
+  o3[oo2] = aw * bx + ax * bw + ay * bz - az * by;
+  o3[oo2 + 1] = aw * by - ax * bz + ay * bw + az * bx;
+  o3[oo2 + 2] = aw * bz + ax * by - ay * bx + az * bw;
+  o3[oo2 + 3] = aw * bw - ax * bx - ay * by - az * bz;
+}
+function _qmulConjA(a2, ao2, b2, bo2, o3, oo2) {
+  const ax = -a2[ao2], ay = -a2[ao2 + 1], az = -a2[ao2 + 2], aw = a2[ao2 + 3];
+  const bx = b2[bo2], by = b2[bo2 + 1], bz = b2[bo2 + 2], bw = b2[bo2 + 3];
+  o3[oo2] = aw * bx + ax * bw + ay * bz - az * by;
+  o3[oo2 + 1] = aw * by - ax * bz + ay * bw + az * bx;
+  o3[oo2 + 2] = aw * bz + ax * by - ay * bx + az * bw;
+  o3[oo2 + 3] = aw * bw - ax * bx - ay * by - az * bz;
+}
+function _qFromTo(ux, uy, uz, vx, vy, vz, o3, oo2) {
+  const d2 = ux * vx + uy * vy + uz * vz;
+  if (d2 > 0.999999) {
+    o3[oo2] = 0;
+    o3[oo2 + 1] = 0;
+    o3[oo2 + 2] = 0;
+    o3[oo2 + 3] = 1;
+    return;
+  }
+  if (d2 < -0.999999) {
+    let ax, ay, az;
+    if (Math.abs(ux) < 0.9) {
+      ax = 0;
+      ay = uz;
+      az = -uy;
+    } else {
+      ax = -uz;
+      ay = 0;
+      az = ux;
+    }
+    const l3 = Math.hypot(ax, ay, az) || 1;
+    o3[oo2] = ax / l3;
+    o3[oo2 + 1] = ay / l3;
+    o3[oo2 + 2] = az / l3;
+    o3[oo2 + 3] = 0;
+    return;
+  }
+  const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx, w2 = 1 + d2;
+  const l2 = Math.hypot(cx, cy, cz, w2) || 1;
+  o3[oo2] = cx / l2;
+  o3[oo2 + 1] = cy / l2;
+  o3[oo2 + 2] = cz / l2;
+  o3[oo2 + 3] = w2 / l2;
+}
+function _nlerp(c2, co2, t3, to2, k2) {
+  let tx = t3[to2], ty = t3[to2 + 1], tz = t3[to2 + 2], tw = t3[to2 + 3];
+  if (c2[co2] * tx + c2[co2 + 1] * ty + c2[co2 + 2] * tz + c2[co2 + 3] * tw < 0) {
+    tx = -tx;
+    ty = -ty;
+    tz = -tz;
+    tw = -tw;
+  }
+  const x3 = c2[co2] + (tx - c2[co2]) * k2, y3 = c2[co2 + 1] + (ty - c2[co2 + 1]) * k2;
+  const z2 = c2[co2 + 2] + (tz - c2[co2 + 2]) * k2, w2 = c2[co2 + 3] + (tw - c2[co2 + 3]) * k2;
+  const l2 = Math.hypot(x3, y3, z2, w2) || 1;
+  c2[co2] = x3 / l2;
+  c2[co2 + 1] = y3 / l2;
+  c2[co2 + 2] = z2 / l2;
+  c2[co2 + 3] = w2 / l2;
+}
 
 // src/engine/plugin/tooltip/ToolTip.js
 var METoolTip = class {
@@ -77212,25 +77483,25 @@ var loadFaceBeast = function() {
         );
         MYCUBE.effects.faceEffect = faceEffect;
         MYCUBE.effects.faceEffect.setScale(32);
-        const laser = MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer);
-        const LASER_LENGTH = 12;
-        const FIRE_INTERVAL = 0.08;
-        const FIRE_DIRECTION = 1;
-        let lastFire = 0;
+        const laser2 = MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer);
+        const LASER_LENGTH2 = 12;
+        const FIRE_INTERVAL2 = 0.08;
+        const FIRE_DIRECTION2 = 1;
+        let lastFire2 = 0;
         function updateLasers(nowSec) {
           const A2 = faceEffect.anchors;
           if (!A2.valid) return;
           if (A2.mouthOpen < 0.5) return;
-          if (nowSec - lastFire < FIRE_INTERVAL) return;
-          lastFire = nowSec;
+          if (nowSec - lastFire2 < FIRE_INTERVAL2) return;
+          lastFire2 = nowSec;
           for (const side of ["right", "left"]) {
             const eye = side === "right" ? A2.rightEye : A2.leftEye;
             const end = [
-              eye[0] + A2.forward[0] * LASER_LENGTH * FIRE_DIRECTION,
-              eye[1] + A2.forward[1] * LASER_LENGTH * FIRE_DIRECTION,
-              eye[2] + A2.forward[2] * LASER_LENGTH * FIRE_DIRECTION
+              eye[0] + A2.forward[0] * LASER_LENGTH2 * FIRE_DIRECTION2,
+              eye[1] + A2.forward[1] * LASER_LENGTH2 * FIRE_DIRECTION2,
+              eye[2] + A2.forward[2] * LASER_LENGTH2 * FIRE_DIRECTION2
             ];
-            laser.fireBeam(eye, end, 0.2);
+            laser2.fireBeam(eye, end, 0.2);
           }
         }
         app.autoUpdate.push({ update: updateLasers });
@@ -79313,22 +79584,368 @@ var loadPoseBeast = function() {
       loadPose.autoUpdate.push(positionAnimator);
       positionAnimator.setMode("hold");
       loadPose.positionAnimator = positionAnimator;
-      const faceEffect = new SplatPoseEffect(
+      const poseEffect2 = new SplatPoseEffect(
         loadPose.device,
         "rgba16float",
         loadPose.cameraBuffer,
         MYCUBE.effects.splat.splatLayers[0],
-        { scale: 1, zScale: 0, bodyScale: 0.1, clusterRadius: 1, origin: [0, 0, 0], mirrorX: true }
+        { scale: 1, zScale: 0, limbScale: 1, clusterRadius: 1, origin: [0, 0, 0], mirrorX: true }
       );
-      MYCUBE.effects.faceEffect = faceEffect;
-      MYCUBE.effects.faceEffect.setScale(32);
-      const laser = MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer);
-      const LASER_LENGTH = 12;
-      const FIRE_INTERVAL = 0.08;
-      const FIRE_DIRECTION = 1;
-      let lastFire = 0;
+      MYCUBE.effects.poseEffect = poseEffect2;
+      MYCUBE.effects.poseEffect.setScale(32);
+      const laser2 = MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer);
+      const LASER_LENGTH2 = 12;
+      const FIRE_INTERVAL2 = 0.08;
+      const FIRE_DIRECTION2 = 1;
+      let lastFire2 = 0;
       function updateLasers(nowSec) {
-        const A2 = faceEffect.anchors;
+        const A2 = poseEffect2.anchors;
+        if (!A2.valid) return;
+        if (A2.mouthOpen < 0.5) return;
+        if (nowSec - lastFire2 < FIRE_INTERVAL2) return;
+        lastFire2 = nowSec;
+        for (const side of ["right", "left"]) {
+          const eye = side === "right" ? A2.rightEye : A2.leftEye;
+          const end = [
+            eye[0] + A2.forward[0] * LASER_LENGTH2 * FIRE_DIRECTION2,
+            eye[1] + A2.forward[1] * LASER_LENGTH2 * FIRE_DIRECTION2,
+            eye[2] + A2.forward[2] * LASER_LENGTH2 * FIRE_DIRECTION2
+          ];
+          laser2.fireBeam(eye, end, 0.2);
+        }
+      }
+      loadPose.MYCUBE = MYCUBE;
+      loadPose.MYCUBE.position.thrust = 0.1;
+      nui.onResults = (r3) => {
+        MYCUBE.effects.poseEffect.setPoseData(r3);
+      };
+      loadPose.activateHZB();
+      MYCUBE.effects.poseEffect.setMode("mesh");
+      MYCUBE.position.translateByY(7);
+      let cam2 = app.getCamera();
+      cam2.setYaw(0);
+      cam2.setPitch(0);
+      cam2.setZ(4);
+      cam2.setY(6);
+      app.buildRenderBuckets();
+      cam2._dirtyAngle = true;
+    };
+    let isRunning = false;
+    let runnerSet;
+    function ambientFromColor(color) {
+      return { r: color.r, g: color.g, b: color.b };
+    }
+    function determinateType() {
+      const chooseType = randomIntFromTo(1, 3);
+      let r3, b2, g2;
+      if (chooseType === 1) {
+        r3 = 70;
+        b2 = 0.5;
+        g2 = 0.5;
+      } else if (chooseType === 2) {
+        r3 = 70;
+        b2 = 0.5;
+        g2 = 0.5;
+      } else if (chooseType === 3) {
+        r3 = 0.5;
+        b2 = 0.5;
+        g2 = 70;
+      }
+      return { r: r3, g: g2, b: b2 };
+    }
+    function damageFromColor(color, baseDamage = 15) {
+      if (color.r > color.b && color.r > color.g) {
+        return baseDamage * 1.5;
+      }
+      if (color.g > color.r && color.g > color.b) {
+        return -baseDamage * 0.8;
+      }
+      return baseDamage * 0.5;
+    }
+    function slowFromColor(color) {
+      return color.g;
+    }
+    let hitEvent = new CustomEvent("player-hit", { detail: { obstacleId: 0 } });
+    function spawnRunners(menuBeast, mesh, opts = {}) {
+      const cfg = Object.assign({
+        count: 12,
+        minX: -18,
+        maxX: 18,
+        minY: 1,
+        maxY: 2,
+        startZ: 60,
+        endZ: -40,
+        speedMin: 0.6,
+        speedMax: 1.6,
+        scaleMin: 0.8,
+        scaleMax: 1.8
+      }, opts);
+      const runners = [];
+      function rand(a2, b2) {
+        return a2 + Math.random() * (b2 - a2);
+      }
+      for (let i2 = 0; i2 < cfg.count; i2++) {
+        const x3 = rand(cfg.minX, cfg.maxX);
+        const y3 = rand(cfg.minY, cfg.maxY);
+        const z2 = cfg.startZ + Math.random() * 30;
+        const s2 = rand(cfg.scaleMin, cfg.scaleMax);
+        const obj2 = menuBeast.addMeshObj({
+          material: { type: "standard", share: false },
+          position: { x: x3, y: y3, z: z2 },
+          rotation: { x: 0, y: 0, z: 0 },
+          rotationSpeed: { x: 15, y: 0, z: 0 },
+          scale: [s2, s2, s2],
+          texturesPaths: ["./res/textures/matrix1.webp"],
+          name: "runner" + i2,
+          mesh,
+          raycast: { enabled: true, radius: 1 },
+          physics: { enabled: false, mass: 0, geometry: "Cube" }
+        });
+        obj2._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
+        obj2._runnerCfg = cfg;
+        obj2._runnerColor = determinateType();
+        obj2._runnerDamage = damageFromColor(obj2._runnerColor);
+        obj2._runnerSlow = slowFromColor(obj2._runnerColor);
+        const amb = ambientFromColor(obj2._runnerColor);
+        obj2.setAmbient(amb.r, amb.g, amb.b);
+        runners.push(obj2);
+        const rRadius = Math.max(s2) || s2;
+        try {
+          collisionSystem.register(obj2.name, obj2.position, s2 * 1.25, "obstacle");
+        } catch (err) {
+          console.warn("collision register failed", err);
+        }
+      }
+      const updater = {
+        update: function() {
+          for (let i2 = 0; i2 < runners.length; i2++) {
+            const r3 = runners[i2];
+            if (!r3.position) continue;
+            r3.position.z -= r3._runnerSpeed;
+            if (r3.rotation) r3.rotation.y += 0.01 + r3._runnerSpeed * 0.01;
+            if (r3.position.z < r3._runnerCfg.endZ) {
+              r3.position.z = r3._runnerCfg.startZ + Math.random() * 30;
+              r3.position.x = rand(r3._runnerCfg.minX, r3._runnerCfg.maxX);
+              r3.position.y = rand(r3._runnerCfg.minY, r3._runnerCfg.maxY);
+              r3._runnerSpeed = rand(r3._runnerCfg.speedMin, r3._runnerCfg.speedMax);
+              const s2 = rand(r3._runnerCfg.scaleMin, r3._runnerCfg.scaleMax);
+              if (r3.scale) r3.scale = [s2, s2, s2];
+            }
+          }
+        }
+      };
+      app.autoUpdate.push(updater);
+      return { runners, updater };
+    }
+    loadPose.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (isRunning === false) {
+        runnerSet = spawnRunners(loadPose, loadPose.SAVE_CUBE, { count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5 });
+        isRunning = true;
+      }
+    });
+  });
+  window.app = loadPose;
+};
+
+// examples/games/nui/pose-to-glb.js
+var TEXT3 = `The Beast Render`;
+var loadPoseToGLB = function() {
+  let loadPose = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    // dontUsePhysics: true,
+    useCannon: true,
+    MAX_SPOTLIGHTS: 2,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      // noEvents: true,
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    let MYCUBE, animator2;
+    const pipe = new PipeGestureResolver();
+    const nui = new PipeCommander(true, null, null, {
+      enableVisual: false,
+      mode: "pose"
+    });
+    let bloomRadius = 0.1;
+    let bloomIntesity = 0.1;
+    let glbAnimation = 0;
+    let arg1 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 82 } : { left: "5" };
+    MobileDOM.addButton("Bloom radius +", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      bloomRadius++;
+    }, () => {
+    }, arg1);
+    let arg2 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 73 } : { left: "13" };
+    MobileDOM.addButton("Bloom radius -", function() {
+      app.bloomPass.setBlurRadius(bloomRadius);
+      if (bloomRadius - 1 > 0) bloomRadius--;
+    }, () => {
+    }, arg2);
+    let arg3 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 64 } : { left: "21" };
+    MobileDOM.addButton("Bloom intesity +", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      bloomIntesity = bloomIntesity + 20;
+    }, () => {
+    }, arg3);
+    let arg4 = isMobile() && getOrientation() === "portrait" ? { left: "84", bottom: 55 } : { left: "29" };
+    MobileDOM.addButton("Bloom intesity -", function() {
+      app.bloomPass.setIntensity(bloomIntesity);
+      if (bloomIntesity - 10 > 0) bloomIntesity = bloomIntesity - 10;
+    }, () => {
+    }, arg4);
+    loadPose.addLight();
+    downloadMeshes({ ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" }, onLoadObj, { scale: [1, 1, 1] });
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    async function onGround(m2) {
+      loadPose.floor = loadPose.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: 0, y: -1, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    function createPillar(loadPose2, m2, x3, y3, z2, name2) {
+      const base = loadPose2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 10, 1],
+        texturesPaths: ["./res/textures/white-metal2.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      const top = loadPose2.addMeshObj({
+        material: { type: "dark", share: true },
+        position: { x: x3, y: y3 + 6, z: z2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1.8, 3, 1.8],
+        texturesPaths: ["./res/textures/matrix1.webp"],
+        name: "cube" + name2,
+        mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 1, geometry: "Cube" }
+      });
+      return { base, top };
+    }
+    async function onLoadObj(m2) {
+      const glbFile = await fetch("res/meshes/glb/monster.glb").then((res) => res.arrayBuffer()).then((buf) => uploadGLBModel(buf, loadPose.device));
+      let beast = loadPose.addGlbObjInctance({
+        material: { type: "standard", useTextureFromGlb: true },
+        useScale: true,
+        scale: [2, 2, 2],
+        position: { x: 0, y: 1.5, z: -15 },
+        name: "player",
+        physics: {
+          enabled: false,
+          geometry: "Cube"
+          // mass: 1,
+          // radius: [1, 1.5, 1],
+          // scale: [1.5, 1.5, 1.5],
+          // height: 1.0,
+          // group: 2,
+          // mask: -1,
+        },
+        texturesPaths: ["./res/meshes/glb/textures/mutant_origin.webp"]
+      }, null, glbFile);
+      loadPose.beast = beast;
+      loadPose.addProceduralMeshObj({
+        material: { type: "standard" },
+        position: { x: 1, y: 3, z: -7 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [2, 2, 2],
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1_low.webp"],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_cone`,
+        physics: {
+          enabled: true,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      MYCUBE = loadPose.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: 5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 1, 1],
+        texturesPaths: ["./res/textures/white-metal.png"],
+        name: "MYCUBE",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: { enabled: true }
+      });
+      loadPose.SAVE_CUBE = m2.cube;
+      const pillar1 = createPillar(loadPose, m2, -20, 6, -30, "pil1");
+      const pillar2 = createPillar(loadPose, m2, 20, 6, -30, "pil2");
+      const pillar3 = createPillar(loadPose, m2, -20, 6, 20, "pil3");
+      const pillar4 = createPillar(loadPose, m2, 20, 6, 20, "pil4");
+      loadPose.activateBloomEffect();
+      loadPose.lightContainer[0].setIntensity(1e3);
+      loadPose.lightContainer[0].setColorB(1);
+      loadPose.lightContainer[0].setPosition(0, 65, 0);
+      loadPose.lightContainer[0].setTarget(0, 0, -20);
+      const sampler = loadPose.device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+        mipmapFilter: "nearest",
+        addressModeU: "clamp-to-edge",
+        addressModeV: "clamp-to-edge"
+      });
+      loadAtlasFONT(loadPose.device).then((OUTPUT) => {
+        loadPose.floor.effects.gpuText = new MSDFTextEffect(
+          loadPose.device,
+          "rgba16float",
+          OUTPUT.msdfTexture,
+          sampler,
+          loadPose.cameraBuffer,
+          OUTPUT.font,
+          { scale: 0.05, localOffset: [-15, 1, 0] }
+        );
+        loadPose.floor.effects.gpuText.typeText(TEXT3, 200, () => {
+          console.log("Typing complete!");
+          setTimeout(loadRest, 1e3);
+        });
+      });
+    }
+    loadRest = async () => {
+      loadPose.beast.enablePoseDrive({ smooth: 0.4, mirror: false });
+      setTimeout(() => {
+        loadPose.beast.debugPoseRest2();
+        const hipsIdx = loadPose.beast.glb.glbJsonData.nodes.findIndex((n3) => n3.name === "mixamorig:Hips");
+        const arm = loadPose.beast.glb.nodes[loadPose.beast.glb.nodes[hipsIdx].parent];
+        console.log("Armature scale", Array.from(arm.scale), "transform diag", arm.transform[0], arm.transform[5], arm.transform[10]);
+      }, 50);
+      function updateLasers(nowSec) {
+        const A2 = poseEffect.anchors;
         if (!A2.valid) return;
         if (A2.mouthOpen < 0.5) return;
         if (nowSec - lastFire < FIRE_INTERVAL) return;
@@ -79343,14 +79960,10 @@ var loadPoseBeast = function() {
           laser.fireBeam(eye, end, 0.2);
         }
       }
-      loadPose.MYCUBE = MYCUBE;
-      loadPose.MYCUBE.position.thrust = 0.1;
       nui.onResults = (r3) => {
-        MYCUBE.effects.faceEffect.setPoseData(r3);
+        loadPose.beast.setPoseResults(r3);
       };
       loadPose.activateHZB();
-      MYCUBE.effects.faceEffect.setMode("mesh");
-      MYCUBE.position.translateByY(7);
       let cam2 = app.getCamera();
       cam2.setYaw(0);
       cam2.setPitch(0);
@@ -79543,6 +80156,7 @@ byId2("loadRoulette").addEventListener("click", () => switchDemo("45"));
 byId2("loadMSDFText").addEventListener("click", () => switchDemo("46"));
 byId2("loadFaceMask").addEventListener("click", () => switchDemo("47"));
 byId2("loadPoseBeast").addEventListener("click", () => switchDemo("48"));
+byId2("loadPoseToGLB").addEventListener("click", () => switchDemo("49"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -79642,6 +80256,8 @@ if (urlQuery["demo"] === "1") {
   loadFaceMask();
 } else if (urlQuery["demo"] === "48") {
   loadPoseBeast();
+} else if (urlQuery["demo"] === "49") {
+  loadPoseToGLB();
 } else {
   loadObjFile();
 }

@@ -354,6 +354,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   update(now) {
+    if(this._poseOn) this._solvePose();
     var inTime = this._animationLength;
     if(this.sharedState.animationStarted == false &&
       this.sharedState.emitAnimationEvent == true) {
@@ -611,6 +612,15 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       const tr = node.translation;
       const sc = node.scale;
       const rot = node.rotation;
+
+      if(this._poseOn) {
+        const o = nodeIndex * 4, pl = this._poseLocal;
+        rot[0] = pl[o]; rot[1] = pl[o + 1]; rot[2] = pl[o + 2]; rot[3] = pl[o + 3];
+        this.composeTRS(tr, rot, sc, node.transform);
+        // skip the animation channels
+        continue;
+      }
+
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
@@ -668,8 +678,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         const base1 = next * 4;
         this.slerp(outputArray, base0, outputArray, base1, factor, rot);
       }
-
-      // BUILD LOCAL MATRIX
       this.composeTRS(tr, rot, sc, node.transform);
     }
 
@@ -688,22 +696,253 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
 
     for(let j = 0;j < skeleton.length;j++) {
       const jointNode = nodes[skeleton[j]];
-      mat4.multiply(
-        jointNode.worldMatrix,
-        jointNode.inverseBindMatrix,
-        this._tempMat
-      );
+      mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
-
     const byteOffset = instanceIndex * this.MAX_BONES * 64;
-    this.device.queue.writeBuffer(
-      this.bonesBuffer,
-      byteOffset,
-      boneMatrices.buffer,
-      boneMatrices.byteOffset,
-      boneMatrices.byteLength
-    );
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices.buffer, boneMatrices.byteOffset, boneMatrices.byteLength);
     return boneMatrices;
   }
+
+  enablePoseDrive(opts = {}) {
+    this._restFromBindPose();
+    const jn = this.glb.glbJsonData.nodes;
+    const n = this.nodes.length;
+    this._poseSmooth = opts.smooth ?? 0.4;              // 0 = raw
+    this._poseMirror = opts.mirror ?? false;            // false: puppet (your left = its left), true: mirror
+    this._poseZSign = opts.zSign ?? -1;
+    this._poseMinVis = opts.minVisibility ?? 0.5;
+    this._poseWL = null; this._poseLM = null;
+
+    this._poseRestLocal = new Float32Array(n * 4);
+    this._poseRestWorld = new Float32Array(n * 4);
+    this._poseNewWorld = new Float32Array(n * 4);
+    this._poseLocal = new Float32Array(n * 4);
+    this._poseFrom = new Int8Array(n).fill(-1);
+    this._poseTo = new Int8Array(n).fill(-1);
+    this._poseRestDir = new Float32Array(n * 3);
+    this._qTmp = new Float32Array(8);
+
+    // rest world matrices / quaternions (one time, allocation is fine here)
+    const world = new Array(n), L = mat4.create();
+    const isJoint = new Set(this.skeleton);
+    for(const i of this._sortedNodes) {
+      const nd = this.nodes[i], p = nd.parent;
+      if(isJoint.has(i)) this.composeTRS(nd.translation, nd.rotation, nd.scale, L);
+      else mat4.copy(nd.transform, L);                  // Armature etc: matrix only
+      world[i] = p != null ? mat4.multiply(world[p], L) : mat4.copy(L);
+      const dl = this.decomposeMatrix(L).rotation;      // local rotation, scale removed
+      const dw = this.decomposeMatrix(world[i]).rotation;  // world rotation incl. Armature
+      this._poseRestLocal.set(dl, i * 4);
+      this._poseLocal.set(dl, i * 4);
+      this._poseRestWorld.set(dw, i * 4);
+    }
+    // const world = new Array(n), local = mat4.create();
+    // const sorted = this._sortedNodes;
+    // for(let s = 0;s < sorted.length;s++) {
+    //   const i = sorted[s], nd = this.nodes[i], p = nd.parent;
+    //   this._poseRestLocal.set(nd.rotation, i * 4);
+    //   this._poseLocal.set(nd.rotation, i * 4);
+    //   this.composeTRS(nd.translation, nd.rotation, nd.scale, local);
+    //   world[i] = mat4.create();
+    //   if(p != null) {
+    //     mat4.multiply(world[p], local, world[i]);
+    //     _qmul(this._poseRestWorld, p * 4, this._poseRestLocal, i * 4, this._poseRestWorld, i * 4);
+    //   } else {
+    //     mat4.copy(local, world[i]);
+    //     this._poseRestWorld.set(nd.rotation, i * 4);
+    //   }
+    // }
+
+    // resolve bones by name
+    const jointSet = new Set(this.skeleton);
+    const found = {};
+    for(const i of this.skeleton) {
+      const t = _poseTokens(jn[i].name);
+      const side = t.includes('left') || t.includes('l') ? 'L' : (t.includes('right') || t.includes('r') ? 'R' : null);
+      if(!side) continue;
+      const part = t.filter(x => x !== 'left' && x !== 'right' && x !== 'l' && x !== 'r').join('');
+      for(const key in _POSE_SLOTS) {
+        if(_POSE_SLOTS[key].names.includes(part) && !((key + side) in found)) found[key + side] = i;
+      }
+    }
+    if(opts.override) for(const id in opts.override) {       // {upperArmL: 'NodeName', ...}
+      const i = jn.findIndex(x => x.name === opts.override[id]);
+      if(i >= 0) found[id] = i;
+    }
+    const missing = [];
+    for(const key in _POSE_SLOTS) for(const side of ['L', 'R']) {
+      const i = found[key + side];
+      if(i === undefined) {missing.push(key + side); continue;}
+      const nextId = _POSE_SLOTS[key].next ? _POSE_SLOTS[key].next + side : null;
+      let c = nextId && found[nextId] !== undefined ? found[nextId] : -1;
+      if(c < 0) for(const ch of(this.nodes[i].children || [])) if(jointSet.has(ch)) {c = ch; break;}
+      if(c < 0) {missing.push(key + side + '(no child)'); continue;}
+      let dx = world[c][12] - world[i][12], dy = world[c][13] - world[i][13], dz = world[c][14] - world[i][14];
+      const l = Math.hypot(dx, dy, dz) || 1;
+      this._poseRestDir.set([dx / l, dy / l, dz / l], i * 3);
+      this._poseFrom[i] = _POSE_SLOTS[key][side][0];
+      this._poseTo[i] = _POSE_SLOTS[key][side][1];
+    }
+    if(missing.length) console.warn(`[${this.name}] pose drive: unmapped`, missing, '-> use opts.override');
+
+    // start from rest, so no old animation values stay in the nodes
+    for(const inst of this.instanceNodes) {
+      for(let i = 0;i < n;i++) {
+        inst[i].translation.set(this.nodes[i].translation);
+        inst[i].rotation.set(this.nodes[i].rotation);
+        inst[i].scale.set(this.nodes[i].scale);
+      }
+    }
+    this._poseOn = true;
+  }
+
+  disablePoseDrive() {this._poseOn = false;}
+
+  // call from pipe.onResults
+  setPoseResults(results) {
+    this._poseWL = results?.worldLandmarks?.[0] ?? null;
+    this._poseLM = results?.landmarks?.[0] ?? null;
+  }
+
+  _solvePose() {
+    const wl = this._poseWL;
+    if(!wl) return;
+    const lm = this._poseLM, sorted = this._sortedNodes, nodes = this.nodes;
+    const rw = this._poseRestWorld, nw = this._poseNewWorld, pl = this._poseLocal, q = this._qTmp;
+    const from = this._poseFrom, to = this._poseTo, rd = this._poseRestDir;
+    const mx = this._poseMirror ? -1 : 1, zs = this._poseZSign, minVis = this._poseMinVis;
+    const k = 1 - this._poseSmooth;
+
+    for(let s = 0;s < sorted.length;s++) {
+      const i = sorted[s], p = nodes[i].parent, f = from[i];
+      if(f >= 0) {
+        const t = to[i];
+        const visOk = !lm || (((lm[f].visibility ?? 1) >= minVis) && ((lm[t].visibility ?? 1) >= minVis));
+        if(visOk) {
+          const a = wl[f], b = wl[t];
+          let dx = mx * (b.x - a.x), dy = -(b.y - a.y), dz = zs * (b.z - a.z);
+          const l = Math.hypot(dx, dy, dz);
+          if(l > 1e-5) {
+            dx /= l; dy /= l; dz /= l;
+            _qFromTo(rd[i * 3], rd[i * 3 + 1], rd[i * 3 + 2], dx, dy, dz, q, 0);  // delta
+            _qmul(q, 0, rw, i * 4, q, 4);                                          // target world
+            if(p != null) _qmulConjA(nw, p * 4, q, 4, q, 0);                       // target local
+            else {q[0] = q[4]; q[1] = q[5]; q[2] = q[6]; q[3] = q[7];}
+            _nlerp(pl, i * 4, q, 0, k);
+          }
+        }
+      }
+      // keep world consistent for the children
+      if(p != null) _qmul(nw, p * 4, pl, i * 4, nw, i * 4);
+      else {nw[i * 4] = pl[i * 4]; nw[i * 4 + 1] = pl[i * 4 + 1]; nw[i * 4 + 2] = pl[i * 4 + 2]; nw[i * 4 + 3] = pl[i * 4 + 3];}
+    }
+  }
+
+  _restFromBindPose() {
+    const n = this.nodes.length, W = new Array(n), tmp = mat4.create(), L = mat4.create();
+    const isJoint = new Set(this.skeleton);
+    for(const i of this._sortedNodes) {
+      const nd = this.nodes[i], p = nd.parent;
+      if(isJoint.has(i)) {
+        const k = this.skeleton.indexOf(i);
+        W[i] = mat4.inverse(this.inverseBindMatrices.subarray(k * 16, k * 16 + 16));
+        if(p != null) mat4.multiply(mat4.inverse(W[p]), W[i], L); else mat4.copy(W[i], L);
+        const d = this.decomposeMatrix(L);
+        nd.translation.set(d.translation); nd.rotation.set(d.rotation); nd.scale.set(d.scale);
+      } else {
+        W[i] = p != null ? mat4.multiply(W[p], nd.transform) : mat4.copy(nd.transform);
+        // this.composeTRS(nd.translation, nd.rotation, nd.scale, tmp);
+        // W[i] = p != null ? mat4.multiply(W[p], tmp) : mat4.copy(tmp);
+      }
+    }
+  }
+
+  debugPoseRest() {
+    const nodes = this.instanceNodes[0];
+    let worst = 0, name = '';
+    for(const j of this.skeleton) {
+      const m = mat4.multiply(nodes[j].worldMatrix, nodes[j].inverseBindMatrix);
+      let d = 0;
+      for(let k = 0;k < 16;k++) d = Math.max(d, Math.abs(m[k] - (k % 5 === 0 ? 1 : 0)));
+      if(d > worst) {worst = d; name = this.glb.glbJsonData.nodes[j].name;}
+    }
+    console.log('pose rest error', worst, name);   // ~0 is good, > 0.01 means rest != bind pose
+  }
+
+  debugPoseRest2() {
+    const nodes = this.instanceNodes[0], jn = this.glb.glbJsonData.nodes;
+    const I = mat4.create(), m = mat4.create(), L = mat4.create();
+    let shown = 0;
+    for(const i of this._sortedNodes) {
+      const k = this.skeleton.indexOf(i);
+      if(k < 0) continue;
+      mat4.multiply(nodes[i].worldMatrix, nodes[i].inverseBindMatrix, m);
+      let err = 0;
+      for(let e = 0;e < 16;e++) err = Math.max(err, Math.abs(m[e] - I[e]));
+      if(err > 0.01 && shown++ < 5) {
+        const n = nodes[i];
+        this.composeTRS(n.translation, n.rotation, n.scale, L);
+        const det = L[0] * (L[5] * L[10] - L[6] * L[9]) - L[4] * (L[1] * L[10] - L[2] * L[9]) + L[8] * (L[1] * L[6] - L[2] * L[5]);
+        console.log(jn[i].name, 'err', err.toFixed(4),
+          'scale', Array.from(n.scale).map(v => +v.toFixed(3)),
+          'rotLen', Math.hypot(...n.rotation).toFixed(4),
+          'localDet', det.toFixed(3),
+          'parent', n.parent != null ? jn[n.parent].name : null);
+      }
+    }
+  }
+}
+
+// Control glb animation from exsternal src - helpers fns
+const _POSE_NOISE = new Set(['mixamorig', 'j', 'bip', 'bip01', 'def', 'mch', 'cc', 'base', 'rig', 'armature', 'c']);
+const _POSE_SLOTS = {
+  upperArm: {L: [11, 13], R: [12, 14], names: ['arm', 'upperarm'], next: 'foreArm'},
+  foreArm: {L: [13, 15], R: [14, 16], names: ['forearm', 'lowerarm'], next: null},
+  thigh: {L: [23, 25], R: [24, 26], names: ['upleg', 'upperleg', 'thigh'], next: 'shin'},
+  shin: {L: [25, 27], R: [26, 28], names: ['leg', 'lowerleg', 'calf', 'shin'], next: null},
+};
+
+function _poseTokens(name) {
+  return (name || '').replace(/^.*[:|]/, '').replace(/([a-z])([A-Z])/g, '$1 $2')
+    .toLowerCase().split(/[^a-z0-9]+/).filter(t => t && !_POSE_NOISE.has(t));
+}
+
+// allocation-free quaternion helpers (arrays + offsets, unit quaternions)
+function _qmul(a, ao, b, bo, o, oo) {
+  const ax = a[ao], ay = a[ao + 1], az = a[ao + 2], aw = a[ao + 3];
+  const bx = b[bo], by = b[bo + 1], bz = b[bo + 2], bw = b[bo + 3];
+  o[oo] = aw * bx + ax * bw + ay * bz - az * by;
+  o[oo + 1] = aw * by - ax * bz + ay * bw + az * bx;
+  o[oo + 2] = aw * bz + ax * by - ay * bx + az * bw;
+  o[oo + 3] = aw * bw - ax * bx - ay * by - az * bz;
+}
+function _qmulConjA(a, ao, b, bo, o, oo) {            // conj(a) * b
+  const ax = -a[ao], ay = -a[ao + 1], az = -a[ao + 2], aw = a[ao + 3];
+  const bx = b[bo], by = b[bo + 1], bz = b[bo + 2], bw = b[bo + 3];
+  o[oo] = aw * bx + ax * bw + ay * bz - az * by;
+  o[oo + 1] = aw * by - ax * bz + ay * bw + az * bx;
+  o[oo + 2] = aw * bz + ax * by - ay * bx + az * bw;
+  o[oo + 3] = aw * bw - ax * bx - ay * by - az * bz;
+}
+function _qFromTo(ux, uy, uz, vx, vy, vz, o, oo) {    // shortest rotation u -> v (unit vectors)
+  const d = ux * vx + uy * vy + uz * vz;
+  if(d > 0.999999) {o[oo] = 0; o[oo + 1] = 0; o[oo + 2] = 0; o[oo + 3] = 1; return;}
+  if(d < -0.999999) {
+    let ax, ay, az;
+    if(Math.abs(ux) < 0.9) {ax = 0; ay = uz; az = -uy;} else {ax = -uz; ay = 0; az = ux;}
+    const l = Math.hypot(ax, ay, az) || 1;
+    o[oo] = ax / l; o[oo + 1] = ay / l; o[oo + 2] = az / l; o[oo + 3] = 0; return;
+  }
+  const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx, w = 1 + d;
+  const l = Math.hypot(cx, cy, cz, w) || 1;
+  o[oo] = cx / l; o[oo + 1] = cy / l; o[oo + 2] = cz / l; o[oo + 3] = w / l;
+}
+function _nlerp(c, co, t, to, k) {                    // c = c + (t - c) * k, normalized
+  let tx = t[to], ty = t[to + 1], tz = t[to + 2], tw = t[to + 3];
+  if(c[co] * tx + c[co + 1] * ty + c[co + 2] * tz + c[co + 3] * tw < 0) {tx = -tx; ty = -ty; tz = -tz; tw = -tw;}
+  const x = c[co] + (tx - c[co]) * k, y = c[co + 1] + (ty - c[co + 1]) * k;
+  const z = c[co + 2] + (tz - c[co + 2]) * k, w = c[co + 3] + (tw - c[co + 3]) * k;
+  const l = Math.hypot(x, y, z, w) || 1;
+  c[co] = x / l; c[co + 1] = y / l; c[co + 2] = z / l; c[co + 3] = w / l;
 }
