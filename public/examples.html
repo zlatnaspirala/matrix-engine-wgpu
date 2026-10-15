@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <link rel="manifest" href="manifest.web" />
-  <title>Matrix Engine Powered by webGPU (The Beast). Created by Nikola Lukic zlatnaspirala@gmail.com </title>
+  <title>Matrix Engine Powered by webGPU (Alias: The Beast engine). Created by Nikola Lukic zlatnaspirala@gmail.com </title>
   <meta name="description" content="Draw loop per pipeline not per mesh (PipelineManager) with share material. Power optimisation.
 ✔️ Support for 3D objects and scene transformations.
 ✔️ Ammo.js, cannonES && Jolt Physics libs integration (app-bridge-worker). Physics use webworkers by default.
 ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs - frontend.
 ✔️ Bloom post processing.
 ✔️ HZB post processing.
-✔️ Scene Culling feature" />
+✔️ Scene CPU/GPU Culling feature" />
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <link defer rel="stylesheet" href="css/mobile.css" />
   <link rel="apple-touch-icon" href="res/icons/512.png" />
@@ -108,7 +108,7 @@
 
     document.getElementById('sliderMenu1').addEventListener('click', () => {
       if(document.getElementById('examples').style.left == "0px") {
-        document.getElementById('examples').style.left = "-150px";
+        document.getElementById('examples').style.left = "-160px";
       } else {
         document.getElementById('examples').style.left = "0px";
       }
