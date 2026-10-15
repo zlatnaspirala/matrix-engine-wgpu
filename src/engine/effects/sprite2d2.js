@@ -459,12 +459,12 @@ class SpriteInstance {
     pass.drawIndexed(this.shared.indexCount);
   }
 
-  destroy() {
-    this.vertexBuffer?.destroy();
-    this.uvBuffer?.destroy();
-    this.indexBuffer?.destroy();
-    this._spriteDataBuffer?.destroy();
-  }
+  // destroy() {
+  //   this.vertexBuffer?.destroy();
+  //   this.uvBuffer?.destroy();
+  //   this.indexBuffer?.destroy();
+  //   this._spriteDataBuffer?.destroy();
+  // }
 
   setTargetRotation(x, y, z) {
     this._targetRotation[0] = x * this.DEG2RAD;

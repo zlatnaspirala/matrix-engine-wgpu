@@ -14006,10 +14006,7 @@ var WASDCamera = class _WASDCamera {
   TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
-  // IMPORTANT:
-  // This is the ONLY dirty flag.
   _dirtyAngle = true;
-  // Classic mouse events are the default.
   usePointerEvents = false;
   static HALF_PI = Math.PI * 0.5;
   constructor(options2 = {}) {
@@ -14022,12 +14019,7 @@ var WASDCamera = class _WASDCamera {
     if (options2.yaw) this.yaw = options2.yaw;
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
-    this.setProjection(
-      2 * Math.PI / 5,
-      this.aspect,
-      1,
-      1e3
-    );
+    this.setProjection(2 * Math.PI / 5, this.aspect, 1, 1e3);
     if (options2.noEvents) {
       this.noEvent = true;
     } else {
@@ -14045,13 +14037,7 @@ var WASDCamera = class _WASDCamera {
     }
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
-    mat4Impl.perspective(
-      fov,
-      aspect,
-      near,
-      far,
-      this.projectionMatrix
-    );
+    mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
     this._recalculateViewVP();
   }
   static mat4MultiplySafe(a2, b2, out) {
@@ -14118,52 +14104,40 @@ var WASDCamera = class _WASDCamera {
     vs2[7] = 0;
     vs2[11] = 0;
     vs2[15] = 1;
-    _WASDCamera.mat4MultiplySafe(
-      this.projectionMatrix,
-      this.view,
-      this.VP
-    );
+    _WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
     let touchStartX = 0;
     let touchStartY = 0;
     if (isMobile() === true) {
-      canvas.addEventListener(
-        "touchstart",
-        (e2) => {
-          if (e2.touches.length > 0) {
-            const touch = e2.touches[0];
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
+      canvas.addEventListener("touchstart", (e2) => {
+        if (e2.touches.length > 0) {
+          const touch = e2.touches[0];
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
+        }
+      }, { passive: false });
+      canvas.addEventListener("touchmove", (e2) => {
+        if (this._lookDisabled) return;
+        if (e2.touches.length > 0) {
+          const touch = e2.touches[0];
+          const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
+          const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
+          this.yaw -= dx * this.rotationSpeed;
+          this.pitch -= dy * this.rotationSpeed;
+          const HALF_PI = _WASDCamera.HALF_PI;
+          if (this.pitch > HALF_PI) {
+            this.pitch = HALF_PI;
+          } else if (this.pitch < -HALF_PI) {
+            this.pitch = -HALF_PI;
           }
-        },
-        { passive: false }
-      );
-      canvas.addEventListener(
-        "touchmove",
-        (e2) => {
-          if (this._lookDisabled) return;
-          if (e2.touches.length > 0) {
-            const touch = e2.touches[0];
-            const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
-            const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
-            this.yaw -= dx * this.rotationSpeed;
-            this.pitch -= dy * this.rotationSpeed;
-            const HALF_PI = _WASDCamera.HALF_PI;
-            if (this.pitch > HALF_PI) {
-              this.pitch = HALF_PI;
-            } else if (this.pitch < -HALF_PI) {
-              this.pitch = -HALF_PI;
-            }
-            this._dirtyAngle = true;
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-          }
-          e2.preventDefault();
-        },
-        { passive: false }
-      );
+          this._dirtyAngle = true;
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
+        }
+        e2.preventDefault();
+      }, { passive: false });
     }
     if (isMobile() === false) {
       canvas.oncontextmenu = (e2) => {
@@ -14211,40 +14185,36 @@ var WASDCamera = class _WASDCamera {
         },
         { passive: true }
       );
-      window.addEventListener(
-        "keyup",
-        (e2) => {
-          let bit = 0;
-          switch (e2.code) {
-            case "ArrowUp":
-            case "KeyW":
-              bit = 1;
-              break;
-            case "ArrowDown":
-            case "KeyS":
-              bit = 2;
-              break;
-            case "ArrowLeft":
-            case "KeyA":
-              bit = 4;
-              break;
-            case "ArrowRight":
-            case "KeyD":
-              bit = 8;
-              break;
-            case "KeyV":
-              bit = 16;
-              break;
-            case "KeyC":
-              bit = 32;
-              break;
-            default:
-              return;
-          }
-          this._digital &= ~bit;
-        },
-        { passive: true }
-      );
+      window.addEventListener("keyup", (e2) => {
+        let bit = 0;
+        switch (e2.code) {
+          case "ArrowUp":
+          case "KeyW":
+            bit = 1;
+            break;
+          case "ArrowDown":
+          case "KeyS":
+            bit = 2;
+            break;
+          case "ArrowLeft":
+          case "KeyA":
+            bit = 4;
+            break;
+          case "ArrowRight":
+          case "KeyD":
+            bit = 8;
+            break;
+          case "KeyV":
+            bit = 16;
+            break;
+          case "KeyC":
+            bit = 32;
+            break;
+          default:
+            return;
+        }
+        this._digital &= ~bit;
+      }, { passive: true });
     }
   }
   // CLASSIC MOUSE EVENTS
@@ -14278,17 +14248,13 @@ var WASDCamera = class _WASDCamera {
   }
   // POINTER EVENTS
   _setupPointerEvents(canvas) {
-    canvas.addEventListener(
-      "pointerdown",
-      (e2) => {
-        if (e2.pointerType !== "mouse") return;
-        this._mouseDown = true;
-        if (canvas.setPointerCapture) {
-          canvas.setPointerCapture(e2.pointerId);
-        }
-      },
-      { passive: true }
-    );
+    canvas.addEventListener("pointerdown", (e2) => {
+      if (e2.pointerType !== "mouse") return;
+      this._mouseDown = true;
+      if (canvas.setPointerCapture) {
+        canvas.setPointerCapture(e2.pointerId);
+      }
+    }, { passive: true });
     canvas.addEventListener(
       "pointermove",
       (e2) => {
@@ -15651,7 +15617,9 @@ var PlaneCamera = class {
     this._dirty = false;
   }
 };
+var DIGITAL_BITS = { forward: 1, backward: 2, left: 4, right: 8 };
 var MobileDOM = {
+  _wasd: null,
   eventDown: null,
   eventUp: null,
   eventCancel: null,
@@ -15678,13 +15646,27 @@ var MobileDOM = {
       touchAction: "none"
     });
     const defs = [
-      ["W", "\u25B2", 2, 1, "forward"],
-      ["A", "\u25C0", 1, 2, "left"],
-      ["S", "\u25BC", 2, 2, "backward"],
-      ["D", "\u25B6", 3, 2, "right"]
+      ["\u25B2", 2, 1, "forward"],
+      ["\u25C0", 1, 2, "left"],
+      ["\u25BC", 2, 2, "backward"],
+      ["\u25B6", 3, 2, "right"]
     ];
+    const idle = `rgba(255,255,255,${opacity * 0.4})`;
+    const active = `rgba(255,255,255,${opacity})`;
+    const setBit = (action, on2) => {
+      const bit = DIGITAL_BITS[action];
+      if (!bit) return;
+      if (on2) {
+        if (camera._digital === 0) camera._lastMoveSceneTime = void 0;
+        camera._digital |= bit;
+      } else {
+        camera._digital &= ~bit;
+      }
+      buttons[action].style.background = on2 ? active : idle;
+    };
     const buttons = {};
-    for (const [, label, col, row2, action] of defs) {
+    const handlers = [];
+    for (const [label, col, row2, action] of defs) {
       const btn = document.createElement("div");
       btn.id = label;
       btn.dataset.action = action;
@@ -15698,7 +15680,7 @@ var MobileDOM = {
         justifyContent: "center",
         fontSize: `${size2 * 0.38}px`,
         color,
-        background: `rgba(255,255,255,${opacity * 0.4})`,
+        background: idle,
         border: `2px solid rgba(255,255,255,${opacity})`,
         borderRadius: `${size2 * 0.18}px`,
         cursor: "pointer",
@@ -15707,74 +15689,31 @@ var MobileDOM = {
       btn.textContent = label;
       buttons[action] = btn;
       if (!forMobileJoystick) {
-        const press = () => {
-          camera._digital[action] = true;
-          btn.style.background = `rgba(255,255,255,${opacity})`;
-          if (camera._keyInterval === null) {
-            camera._keyInterval = setInterval(() => {
-              camera._dirty = true;
-              camera._dirtyAngle = true;
-              camera._applyDigitalMovement();
-            }, 16);
-          }
-        };
-        const release = () => {
-          camera._digital[action] = false;
-          btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-          const d2 = camera._digital;
-          if (!d2.forward && !d2.backward && !d2.left && !d2.right) {
-            clearInterval(camera._keyInterval);
-            camera._keyInterval = null;
-            camera._dirty = false;
-          }
-        };
-        MobileDOM.eventDown = (e2) => {
+        const down = (e2) => {
+          console.log("pad down", e2.pointerId, document.elementFromPoint(e2.clientX, e2.clientY)?.dataset?.action);
           e2.stopPropagation();
-          press();
           btn.setPointerCapture(e2.pointerId);
+          setBit(action, true);
         };
-        MobileDOM.eventUp = (e2) => {
-          release();
-        };
-        MobileDOM.eventCancel = (e2) => {
-          release();
-        };
-        btn.addEventListener("pointerdown", MobileDOM.eventDown, { passive: true });
-        btn.addEventListener("pointerup", MobileDOM.eventUp, { passive: true });
-        btn.addEventListener("pointercancel", MobileDOM.eventCancel, { passive: true });
+        const up = () => setBit(action, false);
+        btn.addEventListener("pointerdown", down, { passive: true });
+        btn.addEventListener("pointerup", up, { passive: true });
+        btn.addEventListener("pointercancel", up, { passive: true });
+        handlers.push([btn, "pointerdown", down], [btn, "pointerup", up], [btn, "pointercancel", up]);
       }
       wrap.appendChild(btn);
     }
     if (forMobileJoystick) {
+      console.log("pad down forMobileJoystick true");
       let activePointerId = null;
       let activeAction = null;
       const setActive = (action) => {
         if (activeAction === action) return;
-        if (activeAction) {
-          camera._digital[activeAction] = false;
-          buttons[activeAction].style.background = `rgba(255,255,255,${opacity * 0.4})`;
-        }
+        if (activeAction) setBit(activeAction, false);
         activeAction = action;
-        if (activeAction) {
-          camera._digital[activeAction] = true;
-          buttons[activeAction].style.background = `rgba(255,255,255,${opacity})`;
-        }
-        if (activeAction && camera._keyInterval === null) {
-          camera._keyInterval = setInterval(() => {
-            camera._dirty = true;
-            camera._dirtyAngle = true;
-            camera._applyDigitalMovement();
-          }, 16);
-        } else if (!activeAction && camera._keyInterval !== null) {
-          clearInterval(camera._keyInterval);
-          camera._keyInterval = null;
-          camera._dirty = false;
-        }
+        if (activeAction) setBit(activeAction, true);
       };
-      const actionAt = (x3, y3) => {
-        const el2 = document.elementFromPoint(x3, y3);
-        return el2?.dataset?.action ?? null;
-      };
+      const actionAt = (x3, y3) => document.elementFromPoint(x3, y3)?.dataset?.action ?? null;
       const onDown = (e2) => {
         e2.stopPropagation();
         activePointerId = e2.pointerId;
@@ -15790,36 +15729,48 @@ var MobileDOM = {
         activePointerId = null;
         setActive(null);
       };
-      MobileDOM.eventDown = onDown;
-      MobileDOM.eventUp = onUp;
-      MobileDOM.eventCancel = onUp;
       wrap.addEventListener("pointerdown", onDown, { passive: true });
       wrap.addEventListener("pointermove", onMove, { passive: true });
       wrap.addEventListener("pointerup", onUp, { passive: true });
       wrap.addEventListener("pointercancel", onUp, { passive: true });
+      handlers.push(
+        [wrap, "pointerdown", onDown],
+        [wrap, "pointermove", onMove],
+        [wrap, "pointerup", onUp],
+        [wrap, "pointercancel", onUp]
+      );
     }
+    MobileDOM._wasd = { camera, handlers, wrap };
     document.body.appendChild(wrap);
     return wrap;
   },
+  // destroyWASD() {
+  //   if(byId('mobileControls') == null) return;
+  //   byId('▲').removeEventListener('pointerdown', MobileDOM.eventDown);
+  //   byId('▲').removeEventListener('pointerup', MobileDOM.eventUp);
+  //   byId('▲').removeEventListener('pointercancel', MobileDOM.eventCancel);
+  //   byId('◀').removeEventListener('pointerdown', MobileDOM.eventDown);
+  //   byId('◀').removeEventListener('pointerup', MobileDOM.eventUp);
+  //   byId('◀').removeEventListener('pointercancel', MobileDOM.eventCancel);
+  //   byId('▼').removeEventListener('pointerdown', MobileDOM.eventDown);
+  //   byId('▼').removeEventListener('pointerup', MobileDOM.eventUp);
+  //   byId('▼').removeEventListener('pointercancel', MobileDOM.eventCancel);
+  //   byId('▶').removeEventListener('pointerdown', MobileDOM.eventDown);
+  //   byId('▶').removeEventListener('pointerup', MobileDOM.eventUp);
+  //   byId('▶').removeEventListener('pointercancel', MobileDOM.eventCancel);
+  //   byId('▲').remove();
+  //   byId('◀').remove();
+  //   byId('▼').remove();
+  //   byId('▶').remove();
+  //   byId('mobileControls').remove();
+  // },
   destroyWASD() {
-    if (byId2("mobileControls") == null) return;
-    byId2("\u25B2").removeEventListener("pointerdown", MobileDOM.eventDown);
-    byId2("\u25B2").removeEventListener("pointerup", MobileDOM.eventUp);
-    byId2("\u25B2").removeEventListener("pointercancel", MobileDOM.eventCancel);
-    byId2("\u25C0").removeEventListener("pointerdown", MobileDOM.eventDown);
-    byId2("\u25C0").removeEventListener("pointerup", MobileDOM.eventUp);
-    byId2("\u25C0").removeEventListener("pointercancel", MobileDOM.eventCancel);
-    byId2("\u25BC").removeEventListener("pointerdown", MobileDOM.eventDown);
-    byId2("\u25BC").removeEventListener("pointerup", MobileDOM.eventUp);
-    byId2("\u25BC").removeEventListener("pointercancel", MobileDOM.eventCancel);
-    byId2("\u25B6").removeEventListener("pointerdown", MobileDOM.eventDown);
-    byId2("\u25B6").removeEventListener("pointerup", MobileDOM.eventUp);
-    byId2("\u25B6").removeEventListener("pointercancel", MobileDOM.eventCancel);
-    byId2("\u25B2").remove();
-    byId2("\u25C0").remove();
-    byId2("\u25BC").remove();
-    byId2("\u25B6").remove();
-    byId2("mobileControls").remove();
+    const w2 = MobileDOM._wasd;
+    if (!w2) return;
+    for (const [el2, type2, fn2] of w2.handlers) el2.removeEventListener(type2, fn2);
+    w2.camera._digital = 0;
+    w2.wrap.remove();
+    MobileDOM._wasd = null;
   },
   addButton(label, onClick, onRelease = () => {
   }, options2 = {}, onMove = () => {
@@ -61338,12 +61289,12 @@ var SpriteInstance = class {
     pass.setIndexBuffer(this.shared.indexBuffer, "uint16");
     pass.drawIndexed(this.shared.indexCount);
   }
-  destroy() {
-    this.vertexBuffer?.destroy();
-    this.uvBuffer?.destroy();
-    this.indexBuffer?.destroy();
-    this._spriteDataBuffer?.destroy();
-  }
+  // destroy() {
+  //   this.vertexBuffer?.destroy();
+  //   this.uvBuffer?.destroy();
+  //   this.indexBuffer?.destroy();
+  //   this._spriteDataBuffer?.destroy();
+  // }
   setTargetRotation(x3, y3, z2) {
     this._targetRotation[0] = x3 * this.DEG2RAD;
     this._targetRotation[1] = y3 * this.DEG2RAD;
@@ -80090,6 +80041,319 @@ var loadPoseToGLB = function() {
   window.app = loadPose;
 };
 
+// examples/games/slot-machine/slot.js
+var loadSlot = function() {
+  let slotMachine = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    slotMachine.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", plane: "./res/meshes/blender/plane.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [35, 0.5, 35] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      slotMachine.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    async function onLoadObj(m2) {
+      slotMachine.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -1, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [100, 100, 100],
+        rotationSpeed: { x: 0, y: 0.1, z: 0 },
+        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "sky",
+        mesh: m2.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
+      let MYCUBE = slotMachine.addMeshObj({
+        material: { type: "standard" },
+        position: { x: -6, y: 15, z: -10 },
+        rotation: { x: 180, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3.5, 3.5, 3.5],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        raycast: { enabled: false, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true
+        }
+      });
+      let MYCUBE2 = slotMachine.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 15, z: -10 },
+        rotation: { x: 180, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3.5, 3.5, 3.5],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "cube2",
+        mesh: m2.cube,
+        raycast: { enabled: false, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true
+        }
+      });
+      let MYCUBE3 = slotMachine.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 6, y: 15, z: -10 },
+        rotation: { x: 180, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3.5, 3.5, 3.5],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "cube3",
+        mesh: m2.cube,
+        raycast: { enabled: false, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true
+        }
+      });
+      slotMachine.lightContainer[0].setIntensity(15);
+      slotMachine.activateBloomEffect();
+      slotMachine.activateVolumetricEffect();
+      slotMachine.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      slotMachine.lightContainer[0].behavior.value_ = -1;
+      slotMachine.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      slotMachine.lightContainer[0].setPosition(0, 45, -8);
+      slotMachine.lightContainer[0].setTarget(0, 0, -10);
+      console.log(MYCUBE3);
+      let MYCUBE_EFFECT = slotMachine.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 15, z: -10 },
+        rotation: { x: 90, y: 0, z: 180 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [9, 9, 9],
+        texturesPaths: ["./res/icons/512.webp"],
+        name: "cubeeffect",
+        mesh: m2.plane,
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true
+          //  flameEmitter: true,
+        }
+      });
+      setTimeout(async () => {
+        MYCUBE_EFFECT.effects.circle = new GenGeoTexture2(slotMachine.device, "rgba16float", "circle2", "./res/textures/star1.png", 3, slotMachine.cameraBuffer);
+        MYCUBE_EFFECT.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
+        const batch = await initializeSpritesForMesh(
+          MYCUBE,
+          // Your mesh
+          app.device,
+          // WebGPU device
+          "rgba16float",
+          // Format
+          app.cameraBuffer,
+          // Camera buffer
+          "./res/textures/loadSlot/reel1-lod0.webp",
+          // Spritesheet path
+          4,
+          // Grid cols
+          4,
+          // Grid rows
+          "circle",
+          // Pattern: matrix|pulsing|flow|circle|wave
+          { radius: 4.5, count: 18 }
+        );
+        const batch2 = await initializeSpritesForMesh(
+          MYCUBE2,
+          // Your mesh
+          app.device,
+          // WebGPU device
+          "rgba16float",
+          // Format
+          app.cameraBuffer,
+          // Camera buffer
+          "./res/textures/loadSlot/reel1-lod0.webp",
+          // Spritesheet path
+          4,
+          // Grid cols
+          4,
+          // Grid rows
+          "circle",
+          // Pattern: matrix|pulsing|flow|circle|wave
+          { radius: 4.5, count: 18 }
+        );
+        const batch3 = await initializeSpritesForMesh(
+          MYCUBE3,
+          // Your mesh
+          app.device,
+          // WebGPU device
+          "rgba16float",
+          // Format
+          app.cameraBuffer,
+          // Camera buffer
+          "./res/textures/loadSlot/reel1-lod0.webp",
+          // Spritesheet path
+          4,
+          // Grid cols
+          4,
+          // Grid rows
+          "circle",
+          // Pattern: matrix|pulsing|flow|circle|wave
+          { radius: 4.5, count: 18 }
+        );
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.05);
+        cam2.setZ(22);
+        cam2.setY(16);
+        cam2._dirtyAngle = true;
+        MYCUBE.setBlend(1e-3);
+        MYCUBE2.setBlend(1e-3);
+        MYCUBE3.setBlend(1e-3);
+        MYCUBE.setupPipeline();
+        app.buildRenderBuckets();
+      }, 600);
+      setTimeout(() => {
+        let timer1 = null;
+        let myReel1 = [...MYCUBE.effects.spriteBatch.sprites.values()];
+        const count = myReel1.length;
+        let myReel2 = [...MYCUBE2.effects.spriteBatch.sprites.values()];
+        const count2 = myReel2.length;
+        let myReel3 = [...MYCUBE3.effects.spriteBatch.sprites.values()];
+        const count3 = myReel3.length;
+        myReel1.forEach((sprite, index) => {
+          const angle2 = index / count * Math.PI * 2;
+          sprite.play(index * 0.5);
+        });
+        myReel2.forEach((sprite, index) => {
+          const angle2 = index / count * Math.PI * 2;
+          sprite.play(index * 0.5);
+        });
+        myReel3.forEach((sprite, index) => {
+          const angle2 = index / count * Math.PI * 2;
+          sprite.play(index * 0.5);
+        });
+        setTimeout(() => {
+          MYCUBE_EFFECT.effects.circle.updateInstanceCount(8);
+          const FX = new InstancedKinematicOperations(MYCUBE_EFFECT.effects.circle.instanceTargets);
+          FX.orbit();
+          myReel1.forEach((sprite, index) => {
+            const baseAngle = index * 20;
+            const targetY = baseAngle;
+            setTimeout(() => {
+              const angle2 = index / count * Math.PI * 2;
+              const yDeg = angle2 * (180 / Math.PI);
+              const FIX = 90;
+              sprite.pause();
+              sprite.goToFrame(randomIntFromTo(0, 8));
+              sprite.setTargetRotation(90, yDeg - FIX, FIX);
+              if (index === myReel1.length - 1) {
+                animateRotationY(MYCUBE.rotation, 90, 1e3);
+                setTimeout(() => {
+                  MYCUBE.rotation.setRotateX(2.5);
+                }, 1500);
+              }
+            }, 100 * index);
+          });
+          myReel2.forEach((sprite, index) => {
+            const baseAngle = index * 20;
+            const targetY = baseAngle;
+            setTimeout(() => {
+              const angle2 = index / count2 * Math.PI * 2;
+              const yDeg = angle2 * (180 / Math.PI);
+              const FIX = 90;
+              sprite.pause();
+              sprite.goToFrame(randomIntFromTo(0, 8));
+              sprite.setTargetRotation(90, yDeg - FIX, FIX);
+              if (index === myReel2.length - 1) {
+                animateRotationY(MYCUBE2.rotation, 90, 1e3);
+                setTimeout(() => {
+                  MYCUBE2.rotation.setRotateX(4);
+                }, 1700);
+              }
+            }, 200 * index);
+          });
+          myReel3.forEach((sprite, index) => {
+            const baseAngle = index * 20;
+            const targetY = baseAngle;
+            setTimeout(() => {
+              const angle2 = index / count3 * Math.PI * 2;
+              const yDeg = angle2 * (180 / Math.PI);
+              const FIX = 90;
+              sprite.pause();
+              sprite.goToFrame(randomIntFromTo(0, 8));
+              sprite.setTargetRotation(90, yDeg - FIX, FIX);
+              if (index === myReel3.length - 1) {
+                animateRotationY(MYCUBE3.rotation, 90, 1e3);
+                setTimeout(() => {
+                  MYCUBE3.rotation.setRotateX(8);
+                  MYCUBE_EFFECT.rotation.setRotateZ(1);
+                  MYCUBE_EFFECT.effects.keeffect.recreateVertexDataFromData(
+                    [-6.94798115268439, 13.359448700316488, 15.690525966669506, 14.642970205525577, 2.5040455061885725, 13.874531871189749, -16.32885928825164, -11.8878829677588]
+                  );
+                }, 1900);
+              }
+            }, 300 * index);
+          });
+        }, 3e3);
+        MYCUBE_EFFECT.effects.circle.instanceTargets[0].isDyrty = true;
+        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
+        MYCUBE.setAmbient(2, 0, 0);
+      }, 1e3);
+    }
+    slotMachine.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cubeeffect")) {
+        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+      }
+    });
+  });
+  window.app = slotMachine;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -80157,6 +80421,7 @@ byId2("loadMSDFText").addEventListener("click", () => switchDemo("46"));
 byId2("loadFaceMask").addEventListener("click", () => switchDemo("47"));
 byId2("loadPoseBeast").addEventListener("click", () => switchDemo("48"));
 byId2("loadPoseToGLB").addEventListener("click", () => switchDemo("49"));
+byId2("loadSlot").addEventListener("click", () => switchDemo("50"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 window.loadObjFile = loadObjFile;
@@ -80258,6 +80523,8 @@ if (urlQuery["demo"] === "1") {
   loadPoseBeast();
 } else if (urlQuery["demo"] === "49") {
   loadPoseToGLB();
+} else if (urlQuery["demo"] === "50") {
+  loadSlot();
 } else {
   loadObjFile();
 }
