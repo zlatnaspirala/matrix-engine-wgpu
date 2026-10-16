@@ -13992,13 +13992,6 @@ var WASDCamera = class _WASDCamera {
   _rotYScratch = mat4Impl.create();
   _rotXScratch = mat4Impl.create();
   _viewScratch = mat4Impl.create();
-  // Bitmask:
-  // 1  = forward / W / ArrowUp
-  // 2  = backward / S / ArrowDown
-  // 4  = left / A / ArrowLeft
-  // 8  = right / D / ArrowRight
-  // 16 = up / V
-  // 32 = down / C
   _digital = 0;
   _mouseDown = false;
   _lookDisabled = false;
@@ -15744,26 +15737,6 @@ var MobileDOM = {
     document.body.appendChild(wrap);
     return wrap;
   },
-  // destroyWASD() {
-  //   if(byId('mobileControls') == null) return;
-  //   byId('▲').removeEventListener('pointerdown', MobileDOM.eventDown);
-  //   byId('▲').removeEventListener('pointerup', MobileDOM.eventUp);
-  //   byId('▲').removeEventListener('pointercancel', MobileDOM.eventCancel);
-  //   byId('◀').removeEventListener('pointerdown', MobileDOM.eventDown);
-  //   byId('◀').removeEventListener('pointerup', MobileDOM.eventUp);
-  //   byId('◀').removeEventListener('pointercancel', MobileDOM.eventCancel);
-  //   byId('▼').removeEventListener('pointerdown', MobileDOM.eventDown);
-  //   byId('▼').removeEventListener('pointerup', MobileDOM.eventUp);
-  //   byId('▼').removeEventListener('pointercancel', MobileDOM.eventCancel);
-  //   byId('▶').removeEventListener('pointerdown', MobileDOM.eventDown);
-  //   byId('▶').removeEventListener('pointerup', MobileDOM.eventUp);
-  //   byId('▶').removeEventListener('pointercancel', MobileDOM.eventCancel);
-  //   byId('▲').remove();
-  //   byId('◀').remove();
-  //   byId('▼').remove();
-  //   byId('▶').remove();
-  //   byId('mobileControls').remove();
-  // },
   destroyWASD() {
     const w2 = MobileDOM._wasd;
     if (!w2) return;
@@ -36338,9 +36311,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         inverseBindMatrix: n3.inverseBindMatrix ? new Float32Array(n3.inverseBindMatrix) : null
       }));
       this.instanceNodes.push(clonedNodes);
-      this.instanceBoneMatrices.push(
-        new Float32Array(this.MAX_BONES * 16)
-      );
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
     }
   }
   initInverseBindMatrices(skinIndex = 0) {
@@ -36382,9 +36353,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
   };
   playAnimationByName = (animationName) => {
     const animations = this.glb.glbJsonData.animations;
-    const index = animations.findIndex(
-      (anim) => anim.name === animationName
-    );
+    const index = animations.findIndex((anim) => anim.name === animationName);
     if (index === -1) {
       console.warn(`Animation '${animationName}' not found`);
       return;
@@ -36475,7 +36444,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         result2 = new Uint8Array(slice);
         break;
       default:
-        throw new Error("Unsupported componentType: " + accessor.componentType);
+        throw new Error("Unsupported componentType:" + accessor.componentType);
     }
     glb._accessorCache.set(accessorIndex, result2);
     return result2;
@@ -36853,6 +36822,55 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       this._poseTo[i2] = _POSE_SLOTS[key][side][1];
     }
     if (missing.length) console.warn(`[${this.name}] pose drive: unmapped`, missing, "-> use opts.override");
+    this._poseKind = new Int8Array(n3);
+    this._poseT = new Float32Array(n3);
+    this._rv = new Float32Array(15);
+    this._tv = new Float32Array(15);
+    this._dq = new Float32Array(12);
+    this._lmS = new Float32Array(18);
+    this._fdS = new Float32Array(12);
+    this._poseTorso = false;
+    let hips = -1, head = -1;
+    const spine = [], neck = [];
+    for (const i2 of this._sortedNodes) {
+      if (!jointSet.has(i2)) continue;
+      const t3 = _poseTokens(jn2[i2].name);
+      if (t3.includes("left") || t3.includes("right")) continue;
+      const k2 = t3.join("");
+      if (hips < 0 && (k2 === "hips" || k2 === "pelvis")) hips = i2;
+      else if (/^(spine|chest|upperchest)/.test(k2)) spine.push(i2);
+      else if (/^neck/.test(k2)) neck.push(i2);
+      else if (head < 0 && k2 === "head") head = i2;
+    }
+    const F2 = found;
+    if (hips >= 0 && head >= 0 && F2.thighL !== void 0 && F2.thighR !== void 0 && F2.upperArmL !== void 0 && F2.upperArmR !== void 0) {
+      const P2 = (i2, a2) => world[i2][12 + a2], rv = this._rv;
+      const hm = [0, 1, 2].map((a2) => (P2(F2.thighL, a2) + P2(F2.thighR, a2)) / 2);
+      const am = [0, 1, 2].map((a2) => (P2(F2.upperArmL, a2) + P2(F2.upperArmR, a2)) / 2);
+      const nrm = (v2) => {
+        const l2 = Math.hypot(...v2) || 1;
+        return v2.map((x3) => x3 / l2);
+      };
+      rv.set(nrm(am.map((x3, a2) => x3 - hm[a2])), 0);
+      rv.set([0, 1, 2].map((a2) => P2(F2.thighL, a2) - P2(F2.thighR, a2)), 3);
+      const cs2 = [0, 1, 2].map((a2) => P2(F2.upperArmL, a2) - P2(F2.upperArmR, a2));
+      rv.set(cs2, 6);
+      rv.set(cs2, 12);
+      rv.set(nrm([0, 1, 2].map((a2) => P2(head, a2) - am[a2])), 9);
+      this._poseKind[hips] = 2;
+      this._poseT[hips] = 0;
+      spine.forEach((i2, k2) => {
+        this._poseKind[i2] = 2;
+        this._poseT[i2] = (k2 + 1) / spine.length;
+      });
+      neck.forEach((i2, k2) => {
+        this._poseKind[i2] = 3;
+        this._poseT[i2] = (k2 + 1) / (neck.length + 1);
+      });
+      this._poseKind[head] = 3;
+      this._poseT[head] = 1;
+      this._poseTorso = true;
+    } else console.warn(`[${this.name}] pose drive: torso/head not resolved (hips/head/thigh/arm missing)`);
     for (const inst of this.instanceNodes) {
       for (let i2 = 0; i2 < n3; i2++) {
         inst[i2].translation.set(this.nodes[i2].translation);
@@ -36876,14 +36894,53 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     const lm = this._poseLM, sorted = this._sortedNodes, nodes = this.nodes;
     const rw = this._poseRestWorld, nw = this._poseNewWorld, pl = this._poseLocal, q2 = this._qTmp;
     const from = this._poseFrom, to2 = this._poseTo, rd = this._poseRestDir;
+    const kinds = this._poseKind, T2 = this._poseT, dq = this._dq;
     const mx = this._poseMirror ? -1 : 1, zs2 = this._poseZSign, minVis = this._poseMinVis;
     const k2 = 1 - this._poseSmooth;
+    let torsoOK = false, headOK = false;
+    if (this._poseTorso && _vis(lm, 11, minVis) && _vis(lm, 12, minVis) && _vis(lm, 23, minVis) && _vis(lm, 24, minVis)) {
+      torsoOK = true;
+      const L2 = this._lmS, tv = this._tv, S2 = this._fdS, idx = [11, 12, 23, 24, 7, 8];
+      for (let n3 = 0; n3 < 6; n3++) {
+        const p2 = wl[idx[n3]];
+        L2[n3 * 3] = mx * p2.x;
+        L2[n3 * 3 + 1] = -p2.y;
+        L2[n3 * 3 + 2] = zs2 * p2.z;
+      }
+      let ux = (L2[0] + L2[3]) / 2 - (L2[6] + L2[9]) / 2, uy = (L2[1] + L2[4]) / 2 - (L2[7] + L2[10]) / 2, uz = (L2[2] + L2[5]) / 2 - (L2[8] + L2[11]) / 2;
+      let l2 = Math.hypot(ux, uy, uz) || 1;
+      tv[0] = ux / l2;
+      tv[1] = uy / l2;
+      tv[2] = uz / l2;
+      tv[3] = L2[6] - L2[9];
+      tv[4] = L2[7] - L2[10];
+      tv[5] = L2[8] - L2[11];
+      tv[6] = L2[0] - L2[3];
+      tv[7] = L2[1] - L2[4];
+      tv[8] = L2[2] - L2[5];
+      _frameDelta(this._rv, 0, 3, tv, 0, 3, dq, 0, S2);
+      _frameDelta(this._rv, 0, 6, tv, 0, 6, dq, 4, S2);
+      if (_vis(lm, 7, minVis) && _vis(lm, 8, minVis)) {
+        headOK = true;
+        ux = (L2[12] + L2[15]) / 2 - (L2[0] + L2[3]) / 2;
+        uy = (L2[13] + L2[16]) / 2 - (L2[1] + L2[4]) / 2;
+        uz = (L2[14] + L2[17]) / 2 - (L2[2] + L2[5]) / 2;
+        l2 = Math.hypot(ux, uy, uz) || 1;
+        tv[9] = ux / l2;
+        tv[10] = uy / l2;
+        tv[11] = uz / l2;
+        tv[12] = L2[12] - L2[15];
+        tv[13] = L2[13] - L2[16];
+        tv[14] = L2[14] - L2[17];
+        _frameDelta(this._rv, 9, 12, tv, 9, 12, dq, 8, S2);
+      }
+    }
     for (let s2 = 0; s2 < sorted.length; s2++) {
-      const i2 = sorted[s2], p2 = nodes[i2].parent, f2 = from[i2];
+      const i2 = sorted[s2], p2 = nodes[i2].parent, f2 = from[i2], kind = kinds[i2];
+      let have = false;
       if (f2 >= 0) {
         const t3 = to2[i2];
-        const visOk = !lm || (lm[f2].visibility ?? 1) >= minVis && (lm[t3].visibility ?? 1) >= minVis;
-        if (visOk) {
+        if (_vis(lm, f2, minVis) && _vis(lm, t3, minVis)) {
           const a2 = wl[f2], b2 = wl[t3];
           let dx = mx * (b2.x - a2.x), dy = -(b2.y - a2.y), dz = zs2 * (b2.z - a2.z);
           const l2 = Math.hypot(dx, dy, dz);
@@ -36892,17 +36949,34 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
             dy /= l2;
             dz /= l2;
             _qFromTo(rd[i2 * 3], rd[i2 * 3 + 1], rd[i2 * 3 + 2], dx, dy, dz, q2, 0);
-            _qmul(q2, 0, rw, i2 * 4, q2, 4);
-            if (p2 != null) _qmulConjA(nw, p2 * 4, q2, 4, q2, 0);
-            else {
-              q2[0] = q2[4];
-              q2[1] = q2[5];
-              q2[2] = q2[6];
-              q2[3] = q2[7];
-            }
-            _nlerp(pl, i2 * 4, q2, 0, k2);
+            have = true;
           }
         }
+      } else if (kind === 2 && torsoOK) {
+        q2[0] = dq[0];
+        q2[1] = dq[1];
+        q2[2] = dq[2];
+        q2[3] = dq[3];
+        _nlerp(q2, 0, dq, 4, T2[i2]);
+        have = true;
+      } else if (kind === 3 && headOK) {
+        q2[0] = dq[4];
+        q2[1] = dq[5];
+        q2[2] = dq[6];
+        q2[3] = dq[7];
+        _nlerp(q2, 0, dq, 8, T2[i2]);
+        have = true;
+      }
+      if (have) {
+        _qmul(q2, 0, rw, i2 * 4, q2, 4);
+        if (p2 != null) _qmulConjA(nw, p2 * 4, q2, 4, q2, 0);
+        else {
+          q2[0] = q2[4];
+          q2[1] = q2[5];
+          q2[2] = q2[6];
+          q2[3] = q2[7];
+        }
+        _nlerp(pl, i2 * 4, q2, 0, k2);
       }
       if (p2 != null) _qmul(nw, p2 * 4, pl, i2 * 4, nw, i2 * 4);
       else {
@@ -37052,6 +37126,52 @@ function _nlerp(c2, co2, t3, to2, k2) {
   c2[co2 + 1] = y3 / l2;
   c2[co2 + 2] = z2 / l2;
   c2[co2 + 3] = w2 / l2;
+}
+function _vrot(q2, qo2, x3, y3, z2, o3, oo2) {
+  const qx = q2[qo2], qy = q2[qo2 + 1], qz = q2[qo2 + 2], qw = q2[qo2 + 3];
+  const tx = 2 * (qy * z2 - qz * y3), ty = 2 * (qz * x3 - qx * z2), tz = 2 * (qx * y3 - qy * x3);
+  o3[oo2] = x3 + qw * tx + (qy * tz - qz * ty);
+  o3[oo2 + 1] = y3 + qw * ty + (qz * tx - qx * tz);
+  o3[oo2 + 2] = z2 + qw * tz + (qx * ty - qy * tx);
+}
+function _vis(lm, i2, m2) {
+  return !lm || (lm[i2].visibility ?? 1) >= m2;
+}
+function _frameDelta(A2, au, as2, B2, bu, bs2, O2, oo2, S2) {
+  const tx = B2[bu], ty = B2[bu + 1], tz = B2[bu + 2];
+  _qFromTo(A2[au], A2[au + 1], A2[au + 2], tx, ty, tz, S2, 0);
+  _vrot(S2, 0, A2[as2], A2[as2 + 1], A2[as2 + 2], S2, 4);
+  let sx = S2[4], sy = S2[5], sz = S2[6], d2 = sx * tx + sy * ty + sz * tz;
+  sx -= d2 * tx;
+  sy -= d2 * ty;
+  sz -= d2 * tz;
+  let px = B2[bs2], py = B2[bs2 + 1], pz = B2[bs2 + 2];
+  d2 = px * tx + py * ty + pz * tz;
+  px -= d2 * tx;
+  py -= d2 * ty;
+  pz -= d2 * tz;
+  const ls2 = Math.hypot(sx, sy, sz), lp = Math.hypot(px, py, pz);
+  if (ls2 < 1e-6 || lp < 1e-6) {
+    O2[oo2] = S2[0];
+    O2[oo2 + 1] = S2[1];
+    O2[oo2 + 2] = S2[2];
+    O2[oo2 + 3] = S2[3];
+    return;
+  }
+  sx /= ls2;
+  sy /= ls2;
+  sz /= ls2;
+  px /= lp;
+  py /= lp;
+  pz /= lp;
+  const cx = sy * pz - sz * py, cy = sz * px - sx * pz, cz = sx * py - sy * px;
+  const ang = Math.atan2(cx * tx + cy * ty + cz * tz, sx * px + sy * py + sz * pz) * 0.5;
+  const sn2 = Math.sin(ang);
+  S2[8] = tx * sn2;
+  S2[9] = ty * sn2;
+  S2[10] = tz * sn2;
+  S2[11] = Math.cos(ang);
+  _qmul(S2, 8, S2, 0, O2, oo2);
 }
 
 // src/engine/plugin/tooltip/ToolTip.js
@@ -54084,20 +54204,20 @@ var MatrixEngineWGPU = class {
     this.shadersPack = {};
     this.lastFrameMS = 0;
     this._camVP = mat4Impl.create();
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
+    console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
+    console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open \nNpm ready, codepen fully supported with physics worker.\nOptimised MediaPipe buildin library implemented (use buildin render or use the beast render).\nCode Creator - standalone (use engine from npm) ai top level code generator.\nCreative power with intuitive visual scripting work flow and ai graph generetor.\nNew Features: NUI-Commander Game runner, Mediapipe, Culling render mode CPU + GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. \u{1F525}",
+      "%cMatrix Engine WGPU - Gate is open \n - Npm ready, codepen fully supported with physics worker.\n - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n - Code Creator - standalone (use engine from npm) ai top level code generator.\n - Creative power with intuitive visual scripting work flow and ai graph generetor.\n - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n\u{1F525} Mobile support: chrome-android tested. \u{1F525}",
       LOG_FUNNY
     );
     console.log(
-      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
+      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - GPUCullingRad  : " + this.MEConfig.GPUCullingRad + "\n - CAM_SPEED  : " + this.MEConfig.CAM_SPEED + "\n - LOAD_AFTER_CLICK_MOBILE  : " + this.MEConfig.LOAD_AFTER_CLICK_MOBILE + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE
     );
-    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
+    console.log("%cYou can direct configure Matrix-Engine with url configuration params:\n", LOG_FUNNY_ARCADE);
     console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
     console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", LOG_FUNNY_ARCADE);
     console.log("%cSource code: \u{1F449} GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
@@ -79890,10 +80010,6 @@ var loadPoseToGLB = function() {
     loadRest = async () => {
       loadPose.beast.enablePoseDrive({ smooth: 0.4, mirror: false });
       setTimeout(() => {
-        loadPose.beast.debugPoseRest2();
-        const hipsIdx = loadPose.beast.glb.glbJsonData.nodes.findIndex((n3) => n3.name === "mixamorig:Hips");
-        const arm = loadPose.beast.glb.nodes[loadPose.beast.glb.nodes[hipsIdx].parent];
-        console.log("Armature scale", Array.from(arm.scale), "transform diag", arm.transform[0], arm.transform[5], arm.transform[10]);
       }, 50);
       function updateLasers(nowSec) {
         const A2 = poseEffect.anchors;
@@ -80041,7 +80157,294 @@ var loadPoseToGLB = function() {
   window.app = loadPose;
 };
 
+// examples/games/slot-machine/networking.js
+var DEFAULT_FRAME_MAP = { A: 0, K: 1, Q: 2, J: 3, "10": 4, W: 5, S: 6 };
+var UNKNOWN_FRAME = 15;
+async function fetchSlotConfig(baseUrl2, machineId2) {
+  const res = await fetch(
+    `${baseUrl2}/slot-api/machines/${machineId2}/slot-config`,
+    {
+      credentials: "include",
+      headers: {
+        "X-Local-Config-Token": "SHITHAPPENS"
+      }
+    }
+  );
+  if (!res.ok) throw new Error(`slot-config HTTP ${res.status}`);
+  return res.json();
+}
+function adaptSlotConfig(raw, opts = {}) {
+  const frameMap = { ...DEFAULT_FRAME_MAP, ...opts.frameMap || {} };
+  const warnings = [];
+  const errors = [];
+  if (!Array.isArray(raw?.reels) || !raw.reels.length) errors.push("No reels in config");
+  if (!Array.isArray(raw?.symbols) || !raw.symbols.length) errors.push("No symbols in config");
+  if (errors.length) throw new Error("Invalid slot config: " + errors.join("; "));
+  const symbols = new Map(raw.symbols.map((s2) => [s2.id, s2]));
+  const reelCount = raw.reels.length;
+  const reels = raw.reels.map((r3) => {
+    const frames = r3.strip.map((id2) => {
+      if (!symbols.has(id2)) {
+        warnings.push(`Reel ${r3.id}: unknown symbol "${id2}", using placeholder frame`);
+        return UNKNOWN_FRAME;
+      }
+      if (!(id2 in frameMap)) {
+        warnings.push(`No frame mapped for symbol "${id2}", using placeholder frame`);
+        return UNKNOWN_FRAME;
+      }
+      return frameMap[id2];
+    });
+    return { id: r3.id, strip: [...r3.strip], frames, length: r3.strip.length };
+  });
+  const paylines = raw.paylines.filter((l2) => l2.enabled !== false).filter((l2) => {
+    if (l2.rows.length !== reelCount) {
+      warnings.push(`Payline ${l2.id}: ${l2.rows.length} rows vs ${reelCount} reels, skipped`);
+      return false;
+    }
+    return true;
+  }).map((l2) => ({ id: l2.id, rows: [...l2.rows] }));
+  const visibleRows = Math.max(...paylines.flatMap((l2) => l2.rows)) + 1;
+  const paytable = {};
+  for (const [sym, pays] of Object.entries(raw.paytable || {})) {
+    paytable[sym] = Object.fromEntries(Object.entries(pays).map(([k2, v2]) => [Number(k2), v2]));
+    if (!symbols.has(sym)) warnings.push(`Paytable symbol "${sym}" not in symbols`);
+  }
+  const byType = (t3) => raw.symbols.filter((s2) => s2.type === t3).map((s2) => s2.id);
+  return {
+    machineId: raw.machineId,
+    name: raw.name,
+    reelCount,
+    visibleRows,
+    reels,
+    symbols,
+    symbolRoles: { wild: byType("wild"), scatter: byType("scatter") },
+    frameMap,
+    paytable,
+    paylines,
+    freeSpins: raw.freeSpins ?? { enabled: false },
+    targetRtp: raw.targetRtp,
+    warnings
+  };
+}
+
+// examples/games/slot-machine/reel.js
+var sleep = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
+var easeOutCubic = (t3) => 1 - Math.pow(1 - t3, 3);
+var SlotReel = class {
+  constructor(mesh, reelCfg, opts = {}) {
+    this.mesh = mesh;
+    this.cfg = reelCfg;
+    this.spinSpeed = opts.spinSpeed ?? 6;
+    this.angleOffset = opts.angleOffset ?? 0;
+    this.dir = opts.dir ?? 1;
+    this.extraTurns = opts.extraTurns ?? 1;
+    this.stopMs = opts.stopMs ?? 900;
+  }
+  get sprites() {
+    return [...this.mesh.effects.spriteBatch.sprites.values()];
+  }
+  // ---- the one engine-specific part I could not verify ----
+  getAngle() {
+    return this.mesh.rotation.x;
+  }
+  // degrees, assumed readable
+  setAngle(deg) {
+    this.mesh.rotation.x = deg;
+  }
+  // degrees, assumed writable
+  // ---------------------------------------------------------
+  async layout(delayPerSprite = 0) {
+    const FIX = 90, N2 = this.cfg.length;
+    const sprites = this.sprites;
+    if (sprites.length !== N2) console.warn(`[slot] ${sprites.length} sprites vs strip length ${N2}`);
+    for (const [i2, sprite] of sprites.entries()) {
+      const yDeg = i2 / N2 * 360;
+      sprite.pause();
+      sprite.goToFrame(this.cfg.frames[i2]);
+      sprite.setTargetRotation(90, yDeg - FIX, FIX);
+      if (i2 === sprites.length - 1) {
+        animateRotationY(this.mesh.rotation, 90, 1e3);
+      }
+      if (delayPerSprite) await sleep(delayPerSprite);
+    }
+  }
+  angleForStop(s2) {
+    return this.angleOffset + this.dir * (s2 / this.cfg.length) * 360;
+  }
+  snapTo(s2) {
+    this.mesh.rotation.setRotateX(0);
+    this.setAngle(this.angleForStop(s2));
+  }
+  startSpin() {
+    this.mesh.rotation.setRotateX(this.spinSpeed);
+  }
+  stopAt(stop) {
+    return new Promise((resolve) => {
+      this.mesh.rotation.setRotateX(0);
+      const from = this.getAngle();
+      const target = this.angleForStop(stop);
+      const delta = ((target - from) % 360 + 360) % 360 + 360 * this.extraTurns;
+      const t0 = performance.now();
+      const tick = (now) => {
+        const t3 = Math.min(1, (now - t0) / this.stopMs);
+        this.setAngle(from + delta * easeOutCubic(t3));
+        if (t3 < 1) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+};
+
+// examples/games/slot-machine/math.js
+function getWindow(slot, stops, { topIsPrev = true } = {}) {
+  const center = Math.floor(slot.visibleRows / 2);
+  return slot.reels.map((reel, i2) => {
+    const N2 = reel.length;
+    return Array.from({ length: slot.visibleRows }, (_2, row2) => {
+      const off = (row2 - center) * (topIsPrev ? 1 : -1);
+      const idx = ((stops[i2] + off) % N2 + N2) % N2;
+      return reel.strip[idx];
+    });
+  });
+}
+function localSpin(slot, rng = Math.random) {
+  return slot.reels.map((r3) => Math.floor(rng() * r3.length));
+}
+function evaluateSpin(slot, grid, { lineBet = 1, inFreeSpins = false } = {}) {
+  const { wild, scatter } = slot.symbolRoles;
+  const isWild = (id2) => wild.includes(id2);
+  const isScatter = (id2) => scatter.includes(id2);
+  const lineWins = [];
+  for (const line of slot.paylines) {
+    const cells = line.rows.map((row2, reel) => ({ reel, row: row2, id: grid[reel][row2] }));
+    let paySym = null;
+    for (const c2 of cells) {
+      if (isScatter(c2.id)) break;
+      if (!isWild(c2.id)) {
+        paySym = c2.id;
+        break;
+      }
+    }
+    let run = 0;
+    for (const c2 of cells) {
+      if (isScatter(c2.id)) break;
+      if (paySym === null || isWild(c2.id) || c2.id === paySym) run++;
+      else break;
+    }
+    const sym = paySym ?? wild[0];
+    const table = sym && slot.paytable[sym];
+    if (!table) continue;
+    const count = Object.keys(table).map(Number).filter((n3) => n3 <= run).sort((a2, b2) => b2 - a2)[0];
+    if (!count) continue;
+    const pay = table[count];
+    if (pay > 0) lineWins.push({ lineId: line.id, symbol: sym, count, pay, cells: cells.slice(0, count) });
+  }
+  const fs2 = slot.freeSpins;
+  const scatterCells = [];
+  grid.forEach((col, reel) => col.forEach((id2, row2) => {
+    if (fs2?.enabled && id2 === fs2.triggerSymbol) scatterCells.push({ reel, row: row2 });
+  }));
+  const freeSpinsAwarded = fs2?.enabled && scatterCells.length >= fs2.triggerCount && (!inFreeSpins || fs2.retrigger) ? fs2.spinsAwarded : 0;
+  const multiplier = inFreeSpins ? fs2?.multiplier ?? 1 : 1;
+  const payUnits = lineWins.reduce((s2, w2) => s2 + w2.pay, 0);
+  return {
+    lineWins,
+    scatterCells,
+    freeSpinsAwarded,
+    payUnits,
+    // sum of paytable values
+    totalWin: payUnits * lineBet * multiplier,
+    // currency
+    multiplier
+  };
+}
+function normalizeSpinResult(raw, slot) {
+  const stops = raw?.stops ?? raw?.reelStops ?? raw?.positions;
+  if (!Array.isArray(stops) || stops.length !== slot.reelCount) {
+    throw new Error("Unknown spin result shape: " + JSON.stringify(raw));
+  }
+  return { stops, serverWin: raw.totalWin ?? raw.win ?? null };
+}
+
+// examples/games/slot-machine/state.js
+var sleep2 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
+var SlotGame = class {
+  constructor(slot, reelViews, opts = {}) {
+    if (reelViews.length !== slot.reelCount) throw new Error("reelViews count != reelCount");
+    this.slot = slot;
+    this.views = reelViews;
+    this.lineBet = opts.lineBet ?? 1;
+    this.minSpinMs = opts.minSpinMs ?? 800;
+    this.stagger = opts.stagger ?? 300;
+    this.topIsPrev = opts.topIsPrev ?? true;
+    this.onPresentWin = opts.onPresentWin;
+    this.freeSpinsLeft = 0;
+    this.state = "IDLE";
+    this.queue = [];
+    this.listeners = {};
+  }
+  on(evt, fn2) {
+    (this.listeners[evt] ??= []).push(fn2);
+    return this;
+  }
+  emit(evt, data) {
+    (this.listeners[evt] || []).forEach((fn2) => fn2(data));
+  }
+  setState(s2) {
+    this.state = s2;
+    this.emit("state", s2);
+  }
+  spin() {
+    return this.playResult({ stops: localSpin(this.slot) });
+  }
+  async playResult(raw) {
+    if (this.state !== "IDLE") {
+      this.queue.push(raw);
+      return;
+    }
+    try {
+      const { stops } = normalizeSpinResult(raw, this.slot);
+      const inFree = this.freeSpinsLeft > 0;
+      if (inFree) this.freeSpinsLeft--;
+      this.setState("SPINNING");
+      this.emit("spinStart", { inFree, freeSpinsLeft: this.freeSpinsLeft });
+      this.views.forEach((v2) => v2.startSpin());
+      await sleep2(this.minSpinMs);
+      this.setState("STOPPING");
+      await Promise.all(this.views.map(async (v2, i2) => {
+        await sleep2(i2 * this.stagger);
+        await v2.stopAt(stops[i2]);
+        this.emit("reelStop", { reel: i2, stop: stops[i2] });
+      }));
+      this.setState("EVALUATING");
+      const grid = getWindow(this.slot, stops, { topIsPrev: this.topIsPrev });
+      const ev = evaluateSpin(this.slot, grid, { lineBet: this.lineBet, inFreeSpins: inFree });
+      this.freeSpinsLeft += ev.freeSpinsAwarded;
+      const result2 = { ...ev, grid, stops, inFree, freeSpinsLeft: this.freeSpinsLeft };
+      this.emit("result", result2);
+      if (this.onPresentWin && (ev.lineWins.length || ev.freeSpinsAwarded)) {
+        this.setState("PRESENTING");
+        await this.onPresentWin(result2);
+      }
+    } catch (err) {
+      console.error("[slot] spin failed", err);
+      this.emit("error", err);
+    } finally {
+      this.setState("IDLE");
+    }
+    if (this.queue.length) return this.playResult(this.queue.shift());
+  }
+};
+
 // examples/games/slot-machine/slot.js
+var baseUrl = "https://slot-simulator.onrender.com";
+var machineId = "6ac80510c453c7d32ec5364a";
+var sleep3 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
+var SHEET = "./res/textures/slot/reel1-lod0.webp";
+var SPACING = 6;
+var SCALE = 3.5;
+var reelX = (i2, n3) => (i2 - (n3 - 1) / 2) * SPACING;
 var loadSlot = function() {
   let slotMachine = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
@@ -80054,7 +80457,13 @@ var loadSlot = function() {
       responseCoef: 1e3
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
-  }, () => {
+  }, async () => {
+    const raw = await fetchSlotConfig(baseUrl, machineId);
+    const slot = adaptSlotConfig(raw);
+    console.log(slot.reelCount, slot.visibleRows, slot.paylines.length);
+    console.log(slot.reels[0].frames);
+    slot.warnings.forEach((w2) => console.warn("[slot]", w2));
+    const n3 = slot.reelCount;
     slotMachine.addLight();
     downloadMeshes(
       { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", plane: "./res/meshes/blender/plane.obj" },
@@ -80094,63 +80503,19 @@ var loadSlot = function() {
           geometry: "Sphere"
         }
       });
-      let MYCUBE = slotMachine.addMeshObj({
+      const reelMeshes = slot.reels.map((reel, i2) => slotMachine.addMeshObj({
         material: { type: "standard" },
-        position: { x: -6, y: 15, z: -10 },
+        position: { x: reelX(i2, n3), y: 15, z: -10 },
         rotation: { x: 180, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [3.5, 3.5, 3.5],
+        scale: [SCALE, SCALE, SCALE],
         texturesPaths: ["./res/textures/floor1.webp"],
-        name: "cube",
+        name: "reel" + i2,
         mesh: m2.cube,
         raycast: { enabled: false, radius: 1 },
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true
-        }
-      });
-      let MYCUBE2 = slotMachine.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 0, y: 15, z: -10 },
-        rotation: { x: 180, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [3.5, 3.5, 3.5],
-        texturesPaths: ["./res/textures/floor1.webp"],
-        name: "cube2",
-        mesh: m2.cube,
-        raycast: { enabled: false, radius: 1 },
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true
-        }
-      });
-      let MYCUBE3 = slotMachine.addMeshObj({
-        material: { type: "standard" },
-        position: { x: 6, y: 15, z: -10 },
-        rotation: { x: 180, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [3.5, 3.5, 3.5],
-        texturesPaths: ["./res/textures/floor1.webp"],
-        name: "cube3",
-        mesh: m2.cube,
-        raycast: { enabled: false, radius: 1 },
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true
-        }
-      });
+        physics: { enabled: false, mass: 0, geometry: "Cube" },
+        pointerEffect: { enabled: true }
+      }));
       slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
       slotMachine.activateVolumetricEffect();
@@ -80162,186 +80527,70 @@ var loadSlot = function() {
       });
       slotMachine.lightContainer[0].setPosition(0, 45, -8);
       slotMachine.lightContainer[0].setTarget(0, 0, -10);
-      console.log(MYCUBE3);
-      let MYCUBE_EFFECT = slotMachine.addMeshObj({
+      const FX_MESH = slotMachine.addMeshObj({
         material: { type: "standard" },
         position: { x: 0, y: 15, z: -10 },
         rotation: { x: 90, y: 0, z: 180 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [9, 9, 9],
+        scale: [9 * Math.max(1, n3 / 3), 9, 9],
         texturesPaths: ["./res/icons/512.webp"],
         name: "cubeeffect",
         mesh: m2.plane,
         raycast: { enabled: true, radius: 1 },
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        },
-        pointerEffect: {
-          enabled: true
-          //  flameEmitter: true,
+        physics: { enabled: false, mass: 0, geometry: "Cube" },
+        pointerEffect: { enabled: true }
+      });
+      await sleep3(600);
+      FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, "rgba16float", "circle2", "./res/textures/star1.png", 3, slotMachine.cameraBuffer);
+      FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
+      for (const [i2, mesh] of reelMeshes.entries()) {
+        await initializeSpritesForMesh(
+          mesh,
+          app.device,
+          "rgba16float",
+          app.cameraBuffer,
+          SHEET,
+          4,
+          4,
+          "circle",
+          { radius: 4.5, count: slot.reels[i2].length }
+        );
+      }
+      const cam2 = app.getCamera();
+      cam2.setYaw(-0.03);
+      cam2.setPitch(-0.05);
+      cam2.setZ(22 * Math.max(1, n3 / 3));
+      cam2.setY(16);
+      cam2._dirtyAngle = true;
+      reelMeshes.forEach((mesh) => mesh.setBlend(1e-3));
+      reelMeshes[0].setupPipeline();
+      app.buildRenderBuckets();
+      app.reelMeshes = reelMeshes;
+      await sleep3(400);
+      const views = reelMeshes.map((mesh, i2) => new SlotReel(mesh, slot.reels[i2]));
+      for (const v2 of views) await v2.layout(60);
+      FX_MESH.effects.circle.updateInstanceCount(8);
+      new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
+      FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
+      app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
+      reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
+      const game = new SlotGame(slot, views, {
+        lineBet: 1,
+        onPresentWin: async (res) => {
+          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
+          FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+          await sleep3(1500);
         }
       });
-      setTimeout(async () => {
-        MYCUBE_EFFECT.effects.circle = new GenGeoTexture2(slotMachine.device, "rgba16float", "circle2", "./res/textures/star1.png", 3, slotMachine.cameraBuffer);
-        MYCUBE_EFFECT.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
-        const batch = await initializeSpritesForMesh(
-          MYCUBE,
-          // Your mesh
-          app.device,
-          // WebGPU device
-          "rgba16float",
-          // Format
-          app.cameraBuffer,
-          // Camera buffer
-          "./res/textures/loadSlot/reel1-lod0.webp",
-          // Spritesheet path
-          4,
-          // Grid cols
-          4,
-          // Grid rows
-          "circle",
-          // Pattern: matrix|pulsing|flow|circle|wave
-          { radius: 4.5, count: 18 }
-        );
-        const batch2 = await initializeSpritesForMesh(
-          MYCUBE2,
-          // Your mesh
-          app.device,
-          // WebGPU device
-          "rgba16float",
-          // Format
-          app.cameraBuffer,
-          // Camera buffer
-          "./res/textures/loadSlot/reel1-lod0.webp",
-          // Spritesheet path
-          4,
-          // Grid cols
-          4,
-          // Grid rows
-          "circle",
-          // Pattern: matrix|pulsing|flow|circle|wave
-          { radius: 4.5, count: 18 }
-        );
-        const batch3 = await initializeSpritesForMesh(
-          MYCUBE3,
-          // Your mesh
-          app.device,
-          // WebGPU device
-          "rgba16float",
-          // Format
-          app.cameraBuffer,
-          // Camera buffer
-          "./res/textures/loadSlot/reel1-lod0.webp",
-          // Spritesheet path
-          4,
-          // Grid cols
-          4,
-          // Grid rows
-          "circle",
-          // Pattern: matrix|pulsing|flow|circle|wave
-          { radius: 4.5, count: 18 }
-        );
-        let cam2 = app.getCamera();
-        cam2.setYaw(-0.03);
-        cam2.setPitch(-0.05);
-        cam2.setZ(22);
-        cam2.setY(16);
-        cam2._dirtyAngle = true;
-        MYCUBE.setBlend(1e-3);
-        MYCUBE2.setBlend(1e-3);
-        MYCUBE3.setBlend(1e-3);
-        MYCUBE.setupPipeline();
-        app.buildRenderBuckets();
-      }, 600);
-      setTimeout(() => {
-        let timer1 = null;
-        let myReel1 = [...MYCUBE.effects.spriteBatch.sprites.values()];
-        const count = myReel1.length;
-        let myReel2 = [...MYCUBE2.effects.spriteBatch.sprites.values()];
-        const count2 = myReel2.length;
-        let myReel3 = [...MYCUBE3.effects.spriteBatch.sprites.values()];
-        const count3 = myReel3.length;
-        myReel1.forEach((sprite, index) => {
-          const angle2 = index / count * Math.PI * 2;
-          sprite.play(index * 0.5);
-        });
-        myReel2.forEach((sprite, index) => {
-          const angle2 = index / count * Math.PI * 2;
-          sprite.play(index * 0.5);
-        });
-        myReel3.forEach((sprite, index) => {
-          const angle2 = index / count * Math.PI * 2;
-          sprite.play(index * 0.5);
-        });
-        setTimeout(() => {
-          MYCUBE_EFFECT.effects.circle.updateInstanceCount(8);
-          const FX = new InstancedKinematicOperations(MYCUBE_EFFECT.effects.circle.instanceTargets);
-          FX.orbit();
-          myReel1.forEach((sprite, index) => {
-            const baseAngle = index * 20;
-            const targetY = baseAngle;
-            setTimeout(() => {
-              const angle2 = index / count * Math.PI * 2;
-              const yDeg = angle2 * (180 / Math.PI);
-              const FIX = 90;
-              sprite.pause();
-              sprite.goToFrame(randomIntFromTo(0, 8));
-              sprite.setTargetRotation(90, yDeg - FIX, FIX);
-              if (index === myReel1.length - 1) {
-                animateRotationY(MYCUBE.rotation, 90, 1e3);
-                setTimeout(() => {
-                  MYCUBE.rotation.setRotateX(2.5);
-                }, 1500);
-              }
-            }, 100 * index);
-          });
-          myReel2.forEach((sprite, index) => {
-            const baseAngle = index * 20;
-            const targetY = baseAngle;
-            setTimeout(() => {
-              const angle2 = index / count2 * Math.PI * 2;
-              const yDeg = angle2 * (180 / Math.PI);
-              const FIX = 90;
-              sprite.pause();
-              sprite.goToFrame(randomIntFromTo(0, 8));
-              sprite.setTargetRotation(90, yDeg - FIX, FIX);
-              if (index === myReel2.length - 1) {
-                animateRotationY(MYCUBE2.rotation, 90, 1e3);
-                setTimeout(() => {
-                  MYCUBE2.rotation.setRotateX(4);
-                }, 1700);
-              }
-            }, 200 * index);
-          });
-          myReel3.forEach((sprite, index) => {
-            const baseAngle = index * 20;
-            const targetY = baseAngle;
-            setTimeout(() => {
-              const angle2 = index / count3 * Math.PI * 2;
-              const yDeg = angle2 * (180 / Math.PI);
-              const FIX = 90;
-              sprite.pause();
-              sprite.goToFrame(randomIntFromTo(0, 8));
-              sprite.setTargetRotation(90, yDeg - FIX, FIX);
-              if (index === myReel3.length - 1) {
-                animateRotationY(MYCUBE3.rotation, 90, 1e3);
-                setTimeout(() => {
-                  MYCUBE3.rotation.setRotateX(8);
-                  MYCUBE_EFFECT.rotation.setRotateZ(1);
-                  MYCUBE_EFFECT.effects.keeffect.recreateVertexDataFromData(
-                    [-6.94798115268439, 13.359448700316488, 15.690525966669506, 14.642970205525577, 2.5040455061885725, 13.874531871189749, -16.32885928825164, -11.8878829677588]
-                  );
-                }, 1900);
-              }
-            }, 300 * index);
-          });
-        }, 3e3);
-        MYCUBE_EFFECT.effects.circle.instanceTargets[0].isDyrty = true;
-        app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
-        MYCUBE.setAmbient(2, 0, 0);
-      }, 1e3);
+      game.on("result", (r3) => console.log("RESULT", r3.grid.map((c2) => c2.join(" ")), "win", r3.totalWin, "FS", r3.freeSpinsLeft));
+      window.slot = slot;
+      window.slotGame = game;
+      window.slotViews = views;
+      window.addEventListener("keydown", (e2) => {
+        if (e2.code === "Space") game.spin();
+      });
+      const es2 = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
+      es2.addEventListener("spin", (e2) => game.playResult(JSON.parse(e2.data)));
     }
     slotMachine.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");

@@ -2,10 +2,14 @@
 
 [2.0.0]
 
+- Removed setInterval from camera class, better performance!
+- Added face mask NUI with mediapipe.
+- Control Body of GLB mesh with NUI mediapipe.
+- Added body NUI skeletal control custom procedural mesh.
 - New main arg also config property `GPUCullingRad` GPU culling radius.
 - New dep:  npm install @mediapipe/face_mesh
   for face pipe.
-  
+
 - Effects system render part use from now cache pipelinf per effect type.
   `Effects system` is full standalone bonus render principe thats why better per  effect caching.
 

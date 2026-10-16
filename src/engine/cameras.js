@@ -1,7 +1,17 @@
 import {mat4, vec3} from 'wgpu-matrix';
-import {byId, isMobile} from './utils';
+import {isMobile} from './utils';
 import {MEConfig} from '../me-config';
 
+/**
+ * @description
+ * Bitmask:
+ * 1  = forward / W / ArrowUp
+ * 2  = backward / S / ArrowDown
+ * 4  = left / A / ArrowLeft
+ * 8  = right / D / ArrowRight
+ * 16 = up / V
+ * 32 = down / C
+ */
 export class WASDCamera {
   pitch = 0;
   yaw = 0;
@@ -18,13 +28,6 @@ export class WASDCamera {
   _rotYScratch = mat4.create();
   _rotXScratch = mat4.create();
   _viewScratch = mat4.create();
-  // Bitmask:
-  // 1  = forward / W / ArrowUp
-  // 2  = backward / S / ArrowDown
-  // 4  = left / A / ArrowLeft
-  // 8  = right / D / ArrowRight
-  // 16 = up / V
-  // 32 = down / C
   _digital = 0;
   _mouseDown = false;
   _lookDisabled = false;
@@ -381,7 +384,7 @@ export class WASDCamera {
       if(e.pointerType !== 'mouse') return;
       this._mouseDown = true;
       if(canvas.setPointerCapture) {canvas.setPointerCapture(e.pointerId);}
-    },      {passive: true}    );
+    }, {passive: true});
 
     canvas.addEventListener('pointermove', (e) => {
       // KEEP THIS FOR GIZMO EDITOR MODE
@@ -422,7 +425,6 @@ export class WASDCamera {
       {passive: true}
     );
   }
-
   // WASD MOVEMENT
   _applyDigitalMovement() {
     const d = this._digital;
@@ -1879,12 +1881,9 @@ export class Camera2DOrthogonaly {
       this.position[1] = options.position[1];
       this.position[2] = options.position[2];
     }
-
     this.canvas = options.canvas;
     this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
-
     if(options.zoom !== undefined) this.zoom = options.zoom;
-
     this._buildProjection();
     this._setupEvents();
     this._recalculateViewVP();
@@ -2012,7 +2011,6 @@ export class Camera2DOrthogonaly {
     } else {
       let lastPinchDist = null;
       let lastTouchX = null, lastTouchY = null;
-
       addEventListener('touchmove', (e) => {
         if(e.touches.length === 2) {
           const dist = this._pinchDist(e.touches);
@@ -2067,7 +2065,6 @@ export const MobileDOM = {
     const opacity = options.opacity ?? 0.35;
     const color = options.color ?? '#ffffff';
     const forMobileJoystick = options.forMobileJoystick ?? false;
-
     const wrap = document.createElement('div');
     wrap.id = 'mobileControls';
     Object.assign(wrap.style, {
@@ -2083,18 +2080,14 @@ export const MobileDOM = {
       gap: '4px',
       touchAction: 'none',
     });
-
     const defs = [
       ['▲', 2, 1, 'forward'],
       ['◀', 1, 2, 'left'],
       ['▼', 2, 2, 'backward'],
       ['▶', 3, 2, 'right'],
     ];
-
     const idle = `rgba(255,255,255,${opacity * 0.4})`;
     const active = `rgba(255,255,255,${opacity})`;
-
-    // --- bit helpers: no timers, the main loop does the movement ---
     const setBit = (action, on) => {
       const bit = DIGITAL_BITS[action];
       if(!bit) return;
@@ -2152,19 +2145,16 @@ export const MobileDOM = {
     }
 
     if(forMobileJoystick) {
-
       console.log('pad down forMobileJoystick true');
       // direction follows the finger across the pad
       let activePointerId = null;
       let activeAction = null;
-
       const setActive = (action) => {
         if(activeAction === action) return;
         if(activeAction) setBit(activeAction, false);
         activeAction = action;
         if(activeAction) setBit(activeAction, true);
       };
-
       const actionAt = (x, y) => document.elementFromPoint(x, y)?.dataset?.action ?? null;
 
       const onDown = e => {
@@ -2192,39 +2182,17 @@ export const MobileDOM = {
         [wrap, 'pointerup', onUp], [wrap, 'pointercancel', onUp]
       );
     }
-
     MobileDOM._wasd = {camera, handlers, wrap};
     document.body.appendChild(wrap);
     return wrap;
   },
 
-  // destroyWASD() {
-  //   if(byId('mobileControls') == null) return;
-  //   byId('▲').removeEventListener('pointerdown', MobileDOM.eventDown);
-  //   byId('▲').removeEventListener('pointerup', MobileDOM.eventUp);
-  //   byId('▲').removeEventListener('pointercancel', MobileDOM.eventCancel);
-  //   byId('◀').removeEventListener('pointerdown', MobileDOM.eventDown);
-  //   byId('◀').removeEventListener('pointerup', MobileDOM.eventUp);
-  //   byId('◀').removeEventListener('pointercancel', MobileDOM.eventCancel);
-  //   byId('▼').removeEventListener('pointerdown', MobileDOM.eventDown);
-  //   byId('▼').removeEventListener('pointerup', MobileDOM.eventUp);
-  //   byId('▼').removeEventListener('pointercancel', MobileDOM.eventCancel);
-  //   byId('▶').removeEventListener('pointerdown', MobileDOM.eventDown);
-  //   byId('▶').removeEventListener('pointerup', MobileDOM.eventUp);
-  //   byId('▶').removeEventListener('pointercancel', MobileDOM.eventCancel);
-  //   byId('▲').remove();
-  //   byId('◀').remove();
-  //   byId('▼').remove();
-  //   byId('▶').remove();
-  //   byId('mobileControls').remove();
-  // },
-
   destroyWASD() {
     const w = MobileDOM._wasd;
     if(!w) return;
     for(const [el, type, fn] of w.handlers) el.removeEventListener(type, fn);
-    w.camera._digital = 0;        // don't leave the camera walking
-    w.wrap.remove();              // removes the buttons with it
+    w.camera._digital = 0;
+    w.wrap.remove();
     MobileDOM._wasd = null;
   },
 
@@ -2241,9 +2209,7 @@ export const MobileDOM = {
     const fontSize = options.fontSize ?? `${size * 0.25}px`;
     const borderRadius = options.borderRadius ?? '50%';
     const btn = document.createElement('div');
-    if(setID !== null) {
-      btn.id = setID;
-    }
+    if(setID !== null) {btn.id = setID;}
     Object.assign(btn.style, {
       position: 'fixed',
       bottom: `${bottom}%`,
@@ -2271,26 +2237,16 @@ export const MobileDOM = {
         e.stopPropagation();
         onClick(e);
       }, {passive: true});
-      btn.addEventListener('touchend', (e) => {
-        onRelease(e);
-      }, {passive: true});
-      btn.addEventListener('touchcancel', (e) => {
-        onRelease(e);
-      }, {passive: true});
-      btn.addEventListener('touchmove', (e) => {
-        onMove(e);
-      }, {passive: true});
+      btn.addEventListener('touchend', (e) => {onRelease(e);}, {passive: true});
+      btn.addEventListener('touchcancel', (e) => {onRelease(e);}, {passive: true});
+      btn.addEventListener('touchmove', (e) => {onMove(e);}, {passive: true});
     } else {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         onClick(e);
       }, {passive: true});
-      btn.addEventListener('mouseup', (e) => {
-        onRelease(e);
-      }, {passive: true});
-      btn.addEventListener('mousemove', (e) => {
-        onMove(e);
-      }, {passive: true});
+      btn.addEventListener('mouseup', (e) => {onRelease(e);}, {passive: true});
+      btn.addEventListener('mousemove', (e) => {onMove(e);}, {passive: true});
     }
     document.body.appendChild(btn);
     return btn;
@@ -2304,7 +2260,6 @@ export const MobileDOM = {
     const color = options.color ?? '#4caf50';
     const height = options.height ?? size;
     const width = options.width ?? size;
-
     const barWrapper = document.createElement('div');
     Object.assign(barWrapper.style, {
       position: 'fixed',

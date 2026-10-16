@@ -604,20 +604,20 @@ export default class MatrixEngineWGPU {
     this.lastFrameMS = 0;
     this._camVP = mat4.create();
     // console.clear();
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
+    console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
+    console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open \n" +
-      "Npm ready, codepen fully supported with physics worker.\n" +
-      "Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n" +
-      "Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
-      "Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
-      "New Features: NUI-Commander Game runner, Mediapipe, Culling render mode CPU + GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
-      "2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
-      "Mobile support: chrome-android tested. 🔥", LOG_FUNNY);
+      " - Npm ready, codepen fully supported with physics worker.\n" +
+      " - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n" +
+      " - Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
+      " - Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
+      " - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      "   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
+      "🔥 Mobile support: chrome-android tested. 🔥", LOG_FUNNY);
     console.log(
       "%cMatrix Engine WGPU - Initial configuration :\n" +
       " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
@@ -626,9 +626,12 @@ export default class MatrixEngineWGPU {
       " - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n" +
       " - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n" +
       " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" +
+      " - GPUCullingRad  : " + this.MEConfig.GPUCullingRad + "\n" +
+      " - CAM_SPEED  : " + this.MEConfig.CAM_SPEED + "\n" +
+      " - LOAD_AFTER_CLICK_MOBILE  : " + this.MEConfig.LOAD_AFTER_CLICK_MOBILE + "\n" +
       " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE);
-    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
+    console.log("%cYou can direct configure Matrix-Engine with url configuration params:\n", LOG_FUNNY_ARCADE);
     console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
     console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", LOG_FUNNY_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);

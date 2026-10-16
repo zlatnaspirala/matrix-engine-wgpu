@@ -306,14 +306,10 @@ export var loadPoseToGLB = function() {
 
       loadPose.beast.enablePoseDrive({smooth: 0.4, mirror: false});
       setTimeout(() => {
-        loadPose.beast.debugPoseRest2();
-
-
-        const hipsIdx =  loadPose.beast.glb.glbJsonData.nodes.findIndex(n => n.name === 'mixamorig:Hips');
-        const arm =  loadPose.beast.glb.nodes[ loadPose.beast.glb.nodes[hipsIdx].parent];
-        console.log('Armature scale', Array.from(arm.scale), 'transform diag', arm.transform[0], arm.transform[5], arm.transform[10]);
-
-
+        // loadPose.beast.debugPoseRest2();
+        // const hipsIdx =  loadPose.beast.glb.glbJsonData.nodes.findIndex(n => n.name === 'mixamorig:Hips');
+        // const arm =  loadPose.beast.glb.nodes[ loadPose.beast.glb.nodes[hipsIdx].parent];
+        // console.log('Armature scale', Array.from(arm.scale), 'transform diag', arm.transform[0], arm.transform[5], arm.transform[10]);
       }, 50)
 
 

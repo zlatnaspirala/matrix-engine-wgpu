@@ -110,13 +110,20 @@
     "free-js-games-code",
     "open-source-games",
     "splat",
+    "CPU-culling",
+    "GPU-culling",
     "gaussian",
     "splat-point-color-animator",
     "splat-point-vertex-animator",
     "android-tv",
+    "android-tv-stream-render",
+    "remote-render",
     "cast-tv",
     "mediapipe",
     "mediapipe-hand",
-    "ai-code-creator"
+    "ai-code-creator",
+    "slot-simulator",
+    "dinamic-slot-game",
+    "construct-slot-machine"
   ]
 }
