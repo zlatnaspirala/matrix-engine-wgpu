@@ -303,6 +303,9 @@ class SpriteInstance {
     this.sheet = sheet;
     this.spritesheetName = spritesheetName;
     this.shared = shared;
+
+    this.frameStart = 0;
+    this.frameCount = null;
     // State
     this.currentFrame = config.currentFrame ?? 0;
     this.playbackSpeed = config.playbackSpeed ?? 1.0;
@@ -339,11 +342,28 @@ class SpriteInstance {
   }
 
   play(speed = 1.0, loop = true) {
+    this.frameStart = 0;
+    this.frameCount = null;
     this.isPlaying = true;
     this.playbackSpeed = speed;
     this.loopMode = loop;
     this.timeAccumulator = 0;
     this.currentFrame = 0;
+  }
+
+  playRange(start, count, speed = 12, loop = true) {
+    this.frameStart = start;
+    this.frameCount = count;
+    this.isPlaying = true;
+    this.playbackSpeed = speed;
+    this.loopMode = loop;
+    this.timeAccumulator = 0;
+    this.currentFrame = start;
+  }
+
+  clearRange() {
+    this.frameStart = 0;
+    this.frameCount = null;
   }
 
   pause() {this.isPlaying = false;}
@@ -382,20 +402,17 @@ class SpriteInstance {
   }
 
   updateInstanceData(baseModelMatrix) {
-    // Frame update unchanged...
     if(this.isPlaying) {
       this.timeAccumulator += 0.016;
-      const frameProgress = this.timeAccumulator * this.playbackSpeed;
-      let nextFrame = Math.floor(frameProgress);
+      const count = this.frameCount ?? this.sheet.totalFrames;
+      let n = Math.floor(this.timeAccumulator * this.playbackSpeed);
       if(this.loopMode) {
-        nextFrame = nextFrame % this.sheet.totalFrames;
-      } else {
-        if(nextFrame >= this.sheet.totalFrames) {
-          nextFrame = this.sheet.totalFrames - 1;
-          this.isPlaying = false;
-        }
+        n = n % count;
+      } else if(n >= count) {
+        n = count - 1;
+        this.isPlaying = false;
       }
-      this.currentFrame = nextFrame;
+      this.currentFrame = this.frameStart + n;
     }
 
     if(this.spinning) {
@@ -563,9 +580,6 @@ fn fsMain(input: VertexOutput) -> FragOut {
   }
 }
 
-
-
-// Top level
 /**
  * Sprite Presets System - Top-level API
  * 

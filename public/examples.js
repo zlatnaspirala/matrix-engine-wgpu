@@ -61272,6 +61272,8 @@ var SpriteInstance = class {
     this.sheet = sheet;
     this.spritesheetName = spritesheetName;
     this.shared = shared;
+    this.frameStart = 0;
+    this.frameCount = null;
     this.currentFrame = config.currentFrame ?? 0;
     this.playbackSpeed = config.playbackSpeed ?? 1;
     this.timeAccumulator = 0;
@@ -61303,11 +61305,26 @@ var SpriteInstance = class {
     this.DEG2RAD = Math.PI / 180;
   }
   play(speed = 1, loop = true) {
+    this.frameStart = 0;
+    this.frameCount = null;
     this.isPlaying = true;
     this.playbackSpeed = speed;
     this.loopMode = loop;
     this.timeAccumulator = 0;
     this.currentFrame = 0;
+  }
+  playRange(start, count, speed = 12, loop = true) {
+    this.frameStart = start;
+    this.frameCount = count;
+    this.isPlaying = true;
+    this.playbackSpeed = speed;
+    this.loopMode = loop;
+    this.timeAccumulator = 0;
+    this.currentFrame = start;
+  }
+  clearRange() {
+    this.frameStart = 0;
+    this.frameCount = null;
   }
   pause() {
     this.isPlaying = false;
@@ -61344,17 +61361,15 @@ var SpriteInstance = class {
   updateInstanceData(baseModelMatrix) {
     if (this.isPlaying) {
       this.timeAccumulator += 0.016;
-      const frameProgress = this.timeAccumulator * this.playbackSpeed;
-      let nextFrame = Math.floor(frameProgress);
+      const count = this.frameCount ?? this.sheet.totalFrames;
+      let n3 = Math.floor(this.timeAccumulator * this.playbackSpeed);
       if (this.loopMode) {
-        nextFrame = nextFrame % this.sheet.totalFrames;
-      } else {
-        if (nextFrame >= this.sheet.totalFrames) {
-          nextFrame = this.sheet.totalFrames - 1;
-          this.isPlaying = false;
-        }
+        n3 = n3 % count;
+      } else if (n3 >= count) {
+        n3 = count - 1;
+        this.isPlaying = false;
       }
-      this.currentFrame = nextFrame;
+      this.currentFrame = this.frameStart + n3;
     }
     if (this.spinning) {
       this.localRotation[0] += this._spinSpeed[0];
@@ -80441,7 +80456,7 @@ var SlotGame = class {
 var baseUrl = "https://slot-simulator.onrender.com";
 var machineId = "6ac80510c453c7d32ec5364a";
 var sleep3 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
-var SHEET = "./res/textures/slot/reel1-lod0.webp";
+var SHEET = "./res/textures/slot/reel1-lod0-inv.webp";
 var SPACING = 6;
 var SCALE = 3.5;
 var reelX = (i2, n3) => (i2 - (n3 - 1) / 2) * SPACING;

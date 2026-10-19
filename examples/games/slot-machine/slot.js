@@ -19,7 +19,7 @@ const baseUrl = 'https://slot-simulator.onrender.com';
 const machineId = '6ac80510c453c7d32ec5364a';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const SHEET = "./res/textures/slot/reel1-lod0.webp";
+const SHEET = "./res/textures/slot/reel1-lod0-inv.webp";
 const SPACING = 6, SCALE = 3.5;
 const reelX = (i, n) => (i - (n - 1) / 2) * SPACING;
 
