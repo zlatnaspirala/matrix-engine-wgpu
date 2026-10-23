@@ -168,8 +168,6 @@ export class PipeCommander {
       } else if(this.mode === 'pose') {
         // console.log('>>>>>>>>>>>>>>>>>>> ', this.faceLandmarker.FACE_LANDMARKS_TESSELATION)
         this.results = this.poseLandmarker.detectForVideo(this.video, startTimeMs, {});
-
-        //
         const m = this.results.segmentationMasks?.[0];
         if(m) {
           this.maskData = m.getAsUint8Array().slice();   // copy, 0..255
@@ -177,8 +175,6 @@ export class PipeCommander {
           m.close();
         }
         this.onResults(this.results);
-        //
-
       } else {
         this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs, {
           imageSize: {
@@ -187,7 +183,6 @@ export class PipeCommander {
           }
         });
       }
-
       this.onResults(this.results);
     }
 

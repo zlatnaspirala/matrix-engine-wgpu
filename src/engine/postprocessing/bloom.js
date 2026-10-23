@@ -1,7 +1,8 @@
 /**
  * @description 
  * Bloom class for matrix-engine-wgpu
- * @public 
+ * Zero allocation in reapeating fns.
+ * @public
  * 
  * @setKnee
  * @setIntensity
@@ -16,38 +17,26 @@ export class BloomPass {
     this.width = width;
     this.height = height;
 
+    this.clearValue = {r: 0, g: 0, b: 0, a: 1};
+    this.loadOp = 'clear';
+    this.storeOp = 'store';
+    this._renderPassDesc = {
+      colorAttachments: [{view: null, loadOp: this.loadOp, storeOp: this.storeOp, clearValue: this.clearValue}]
+    };
+
     this.brightTex = this._createTexture();
     this.blurTexA = this._createTexture();
     this.blurTexB = this._createTexture();
-
-    this.sampler = device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear'
-    });
-
+    this.sampler = device.createSampler({magFilter: 'linear', minFilter: 'linear'});
     this.intensityBuffer = this._createUniformBuffer([intensity]);
     this.blurDirX = this._createUniformBuffer([1, 0]);
     this.blurDirY = this._createUniformBuffer([0, 1]);
-
-    // ── Pre-create all stable views ──────────────────────────────────────
     this._brightView = this.brightTex.createView();
     this._blurAView = this.blurTexA.createView();
     this._blurBView = this.blurTexB.createView();
-
-    this.params = {
-      intensity: intensity,
-      threshold: 0.6,
-      knee: 0.5,
-      blurRadius: 6.0
-    };
-
-    this.paramBuffer = this.device.createBuffer({
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
+    this.params = {intensity: intensity, threshold: 0.6, knee: 0.5, blurRadius: 6.0};
+    this.paramBuffer = this.device.createBuffer({size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, });
     this._paramScratch = new Float32Array(4);
-
     this._updateParams();
 
     this.brightPipeline = this._createPipeline(
@@ -74,16 +63,9 @@ export class BloomPass {
     );
 
     this._brightBG = this._brightBindGroup(sceneView);
-    this._combineBG = this._combineBindGroup(
-      sceneView,
-      this._blurBView
-    );
-
-    // ── Pre-create all stable bind groups ───────────────────────────────
-    // brightBindGroup depends on sceneView (changes each frame) → stays dynamic
+    this._combineBG = this._combineBindGroup(sceneView, this._blurBView);
     this._blurXBindGroup = this._blurBindGroup(this._brightView, this.blurDirX);
     this._blurYBindGroup = this._blurBindGroup(this._blurAView, this.blurDirY);
-    // combineBindGroup depends on sceneView → stays dynamic
   }
 
   _createTexture() {
@@ -151,10 +133,7 @@ export class BloomPass {
   }
 
   _createUniformBuffer(data) {
-    const buffer = this.device.createBuffer({
-      size: 16, // std140 safe
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    const buffer = this.device.createBuffer({size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(buffer, 0, new Float32Array(data));
     return buffer;
   }
@@ -195,14 +174,8 @@ export class BloomPass {
   }
 
   _beginFullscreenPass(encoder, targetView) {
-    return encoder.beginRenderPass({
-      colorAttachments: [{
-        view: targetView,
-        loadOp: 'clear',
-        storeOp: 'store',
-        clearValue: {r: 0, g: 0, b: 0, a: 1}
-      }]
-    });
+    this._renderPassDesc.colorAttachments[0].view = targetView;
+    return encoder.beginRenderPass(this._renderPassDesc);
   }
 
   render(encoder, finalTargetView) {
@@ -321,13 +294,9 @@ function combinePassWGSL() {
   fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
     let size = vec2<f32>(textureDimensions(origTex));
     let uv = p.xy / size;
-
     let origColor = textureSample(origTex, samp, uv).rgb;
     let bloomColor = textureSample(bloomTex, samp, uv).rgb;
-
-    // additive bloom
     let color = origColor + bloomColor * bloom.intensity;
-
     return vec4(color, 1.0);
   }
 `;

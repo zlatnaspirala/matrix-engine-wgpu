@@ -17,6 +17,28 @@ export class SSRPass {
     this.ssrOutputView = this.ssrOutputTexture.createView();
     this.depthBlitBindGroup = null;
     this.data = new Float32Array(40);
+    this._computePassDesc = {label: 'HZB build'};
+
+    this._ssrPassDesc = {
+      label: 'SSR Composite Pass',
+      colorAttachments: [{
+        view: null,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [0, 0, 0, 0]
+      }]
+    };
+
+    this._blitPassDesc = {
+      label: 'Depth blit Pass',
+      colorAttachments: [{
+        view: null,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: [1, 0, 0, 1],
+      }],
+    };
+
     this._computeHZBMipParams();
     this._createHZB();
     this._createSSRConfig();
@@ -26,13 +48,12 @@ export class SSRPass {
   }
 
   _createDepthBlitBindGroup(depthView) {
-    this.depthBlitBindGroup =
-      this.device.createBindGroup({
-        layout: this.blitPipeline.getBindGroupLayout(0),
-        entries: [
-          {binding: 0, resource: depthView},
-          {binding: 1, resource: this.pointSampler}]
-      });
+    this.depthBlitBindGroup = this.device.createBindGroup({
+      layout: this.blitPipeline.getBindGroupLayout(0),
+      entries: [
+        {binding: 0, resource: depthView},
+        {binding: 1, resource: this.pointSampler}]
+    });
   }
 
   _createHZB() {
@@ -41,10 +62,7 @@ export class SSRPass {
       size: [this.width, this.height],
       mipLevelCount: this.mipCount,
       format: 'r32float',
-      usage:
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.STORAGE_BINDING |
-        GPUTextureUsage.RENDER_ATTACHMENT,
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
     });
     this.hzbMipWriteViews = Array.from({length: this.mipCount}, (_, i) =>
       this.hzbTexture.createView({
@@ -75,7 +93,7 @@ export class SSRPass {
       });
       this.device.queue.writeBuffer(buffer, 0, new Uint32Array([dstW, dstH, 0, 0]));
       const bindGroup = this.device.createBindGroup({
-        label: `HZB Build BG ${mip}`,
+        label: `HZB BG ${mip}`,
         layout: this.hzbPipeline.getBindGroupLayout(0),
         entries: [
           {binding: 0, resource: {buffer}},
@@ -176,19 +194,12 @@ export class SSRPass {
   render(commandEncoder, {sceneTextureView, normalTextureView, mainDepthView, mainDepthTexture, worldPosTextureView}) {
     this._blitDepth(commandEncoder, mainDepthTexture, mainDepthView);
     this._buildHZB(commandEncoder);
-    this._renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView);
+    this._renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView);
   }
 
   _blitDepth(commandEncoder, depthTexture, depthView) {
-    const pass = commandEncoder.beginRenderPass({
-      label: 'Depth blit Pass',
-      colorAttachments: [{
-        view: this.hzbMipWriteViews[0],
-        loadOp: 'clear',
-        storeOp: 'store',
-        clearValue: [1, 0, 0, 1],
-      }],
-    });
+    this._blitPassDesc.colorAttachments[0].view = this.hzbMipWriteViews[0];
+    const pass = commandEncoder.beginRenderPass(this._blitPassDesc);
     pass.setPipeline(this.blitPipeline);
     pass.setBindGroup(0, this.depthBlitBindGroup);
     pass.draw(3);
@@ -197,23 +208,23 @@ export class SSRPass {
 
   _computeHZBMipParams() {
     this._hzbMipParams = [];
+    this._hzbWgX = new Uint32Array(this.mipCount - 1);
+    this._hzbWgY = new Uint32Array(this.mipCount - 1);
     for(let mip = 1;mip < this.mipCount;mip++) {
       const dstW = Math.max(1, this.width >> mip);
       const dstH = Math.max(1, this.height >> mip);
-      this._hzbMipParams.push({
-        wgX: Math.ceil(dstW / 8),
-        wgY: Math.ceil(dstH / 8),
-      });
+      this._hzbWgX[mip - 1] = Math.ceil(dstW / 8);
+      this._hzbWgY[mip - 1] = Math.ceil(dstH / 8);
     }
   }
 
   _buildHZB(commandEncoder) {
-    const pass = commandEncoder.beginComputePass({label: 'HZB build'});
+    const pass = commandEncoder.beginComputePass(this._computePassDesc);
     pass.setPipeline(this.hzbPipeline);
     for(let mip = 1;mip < this.mipCount;mip++) {
-      const {wgX, wgY} = this._hzbMipParams[mip - 1];
-      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
-      pass.dispatchWorkgroups(wgX, wgY);
+      const idx = mip - 1;
+      pass.setBindGroup(0, this.hzbMipBindGroups[idx]);
+      pass.dispatchWorkgroups(this._hzbWgX[idx], this._hzbWgY[idx]);
     }
     pass.end();
   }
@@ -223,7 +234,6 @@ export class SSRPass {
       this._lastSceneView !== sceneTextureView ||
       this._lastNormalView !== normalTextureView ||
       this._lastWorldPosView !== worldPosTextureView) {
-
       this._ssrBindGroup = this.device.createBindGroup({
         layout: this.ssrPipeline.getBindGroupLayout(0),
         entries: [
@@ -237,21 +247,13 @@ export class SSRPass {
           {binding: 7, resource: this.linearSampler},
         ],
       });
-
       this._lastSceneView = sceneTextureView;
       this._lastNormalView = normalTextureView;
       this._lastWorldPosView = worldPosTextureView;
       this._ssrBGDirty = false;
     }
-    const pass = commandEncoder.beginRenderPass(this._ssrPassDesc ??= {
-      label: 'SSR Composite Pass',
-      colorAttachments: [{
-        view: this.ssrOutputView,
-        loadOp: 'clear',
-        storeOp: 'store',
-        clearValue: [0, 0, 0, 0]
-      }],
-    });
+    this._ssrPassDesc.colorAttachments[0].view = this.ssrOutputView;
+    const pass = commandEncoder.beginRenderPass(this._ssrPassDesc);
     pass.setPipeline(this.ssrPipeline);
     pass.setBindGroup(0, this._ssrBindGroup);
     pass.draw(3);

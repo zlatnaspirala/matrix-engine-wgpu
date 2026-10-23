@@ -11371,7 +11371,7 @@ var mb = {
   t: {},
   setContent: function(content, t3) {
     var iMsg = document.createElement("div");
-    iMsg.innerHTML = content;
+    iMsg.textContent = String(content);
     iMsg.id = `msgbox-loc-${mb.c}`;
     mb.root().appendChild(iMsg);
     iMsg.classList.add("animate1");
@@ -47293,29 +47293,24 @@ var BloomPass = class {
     this.device = device2;
     this.width = width;
     this.height = height;
+    this.clearValue = { r: 0, g: 0, b: 0, a: 1 };
+    this.loadOp = "clear";
+    this.storeOp = "store";
+    this._renderPassDesc = {
+      colorAttachments: [{ view: null, loadOp: this.loadOp, storeOp: this.storeOp, clearValue: this.clearValue }]
+    };
     this.brightTex = this._createTexture();
     this.blurTexA = this._createTexture();
     this.blurTexB = this._createTexture();
-    this.sampler = device2.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear" });
     this.intensityBuffer = this._createUniformBuffer([intensity]);
     this.blurDirX = this._createUniformBuffer([1, 0]);
     this.blurDirY = this._createUniformBuffer([0, 1]);
     this._brightView = this.brightTex.createView();
     this._blurAView = this.blurTexA.createView();
     this._blurBView = this.blurTexB.createView();
-    this.params = {
-      intensity,
-      threshold: 0.6,
-      knee: 0.5,
-      blurRadius: 6
-    };
-    this.paramBuffer = this.device.createBuffer({
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    this.params = { intensity, threshold: 0.6, knee: 0.5, blurRadius: 6 };
+    this.paramBuffer = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this._paramScratch = new Float32Array(4);
     this._updateParams();
     this.brightPipeline = this._createPipeline(
@@ -47345,10 +47340,7 @@ var BloomPass = class {
       ]
     );
     this._brightBG = this._brightBindGroup(sceneView);
-    this._combineBG = this._combineBindGroup(
-      sceneView,
-      this._blurBView
-    );
+    this._combineBG = this._combineBindGroup(sceneView, this._blurBView);
     this._blurXBindGroup = this._blurBindGroup(this._brightView, this.blurDirX);
     this._blurYBindGroup = this._blurBindGroup(this._blurAView, this.blurDirY);
   }
@@ -47408,11 +47400,7 @@ var BloomPass = class {
     this._updateParams();
   };
   _createUniformBuffer(data) {
-    const buffer = this.device.createBuffer({
-      size: 16,
-      // std140 safe
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    const buffer = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(buffer, 0, new Float32Array(data));
     return buffer;
   }
@@ -47449,14 +47437,8 @@ var BloomPass = class {
     });
   }
   _beginFullscreenPass(encoder, targetView) {
-    return encoder.beginRenderPass({
-      colorAttachments: [{
-        view: targetView,
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: { r: 0, g: 0, b: 0, a: 1 }
-      }]
-    });
+    this._renderPassDesc.colorAttachments[0].view = targetView;
+    return encoder.beginRenderPass(this._renderPassDesc);
   }
   render(encoder, finalTargetView) {
     {
@@ -47570,13 +47552,9 @@ function combinePassWGSL() {
   fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
     let size = vec2<f32>(textureDimensions(origTex));
     let uv = p.xy / size;
-
     let origColor = textureSample(origTex, samp, uv).rgb;
     let bloomColor = textureSample(bloomTex, samp, uv).rgb;
-
-    // additive bloom
     let color = origColor + bloomColor * bloom.intensity;
-
     return vec4(color, 1.0);
   }
 `;
@@ -51714,6 +51692,25 @@ var SSRPass = class {
     this.ssrOutputView = this.ssrOutputTexture.createView();
     this.depthBlitBindGroup = null;
     this.data = new Float32Array(40);
+    this._computePassDesc = { label: "HZB build" };
+    this._ssrPassDesc = {
+      label: "SSR Composite Pass",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: [0, 0, 0, 0]
+      }]
+    };
+    this._blitPassDesc = {
+      label: "Depth blit Pass",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: [1, 0, 0, 1]
+      }]
+    };
     this._computeHZBMipParams();
     this._createHZB();
     this._createSSRConfig();
@@ -51768,7 +51765,7 @@ var SSRPass = class {
       });
       this.device.queue.writeBuffer(buffer, 0, new Uint32Array([dstW, dstH, 0, 0]));
       const bindGroup = this.device.createBindGroup({
-        label: `HZB Build BG ${mip}`,
+        label: `HZB BG ${mip}`,
         layout: this.hzbPipeline.getBindGroupLayout(0),
         entries: [
           { binding: 0, resource: { buffer } },
@@ -51868,18 +51865,11 @@ var SSRPass = class {
   render(commandEncoder, { sceneTextureView, normalTextureView, mainDepthView, mainDepthTexture, worldPosTextureView }) {
     this._blitDepth(commandEncoder, mainDepthTexture, mainDepthView);
     this._buildHZB(commandEncoder);
-    this._renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView);
+    this._renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView);
   }
   _blitDepth(commandEncoder, depthTexture, depthView) {
-    const pass = commandEncoder.beginRenderPass({
-      label: "Depth blit Pass",
-      colorAttachments: [{
-        view: this.hzbMipWriteViews[0],
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: [1, 0, 0, 1]
-      }]
-    });
+    this._blitPassDesc.colorAttachments[0].view = this.hzbMipWriteViews[0];
+    const pass = commandEncoder.beginRenderPass(this._blitPassDesc);
     pass.setPipeline(this.blitPipeline);
     pass.setBindGroup(0, this.depthBlitBindGroup);
     pass.draw(3);
@@ -51887,22 +51877,22 @@ var SSRPass = class {
   }
   _computeHZBMipParams() {
     this._hzbMipParams = [];
+    this._hzbWgX = new Uint32Array(this.mipCount - 1);
+    this._hzbWgY = new Uint32Array(this.mipCount - 1);
     for (let mip = 1; mip < this.mipCount; mip++) {
       const dstW = Math.max(1, this.width >> mip);
       const dstH = Math.max(1, this.height >> mip);
-      this._hzbMipParams.push({
-        wgX: Math.ceil(dstW / 8),
-        wgY: Math.ceil(dstH / 8)
-      });
+      this._hzbWgX[mip - 1] = Math.ceil(dstW / 8);
+      this._hzbWgY[mip - 1] = Math.ceil(dstH / 8);
     }
   }
   _buildHZB(commandEncoder) {
-    const pass = commandEncoder.beginComputePass({ label: "HZB build" });
+    const pass = commandEncoder.beginComputePass(this._computePassDesc);
     pass.setPipeline(this.hzbPipeline);
     for (let mip = 1; mip < this.mipCount; mip++) {
-      const { wgX, wgY } = this._hzbMipParams[mip - 1];
-      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
-      pass.dispatchWorkgroups(wgX, wgY);
+      const idx = mip - 1;
+      pass.setBindGroup(0, this.hzbMipBindGroups[idx]);
+      pass.dispatchWorkgroups(this._hzbWgX[idx], this._hzbWgY[idx]);
     }
     pass.end();
   }
@@ -51926,15 +51916,8 @@ var SSRPass = class {
       this._lastWorldPosView = worldPosTextureView;
       this._ssrBGDirty = false;
     }
-    const pass = commandEncoder.beginRenderPass(this._ssrPassDesc ??= {
-      label: "SSR Composite Pass",
-      colorAttachments: [{
-        view: this.ssrOutputView,
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: [0, 0, 0, 0]
-      }]
-    });
+    this._ssrPassDesc.colorAttachments[0].view = this.ssrOutputView;
+    const pass = commandEncoder.beginRenderPass(this._ssrPassDesc);
     pass.setPipeline(this.ssrPipeline);
     pass.setBindGroup(0, this._ssrBindGroup);
     pass.draw(3);
