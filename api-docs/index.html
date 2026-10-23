@@ -1,45 +1,72 @@
-<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Matrix Engine Api Documentation - v1.18.6</title><meta name="description" content="Documentation for Matrix Engine Api Documentation"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="index.html" class="title">Matrix Engine Api Documentation - v1.18.6</a><div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>Matrix Engine Api Documentation - v1.18.6</h1></div><div class="tsd-panel tsd-typography"><h1 id="matrix-engine-wgpu" class="tsd-anchor-link">matrix-engine-wgpu<a href="#matrix-engine-wgpu" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Matrix Engine Api Documentation - v2.0.0</title><meta name="description" content="Documentation for Matrix Engine Api Documentation"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="index.html" class="title">Matrix Engine Api Documentation - v2.0.0</a><div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>Matrix Engine Api Documentation - v2.0.0</h1></div><div class="tsd-panel tsd-typography"><h1 id="matrix-engine-wgpu" class="tsd-anchor-link">matrix-engine-wgpu<a href="#matrix-engine-wgpu" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
 <p><strong>Author:</strong> Nikola Lukić
 📧 <a href="mailto:zlatnaspirala@gmail.com">zlatnaspirala@gmail.com</a>
-📅 Version: 1.18.0 2026 Alias <code>The beast</code></p>
+📅 Version: 2.0.0 Beta 2026 Alias <code>The Beast</code></p>
 <hr>
 <h2 id="logo" class="tsd-anchor-link">Logo<a href="#logo" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <img width="256" height="256" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/public/res/icons/512.webp?raw=true" />
 <hr>
 <h2 id="description" class="tsd-anchor-link">Description<a href="#description" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>This project is a <code>stable</code> but also <code>work-in-progress</code> WebGPU engine inspired by the original <strong>matrix-engine</strong> for WebGL.
+<p>WebGPU engine focus performance but also mimic major engines features inspired by the original <strong>matrix-engine</strong> for WebGL.
 It uses the <code>wgpu-matrix</code> npm package as a replacement for <code>gl-matrix</code> to handle model-view-projection matrices.</p>
-<p>Published on npm as: <strong><code>matrix-engine-wgpu</code></strong> (not always updated on last - recommended is to use github clone)</p>
-<p>Backend editor (works in local env - desktop browsers) support list:</p>
+<p>Published on npm as: <strong><code>matrix-engine-wgpu</code></strong> (not always updated on last - recommended is to use github clone)
+From [1.18.7] ver npm package is much more stable and usable. All examples can be done by npm services not just github clone.
+You can also use public provides like <code>unpkg.com</code> etc. You can use <code>PREFIX</code> for textures or objects paths. The-Beast is friendly with codepen, worker physics bridge will test host origin name is it exsternal or not to fix loading link if not it will use local resource always. See <a href="https://codepen.io/editor/zlatnaspirala/pen/019fc918-e45f-73f4-9987-9a1599ac4a1f">codepen examples</a>.</p>
 <ul>
-<li>Chrome, Edge, Opera, Firefox desktop</li>
+<li>
+<p>Backend editorX (App level+Shader VisualScripting) (works in local env - desktop browsers) support list: Chrome, Edge, Opera, Firefox desktop.</p>
+</li>
+<li>
+<p>Code Creator (TheBeast Code generator) is standalone. Can be used public but user must trust page to enter api key.
+Without api key no ai response. Code creator make project from task and test it direct intro same page.
+Code creator dont even needed to build own js bundle, just use it from watcher build on localhost:3000 by default.</p>
+</li>
 </ul>
 <hr>
 <h2 id="done-list-" class="tsd-anchor-link">Done list []<a href="#done-list-" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <ul>
-<li>✔️ Draw loop per pipeline not per mesh (PipelineManager) with share material. Power optimisation.</li>
-<li>✔️ Support for 3D objects and scene transformations.</li>
-<li>✔️ Ammo.js, cannonES &amp;&amp; Jolt Physics libs integration (app&lt;-&gt;bridge&lt;-&gt;worker).
-Physics use webworkers by default.</li>
+<li>✔️ Draw loop per pipeline not per mesh (PipelineManager) with share material feature. Power optimisation
+on every level like micro optimisation. Mobile browsers real test results make decision on further development.</li>
+<li>✔️ Support for 3D objects (scene object) standard TRS transformations.</li>
+<li>✔️ Ammo.js, cannonES, Jolt and matter.js physics libs integration (app&lt;-&gt;bridge&lt;-&gt;worker).
+Physics use webworkers by default. Fixed crossOrigin worker.</li>
 <li>✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -&gt; frontend.</li>
-<li>✔️ Bloom post processing.</li>
-<li>✔️ HZB post processing.</li>
-<li>✔️ Scene Culling feature (see maze example).</li>
-<li>📦 Based on the <code>shadowMapping</code> sample from <a href="https://webgpu.github.io/webgpu-samples/?sample=shadowMapping">webgpu-samples</a>.</li>
+<li>✔️ Bloom, HZB and Volumetric post processing.</li>
+<li>✔️ GPU Features: <code>texture-compression-bc</code> - (Not active by default).</li>
+<li>✔️ Scene Culling feature (see maze example for CPU Culling).</li>
+<li>✔️ Effects (sub draw system) Cached pipelines. Effect is standalone webgpu entity with own
+groups and pipelines. With effects i can add any exsternal demo very easy and quick.</li>
 <li>✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).</li>
 <li>✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader).</li>
 <li>✔️ Dynamic shadow cast (done also for skinned meshes).</li>
 <li>✔️ VertexShader displacment (done also for skinned meshes), nice for water effect.</li>
-<li>✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. <a href="https://ollama.com/">Open account/open-source/free-service-quota</a>.</li>
+<li>✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform.
+<a href="https://ollama.com/">Open account/open-source/free-service-quota</a>.</li>
 <li>✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend.</li>
-<li>✔️ MediaPipe implemented - dinamic loading (if not in use no loading script or any related to mediapipe)</li>
+<li>✔️ MediaPipe implemented - dinamic loading (if not in use no loading script or any related to mediapipe)
+Make possible to morph from some splat(ply) shape to special mediapipe integrated mesh like 'FACEMESH_TESSELLATION' with real time video texture from webcam or video see <code>splatFaceEffect</code> for examples.</li>
 <li>✔️ Remote render stream emit example (standard engine networking) and special endpoint for &quot;wachers&quot; <code>tv-10.html</code>
 Replace webcam stream with canvas capture - on endpoint use webRTC and video tag to preview remote render.</li>
 <li>✔️ Code creator AI services agent system(use engine from npm)
 <code>npm run creator</code> for '<a href="http://localhost:3000/">http://localhost:3000/</a>' <code>npm run creator-backend</code> for backend.
 create games from simple prompt.</li>
 </ul>
-<h2 id="roadmap" class="tsd-anchor-link">Roadmap<a href="#roadmap" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h2 id="supported-browsers-for-final-build" class="tsd-anchor-link">Supported browsers for final build:<a href="#supported-browsers-for-final-build" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>Windows Chrome ✔️</li>
+<li>Windows Firefox ✔️</li>
+<li>MACOS   Chrome (151 tested) ✔️ (golden gate)</li>
+<li>MAXOS   Firefox ✔️             (golden gate)</li>
+<li>MACOS   Opera (arm64) ✔️       (golden gate)</li>
+<li>MACOS   Edge ✔️                (golden gate)</li>
+</ul>
+<p><a href="https://github.com/user-attachments/assets/d7d647e4-2672-488f-a1c7-cf8706e34fd8">https://github.com/user-attachments/assets/d7d647e4-2672-488f-a1c7-cf8706e34fd8</a></p>
+<h2 id="navite-hybrid-port" class="tsd-anchor-link">Navite hybrid port<a href="#navite-hybrid-port" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Ported on android (used android studio) Page examples.html:</p>
+<ul>
+<li><a href="https://play.google.com/store/apps/details?id=nikolalukic.beast.engine&amp;pli=1">https://play.google.com/store/apps/details?id=nikolalukic.beast.engine&amp;pli=1</a></li>
+</ul>
+<h2 id="roadmapsync-to-external-parts" class="tsd-anchor-link">Roadmap/sync to external parts<a href="#roadmapsync-to-external-parts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <ul>
 <li>(Preparing API DOCs)[<a href="https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API">https://github.com/zlatnaspirala/matrix-engine-wgpu/wiki/Visual-Scripting-API</a>]</li>
 <li>🎯 Test linux OS -&gt; Editor creates and manages files internally.</li>
@@ -160,10 +187,10 @@ Users must trust you! I will force local usage.</p>
 </ul>
 <h2 id="api-documentation" class="tsd-anchor-link">Api documentation<a href="#api-documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>Build api with:</p>
-<pre><code class="js">
+<pre><code class="js"><span class="hl-4">typedoc</span><span class="hl-1"> </span><span class="hl-4">index</span><span class="hl-1">.</span><span class="hl-4">js</span>
 </code><button type="button">Copy</button></pre>
 
-<p>Live :
+<p>Live:
 <a href="https://maximumroulette.com/apps/webgpu/api-docs/">https://maximumroulette.com/apps/webgpu/api-docs/</a></p>
 <h2 id="features" class="tsd-anchor-link">Features<a href="#features" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <h3 id="scene-management" class="tsd-anchor-link">Scene Management<a href="#scene-management" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
@@ -203,6 +230,10 @@ Users must trust you! I will force local usage.</p>
 
 </li>
 </ul>
+<h4 id="culling" class="tsd-anchor-link">Culling<a href="#culling" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4>
+<pre><code class="js"><span class="hl-2">var</span><span class="hl-1"> </span><span class="hl-6">mazeGame</span><span class="hl-1"> = </span><span class="hl-2">function</span><span class="hl-1">() {</span><br/><span class="hl-1">  </span><span class="hl-2">let</span><span class="hl-1"> </span><span class="hl-4">maze</span><span class="hl-1"> = </span><span class="hl-2">new</span><span class="hl-1"> </span><span class="hl-6">MatrixEngineWGPU</span><span class="hl-1">({</span><br/><span class="hl-1">    </span><span class="hl-4">canvasSize:</span><span class="hl-1"> </span><span class="hl-5">&#39;fullscreen&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-7">// render: &#39;culling&#39;, &lt;&lt;&lt;--- CPU Culling</span><br/><span class="hl-1">    </span><span class="hl-4">render:</span><span class="hl-1"> </span><span class="hl-5">&#39;GPUInstancedDraw&#39;</span><span class="hl-1">, &lt;&lt;&lt;--- GPU </span><span class="hl-6">Culling</span><span class="hl-1"> (+</span><span class="hl-4">indirectDraws</span><span class="hl-1">)</span>
+</code><button type="button">Copy</button></pre>
+
 <hr>
 <h3 id="camera-options" class="tsd-anchor-link">Camera Options<a href="#camera-options" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>Add in args for instancing main MEWGPU class.</p>
@@ -356,7 +387,7 @@ setIntensity
 setThreshold
 setBlurRadius</p>
 <p>Fancy results:
-<img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bloom.png?raw=true" /></p>
+<img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mat.png?raw=true" /></p>
 <h3 id="volumetric-effect" class="tsd-anchor-link">Volumetric effect<a href="#volumetric-effect" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>Call from app <code>app.activateVolumetricEffect()</code>
 !Note volumetric works only if bloom is activated. Bloom can work alone.</p>
@@ -364,6 +395,7 @@ setBlurRadius</p>
 <pre><code class="js"><span class="hl-4">app</span><span class="hl-1">.</span><span class="hl-6">activateVolumetricEffect</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">density:</span><span class="hl-1"> </span><span class="hl-8">0.03</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">steps:</span><span class="hl-1"> </span><span class="hl-8">32</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">scatterStrength:</span><span class="hl-1"> </span><span class="hl-8">1.2</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">heightFalloff:</span><span class="hl-1"> </span><span class="hl-8">0.08</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">lightColor:</span><span class="hl-1"> [</span><span class="hl-8">1.0</span><span class="hl-1">, </span><span class="hl-8">0.88</span><span class="hl-1">, </span><span class="hl-8">0.65</span><span class="hl-1">],</span><br/><span class="hl-1">});</span>
 </code><button type="button">Copy</button></pre>
 
+<img src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/par.png?raw=true" />
 <h3 id="object-interaction-raycasting" class="tsd-anchor-link">Object Interaction (Raycasting)<a href="#object-interaction-raycasting" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>The raycast returns:</p>
 <pre><code class="js"><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-9">rayOrigin</span><span class="hl-1">: [</span><span class="hl-4">x</span><span class="hl-1">, </span><span class="hl-4">y</span><span class="hl-1">, </span><span class="hl-4">z</span><span class="hl-1">],</span><br/><span class="hl-1">  </span><span class="hl-9">rayDirection</span><span class="hl-1">: [</span><span class="hl-4">x</span><span class="hl-1">, </span><span class="hl-4">y</span><span class="hl-1">, </span><span class="hl-4">z</span><span class="hl-1">] </span><span class="hl-7">// normalized</span><br/><span class="hl-1">}</span>
@@ -514,14 +546,8 @@ If you wanna override values from MECOnfig or even urlParam than use in main eng
 </code><button type="button">Copy</button></pre>
 
 <h2 id="exclude-for-example-floorground-from-culling" class="tsd-anchor-link">Exclude (for example floor/ground) from culling: <code>floor.ignoreCulling = true;</code><a href="#exclude-for-example-floorground-from-culling" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<h2 id="about" class="tsd-anchor-link">About <code>empty.js</code><a href="#about" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>For a clean startup without extra logic, use engine build <code>empty.js</code>.
-This minimal build is ideal for online editors like CodePen or StackOverflow snippets.
-It is the plain text JavaScript ready for exec.</p>
-<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/3d-jamb.png?raw=true" />
-<hr>
 <h2 id="android-tv-or-any-other-supported-device-render-stream-receiver" class="tsd-anchor-link">Android TV or any other supported device render stream receiver<a href="#android-tv-or-any-other-supported-device-render-stream-receiver" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>Tech:L webRTC (used standard kurento/openvidu matrixStream)
+<p>Tech: webRTC (used standard kurento/openvidu matrixStream)
 Look for ./public/tv-10.html</p>
 <p>To make or build you own see android native part at:
 <a href="https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv">https://github.com/zlatnaspirala/web-to-native/tree/master/android-tv</a>
@@ -535,8 +561,8 @@ Dev help for android studio:
 
 <h2 id="npm-scripts" class="tsd-anchor-link">NPM Scripts<a href="#npm-scripts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>Editor use esbuild.
-Uses <code>watchify</code> to bundle JavaScript. (still good)
-Slow migration to the ESBUILD (note: it strange becouse it is exe file).</p>
+You can use <code>watchify</code> to bundle JavaScript. (still good)
++Migration to the ESBUILD (note: it strange becouse it is exe file) but it is popular.</p>
 <p>You can setup more games/apps in single bundle or make special end point for specific game/app.</p>
 <pre><code class="json"><span class="hl-5">&quot;examples&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;esbuild examples.js --bundle --outfile=public/examples.js --format=esm --watch&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;android-tv-cast&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;esbuild android-tv-cast.js --bundle --outfile=public/android-tv-cast.js --format=esm --watch&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;jamb&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;watchify ./examples/games/jamb/jamb.js -p [esmify --noImplicitAny] -o public/yacht.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;demo1&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;watchify demo1.js -p [esmify --noImplicitAny] -o public/app.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;empty&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;watchify empty.js -p [esmify --noImplicitAny] -o public/empty.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;build.jamb&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;browserify main.js -p esmify &gt; public/app.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;glb-loader&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;watchify ./examples/glb-loader.js -p [esmify --noImplicitAny] -o public/app.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;moba&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;watchify ./examples/games/moba/forestOfHollowBlood.js -p [esmify --noImplicitAny] -o public/moba-game.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;moba-menu&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;watchify ./examples/games/moba/start-menu.js -p [esmify --noImplicitAny] -o public/moba-menu.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;build-all&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;npm run examples | npm run main | npm run empty&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;creator-install&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;npm --prefix src/tools/the-beast-code-gen i&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;creator&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;npm --prefix src/tools/the-beast-code-gen run dev&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;creator-backend&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;npm --prefix src/tools/the-beast-code-gen run backend&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;landpage&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;watchify ./examples/my-lights.js -p [esmify --noImplicitAny] -o public/landpage.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;hosts&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;http-server ./public/ -p 3000&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;editor-landing&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;watchify ./src/tools/editor/template/autogen.js -p [esmify --noImplicitAny] -o public/matrix-engine-autogen.js&quot;</span><span class="hl-1">,</span><br/><span class="hl-5">&quot;editorx&quot;</span><span class="hl-1">: </span><span class="hl-5">&quot;cd src/tools/editor/backend &amp;&amp; node matrix-editor.js&quot;</span>
 </code><button type="button">Copy</button></pre>
@@ -550,8 +576,9 @@ This is static file storage also all builds make outputs here.</p>
 </ul>
 <hr>
 <h2 id="proof-of-concept" class="tsd-anchor-link">Proof of Concept<a href="#proof-of-concept" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>🎲 The first full app example will be a WebGPU-powered <strong>Jamb 3d deluxe</strong> game.
-Also MOBA 'Forest of hollow blood'</p>
+<p>🎲 The first full app example will be a WebGPU-powered <strong>Jamb 3d deluxe</strong> game,
+MOBA 'Forest of hollow blood' , flipper , NUI runner etc.</p>
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/3d-jamb.png?raw=true" />
 <h2 id="moba-game-beta-version-done" class="tsd-anchor-link">MOBA game Beta version done<a href="#moba-game-beta-version-done" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>Features done:</p>
 <ul>
@@ -564,10 +591,13 @@ Also MOBA 'Forest of hollow blood'</p>
 <li>Invertory (construct from 2 or 3 new upgraded item)</li>
 <li>Videochat - stream video follow player character (remote &amp; local 'one on one')</li>
 </ul>
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/cam.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game2.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game3.png?raw=true" />
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game4.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/earth.png?raw=true" />
+<img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/bvh.png?raw=true" />
 <p>Install it on your desktop with one click.
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/mmorpg-online-game5.png?raw=true" /></p>
 <p>💲💲💲 <a href="https://goldenspiral.itch.io/forest-of-hollow-blood">Invest in Forest Of Hollow Blood 1,000$</a>
@@ -585,14 +615,29 @@ See more details at <a href="https://github.com/zlatnaspirala/matrix-engine-wgpu
 <p><a href="https://maximumroulette.com/apps/fohb/">MOBA Forest Of Hollow Blood from hosted on maximumroulette.com</a></p>
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/2026-loading-performance.png?raw=true" />
 </li>
-<li>
-<p><a href="https://codepen.io/zlatnaspirala/pen/VwNKMar?editors=0011">CodePen Demo</a>
-→ Uses <code>empty.js</code> build from:
-<a href="https://maximumroulette.com/apps/megpu/empty.js">https://maximumroulette.com/apps/megpu/empty.js</a></p>
-</li>
-<li>
-<p><a href="https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16">CodeSandbox Implementation</a></p>
-</li>
+</ul>
+<h3 id="codepen-examples" class="tsd-anchor-link">Codepen examples:<a href="#codepen-examples" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019f2f4b-2ace-7c39-b304-b4028f7e5456">The Beast Cube + Fire effect + onhit changed effect configuration</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fc918-e45f-73f4-9987-9a1599ac4a1f">Zombie Shooter full game on codepen</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fc979-ef25-7fe4-8bb4-4af074fe5843">The Beast Maze + culling + collision non real physics involved</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd2c0-3b88-7562-98dd-195bc4f74e3f">The Beast - Platformer 2D demo</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd2fe-77c8-7860-a2b7-ee332ce29d86">The Beast - Slot Mashine, initializeSpritesForMesh</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd30e-35ba-7c0c-a406-8db158bae5c7">The Beast - BVH Skeletal animations</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd31d-7e1d-7149-b2e4-b82e7dd57197">The Beats - Camera texture on MorphMesh object example</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd323-4e24-72bb-9456-399ce2d792ff">The Beast - Canvas2d inline draws in webGPU scene</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd339-1abb-7622-adb5-ae2e427cad29">The Beast - Cinematic Camera movement demo</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd33f-b64d-76f4-b136-91a5e3afdf76">The Beast - Procedural destruction demo</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd37a-554a-7fc8-aea8-e345f5e38caf">The Beast - Flipper JOLJS</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd353-5540-79ce-8d7b-12cb2d90a3a8">The Beast - Drum with balls with continius rounds of 5 numbers (JOLT Bridge)</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd388-de26-71dc-a6f0-481525624b42">The Beast - Splat Color Effects</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd3a0-6cd9-756c-bf77-985e2a60741e">The Beast - Gaussian splat vertex animator</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd635-9e66-7795-93df-3dd7ab08414b">The Beast - Horizontal Z-buffer</a></li>
+<li><a href="https://codepen.io/editor/zlatnaspirala/pen/019fd663-3e4e-7e1e-802f-e17f22858512">The Beast - ProceduralMesh - morphTo func</a></li>
+</ul>
+<h3 id="codesandbox" class="tsd-anchor-link">CodeSandbox<a href="#codesandbox" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li><a href="https://codesandbox.io/p/github/zlatnaspirala/matrix-engine-wgpu/main?file=%2Fpackage.json%3A14%2C16">CodeSandbox Implementation</a></li>
 </ul>
 <hr>
 <p>Performance for Jamb game:</p>
@@ -701,6 +746,9 @@ Magic icons : <a href="https://craftpix.net/freebies/free-rpg-splash-game-512x51
 Keep this &quot;<a href="http://readme.md">readme.md</a>&quot; file with files.</p>
 </li>
 <li>
+<p>Material <code>hell</code> use origin source from <a href="https://www.shadertoy.com/view/4ttGWM">https://www.shadertoy.com/view/4ttGWM</a></p>
+</li>
+<li>
 <p>For background music in rpg template used:
 Music by <a href="https://pixabay.com/users/sonican-38947841/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Dvir Silverstone</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=379413">Pixabay</a>
 Sound Effect by <a href="https://pixabay.com/users/freesound_crunchpixstudio-49769582/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Crunchpix Studio</a> from <a href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=384915">Pixabay</a>
@@ -716,6 +764,12 @@ Music by <a href="https://pixabay.com/users/emmraan-24732583/?utm_source=link-at
 License: CC0 1.0 Universal (Public Domain Dedication)</p>
 <p>Folder './public/res/bvh/'
 Special thanks to the CMU Graphics Lab Motion Capture Database which provided the data <a href="http://mocap.cs.cmu.edu/">http://mocap.cs.cmu.edu/</a></p>
+<p>&quot;Dali_world_01&quot; by Mind Expander (<a href="https://superspl.at/user/mindbotz">https://superspl.at/user/mindbotz</a>)
+Source: <a href="https://superspl.at/scene/50be21df">https://superspl.at/scene/50be21df</a>
+Licensed under CC BY 4.0 (<a href="https://creativecommons.org/licenses/by/4.0/">https://creativecommons.org/licenses/by/4.0/</a>)</p>
+<p>&quot;Towers WoW&quot; (<a href="https://skfb.ly/6XtCI">https://skfb.ly/6XtCI</a>) by CGArt is licensed under Creative Commons Attribution (<a href="http://creativecommons.org/licenses/by/4.0/">http://creativecommons.org/licenses/by/4.0/</a>).</p>
+<p>One of buildin shaders use original source (material: {type: 'hell'})
+<a href="https://www.shadertoy.com/view/4ttGWM">https://www.shadertoy.com/view/4ttGWM</a></p>
 </li>
 </ul>
 <hr>
@@ -724,8 +778,9 @@ Special thanks to the CMU Graphics Lab Motion Capture Database which provided th
 <p>Top level main.js instance (Jamb 3d deluxe)</p>
 <hr>
 <h2 id="📘-learning-resource" class="tsd-anchor-link">📘 Learning Resource:<a href="#📘-learning-resource" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p><a href="https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/">WebGPU Ray Tracing</a></p>
 <ul>
-<li>ChatGPT, claude and Gemini.</li>
+<li><a href="https://webgpufundamentals.org">https://webgpufundamentals.org</a></li>
+<li><a href="https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/">WebGPU Ray Tracing</a></li>
+<li>For assist not whole code writing - ChatGPT, claude and Gemini.</li>
 </ul>
-</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#matrix-engine-wgpu"><span>matrix-<wbr/>engine-<wbr/>wgpu</span></a><ul><li><a href="#logo"><span>Logo</span></a></li><li><a href="#description"><span>Description</span></a></li><li><a href="#done-list-"><span>Done list []</span></a></li><li><a href="#roadmap"><span>Roadmap</span></a></li><li><a href="#fluxcodexvertex-web-graph-editor-🚀-since-version-180"><span>Flux<wbr/>Codex<wbr/>Vertex <wbr/>Web <wbr/>Graph <wbr/>Editor 🚀 (since version 1.8.0)</span></a></li><li><a href="#general-features-🧩"><span>General <wbr/>Features 🧩</span></a></li><li><a href="#visual-scripting-implemented-features-✅"><span>Visual <wbr/>Scripting – <wbr/>Implemented <wbr/>Features ✅</span></a></li><li><ul><li><a href="#⚠️-important-notes"><span>⚠️ <wbr/>Important <wbr/>Notes</span></a></li><li><a href="#instructions-📌"><span>Instructions 📌</span></a></li></ul></li><li><a href="#thebeast-code-creator"><span>The<wbr/>Beast <wbr/>Code <wbr/>Creator</span></a></li><li><a href="#api-documentation"><span>Api documentation</span></a></li><li><a href="#features"><span>Features</span></a></li><li><ul><li><a href="#scene-management"><span>Scene <wbr/>Management</span></a></li><li><a href="#camera-options"><span>Camera <wbr/>Options</span></a></li><li><a href="#object-position"><span>Object <wbr/>Position</span></a></li><li><a href="#object-rotation"><span>Object <wbr/>Rotation</span></a></li><li><a href="#materials"><span>Materials</span></a></li><li><a href="#effect-standalone-pipeline-draw-subsystem"><span>Effect (<wbr/>Standalone pipeline draw subsystem)</span></a></li><li><a href="#bloom-post-processing"><span>Bloom post processing</span></a></li><li><a href="#volumetric-effect"><span>Volumetric effect</span></a></li><li><a href="#object-interaction-raycasting"><span>Object <wbr/>Interaction (<wbr/>Raycasting)</span></a></li><li><a href="#how-to-load-models"><span>How to <wbr/>Load  <wbr/>Models</span></a></li><li><a href="#🔁-load-obj-sequence-animation"><span>🔁 <wbr/>Load <wbr/>OBJ <wbr/>Sequence <wbr/>Animation</span></a></li><li><a href="#proceduralmesh"><span>Procedural<wbr/>Mesh</span></a></li><li><a href="#📽️-video-textures"><span>📽️ <wbr/>Video textures</span></a></li><li><a href="#note"><span>Note</span></a></li><li><a href="#note-videotexture"><span>Note <wbr/>Video<wbr/>Texture</span></a></li><li><a href="#networking"><span>Networking</span></a></li><li><a href="#about-urlparams"><span>About <wbr/>URL<wbr/>Params</span></a></li></ul></li></ul><a href="#exclude-for-example-floorground-from-culling"><span>Exclude (for example floor/ground) from culling: </span></a><ul><li><a href="#about"><span>About </span></a></li><li><a href="#android-tv-or-any-other-supported-device-render-stream-receiver"><span>Android <wbr/>TV or any other supported device render stream receiver</span></a></li><li><a href="#npm-scripts"><span>NPM <wbr/>Scripts</span></a></li><li><a href="#resources"><span>Resources</span></a></li><li><a href="#proof-of-concept"><span>Proof of <wbr/>Concept</span></a></li><li><a href="#moba-game-beta-version-done"><span>MOBA game <wbr/>Beta version done</span></a></li><li><a href="#live-demos-dev-links"><span>Live <wbr/>Demos &amp; <wbr/>Dev <wbr/>Links</span></a></li><li><a href="#web-editor-fluxcodexvertex-from-version-180"><span>Web <wbr/>Editor <wbr/>Flux<wbr/>Codex<wbr/>Vertex from version [1.8.0]</span></a></li><li><a href="#license-credits"><span>License &amp;&amp; <wbr/>Credits</span></a></li><li><ul><li><a href="#usage-note"><span>Usage <wbr/>Note</span></a></li><li><a href="#attribution-credits"><span>Attribution &amp; <wbr/>Credits</span></a></li><li><a href="#bsd-3-clause-license-from-webgpu-samples"><span>BSD 3-<wbr/>Clause <wbr/>License (from <wbr/>Web<wbr/>GPU <wbr/>Samples)</span></a></li></ul></li><li><a href="#📘-learning-resource"><span>📘 <wbr/>Learning <wbr/>Resource:</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">Matrix Engine Api Documentation - v1.18.6</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#matrix-engine-wgpu"><span>matrix-<wbr/>engine-<wbr/>wgpu</span></a><ul><li><a href="#logo"><span>Logo</span></a></li><li><a href="#description"><span>Description</span></a></li><li><a href="#done-list-"><span>Done list []</span></a></li><li><a href="#supported-browsers-for-final-build"><span>Supported browsers for final build:</span></a></li><li><a href="#navite-hybrid-port"><span>Navite hybrid port</span></a></li><li><a href="#roadmapsync-to-external-parts"><span>Roadmap/sync to external parts</span></a></li><li><a href="#fluxcodexvertex-web-graph-editor-🚀-since-version-180"><span>Flux<wbr/>Codex<wbr/>Vertex <wbr/>Web <wbr/>Graph <wbr/>Editor 🚀 (since version 1.8.0)</span></a></li><li><a href="#general-features-🧩"><span>General <wbr/>Features 🧩</span></a></li><li><a href="#visual-scripting-implemented-features-✅"><span>Visual <wbr/>Scripting – <wbr/>Implemented <wbr/>Features ✅</span></a></li><li><ul><li><a href="#⚠️-important-notes"><span>⚠️ <wbr/>Important <wbr/>Notes</span></a></li><li><a href="#instructions-📌"><span>Instructions 📌</span></a></li></ul></li><li><a href="#thebeast-code-creator"><span>The<wbr/>Beast <wbr/>Code <wbr/>Creator</span></a></li><li><a href="#api-documentation"><span>Api documentation</span></a></li><li><a href="#features"><span>Features</span></a></li><li><ul><li><a href="#scene-management"><span>Scene <wbr/>Management</span></a></li><li><ul><li><a href="#culling"><span>Culling</span></a></li></ul></li><li><a href="#camera-options"><span>Camera <wbr/>Options</span></a></li><li><a href="#object-position"><span>Object <wbr/>Position</span></a></li><li><a href="#object-rotation"><span>Object <wbr/>Rotation</span></a></li><li><a href="#materials"><span>Materials</span></a></li><li><a href="#effect-standalone-pipeline-draw-subsystem"><span>Effect (<wbr/>Standalone pipeline draw subsystem)</span></a></li><li><a href="#bloom-post-processing"><span>Bloom post processing</span></a></li><li><a href="#volumetric-effect"><span>Volumetric effect</span></a></li><li><a href="#object-interaction-raycasting"><span>Object <wbr/>Interaction (<wbr/>Raycasting)</span></a></li><li><a href="#how-to-load-models"><span>How to <wbr/>Load  <wbr/>Models</span></a></li><li><a href="#🔁-load-obj-sequence-animation"><span>🔁 <wbr/>Load <wbr/>OBJ <wbr/>Sequence <wbr/>Animation</span></a></li><li><a href="#proceduralmesh"><span>Procedural<wbr/>Mesh</span></a></li><li><a href="#📽️-video-textures"><span>📽️ <wbr/>Video textures</span></a></li><li><a href="#note"><span>Note</span></a></li><li><a href="#note-videotexture"><span>Note <wbr/>Video<wbr/>Texture</span></a></li><li><a href="#networking"><span>Networking</span></a></li><li><a href="#about-urlparams"><span>About <wbr/>URL<wbr/>Params</span></a></li></ul></li></ul><a href="#exclude-for-example-floorground-from-culling"><span>Exclude (for example floor/ground) from culling: </span></a><ul><li><a href="#android-tv-or-any-other-supported-device-render-stream-receiver"><span>Android <wbr/>TV or any other supported device render stream receiver</span></a></li><li><a href="#npm-scripts"><span>NPM <wbr/>Scripts</span></a></li><li><a href="#resources"><span>Resources</span></a></li><li><a href="#proof-of-concept"><span>Proof of <wbr/>Concept</span></a></li><li><a href="#moba-game-beta-version-done"><span>MOBA game <wbr/>Beta version done</span></a></li><li><a href="#live-demos-dev-links"><span>Live <wbr/>Demos &amp; <wbr/>Dev <wbr/>Links</span></a></li><li><ul><li><a href="#codepen-examples"><span>Codepen examples:</span></a></li><li><a href="#codesandbox"><span>Code<wbr/>Sandbox</span></a></li></ul></li><li><a href="#web-editor-fluxcodexvertex-from-version-180"><span>Web <wbr/>Editor <wbr/>Flux<wbr/>Codex<wbr/>Vertex from version [1.8.0]</span></a></li><li><a href="#license-credits"><span>License &amp;&amp; <wbr/>Credits</span></a></li><li><ul><li><a href="#usage-note"><span>Usage <wbr/>Note</span></a></li><li><a href="#attribution-credits"><span>Attribution &amp; <wbr/>Credits</span></a></li><li><a href="#bsd-3-clause-license-from-webgpu-samples"><span>BSD 3-<wbr/>Clause <wbr/>License (from <wbr/>Web<wbr/>GPU <wbr/>Samples)</span></a></li></ul></li><li><a href="#📘-learning-resource"><span>📘 <wbr/>Learning <wbr/>Resource:</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">Matrix Engine Api Documentation - v2.0.0</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
