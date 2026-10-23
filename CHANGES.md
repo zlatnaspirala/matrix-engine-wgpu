@@ -2,6 +2,7 @@
 
 [2.0.0]
 
+- Optimised "POST PROCESSING" allocation in repeating fns. Zero allocation.
 - Removed setInterval from camera class, better performance!
 - Added face mask NUI with mediapipe.
 - Control Body of GLB mesh with NUI mediapipe.
