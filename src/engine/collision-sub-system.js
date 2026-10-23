@@ -110,27 +110,20 @@ export class CollisionSystem {
     this.entries.push({id, pos: positionInstance, radius, group});
   }
 
-  registerStatic(id, positionInstance, radius = 1, group = "default", halfExtents = null) {
-    const entry = {
-      id,
-      pos: positionInstance,
-      radius,
-      group,
-      // store actual box dimensions if provided, else assume unit cube
-      half: halfExtents ?? {x: radius, y: radius, z: radius}
-    };
-
-    const h = entry.half;
-    if(!h) {
-      console.warn('entry missing half:', entry.id);
-      return false;
-    }
-
+  registerStatic(id, pos, radius = 1, group = "default", half = null) {
+    const h = half ?? {x: radius, y: radius, z: radius};
+    const entry = {id, pos, radius, group, half: h};
     this.staticEntries.push(entry);
-    const key = this._cellKey(positionInstance.x, positionInstance.y ?? 0, positionInstance.z);
-    let cell = this._staticGrid.get(key);
-    if(!cell) {cell = []; this._staticGrid.set(key, cell);}
-    cell.push(entry);
+    const cs = this.cellSize, y = pos.y ?? 0;
+    for(let cx = Math.floor((pos.x - h.x) / cs);cx <= Math.floor((pos.x + h.x) / cs);cx++)
+      for(let cy = Math.floor((y - h.y) / cs);cy <= Math.floor((y + h.y) / cs);cy++)
+        for(let cz = Math.floor((pos.z - h.z) / cs);cz <= Math.floor((pos.z + h.z) / cs);cz++) {
+          const key = `${cx},${cy},${cz}`;
+          let cell = this._staticGrid.get(key);
+          if(!cell) this._staticGrid.set(key, cell = []);
+          cell.push(entry);
+        }
+    return entry;
   }
 
   unregister(id) {
@@ -292,8 +285,8 @@ export class CollisionSystem {
       for(let j = 0;j < this._neighbors.length;j++) {
         const B = this._neighbors[j];
         if(A === B) continue;
-        const minDist = (A.radius + B.radius) * 0.5;
-        // const minDist = A.radius + B.radius;
+        // const minDist = (A.radius + B.radius) * 0.5;
+        const minDist = A.radius + B.radius;
         if(A.group === B.group) {
           resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
           continue;

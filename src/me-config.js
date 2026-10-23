@@ -61,6 +61,7 @@ export const MEConfig = {
   SHADOW_RES: isMobile() == true ? 256.0 : 512.0,
   MAX_BONES: isMobile() == true ? 70 : 100,
   MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
+  GPUCullingRad: 200,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
@@ -106,20 +107,16 @@ export const MEConfig = {
     }
     console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
 
-    if(urlQ['TOUCH_SENS']) {
-      this.TOUCH_SENS = parseInt(urlQ['TOUCH_SENS']);
-    }
-    if(options.TOUCH_SENS) {
-      this.TOUCH_SENS = options.TOUCH_SENS;
-    }
+    if(urlQ['GPUCullingRad']) {this.GPUCullingRad = parseInt(urlQ['GPUCullingRad']);}
+    if(options.GPUCullingRad) {this.GPUCullingRad = options.GPUCullingRad;}
+    console.log(`%cGPUCullingRad : ${this.GPUCullingRad}`, LOG_FUNNY_ARCADE);
+
+    if(urlQ['TOUCH_SENS']) {this.TOUCH_SENS = parseInt(urlQ['TOUCH_SENS']);}
+    if(options.TOUCH_SENS) {this.TOUCH_SENS = options.TOUCH_SENS;}
     console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
 
-    if(urlQ['MOUSE_SENS']) {
-      this.MOUSE_SENS = parseInt(urlQ['MOUSE_SENS']);
-    }
-    if(options.MOUSE_SENS) {
-      this.MOUSE_SENS = options.MOUSE_SENS;
-    }
+    if(urlQ['MOUSE_SENS']) {this.MOUSE_SENS = parseInt(urlQ['MOUSE_SENS']);}
+    if(options.MOUSE_SENS) {this.MOUSE_SENS = options.MOUSE_SENS;}
     console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
 
     if(urlQ['CAM_SPEED']) {

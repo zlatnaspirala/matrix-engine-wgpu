@@ -27,7 +27,7 @@ export class PipeCommander {
     this.webcamRunning = false;
     this.lastVideoTime = -1;
     this.results = undefined;
-    // 'hand' | 'face'
+    // 'hand' | 'face' | 'pose'
     this.mode = opts.mode ?? 'hand';
     this.enableVisual = opts.enableVisual ?? true;
 
@@ -66,18 +66,16 @@ export class PipeCommander {
       this.canvasCtx = this.canvasElement.getContext("2d");
     }
 
-    this.ready = this.init();
+    this.ready = this.init(opts);
   }
 
-  async init() {
+  async init(opts) {
     const visionModule = await import("@mediapipe/tasks-vision");
-    const {HandLandmarker, FaceLandmarker, FilesetResolver, DrawingUtils} = visionModule;
-    this.HandLandmarker = HandLandmarker;
-    this.FaceLandmarker = FaceLandmarker;
-
+    const {FilesetResolver} = visionModule;
     const vision = await FilesetResolver.forVisionTasks("./mediapipe/wasm");
-
     if(this.mode === 'face') {
+      const {FaceLandmarker, DrawingUtils} = visionModule;
+      this.FaceLandmarker = FaceLandmarker;
       this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
@@ -88,7 +86,21 @@ export class PipeCommander {
         outputFaceBlendshapes: false,
         outputFacialTransformationMatrixes: false
       });
+    } else if(this.mode === 'pose') {
+      const {PoseLandmarker, DrawingUtils} = visionModule;
+      this.PoseLandmarker = PoseLandmarker;
+      this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+          delegate: "GPU"
+        },
+        runningMode: this.runningMode,
+        numPoses: opts.numPoses ?? 1,
+        outputSegmentationMasks: true
+      });
     } else {
+      const {HandLandmarker, DrawingUtils} = visionModule;
+      this.HandLandmarker = HandLandmarker;
       this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
@@ -108,7 +120,9 @@ export class PipeCommander {
 
   async enableWebcam() {
     await this.ready;
-    const stream = await navigator.mediaDevices.getUserMedia({video: true});
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {width: {ideal: 720}, height: {ideal: 720}}
+    });
     this.video.srcObject = stream;
     await this.video.play();
     const w = this.video.videoWidth;
@@ -127,24 +141,44 @@ export class PipeCommander {
     this.predictWebcam();
   }
 
+  getLandmarker() {
+    return this.mode === 'face' ? this.faceLandmarker
+      : this.mode === 'pose' ? this.poseLandmarker
+        : this.handLandmarker;
+  }
+
   async predictWebcam() {
     if(this.runningMode === "IMAGE") {
       this.runningMode = "VIDEO";
-      const landmarker = this.mode === 'face' ? this.faceLandmarker : this.handLandmarker;
+      const landmarker = this.getLandmarker();
       await landmarker.setOptions({runningMode: "VIDEO"});
     }
 
     const startTimeMs = performance.now();
     if(this.lastVideoTime !== this.video.currentTime) {
       this.lastVideoTime = this.video.currentTime;
-
       if(this.mode === 'face') {
+        // console.log('>>>>>>>>>>>>>>>>>>> ', this.faceLandmarker.FACE_LANDMARKS_TESSELATION)
         this.results = this.faceLandmarker.detectForVideo(this.video, startTimeMs, {
           imageSize: {
             width: this.video.videoWidth || 640,
             height: this.video.videoHeight || 480
           }
         });
+      } else if(this.mode === 'pose') {
+        // console.log('>>>>>>>>>>>>>>>>>>> ', this.faceLandmarker.FACE_LANDMARKS_TESSELATION)
+        this.results = this.poseLandmarker.detectForVideo(this.video, startTimeMs, {});
+
+        //
+        const m = this.results.segmentationMasks?.[0];
+        if(m) {
+          this.maskData = m.getAsUint8Array().slice();   // copy, 0..255
+          this.maskW = m.width; this.maskH = m.height;
+          m.close();
+        }
+        this.onResults(this.results);
+        //
+
       } else {
         this.results = this.handLandmarker.detectForVideo(this.video, startTimeMs, {
           imageSize: {
@@ -180,6 +214,17 @@ export class PipeCommander {
               {color: "#E0E0E0"}
             );
           }
+        } else if(this.mode === 'pose') {
+          for(const landmarks of this.results.landmarks) {
+            this.drawingUtils.drawConnectors(
+              landmarks, this.PoseLandmarker.POSE_CONNECTIONS,
+              {color: "#00ffcc", lineWidth: 3}
+            );
+            this.drawingUtils.drawLandmarks(landmarks, {
+              color: "#ff0066",
+              radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+            });
+          }
         } else {
           for(const landmarks of this.results.landmarks) {
             this.drawingUtils.drawConnectors(
@@ -199,7 +244,7 @@ export class PipeCommander {
       window.requestAnimationFrame(() => this.predictWebcam());
     }
   }
-  
+
   onResults(results) {}
 
   disableWebcam() {

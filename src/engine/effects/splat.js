@@ -16,6 +16,7 @@
  * Copyright (c) 2026 Nikola Lukić zlatnaspirala@gmail.com
  */
 export class GaussianSplatLayer {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer, topology = "point-list") {
     this.device = device;
     this.format = format;
@@ -30,11 +31,101 @@ export class GaussianSplatLayer {
     this.indexBuffer = null;
     this.vertexBufferLayout = null;
     this.bindGroup = null;
-    this.renderPipeline = null;
+    this.pipeline = null;
     this.indexCount = 0;
     this.splatScale = 2.0;
     this._scaleData = new Float32Array([this.splatScale, 0, 0, 0]);
     this.depthTest = true;
+    this.renderMode = 'points'; // Options: 'points' | 'quads' | 'mesh'
+    this.meshIndexBuffer = null;
+    this.meshIndexCount = 0;
+    this.splatSize = 0.015; // Size of quads in 'quads' mode
+  }
+
+  _createPipeline(label, topology, stepMode) {
+    const device = this.device;
+    return device.createRenderPipeline({
+      label,
+      layout: this.pipelineLayout,
+      vertex: {
+        module: this.shaderModule,
+        entryPoint: 'vs_main',
+        buffers: [
+          {
+            // Slot 0: Static scale + rotation
+            arrayStride: 56,
+            stepMode: stepMode,
+            attributes: [
+              {shaderLocation: 2, offset: 28, format: 'float32x3'}, // scale
+              {shaderLocation: 3, offset: 40, format: 'float32x4'}, // rotation
+            ]
+          },
+          {
+            // Slot 1: Color
+            arrayStride: 16, stepMode: stepMode,
+            attributes: [{shaderLocation: 1, offset: 0, format: 'float32x4'}]
+          },
+          {
+            // Slot 2: Position
+            arrayStride: 12, stepMode: stepMode,
+            attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]
+          },
+          {
+            // Slot 3: UV coordinates (always per-vertex)
+            arrayStride: 8, stepMode: 'vertex',
+            attributes: [{shaderLocation: 4, offset: 0, format: 'float32x2'}]
+          }
+        ]
+      },
+      fragment: {
+        module: this.shaderModule,
+        entryPoint: 'fs_main',
+        targets: [
+          {
+            format: this.format,
+            blend: {
+              color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+              alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'}
+            }
+          },
+          {format: 'rgba16float'},
+          {format: 'rgba16float'}
+        ]
+      },
+      primitive: {
+        topology: topology,
+        cullMode: 'none'
+      },
+      depthStencil: {
+        format: 'depth24plus',
+        depthWriteEnabled: false,
+        depthCompare: 'less'
+      }
+    });
+  }
+
+  _selectPipeline() {
+    if(!this.pipelines) return;
+    if(this.renderMode === 'quads') this.pipeline = this.pipelines.quads;
+    else if(this.renderMode === 'mesh' && this.meshIndexBuffer) this.pipeline = this.pipelines.mesh;
+    else this.pipeline = this.pipelines.points;
+  }
+
+  setRenderMode(mode, meshTriangles = null) {
+    this.renderMode = mode;
+    if(mode === 'mesh' && meshTriangles) {
+      // console.log('>>>>>>>>>', meshTriangles);
+      this.meshIndexCount = meshTriangles.length;
+      this.meshIndexBuffer = this.device.createBuffer({
+        label: 'splat-mesh-index-buffer',
+        size: Math.ceil(meshTriangles.byteLength / 4) * 4,
+        usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true,
+      });
+      new Uint16Array(this.meshIndexBuffer.getMappedRange()).set(meshTriangles);
+      this.meshIndexBuffer.unmap();
+    }
+    this._selectPipeline();
   }
 
   async loadPLY(source) {
@@ -52,7 +143,7 @@ export class GaussianSplatLayer {
       this.splatData = this._parsePLY(arrayBuffer);
       this.vertexCount = this.splatData.positions.length / 3;
       console.info(`✓ Loaded splat: ${this.vertexCount} points, AABB: [${this.aabbMin}] → [${this.aabbMax}]`);
-      await this._initializeGPU();
+      await this.initPipeline();
       return this;
     } catch(err) {
       console.error('Splat load error:', err);
@@ -161,7 +252,65 @@ export class GaussianSplatLayer {
 
   _sigmoid(x) {return 1.0 / (1.0 + Math.exp(-x));}
 
-  async _initializeGPU() {
+  async initPipeline() {
+    const device = this.device;
+    if(GaussianSplatLayer._pipelineCache.has(device)) {
+      const cached = GaussianSplatLayer._pipelineCache.get(device);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipelines = cached.pipelines;
+    } else {
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 3, visibility: GPUShaderStage.FRAGMENT, externalTexture: {}},
+          {binding: 4, visibility: GPUShaderStage.FRAGMENT, sampler: {type: 'filtering'}}
+        ]
+      });
+
+      const shaderCode = this._getRenderShaderCode();
+      this.shaderModule = device.createShaderModule({
+        label: 'Splat shader',
+        code: shaderCode
+      });
+
+      this.pipelineLayout = device.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+
+      this.pipelines = {
+        // original: one vertex per splat, point primitives
+        points: this._createPipeline('Splat render pipeline', this.topology, 'vertex'),
+        // 6 vertices per instance, per-splat data steps per instance
+        quads: this._createPipeline('Splat quad pipeline', 'triangle-list', 'instance'),
+        // indexed triangles over per-vertex data
+        mesh: this._createPipeline('Splat mesh pipeline', 'triangle-list', 'vertex'),
+      };
+
+      GaussianSplatLayer._pipelineCache.set(device, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipelines: this.pipelines
+      });
+    }
+
+    this._selectPipeline(); // this.pipeline = pipeline for current renderMode
+
+    // Dummy/fallback UV buffer (slot 3) - per layer, NOT only on first creation
+    const dummyUVData = new Float32Array(Math.max(this.vertexCount, 6) * 2); // default (0, 0) UVs
+    this.dummyUVBuffer = device.createBuffer({
+      label: 'splat-dummy-uv',
+      size: dummyUVData.byteLength,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    new Float32Array(this.dummyUVBuffer.getMappedRange()).set(dummyUVData);
+    this.dummyUVBuffer.unmap();
+
     // Vertex buffer: interleaved position + color + scale + rotation
     const vertexData = new Float32Array(this.vertexCount * 14);
     for(let i = 0;i < this.vertexCount;i++) {
@@ -182,7 +331,7 @@ export class GaussianSplatLayer {
       vertexData[idx++] = this.splatData.rotations[i * 4 + 3];
     }
 
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device.createBuffer({
       label: 'Splat vertex buffer',
       size: vertexData.byteLength,
       mappedAtCreation: true,
@@ -191,11 +340,10 @@ export class GaussianSplatLayer {
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
 
-    // Dummy/fallback position buffer (slot 2) — used when no positionAnimator
-    // is attached, so render() never crashes on missing dynamic position data.
+    // Dummy/fallback position buffer (slot 2)
     const dummyPosData = new Float32Array(this.vertexCount * 3);
     dummyPosData.set(this.splatData.positions);
-    this.dummyPosBuffer = this.device.createBuffer({
+    this.dummyPosBuffer = device.createBuffer({
       label: 'splat-dummy-pos',
       size: dummyPosData.byteLength,
       mappedAtCreation: true,
@@ -214,40 +362,19 @@ export class GaussianSplatLayer {
       initialColors[i * 4 + 3] = this.splatData.splatColors[i * 4 + 3];
     }
 
-    this.colorBuffer = this.device.createBuffer({
+    this.colorBuffer = device.createBuffer({
       label: 'splat-color',
       size: initialColors.byteLength,
       mappedAtCreation: true,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
     new Float32Array(this.colorBuffer.getMappedRange()).set(initialColors);
-    this.colorBuffer.unmap()
+    this.colorBuffer.unmap();
+
     this.positions = this.splatData.positions;
     this.vertexCount = this.splatData.vertexCount;
-    this.vertexBufferLayout = [
-      {
-        // slot 0: static — scale + rotation only (position slot skipped)
-        arrayStride: 56,
-        stepMode: 'vertex',
-        attributes: [
-          // shaderLocation 0 = position now comes from slot 2
-          {shaderLocation: 2, offset: 28, format: 'float32x3'}, // scale
-          {shaderLocation: 3, offset: 40, format: 'float32x4'}, // rotation
-        ]
-      },
-      {
-        // slot 1: animated rgba color (SplatColorAnimator)
-        arrayStride: 16, stepMode: 'vertex',
-        attributes: [{shaderLocation: 1, offset: 0, format: 'float32x4'}]
-      },
-      {
-        // slot 2: dynamic position (SplatPositionAnimator)
-        arrayStride: 12, stepMode: 'vertex',
-        attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]
-      }
-    ];
 
-    this.scaleBuffer = this.device.createBuffer({
+    this.scaleBuffer = device.createBuffer({
       label: 'Splat scale buffer',
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -256,81 +383,33 @@ export class GaussianSplatLayer {
     new Float32Array(this.scaleBuffer.getMappedRange()).set([this.splatScale, 0, 0, 0]);
     this.scaleBuffer.unmap();
 
-    this.modelBuffer = this.device.createBuffer({size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST});
-
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}}
-      ]
+    this.modelBuffer = device.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    const dummyTexture = device.createTexture({
+      size: [1, 1],
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.TEXTURE_BINDING,
+    });
+
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
-        {binding: 2, resource: {buffer: this.scaleBuffer}}
+        {binding: 2, resource: {buffer: this.scaleBuffer}},
+        {binding: 3, resource: dummyTexture.createView()}, // Fallback frame
+        {binding: 4, resource: device.createSampler()}
       ]
     });
-
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-
-    const shaderCode = this._getRenderShaderCode();
-    const shaderModule = this.device.createShaderModule({
-      label: 'Splat shader',
-      code: shaderCode
-    });
-
-    this.renderPipeline = this.device.createRenderPipeline({
-      label: 'Splat render pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vs_main',
-        buffers: this.vertexBufferLayout
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fs_main',
-        targets: [
-          {
-            format: this.format,
-            blend: {
-              color: {
-                srcFactor: 'src-alpha',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add'
-              },
-              alpha: {
-                srcFactor: 'one',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add'
-              }
-            }
-          },
-          {format: 'rgba16float'},
-          {format: 'rgba16float'}
-        ]
-      },
-      primitive: {
-        topology: this.topology,
-        cullMode: 'none'
-      },
-      depthStencil: {
-        format: 'depth24plus',
-        depthWriteEnabled: false,
-        depthCompare: 'less'
-      }
-    });
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200)
   }
 
   _getRenderShaderCode() {
     return `struct Camera {
-  mvp: mat4x4<f32>
+  mvp: mat4x4<f32>,
 };
 
 struct Model {
@@ -339,20 +418,23 @@ struct Model {
 
 struct Scale {
   factor: f32,
+  splatSize: f32,
+  renderMode: f32, // 0.0 = points/mesh, 1.0 = quads
   pad0: f32,
-  pad1: f32,
-  pad2: f32,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;
 @group(0) @binding(1) var<uniform> model: Model;
 @group(0) @binding(2) var<uniform> scale: Scale;
+@group(0) @binding(3) var videoTexture: texture_external;
+@group(0) @binding(4) var videoSampler: sampler;
 
 struct VertexInput {
   @location(0) position: vec3<f32>,
   @location(1) colorOpacity: vec4<f32>,
   @location(2) scale: vec3<f32>,
   @location(3) rotation: vec4<f32>,
+  @location(4) uv: vec2<f32>,
 };
 
 struct VertexOutput {
@@ -360,6 +442,7 @@ struct VertexOutput {
   @location(0) color: vec3<f32>,
   @location(1) opacity: f32,
   @location(2) worldPos: vec3<f32>,
+  @location(3) uv: vec2<f32>,
 };
 
 struct FragOut {
@@ -368,27 +451,96 @@ struct FragOut {
   @location(2) worldPos: vec4<f32>,
 };
 
+
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
   var out: VertexOutput;
-  let scaledPos = in.position * scale.factor;
-  let worldPos = model.matrix * vec4<f32>(scaledPos, 1.0);
-  let clipPos = camera.mvp * worldPos;
-  out.clipPos = clipPos;
+
+  let worldPos = model.matrix * vec4<f32>(in.position, 1.0);
+  out.clipPos = camera.mvp * worldPos;
   out.color = in.colorOpacity.rgb;
   out.opacity = in.colorOpacity.a;
   out.worldPos = worldPos.xyz;
+
+  // Pass UV directly through to Fragment Shader
+  out.uv = in.uv;
+
   return out;
 }
+
+// @vertex
+// fn vs_main(
+//   @builtin(vertex_index) vertexIdx: u32,  in: VertexInput) -> VertexOutput {
+//   var out: VertexOutput;
+
+//   var pos = in.position * scale.factor;
+
+//   // Quads / Billboard expansion logic
+//   if (scale.renderMode > 0.5) {
+//     var quadCorners = array<vec2<f32>, 6>(
+//       vec2<f32>(-0.5, -0.5),
+//       vec2<f32>( 0.5, -0.5),
+//       vec2<f32>(-0.5,  0.5),
+//       vec2<f32>(-0.5,  0.5),
+//       vec2<f32>( 0.5, -0.5),
+//       vec2<f32>( 0.5,  0.5)
+//     );
+//     let corner = quadCorners[vertexIdx];
+//     pos += vec3<f32>(corner * scale.splatSize, 0.0);
+//   }
+
+//   let worldPos = model.matrix * vec4<f32>(pos, 1.0);
+//   out.clipPos = camera.mvp * worldPos;
+//   out.color = in.colorOpacity.rgb;
+//   out.opacity = in.colorOpacity.a;
+//   out.worldPos = worldPos.xyz;
+//   out.uv = in.uv;
+//   return out;
+// }
+
+
+// ORIGIN
+// @fragment
+// fn fs_main(in: VertexOutput) -> FragOut {
+//   var out: FragOut;
+//   let videoColor = textureSampleBaseClampToEdge(videoTexture, videoSampler, in.uv);
+//   let finalColor = mix(in.color, videoColor.rgb, 0.85);
+
+//   out.color = vec4<f32>(finalColor, in.opacity);
+//   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+//   out.worldPos = vec4<f32>(in.worldPos, 1.0);
+//   return out;
+// }
+
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragOut {
   var out: FragOut;
-  out.color = vec4<f32>(in.color, in.opacity);
+
+  // Sample external texture using vertex UV
+  let videoColor = textureSampleBaseClampToEdge(videoTexture, videoSampler, in.uv);
+
+  out.color = vec4<f32>(videoColor.rgb, in.opacity);
   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
   out.worldPos = vec4<f32>(in.worldPos, 1.0);
   return out;
-}`;
+}
+
+
+// @fragment
+// fn fs_main(in: VertexOutput) -> FragOut {
+//   var out: FragOut;
+  
+//   // Debug mode: visualize UV space directly
+//   // Red = U (horizontal), Green = V (vertical)
+//   out.color = vec4<f32>(in.uv.x, in.uv.y, 0.0, 1.0);
+  
+//   out.normal = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+//   out.worldPos = vec4<f32>(in.worldPos, 1.0);
+//   return out;
+// }
+
+`;
   }
 
   attachPositionAnimator(animator) {
@@ -399,11 +551,6 @@ fn fs_main(in: VertexOutput) -> FragOut {
     this.positionAnimator = null;
   }
 
-  /**
- * Builds a target array of exactly `sampleCount` points by directly
- * sampling the mesh's own vertex positions (no triangle interpolation).
- * If sampleCount > mesh vertex count, vertices repeat.
- */
   sampleMeshVertices(positions, sampleCount) {
     const meshVertCount = positions.length / 3;
     const out = new Float32Array(sampleCount * 3);
@@ -416,17 +563,6 @@ fn fs_main(in: VertexOutput) -> FragOut {
     return out;
   }
 
-  /**
-   * Remaps a flat xyz array between axis conventions.
-   * Default: identity (no change).
-   *
-   * @param {Float32Array} positions  flat xyz triplets
-   * @param {object} [opts]
-   * @param {'Y_UP'|'Z_UP'} [opts.from='Y_UP']  source convention
-   * @param {'Y_UP'|'Z_UP'} [opts.to='Y_UP']    target convention
-   * @param {boolean} [opts.flipZ=false]        negate Z (e.g. glTF +Z forward → engine -Z forward)
-   * @returns {Float32Array}  new remapped array (does not mutate input)
-   */
   remapAxes(positions, opts = {}) {
     const {from = 'Y_UP', to = 'Z_UP', flipZ = false} = opts;
     const n = positions.length / 3;
@@ -467,17 +603,33 @@ fn fs_main(in: VertexOutput) -> FragOut {
   }
 
   render(pass, mesh, viewProjMatrix) {
+    const modeFlag = this.renderMode === 'quads' ? 1.0 : 0.0;
+    this._scaleData[0] = this.splatScale;
+    this._scaleData[1] = this.splatSize;
+    this._scaleData[2] = modeFlag;
+
     this.device.queue.writeBuffer(this.modelBuffer, 0, mesh.modelMatrix);
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
     this.device.queue.writeBuffer(this.scaleBuffer, 0, this._scaleData);
-    pass.setPipeline(this.renderPipeline);
+
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);
     pass.setVertexBuffer(2, this.positionAnimator ? this.positionAnimator.posBuffer : this.dummyPosBuffer);
-    pass.draw(this.vertexCount, 1, 0, 0);
-  }
+    pass.setVertexBuffer(3, this.dummyUVBuffer);
 
+    if(this.renderMode === 'mesh' && this.meshIndexBuffer) {
+      // MODE 1: Solid Face Mesh Surface
+      pass.setIndexBuffer(this.meshIndexBuffer, 'uint16');
+      pass.drawIndexed(this.meshIndexCount, 1, 0, 0, 0);
+    } else if(this.renderMode === 'quads') {
+      // MODE 2: Instanced Quad Splats (6 vertices per point)
+      pass.draw(6, this.vertexCount, 0, 0);
+    } else {
+      // MODE 3: Original Points
+      pass.draw(this.vertexCount, 1, 0, 0);
+    }
+  }
   setScale(scale) {
     this.splatScale = scale;
     this._scaleData[0] = scale;
@@ -500,6 +652,7 @@ export class GaussianSplatScene {
     this.format = format;
     this.cameraBuffer = cameraBuffer;
     this.splatLayers = [];
+    this.pipeline = null;
   }
 
   updateInstanceData(baseModelMatrix) {}
@@ -510,6 +663,7 @@ export class GaussianSplatScene {
       if(scale) splatLayer.setScale(scale);
       await splatLayer.loadPLY(plyPath);
       this.splatLayers.push(splatLayer);
+      this.pipeline = splatLayer.pipeline;
     } catch(err) {
       console.error('Failed to load splat:', err);
       return false;

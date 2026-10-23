@@ -182,6 +182,7 @@ export var loadParticles = function() {
 
         app.MAT_EFFECT_WATER.setBlend(0.001)
         app.MAT_EFFECT_WATER.effects.waterEffect = new WaterSimEffect(app.device, 'rgba16float', {size: 50}, app.cameraBuffer);
+
         app.autoUpdate.push({update: followMe, my: app.MAT_EFFECT_WATER.effects.waterEffect})
 
         app.birds.effects.keeffect = new KaleidoscopeEmitter(app.device, 'rgba16float', 30, app.cameraBuffer)

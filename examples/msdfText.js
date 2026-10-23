@@ -1,9 +1,10 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
-import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
+import {isMobile, OSCILLATOR, randomIntFromTo, SWITCHER} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {loadAtlasFONT, MSDFTextEffect} from "../src/engine/effects/msdfText.js";
+import {ParticleActionEmitter} from "../src/engine/effects/particles.js";
 
 export var loadMSDFText = function() {
 
@@ -20,6 +21,7 @@ export var loadMSDFText = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, () => {
 
+    let floor;
     msdfText.addLight();
     // if you double call downloadMeshes for same path engine use cached values no double fetch...
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
@@ -29,7 +31,7 @@ export var loadMSDFText = function() {
     addRaycastsAABBListener('canvas1', 'click');
 
     function onGround(m) {
-      msdfText.addMeshObj({
+      floor = msdfText.addMeshObj({
         material: {type: 'hell', share: true},
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
@@ -43,6 +45,9 @@ export var loadMSDFText = function() {
           geometry: "Cube"
         }
       })
+
+
+
     }
 
     async function onLoadObj(m) {
@@ -64,7 +69,7 @@ export var loadMSDFText = function() {
       // material: {type: 'mirror', share: true }, share: true if not defined it is false.
       let MYCUBE = msdfText.addMeshObj({
         material: {type: 'hell'},
-        position: {x: 0, y: 4, z: -10},
+        position: {x: -1, y: 7, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [3, 5, 3],
@@ -96,21 +101,7 @@ export var loadMSDFText = function() {
       })
 
 
-      loadAtlasFONT(msdfText.device).then((OUTPUT) => {
-        // console.log("FONT ", OUTPUT)
-        msdfText.floor.effects.gpuText = new MSDFTextEffect(
-          msdfText.device,
-          'rgba16float',
-          OUTPUT.msdfTexture,
-          sampler,
-          msdfText.cameraBuffer,
-          OUTPUT.font, {scale: 0.1}
-        );
 
-        msdfText.floor.effects.gpuText.typeText("TEXT123", 200, () => {
-          console.log('Typing complete!');
-        });
-      });
 
       msdfText.lightContainer[0].setIntensity(15);
       msdfText.activateBloomEffect();
@@ -126,12 +117,71 @@ export var loadMSDFText = function() {
       setTimeout(() => {
         MYCUBE.effects.circle = new GenGeoTexture2(msdfText.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+
+        app.activateVolumetricEffect({
+          density: 0.01,
+          steps: 28,
+          scatterStrength: 0.1,
+          heightFalloff: 0.9,
+          lightColor: [2, 1, 0]
+        })
+
+        MYCUBE.effects.circle.instanceCount = 3
+
+        MYCUBE.effects.particles = new ParticleActionEmitter(msdfText.device, 'rgba16float', isMobile() ? 50 : 200, msdfText.cameraBuffer);
+
+        MYCUBE.effects.particles.setAction('orbitMagic', {separationRadius: 1.2, angularVelRange: [0, 0]});
+
         MYCUBE.effects.flameEmitter.rotSpeed = 1;
 
         // Nice fire tourch effect.
         MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-          -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-          0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
+          -0.7992107559760324, 0.7105025479535736, 5.030921295940277,
+          0.9881520671598031, 2.1490530913763597, 0.7869976690056915, -4.852952644663379, -3.0362252537426024]);
+
+        const sampler = msdfText.device.createSampler({
+          magFilter: 'linear',
+          minFilter: 'linear',
+          mipmapFilter: 'nearest',
+          addressModeU: 'clamp-to-edge',
+          addressModeV: 'clamp-to-edge'
+        });
+
+
+        // debug
+        app.MYCUBE = MYCUBE;
+
+        loadAtlasFONT(msdfText.device).then((OUTPUT) => {
+          MYCUBE.effects.gpuText = new MSDFTextEffect(
+            msdfText.device,
+            'rgba16float',
+            OUTPUT.msdfTexture,
+            sampler,
+            msdfText.cameraBuffer,
+            OUTPUT.font, {scale: 0.01}
+          );
+          MYCUBE.effects.gpuText.typeText("The Beast Render", 200, () => {
+            console.log('Typing complete!');
+          });
+        });
+
+        let S = new SWITCHER()
+        MYCUBE.setBlend(0)
+        app.buildRenderBuckets()
+        MYCUBE.position.translateByX(6 * S.GET())
+        MYCUBE.position.thrust = 0.1;
+        app.MYCUBE.effects.circle.rotateEffectSpeed = 122;
+        MYCUBE.position.onPositionReach = () => {
+          MYCUBE.position.translateByX(6 * S.GET())
+          MYCUBE.effects.circle.instanceTargets.forEach((ins, index) => {
+            ins.scale[0] = (index + 1) * 3;
+            ins.scale[1] = (index + 1) * 3;
+            ins.scale[2] = (index + 1) * 3;
+            app.MYCUBE.effects.circle.instanceTargets[index].color = [100 * (index + 1), randomIntFromTo(0, 1), randomIntFromTo(0, 1), 0.5]
+          })
+
+        }
+
 
         MYCUBE.setAmbient(2, 3, 0.5);
         let cam = app.getCamera();

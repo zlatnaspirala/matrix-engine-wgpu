@@ -150,7 +150,25 @@ export default class MatrixEngineWGPU {
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
 
-    this.GPUCullingRad = 200;
+    this.effectsByType = {FlameEmitter: [], };
+
+    addEventListener('update-effects', (e) => {
+      for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
+        const mesh = this.mainRenderBundle[meshIndex];
+        if(mesh.effects) {
+          for(const effectName in mesh.effects) {
+            const effect = mesh.effects[effectName];
+            if(effect === null) continue;
+            // Group by CLASS name, not property key!
+            const className = effect.constructor.name;
+            if(!this.effectsByType[className]) this.effectsByType[className] = [];
+            this.effectsByType[className].push({effect, mesh});
+          }
+        }
+      }
+    })
+
+    this.GPUCullingRad = MEConfig.GPUCullingRad;
 
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
@@ -330,7 +348,7 @@ export default class MatrixEngineWGPU {
     if(MEConfig.SINGLE_CAMERA == true) {
       if('firstPersonCamera' == this.options.mainCameraParams.type) {
         this.cameras = {
-          firstPersonCamera: new FirstPersonCamera({position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+          firstPersonCamera: new FirstPersonCamera({ usePointerEvents: this.options.mainCameraParams.usePointerEvents,  position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
         };
       } else if('WASD' == this.options.mainCameraParams.type) {
         this.cameras = {
@@ -586,20 +604,20 @@ export default class MatrixEngineWGPU {
     this.lastFrameMS = 0;
     this._camVP = mat4.create();
     // console.clear();
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
+    console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
+    console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open...\n" +
-      "Npm ready, codepen fully supported (physics worker).\n" +
-      "Optimised MediaPipe buildin library implemented.\n" +
-      "Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
-      "Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
-      "New Features: NUI-Commander Game runner, Mediapipe, Culling render mode CPU + GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
-      "2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
-      "Mobile support: chrome-android tested. Just solutions and high performance. 🔥", LOG_FUNNY_BIG_ARCADE);
+      "%cMatrix Engine WGPU - Gate is open \n" +
+      " - Npm ready, codepen fully supported with physics worker.\n" +
+      " - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n" +
+      " - Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
+      " - Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
+      " - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      "   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
+      "🔥 Mobile support: chrome-android tested. 🔥", LOG_FUNNY);
     console.log(
       "%cMatrix Engine WGPU - Initial configuration :\n" +
       " - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n" +
@@ -608,9 +626,12 @@ export default class MatrixEngineWGPU {
       " - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n" +
       " - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n" +
       " - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n" +
+      " - GPUCullingRad  : " + this.MEConfig.GPUCullingRad + "\n" +
+      " - CAM_SPEED  : " + this.MEConfig.CAM_SPEED + "\n" +
+      " - LOAD_AFTER_CLICK_MOBILE  : " + this.MEConfig.LOAD_AFTER_CLICK_MOBILE + "\n" +
       " - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE);
-    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
+    console.log("%cYou can direct configure Matrix-Engine with url configuration params:\n", LOG_FUNNY_ARCADE);
     console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
     console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", LOG_FUNNY_ARCADE);
     console.log("%cSource code: 👉 GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
@@ -1290,10 +1311,10 @@ export default class MatrixEngineWGPU {
       this.updateLights();
       this._sceneData[44] = (performance.now() - this.startTime) / 1000;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if(camera._dirtyAngle || camera._dirty) {
-        this.getTransformationMatrix(camera, now2);
-        camera.update();
-      }
+
+      if(camera._digital) {camera._applyDigitalMovement(this.now);}
+      if(camera._dirtyAngle) {camera.update(); this.getTransformationMatrix(camera, now2);}
+
       for(let i = 0;i < this.lightContainer.length;i++) {
         const light = this.lightContainer[i];
         const p = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -1337,7 +1358,7 @@ export default class MatrixEngineWGPU {
         if(mesh.effects) {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
-            effect.simulate?.(commandEncoder);
+            if(effect) effect.simulate?.(commandEncoder);
           }
         }
       }
@@ -1379,15 +1400,22 @@ export default class MatrixEngineWGPU {
         }
       }
 
-      for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
-        const mesh = this.mainRenderBundle[meshIndex];
-        if(mesh.effects) {
-          for(const effectName in mesh.effects) {
-            const effect = mesh.effects[effectName];
-            if(effect === null || effect.enabled === false) continue;
+      for(const className in this.effectsByType) {
+        const pile = this.effectsByType[className];
+        if(pile.length === 0) continue;
+        if(className === '_WaterSimEffect' || className === '_DepthWebcamVoxelEffect' || className === '_WaterSimSphereEffect') {
+          for(const {effect, mesh} of pile) {
+            if(effect.enabled === false) continue;
             if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
             effect.render(pass, mesh, camera.VP);
           }
+          continue;
+        }
+        pass.setPipeline(pile[0].effect.pipeline);
+        for(const {effect, mesh} of pile) {
+          if(effect.enabled === false) continue;
+          if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+          effect.render(pass, mesh, camera.VP, 0.016);
         }
       }
       pass.end();

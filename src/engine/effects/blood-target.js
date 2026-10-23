@@ -8,16 +8,16 @@ import {bloodBurstShader} from "../../shaders/blood/blood-target";
  * one-shot particle pool, gravity+drag integration, alpha fade lifetime
  */
 export class BloodBurst {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, maxParticles = 64, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.maxParticles = maxParticles;
-    this.floatsPerInstance = 24; // mat4(16) + life/maxLife/pad/pad(4) + color(4)
+    this.floatsPerInstance = 24;
     this.instanceData = new Float32Array(maxParticles * this.floatsPerInstance);
     this.gravity = -9.8;
     this.drag = 0.98;
     this.cameraBuffer = cameraBuffer;
-
     this.pool = [];
     for(let i = 0;i < maxParticles;i++) {
       this.pool.push({
@@ -36,7 +36,6 @@ export class BloodBurst {
     this._initPipeline();
   }
 
-  // one-shot burst spawn — hook this at your hitscan/animationEnd impact point
   spawn(origin, baseModelMatrix, count = 20, speed = 6.0) {
     let spawned = 0;
     for(const p of this.pool) {
@@ -139,7 +138,6 @@ export class BloodBurst {
 
     if(!this.activeCount) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -148,63 +146,90 @@ export class BloodBurst {
   }
 
   _initPipeline() {
+    // Check cache first - if pipeline already built for this device, reuse it
+    if (BloodBurst._pipelineCache.has(this.device)) {
+      const cached = BloodBurst._pipelineCache.get(this.device);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.shaderModule = cached.shaderModule;
+    } else {
+      // Build pipeline only once per device
+      this.bindGroupLayout = this.device.createBindGroupLayout({
+        label: 'blood-burst bindGroupLayout',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
+        ]
+      });
+      this.shaderModule = this.device.createShaderModule({code: bloodBurstShader});
+      this.pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+      this.pipeline = this.device.createRenderPipeline({
+        label: 'blood-burst pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
+            {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{
+            format: this.format,
+            blend: {
+              color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+              alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+            }
+          },
+          {format: 'rgba16float'},
+          {format: 'rgba16float'}]
+        },
+        primitive: {topology: "triangle-list"},
+        depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}
+      });
+
+      // Cache it for next emitters
+      BloodBurst._pipelineCache.set(this.device, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout,
+        pipelineLayout: this.pipelineLayout,
+        shaderModule: this.shaderModule
+      });
+    }
+
+    // Each effect gets own buffers (not cached)
     const vertexData = new Float32Array([
       -0.5, 0.5, 0.0, 0.5, 0.5, 0.0,
       -0.5, -0.5, 0.0, 0.5, -0.5, 0.0,
     ]);
-    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.vertexBuffer = this.device.createBuffer({size: vertexData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    
+    const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
     this.uvBuffer = this.device.createBuffer({size: uvData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    
+    const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
     this.indexBuffer = this.device.createBuffer({size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST});
     this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
+    
     this.modelBuffer = this.device.createBuffer({label: 'blood-burst modelBuffer', size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST});
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'blood-burst bindGroupLayout',
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "read-only-storage"}},
-      ]
-    });
+    
     this.bindGroup = this.device.createBindGroup({
       label: 'blood-burst bindGroup',
-      layout: bindGroupLayout,
+      layout: this.bindGroupLayout,
       entries: [
         {binding: 0, resource: {buffer: this.cameraBuffer}},
         {binding: 1, resource: {buffer: this.modelBuffer}},
       ]
     });
-    const shaderModule = this.device.createShaderModule({code: bloodBurstShader});
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
-    this.pipeline = this.device.createRenderPipeline({
-      label: 'blood-burst pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: "float32x3"}]},
-          {arrayStride: 8, attributes: [{shaderLocation: 1, offset: 0, format: "float32x2"}]}
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
-            alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'},
-          }
-        },
-        {format: 'rgba16float'},
-        {format: 'rgba16float'}]
-      },
-      primitive: {topology: "triangle-list"},
-      depthStencil: {depthWriteEnabled: false, depthCompare: "less", format: "depth24plus"}
-    });
+
+    // Trigger effect reorganization in main loop
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 30);
   }
 }

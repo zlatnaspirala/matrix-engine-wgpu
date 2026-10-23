@@ -39,6 +39,7 @@ export var loadHang3d = function() {
     TOUCH_SENS: 0.01,
     mainCameraParams: {
       type: 'firstPersonCamera',
+      usePointerEvents: true,
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0, g: 0, a: 1}

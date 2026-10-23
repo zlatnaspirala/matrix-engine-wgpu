@@ -2,6 +2,7 @@ import {mat4} from "wgpu-matrix";
 import {pointerEffect} from "../../shaders/standalone/pointer.effect.js";
 
 export class PointerEffect {
+
   constructor(device, format, initialScale = 10, cameraBuffer) {
     this.initialScale = initialScale;
     this.device = device;
@@ -98,7 +99,7 @@ export class PointerEffect {
   draw(pass, cameraMatrix, modelMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    pass.setPipeline(this.pipeline);
+    
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);

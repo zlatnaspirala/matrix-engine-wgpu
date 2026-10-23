@@ -15,7 +15,8 @@ export var mazeGame = function() {
   let maze = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
     fastRender: 0.9,
-    render: 'culling',
+    // render: 'culling',
+    render: 'GPUInstancedDraw',
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
@@ -60,6 +61,8 @@ export var mazeGame = function() {
         floor.changeTexture(checker2, samplerTest);
         floor.setUVScale(12, 12);
 
+        maze.collisionSystem.registerStatic('floor', floor.position, 1, 'floor', {x: 80, y: 0.1, z: 80});
+
       }, 500)
 
     }, {scale: [1, 1, 1]});
@@ -91,6 +94,7 @@ export var mazeGame = function() {
       grid[1][0] = 1;                          // entrance: left wall, row 1
       grid[mazeSize - 2][mazeSize - 1] = 1;    // exit: right wall, second-to-last row
       // Instantiate walls (unchanged)
+      const wallScale = [1, 3, 1];
       for(let y = 0;y < mazeSize;y++) {
         for(let x = 0;x < mazeSize;x++) {
           if(grid[y][x] === 0) {
@@ -103,13 +107,13 @@ export var mazeGame = function() {
                 y: 0,
                 z: y * spacing - (mazeSize * spacing) / 2
               },
-              scale: [1, 3, 1],
+              scale: wallScale,
               texturesPaths: ['./res/textures/blankgray2.webp'],
               name: wallName,
               mesh: meshes.cube,
               physics: {enabled: false, mass: 0, geometry: "Cube"}
             });
-            maze.collisionSystem.registerStatic((test.name), test.position, 1.1, 'walls');
+            maze.collisionSystem.registerStatic((test.name), test.position, 1.0, 'walls',  {x: wallScale[0] * K, y: wallScale[1] * K, z: wallScale[2] * K});
           }
         }
       }
@@ -119,7 +123,8 @@ export var mazeGame = function() {
       light.setIntensity(8.5);
 
       maze.cameras.firstPersonCamera.movementSpeed = 0.1;
-      maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
+      // maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 1.0);
+      maze.collisionSystem.registerCamera(app.cameras.firstPersonCamera.position, 0.6);
       maze.cameras.firstPersonCamera.setPosition(-49, 10.40, -49);
 
       let test2 = maze.addMeshObj({

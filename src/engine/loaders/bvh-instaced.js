@@ -1,29 +1,7 @@
-// import MEBvh from "bvh-loader";
 import {mat4} from "wgpu-matrix";
 import {GLTFBuffer} from "./webgpu-gltf.js";
 import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
 import {MEConfig} from "../../me-config.js";
-
-// export var animBVH = new MEBvh();
-// export let loadBVH = (path) => {
-//   return new Promise((resolve, reject) => {
-//     animBVH.parse_file(path).then(() => {
-//       console.info("plot_hierarchy no function")
-//       animBVH.plot_hierarchy();
-//       var r = animBVH.frame_pose(0);
-//       // Not in use at the moment next feature - change skeletal or indipended new class.
-//       // console.log("FINAL P => ", r[0].length)
-//       // console.log("FINAL R => ", r[1].length)
-//       var KEYS = animBVH.joint_names();
-//       for(var x = 0;x < r[0].length;x++) {
-//         // console.log("->" + KEYS[x] + "-> position: " + r[0][x] + " rotation: " + r[1][x]);
-//       }
-//       var all = animBVH.all_frame_poses();
-//       // console.log("Final All -> ", all);
-//       resolve(animBVH);
-//     }).catch((err) => {reject(err)});
-//   })
-// }
 
 /**
  * @description
@@ -37,20 +15,16 @@ import {MEConfig} from "../../me-config.js";
 export class BVHPlayerInstances extends MEMeshObjInstances {
   constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient, cameraBuffer) {
     super(canvas, device, context, o, inputHandler, globalAmbient, glb, primitiveIndex, skinnedNodeIndex, cameraBuffer);
-    // bvh arg not actual at the moment
     this.bvh = {};
     this.glb = glb;
-
     this.currentFrame = 0;
     this.fps = 30;
     this.timeAccumulator = 0;
-
     this.sharedBones = false;
     this.trailAnimation = {
       enabled: false, // deplaced
       delay: 0
     };
-
     this.scaleBoneTest = 1;
     this.primitiveIndex = primitiveIndex;
     this.sharedState = {
@@ -93,9 +67,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     this.inverseBindMatrices = [];             // Float32Array for each joint
     this.initInverseBindMatrices();
     this.makeSkeletal();
-
     this.rebuildInstanceSkeletons();
-
     this._numFrames = this.getNumberOfFramesCurAni();
     this._finalMat = new Float32Array(this.MAX_BONES * 16);
     this._tempMat = mat4.create();
@@ -153,17 +125,14 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     for(let i = 0;i < nodeCount;i++) {
       this._nodeChannelsArray[i] = [];
     }
-
     this._translationChannels = new Array(nodeCount);
     this._rotationChannels = new Array(nodeCount);
     this._scaleChannels = new Array(nodeCount);
-
     for(let i = 0;i < nodeCount;i++) {
       this._translationChannels[i] = [];
       this._rotationChannels[i] = [];
       this._scaleChannels[i] = [];
     }
-
     for(let i = 0;i < anim.channels.length;i++) {
       const channel = anim.channels[i];
       const nodeIndex = channel.target.node;
@@ -171,7 +140,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         this._nodeChannelsArray[nodeIndex] = [];
       }
       this._nodeChannelsArray[nodeIndex].push(channel);
-
       if(channel.target.path === "translation") {
         this._translationChannels[nodeIndex].push(channel);
       }
@@ -186,19 +154,15 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
     for(let i = 0;i < anim.channels.length;i++) {
       const channel = anim.channels[i];
       const sampler = anim.samplers[channel.sampler];
-
       channel._inputTimes = this.getAccessorArray(this.glb, sampler.input);
       channel._outputArray = this.getAccessorArray(this.glb, sampler.output);
       channel._numComponents = channel.target.path === 'rotation' ? 4 : 3;
       channel._animLength = channel._inputTimes[channel._inputTimes.length - 1];
       channel._isStep = sampler.interpolation === 'STEP';
       channel._lastKeyIndex = 0;
-      channel._pathType =
-        channel.target.path === 'rotation' ? 2 :
-          channel.target.path === 'translation' ? 0 : 1;
+      channel._pathType = channel.target.path === 'rotation' ? 2 : channel.target.path === 'translation' ? 0 : 1;
       channel._lastFrame = channel._inputTimes.length - 1;
     }
-
     this._animationLength = this.getAnimationLength(anim);
   }
 
@@ -246,44 +210,20 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   initInstanceSkeletons() {
-
     this.instanceNodes = [];
     this.instanceBoneMatrices = [];
-
     for(let i = 0;i < this.instanceCount;i++) {
-
       const clonedNodes = this.nodes.map(n => ({
-
         ...n,
-
-        translation: n.translation
-          ? new Float32Array(n.translation)
-          : new Float32Array([0, 0, 0]),
-
-        rotation: n.rotation
-          ? new Float32Array(n.rotation)
-          : new Float32Array([0, 0, 0, 1]),
-
-        scale: n.scale
-          ? new Float32Array(n.scale)
-          : new Float32Array([1, 1, 1]),
-
-        transform: n.transform
-          ? new Float32Array(n.transform)
-          : mat4.identity(),
-
+        translation: n.translation ? new Float32Array(n.translation) : new Float32Array([0, 0, 0]),
+        rotation: n.rotation ? new Float32Array(n.rotation) : new Float32Array([0, 0, 0, 1]),
+        scale: n.scale ? new Float32Array(n.scale) : new Float32Array([1, 1, 1]),
+        transform: n.transform ? new Float32Array(n.transform) : mat4.identity(),
         worldMatrix: mat4.create(),
-
-        inverseBindMatrix: n.inverseBindMatrix
-          ? new Float32Array(n.inverseBindMatrix)
-          : null
+        inverseBindMatrix: n.inverseBindMatrix ? new Float32Array(n.inverseBindMatrix) : null
       }));
-
       this.instanceNodes.push(clonedNodes);
-
-      this.instanceBoneMatrices.push(
-        new Float32Array(this.MAX_BONES * 16)
-      );
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
     }
   }
 
@@ -330,9 +270,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
 
   playAnimationByName = (animationName) => {
     const animations = this.glb.glbJsonData.animations;
-    const index = animations.findIndex(
-      anim => anim.name === animationName
-    );
+    const index = animations.findIndex(anim => anim.name === animationName);
     if(index === -1) {
       console.warn(`Animation '${animationName}' not found`);
       return;
@@ -354,6 +292,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
   }
 
   update(now) {
+    if(this._poseOn) this._solvePose();
     var inTime = this._animationLength;
     if(this.sharedState.animationStarted == false &&
       this.sharedState.emitAnimationEvent == true) {
@@ -361,9 +300,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       const capturedIndex = this.animationIndex ?? 0;
       setTimeout(() => {
         this.sharedState.animationStarted = false;
-        if(this.animationIndex == null) {
-          this.animationIndex = 0;
-        }
+        if(this.animationIndex == null) {this.animationIndex = 0}
         window.dispatchEvent(this.glbAnimEvents['animEndEvent' + capturedIndex]);
       }, inTime * 1000);
     }
@@ -408,7 +345,7 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       case 5126: result = new Float32Array(slice); break;
       case 5123: result = new Uint16Array(slice); break;
       case 5121: result = new Uint8Array(slice); break;
-      default: throw new Error("Unsupported componentType: " + accessor.componentType);
+      default: throw new Error("Unsupported componentType:" + accessor.componentType);
     }
     glb._accessorCache.set(accessorIndex, result);
     return result;
@@ -443,7 +380,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       default: throw new Error("Unknown componentType: " + componentType);
     }
   }
-
   /**
    *  @description
    *  Get a typed slice of the raw binary buffer from glTF buffer definitions.
@@ -498,7 +434,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       0, 0, 0, 1
     ]);
   }
-
   // Compose TRS to a 4×4
   composeMatrix(translation, rotationQuat, scale) {
     const m = mat4.identity();
@@ -511,10 +446,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
 
   decomposeMatrix(m) {
     // m is column-major: indices:
-    // [ m0 m4 m8  m12
-    //   m1 m5 m9  m13
-    //   m2 m6 m10 m14
-    //   m3 m7 m11 m15 ]
     const t = new Float32Array([m[12], m[13], m[14]]);
     const cx = [m[0], m[1], m[2]];
     const cy = [m[4], m[5], m[6]];
@@ -571,7 +502,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       qy = (r12 + r21) / s;
       qz = 0.25 * s;
     }
-
     const rot = new Float32Array([qx, qy, qz, qw]);
     const scale = new Float32Array([sx, sy, sz]);
     return {translation: t, rotation: rot, scale: scale};
@@ -611,6 +541,15 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
       const tr = node.translation;
       const sc = node.scale;
       const rot = node.rotation;
+
+      if(this._poseOn) {
+        const o = nodeIndex * 4, pl = this._poseLocal;
+        rot[0] = pl[o]; rot[1] = pl[o + 1]; rot[2] = pl[o + 2]; rot[3] = pl[o + 3];
+        this.composeTRS(tr, rot, sc, node.transform);
+        // skip the animation channels
+        continue;
+      }
+
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
@@ -668,8 +607,6 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
         const base1 = next * 4;
         this.slerp(outputArray, base0, outputArray, base1, factor, rot);
       }
-
-      // BUILD LOCAL MATRIX
       this.composeTRS(tr, rot, sc, node.transform);
     }
 
@@ -688,22 +625,335 @@ export class BVHPlayerInstances extends MEMeshObjInstances {
 
     for(let j = 0;j < skeleton.length;j++) {
       const jointNode = nodes[skeleton[j]];
-      mat4.multiply(
-        jointNode.worldMatrix,
-        jointNode.inverseBindMatrix,
-        this._tempMat
-      );
+      mat4.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
-
     const byteOffset = instanceIndex * this.MAX_BONES * 64;
-    this.device.queue.writeBuffer(
-      this.bonesBuffer,
-      byteOffset,
-      boneMatrices.buffer,
-      boneMatrices.byteOffset,
-      boneMatrices.byteLength
-    );
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices.buffer, boneMatrices.byteOffset, boneMatrices.byteLength);
     return boneMatrices;
   }
+
+  enablePoseDrive(opts = {}) {
+    this._restFromBindPose();
+    const jn = this.glb.glbJsonData.nodes;
+    const n = this.nodes.length;
+    this._poseSmooth = opts.smooth ?? 0.4;              // 0 = raw
+    this._poseMirror = opts.mirror ?? false;            // false: puppet (your left = its left), true: mirror
+    this._poseZSign = opts.zSign ?? -1;
+    this._poseMinVis = opts.minVisibility ?? 0.5;
+    this._poseWL = null; this._poseLM = null;
+    this._poseRestLocal = new Float32Array(n * 4);
+    this._poseRestWorld = new Float32Array(n * 4);
+    this._poseNewWorld = new Float32Array(n * 4);
+    this._poseLocal = new Float32Array(n * 4);
+    this._poseFrom = new Int8Array(n).fill(-1);
+    this._poseTo = new Int8Array(n).fill(-1);
+    this._poseRestDir = new Float32Array(n * 3);
+    this._qTmp = new Float32Array(8);
+    // rest world matrices / quaternions (one time, allocation is fine here)
+    const world = new Array(n), L = mat4.create();
+    const isJoint = new Set(this.skeleton);
+    for(const i of this._sortedNodes) {
+      const nd = this.nodes[i], p = nd.parent;
+      if(isJoint.has(i)) this.composeTRS(nd.translation, nd.rotation, nd.scale, L);
+      else mat4.copy(nd.transform, L);                  // Armature etc: matrix only
+      world[i] = p != null ? mat4.multiply(world[p], L) : mat4.copy(L);
+      const dl = this.decomposeMatrix(L).rotation;      // local rotation, scale removed
+      const dw = this.decomposeMatrix(world[i]).rotation;  // world rotation incl. Armature
+      this._poseRestLocal.set(dl, i * 4);
+      this._poseLocal.set(dl, i * 4);
+      this._poseRestWorld.set(dw, i * 4);
+    }
+    // resolve bones by name
+    const jointSet = new Set(this.skeleton);
+    const found = {};
+    for(const i of this.skeleton) {
+      const t = _poseTokens(jn[i].name);
+      const side = t.includes('left') || t.includes('l') ? 'L' : (t.includes('right') || t.includes('r') ? 'R' : null);
+      if(!side) continue;
+      const part = t.filter(x => x !== 'left' && x !== 'right' && x !== 'l' && x !== 'r').join('');
+      for(const key in _POSE_SLOTS) {
+        if(_POSE_SLOTS[key].names.includes(part) && !((key + side) in found)) found[key + side] = i;
+      }
+    }
+    if(opts.override) for(const id in opts.override) {       // {upperArmL: 'NodeName', ...}
+      const i = jn.findIndex(x => x.name === opts.override[id]);
+      if(i >= 0) found[id] = i;
+    }
+    const missing = [];
+    for(const key in _POSE_SLOTS) for(const side of ['L', 'R']) {
+      const i = found[key + side];
+      if(i === undefined) {missing.push(key + side); continue;}
+      const nextId = _POSE_SLOTS[key].next ? _POSE_SLOTS[key].next + side : null;
+      let c = nextId && found[nextId] !== undefined ? found[nextId] : -1;
+      if(c < 0) for(const ch of(this.nodes[i].children || [])) if(jointSet.has(ch)) {c = ch; break;}
+      if(c < 0) {missing.push(key + side + '(no child)'); continue;}
+      let dx = world[c][12] - world[i][12], dy = world[c][13] - world[i][13], dz = world[c][14] - world[i][14];
+      const l = Math.hypot(dx, dy, dz) || 1;
+      this._poseRestDir.set([dx / l, dy / l, dz / l], i * 3);
+      this._poseFrom[i] = _POSE_SLOTS[key][side][0];
+      this._poseTo[i] = _POSE_SLOTS[key][side][1];
+    }
+    if(missing.length) console.warn(`[${this.name}] pose drive: unmapped`, missing, '-> use opts.override');
+
+    //
+    // torso / head
+    this._poseKind = new Int8Array(n);          // 2 = torso, 3 = head
+    this._poseT = new Float32Array(n);
+    this._rv = new Float32Array(15); this._tv = new Float32Array(15);
+    this._dq = new Float32Array(12); this._lmS = new Float32Array(18); this._fdS = new Float32Array(12);
+    this._poseTorso = false;
+
+    let hips = -1, head = -1; const spine = [], neck = [];
+    for(const i of this._sortedNodes) {
+      if(!jointSet.has(i)) continue;
+      const t = _poseTokens(jn[i].name);
+      if(t.includes('left') || t.includes('right')) continue;
+      const k = t.join('');
+      if(hips < 0 && (k === 'hips' || k === 'pelvis')) hips = i;
+      else if(/^(spine|chest|upperchest)/.test(k)) spine.push(i);
+      else if(/^neck/.test(k)) neck.push(i);
+      else if(head < 0 && k === 'head') head = i;
+    }
+    const F = found;
+    if(hips >= 0 && head >= 0 && F.thighL !== undefined && F.thighR !== undefined &&
+      F.upperArmL !== undefined && F.upperArmR !== undefined) {
+      const P = (i, a) => world[i][12 + a], rv = this._rv;
+      const hm = [0, 1, 2].map(a => (P(F.thighL, a) + P(F.thighR, a)) / 2);
+      const am = [0, 1, 2].map(a => (P(F.upperArmL, a) + P(F.upperArmR, a)) / 2);
+      const nrm = (v) => {const l = Math.hypot(...v) || 1; return v.map(x => x / l);};
+      rv.set(nrm(am.map((x, a) => x - hm[a])), 0);                                   // torso up
+      rv.set([0, 1, 2].map(a => P(F.thighL, a) - P(F.thighR, a)), 3);                 // hips side
+      const cs = [0, 1, 2].map(a => P(F.upperArmL, a) - P(F.upperArmR, a));
+      rv.set(cs, 6); rv.set(cs, 12);                                                   // chest + head side
+      rv.set(nrm([0, 1, 2].map(a => P(head, a) - am[a])), 9);                          // head up
+      this._poseKind[hips] = 2; this._poseT[hips] = 0;
+      spine.forEach((i, k) => {this._poseKind[i] = 2; this._poseT[i] = (k + 1) / spine.length;});
+      neck.forEach((i, k) => {this._poseKind[i] = 3; this._poseT[i] = (k + 1) / (neck.length + 1);});
+      this._poseKind[head] = 3; this._poseT[head] = 1;
+      this._poseTorso = true;
+    } else console.warn(`[${this.name}] pose drive: torso/head not resolved (hips/head/thigh/arm missing)`);
+    //
+
+    // start from rest, so no old animation values stay in the nodes
+    for(const inst of this.instanceNodes) {
+      for(let i = 0;i < n;i++) {
+        inst[i].translation.set(this.nodes[i].translation);
+        inst[i].rotation.set(this.nodes[i].rotation);
+        inst[i].scale.set(this.nodes[i].scale);
+      }
+    }
+    this._poseOn = true;
+  }
+
+  disablePoseDrive() {this._poseOn = false;}
+
+  // call from pipe.onResults
+  setPoseResults(results) {
+    this._poseWL = results?.worldLandmarks?.[0] ?? null;
+    this._poseLM = results?.landmarks?.[0] ?? null;
+  }
+
+  _solvePose() {
+    const wl = this._poseWL;
+    if(!wl) return;
+    const lm = this._poseLM, sorted = this._sortedNodes, nodes = this.nodes;
+    const rw = this._poseRestWorld, nw = this._poseNewWorld, pl = this._poseLocal, q = this._qTmp;
+    const from = this._poseFrom, to = this._poseTo, rd = this._poseRestDir;
+    const kinds = this._poseKind, T = this._poseT, dq = this._dq;
+    const mx = this._poseMirror ? -1 : 1, zs = this._poseZSign, minVis = this._poseMinVis;
+    const k = 1 - this._poseSmooth;
+
+    // torso / head target frames (once per frame)
+    let torsoOK = false, headOK = false;
+    if(this._poseTorso && _vis(lm, 11, minVis) && _vis(lm, 12, minVis) && _vis(lm, 23, minVis) && _vis(lm, 24, minVis)) {
+      torsoOK = true;
+      const L = this._lmS, tv = this._tv, S = this._fdS, idx = [11, 12, 23, 24, 7, 8];
+      for(let n = 0;n < 6;n++) {
+        const p = wl[idx[n]];
+        L[n * 3] = mx * p.x; L[n * 3 + 1] = -p.y; L[n * 3 + 2] = zs * p.z;
+      }
+      // up = hip mid -> shoulder mid
+      let ux = (L[0] + L[3]) / 2 - (L[6] + L[9]) / 2, uy = (L[1] + L[4]) / 2 - (L[7] + L[10]) / 2, uz = (L[2] + L[5]) / 2 - (L[8] + L[11]) / 2;
+      let l = Math.hypot(ux, uy, uz) || 1; tv[0] = ux / l; tv[1] = uy / l; tv[2] = uz / l;
+      tv[3] = L[6] - L[9]; tv[4] = L[7] - L[10]; tv[5] = L[8] - L[11];      // hips side (23 - 24)
+      tv[6] = L[0] - L[3]; tv[7] = L[1] - L[4]; tv[8] = L[2] - L[5];        // chest side (11 - 12)
+      _frameDelta(this._rv, 0, 3, tv, 0, 3, dq, 0, S);                      // hips
+      _frameDelta(this._rv, 0, 6, tv, 0, 6, dq, 4, S);                      // chest
+      if(_vis(lm, 7, minVis) && _vis(lm, 8, minVis)) {
+        headOK = true;
+        ux = (L[12] + L[15]) / 2 - (L[0] + L[3]) / 2; uy = (L[13] + L[16]) / 2 - (L[1] + L[4]) / 2; uz = (L[14] + L[17]) / 2 - (L[2] + L[5]) / 2;
+        l = Math.hypot(ux, uy, uz) || 1; tv[9] = ux / l; tv[10] = uy / l; tv[11] = uz / l;   // neck up
+        tv[12] = L[12] - L[15]; tv[13] = L[13] - L[16]; tv[14] = L[14] - L[17];              // ears side (7 - 8)
+        _frameDelta(this._rv, 9, 12, tv, 9, 12, dq, 8, S);                                   // head
+      }
+    }
+
+    for(let s = 0;s < sorted.length;s++) {
+      const i = sorted[s], p = nodes[i].parent, f = from[i], kind = kinds[i];
+      let have = false;
+      if(f >= 0) {
+        const t = to[i];
+        if(_vis(lm, f, minVis) && _vis(lm, t, minVis)) {
+          const a = wl[f], b = wl[t];
+          let dx = mx * (b.x - a.x), dy = -(b.y - a.y), dz = zs * (b.z - a.z);
+          const l = Math.hypot(dx, dy, dz);
+          if(l > 1e-5) {
+            dx /= l; dy /= l; dz /= l;
+            _qFromTo(rd[i * 3], rd[i * 3 + 1], rd[i * 3 + 2], dx, dy, dz, q, 0);
+            have = true;
+          }
+        }
+      } else if(kind === 2 && torsoOK) {
+        q[0] = dq[0]; q[1] = dq[1]; q[2] = dq[2]; q[3] = dq[3];
+        _nlerp(q, 0, dq, 4, T[i]);                          // hips -> chest blend
+        have = true;
+      } else if(kind === 3 && headOK) {
+        q[0] = dq[4]; q[1] = dq[5]; q[2] = dq[6]; q[3] = dq[7];
+        _nlerp(q, 0, dq, 8, T[i]);                          // chest -> head blend
+        have = true;
+      }
+      if(have) {
+        _qmul(q, 0, rw, i * 4, q, 4);                        // target world
+        if(p != null) _qmulConjA(nw, p * 4, q, 4, q, 0);     // target local
+        else {q[0] = q[4]; q[1] = q[5]; q[2] = q[6]; q[3] = q[7];}
+        _nlerp(pl, i * 4, q, 0, k);
+      }
+      if(p != null) _qmul(nw, p * 4, pl, i * 4, nw, i * 4);
+      else {nw[i * 4] = pl[i * 4]; nw[i * 4 + 1] = pl[i * 4 + 1]; nw[i * 4 + 2] = pl[i * 4 + 2]; nw[i * 4 + 3] = pl[i * 4 + 3];}
+    }
+  }
+
+  _restFromBindPose() {
+    const n = this.nodes.length, W = new Array(n), tmp = mat4.create(), L = mat4.create();
+    const isJoint = new Set(this.skeleton);
+    for(const i of this._sortedNodes) {
+      const nd = this.nodes[i], p = nd.parent;
+      if(isJoint.has(i)) {
+        const k = this.skeleton.indexOf(i);
+        W[i] = mat4.inverse(this.inverseBindMatrices.subarray(k * 16, k * 16 + 16));
+        if(p != null) mat4.multiply(mat4.inverse(W[p]), W[i], L); else mat4.copy(W[i], L);
+        const d = this.decomposeMatrix(L);
+        nd.translation.set(d.translation); nd.rotation.set(d.rotation); nd.scale.set(d.scale);
+      } else {
+        W[i] = p != null ? mat4.multiply(W[p], nd.transform) : mat4.copy(nd.transform);
+        // this.composeTRS(nd.translation, nd.rotation, nd.scale, tmp);
+        // W[i] = p != null ? mat4.multiply(W[p], tmp) : mat4.copy(tmp);
+      }
+    }
+  }
+
+  debugPoseRest() {
+    const nodes = this.instanceNodes[0];
+    let worst = 0, name = '';
+    for(const j of this.skeleton) {
+      const m = mat4.multiply(nodes[j].worldMatrix, nodes[j].inverseBindMatrix);
+      let d = 0;
+      for(let k = 0;k < 16;k++) d = Math.max(d, Math.abs(m[k] - (k % 5 === 0 ? 1 : 0)));
+      if(d > worst) {worst = d; name = this.glb.glbJsonData.nodes[j].name;}
+    }
+    console.log('pose rest error', worst, name);   // ~0 is good, > 0.01 means rest != bind pose
+  }
+
+  debugPoseRest2() {
+    const nodes = this.instanceNodes[0], jn = this.glb.glbJsonData.nodes;
+    const I = mat4.create(), m = mat4.create(), L = mat4.create();
+    let shown = 0;
+    for(const i of this._sortedNodes) {
+      const k = this.skeleton.indexOf(i);
+      if(k < 0) continue;
+      mat4.multiply(nodes[i].worldMatrix, nodes[i].inverseBindMatrix, m);
+      let err = 0;
+      for(let e = 0;e < 16;e++) err = Math.max(err, Math.abs(m[e] - I[e]));
+      if(err > 0.01 && shown++ < 5) {
+        const n = nodes[i];
+        this.composeTRS(n.translation, n.rotation, n.scale, L);
+        const det = L[0] * (L[5] * L[10] - L[6] * L[9]) - L[4] * (L[1] * L[10] - L[2] * L[9]) + L[8] * (L[1] * L[6] - L[2] * L[5]);
+        console.log(jn[i].name, 'err', err.toFixed(4),
+          'scale', Array.from(n.scale).map(v => +v.toFixed(3)),
+          'rotLen', Math.hypot(...n.rotation).toFixed(4),
+          'localDet', det.toFixed(3),
+          'parent', n.parent != null ? jn[n.parent].name : null);
+      }
+    }
+  }
+}
+
+// Control glb animation from exsternal src - helpers fns
+const _POSE_NOISE = new Set(['mixamorig', 'j', 'bip', 'bip01', 'def', 'mch', 'cc', 'base', 'rig', 'armature', 'c']);
+const _POSE_SLOTS = {
+  upperArm: {L: [11, 13], R: [12, 14], names: ['arm', 'upperarm'], next: 'foreArm'},
+  foreArm: {L: [13, 15], R: [14, 16], names: ['forearm', 'lowerarm'], next: null},
+  thigh: {L: [23, 25], R: [24, 26], names: ['upleg', 'upperleg', 'thigh'], next: 'shin'},
+  shin: {L: [25, 27], R: [26, 28], names: ['leg', 'lowerleg', 'calf', 'shin'], next: null},
+};
+
+function _poseTokens(name) {
+  return (name || '').replace(/^.*[:|]/, '').replace(/([a-z])([A-Z])/g, '$1 $2')
+    .toLowerCase().split(/[^a-z0-9]+/).filter(t => t && !_POSE_NOISE.has(t));
+}
+
+// allocation-free quaternion helpers (arrays + offsets, unit quaternions)
+function _qmul(a, ao, b, bo, o, oo) {
+  const ax = a[ao], ay = a[ao + 1], az = a[ao + 2], aw = a[ao + 3];
+  const bx = b[bo], by = b[bo + 1], bz = b[bo + 2], bw = b[bo + 3];
+  o[oo] = aw * bx + ax * bw + ay * bz - az * by;
+  o[oo + 1] = aw * by - ax * bz + ay * bw + az * bx;
+  o[oo + 2] = aw * bz + ax * by - ay * bx + az * bw;
+  o[oo + 3] = aw * bw - ax * bx - ay * by - az * bz;
+}
+function _qmulConjA(a, ao, b, bo, o, oo) {            // conj(a) * b
+  const ax = -a[ao], ay = -a[ao + 1], az = -a[ao + 2], aw = a[ao + 3];
+  const bx = b[bo], by = b[bo + 1], bz = b[bo + 2], bw = b[bo + 3];
+  o[oo] = aw * bx + ax * bw + ay * bz - az * by;
+  o[oo + 1] = aw * by - ax * bz + ay * bw + az * bx;
+  o[oo + 2] = aw * bz + ax * by - ay * bx + az * bw;
+  o[oo + 3] = aw * bw - ax * bx - ay * by - az * bz;
+}
+function _qFromTo(ux, uy, uz, vx, vy, vz, o, oo) {    // shortest rotation u -> v (unit vectors)
+  const d = ux * vx + uy * vy + uz * vz;
+  if(d > 0.999999) {o[oo] = 0; o[oo + 1] = 0; o[oo + 2] = 0; o[oo + 3] = 1; return;}
+  if(d < -0.999999) {
+    let ax, ay, az;
+    if(Math.abs(ux) < 0.9) {ax = 0; ay = uz; az = -uy;} else {ax = -uz; ay = 0; az = ux;}
+    const l = Math.hypot(ax, ay, az) || 1;
+    o[oo] = ax / l; o[oo + 1] = ay / l; o[oo + 2] = az / l; o[oo + 3] = 0; return;
+  }
+  const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx, w = 1 + d;
+  const l = Math.hypot(cx, cy, cz, w) || 1;
+  o[oo] = cx / l; o[oo + 1] = cy / l; o[oo + 2] = cz / l; o[oo + 3] = w / l;
+}
+function _nlerp(c, co, t, to, k) {                    // c = c + (t - c) * k, normalized
+  let tx = t[to], ty = t[to + 1], tz = t[to + 2], tw = t[to + 3];
+  if(c[co] * tx + c[co + 1] * ty + c[co + 2] * tz + c[co + 3] * tw < 0) {tx = -tx; ty = -ty; tz = -tz; tw = -tw;}
+  const x = c[co] + (tx - c[co]) * k, y = c[co + 1] + (ty - c[co + 1]) * k;
+  const z = c[co + 2] + (tz - c[co + 2]) * k, w = c[co + 3] + (tw - c[co + 3]) * k;
+  const l = Math.hypot(x, y, z, w) || 1;
+  c[co] = x / l; c[co + 1] = y / l; c[co + 2] = z / l; c[co + 3] = w / l;
+}
+function _vrot(q, qo, x, y, z, o, oo) {            // rotate vector by quaternion
+  const qx = q[qo], qy = q[qo + 1], qz = q[qo + 2], qw = q[qo + 3];
+  const tx = 2 * (qy * z - qz * y), ty = 2 * (qz * x - qx * z), tz = 2 * (qx * y - qy * x);
+  o[oo] = x + qw * tx + (qy * tz - qz * ty);
+  o[oo + 1] = y + qw * ty + (qz * tx - qx * tz);
+  o[oo + 2] = z + qw * tz + (qx * ty - qy * tx);
+}
+function _vis(lm, i, m) {return !lm || ((lm[i].visibility ?? 1) >= m);}
+// rotation that maps rest (up, side) onto target (up, side). S = scratch(12)
+function _frameDelta(A, au, as, B, bu, bs, O, oo, S) {
+  const tx = B[bu], ty = B[bu + 1], tz = B[bu + 2];
+  _qFromTo(A[au], A[au + 1], A[au + 2], tx, ty, tz, S, 0);        // align up
+  _vrot(S, 0, A[as], A[as + 1], A[as + 2], S, 4);                  // rest side after step 1
+  let sx = S[4], sy = S[5], sz = S[6], d = sx * tx + sy * ty + sz * tz;
+  sx -= d * tx; sy -= d * ty; sz -= d * tz;
+  let px = B[bs], py = B[bs + 1], pz = B[bs + 2]; d = px * tx + py * ty + pz * tz;
+  px -= d * tx; py -= d * ty; pz -= d * tz;
+  const ls = Math.hypot(sx, sy, sz), lp = Math.hypot(px, py, pz);
+  if(ls < 1e-6 || lp < 1e-6) {O[oo] = S[0]; O[oo + 1] = S[1]; O[oo + 2] = S[2]; O[oo + 3] = S[3]; return;}
+  sx /= ls; sy /= ls; sz /= ls; px /= lp; py /= lp; pz /= lp;
+  const cx = sy * pz - sz * py, cy = sz * px - sx * pz, cz = sx * py - sy * px;
+  const ang = Math.atan2(cx * tx + cy * ty + cz * tz, sx * px + sy * py + sz * pz) * 0.5;
+  const sn = Math.sin(ang);
+  S[8] = tx * sn; S[9] = ty * sn; S[10] = tz * sn; S[11] = Math.cos(ang);   // twist around target up
+  _qmul(S, 8, S, 0, O, oo);                                                // twist * align
 }

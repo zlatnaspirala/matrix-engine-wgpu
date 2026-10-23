@@ -45,6 +45,7 @@ export class AudioSplatFieldEffect {
    * @param {string} [opts.format]  color target format, required only for standalone render()
    * @param {GPUBuffer} [opts.cameraBuffer]  required only for standalone render()
    */
+  static _pipelineCache = new WeakMap();
   constructor(device, opts = {}) {
     this.device = device;
     this.pointCount = opts.pointCount ?? isMobile() ? 1200 : 3500;
@@ -104,15 +105,12 @@ export class AudioSplatFieldEffect {
     this._seedColors();
     device.queue.writeBuffer(this.colorBuffer, 0, this._colorCPU);
 
-    if(this.format && this.cameraBuffer) this._buildStandalonePipeline();
+    if(this.format && this.cameraBuffer) this.initPipeline();
   }
-
-  // ─── Setup helpers ─────────────────────────────────────────────────────
 
   _generateBasePositions(n) {
     const out = new Float32Array(n * 3);
     if(this.mode === 'waveformRibbon') {
-      // laid out later per-mode anyway, but give sane defaults
       for(let i = 0;i < n;i++) {
         out[i * 3] = (i / n - 0.5) * 4.0;
         out[i * 3 + 1] = 0;
@@ -123,9 +121,9 @@ export class AudioSplatFieldEffect {
     // Default: 3 nested spherical shells (low/mid/high), fibonacci-sphere distributed
     const golden = Math.PI * (3 - Math.sqrt(5));
     for(let i = 0;i < n;i++) {
-      const shellIdx = i % 3;               // 0=low(inner),1=mid,2=high(outer)
+      const shellIdx = i % 3;
       const radius = 0.4 + shellIdx * 0.35;
-      const yFrac = 1 - (i / (n - 1)) * 2;    // -1..1
+      const yFrac = 1 - (i / (n - 1)) * 2;
       const r = Math.sqrt(Math.max(0, 1 - yFrac * yFrac));
       const theta = golden * i;
       out[i * 3] = Math.cos(theta) * r * radius;
@@ -150,8 +148,6 @@ export class AudioSplatFieldEffect {
       this._colorCPU[i * 4 + 3] = 1.0;
     }
   }
-
-  // ─── Public API ─────────────────────────────────────────────────────────
 
   setMode(mode) {
     this.mode = mode;
@@ -317,33 +313,28 @@ export class AudioSplatFieldEffect {
     this.updateAudio(low, mid, high, energy, beat, dt, elapsed);
   }
 
-  _buildStandalonePipeline() {
-    this.modelBuffer = this.device.createBuffer({
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    // identity matrix default
-    const identity = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, identity);
+  initPipeline() {
+    const device = this.device;
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        {binding: 0, resource: {buffer: this.cameraBuffer}},
-        {binding: 1, resource: {buffer: this.modelBuffer}},
-      ]
-    });
-    const pipelineLayout = this.device.createPipelineLayout({bindGroupLayouts: [bindGroupLayout]});
+    // ========== CACHE CHECK ==========
+    if(AudioSplatFieldEffect._pipelineCache.has(device)) {
+      const cached = AudioSplatFieldEffect._pipelineCache.get(device);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      // ========== BUILD PIPELINE ONCE ==========
+      this.bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
+        ]
+      });
 
-    const shaderModule = this.device.createShaderModule({
-      label: 'audio-splat-field-shader',
-      code: `
+      this.shaderModule = device.createShaderModule({
+        label: 'audio-splat-field-shader',
+        code: `
 struct Camera { mvp: mat4x4<f32> };
 struct Model { matrix: mat4x4<f32> };
 @group(0) @binding(0) var<uniform> camera: Camera;
@@ -389,44 +380,72 @@ fn fs_main(in: VertexOutput) -> FragOut {
   );
 }
 `
-    });
+      });
 
-    this.renderPipeline = this.device.createRenderPipeline({
-      label: 'audio-splat-field-pipeline',
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: 'vs_main',
-        buffers: [
-          {arrayStride: 12, stepMode: 'vertex', attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
-          {arrayStride: 16, stepMode: 'vertex', attributes: [{shaderLocation: 1, offset: 0, format: 'float32x4'}]},
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: 'fs_main',
-        targets: [{
-          format: this.format,
-          blend: {
-            color: {srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add'},
-            alpha: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
-          }
-        }, {format: 'rgba16float'}, {format: 'rgba16float'}]
-      },
-      primitive: {topology: 'point-list'},
-      depthStencil: {
-        format: 'depth24plus',
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-      },
+      this.pipelineLayout = device.createPipelineLayout({bindGroupLayouts: [this.bindGroupLayout]});
+
+      this.pipeline = device.createRenderPipeline({
+        label: 'audio-splat-field-pipeline',
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: 'vs_main',
+          buffers: [
+            {arrayStride: 12, stepMode: 'vertex', attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]},
+            {arrayStride: 16, stepMode: 'vertex', attributes: [{shaderLocation: 1, offset: 0, format: 'float32x4'}]},
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: 'fs_main',
+          targets: [{
+            format: this.format,
+            blend: {
+              color: {srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add'},
+              alpha: {srcFactor: 'one', dstFactor: 'one', operation: 'add'},
+            }
+          }, {format: 'rgba16float'}, {format: 'rgba16float'}]
+        },
+        primitive: {topology: 'point-list'},
+        depthStencil: {
+          format: 'depth24plus',
+          depthWriteEnabled: false,
+          depthCompare: 'less',
+        },
+      });
+
+      // ========== CACHE THEM ==========
+      AudioSplatFieldEffect._pipelineCache.set(device, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+
+    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
+    this.modelBuffer = device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+    // identity matrix default
+    const identity = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    device.queue.writeBuffer(this.modelBuffer, 0, identity);
+
+    this.bindGroup = device.createBindGroup({
+      layout: this.bindGroupLayout,
+      entries: [
+        {binding: 0, resource: {buffer: this.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.modelBuffer}},
+      ]
+    });
+    setTimeout(() => {dispatchEvent(new CustomEvent('update-effects', {}))}, 200)
   }
 
   /** Only meaningful if constructed with {format, cameraBuffer} and NOT attached to a splat layer. */
   render(pass, mesh, viewProjMatrix) {
-    if(this._attachedLayer || !this.renderPipeline) return; // attached mode: layer draws it
+    if(this._attachedLayer || !this.pipeline) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.renderPipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.posBuffer);
     pass.setVertexBuffer(1, this.colorBuffer);

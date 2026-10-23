@@ -168,7 +168,6 @@ export var loadSprite1 = function() {
         MYCUBE_EFFECT.effects.circle = new GenGeoTexture2(world2D.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, world2D.cameraBuffer);
         MYCUBE_EFFECT.effects.keeffect = new KaleidoscopeEmitter(world2D.device, 'rgba16float', 30, world2D.cameraBuffer)
 
-
         const batch = await initializeSpritesForMesh(
           MYCUBE,                                    // Your mesh
           app.device,                              // WebGPU device
@@ -205,7 +204,6 @@ export var loadSprite1 = function() {
           {radius: 4.5, count: 18}
         );
 
-
         let cam = app.getCamera();
         cam.setYaw(-0.03);
         cam.setPitch(-0.05);
@@ -230,7 +228,6 @@ export var loadSprite1 = function() {
         const count2 = myReel2.length;
         let myReel3 = [...MYCUBE3.effects.spriteBatch.sprites.values()];
         const count3 = myReel3.length;
-
 
         myReel1.forEach((sprite, index) => {
           const angle = (index / count) * Math.PI * 2;
@@ -289,7 +286,6 @@ export var loadSprite1 = function() {
               }
             }, 200 * index);
           });
-
 
           myReel3.forEach((sprite, index) => {
             const baseAngle = index * 20;

@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener, touchCoordinate} from "../src/engine/raycast.js";
-import {SacredGeometryEffect} from "../src/engine/effects/facemask.js";
+import {SacredGeometryEffect} from "../src/engine/effects/nidza.js";
 
 export var loadFaceMask = function() {
 
@@ -10,7 +10,7 @@ export var loadFaceMask = function() {
     fastRender: 0.9,
     dontUsePhysics: true,
     MAX_BONES: 0,
-    MAX_SPOTLIGHTS: 1,
+    MAX_SPOTLIGHTS: 2,
     mainCameraParams: {
       type: 'WASD',
       responseCoef: 1000
@@ -19,11 +19,7 @@ export var loadFaceMask = function() {
   }, () => {
 
     FACEMASK.addLight();
-
-    // FACEMASK.addLight();
-
-    FACEMASK.buildLightShadowBuckets()
-
+    
     touchCoordinate.stopOnFirstDetectedHit = true;
 
     downloadMeshes({
@@ -40,6 +36,10 @@ export var loadFaceMask = function() {
     const totalCubesInGrid = 9; // 3x3 grid
 
     function onGround(m) {
+
+      FACEMASK.addLight();
+      FACEMASK.buildLightShadowBuckets()
+
       FACEMASK.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: -1.1, z: -10},

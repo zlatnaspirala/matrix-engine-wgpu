@@ -1,32 +1,44 @@
 import {mat4, vec3} from 'wgpu-matrix';
-import {byId, isMobile} from './utils';
+import {isMobile} from './utils';
 import {MEConfig} from '../me-config';
 
+/**
+ * @description
+ * Bitmask:
+ * 1  = forward / W / ArrowUp
+ * 2  = backward / S / ArrowDown
+ * 4  = left / A / ArrowLeft
+ * 8  = right / D / ArrowRight
+ * 16 = up / V
+ * 32 = down / C
+ */
 export class WASDCamera {
   pitch = 0;
   yaw = 0;
   position = new Float32Array(3);
   velocity = new Float32Array(3);
+
   view = new Float32Array(16);
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   invProj = new Float32Array(16);
-  _moveVelScratch = new Float32Array(3);
-  _dirty = true;
   right = vec3.fromValues(1, 0, 0);
   up = vec3.fromValues(0, 1, 0);
   back = vec3.fromValues(0, 0, 1);
   _rotYScratch = mat4.create();
   _rotXScratch = mat4.create();
   _viewScratch = mat4.create();
-  _digital = {forward: false, backward: false, left: false, right: false, up: false, down: false};
+  _digital = 0;
   _mouseDown = false;
-  _lookDisabled = false; // when true, pointer drag no longer rotates the camera
+  _lookDisabled = false;
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
-  _dirtyAngle = false;
+
+  _dirtyAngle = true;
+  usePointerEvents = false;
+  static HALF_PI = Math.PI * 0.5;
 
   constructor(options = {}) {
     if(options.position) {
@@ -34,20 +46,21 @@ export class WASDCamera {
       this.position[1] = options.position[1];
       this.position[2] = options.position[2];
     }
+
     if(options.pitch) this.pitch = options.pitch;
     if(options.yaw) this.yaw = options.yaw;
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection((2 * Math.PI) / 5, this.aspect, 1, 1000);
-    if(options.noEvents) {
-      this.noEvent = true;
-    } else {
-      this.noEvent = false;
-    }
-    if(this.canvas) this._setupInput(this.canvas);
+    if(options.noEvents) {this.noEvent = true;} else {this.noEvent = false;}
+    if(this.canvas) {this._setupInput(this.canvas);}
     this._recalculateViewVP();
-    if(isMobile() == true && options.isActive == 'init active cam') {
-      MobileDOM.createWASD(this, {marginR: 0, marginD: 0});
+
+    if(isMobile() === true && options.isActive == 'init active cam') {
+      MobileDOM.createWASD(this, {
+        marginR: 0,
+        marginD: 0
+      });
     }
   }
 
@@ -67,64 +80,172 @@ export class WASDCamera {
     const b20 = b[2], b21 = b[6], b22 = b[10], b23 = b[14];
     const b30 = b[3], b31 = b[7], b32 = b[11], b33 = b[15];
 
-    out[0] = a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30;
-    out[1] = a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30;
-    out[2] = a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30;
-    out[3] = a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30;
+    out[0] =
+      a00 * b00 +
+      a01 * b10 +
+      a02 * b20 +
+      a03 * b30;
 
-    out[4] = a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31;
-    out[5] = a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31;
-    out[6] = a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31;
-    out[7] = a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31;
+    out[1] =
+      a10 * b00 +
+      a11 * b10 +
+      a12 * b20 +
+      a13 * b30;
 
-    out[8] = a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32;
-    out[9] = a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32;
-    out[10] = a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32;
-    out[11] = a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32;
+    out[2] =
+      a20 * b00 +
+      a21 * b10 +
+      a22 * b20 +
+      a23 * b30;
 
-    out[12] = a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33;
-    out[13] = a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33;
-    out[14] = a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33;
-    out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
+    out[3] =
+      a30 * b00 +
+      a31 * b10 +
+      a32 * b20 +
+      a33 * b30;
 
+    out[4] =
+      a00 * b01 +
+      a01 * b11 +
+      a02 * b21 +
+      a03 * b31;
+
+    out[5] =
+      a10 * b01 +
+      a11 * b11 +
+      a12 * b21 +
+      a13 * b31;
+
+    out[6] =
+      a20 * b01 +
+      a21 * b11 +
+      a22 * b21 +
+      a23 * b31;
+
+    out[7] =
+      a30 * b01 +
+      a31 * b11 +
+      a32 * b21 +
+      a33 * b31;
+
+    out[8] =
+      a00 * b02 +
+      a01 * b12 +
+      a02 * b22 +
+      a03 * b32;
+
+    out[9] =
+      a10 * b02 +
+      a11 * b12 +
+      a12 * b22 +
+      a13 * b32;
+
+    out[10] =
+      a20 * b02 +
+      a21 * b12 +
+      a22 * b22 +
+      a23 * b32;
+
+    out[11] =
+      a30 * b02 +
+      a31 * b12 +
+      a32 * b22 +
+      a33 * b32;
+
+    out[12] =
+      a00 * b03 +
+      a01 * b13 +
+      a02 * b23 +
+      a03 * b33;
+
+    out[13] =
+      a10 * b03 +
+      a11 * b13 +
+      a12 * b23 +
+      a13 * b33;
+
+    out[14] =
+      a20 * b03 +
+      a21 * b13 +
+      a22 * b23 +
+      a23 * b33;
+
+    out[15] =
+      a30 * b03 +
+      a31 * b13 +
+      a32 * b23 +
+      a33 * b33;
     return out;
   }
 
   _recalculateViewVP() {
-    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
-    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
-    this.right[0] = cy; this.right[1] = 0; this.right[2] = -sy;
-    this.up[0] = sy * sp; this.up[1] = cp; this.up[2] = cy * sp;
-    this.back[0] = sy * cp; this.back[1] = -sp; this.back[2] = cy * cp;
-    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
+    const yaw = this.yaw;
+    const pitch = this.pitch;
+    const cy = Math.cos(yaw);
+    const sy = Math.sin(yaw);
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const rx = this.right;
+    const uy = this.up;
+    const bz = this.back;
+    const p = this.position;
     const vs = this.view;
-    vs[0] = rx[0]; vs[4] = rx[1]; vs[8] = rx[2]; vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
-    vs[1] = uy[0]; vs[5] = uy[1]; vs[9] = uy[2]; vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
-    vs[2] = bz[0]; vs[6] = bz[1]; vs[10] = bz[2]; vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
-    vs[3] = 0; vs[7] = 0; vs[11] = 0; vs[15] = 1;
+    rx[0] = cy;
+    rx[1] = 0;
+    rx[2] = -sy;
+    uy[0] = sy * sp;
+    uy[1] = cp;
+    uy[2] = cy * sp;
+    bz[0] = sy * cp;
+    bz[1] = -sp;
+    bz[2] = cy * cp;
+    vs[0] = rx[0];
+    vs[4] = rx[1];
+    vs[8] = rx[2];
+    vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0];
+    vs[5] = uy[1];
+    vs[9] = uy[2];
+    vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0];
+    vs[6] = bz[1];
+    vs[10] = bz[2];
+    vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    vs[3] = 0;
+    vs[7] = 0;
+    vs[11] = 0;
+    vs[15] = 1;
     WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
 
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
-    let touchStartX = 0, touchStartY = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    // MOBILE TOUCH
     if(isMobile() === true) {
-      canvas.addEventListener('touchstart', e => {
+      canvas.addEventListener('touchstart', (e) => {
         if(e.touches.length > 0) {
-          touchStartX = e.touches[0].clientX;
-          touchStartY = e.touches[0].clientY;
+          const touch = e.touches[0];
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
         }
       }, {passive: false});
-      canvas.addEventListener('touchmove', e => {
-        if(this._lookDisabled) return; // skip camera rotation while something else owns the drag
+
+      canvas.addEventListener('touchmove', (e) => {
+        if(this._lookDisabled) return;
         if(e.touches.length > 0) {
           const touch = e.touches[0];
           const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
           const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
           this.yaw -= dx * this.rotationSpeed;
           this.pitch -= dy * this.rotationSpeed;
-          this.yaw %= Math.PI * 2;
-          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+          const HALF_PI = WASDCamera.HALF_PI;
+          if(this.pitch > HALF_PI) {
+            this.pitch = HALF_PI;
+          } else if(this.pitch < -HALF_PI) {
+            this.pitch = -HALF_PI;
+          }
           this._dirtyAngle = true;
           touchStartX = touch.clientX;
           touchStartY = touch.clientY;
@@ -132,106 +253,200 @@ export class WASDCamera {
         e.preventDefault();
       }, {passive: false});
     }
-
+    // DESKTOP
     if(isMobile() === false) {
-
-      canvas.addEventListener('contextmenu', e => {
-        e.preventDefault();
-      });
-
-      canvas.addEventListener('pointerdown', e => {
-        if(e.pointerType === 'mouse') {
-          this._mouseDown = true;
-          if(canvas.requestPointerLock) {
-            // canvas.requestPointerLock();
-          } else {
-            canvas.setPointerCapture(e.pointerId);
-          }
+      canvas.oncontextmenu = (e) => {e.preventDefault();};
+      if(this.usePointerEvents === true) {
+        this._setupPointerEvents(canvas);
+      } else {
+        this._setupMouseEvents(canvas);
+      }
+    }
+    // KEYBOARD
+    if(this.noEvent !== true) {
+      window.addEventListener('keydown', (e) => {
+        if(e.repeat) return;
+        let bit = 0;
+        switch(e.code) {
+          case 'ArrowUp':
+          case 'KeyW':
+            bit = 1;
+            break;
+          case 'ArrowDown':
+          case 'KeyS':
+            bit = 2;
+            break;
+          case 'ArrowLeft':
+          case 'KeyA':
+            bit = 4;
+            break;
+          case 'ArrowRight':
+          case 'KeyD':
+            bit = 8;
+            break;
+          case 'KeyV':
+            bit = 16;
+            break;
+          case 'KeyC':
+            bit = 32;
+            break;
+          default:
+            return;
         }
-      }, {passive: false});
+        this._digital |= bit;
+      }, {passive: true}
+      );
 
-      canvas.addEventListener('pointermove', e => {
-        if(e.pointerType === 'mouse' && this._mouseDown) {
-          if(this._lookDisabled) {return;}
-          const dx = e.movementX * this.MOUSE_SENS;
-          const dy = e.movementY * this.MOUSE_SENS;
-          this.yaw -= dx * this.rotationSpeed;
-          this.pitch -= dy * this.rotationSpeed;
-          this.yaw %= Math.PI * 2;
-          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-          this._dirtyAngle = true;
+      window.addEventListener('keyup', (e) => {
+        let bit = 0;
+        switch(e.code) {
+          case 'ArrowUp':
+          case 'KeyW':
+            bit = 1;
+            break;
+          case 'ArrowDown':
+          case 'KeyS':
+            bit = 2;
+            break;
+          case 'ArrowLeft':
+          case 'KeyA':
+            bit = 4;
+            break;
+          case 'ArrowRight':
+          case 'KeyD':
+            bit = 8;
+            break;
+          case 'KeyV':
+            bit = 16;
+            break;
+          case 'KeyC':
+            bit = 32;
+            break;
+          default:
+            return;
         }
+        this._digital &= ~bit;
       }, {passive: true});
+    }
+  }
+  // CLASSIC MOUSE EVENTS
+  _setupMouseEvents(canvas) {
+    canvas.onmousedown = (e) => {
+      if(e.button !== 0) return;
 
-      canvas.addEventListener('pointerup', e => {
+      this._mouseDown = true;
+    };
+
+    canvas.onmousemove = (e) => {
+
+      // KEEP THIS FOR GIZMO EDITOR MODE
+      if(window.__isDragging === true) return;
+
+      if(!this._mouseDown) return;
+
+      if(this._lookDisabled) return;
+
+      const dx = e.movementX;
+      const dy = e.movementY;
+
+      this.yaw -=
+        dx *
+        this.MOUSE_SENS *
+        this.rotationSpeed;
+
+      this.pitch -=
+        dy *
+        this.MOUSE_SENS *
+        this.rotationSpeed;
+
+      const HALF_PI = WASDCamera.HALF_PI;
+
+      if(this.pitch > HALF_PI) {
+        this.pitch = HALF_PI;
+      } else if(this.pitch < -HALF_PI) {
+        this.pitch = -HALF_PI;
+      }
+
+      this._dirtyAngle = true;
+    };
+
+    canvas.onmouseup = () => {
+      this._mouseDown = false;
+    };
+
+    canvas.onmouseleave = () => {
+      this._mouseDown = false;
+    };
+  }
+  // POINTER EVENTS
+  _setupPointerEvents(canvas) {
+    canvas.addEventListener('pointerdown', (e) => {
+      if(e.pointerType !== 'mouse') return;
+      this._mouseDown = true;
+      if(canvas.setPointerCapture) {canvas.setPointerCapture(e.pointerId);}
+    }, {passive: true});
+
+    canvas.addEventListener('pointermove', (e) => {
+      // KEEP THIS FOR GIZMO EDITOR MODE
+      if(window.__isDragging === true) return;
+      if(e.pointerType !== 'mouse') return;
+      if(!this._mouseDown) return;
+      if(this._lookDisabled) return;
+      const dx = e.movementX;
+      const dy = e.movementY;
+      this.yaw -= dx * this.MOUSE_SENS * this.rotationSpeed;
+      this.pitch -= dy * this.MOUSE_SENS * this.rotationSpeed;
+      const HALF_PI = WASDCamera.HALF_PI;
+      if(this.pitch > HALF_PI) {
+        this.pitch = HALF_PI;
+      } else if(this.pitch < -HALF_PI) {
+        this.pitch = -HALF_PI;
+      }
+      this._dirtyAngle = true;
+    },
+      {passive: true}
+    );
+
+    canvas.addEventListener('pointerup',
+      (e) => {
         if(e.pointerType === 'mouse') {
           this._mouseDown = false;
         }
-      }, {passive: true});
-    }
+      },
+      {passive: true}
+    );
 
-    this._keyInterval = null;
-    const setDigital = (e, value) => {
-      switch(e.code) {
-        case 'ArrowUp': this._digital.forward = value; break;
-        case 'ArrowDown': this._digital.backward = value; break;
-        case 'ArrowLeft': this._digital.left = value; break;
-        case 'ArrowRight': this._digital.right = value; break;
-        case 'KeyW': this._digital.forward = value; break;
-        case 'KeyS': this._digital.backward = value; break;
-        case 'KeyA': this._digital.left = value; break;
-        case 'KeyD': this._digital.right = value; break;
-        case 'KeyV': this._digital.up = value; break;
-        case 'KeyC': this._digital.down = value; break;
-      }
-      if(value == true && this._keyInterval === null) {
-        this._keyInterval = setInterval(() => {
-          this._dirty = true;
-          this._dirtyAngle = true;
-          this._applyDigitalMovement();
-        }, 16);
-      } else {
-        const d = this._digital;
-        if(!d.forward && !d.backward && !d.left && !d.right && !d.up && !d.down) {
-          clearInterval(this._keyInterval);
-          this._keyInterval = null;
-          this._dirty = false;
-          this._dirtyAngle = false;
+    canvas.addEventListener('pointercancel',
+      (e) => {
+        if(e.pointerType === 'mouse') {
+          this._mouseDown = false;
         }
-      }
-    };
-
-    if(this.noEvent !== true) {
-      window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
-      window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
-    }
+      },
+      {passive: true}
+    );
   }
-
+  // WASD MOVEMENT
   _applyDigitalMovement() {
     const d = this._digital;
-    let vx = 0, vy = 0, vz = 0;
-
-    if(d.forward) {vx -= this.back[0]; vy -= this.back[1]; vz -= this.back[2];}
-    if(d.backward) {vx += this.back[0]; vy += this.back[1]; vz += this.back[2];}
-    if(d.right) {vx += this.right[0]; vy += this.right[1]; vz += this.right[2];}
-    if(d.left) {vx -= this.right[0]; vy -= this.right[1]; vz -= this.right[2];}
-    if(d.up) {vx += this.up[0]; vy += this.up[1]; vz += this.up[2];}
-    if(d.down) {vx -= this.up[0]; vy -= this.up[1]; vz -= this.up[2];}
-
-    const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
-    if(len < 0.0001) return;
-
+    if(d === 0) return;
+    const right = this.right;
+    const up = this.up;
+    const back = this.back;
+    const p = this.position;
+    let vx = 0;
+    let vy = 0;
+    let vz = 0;
+    if(d & 1) {vx -= back[0]; vy -= back[1]; vz -= back[2];}
+    if(d & 2) {vx += back[0]; vy += back[1]; vz += back[2];}
+    if(d & 4) {vx -= right[0]; vy -= right[1]; vz -= right[2];}
+    if(d & 8) {vx += right[0]; vy += right[1]; vz += right[2];}
+    if(d & 16) {vx += up[0]; vy += up[1]; vz += up[2];}
+    if(d & 32) {vx -= up[0]; vy -= up[1]; vz -= up[2];}
     const s = this.movementSpeed;
-    this.position[0] += vx * s;
-    this.position[1] += vy * s;
-    this.position[2] += vz * s;
-
-    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
-    this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
-    this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
-    this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
-    WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
-    this._dirty = false;
+    p[0] += vx * s;
+    p[1] += vy * s;
+    p[2] += vz * s;
+    this._dirtyAngle = true;
   }
 
   update() {
@@ -240,10 +455,20 @@ export class WASDCamera {
     this._dirtyAngle = false;
   }
 
+  setX = (x) => {
+    this.position[0] = x;
+    this._dirtyAngle = true;
+  }
 
-  setX = (x) => {this.position[0] = x; this._dirtyAngle = true;}
-  setY = (y) => {this.position[1] = y; this._dirtyAngle = true;}
-  setZ = (z) => {this.position[2] = z; this._dirtyAngle = true;}
+  setY = (y) => {
+    this.position[1] = y;
+    this._dirtyAngle = true;
+  }
+
+  setZ = (z) => {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  }
 
   setPosition = (x, y, z) => {
     this.position[0] = x;
@@ -252,10 +477,16 @@ export class WASDCamera {
     this._dirtyAngle = true;
   }
 
-  setPitch = (p) => {this.pitch = p; this._dirtyAngle = true;}
-  setYaw = (y) => {this.yaw = y; this._dirtyAngle = true;}
+  setPitch = (p) => {
+    this.pitch = p;
+    this._dirtyAngle = true;
+  }
 
-  // new: clean on/off toggle for camera look, replaces window.__isDragging hack
+  setYaw = (y) => {
+    this.yaw = y;
+    this._dirtyAngle = true;
+  }
+  // LOOK CONTROL
   setLookEnabled = (enabled) => {this._lookDisabled = !enabled;}
   disableLook = () => {this._lookDisabled = true;}
   enableLook = () => {this._lookDisabled = false;}
@@ -700,26 +931,32 @@ export class FirstPersonCamera {
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   invProj = new Float32Array(16);
-  _moveVelScratch = new Float32Array(3);
-  _dirty = true;
   right = vec3.fromValues(1, 0, 0);
   up = vec3.fromValues(0, 1, 0);
   back = vec3.fromValues(0, 0, 1);
   _rotYScratch = mat4.create();
   _rotXScratch = mat4.create();
   _viewScratch = mat4.create();
-  _digital = {forward: false, backward: false, left: false, right: false};
-  _lastX = 0;
-  _lastY = 0;
+  // Bitmask:
+  // 1 = forward, 2 = backward, 4 = left, 8 = right
+  _digital = 0;
   _mouseDown = false;
-  _pointerLastScratch = {x: 0, y: 0};
+  _lookDisabled = false;
+  _jumpVelocity = 0;
+  _jumpVelocityAMP = 1;
+  _isGrounded = false;
+  usePointerEvents = false;
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
-  _dirtyAngle = false;
-
+  _dirtyAngle = true;
+  static HALF_PI = Math.PI * 0.5;
+  static DIAG = 0.7071067811865476;
   constructor(options = {}) {
+    if(options.usePointerEvents) {
+      this.usePointerEvents = options.usePointerEvents;
+    }
     if(options.position) {
       this.position[0] = options.position[0];
       this.position[1] = options.position[1];
@@ -730,106 +967,128 @@ export class FirstPersonCamera {
     this.canvas = options.canvas;
     this.aspect = options.canvas ? options.canvas.width / options.canvas.height : 1;
     this.setProjection((2 * Math.PI) / 5, this.aspect, 0.3, 200);
-
-    this._jumpVelocity = 0;
-    this._isGrounded = false;
-
-    if(this.canvas) this._setupInput(this.canvas);
+    this._onKeyDown = this._handleKeyDown.bind(this);
+    this._onKeyUp = this._handleKeyUp.bind(this);
+    if(this.canvas) {this._setupInput(this.canvas);}
     this._recalculateViewVP();
-    if(isMobile() == true && options.isActive == 'init active cam') {
-      MobileDOM.createWASD(this, {margin: 50, forMobileJoystick: true, color: 'red'});
+    if(isMobile() === true && options.isActive === 'init active cam') {
+      MobileDOM.createWASD(this, {
+        margin: 50,
+        forMobileJoystick: true,
+        color: 'red'
+      });
     }
-  }
-
-  setPitch = (p) => {
-    this.pitch = p;
-    this._dirtyAngle = true;
-  }
-
-  setYaw = (y) => {
-    this.yaw = y;
-    this._dirtyAngle = true;
   }
 
   setProjection = (fov = (2 * Math.PI) / 5, aspect = 1, near = 1, far = 1000) => {
     mat4.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._dirtyAngle = true;
     this._recalculateViewVP();
-  }
-
-  setPosition = (x, y, z) => {
-    this.position[0] = x;
-    this.position[1] = y;
-    this.position[2] = z;
-    this._dirtyAngle = true;
-  }
-
-  setX = (x) => {
-    this.position[0] = x;
-    this._dirtyAngle = true;
-  }
-
-  setY = (y) => {
-    this.position[1] = y;
-    this._dirtyAngle = true;
-  }
-
-  setZ = (z) => {
-    this.position[2] = z;
-    this._dirtyAngle = true;
-  }
+    this._dirtyAngle = false;
+  };
 
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
     const a10 = a[1], a11 = a[5], a12 = a[9], a13 = a[13];
     const a20 = a[2], a21 = a[6], a22 = a[10], a23 = a[14];
     const a30 = a[3], a31 = a[7], a32 = a[11], a33 = a[15];
+
     const b00 = b[0], b01 = b[4], b02 = b[8], b03 = b[12];
     const b10 = b[1], b11 = b[5], b12 = b[9], b13 = b[13];
     const b20 = b[2], b21 = b[6], b22 = b[10], b23 = b[14];
     const b30 = b[3], b31 = b[7], b32 = b[11], b33 = b[15];
+
     out[0] = a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30;
     out[1] = a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30;
     out[2] = a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30;
     out[3] = a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30;
+
     out[4] = a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31;
     out[5] = a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31;
     out[6] = a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31;
     out[7] = a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31;
+
     out[8] = a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32;
     out[9] = a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32;
     out[10] = a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32;
     out[11] = a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32;
+
     out[12] = a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33;
     out[13] = a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33;
     out[14] = a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33;
     out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
+
     return out;
   }
 
   _recalculateViewVP() {
-    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
-    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
-    this.right[0] = cy; this.right[1] = 0; this.right[2] = -sy;
-    this.up[0] = sy * sp; this.up[1] = cp; this.up[2] = cy * sp;
-    this.back[0] = sy * cp; this.back[1] = -sp; this.back[2] = cy * cp;
-    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
+    const yaw = this.yaw;
+    const pitch = this.pitch;
+    const cy = Math.cos(yaw);
+    const sy = Math.sin(yaw);
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const rx = this.right;
+    const uy = this.up;
+    const bz = this.back;
+    const p = this.position;
     const vs = this.view;
-    vs[0] = rx[0]; vs[4] = rx[1]; vs[8] = rx[2]; vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
-    vs[1] = uy[0]; vs[5] = uy[1]; vs[9] = uy[2]; vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
-    vs[2] = bz[0]; vs[6] = bz[1]; vs[10] = bz[2]; vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
-    vs[3] = 0; vs[7] = 0; vs[11] = 0; vs[15] = 1;
-    FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+    rx[0] = cy;
+    rx[1] = 0;
+    rx[2] = -sy;
+    uy[0] = sy * sp;
+    uy[1] = cp;
+    uy[2] = cy * sp;
+    bz[0] = sy * cp;
+    bz[1] = -sp;
+    bz[2] = cy * cp;
+    vs[0] = rx[0];
+    vs[4] = rx[1];
+    vs[8] = rx[2];
+    vs[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
+    vs[1] = uy[0];
+    vs[5] = uy[1];
+    vs[9] = uy[2];
+    vs[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
+    vs[2] = bz[0];
+    vs[6] = bz[1];
+    vs[10] = bz[2];
+    vs[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
+    vs[3] = 0;
+    vs[7] = 0;
+    vs[11] = 0;
+    vs[15] = 1;
+    FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, vs, this.VP);
   }
 
+  // INPUT SETUP
   _setupInput(canvas) {
     canvas.style.touchAction = 'none';
-    let lookTouchId = null;
-    let touchStartX = 0, touchStartY = 0;
+    const mobile = isMobile() === true;
+    if(mobile) {
+      this._setupTouchEvents(canvas);
+    } else {
+      canvas.oncontextmenu = (e) => e.preventDefault();
+      if(this.usePointerEvents) {
+        this._setupPointerEvents(canvas);
+      } else {
+        this._setupMouseEvents(canvas);
+      }
+    }
 
-    if(isMobile() === true) canvas.addEventListener('touchstart', e => {
-      // only adopt a touch if we don't already have one, and it started on the canvas
+    window.addEventListener('keydown', this._onKeyDown, {passive: true});
+    window.addEventListener('keyup', this._onKeyUp, {passive: true});
+  }
+
+  _setupTouchEvents(canvas) {
+    let lookTouchId = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    canvas.addEventListener('touchstart', (e) => {
       if(lookTouchId !== null) return;
-      for(const t of e.changedTouches) {
+      const touches = e.changedTouches;
+      for(let i = 0;i < touches.length;i++) {
+        const t = touches[i];
         if(t.target === canvas) {
           lookTouchId = t.identifier;
           touchStartX = t.clientX;
@@ -839,161 +1098,264 @@ export class FirstPersonCamera {
       }
     }, {passive: false});
 
-    if(isMobile() === true) canvas.addEventListener('touchmove', e => {
-      if(lookTouchId === null) return;
-
+    canvas.addEventListener('touchmove', (e) => {
+      if(lookTouchId === null || this._lookDisabled) return;
+      const touches = e.touches;
       let touch = null;
-      for(const t of e.touches) {
-        if(t.identifier === lookTouchId) {touch = t; break;}
+      for(let i = 0;i < touches.length;i++) {
+        if(touches[i].identifier === lookTouchId) {
+          touch = touches[i];
+          break;
+        }
       }
-      if(!touch) return;
-
+      if(touch === null) return;
       const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
       const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
       this.yaw -= dx * this.rotationSpeed;
       this.pitch -= dy * this.rotationSpeed;
-      this.yaw %= Math.PI * 2;
-      this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+      this._clampPitch();
       this._dirtyAngle = true;
       touchStartX = touch.clientX;
       touchStartY = touch.clientY;
-
       e.preventDefault();
     }, {passive: false});
 
-    const clearLookTouch = e => {
-      for(const t of e.changedTouches) {
-        if(t.identifier === lookTouchId) {
+    const clearLookTouch = (e) => {
+      const touches = e.changedTouches;
+      for(let i = 0;i < touches.length;i++) {
+        if(touches[i].identifier === lookTouchId) {
           lookTouchId = null;
           break;
         }
       }
     };
-    if(isMobile() === true) canvas.addEventListener('touchend', clearLookTouch, {passive: true});
-    if(isMobile() === true) canvas.addEventListener('touchcancel', clearLookTouch, {passive: true});
 
-    // MOUSE
-    if(isMobile() === false) canvas.addEventListener('pointerdown', e => {
-      if(e.pointerType === 'mouse') {
-        this._mouseDown = true;
-        if(canvas.requestPointerLock) {
-          canvas.requestPointerLock();
-        } else {
-          canvas.setPointerCapture(e.pointerId);
-        }
-      }
-    }, {passive: false});
+    canvas.addEventListener('touchend', clearLookTouch, {passive: true});
+    canvas.addEventListener('touchcancel', clearLookTouch, {passive: true});
+  }
 
-    if(isMobile() === false) canvas.addEventListener('pointermove', e => {
-      if(e.pointerType === 'mouse') {
-        if(window.__isDragging === true) {return }
-        const dx = e.movementX * this.MOUSE_SENS;
-        const dy = e.movementY * this.MOUSE_SENS;
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
+  _clampPitch() {
+    const halfPi = FirstPersonCamera.HALF_PI;
+    if(this.pitch > halfPi) {
+      this.pitch = halfPi;
+    } else if(this.pitch < -halfPi) {
+      this.pitch = -halfPi;
+    }
+  }
+
+  _setupMouseEvents(canvas) {
+    // DESKTOP MOUSE — classic events by default.
+    if(isMobile() === false) {
+      canvas.addEventListener('contextmenu', e => {
+        e.preventDefault();
+      });
+      const onMouseMove = e => {
+        if(window.__isDragging === true) return;
+
+        this.yaw -= e.movementX * this.MOUSE_SENS * this.rotationSpeed;
+        this.pitch -= e.movementY * this.MOUSE_SENS * this.rotationSpeed;
+
         this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this.pitch = Math.max(
+          -Math.PI / 2,
+          Math.min(Math.PI / 2, this.pitch)
+        );
+
         this._dirtyAngle = true;
+      };
+      canvas.addEventListener('mousemove', onMouseMove, {passive: true});
+    }
+  }
+
+  _setupPointerEvents(canvas) {
+    canvas.addEventListener('pointerdown', (e) => {
+      if(e.pointerType !== 'mouse' || e.button !== 0) return;
+      this._mouseDown = true;
+      if(canvas.requestPointerLock) {
+        canvas.requestPointerLock();
+      } else if(canvas.setPointerCapture) {
+        canvas.setPointerCapture(e.pointerId);
       }
     }, {passive: true});
 
-    if(isMobile() === false) canvas.addEventListener('pointerup', e => {
+    canvas.addEventListener('pointermove', (e) => {
+      if(window.__isDragging === true) return;
+      if(e.pointerType !== 'mouse') return;
+      if(this._lookDisabled) return;
+      this.yaw -= e.movementX * this.MOUSE_SENS * this.rotationSpeed;
+      this.pitch -= e.movementY * this.MOUSE_SENS * this.rotationSpeed;
+      this._clampPitch();
+      this._dirtyAngle = true;
+    }, {passive: true});
+
+    const stopLook = (e) => {
       if(e.pointerType === 'mouse') {
         this._mouseDown = false;
       }
-    }, {passive: true});
-
-    this._keyInterval = null;
-    this.setDigital = (e, value) => {
-      switch(e.code) {
-        case 'KeyW': this._digital.forward = value; break;
-        case 'KeyS': this._digital.backward = value; break;
-        case 'KeyA': this._digital.left = value; break;
-        case 'KeyD': this._digital.right = value; break;
-        case 'ArrowUp': this._digital.forward = value; break;
-        case 'ArrowDown': this._digital.backward = value; break;
-        case 'ArrowLeft': this._digital.left = value; break;
-        case 'ArrowRight': this._digital.right = value; break;
-        case 'Space':
-          if(value === true && window.app?.collisionSystem?._onGround) {
-            window.app.collisionSystem._gravityAcc = 0.22;
-            window.app.collisionSystem._onGround = false;
-            this._dirty = true;
-            this._dirtyAngle = true;
-          }
-          break;
-      }
-      if(value == true && this._keyInterval === null) {
-        this._keyInterval = setInterval(() => {
-          this._dirty = true;
-          this._dirtyAngle = true;
-          this._applyDigitalMovement();
-        }, 16);
-      } else {
-        const d = this._digital;
-        if(!d.forward && !d.backward && !d.left && !d.right) {
-          clearInterval(this._keyInterval);
-          this._keyInterval = null;
-          this._dirty = false;
-          this._dirtyAngle = false;
-        }
-      }
     };
-    this._onKeyDown = e => this.setDigital(e, true);
-    this._onKeyUp = e => this.setDigital(e, false);
-    window.addEventListener('keydown', this._onKeyDown, {passive: true});
-    window.addEventListener('keyup', this._onKeyUp, {passive: true});
+
+    canvas.addEventListener('pointerup', stopLook, {passive: true});
+    canvas.addEventListener('pointercancel', stopLook, {passive: true});
   }
 
-  removeKeyboard() {
-    clearInterval(this._keyInterval);
-    this._keyInterval = null;
-    window.removeEventListener('keydown', this._onKeyDown);
-    window.removeEventListener('keyup', this._onKeyUp);
-    this._onKeyDown = null;
-    this._onKeyUp = null;
-    this._dirty = false;
-    this._dirtyAngle = false;
+  _getKeyBit(code) {
+    switch(code) {
+      case 'KeyW':
+      case 'ArrowUp':
+        return 1;
+      case 'KeyS':
+      case 'ArrowDown':
+        return 2;
+      case 'KeyA':
+      case 'ArrowLeft':
+        return 4;
+      case 'KeyD':
+      case 'ArrowRight':
+        return 8;
+      case 'Space':
+        return 16;
+      default:
+        return 0;
+    }
   }
 
-  forceViewUpdate() {
-    this._dirtyAngle = true;
-    this._dirty = true;
-    this._recalculateViewVP();
+  _handleKeyDown(e) {
+    console.log('key', e.code, this._digital);
+    if(e.code === 'Space') {
+      if(window.app?.collisionSystem?._onGround) {
+        window.app.collisionSystem._gravityAcc = 0.22;
+        window.app.collisionSystem._onGround = false;
+        this._jumpVelocity = 1;
+        this._dirtyAngle = true;
+      }
+      // return;
+    }
+    const bit = this._getKeyBit(e.code);
+    if(bit !== 0) {this._digital |= bit;}
   }
 
-  _applyDigitalMovement() {
+  _handleKeyUp(e) {
+    if(e.code === 'Space') {return;}
+    const bit = this._getKeyBit(e.code);
+    if(bit !== 0) {
+      this._digital &= ~bit;
+    }
+  }
+
+  setDigital(e, value) {
+    if(e.code === 'Space') {
+      if(value === true && window.app?.collisionSystem?._onGround) {
+        window.app.collisionSystem._gravityAcc = 0.22;
+        window.app.collisionSystem._onGround = false;
+        this._dirtyAngle = true;
+      }
+      return;
+    }
+    const bit = this._getKeyBit(e.code);
+    if(bit === 0) return;
+    if(value) {
+      this._digital |= bit;
+    } else {
+      this._digital &= ~bit;
+    }
+  }
+
+  _applyDigitalMovement(sceneTime) {
     const d = this._digital;
-    let vx = 0, vz = 0;
-
-    // flatten back onto XZ, ignore pitch
+    if(d === 0) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    if(this._lastMoveSceneTime === undefined) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    let dt = sceneTime - this._lastMoveSceneTime;
+    this._lastMoveSceneTime = sceneTime;
+    if(dt <= 0) return;
+    if(dt > 0.1) dt = 0.1;
     const fx = -this.back[0];
     const fz = -this.back[2];
-    const flen = Math.sqrt(fx * fx + fz * fz);
-    const fnx = flen > 0.0001 ? fx / flen : 0;
-    const fnz = flen > 0.0001 ? fz / flen : 0;
-
-    if(d.forward) {vx += fnx; vz += fnz;}
-    if(d.backward) {vx -= fnx; vz -= fnz;}
-    if(d.right) {vx += this.right[0]; vz += this.right[2];}
-    if(d.left) {vx -= this.right[0]; vz -= this.right[2];}
-
+    let vx = 0;
+    let vz = 0;
+    if(d & 1) {vx += fx; vz += fz;}
+    if(d & 2) {vx -= fx; vz -= fz;}
+    if(d & 4) {vx -= this.right[0]; vz -= this.right[2];}
+    if(d & 8) {vx += this.right[0]; vz += this.right[2];}
     const len = Math.sqrt(vx * vx + vz * vz);
-    if(len < 0.0001) return;
-
-    const s = this.movementSpeed / len;
-    this.position[0] += vx * s;
-    this.position[2] += vz * s;
+    if(len > 0.0001) {
+      const speed = this.movementSpeed * (dt / 0.016) / len;
+      this.position[0] += vx * speed;
+      this.position[2] += vz * speed;
+      this._dirtyAngle = true;
+    }
     if(this._jumpVelocity !== 0) {
       this.position[1] += this._jumpVelocity;
       this._jumpVelocity = 0;
+      this._dirtyAngle = true;
+    } else {
+      this._dirtyAngle = true;
+
     }
-    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
-    this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
-    this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
-    this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
-    FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
+
+  removeKeyboard() {
+    window.removeEventListener('keydown', this._onKeyDown);
+    window.removeEventListener('keyup', this._onKeyUp);
+    this._digital = 0;
+    this._onKeyDown = null;
+    this._onKeyUp = null;
+  }
+
+  forceViewUpdate() {
+    this._recalculateViewVP();
+    this._dirtyAngle = false;
+  }
+
+  setPitch = (p) => {
+    this.pitch = p;
+    this._clampPitch();
+    this._dirtyAngle = true;
+  };
+
+  setYaw = (y) => {
+    this.yaw = y;
+    this._dirtyAngle = true;
+  };
+
+  setPosition = (x, y, z) => {
+    this.position[0] = x;
+    this.position[1] = y;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+
+  setX = (x) => {
+    this.position[0] = x;
+    this._dirtyAngle = true;
+  };
+
+  setY = (y) => {
+    this.position[1] = y;
+    this._dirtyAngle = true;
+  };
+
+  setZ = (z) => {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+
+  setLookEnabled = (enabled) => {
+    this._lookDisabled = !enabled;
+  };
+
+  disableLook = () => {
+    this._lookDisabled = true;
+  };
+
+  enableLook = () => {
+    this._lookDisabled = false;
+  };
 
   update() {
     if(!this._dirtyAngle) return;
@@ -1121,12 +1483,10 @@ export class CinematicCamera {
   }
 
   setRoll = (r) => {
-    // roll tilts the up vector around the forward axis
     this._roll = r;
     this._dirtyAngle = true;
   }
 
-  // ── path control ─────────────────────────────────────────────────────────────
   setPath = (path) => {
     this._path = path;
     this._t = 0;
@@ -1267,7 +1627,8 @@ export class CinematicCamera {
 
     if(!this._dirtyAngle) return;
     this._recalculateViewVP();
-    this._dirtyAngle = false;
+    // this._dirtyAngle = false;
+    this._dirtyAngle = this._playing || this._shake.active;
   }
 
   _applyPathSample() {
@@ -1520,12 +1881,9 @@ export class Camera2DOrthogonaly {
       this.position[1] = options.position[1];
       this.position[2] = options.position[2];
     }
-
     this.canvas = options.canvas;
     this.aspect = this.canvas ? this.canvas.width / this.canvas.height : 1;
-
     if(options.zoom !== undefined) this.zoom = options.zoom;
-
     this._buildProjection();
     this._setupEvents();
     this._recalculateViewVP();
@@ -1653,7 +2011,6 @@ export class Camera2DOrthogonaly {
     } else {
       let lastPinchDist = null;
       let lastTouchX = null, lastTouchY = null;
-
       addEventListener('touchmove', (e) => {
         if(e.touches.length === 2) {
           const dist = this._pinchDist(e.touches);
@@ -1694,21 +2051,22 @@ export class Camera2DOrthogonaly {
   }
 }
 
+const DIGITAL_BITS = {forward: 1, backward: 2, left: 4, right: 8};
+
 export const MobileDOM = {
+  _wasd: null,
   eventDown: null,
   eventUp: null,
   eventCancel: null,
-
   createWASD(camera, options = {}) {
     const size = options.size ?? 60;
     const marginR = options.marginR ?? 0;
     const marginB = options.marginB ?? 0;
     const opacity = options.opacity ?? 0.35;
     const color = options.color ?? '#ffffff';
-    const forMobileJoystick = options.forMobileJoystick ?? false; // NEW: drag-over-pad instead of press/release
-
+    const forMobileJoystick = options.forMobileJoystick ?? false;
     const wrap = document.createElement('div');
-    wrap.id = "mobileControls";
+    wrap.id = 'mobileControls';
     Object.assign(wrap.style, {
       position: 'fixed',
       bottom: `${marginB}px`,
@@ -1722,17 +2080,32 @@ export const MobileDOM = {
       gap: '4px',
       touchAction: 'none',
     });
-
-    // [key, label, col, row, digital_key]
     const defs = [
-      ['W', '▲', 2, 1, 'forward'],
-      ['A', '◀', 1, 2, 'left'],
-      ['S', '▼', 2, 2, 'backward'],
-      ['D', '▶', 3, 2, 'right'],
+      ['▲', 2, 1, 'forward'],
+      ['◀', 1, 2, 'left'],
+      ['▼', 2, 2, 'backward'],
+      ['▶', 3, 2, 'right'],
     ];
+    const idle = `rgba(255,255,255,${opacity * 0.4})`;
+    const active = `rgba(255,255,255,${opacity})`;
+    const setBit = (action, on) => {
+      const bit = DIGITAL_BITS[action];
+      if(!bit) return;
+      if(on) {
+        // First press after idle: reset the time base so the first frame
+        // doesn't get a huge stale dt (the loop skips the call while _digital === 0)
+        if(camera._digital === 0) camera._lastMoveSceneTime = undefined;
+        camera._digital |= bit;
+      } else {
+        camera._digital &= ~bit;
+      }
+      buttons[action].style.background = on ? active : idle;
+    };
 
     const buttons = {};
-    for(const [, label, col, row, action] of defs) {
+    const handlers = [];
+
+    for(const [label, col, row, action] of defs) {
       const btn = document.createElement('div');
       btn.id = label;
       btn.dataset.action = action;
@@ -1746,7 +2119,7 @@ export const MobileDOM = {
         justifyContent: 'center',
         fontSize: `${size * 0.38}px`,
         color,
-        background: `rgba(255,255,255,${opacity * 0.4})`,
+        background: idle,
         border: `2px solid rgba(255,255,255,${opacity})`,
         borderRadius: `${size * 0.18}px`,
         cursor: 'pointer',
@@ -1756,80 +2129,33 @@ export const MobileDOM = {
       buttons[action] = btn;
 
       if(!forMobileJoystick) {
-        // first touch press/release behavior
-        const press = () => {
-          camera._digital[action] = true;
-          btn.style.background = `rgba(255,255,255,${opacity})`;
-          if(camera._keyInterval === null) {
-            camera._keyInterval = setInterval(() => {
-              camera._dirty = true;
-              camera._dirtyAngle = true;
-              camera._applyDigitalMovement();
-            }, 16);
-          }
-        };
-
-        const release = () => {
-          camera._digital[action] = false;
-          btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-          const d = camera._digital;
-          if(!d.forward && !d.backward && !d.left && !d.right) {
-            clearInterval(camera._keyInterval);
-            camera._keyInterval = null;
-            camera._dirty = false;
-          }
-        };
-
-        MobileDOM.eventDown = e => {
-          e.stopPropagation(); press();
+        const down = e => {
+          console.log('pad down', e.pointerId, document.elementFromPoint(e.clientX, e.clientY)?.dataset?.action);
+          e.stopPropagation();
           btn.setPointerCapture(e.pointerId);
+          setBit(action, true);
         };
-        MobileDOM.eventUp = e => {release()};
-        MobileDOM.eventCancel = e => {release()};
-
-        btn.addEventListener('pointerdown', MobileDOM.eventDown, {passive: true});
-        btn.addEventListener('pointerup', MobileDOM.eventUp, {passive: true});
-        btn.addEventListener('pointercancel', MobileDOM.eventCancel, {passive: true});
+        const up = () => setBit(action, false);
+        btn.addEventListener('pointerdown', down, {passive: true});
+        btn.addEventListener('pointerup', up, {passive: true});
+        btn.addEventListener('pointercancel', up, {passive: true});
+        handlers.push([btn, 'pointerdown', down], [btn, 'pointerup', up], [btn, 'pointercancel', up]);
       }
-
       wrap.appendChild(btn);
     }
 
     if(forMobileJoystick) {
-      // ---- joystick-style: direction follows the finger across the pad ----
+      console.log('pad down forMobileJoystick true');
+      // direction follows the finger across the pad
       let activePointerId = null;
       let activeAction = null;
-
       const setActive = (action) => {
         if(activeAction === action) return;
-
-        if(activeAction) {
-          camera._digital[activeAction] = false;
-          buttons[activeAction].style.background = `rgba(255,255,255,${opacity * 0.4})`;
-        }
+        if(activeAction) setBit(activeAction, false);
         activeAction = action;
-        if(activeAction) {
-          camera._digital[activeAction] = true;
-          buttons[activeAction].style.background = `rgba(255,255,255,${opacity})`;
-        }
-
-        if(activeAction && camera._keyInterval === null) {
-          camera._keyInterval = setInterval(() => {
-            camera._dirty = true;
-            camera._dirtyAngle = true;
-            camera._applyDigitalMovement();
-          }, 16);
-        } else if(!activeAction && camera._keyInterval !== null) {
-          clearInterval(camera._keyInterval);
-          camera._keyInterval = null;
-          camera._dirty = false;
-        }
+        if(activeAction) setBit(activeAction, true);
       };
-
-      const actionAt = (x, y) => {
-        const el = document.elementFromPoint(x, y);
-        return el?.dataset?.action ?? null;
-      };
+      const actionAt = (x, y) => document.elementFromPoint(x, y)?.dataset?.action ?? null;
 
       const onDown = e => {
         e.stopPropagation();
@@ -1847,39 +2173,27 @@ export const MobileDOM = {
         setActive(null);
       };
 
-      MobileDOM.eventDown = onDown;
-      MobileDOM.eventUp = onUp;
-      MobileDOM.eventCancel = onUp;
-
       wrap.addEventListener('pointerdown', onDown, {passive: true});
       wrap.addEventListener('pointermove', onMove, {passive: true});
       wrap.addEventListener('pointerup', onUp, {passive: true});
       wrap.addEventListener('pointercancel', onUp, {passive: true});
+      handlers.push(
+        [wrap, 'pointerdown', onDown], [wrap, 'pointermove', onMove],
+        [wrap, 'pointerup', onUp], [wrap, 'pointercancel', onUp]
+      );
     }
-
+    MobileDOM._wasd = {camera, handlers, wrap};
     document.body.appendChild(wrap);
     return wrap;
   },
 
   destroyWASD() {
-    if(byId('mobileControls') == null) return;
-    byId('▲').removeEventListener('pointerdown', MobileDOM.eventDown);
-    byId('▲').removeEventListener('pointerup', MobileDOM.eventUp);
-    byId('▲').removeEventListener('pointercancel', MobileDOM.eventCancel);
-    byId('◀').removeEventListener('pointerdown', MobileDOM.eventDown);
-    byId('◀').removeEventListener('pointerup', MobileDOM.eventUp);
-    byId('◀').removeEventListener('pointercancel', MobileDOM.eventCancel);
-    byId('▼').removeEventListener('pointerdown', MobileDOM.eventDown);
-    byId('▼').removeEventListener('pointerup', MobileDOM.eventUp);
-    byId('▼').removeEventListener('pointercancel', MobileDOM.eventCancel);
-    byId('▶').removeEventListener('pointerdown', MobileDOM.eventDown);
-    byId('▶').removeEventListener('pointerup', MobileDOM.eventUp);
-    byId('▶').removeEventListener('pointercancel', MobileDOM.eventCancel);
-    byId('▲').remove();
-    byId('◀').remove();
-    byId('▼').remove();
-    byId('▶').remove();
-    byId('mobileControls').remove();
+    const w = MobileDOM._wasd;
+    if(!w) return;
+    for(const [el, type, fn] of w.handlers) el.removeEventListener(type, fn);
+    w.camera._digital = 0;
+    w.wrap.remove();
+    MobileDOM._wasd = null;
   },
 
   addButton(label, onClick, onRelease = () => {}, options = {}, onMove = () => {}) {
@@ -1895,9 +2209,7 @@ export const MobileDOM = {
     const fontSize = options.fontSize ?? `${size * 0.25}px`;
     const borderRadius = options.borderRadius ?? '50%';
     const btn = document.createElement('div');
-    if(setID !== null) {
-      btn.id = setID;
-    }
+    if(setID !== null) {btn.id = setID;}
     Object.assign(btn.style, {
       position: 'fixed',
       bottom: `${bottom}%`,
@@ -1925,28 +2237,17 @@ export const MobileDOM = {
         e.stopPropagation();
         onClick(e);
       }, {passive: true});
-      btn.addEventListener('touchend', (e) => {
-        onRelease(e);
-      }, {passive: true});
-      btn.addEventListener('touchcancel', (e) => {
-        onRelease(e);
-      }, {passive: true});
-      btn.addEventListener('touchmove', (e) => {
-        onMove(e);
-      }, {passive: true});
+      btn.addEventListener('touchend', (e) => {onRelease(e);}, {passive: true});
+      btn.addEventListener('touchcancel', (e) => {onRelease(e);}, {passive: true});
+      btn.addEventListener('touchmove', (e) => {onMove(e);}, {passive: true});
     } else {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         onClick(e);
       }, {passive: true});
-      btn.addEventListener('mouseup', (e) => {
-        onRelease(e);
-      }, {passive: true});
-      btn.addEventListener('mousemove', (e) => {
-        onMove(e);
-      }, {passive: true});
+      btn.addEventListener('mouseup', (e) => {onRelease(e);}, {passive: true});
+      btn.addEventListener('mousemove', (e) => {onMove(e);}, {passive: true});
     }
-
     document.body.appendChild(btn);
     return btn;
   },
@@ -1959,7 +2260,6 @@ export const MobileDOM = {
     const color = options.color ?? '#4caf50';
     const height = options.height ?? size;
     const width = options.width ?? size;
-
     const barWrapper = document.createElement('div');
     Object.assign(barWrapper.style, {
       position: 'fixed',

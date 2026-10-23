@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 1.19.0 2026 Alias `The beast`
+📅 Version: 2.0.0 Beta 2026 Alias `The beast`
 
 ---
 
@@ -30,29 +30,33 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 
 ## Done list []
 
-- ✔️ Draw loop per pipeline not per mesh (PipelineManager) with share material. Power optimisation.
-- ✔️ Support for 3D objects and scene transformations.
-- ✔️ Ammo.js, cannonES && Jolt Physics libs integration (app<->bridge<->worker).
-  Physics use webworkers by default. Fixed crossOrigin worker.
+- ✔️ Draw loop per pipeline not per mesh (PipelineManager) with share material feature. Power optimisation
+     on every level like micro optimisation. Mobile browsers real test results make decision on further development.
+- ✔️ Support for 3D objects (scene object) standard TRS transformations.
+- ✔️ Ammo.js, cannonES, Jolt and matter.js physics libs integration (app<->bridge<->worker).
+     Physics use webworkers by default. Fixed crossOrigin worker.
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
 - ✔️ Bloom post processing.
 - ✔️ HZB post processing.
 - ✔️ Volumetric post processing.
 - ✔️ GPU Features: `texture-compression-bc` - (Not active by default).
 - ✔️ Scene Culling feature (see maze example for CPU Culling).
-- 📦 Based on the `shadowMapping` sample from [webgpu-samples](https://webgpu.github.io/webgpu-samples/?sample=shadowMapping).
+- ✔️ Effects (sub draw system) Cached pipelines. Effect is standalone webgpu entity with own
+     groups and pipelines. With effects i can add any exsternal demo very easy and quick.
 - ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).
 - ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader).
 - ✔️ Dynamic shadow cast (done also for skinned meshes).
 - ✔️ VertexShader displacment (done also for skinned meshes), nice for water effect.
-- ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. [Open account/open-source/free-service-quota](https://ollama.com/).
+- ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. 
+     [Open account/open-source/free-service-quota](https://ollama.com/).
 - ✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend.
 - ✔️ MediaPipe implemented - dinamic loading (if not in use no loading script or any related to mediapipe)
+     Make possible to morph from some splat(ply) shape to special mediapipe integrated mesh like 'FACEMESH_TESSELLATION' with real time video texture from webcam or video see `splatFaceEffect` for examples.
 - ✔️ Remote render stream emit example (standard engine networking) and special endpoint for "wachers" `tv-10.html`
-    Replace webcam stream with canvas capture - on endpoint use webRTC and video tag to preview remote render.
+     Replace webcam stream with canvas capture - on endpoint use webRTC and video tag to preview remote render.
 - ✔️ Code creator AI services agent system(use engine from npm)
-    `npm run creator` for 'http://localhost:3000/' `npm run creator-backend` for backend.
-    create games from simple prompt.
+     `npm run creator` for 'http://localhost:3000/' `npm run creator-backend` for backend.
+     create games from simple prompt.
 
 
 ## Supported browsers for final build:
@@ -65,8 +69,6 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 
 <video src="https://github.com/user-attachments/assets/8ef7fcd2-c54e-404e-902d-4743f7609c5b" width="100%"></video>
 
-
-[![Video](https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files//indirect-draws.png)](https://www.youtube.com/watch?v=gE6FjwxMGyo)
 
 ## Roadmap/sync to external parts
 
@@ -255,6 +257,17 @@ https://maximumroulette.com/apps/webgpu/api-docs/
   ```js
   app.destroyProgram();
   ```
+
+
+#### Culling
+
+```js
+var mazeGame = function() {
+  let maze = new MatrixEngineWGPU({
+    canvasSize: 'fullscreen',
+    // render: 'culling', <<<--- CPU Culling
+    render: 'GPUInstancedDraw', <<<--- GPU Culling (+indirectDraws)
+```
 
 ---
 
@@ -747,6 +760,7 @@ export let application = new MatrixEngineWGPU(
 window.app = application;
 ```
 
+
 ### 🔁 Load OBJ Sequence Animation
 
 This example shows how to load and animate a sequence of .obj files to simulate mesh-based animation (e.g. walking character).
@@ -1143,12 +1157,6 @@ new MatrixEngineWGPU({
 Exclude (for example floor/ground) from culling: `floor.ignoreCulling = true;`
 ---
 
-## About `empty.js`
-
-
-
----
-
 
 ## Android TV or any other supported device render stream receiver
 
@@ -1422,5 +1430,6 @@ Top level main.js instance (Jamb 3d deluxe)
 
 ## 📘 Learning Resource:
 
-[WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
-- ChatGPT, claude and Gemini.
+- https://webgpufundamentals.org
+- [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
+- For assist not whole code writing - ChatGPT, claude and Gemini.

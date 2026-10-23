@@ -20,14 +20,13 @@ export var loadKinematicCollision = function() {
   }, () => {
 
     collision.addLight();
-
     collision.collisionSystem = new CollisionSystem(collision);
 
     touchCoordinate.stopOnFirstDetectedHit = true;
 
     downloadMeshes({ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", },
       onLoadObj, {scale: [1, 1, 1]})
-    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [30, 0.5, 30]})
+    downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, onGround, {scale: [45, 1, 45]})
 
     addRaycastsAABBListener('canvas1', 'click');
     // Keep track of our grid objects globally within the block scope
@@ -217,11 +216,11 @@ export var loadKinematicCollision = function() {
         let cam = app.getCamera();
         cam.setYaw(-0.0);
         cam.setPitch(-0.29);
-        cam.setZ(25);
-        cam.setY(8);
+        cam.setZ(20);
+        cam.setY(38);
 
-        collision.getCamera().setPosition(0, 3, 10);
-        collision.collisionSystem.registerCamera(collision.getCamera().position, 2.0);
+        // collision.getCamera().setPosition(0, 3, 10);
+        collision.collisionSystem.registerCamera(collision.getCamera().position, 1.0);
         
 
         // app.buildRenderBuckets();

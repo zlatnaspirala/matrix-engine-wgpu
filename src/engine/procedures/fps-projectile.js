@@ -55,6 +55,8 @@ export class ProjectileSystem {
     this._maxDecals = opts.maxDecals ?? 40;
     this._decals = [];
     this.pArg = {name: null, obj: null, dir: null};
+
+    this.test = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
   }
 
   _getCameraState() {
@@ -120,10 +122,10 @@ export class ProjectileSystem {
     if(idx !== -1) this._projectiles.splice(idx, 1);
     let getObj = this.engine.getSceneObjectByName(name);
     if(getObj) {
-      // console.log("REMOVE ", name);
-      this.engine.removeSceneObjectByName(name);
+      if (getObj.effects.kaleBullet) getObj.effects.kaleBullet.destroy()
+      getObj.destroy();  
+      // this.engine.removeSceneObjectByName(name);
     } else {
-      // console.log("RE POS  ", name);
       const obj = this.engine.mainRenderBundle?.find(o => o.name === name);
       if(obj) {obj.position.x = 99999; obj.position.y = 99999; obj.position.z = 99999;}
     }
@@ -245,6 +247,7 @@ export class ProjectileSystem {
     obj.effects = {};
     obj.setBlend(0.7);
     setTimeout(() => {
+      // obj.effects.kaleBullet = this.test;//new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
       obj.effects.kaleBullet = new FlameEmitter(this.engine.device, "rgba16float", 20, this.engine.cameraBuffer);
       // obj.effects.kaleBullet = new KaleidoscopeEffect(this.engine.device, "rgba16float", 'pyramid', undefined, this.engine.cameraBuffer);
       // obj.effects.kaleBullet.recreateVertexData(12);

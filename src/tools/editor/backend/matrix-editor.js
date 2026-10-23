@@ -293,6 +293,10 @@ async function cnp(ws, msg) {
   content.addLine(`, (app) => {`);
   if(p) content.addLine(`addEventListener('PhysicsReady', async () => { `);
 
+  content.addLine(`// [prevent - double call]`);
+  content.addLine(`if (typeof app.loaded !== 'undefined') return;`);
+  content.addLine(`app.loaded = true;`);
+
   content.addLine(`// [only for projects created from editor]`);
   content.addLine(`app.graph = graph;`);
   content.addLine(` shaderGraphsProdc.forEach((gShader) => {`);
@@ -790,7 +794,7 @@ async function updatePos(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
   content.addLine(` setTimeout(() => {`);
-  content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').position.Set${msg.data.property.toUpperCase()}(${msg.data.value});`);
+  content.addLine(` try { app.getSceneObjectByName('${msg.data.inputFor}').position.Set${msg.data.property.toUpperCase()}(${msg.data.value}); } catch(e) {}`);
   content.addLine(` }, 800);`);
   content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
 
@@ -809,7 +813,7 @@ async function updateRot(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
   content.addLine(` setTimeout(() => {`);
-  content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').rotation.${msg.data.property} = ${msg.data.value};`);
+  content.addLine(`  try { app.getSceneObjectByName('${msg.data.inputFor}').rotation.${msg.data.property} = ${msg.data.value}; } catch(e) {}`);
   content.addLine(` }, 800);`);
   content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
 
@@ -828,7 +832,7 @@ async function updateScale(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
   content.addLine(` setTimeout(() => {`);
-  content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').scale[${msg.data.property}] = ${msg.data.value};`);
+  content.addLine(`  try {app.getSceneObjectByName('${msg.data.inputFor}').scale[${msg.data.property}] = ${msg.data.value};} catch(e){}`);
   content.addLine(` }, 800);`);
   content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
 
@@ -847,7 +851,7 @@ async function useScale(msg, ws) {
   const content = new CodeBuilder();
   content.addLine(` // ME START ${msg.data.inputFor} ${msg.action + msg.data.property}`);
   content.addLine(` setTimeout(() => {`);
-  content.addLine(`  app.getSceneObjectByName('${msg.data.inputFor}').useScale = ${msg.data.value};`);
+  content.addLine(`  try{app.getSceneObjectByName('${msg.data.inputFor}').useScale = ${msg.data.value};} catch(e) {}`);
   content.addLine(` }, 800);`);
   content.addLine(` // ME END ${msg.data.inputFor} ${msg.action + msg.data.property}`);
 

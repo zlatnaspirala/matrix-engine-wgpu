@@ -22,6 +22,9 @@ let app = new MatrixEngineWGPU(
   
 , (app) => {
 addEventListener('PhysicsReady', async () => { 
+// [prevent - double call]
+if (typeof app.loaded !== 'undefined') return;
+app.loaded = true;
 // [only for projects created from editor]
 app.graph = graph;
  shaderGraphsProdc.forEach((gShader) => {
@@ -57,23 +60,45 @@ app.addLight();
       // ME END FLOOR addCube
 
   
-                            // ME START FLOOR updatePosz
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetZ(-20);
- }, 800);
- // ME END FLOOR updatePosz
+
+       // ME START nikola addCube
+ downloadMeshes({cube: "./res/meshes/blender/cube.obj"}, (m) => { 
+   let texturesPaths = ['./res/textures/cube-g1-extra_low.png']; 
+   app.addMeshObj({
+     position: {x: 0, y: 0, z: -20}, rotation: {x: 0, y: 0, z: 0}, rotationSpeed: {x: 0, y: 0, z: 0},
+     texturesPaths: [texturesPaths],
+     name: 'nikola',
+     mesh: m.cube,
+     raycast: {enabled: true, radius: 1},
+     physics: {enabled: false, geometry: "Cube"}
+   }); 
+ }, {scale: [1, 1, 1]});  
+ // ME END nikola addCube
  
-               // ME START FLOOR updatePosx
+
+       // ME START FLOOR updatePosy
  setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetX(0);
- }, 800);
- // ME END FLOOR updatePosx
- 
-           // ME START FLOOR updatePosy
- setTimeout(() => {
-  app.getSceneObjectByName('FLOOR').position.SetY(0);
+ try { app.getSceneObjectByName('FLOOR').position.SetY(-0.7000000000000007); } catch(e) {}
  }, 800);
  // ME END FLOOR updatePosy
+ 
+  // ME START nikola updatePosz
+ setTimeout(() => {
+ try { app.getSceneObjectByName('nikola').position.SetZ(-19.649999999999945); } catch(e) {}
+ }, 800);
+ // ME END nikola updatePosz
+ 
+  // ME START nikola updatePosy
+ setTimeout(() => {
+ try { app.getSceneObjectByName('nikola').position.SetY(3.989999999999993); } catch(e) {}
+ }, 800);
+ // ME END nikola updatePosy
+ 
+    // ME START nikola updatePosx
+ setTimeout(() => {
+ try { app.getSceneObjectByName('nikola').position.SetX(-3.8850000000000047); } catch(e) {}
+ }, 800);
+ // ME END nikola updatePosx
  
  // [MAIN_REPLACE2]
  })

@@ -1,0 +1,504 @@
+import {byId} from "../utils";
+import * as poseModule from '@mediapipe/pose';
+/**
+ * @description
+ * SplatFaceEffect
+ * Maps MediaPipe FaceLandmarker 478 landmarks into a splat point cloud.
+ * Follows FlameEmitter interface:
+ *   updateInstanceData(baseModelMatrix) — called automatically by main loop
+ *   render(pass, mesh, viewProjMatrix, dt) — no-op, splat renders itself
+ * 
+ * @filename
+ * splatFace.js
+ *
+ * @Licence
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file,
+ * You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (c) 2026 Nikola Lukić zlatnaspirala@gmail.com
+ */
+export class SplatPoseEffect {
+  static _pipelineCache = new WeakMap();
+  constructor(device, format, cameraBuffer, splatLayer, opts = {}) {
+    this.device = device;
+    this.splatLayer = splatLayer;
+    this.enabled = true;
+    this.time = 0;
+    this.scale = opts.scale ?? 3.0;
+    this.clusterRadius = opts.clusterRadius ?? 1.0;
+    this.origin = opts.origin ?? [0, 1.6, 0];
+    this.mirrorX = opts.mirrorX ?? true;
+    this._videoElement = byId('auto-video');
+    this._landmarks = null;
+
+    const POSE_EDGES =
+      poseModule.POSE_CONNECTIONS ||
+      poseModule.PoseLandmarker?.POSE_CONNECTIONS ||
+      poseModule.default?.POSE_CONNECTIONS ||
+      poseModule.default?.PoseLandmarker?.POSE_CONNECTIONS;
+
+    console.log(poseModule.POSE_CONNECTIONS?.length);
+
+    console.log('POSE_EDGES', POSE_EDGES)
+    const FILL_EDGES = opts.fillEdges ?? [[11, 24], [12, 23]];
+    this.POSE_TRIANGLES = this.extractTrianglesFromTessellation([...(POSE_EDGES || []), ...FILL_EDGES]);
+    console.log(this.POSE_TRIANGLES.length);
+
+    this._edges = (POSE_EDGES || [])
+      .map(e => Array.isArray(e) ? e : [e.start, e.end])
+      .filter(([a, b]) => a >= 11 && b >= 11);    // body only, face lines skipped
+
+    //
+    this.sides = opts.sides ?? 8;
+    this._tubeEdges = this._edges;                          // reuse the (a>=11) edges
+    const N = this.sides, E = this._tubeEdges.length;
+    const ST = 8, SL = 10;                                  // head sphere stacks / slices
+    this._headBase = E * 2 * N;
+    this._vertexCount = this._headBase + (ST + 1) * (SL + 1);
+
+    const tris = [];
+    for(let e = 0;e < E;e++) {
+      const base = e * 2 * N;
+      for(let j = 0;j < N;j++) {
+        const a0 = base + j, a1 = base + (j + 1) % N;
+        const b0 = base + N + j, b1 = base + N + (j + 1) % N;
+        tris.push(a0, b0, a1, a1, b0, b1);
+      }
+    }
+    for(let i = 0;i < ST;i++) for(let j = 0;j < SL;j++) {
+      const a = this._headBase + i * (SL + 1) + j, b = a + SL + 1;
+      tris.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+
+    this._torsoBase = this._headBase + (ST + 1) * (SL + 1);
+    const T = this._torsoBase;
+    tris.push(T, T + 1, T + 2, T, T + 2, T + 3);     // 11,12,24 / 11,24,23
+    tris.push(T, T + 2, T + 1, T, T + 3, T + 2);     // back face, in case of culling
+    this._vertexCount = T + 4;
+    this.limbScale = opts.limbScale ?? 0.50;
+    this.zScale = opts.zScale ?? 0.0;
+
+    this.BODY_TRIANGLES = new Uint16Array(tris);
+    this._meshPos = new Float32Array(this._vertexCount * 3);
+    this._meshUV = new Float32Array(this._vertexCount * 2);
+    this._ST = ST; this._SL = SL;
+
+    // radius in meters per landmark
+    this._boneR = new Float32Array(33).fill(0.03);
+    this._boneR[11] = this._boneR[12] = 0.07;
+    this._boneR[13] = this._boneR[14] = 0.045;
+    this._boneR[15] = this._boneR[16] = 0.035;
+    this._boneR[23] = this._boneR[24] = 0.09;
+    this._boneR[25] = this._boneR[26] = 0.06;
+    this._boneR[27] = this._boneR[28] = 0.045;
+
+    this.pipeline = splatLayer.pipeline;
+    const n = splatLayer.vertexCount;
+    this._posCPU = new Float32Array(n * 3);
+    this._uvCPU = new Float32Array(n * 6 * 2);
+    this._clusterIdx = new Uint16Array(n);
+    this._offsetX = new Float32Array(n);
+    this._offsetY = new Float32Array(n);
+    this._offsetZ = new Float32Array(n);
+    this._jointRadius = this._buildRadiusMap();
+    this._precompute(n);
+    this.uvBuffer = device.createBuffer({
+      label: 'splat-pose-uv',
+      size: n * 6 * 2 * 4,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    this.sampler = device.createSampler({magFilter: 'linear', minFilter: 'linear', });
+    this.updateInstanceData = this.updateInstanceDataPoints;
+    this.render = this.renderPoint;
+
+    this.anchors = {
+      rightHand: [0, 0, 0], leftHand: [0, 0, 0],   // world positions (wrists 16 / 15)
+      head: [0, 0, 0],                              // nose (0)
+      chest: [0, 0, 0],                             // shoulders midpoint
+      hips: [0, 0, 0],                              // hips midpoint
+      forward: [0, 0, 1],                           // where the body points (unit)
+      up: [0, 1, 0],
+      right: [1, 0, 0],
+      valid: false,
+    };
+    this.anchorSmoothing = opts.anchorSmoothing ?? 0.5; // 0 = raw, 0.9 = very smooth
+  }
+
+  _toWorld(j, out = [0, 0, 0]) {
+    const mx = this.mirrorX ? -1 : 1;
+    const v = this._videoElement;
+    const aspect = (v.videoWidth / v.videoHeight) || 1;
+    out[0] = (j.x - 0.5) * mx * this.scale * aspect + this.origin[0];
+    out[1] = -(j.y - 0.5) * this.scale + this.origin[1];
+    out[2] = -j.z * this.scale * aspect + this.origin[2];
+    return out;
+  }
+
+  _updateAnchors(lm) {
+    const A = this.anchors;
+    const mx = this.mirrorX ? -1 : 1;
+    const P = i => this._toWorld(lm[i]);
+    const mid = (a, b) => a.map((v, k) => (v + b[k]) * 0.5);
+
+    const rHand = P(16);
+    const lHand = P(15);
+    const head = P(0);
+    const chest = mid(P(11), P(12));
+    const hips = mid(P(23), P(24));
+
+    const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    const norm = v => {const l = Math.hypot(...v) || 1; return v.map(x => x / l);};
+    const cross = (a, b) => [
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0],
+    ];
+
+    // body orientation from shoulders (11 -> 12) and hips -> chest
+    const right = norm(sub(P(12), P(11)));
+    const up = norm(sub(chest, hips));
+    // mirroring flips handedness, so multiply by mx to keep "forward" correct
+    const forward = norm(cross(right, up).map(x => x * mx));
+
+    const s = this.anchorSmoothing, k = 1 - s;
+    const lerp = (dst, src) => {for(let i = 0;i < dst.length;i++) dst[i] = dst[i] * s + src[i] * k;};
+
+    if(!A.valid) { // first frame: snap
+      A.rightHand = rHand; A.leftHand = lHand; A.head = head;
+      A.chest = chest; A.hips = hips;
+      A.forward = forward; A.up = up; A.right = right;
+    } else {
+      lerp(A.rightHand, rHand); lerp(A.leftHand, lHand); lerp(A.head, head);
+      lerp(A.chest, chest); lerp(A.hips, hips);
+      lerp(A.forward, forward); lerp(A.up, up); lerp(A.right, right);
+    }
+    A.forward = norm(A.forward);
+    A.valid = true;
+  }
+
+  // public API
+  getHandRay(side = 'right', length = 10) {
+    const A = this.anchors;
+    const o = side === 'right' ? A.rightHand : A.leftHand;
+    return {
+      origin: o.slice(), dir: A.forward.slice(),
+      end: [o[0] + A.forward[0] * length, o[1] + A.forward[1] * length, o[2] + A.forward[2] * length]
+    };
+  }
+
+  extractTrianglesFromTessellation(edges) {
+    if(!edges?.length) return new Uint16Array(0);
+    const adj = new Map();
+    const add = (a, b) => {
+      if(!adj.has(a)) adj.set(a, new Set());
+      adj.get(a).add(b);
+    };
+    for(const e of edges) {
+      const a = Array.isArray(e) ? e[0] : e.start;
+      const b = Array.isArray(e) ? e[1] : e.end;
+      add(a, b); add(b, a);
+    }
+    const tris = [];
+    for(const [a, na] of adj) {
+      for(const b of na) {
+        if(b <= a) continue;
+        for(const c of adj.get(b)) {
+          if(c <= b) continue;
+          if(na.has(c)) tris.push(a, b, c);
+        }
+      }
+    }
+    return new Uint16Array(tris);
+  }
+
+  setMode(mode, meshTriangles = null) {
+    if(mode === 'mesh') {
+      this.updateInstanceData = this.updateInstanceDataMesh;
+      this.render = this.renderMesh;
+    } else {
+      this.updateInstanceData = this.updateInstanceDataPoints;
+      this.render = this.renderPoint;
+    }
+    this.splatLayer.setRenderMode(mode,
+      meshTriangles === null ? this.BODY_TRIANGLES : meshTriangles
+    );
+    this.pipeline = this.splatLayer.pipeline;
+  }
+
+  _buildRadiusMap() {
+    // Default radius for all 33 landmarks
+    const r = new Float32Array(33).fill(0.02);
+    // Face points (0-10)
+    for(let i = 0;i <= 10;i++) r[i] = 0.015;
+    // Nose
+    r[0] = 0.030;
+    // Shoulders
+    r[11] = 0.045; r[12] = 0.045;
+    // Elbows
+    r[13] = 0.030; r[14] = 0.030;
+    // Wrists
+    r[15] = 0.025; r[16] = 0.025;
+    // Hand points (17-22)
+    for(let i = 17;i <= 22;i++) r[i] = 0.012;
+    // Hips
+    r[23] = 0.050; r[24] = 0.050;
+    // Knees
+    r[25] = 0.035; r[26] = 0.035;
+    // Ankles
+    r[27] = 0.030; r[28] = 0.030;
+    // Feet (29-32)
+    for(let i = 29;i <= 32;i++) r[i] = 0.015;
+    return r;
+  }
+
+  _buildColorMap() {
+    // [r, g, b] per landmark, flat array: index * 3
+    const colors = new Float32Array(33 * 3);
+    const setRange = (from, to, r, g, b) => {
+      for(let i = from;i <= to;i++) {
+        colors[i * 3] = r;
+        colors[i * 3 + 1] = g;
+        colors[i * 3 + 2] = b;
+      }
+    };
+    // Default — skin tone base
+    setRange(0, 32, 0.9, 0.7, 0.5);
+    // Face points — warm gold
+    setRange(0, 10, 1.0, 0.8, 0.2);
+    // Shoulders — cyan
+    setRange(11, 12, 0.2, 1.0, 1.0);
+    // Arms — soft blue
+    setRange(13, 16, 0.4, 0.6, 1.0);
+    // Hands — bright green
+    setRange(17, 22, 0.2, 1.0, 0.3);
+    // Hips — hot pink/red
+    setRange(23, 24, 1.0, 0.2, 0.4);
+    // Legs — blue
+    setRange(25, 28, 0.3, 0.5, 1.0);
+    // Feet — bright red
+    setRange(29, 32, 1.0, 0.1, 0.2);
+    // Key landmarks — white highlights
+    [0, 11, 12, 15, 16, 23, 24, 27, 28].forEach(i => {
+      colors[i * 3] = 1.0;
+      colors[i * 3 + 1] = 1.0;
+      colors[i * 3 + 2] = 1.0;
+    });
+    return colors;
+  }
+
+  _buildWeights() {
+    const w = new Float32Array(33).fill(1.0); // base weight
+    // Face points
+    for(let i = 0;i <= 10;i++) w[i] = 0.6;
+    w[0] = 1.5;
+    // Torso corners — structural, most points
+    w[11] = 3.0; w[12] = 3.0; w[23] = 3.0; w[24] = 3.0;
+    // Elbows + knees
+    w[13] = 2.0; w[14] = 2.0; w[25] = 2.0; w[26] = 2.0;
+    // Wrists + ankles
+    w[15] = 1.8; w[16] = 1.8; w[27] = 1.8; w[28] = 1.8;
+    // Hand points
+    for(let i = 17;i <= 22;i++) w[i] = 0.5;
+    // Feet
+    for(let i = 29;i <= 32;i++) w[i] = 0.5;
+    return w;
+  }
+
+  _precompute(n) {
+    const weights = this._buildWeights();
+    const TOTAL_LM = 33;
+    let total = 0;
+    for(let i = 0;i < TOTAL_LM;i++) total += weights[i];
+    const cdf = new Float32Array(TOTAL_LM);
+    let run = 0;
+    for(let i = 0;i < TOTAL_LM;i++) {
+      run += weights[i] / total;
+      cdf[i] = run;
+    }
+    cdf[TOTAL_LM - 1] = 1.0;
+    for(let p = 0;p < n;p++) {
+      const r = Math.random();
+      // Binary search CDF
+      let lo = 0, hi = TOTAL_LM - 1;
+      while(lo < hi) {
+        const mid = (lo + hi) >>> 1;
+        if(cdf[mid] < r) lo = mid + 1;
+        else hi = mid;
+      }
+      this._clusterIdx[p] = lo;
+      // Uniform point inside unit sphere
+      let ox, oy, oz;
+      do {
+        ox = (Math.random() - 0.5) * 2;
+        oy = (Math.random() - 0.5) * 2;
+        oz = (Math.random() - 0.5) * 2;
+      } while(ox * ox + oy * oy + oz * oz > 1.0);
+      this._offsetX[p] = ox;
+      this._offsetY[p] = oy;
+      this._offsetZ[p] = oz;
+    }
+  }
+
+  // PipeCommander in 'pose' mode returns results.landmarks
+  setPoseData(results) {
+    if(!results?.landmarks?.length) {
+      this._landmarks = null;
+      this.anchors.valid = false;
+      return;
+    }
+    this._landmarks = results.landmarks[0];
+    this._updateAnchors(this._landmarks);
+    this._world = results.worldLandmarks?.[0] ?? null;
+  }
+
+  setScale(s) {this.scale = s;}
+  setClusterRadius(r) {this.clusterRadius = r;}
+  setOrigin(x, y, z) {this.origin = [x, y, z];}
+
+  updateInstanceDataPoints(baseModelMatrix) {
+    if(!this.enabled || !this._landmarks) return;
+    const lm = this._landmarks;
+    const sc = this.scale;
+    const ox = this.origin[0], oy = this.origin[1], oz = this.origin[2];
+    const mx = this.mirrorX ? -1 : 1;
+    const n = this.splatLayer.vertexCount;
+    const p = this._posCPU;
+    const uv = this._uvCPU;
+    for(let i = 0;i < n;i++) {
+      const ci = this._clusterIdx[i];
+      const joint = lm[ci];
+      // 3D position offset
+      const jx = (joint.x - 0.5) * mx * sc + ox;
+      const jy = -(joint.y - 0.5) * sc + oy;
+      const jz = -joint.z * sc + oz;
+      const r = this._jointRadius[ci] * sc * this.clusterRadius;
+      p[i * 3] = jx + this._offsetX[i] * r;
+      p[i * 3 + 1] = jy + this._offsetY[i] * r;
+      p[i * 3 + 2] = jz + this._offsetZ[i] * r;
+      // Direct UV mapping from MediaPipe 0..1 coordinates
+      const ux = this.mirrorX ? (1.0 - joint.x) : joint.x;
+      const uy = joint.y;
+      const uvi = i * 12;
+      for(let v = 0;v < 6;v++) {
+        this._uvCPU[uvi + v * 2] = ux;
+        this._uvCPU[uvi + v * 2 + 1] = uy;
+      }
+    }
+    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, p);
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
+  }
+
+  updateInstanceDataMesh() {
+    if(!this.enabled || !this._landmarks) return;
+    const lm = this._landmarks;
+    const sc = this.scale, zs = this.zScale;
+    const [ox, oy, oz] = this.origin;
+    const mx = this.mirrorX ? -1 : 1;
+    const vid = this._videoElement;
+    const aspect = (vid.videoWidth / vid.videoHeight) || 1;
+    const pos = this._meshPos, uv = this._meshUV, N = this.sides;
+
+    // same projection as the face class
+    const W = i => [
+      (lm[i].x - 0.5) * mx * sc * aspect + ox,
+      -(lm[i].y - 0.5) * sc + oy,
+      -lm[i].z * sc * zs + oz
+    ];
+    // position -> UV is the exact inverse, so texture always matches the vertex
+    const setV = (vi, p) => {
+      pos[vi * 3] = p[0]; pos[vi * 3 + 1] = p[1]; pos[vi * 3 + 2] = p[2];
+      uv[vi * 2] = 0.5 + (p[0] - ox) / (mx * sc * aspect);
+      uv[vi * 2 + 1] = 0.5 - (p[1] - oy) / sc;
+    };
+
+    this._tubeEdges.forEach(([a, b], e) => {
+      const A = W(a), B = W(b);
+      let d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+      const L = Math.hypot(...d) || 1; d = d.map(x => x / L);
+      const ref = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+      let u = [d[1] * ref[2] - d[2] * ref[1], d[2] * ref[0] - d[0] * ref[2], d[0] * ref[1] - d[1] * ref[0]];
+      const ul = Math.hypot(...u) || 1; u = u.map(x => x / ul);
+      const v = [d[1] * u[2] - d[2] * u[1], d[2] * u[0] - d[0] * u[2], d[0] * u[1] - d[1] * u[0]];
+      // const ra = this._boneR[a] * sc * this.limbScale;
+      // const rb = this._boneR[b] * sc * this.limbScale;
+      const ra = this._boneR[a] * sc * this.limbScale;
+      const rb = this._boneR[b] * sc * this.limbScale;
+      const base = e * 2 * N;
+      for(let j = 0;j < N;j++) {
+        const t = j / N * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
+        const o = [u[0] * c + v[0] * s, u[1] * c + v[1] * s, u[2] * c + v[2] * s];
+        setV(base + j, [A[0] + o[0] * ra, A[1] + o[1] * ra, A[2] + o[2] * ra]);
+        setV(base + N + j, [B[0] + o[0] * rb, B[1] + o[1] * rb, B[2] + o[2] * rb]);
+      }
+    });
+
+    // head sphere
+    const E1 = W(7), E2 = W(8);
+    const R = Math.hypot(E1[0] - E2[0], E1[1] - E2[1]) * 0.75 * this.limbScale;
+    const c = [(E1[0] + E2[0]) / 2, (E1[1] + E2[1]) / 2 + R * 0.3, (E1[2] + E2[2]) / 2];
+    const ST = this._ST, SL = this._SL;
+    for(let i = 0;i <= ST;i++) for(let j = 0;j <= SL;j++) {
+      const th = i / ST * Math.PI, ph = j / SL * Math.PI * 2;
+      setV(this._headBase + i * (SL + 1) + j, [
+        c[0] + R * Math.sin(th) * Math.cos(ph),
+        c[1] + R * Math.cos(th),
+        c[2] + R * Math.sin(th) * Math.sin(ph)
+      ]);
+    }
+
+    // torso fill: 11, 12, 24, 23
+    const T = this._torsoBase;
+    setV(T, W(11)); setV(T + 1, W(12)); setV(T + 2, W(24)); setV(T + 3, W(23));
+
+    this.device.queue.writeBuffer(this.splatLayer.positionAnimator.posBuffer, 0, pos);
+    this.device.queue.writeBuffer(this.uvBuffer, 0, uv);
+  }
+
+  renderPoint(pass, mesh, viewProjMatrix, dt = 0.016) {
+    this.time += dt;
+    if(this._videoElement.readyState < 2) {return;}
+    this.splatLayer.device.queue.writeBuffer(this.splatLayer.modelBuffer, 0, mesh.modelMatrix);
+    this.splatLayer.device.queue.writeBuffer(this.splatLayer.cameraBuffer, 0, viewProjMatrix);
+    const externalTexture = this.device.importExternalTexture({source: this._videoElement});
+    const bindGroup = this.device.createBindGroup({
+      layout: this.splatLayer.bindGroupLayout,
+      entries: [
+        {binding: 0, resource: {buffer: this.splatLayer.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.splatLayer.modelBuffer}},
+        {binding: 2, resource: {buffer: this.splatLayer.scaleBuffer}},
+        {binding: 3, resource: externalTexture}, {binding: 4, resource: this.sampler}
+      ]
+    });
+    pass.setBindGroup(0, bindGroup);
+    pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
+    pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
+    pass.setVertexBuffer(2, this.splatLayer.positionAnimator ? this.splatLayer.positionAnimator.posBuffer : this.splatLayer.dummyPosBuffer);
+    pass.setVertexBuffer(3, this.uvBuffer);
+    pass.draw(6, this.splatLayer.vertexCount, 0, 0);
+  }
+
+  renderMesh(pass, mesh, viewProjMatrix, dt = 0.016) {
+    if(this._videoElement.readyState < 2) return;
+    const externalTexture = this.device.importExternalTexture({source: this._videoElement});
+    const bindGroup = this.device.createBindGroup({
+      layout: this.splatLayer.bindGroupLayout,
+      entries: [
+        {binding: 0, resource: {buffer: this.splatLayer.cameraBuffer}},
+        {binding: 1, resource: {buffer: this.splatLayer.modelBuffer}},
+        {binding: 2, resource: {buffer: this.splatLayer.scaleBuffer}},
+        {binding: 3, resource: externalTexture},
+        {binding: 4, resource: this.sampler}
+      ]
+    });
+    pass.setBindGroup(0, bindGroup);
+    pass.setVertexBuffer(0, this.splatLayer.vertexBuffer);
+    pass.setVertexBuffer(1, this.splatLayer.colorBuffer);
+    pass.setVertexBuffer(2, this.splatLayer.positionAnimator.posBuffer);
+    // UVs PER-LANDMARK
+    pass.setVertexBuffer(3, this.uvBuffer);
+    pass.setIndexBuffer(this.splatLayer.meshIndexBuffer, 'uint16');
+    pass.drawIndexed(this.BODY_TRIANGLES.length, 1, 0, 0, 0);
+  }
+}

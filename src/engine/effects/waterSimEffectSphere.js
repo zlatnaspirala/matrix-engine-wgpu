@@ -8,10 +8,13 @@ import {GeometryFactory} from "../geometry-factory";
 
 const SIM_RES = 512;
 export class WaterSimSphereEffect {
+  static _pipelineCache = new WeakMap();
   constructor(device, format, options = {}) {
     this.device = device;
     this.format = format;
     this.enabled = true;
+
+    // Store options as instance properties (needed by initPipeline helpers)
     this.opacity = options.opacity ?? 0.2;
     this.geometryType = options.geometryType ?? (options.isSphere ? 'sphere' : 'sphere');
     this.geometryOptions = options.geometryOptions ?? {};
@@ -30,6 +33,7 @@ export class WaterSimSphereEffect {
     this.fresnelMin = options.fresnelMin ?? 0.25;
     this.causticIntensity = options.causticIntensity ?? 0.3;
     this.lightDirection = options.lightDirection ?? [2.0, 2.0, -1.0];
+
     this._dropQueue = [];
     this._sphereStamp = null;
     this._simFormat = device.features.has('float32-filterable') ? 'rgba32float' : 'rgba16float';
@@ -39,6 +43,142 @@ export class WaterSimSphereEffect {
     this.data2 = new Float32Array(12);
     this._idleFrames = 0;
     this._idleThreshold = 90;
+    this.vertexCount = 0; // Will be set in _createSurfaceMesh
+
+    // Call initPipeline — it handles cache check and all pipeline/buffer creation
+    this.initPipeline();
+  }
+
+  destroy() {
+    if(this.textureA) this.textureA.destroy();
+    if(this.textureB) this.textureB.destroy();
+    if(this.causticsTexture) this.causticsTexture.destroy();
+    if(this.floorTexture) this.floorTexture.destroy();
+
+    if(this.vertexBuffer) this.vertexBuffer.destroy();
+    if(this.indexBuffer) this.indexBuffer.destroy();
+    if(this.dummyPosBuffer) this.dummyPosBuffer.destroy();
+    if(this.colorBuffer) this.colorBuffer.destroy();
+    if(this.scaleBuffer) this.scaleBuffer.destroy();
+    if(this.modelBuffer) this.modelBuffer.destroy();
+    if(this.commonUniformBuffer) this.commonUniformBuffer.destroy();
+    if(this.lightUniformBuffer) this.lightUniformBuffer.destroy();
+    if(this.waterUniformBuffer) this.waterUniformBuffer.destroy();
+
+    if(this.dropPipeline?.uniformBuffer) this.dropPipeline.uniformBuffer.destroy();
+    if(this.updatePipeline?.uniformBuffer) this.updatePipeline.uniformBuffer.destroy();
+    if(this.normalPipeline?.uniformBuffer) this.normalPipeline.uniformBuffer.destroy();
+    if(this.spherePipeline?.uniformBuffer) this.spherePipeline.uniformBuffer.destroy();
+  }
+
+  initPipeline() {
+    const device = this.device;
+
+    // ========== CACHE CHECK ==========
+    if(WaterSimSphereEffect._pipelineCache.has(device)) {
+      const cached = WaterSimSphereEffect._pipelineCache.get(device);
+      // Surface pipelines (shared, device-wide)
+      this.surfaceBindGroupLayout = cached.surfaceBindGroupLayout;
+      this.surfacePipelineLayout = cached.surfacePipelineLayout;
+      this.surfacePipelineAbove = cached.surfacePipelineAbove;
+      this.surfacePipelineUnder = cached.surfacePipelineUnder;
+      // Sim pipelines (just the pipeline objects, not uniform buffers or bind groups)
+      this._cachedSimPipelines = cached.simPipelines;
+      // Caustics pipeline
+      this.causticsPipeline = cached.causticsPipeline;
+    } else {
+      // ========== BUILD PIPELINES ONCE (DEVICE-WIDE) ==========
+      this.surfaceBindGroupLayout = device.createBindGroupLayout({
+        label: 'WaterSim Surface BGL',
+        entries: [
+          {binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+          {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+          {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+          {binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}},
+          {binding: 4, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, sampler: {}},
+          {binding: 5, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: {}},
+          {binding: 6, visibility: GPUShaderStage.FRAGMENT, sampler: {}},
+          {binding: 7, visibility: GPUShaderStage.FRAGMENT, texture: {}},
+          {binding: 8, visibility: GPUShaderStage.FRAGMENT, texture: {}}
+        ]
+      });
+
+      this.surfacePipelineLayout = device.createPipelineLayout({bindGroupLayouts: [this.surfaceBindGroupLayout]});
+      const surfaceVSModule = device.createShaderModule({label: 'WaterSim S VS', code: surfaceVertShaderSphere});
+      const surfaceFSModule = device.createShaderModule({label: 'WaterSim S FS', code: surfaceFragShaderSphere});
+
+      const baseDesc = {
+        layout: this.surfacePipelineLayout,
+        vertex: {
+          module: surfaceVSModule,
+          entryPoint: 'vs_main',
+          buffers: [{arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]}]
+        },
+        fragment: {
+          module: surfaceFSModule, entryPoint: 'fs_main', targets: [
+            {format: this.format, blend: this.gpuBlend},
+            {format: this.format}, {format: this.format}
+          ]
+        },
+        primitive: {topology: 'triangle-list'},
+        depthStencil: {depthWriteEnabled: true, depthCompare: 'less', format: 'depth24plus'}
+      };
+
+      this.surfacePipelineAbove = device.createRenderPipeline({
+        ...baseDesc, label: 'WaterSim S Above',
+        primitive: {topology: 'triangle-list', cullMode: 'back'}
+      });
+      this.surfacePipelineUnder = device.createRenderPipeline({
+        ...baseDesc, label: 'WaterSim S Under',
+        depthStencil: {depthWriteEnabled: false, depthCompare: 'less-equal', format: 'depth24plus'},
+        primitive: {topology: 'triangle-list', cullMode: 'front'}
+      });
+
+      // Sim pipelines (store just the pipeline objects)
+      this._cachedSimPipelines = {
+        drop: this._buildSimPipelineShaderAndPipeline('Drop', dropFragShader),
+        update: this._buildSimPipelineShaderAndPipeline('Update', updateFragShaderSphere),
+        normal: this._buildSimPipelineShaderAndPipeline('Normal', normalFragShaderSphere),
+        sphere: this._buildSimPipelineShaderAndPipeline('Sphere', sphereFragShader)
+      };
+
+      // Caustics pipeline
+      const causticsVSModule = device.createShaderModule({label: 'WaterSim Caustics VS', code: causticsVertShader});
+      const causticsFSModule = device.createShaderModule({label: 'WaterSim Caustics FS', code: causticsFragShader});
+      this.causticsPipeline = device.createRenderPipeline({
+        label: 'WaterSim Caustics',
+        layout: 'auto',
+        vertex: {
+          module: causticsVSModule,
+          entryPoint: 'vs_main',
+          buffers: [{arrayStride: 12, attributes: [{shaderLocation: 0, offset: 0, format: 'float32x3'}]}]
+        },
+        fragment: {
+          module: causticsFSModule,
+          entryPoint: 'fs_main',
+          targets: [{
+            format: 'rgba8unorm',
+            blend: {
+              color: {srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add'},
+              alpha: {srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add'}
+            }
+          }]
+        },
+        primitive: {topology: 'triangle-list'}
+      });
+
+      // ========== CACHE THEM ==========
+      WaterSimSphereEffect._pipelineCache.set(device, {
+        surfaceBindGroupLayout: this.surfaceBindGroupLayout,
+        surfacePipelineLayout: this.surfacePipelineLayout,
+        surfacePipelineAbove: this.surfacePipelineAbove,
+        surfacePipelineUnder: this.surfacePipelineUnder,
+        simPipelines: this._cachedSimPipelines,
+        causticsPipeline: this.causticsPipeline
+      });
+    }
+
+    // ========== PER-INSTANCE RESOURCES (NOT CACHED) ==========
     this._createTextures();
     this._simPassDescs = [
       {colorAttachments: [{view: this._physViews[0], loadOp: 'clear', storeOp: 'store', clearValue: {r: 0, g: 0, b: 0, a: 0}}]},
@@ -48,17 +188,101 @@ export class WaterSimSphereEffect {
     this._causticsPassDesc = {
       colorAttachments: [{view: this._causticsView, loadOp: 'clear', storeOp: 'store', clearValue: {r: 0, g: 0, b: 0, a: 0}}]
     };
+
     this._dropUniform = new Float32Array(4);
     this._sphereUniform = new Float32Array(8);
     this._deltaUniform = new Float32Array([1 / this.width, 1 / this.height]);
     this._defaultEye = [0, 5, 5];
-    this._createSampler();
-    this._createUniformBuffers(options);
-    this._createSimPipelines();
-    this._createSurfaceMesh();
-    this._createSurfacePipelines();
-    this._createCausticsPipeline();
 
+    this._createSampler();
+    this._createUniformBuffers(this.constructor.options ?? {});
+    this._createSimPipelineBG(); // Create per-instance bind groups for cached sim pipelines
+    this._createSurfaceMesh();
+    this._createSurfaceBindGroups();
+    this._createCausticsBindGroups();
+  }
+
+  // Helper: create just the shader module and pipeline for sim (no uniform buffer or bind groups)
+  _buildSimPipelineShaderAndPipeline(label, fragCode) {
+    const module = this.device.createShaderModule({
+      label: label + ' Sim Module',
+      code: fullscreenVertShader + fragCode
+    });
+    const pipeline = this.device.createRenderPipeline({
+      label: label + ' Sim Pipeline',
+      layout: 'auto',
+      vertex: {module, entryPoint: 'vs_main'},
+      fragment: {module, entryPoint: 'fs_main', targets: [{format: this._simFormat}]},
+      primitive: {topology: 'triangle-list'}
+    });
+    return pipeline;
+  }
+
+  // Helper: create per-instance uniform buffers and bind groups for cached sim pipelines
+  _createSimPipelineBG() {
+    const createSimPipelineObj = (pipeline, uniformSize) => {
+      const uniformBuffer = this.device.createBuffer({
+        size: uniformSize,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+      });
+      const makeBG = (readView) => this.device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+          {binding: 0, resource: readView},
+          {binding: 1, resource: this.sampler},
+          {binding: 2, resource: {buffer: uniformBuffer}}
+        ]
+      });
+      return {
+        pipeline,
+        uniformBuffer,
+        bindGroups: [makeBG(this._physViews[0]), makeBG(this._physViews[1])]
+      };
+    };
+
+    this.dropPipeline = createSimPipelineObj(this._cachedSimPipelines.drop, 32);
+    this.updatePipeline = createSimPipelineObj(this._cachedSimPipelines.update, 16);
+    this.normalPipeline = createSimPipelineObj(this._cachedSimPipelines.normal, 16);
+    this.spherePipeline = createSimPipelineObj(this._cachedSimPipelines.sphere, 32);
+  }
+
+  // Helper: create per-instance surface bind groups (uses cached pipelines/layouts)
+  _createSurfaceBindGroups() {
+    this.modelBuffer = this.device.createBuffer({
+      label: "WaterSim Model Buff",
+      size: 96,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    const makeBG = (waterView) => this.device.createBindGroup({
+      layout: this.surfaceBindGroupLayout,
+      entries: [
+        {binding: 0, resource: {buffer: this.commonUniformBuffer}},
+        {binding: 1, resource: {buffer: this.modelBuffer}},
+        {binding: 2, resource: {buffer: this.lightUniformBuffer}},
+        {binding: 3, resource: {buffer: this.waterUniformBuffer}},
+        {binding: 4, resource: this.sampler},
+        {binding: 5, resource: waterView},
+        {binding: 6, resource: this.floorSampler},
+        {binding: 7, resource: this.floorTexture.createView()},
+        {binding: 8, resource: this.causticsTexture.createView()}
+      ]
+    });
+    this._surfaceBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
+  }
+
+  // Helper: create per-instance caustics bind groups (uses cached pipeline)
+  _createCausticsBindGroups() {
+    const makeBG = (waterView) => this.device.createBindGroup({
+      layout: this.causticsPipeline.getBindGroupLayout(0),
+      entries: [
+        {binding: 0, resource: {buffer: this.lightUniformBuffer}},
+        {binding: 1, resource: {buffer: this.waterUniformBuffer}},
+        {binding: 2, resource: this.sampler},
+        {binding: 3, resource: waterView}
+      ]
+    });
+    this._causticsBindGroups = [makeBG(this._physViews[0]), makeBG(this._physViews[1])];
   }
 
   useExternalGeometry(positionBuffer, indexBuffer, indexCount, indexFormat = 'uint32') {

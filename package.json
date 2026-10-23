@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "examples": "esbuild examples.js --bundle --outfile=public/examples.js --format=esm --watch",
+    "build:examples": "esbuild examples.js --bundle --minify --sourcemap --drop:console --target=es2022 --format=esm --outfile=public/examples.min.js",
     "android-tv-cast": "esbuild android-tv-cast.js --bundle --outfile=public/android-tv-cast.js --format=esm --watch",
     "jamb": "watchify ./examples/games/jamb/jamb.js -p [esmify --noImplicitAny] -o public/yacht.js",
     "demo1": "watchify demo1.js -p [esmify --noImplicitAny] -o public/app.js",
@@ -42,6 +43,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
     "@google/generative-ai": "^0.24.1",
+    "@mediapipe/face_mesh": "^0.4.1633559619",
+    "@mediapipe/pose": "^0.5.1675469404",
     "@mediapipe/tasks-vision": "^0.10.35",
     "bvh-loader": "1.1.0",
     "gl-matrix": "^3.4.4",
@@ -107,13 +110,20 @@
     "free-js-games-code",
     "open-source-games",
     "splat",
+    "CPU-culling",
+    "GPU-culling",
     "gaussian",
     "splat-point-color-animator",
     "splat-point-vertex-animator",
     "android-tv",
+    "android-tv-stream-render",
+    "remote-render",
     "cast-tv",
     "mediapipe",
     "mediapipe-hand",
-    "ai-code-creator"
+    "ai-code-creator",
+    "slot-simulator",
+    "dinamic-slot-game",
+    "construct-slot-machine"
   ]
 }
