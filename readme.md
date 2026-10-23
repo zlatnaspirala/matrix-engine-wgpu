@@ -70,6 +70,9 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
  
 https://github.com/user-attachments/assets/d7d647e4-2672-488f-a1c7-cf8706e34fd8
 
+## Navite hybrid port
+  Ported on android (used android studio) Page examples.html:
+ - https://play.google.com/store/apps/details?id=nikolalukic.beast.engine&pli=1
 
 
 ## Roadmap/sync to external parts

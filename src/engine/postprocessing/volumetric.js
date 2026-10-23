@@ -322,7 +322,7 @@ export class VolumetricPass {
 }
 
 export function fullscreenVertWGSL() {
-  return /* wgsl */`
+  return `
     @vertex
     fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
       var pos = array<vec2<f32>, 6>(
@@ -335,7 +335,7 @@ export function fullscreenVertWGSL() {
 }
 
 function marchFragWGSL() {
-  return /* wgsl */`
+  return `
   @group(0) @binding(0) var depthTex:   texture_depth_2d;
   @group(0) @binding(1) var shadowTex:  texture_depth_2d_array;
   @group(0) @binding(2) var cmpSamp:    sampler_comparison;
@@ -405,23 +405,18 @@ function marchFragWGSL() {
       let distToLight = length(p - /* lightPos */ vec3(0.0)); // needs light pos not dir
       let rangeAtten = clamp(1.0 - (distToLight / params.range), 0.0, 1.0);
       let rangeAtten2 = rangeAtten * rangeAtten;
-
       let s = trans * (1.0 - ext) * lit * params.scatterStrength * rangeAtten2 * f32(d > 0.0001);
-
-      // let s   = trans * (1.0 - ext) * lit * params.scatterStrength * f32(d > 0.0001);
 
       accum += s * lightColor.rgb;
       trans *= select(1.0, ext, d > 0.0001);
     }
 
     return vec4<f32>(accum, 1.0 - trans);
-  }
-  `;
+  }`;
 }
 
 function compositeFragWGSL() {
-  return /* wgsl */`
-
+  return `
   @group(0) @binding(0) var sceneTex: texture_2d<f32>;
   @group(0) @binding(1) var volTex:   texture_2d<f32>;
   @group(0) @binding(2) var samp:     sampler;
