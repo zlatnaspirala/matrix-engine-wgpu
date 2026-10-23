@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 2.0.0 Beta 2026 Alias `The beast`
+📅 Version: 2.0.0 Beta 2026 Alias `The Beast`
 
 ---
 
@@ -36,9 +36,7 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 - ✔️ Ammo.js, cannonES, Jolt and matter.js physics libs integration (app<->bridge<->worker).
      Physics use webworkers by default. Fixed crossOrigin worker.
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
-- ✔️ Bloom post processing.
-- ✔️ HZB post processing.
-- ✔️ Volumetric post processing.
+- ✔️ Bloom, HZB and Volumetric post processing.
 - ✔️ GPU Features: `texture-compression-bc` - (Not active by default).
 - ✔️ Scene Culling feature (see maze example for CPU Culling).
 - ✔️ Effects (sub draw system) Cached pipelines. Effect is standalone webgpu entity with own
@@ -69,6 +67,7 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 
  
 https://github.com/user-attachments/assets/d7d647e4-2672-488f-a1c7-cf8706e34fd8
+
 
 ## Navite hybrid port
   Ported on android (used android studio) Page examples.html:
