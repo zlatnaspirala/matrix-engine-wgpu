@@ -2,7 +2,7 @@ import {downloadMeshes} from "../../engine/loader-obj";
 import {uploadGLBModel} from "../../engine/loaders/webgpu-gltf";
 
 /**
- * @description
+ *
  * For now it is posible for editor to work on fly
  * with no memory/saves.
  */

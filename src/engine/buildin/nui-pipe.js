@@ -12,7 +12,7 @@
  **/
 
 /**
- * @description
+ *
  * @name PipeCommander
  * You can do whatever you want just leave header licence.
  * For The beast by default used most optimised variant of hand model also 

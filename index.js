@@ -2,7 +2,7 @@
  * This file created by:
  * @author Nikola Lukic 
  * @email zlatnaspirala@gmail.com mart 2024-2026
- * @description npm import/export sync with
+ * npm import/export sync with
  * @version 1.19.1
  */
 
@@ -17,7 +17,7 @@ import {
   touchCoordinate,
   rayIntersectsSphere2
 } from "./src/engine/raycast.js";
-import {byId, CameraPath, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER, vecOf} from "./src/engine/utils.js";
+import {byId, CameraPath, FullScreenManagerElement, getOrientation, isMobile, ORBIT, OSCILLATOR, randomFloatFromTo, randomIntFromTo, SWITCHER, vecOf} from "./src/engine/utils.js";
 import {uploadGLBModel} from "./src/engine/loaders/webgpu-gltf.js";
 import {MeshMorpher} from "./src/engine/procedural-mesh.js";
 import {CollisionSystem} from "./src/engine/collision-sub-system.js";
@@ -26,12 +26,12 @@ import {KaleidoscopeEffect, KaleidoscopePresets} from "./src/engine/effects/Kale
 import {PVector} from "./src/engine/matrix-class.js";
 import {MapCreator} from "./src/engine/buildin/map-creator/map-creator.js";
 import {ProjectileSystem} from './src/engine/procedures/fps-projectile.js';
-import {MobileDOM} from './src/engine/cameras.js';
+import {CinematicCamera, FirstPersonCamera, MobileDOM, PlaneCamera, RPGCamera, WASDCamera} from './src/engine/cameras.js';
 import {mb} from "./src/engine/utils.js";
 import {GenGeoTexture2} from "./src/engine/effects/gen-tex2.js";
 import {MatrixStream} from "./src/engine/networking/net.js";
-import {GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "./src/engine/effects/splat.js";
-import {initializeSpritesForMesh, SpritesPack2D} from "./src/engine/effects/sprite2d2.js";
+import {GaussianSplatLayer, GaussianSplatScene, SplatColorAnimator, SplatPositionAnimator} from "./src/engine/effects/splat.js";
+import {initializeSpritesForMesh, SpriteInstance, SpritesPack2D} from "./src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "./src/engine/procedures/InstancedKinematicOperations.js";
 import {followPath, loadNavMesh} from "./src/engine/buildin/navigation-plane/navigation.js";
 import {Player} from "./src/engine/plugin/player-object/player.js";
@@ -47,10 +47,14 @@ import {BVHSkeletal} from "./src/engine/loaders/raw-bvh-skeletal.js";
 import {ParticleActionEmitter} from './src/engine/effects/particles.js'
 import {AudioSplatFieldEffect} from "./src/engine/effects/reacte-audio.js";
 import {MatrixTTS} from "./src/engine/tts.js";
-// Deplace in future.
 import {EarthquakeEffect} from "./src/engine/effects/seismic.js";
 import {ExternalDataHandler} from "./src/engine/buildin/externalDataHandler/externalDataHandler.js";
 import {CoinGeckoAdapter} from "./src/engine/buildin/externalDataHandler/adapters/coingecko/coingecko.js";
+import {PointerEffect} from "./src/engine/effects/pointerEffect.js";
+import {MANABarEffect} from "./src/engine/effects/mana-bar.js";
+import {HPBarEffect} from "./src/engine/effects/energy-bar.js";
+import {FlameEffect} from "./src/engine/effects/flame.js";
+import {FlameEmitter} from "./src/engine/effects/flame-emmiter.js";
 
 export {
   MatrixEngineWGPU,
@@ -58,10 +62,19 @@ export {
   touchCoordinate,
   addRaycastsListener,
   ExternalDataHandler,
+  FlameEmitter,
+  FullScreenManagerElement,
+  GaussianSplatLayer,
+  FirstPersonCamera,
+  PlaneCamera,
+  RPGCamera,
   CoinGeckoAdapter,
+  SpriteInstance, // no example
+  WASDCamera,
   KaleidoscopeEffect,
   AudioSplatFieldEffect,
   EarthquakeEffect,
+  CinematicCamera,
   InstancedKinematicOperations,
   SpritesPack2D,
   GeometryFactory,
@@ -73,6 +86,10 @@ export {
   DragRotateController,
   SeismicPortalAdapter,
   ChartsEffect,
+  PointerEffect,
+  HPBarEffect,
+  FlameEffect,
+  MANABarEffect,
   rayIntersectsSphere2,
   byId,
   vecOf,

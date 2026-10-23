@@ -4,7 +4,7 @@ import {WebSocketServer} from "ws";
 import esbuild from "esbuild";
 
 /**
- * @description
+ *
  * Main EditorX backend script.
  * @note 
  * This is node.js script.

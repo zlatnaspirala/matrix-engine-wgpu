@@ -4,13 +4,14 @@ import MEMeshObjInstances from "../instanced/mesh-obj-instances.js";
 import {MEConfig} from "../../me-config.js";
 
 /**
- * @description
+ *
  * Skinning basic done animation can be changed with animation index.
  * Holder for GLB model with skinning.
  * @param {GLBModel} glb - Your loaded GLB
  * @param {Object} bvhBones - Mapping of boneName → BVH bone data
  * @param {GPUDevice} device - WebGPU device
- * @credits Chatgpt assist here.
+ * 
+ * Credits Chatgpt assist here.
  */
 export class BVHPlayerInstances extends MEMeshObjInstances {
   constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient, cameraBuffer) {

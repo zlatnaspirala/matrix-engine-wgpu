@@ -7,7 +7,7 @@ import {KaleidoscopeEmitter} from "../effects/kaleidoscopeEffectInstance";
 import {randomIntFromTo} from "../utils";
 
 /**
- * @description
+ *
  * ProjectileSystem — FPS projectile manager for the beast
  *
  * Two modes:

@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import {WebSocketServer} from "ws";
 
 /**
- * @description
+ *
  * NodeJS backend for the-beast-code-creator
  * @note
  * This is node.js script.

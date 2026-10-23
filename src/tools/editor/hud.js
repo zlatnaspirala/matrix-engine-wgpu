@@ -2,7 +2,7 @@ import {byId, FullscreenManager, isMobile, jsonHeaders, LOG_FUNNY_ARCADE, mb} fr
 import {openFragmentShaderEditor} from "./flexCodexShader.js";
 /**
  * @Author NIkola Lukic
- * @description
+ *
  * Web Editor for matrix-engine-wgpu alias EditorX
  * Using "file protocol" in direct way no virtual/syntetic assets
  */

@@ -1,7 +1,7 @@
 import {byId, isMobile, jsonHeaders, mb} from "../../../src/engine/utils.js";
 
 /**
- * @description This is clone from hang3d.
+ * This is clone from hang3d.
  * @author Nikola Lukic 
  * @email zlatnaspirala@gmail.com
  * @website https://maximumroulette.com

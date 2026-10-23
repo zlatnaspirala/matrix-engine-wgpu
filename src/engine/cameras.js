@@ -3,7 +3,7 @@ import {isMobile} from './utils';
 import {MEConfig} from '../me-config';
 
 /**
- * @description
+ *
  * Bitmask:
  * 1  = forward / W / ArrowUp
  * 2  = backward / S / ArrowDown

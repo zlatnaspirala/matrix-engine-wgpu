@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * The Beast 2.0.0
  * Indirect draws feature.
  */

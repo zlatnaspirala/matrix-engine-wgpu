@@ -3,7 +3,7 @@ import {byId} from "./src/engine/networking/matrix-stream";
 import {MatrixStream} from "./src/engine/networking/net";
 
 /**
- * @description
+ *
  * Who to port render stream to the android TV
  * This is androidTV part of application.
  */

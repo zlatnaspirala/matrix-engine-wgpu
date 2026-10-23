@@ -17,7 +17,6 @@ export class SpritesPack2D {
   _initSharedResources() {
     if(this.shared) return;
     const device = this.device;
-
     if(SpritesPack2D._pipelineCache.has(device)) {
       const cached = SpritesPack2D._pipelineCache.get(device);
       this.pipeline = cached.pipeline;
@@ -25,7 +24,6 @@ export class SpritesPack2D {
       this.spriteBindGroupLayout = cached.spriteBindGroupLayout;
     } else {
       const shaderModule = device.createShaderModule({code: SpriteInstance._getShaderCode()});
-
       // LAYOUTS
       this.cameraBindGroupLayout = device.createBindGroupLayout({
         entries: [
@@ -72,7 +70,6 @@ export class SpritesPack2D {
         depthStencil: {depthWriteEnabled: true, depthCompare: "less-equal", format: "depth24plus"}
       });
 
-      // ========== CACHE THEM ==========
       SpritesPack2D._pipelineCache.set(device, {
         pipeline: this.pipeline,
         cameraBindGroupLayout: this.cameraBindGroupLayout,
@@ -80,7 +77,6 @@ export class SpritesPack2D {
       });
     }
 
-    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
     const positions = new Float32Array([
       -1, -1, 0,
       1, -1, 0,
@@ -125,16 +121,9 @@ export class SpritesPack2D {
     };
   }
 
-  /**
-   * Register a spritesheet texture (can be shared across multiple sprites)
-   */
   async registerSpritesheet(name, imageSource, gridCols, gridRows) {
     const texture = await this._loadTexture(imageSource);
-    const sampler = this.device.createSampler({
-      magFilter: "nearest",
-      minFilter: "nearest",
-    });
-
+    const sampler = this.device.createSampler({magFilter: "nearest", minFilter: "nearest"});
     this.spriteSheets.set(name, {
       texture,
       textureView: texture.createView(),
@@ -143,13 +132,9 @@ export class SpritesPack2D {
       gridRows,
       totalFrames: gridCols * gridRows,
     });
-
     return this.spriteSheets.get(name);
   }
 
-  /**
-   * Create a new sprite using registered spritesheet
-   */
   createSprite(spriteName, spritesheetName, config = {}) {
     const sheet = this.spriteSheets.get(spritesheetName);
     if(!sheet) throw new Error(`Spritesheet "${spritesheetName}" not found`);
@@ -174,40 +159,27 @@ export class SpritesPack2D {
     return this.sprites.get(spriteName);
   }
 
-  /**
-   * Remove sprite
-   */
-  removeSprite(spriteName) {
-    this.sprites.delete(spriteName);
-  }
+  removeSprite(spriteName) {this.sprites.delete(spriteName)}
 
   _getDistance(sprite, cameraPosition) {
     // Extract the sprite's world position from its local matrix 
     // or store an explicit worldPosition property on the sprite.
     // Since you use localOffset in the sprite, we can use that:
     const spritePos = sprite.localOffset;
-
     const dx = spritePos[0] - cameraPosition[0];
     const dy = spritePos[1] - cameraPosition[1];
     const dz = spritePos[2] - cameraPosition[2];
-
     return dx * dx + dy * dy + dz * dz; // Squared distance is faster (no Math.sqrt)
   }
 
   render(pass, mesh, viewProjMatrix) {
     if(!this.enabled) return;
-
     let baseModelMatrix = mesh._modelMatrix;
-
-    // Update all sprites
     for(const [, sprite] of this.sprites) {
       sprite.updateInstanceData(baseModelMatrix);
     }
-
-
     // 1. Convert Map to Array
     const spriteArray = Array.from(this.sprites.values());
-
     // 2. Sort sprites by distance from camera 
     // (You need to calculate distance based on camera position)
     const cameraPosition = app.getCamera().position;
@@ -222,35 +194,17 @@ export class SpritesPack2D {
       if(!sheet) continue;
       sprite.draw(pass, viewProjMatrix, sheet);
     }
-
-    // // Draw all sprites
-    // for(const [, sprite] of this.sprites) {
-    //   const sheet = this.spriteSheets.get(sprite.spritesheetName);
-    //   if(!sheet) continue;
-    //   sprite.draw(pass, viewProjMatrix, sheet);
-    // }
   }
 
-  /**
-   * Cleanup
-   */
   destroy() {
-    for(const [, sprite] of this.sprites) {
-      sprite.destroy();
-    }
-    for(const [, sheet] of this.spriteSheets) {
-      sheet.texture.destroy();
-    }
+    for(const [, sprite] of this.sprites) {sprite.destroy()}
+    for(const [, sheet] of this.spriteSheets) {sheet.texture.destroy()}
     this.sprites.clear();
     this.spriteSheets.clear();
   }
 
-  /**
-   * Helper: Load image to texture
-   */
   async _loadTexture(imageSource) {
     let bitmap;
-
     if(typeof imageSource === "string") {
       const response = await fetch(imageSource);
       const blob = await response.blob();
@@ -294,7 +248,7 @@ export class SpritesPack2D {
 /**
  * SpriteInstance - Individual sprite with shared pipeline/texture
  */
-class SpriteInstance {
+export class SpriteInstance {
   constructor(device, format, colorFormat, cameraBuffer, sheet, spritesheetName, config = {}, shared) {
     this.device = device;
     this.format = format;
@@ -467,7 +421,6 @@ class SpriteInstance {
   }
 
   draw(pass) {
-    // pass.setPipeline(this.shared.pipeline);
     pass.setBindGroup(0, this.cameraBindGroup);
     pass.setBindGroup(1, this.spriteBindGroup);
     pass.setVertexBuffer(0, this.shared.vertexBuffer);
@@ -475,13 +428,6 @@ class SpriteInstance {
     pass.setIndexBuffer(this.shared.indexBuffer, "uint16");
     pass.drawIndexed(this.shared.indexCount);
   }
-
-  // destroy() {
-  //   this.vertexBuffer?.destroy();
-  //   this.uvBuffer?.destroy();
-  //   this.indexBuffer?.destroy();
-  //   this._spriteDataBuffer?.destroy();
-  // }
 
   setTargetRotation(x, y, z) {
     this._targetRotation[0] = x * this.DEG2RAD;
@@ -575,27 +521,9 @@ fn fsMain(input: VertexOutput) -> FragOut {
     vec4f(N, 0.0),
     vec4f(input.fragPos, 1.0)
   );
-}
-    `;
+}`;
   }
 }
-
-/**
- * Sprite Presets System - Top-level API
- * 
- * Similar to FlamePresets pattern:
- * - Define variations upfront
- * - Create multiple instances with different configs
- * - All controlled from high level
- */
-/**
- * Sprite Presets System - Top-level API
- * 
- * Similar to FlamePresets pattern:
- * - Define variations upfront
- * - Create multiple instances with different configs
- * - All controlled from high level
- */
 
 export const SpritePresets = {
   // Reel animations (slot machine)
@@ -855,7 +783,6 @@ export function createWavePattern(batch, spritesheetName, count = 8) {
  */
 function hslToRgb(h, s, l) {
   let r, g, b;
-
   if(s === 0) {
     r = g = b = l;
   } else {
@@ -867,7 +794,6 @@ function hslToRgb(h, s, l) {
       if(t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
       return p;
     };
-
     const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
     const p = 2 * l - q;
     r = hue2rgb(p, q, h + 1 / 3);
@@ -900,15 +826,8 @@ export function updateSpriteGroup(sprites, updates = {}) {
 
 export async function initializeSpritesForMesh(mesh, device, format, cameraBuffer, spritesheetPath, gridCols, gridRows, pattern = "pulsing",
   extraData = {waveCount: 50, radius: 10, count: 10, spacing: 5}) {
-  const batch = new SpritesPack2D(
-    device,
-    format,
-    format,
-    cameraBuffer
-  );
-
+  const batch = new SpritesPack2D(device, format, format, cameraBuffer);
   await batch.registerSpritesheet("reel", spritesheetPath, gridCols, gridRows);
-
   // Create sprite pattern based on choice
   switch(pattern) {
     case "matrix":

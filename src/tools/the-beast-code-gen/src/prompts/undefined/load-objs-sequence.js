@@ -3,7 +3,7 @@ import {downloadMeshes, makeObjSeqArg} from '../src/engine/loader-obj.js';
 import {LOG_MATRIX} from "../src/engine/utils.js";
 
 /**
- * @description
+ *
  * In this example we laso use optimisation flag
  *  MAX_BONES: 0
  * because this is morphing not skeletal animation.

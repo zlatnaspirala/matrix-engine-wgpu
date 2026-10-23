@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * MatrixEngine Raycaster
  **/
 import {mat4, vec3, vec4} from "wgpu-matrix";

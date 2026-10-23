@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * Matrix Engine WGPU
  * Hierarchical Z-Buffer Raytrace implementation.
  * Postprocessing implementation.
@@ -23,7 +23,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 }`;
 
 /**
- * @description
+ *
  * Copies depth attachment → r32float linear depth texture
  * One full-screen triangle dispatch before HZB build
 */

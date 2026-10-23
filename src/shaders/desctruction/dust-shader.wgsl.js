@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * Dust/Smoke Particle Shader (WGSL)
  * For Matrix-Engine-WGPU DestructionEffect
  * 

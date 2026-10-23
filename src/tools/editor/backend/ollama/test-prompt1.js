@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * This is special MEWGPU agent for generating app graphs.
  */
 export const SYSTEM_PROMPT =
@@ -1715,7 +1715,7 @@ export default {"nodes":{"node_1":{"id":"node_1","title":"onLoad","x":347.344602
 `;
 
 /**
- * @description
+ *
  * Adapted smarter version without big complex example.
  */
 export const SYSTEM_PROMPT_MINI = `You are a Visual Scripting Graph Generator.

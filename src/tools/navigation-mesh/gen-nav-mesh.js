@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * IMPORTANT this is not javascript browser code.
  * This is NODE.JS script.
  * @usage

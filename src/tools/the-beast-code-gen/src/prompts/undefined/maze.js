@@ -5,7 +5,7 @@ import {CollisionSystem} from '../src/engine/collision-sub-system.js';
 import {isMobile} from '../src/engine/utils.js';
 
 /**
- * @description
+ *
  * How to use culling scene optimisation.
  * U load 1352 cubes (scene objects)
  * If you wanna implement glb animations then remove 

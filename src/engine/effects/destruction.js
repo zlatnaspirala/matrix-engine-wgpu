@@ -1,6 +1,6 @@
 /**
  * @class DestructionEffect
- * @description Complete destruction effect with particle smoke/dust for MOBA
+ * Complete destruction effect with particle smoke/dust for MOBA
  * Matches Matrix-Engine-WGPU effect interface (like FlameEffect)
  * 
  * Features:

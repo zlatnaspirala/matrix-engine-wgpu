@@ -1,6 +1,6 @@
 
 /**
- * @description
+ *
  * GeometryFactory - can be reused for any level of pipeline integration.
  * It is already integrated with level of 'mewgpu effects subsystem'.
  */

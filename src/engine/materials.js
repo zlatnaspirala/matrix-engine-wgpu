@@ -21,7 +21,7 @@ import {fragmentDarkWGSL} from "../shaders/fragment.dark.wgsl";
 import {MEConfig} from "../me-config";
 import {fragmentHellWGSL} from "../shaders/shadertoy_source/fragment.wgsl";
 /**
- * @description
+ *
  * Created for matrix-engine-wgpu project. MeshObj class estends Materials.
  * @variable material is engine meta data variable not real material object.
  * @author Nikola Lukic
@@ -223,7 +223,7 @@ export default class Materials {
   }
 
   /**
-   * @description
+   *
    * Change ONLY base color texture (binding = 3)
    * Does NOT rebuild pipeline or layout
    **/

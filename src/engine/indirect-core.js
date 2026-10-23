@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * Matrix Engine WGPU
  * GPU based culling with combination with indirect draws.
  */

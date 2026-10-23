@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * Hero based classes
  * Core of MOBA type of game.
  */

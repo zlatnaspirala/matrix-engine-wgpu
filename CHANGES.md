@@ -2,7 +2,7 @@
 
 [2.0.0]
 
-- Removed esmify with esbuild. (fixed critical sec alert).
+- Removed esmify with esbuild. (fixed critical sec alerts).
 - Optimised "POST PROCESSING" allocation in repeating fns. Zero allocation.
 - Removed setInterval from camera class, better performance!
 - Added face mask NUI with mediapipe.

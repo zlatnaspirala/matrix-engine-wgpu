@@ -1,7 +1,7 @@
 import {byId} from "../utils";
 import * as poseModule from '@mediapipe/pose';
 /**
- * @description
+ *
  * SplatFaceEffect
  * Maps MediaPipe FaceLandmarker 478 landmarks into a splat point cloud.
  * Follows FlameEmitter interface:

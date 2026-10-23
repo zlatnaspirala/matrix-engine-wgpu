@@ -1134,7 +1134,7 @@ let forestOfHollowBloodStartSceen = new MatrixEngineWGPU({
     });
 
     /**
-     * @description
+     *
      * Important moment for sys browser stuff
      */
     function firstClick() {

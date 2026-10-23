@@ -11644,7 +11644,7 @@ var MEConfig = {
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() == true ? 256 : 512,
   MAX_BONES: isMobile() == true ? 70 : 100,
-  MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
+  MAX_SPOTLIGHTS: isMobile() == true ? 4 : 10,
   GPUCullingRad: 200,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
@@ -20360,7 +20360,7 @@ var Materials = class {
     return texture;
   }
   /**
-   * @description
+   *
    * Change ONLY base color texture (binding = 3)
    * Does NOT rebuild pipeline or layout
    **/
@@ -61125,15 +61125,9 @@ var SpritesPack2D = class _SpritesPack2D {
       indexCount: this.indexCount
     };
   }
-  /**
-   * Register a spritesheet texture (can be shared across multiple sprites)
-   */
   async registerSpritesheet(name2, imageSource, gridCols, gridRows) {
     const texture = await this._loadTexture(imageSource);
-    const sampler = this.device.createSampler({
-      magFilter: "nearest",
-      minFilter: "nearest"
-    });
+    const sampler = this.device.createSampler({ magFilter: "nearest", minFilter: "nearest" });
     this.spriteSheets.set(name2, {
       texture,
       textureView: texture.createView(),
@@ -61144,9 +61138,6 @@ var SpritesPack2D = class _SpritesPack2D {
     });
     return this.spriteSheets.get(name2);
   }
-  /**
-   * Create a new sprite using registered spritesheet
-   */
   createSprite(spriteName, spritesheetName, config = {}) {
     const sheet = this.spriteSheets.get(spritesheetName);
     if (!sheet) throw new Error(`Spritesheet "${spritesheetName}" not found`);
@@ -61169,9 +61160,6 @@ var SpritesPack2D = class _SpritesPack2D {
   getSprite(spriteName) {
     return this.sprites.get(spriteName);
   }
-  /**
-   * Remove sprite
-   */
   removeSprite(spriteName) {
     this.sprites.delete(spriteName);
   }
@@ -61201,9 +61189,6 @@ var SpritesPack2D = class _SpritesPack2D {
       sprite.draw(pass, viewProjMatrix, sheet);
     }
   }
-  /**
-   * Cleanup
-   */
   destroy() {
     for (const [, sprite] of this.sprites) {
       sprite.destroy();
@@ -61214,9 +61199,6 @@ var SpritesPack2D = class _SpritesPack2D {
     this.sprites.clear();
     this.spriteSheets.clear();
   }
-  /**
-   * Helper: Load image to texture
-   */
   async _loadTexture(imageSource) {
     let bitmap;
     if (typeof imageSource === "string") {
@@ -61412,12 +61394,6 @@ var SpriteInstance = class {
     pass.setIndexBuffer(this.shared.indexBuffer, "uint16");
     pass.drawIndexed(this.shared.indexCount);
   }
-  // destroy() {
-  //   this.vertexBuffer?.destroy();
-  //   this.uvBuffer?.destroy();
-  //   this.indexBuffer?.destroy();
-  //   this._spriteDataBuffer?.destroy();
-  // }
   setTargetRotation(x3, y3, z2) {
     this._targetRotation[0] = x3 * this.DEG2RAD;
     this._targetRotation[1] = y3 * this.DEG2RAD;
@@ -61508,8 +61484,7 @@ fn fsMain(input: VertexOutput) -> FragOut {
     vec4f(N, 0.0),
     vec4f(input.fragPos, 1.0)
   );
-}
-    `;
+}`;
   };
 };
 var SpritePresets = {
@@ -61759,12 +61734,7 @@ function hslToRgb(h2, s2, l2) {
   return [r3, g2, b2];
 }
 async function initializeSpritesForMesh(mesh, device2, format, cameraBuffer, spritesheetPath, gridCols, gridRows, pattern = "pulsing", extraData = { waveCount: 50, radius: 10, count: 10, spacing: 5 }) {
-  const batch = new SpritesPack2D(
-    device2,
-    format,
-    format,
-    cameraBuffer
-  );
+  const batch = new SpritesPack2D(device2, format, format, cameraBuffer);
   await batch.registerSpritesheet("reel", spritesheetPath, gridCols, gridRows);
   switch (pattern) {
     case "matrix":

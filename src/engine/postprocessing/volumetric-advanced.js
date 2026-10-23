@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * AdvancedVolumetricPass - High-performance volumetric lighting for mobile & desktop
  * Mobile-first optimization: Adaptive quality, texture projection, compute-friendly shader
  *

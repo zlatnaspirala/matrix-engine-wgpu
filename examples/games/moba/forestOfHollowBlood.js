@@ -16,7 +16,7 @@ import {RCSAccount} from "./rocket-crafting-account.js";
 import {en} from "../../../public/res/multilang/en-backup.js";
 
 /**
- * @description
+ *
  * This is main root dep file.
  * All start from here.
  * @Note

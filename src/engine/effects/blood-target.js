@@ -3,7 +3,7 @@ import {randomFloatFromTo} from "../utils";
 import {bloodBurstShader} from "../../shaders/blood/blood-target";
 
 /**
- * @description
+ *
  * BloodBurst
  * one-shot particle pool, gravity+drag integration, alpha fade lifetime
  */

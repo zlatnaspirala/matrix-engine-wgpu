@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * Flux Codex Vertex use visual scripting model.
  *
  * @filename

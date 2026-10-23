@@ -5,7 +5,7 @@ import {geometryTypes} from "../../geometry-factory";
 import {isMobile, MeshType, randomIntFromTo} from "../../utils";
 /**
  * MapCreator — Map generator for matrix-engine-wgpu (the beast)
- * @description
+ *
  * Claude assist. Adapted for MEGPU engine.
  * 
  * Architecture primitives:
@@ -28,7 +28,7 @@ import {isMobile, MeshType, randomIntFromTo} from "../../utils";
 export class MapCreator {
   /**
    * @param {object} engine   — MatrixEngineWGPU instance
-   * @param {object} mesh     — pre-loaded cube OBJ mesh (m.cube)
+   * @param {object} m     — pre-loaded cube OBJ mesh (m.cube)
    * @param {object} collision — CollisionSystem instance
    * @param {object} [opts]
    * @param {string} [opts.wallTexture]   — path to wall texture

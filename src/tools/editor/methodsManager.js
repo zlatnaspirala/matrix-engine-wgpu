@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * MethodsManager only for web editor jobs.
  * @author Nikola Lukic
  * @email zlatnaspirala@gmail.com

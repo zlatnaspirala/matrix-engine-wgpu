@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * Matrix-Engine-Wgpu Curve Editor
  */
 
@@ -697,7 +697,7 @@ export class CurveEditor {
 }
 
 /**
- * @description
+ *
  * Data class
  **/
 

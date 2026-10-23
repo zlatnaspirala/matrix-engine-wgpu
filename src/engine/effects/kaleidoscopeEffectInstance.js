@@ -3,7 +3,7 @@ import {kaleidoscopeEffectInstance} from "../../shaders/kale/kale.wgsl";
 import {LOG_FUNNY_ARCADE, randomFloatFromTo, randomIntFromTo} from "../utils";
 
 /**
- * @description
+ *
  * KaleidoscopeEmitter
  * procedural kaleidoscope particles with vertex animation.
  */

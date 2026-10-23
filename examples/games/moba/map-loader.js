@@ -7,7 +7,7 @@ import NavMesh from "./nav-mesh.js";
 import {creepPoints, startUpPositions} from "./static.js";
 
 /**
- * @description
+ *
  * Map Loader controls first light
  */
 export class MEMapLoader {

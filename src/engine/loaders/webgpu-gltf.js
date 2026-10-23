@@ -1,6 +1,6 @@
 /**
  * @author Nikola Lukic zlatnaspirala
- * @description
+ *
  * Importer is adapted for matrix-engine-wgpu.
  * Improved - Fix children empty array.
  * Access to json raw data.

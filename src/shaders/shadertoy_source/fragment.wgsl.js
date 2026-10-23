@@ -1,6 +1,6 @@
 import {MEConfig} from "../../me-config";
 /**
- * @description
+ *
  * Dont remove link of origin source.
  * Original source:
  * https://www.shadertoy.com/view/4ttGWM

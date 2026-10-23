@@ -1,8 +1,7 @@
 /**
  * @author Nikola Lukic
- * @email zlatnaspirala@gmail.com
- * @www maximumroulette.com
- * @description For audio voice Best way is 
+ * 
+ * For audio voice Best way is 
  * to use browser buildin TTS speech API
  * It is so good like paid services on internet.
  */

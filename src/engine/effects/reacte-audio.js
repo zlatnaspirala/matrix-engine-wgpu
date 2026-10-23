@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * AudioSplatFieldEffect
  * Standalone audio-reactive point-cloud driver. 1000-point topology by default.
  * Does NOT touch EarthquakeEffect, AudioSplatEffect, or any other effect class.

@@ -253,7 +253,7 @@ var Ajax = function () {
  *
  * @param {Function} completionCallback should contain a function that will take one parameter: an object array where the keys will be the unique object name and the value will be a Mesh object
  *
- * @param {Object} meshes In case other meshes are loaded separately or if a previously declared variable is desired to be used, pass in a (possibly empty) json object of the pattern: { '<mesh_name>': OBJ.Mesh }
+ * @param {Object} inputArg 
  *
  */
 export var downloadMeshes = function (nameAndURLs, completionCallback, inputArg) {
@@ -390,7 +390,7 @@ export var initMeshBuffers = function (gl, mesh) {
 };
 
 /**
- * @description
+ *
  * Construct sequence list argument for downloadMeshes.
  * This is adaptation for blender obj animation export.
  * For example:
@@ -463,7 +463,7 @@ export const makeObjSeqArg = (arg) => {
 }
 
 /**
- * @description
+ *
  * Switching obj seq animations frames range.
  */
 export function play (nameAni) {

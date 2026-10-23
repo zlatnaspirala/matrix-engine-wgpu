@@ -1,7 +1,7 @@
 import {degToRad, radToDeg} from "./utils";
 
 /**
- * @description
+ *
  * Sub classes for matrix-engine-wgpu
  * Base class
  * Position { x, y, z }

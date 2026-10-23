@@ -28,14 +28,13 @@ export let loadBVH = (path) => {
 }
 
 /**
- * @description
+ * @author Nikola Lukic
  * Skinning basic done animation can be changed with animation index.
  * Holder for GLB model with skinning.
  * @param {GLBModel} glb - Your loaded GLB
  * @param {Object} bvhBones - Mapping of boneName → BVH bone data
  * @param {GPUDevice} device - WebGPU device
- * @credits Claude&Chatgpt assist here.
- * @author Nikola Lukic
+ * Credits Claude&Chatgpt assist here.
  */
 export class BVHPlayer extends MEMeshObj {
   constructor(o, bvh, glb, primitiveIndex, skinnedNodeIndex, canvas, device, context, inputHandler, globalAmbient) {

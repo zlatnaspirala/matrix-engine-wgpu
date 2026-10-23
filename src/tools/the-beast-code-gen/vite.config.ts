@@ -3,7 +3,7 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 /**
- * @description
+ *
  * You must change 'publicDir' if you use code-creator out of engine git repo.
  * This is just path to the standard public folder of engine project.
  */

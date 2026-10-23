@@ -14,7 +14,7 @@ import {MatrixTTS} from '../moba/tts.js';
 import {mapParams} from './table-params.js';
 
 /**
- * @description
+ *
  * This is First Person Shooter demo.
  * Free for commercials - no need to republish source but
  * need to have all references.

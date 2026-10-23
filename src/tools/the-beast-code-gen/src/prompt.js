@@ -1,11 +1,11 @@
 /**
- * @description
+ *
  * This is special MEWGPU agent for generating project code.
  * @author Nikola Lukic
  * @year 2026
  */
 /**
- * @description
+ *
  * This is special MEWGPU agent for generating project code.
  * @author Nikola Lukic
  * @year 2026

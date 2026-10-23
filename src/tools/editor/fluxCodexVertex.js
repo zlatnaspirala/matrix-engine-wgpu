@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * Flux Codex Vertex use visual scripting model.
  * It is pragmatic and intuitive.
  * Avoid casting with adaptive expectation logic.

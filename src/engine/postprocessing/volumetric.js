@@ -1,5 +1,5 @@
 /**
- * @description
+ *
  * VolumetricPass class for matrix-engine-wgpu
  * Matches BloomPass architecture — drop-in standalone pass.
  *
@@ -7,11 +7,11 @@
  *   volumetricPass.render(encoder, sceneTextureView, mainDepthView, shadowArrayView, camera, light)
  *   bloomPass.render(encoder, volumetricPass.compositeOutputTex.createView(), bloomOutputTex)
  *
- * @setDensity         - fog density (default 0.03)
- * @setSteps           - ray march steps (default 32)
- * @setLightColor      - RGB light scattering color
- * @setScatterStrength - how bright the scattering is
- * @setHeightFalloff   - how fast fog fades with height
+ * setDensity         - fog density (default 0.03)
+ * setSteps           - ray march steps (default 32)
+ * setLightColor      - RGB light scattering color
+ * setScatterStrength - how bright the scattering is
+ * setHeightFalloff   - how fast fog fades with height
  */
 
 export class VolumetricPass {

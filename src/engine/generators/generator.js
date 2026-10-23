@@ -13,7 +13,7 @@ export function stabilizeTowerBody(body, root) {
 }
 
 /**
- * @description Generator can be used also from visual scripting.
+ * Generator can be used also from visual scripting.
  * Work only for physics bodie variant.
  * @param {string} material 
  * @enum "standard", "power", "mirror"
@@ -89,7 +89,7 @@ export async function physicsBodiesGenerator(
 }
 
 /**
- * @description Generate a wall of physics cubes
+ * Generate a wall of physics cubes
  * @param {string} material
  * @param {object} pos        starting position {x,y,z}
  * @param {object} rot
@@ -187,7 +187,7 @@ export function physicsBodiesGeneratorWall(
 }
 
 /**
- * @description Generate a pyramid of physics cubes
+ * Generate a pyramid of physics cubes
  * @param {object} pos       base position {x,y,z}
  * @param {object} rot
  * @param {string} texturePath
@@ -253,7 +253,7 @@ export function physicsBodiesGeneratorPyramid(
 }
 
 /**
- * @description Generate a full 3D pyramid of physics cubes
+ * Generate a full 3D pyramid of physics cubes
  * @param {object} pos       base position {x,y,z}
  * @param {object} rot
  * @param {string} texturePath

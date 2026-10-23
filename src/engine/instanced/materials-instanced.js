@@ -16,7 +16,7 @@ import {fragmentWaterWGSL} from "../../shaders/water/water-c.wgls";
 import {MaterialBindGroupCache} from "../pipelineManager";
 
 /**
- * @description
+ *
  * Created for matrix-engine-wgpu project.
  * MeshObj class estends Materials.
  * @var material is engine meta data variable not real material object.

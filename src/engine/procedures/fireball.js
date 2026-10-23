@@ -1,7 +1,7 @@
 import {uploadGLBModel} from "../loaders/webgpu-gltf";
 
 /**
- * @description
+ *
  * This is special agnostics class for MOBA template.
  */
 export class FireballSystem {

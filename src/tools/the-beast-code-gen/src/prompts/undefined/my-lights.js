@@ -4,7 +4,7 @@ import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
 import {CameraPath, isMobile, ORBIT} from '../src/engine/utils.js';
 
 /**
- * @description
+ *
  * This is example for `addGlbObjInctance`
  * One of most adviced scene objects in mewgpu vs 
  * lights updated. You can move manually light

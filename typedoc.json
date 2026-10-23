@@ -6,6 +6,14 @@
   "includeVersion": true,
   "searchInComments": true,
 
+  "intentionallyNotExported": [
+    "BVHPlayer", "BVHPlayerInstances", "__function", "GLBModel",
+    "VolumetricPass", "TextureCache", "AdvancedVolumetricPass",
+    "SSRPass", "PhysicsBridge", "MatrixSounds", "MultiLang",
+    "IndirectRenderingManager", "GPUCapabilities", "CulledRenderPass",
+    "ComputeCullingSystem", "BloomPass", "AudioAssetManager",
+    "default", "Editor"],
+
   "compilerOptions": {
     "allowJs": true,
     "checkJs": false,

@@ -2,7 +2,7 @@ import {mat4} from "wgpu-matrix";
 import {LOG_WARN} from "../utils";
 
 /**
- * @description
+ *
  * CPU Culling still present and default.
  */
 

@@ -7,7 +7,7 @@ import {isMobile} from './utils';
 import {MEConfig} from '../me-config';
 
 /**
- * @description
+ *
  * Spot light with shadow cast.
  * Optimized: dirty-flag pattern for VP matrix and light buffer.
  * writeBuffer for lightVPBuffer is deferred — called from updateLights only when dirty.

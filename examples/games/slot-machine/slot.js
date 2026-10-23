@@ -11,7 +11,7 @@ import {SlotReel} from "./reel.js";
 import {SlotGame} from "./state.js";
 
 /**
- * @description
+ *
  * Add your domain where you have installer or runned "slot-simulator" application.
  * Add you machine ID created from "slot-simulator".
  */

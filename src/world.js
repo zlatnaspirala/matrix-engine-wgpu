@@ -39,7 +39,7 @@ import {GPUIndirectDraws} from "./engine/overrides/GPUCulling.js";
 import {AdvancedVolumetricPass} from "./engine/postprocessing/volumetric-advanced.js";
 
 /**
- * @description
+ *
  * Main engine root class.
  * @author Nikola Lukic 2026
  * @email zlatnaspirala@gmail.com

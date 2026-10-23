@@ -1,13 +1,12 @@
 /**
- * @description 
  * Bloom class for matrix-engine-wgpu
  * Zero allocation in reapeating fns.
  * @public
  * 
- * @setKnee
- * @setIntensity
- * @setThreshold
- * @setBlurRadius
+ * setKnee
+ * setIntensity
+ * setThreshold
+ * setBlurRadius
  */
 
 export class BloomPass {

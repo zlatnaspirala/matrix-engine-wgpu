@@ -90,7 +90,7 @@ export function createAppEvent(name, myDetails) {
 }
 
 /**
- * @description
+ *
  * Load script in runtime.
  */
 export var scriptManager = {
@@ -761,7 +761,7 @@ export function setupCanvasFilters(canvasId) {
 }
 
 /**
- * @description
+ *
  * // Save an object
     Storage.set('playerData', { name: 'Slayzer', hp: 120, mana: 80 });
 

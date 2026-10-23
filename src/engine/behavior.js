@@ -1,7 +1,7 @@
 import {OSCILLATOR} from "./utils";
 
 /**
- * @description
+ *
  * Can be reuse for any other tasks.
  * @author Nikola Lukic
  */
