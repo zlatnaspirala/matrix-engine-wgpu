@@ -23,7 +23,27 @@ export class VolumetricPass {
     this.volumetricTex = this._createTexture(width, height);
     this.volumetricTexView = this.volumetricTex.createView();
     this.sceneView = sceneView;
-    // Linear sampler — composite pass
+
+    this._marchPassDesc = {
+      label: 'march',
+      colorAttachments: [{
+        view: null,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: {r: 0, g: 0, b: 0, a: 0}
+      }]
+    };
+
+    this._compositePassDesc = {
+      label: 'composite',
+      colorAttachments: [{
+        view: null,
+        loadOp: 'clear',
+        storeOp: 'store',
+        clearValue: {r: 0, g: 0, b: 0, a: 0}
+      }]
+    };
+
     this.sampler = device.createSampler({
       label: 'VolumetricPass.linearSampler',
       magFilter: 'linear',
@@ -288,16 +308,18 @@ export class VolumetricPass {
     this._lightDir[2] = light.direction[2];
     this._lightDir[3] = 0.0;
     this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
+    this.setMarchInputs(depthView, shadowArrayView);
     {
-      const pass = this._beginPass(encoder, this.volumetricTexView, 'march');
+      this._marchPassDesc.colorAttachments[0].view = this.volumetricTexView;
+      const pass = encoder.beginRenderPass(this._marchPassDesc);
       pass.setPipeline(this.marchPipeline);
-      this.setMarchInputs(depthView, shadowArrayView);
       pass.setBindGroup(0, this._marchBG);
       pass.draw(6);
       pass.end();
     }
     {
-      const pass = this._beginPass(encoder, this.compositeOutputTexView, 'composite');
+      this._compositePassDesc.colorAttachments[0].view = this.compositeOutputTexView;
+      const pass = encoder.beginRenderPass(this._compositePassDesc);
       pass.setPipeline(this.compositePipeline);
       pass.setBindGroup(0, this._compositeBG);
       pass.draw(6);
