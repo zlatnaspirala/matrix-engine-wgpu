@@ -14940,7 +14940,6 @@ var FirstPersonCamera = class _FirstPersonCamera {
     }
   }
   _handleKeyDown(e2) {
-    console.log("key", e2.code, this._digital);
     if (e2.code === "Space") {
       if (window.app?.collisionSystem?._onGround) {
         window.app.collisionSystem._gravityAcc = 0.22;

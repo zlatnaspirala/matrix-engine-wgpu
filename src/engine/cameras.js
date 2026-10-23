@@ -1220,7 +1220,6 @@ export class FirstPersonCamera {
   }
 
   _handleKeyDown(e) {
-    console.log('key', e.code, this._digital);
     if(e.code === 'Space') {
       if(window.app?.collisionSystem?._onGround) {
         window.app.collisionSystem._gravityAcc = 0.22;
@@ -1228,7 +1227,6 @@ export class FirstPersonCamera {
         this._jumpVelocity = 1;
         this._dirtyAngle = true;
       }
-      // return;
     }
     const bit = this._getKeyBit(e.code);
     if(bit !== 0) {this._digital |= bit;}
