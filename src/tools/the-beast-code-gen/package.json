@@ -18,7 +18,7 @@
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "matrix-engine-wgpu": "^1.18.7",
-    "vite": "^6.2.3",
+    "vite": "^6.4.5",
     "fs": "^0.0.1-security",
     "ollama": "^0.6.3",
     "path": "^0.12.7",
@@ -33,7 +33,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.4.5"
   },
   "overrides": {
     "postcss": "8.5.18"
