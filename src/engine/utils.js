@@ -553,7 +553,7 @@ export let mb = {
   c: 0, ic: 0, t: {},
   setContent: function(content, t) {
     var iMsg = document.createElement('div');
-    iMsg.innerHTML = content;
+    iMsg.textContent = String(content);
     iMsg.id = `msgbox-loc-${mb.c}`;
     mb.root().appendChild(iMsg);
     iMsg.classList.add('animate1')
