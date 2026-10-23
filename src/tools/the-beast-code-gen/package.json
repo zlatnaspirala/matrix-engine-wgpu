@@ -16,7 +16,7 @@
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "dotenv": "^17.2.3",
-    "express": "^4.21.2",
+    "express": "^4.22.3",
     "matrix-engine-wgpu": "^1.18.7",
     "vite": "^6.4.5",
     "fs": "^0.0.1-security",
