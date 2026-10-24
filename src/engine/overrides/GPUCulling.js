@@ -50,6 +50,7 @@ export async function GPUIndirectDraws() {
     }
     //PER MESH
     const len = this.mainRenderBundle.length;
+    let drawCount = 0;
     for(let i = 0;i < len;i++) {
       const mesh = this.mainRenderBundle[i];
       mesh.updateInstanceData?.(mesh.modelMatrix);
@@ -67,37 +68,43 @@ export async function GPUIndirectDraws() {
         }
       }
 
-      this.computeCulling.setMeshDrawCommand(i, mesh.indexCount, mesh.instanceCount);
-
-      // const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
-      // if(mesh.instanceData) {
-      //   for(let j = 0;j < mesh.instanceCount;j++) {
-      //     const globalIdx = mesh.globalInstanceIndex + j;
-      //     const strideOffset = j * mesh.floatsPerInstance;
-      //     const worldPos = vec3.fromValues(
-      //       mesh.instanceData[strideOffset + 12],
-      //       mesh.instanceData[strideOffset + 13],
-      //       mesh.instanceData[strideOffset + 14]
-      //     );
-      //     const radius = mesh.boundingSphere?.radius || 1.0;
-      //     this.computeCulling.updateInstance(globalIdx, worldPos, radius, meshIndex);
-      //   }
-      // } else {
-      //   const worldPos = mesh.modelMatrix.slice(12, 15);
-      //   const radius = mesh.boundingSphere?.radius || 1.0;
-      //   this.computeCulling.updateInstance(mesh.globalInstanceIndex, worldPos, radius, meshIndex);
-      // }
+      const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex ?? i;
+      if(drawIndex >= this.computeCulling.maxDrawCalls) continue;
+      const instanceCount = mesh.instanceCount || 1;
+      let center, radius = mesh.boundingSphere?.radius || 1.0;
+      mesh.updateBoundingSphere?.();
+      const instanceData = mesh.instanceData;
+      const stride = mesh.floatsPerInstance || 20;
+      if(instanceData && instanceCount > 1 && instanceData.length >= instanceCount * stride) {
+        let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+        for(let j = 0;j < instanceCount;j++) {
+          const o = j * stride + 12;
+          minX = Math.min(minX, instanceData[o]); maxX = Math.max(maxX, instanceData[o]);
+          minY = Math.min(minY, instanceData[o + 1]); maxY = Math.max(maxY, instanceData[o + 1]);
+          minZ = Math.min(minZ, instanceData[o + 2]); maxZ = Math.max(maxZ, instanceData[o + 2]);
+        }
+        center = [(minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5];
+        radius = 0;
+        for(let j = 0;j < instanceCount;j++) {
+          const o = j * stride;
+          const dx = instanceData[o + 12] - center[0], dy = instanceData[o + 13] - center[1], dz = instanceData[o + 14] - center[2];
+          const sx = Math.hypot(instanceData[o], instanceData[o + 1], instanceData[o + 2]);
+          const sy = Math.hypot(instanceData[o + 4], instanceData[o + 5], instanceData[o + 6]);
+          const sz = Math.hypot(instanceData[o + 8], instanceData[o + 9], instanceData[o + 10]);
+          radius = Math.max(radius, Math.hypot(dx, dy, dz) + (mesh.boundingSphere?.radius || 1.0) * Math.max(sx, sy, sz));
+        }
+      } else {
+        const matrix = mesh.modelMatrix || mesh._modelMatrix;
+        center = mesh.boundingSphere?.center || [matrix?.[12] ?? mesh.position.x ?? 0, matrix?.[13] ?? mesh.position.y ?? 0, matrix?.[14] ?? mesh.position.z ?? 0];
+      }
+      this.computeCulling.setMeshDrawCommand(drawIndex, mesh.indexCount, instanceCount);
+      this.computeCulling.updateInstance(drawIndex, center, radius, drawIndex);
+      drawCount = Math.max(drawCount, drawIndex + 1);
     }
 
     this.computeCulling.flushIndirectBuffer();
-    this.computeCulling.flushInstances();
-    // await this.computeCulling.execute(
-    //   commandEncoder,
-    //   camera.view,
-    //   camera.projectionMatrix,
-    //   camera.position,
-    //   10.0
-    // );
+    this.computeCulling.flushInstances(drawCount);
+    await this.computeCulling.execute(commandEncoder, camera.view, camera.projectionMatrix, camera.position, drawCount, 500.0);
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
