@@ -23,7 +23,7 @@ test-npm/**/*
 test-npm/
 src/tools/the-beast-code-gen/**/*
 non-project-files/**/*
-
+src/tools/editor/backend/node_modules/**/*
 public/mediapipe/wasm/**/*
 public/moba-game.html
 public/moba-game.js
