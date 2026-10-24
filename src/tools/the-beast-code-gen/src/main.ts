@@ -275,10 +275,19 @@ function extractPureJS(detail: any): string {
 
   // If HTML structure present, extract content from <script> tags
   if(code.includes('<script')) {
-    const scriptMatches=code.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
-    if(scriptMatches&&scriptMatches.length>0) {
-      const scripts=scriptMatches.map(s => s.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '').trim());
-      return scripts.join('\n\n');
+    try {
+      const doc=new DOMParser().parseFromString(code, 'text/html');
+      const scriptNodes=Array.from(doc.querySelectorAll('script'));
+      if(scriptNodes.length>0) {
+        const scripts=scriptNodes
+          .map(node => (node.textContent||'').trim())
+          .filter(Boolean);
+        if(scripts.length>0) {
+          return scripts.join('\n\n');
+        }
+      }
+    } catch {
+      // Fall through to existing cleanup logic if parsing fails
     }
   }
 
