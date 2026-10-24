@@ -95,7 +95,7 @@ export async function GPUIndirectDraws() {
         }
       } else {
         const matrix = mesh.modelMatrix || mesh._modelMatrix;
-        center = mesh.boundingSphere?.center || [matrix?.[12] ?? mesh.position.x ?? 0, matrix?.[13] ?? mesh.position.y ?? 0, matrix?.[14] ?? mesh.position.z ?? 0];
+        center = mesh.boundingSphere?.center || [matrix?.[12] ?? mesh.position?.x ?? 0, matrix?.[13] ?? mesh.position?.y ?? 0, matrix?.[14] ?? mesh.position?.z ?? 0];
       }
       this.computeCulling.setMeshDrawCommand(drawIndex, mesh.indexCount, instanceCount);
       this.computeCulling.updateInstance(drawIndex, center, radius, drawIndex);
