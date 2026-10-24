@@ -656,8 +656,8 @@ export class RPGCamera {
 
   _detachedFromFollow = false;
   _digital = {forward: false, backward: false, left: false, right: false};
-  _keyInterval = null;
-  KEYBOARD_SPEED = 4.5;
+  _lastMoveSceneTime = undefined;
+  KEYBOARD_SPEED = 7.5;
 
   mousRollInAction = false;
 
@@ -742,50 +742,54 @@ export class RPGCamera {
     return out;
   }
 
-  _applyDigitalMovement() {
+  _applyDigitalMovement(sceneTime) {
     const d = this._digital;
+    if(this.followMe?.inMove === true) this._dirtyAngle = true;
+    if(!d.forward && !d.backward && !d.left && !d.right) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    if(this._lastMoveSceneTime === undefined) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    let dt = sceneTime - this._lastMoveSceneTime;
+    this._lastMoveSceneTime = sceneTime;
+    if(dt <= 0) return;
+    if(dt > 0.1) dt = 0.1;
     let vx = 0, vz = 0;
-
     if(d.forward) {vx -= this.back[0]; vz -= this.back[2];}
     if(d.backward) {vx += this.back[0]; vz += this.back[2];}
     if(d.right) {vx += this.right[0]; vz += this.right[2];}
     if(d.left) {vx -= this.right[0]; vz -= this.right[2];}
-
     const len = Math.sqrt(vx * vx + vz * vz);
     if(len < 0.0001) return;
-
-    const s = this.KEYBOARD_SPEED / len;
+    const s = this.KEYBOARD_SPEED * (dt / 0.016) / len;
     this.position[0] += vx * s;
     this.position[2] += vz * s;
-
     this._dirty = true;
+    this._dirtyAngle = true;
   }
 
   _setupKeyboard() {
     const setDigital = (e, value) => {
+      const d = this._digital;
+      const wasAnyDown = d.forward || d.backward || d.left || d.right;
       switch(e.code) {
-        case 'KeyW': this._digital.forward = value; break;
-        case 'KeyS': this._digital.backward = value; break;
-        case 'KeyA': this._digital.left = value; break;
-        case 'KeyD': this._digital.right = value; break;
-        case 'ArrowUp': this._digital.forward = value; break;
-        case 'ArrowDown': this._digital.backward = value; break;
-        case 'ArrowLeft': this._digital.left = value; break;
-        case 'ArrowRight': this._digital.right = value; break;
+        case 'KeyW': case 'ArrowUp': d.forward = value; break;
+        case 'KeyS': case 'ArrowDown': d.backward = value; break;
+        case 'KeyA': case 'ArrowLeft': d.left = value; break;
+        case 'KeyD': case 'ArrowRight': d.right = value; break;
+        default: return;
       }
-
-      if(value && this._keyInterval === null) {
+      const anyDown = d.forward || d.backward || d.left || d.right;
+      if(value && !wasAnyDown) {
         this._detachedFromFollow = true;
-        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
-      } else {
-        const d = this._digital;
-        if(!d.forward && !d.backward && !d.left && !d.right) {
-          clearInterval(this._keyInterval);
-          this._keyInterval = null;
-        }
+        this._lastMoveSceneTime = undefined;
+      } else if(!anyDown) {
+        this._lastMoveSceneTime = undefined;
       }
     };
-
     window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
     window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
   }
@@ -803,6 +807,7 @@ export class RPGCamera {
         this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
         this._dirty = true;
+        this._dirtyAngle = true;
       });
       this._setupKeyboard();
     } else {
@@ -914,11 +919,10 @@ export class RPGCamera {
 
   update() {
     this._updateFollow();
-
-    if(!this._dirty) return;
-
+    if(!this._dirty) {this._dirtyAngle = false; return;}
     this._recalculateViewVP();
     this._dirty = false;
+    this._dirtyAngle = false;
   }
 }
 
@@ -1864,7 +1868,7 @@ export class Camera2DOrthogonaly {
   smoothFactor = 0.12;
   _detachedFromFollow = false;
   _digital = {forward: false, backward: false, left: false, right: false};
-  _keyInterval = null;
+  _lastMoveSceneTime = undefined;
   KEYBOARD_SPEED = 4.5;
   // set after construction if you want WASD → worker velocity
   // cam._bridge = physicsBridge;  cam._followBodyId = bodyId;
@@ -1930,31 +1934,42 @@ export class Camera2DOrthogonaly {
     }
   }
 
-  _applyDigitalMovement() {
+  _applyDigitalMovement(sceneTime) {
     const d = this._digital;
+    const anyDown = d.forward || d.backward || d.left || d.right;
+    if(!anyDown) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
     if(this._bridge && this._followBodyId !== null) {
-      // send velocity to Matter.js worker — camera follows via followMe
       let vx = 0, vy = 0;
       if(d.left) vx -= this.MOVE_FORCE;
       if(d.right) vx += this.MOVE_FORCE;
       if(d.forward) vy -= this.MOVE_FORCE;
       if(d.backward) vy += this.MOVE_FORCE;
-      if(vx === 0 && vy === 0) return;
       this._bridge._send({type: 'setVelocity', id: this._followBodyId, vx, vy});
-    } else {
-      // no bridge — move camera directly (free pan)
-      let vx = 0, vz = 0;
-      if(d.forward) vx -= this.back[0], vz -= this.back[2];
-      if(d.backward) vx += this.back[0], vz += this.back[2];
-      if(d.right) vx += this.right[0], vz += this.right[2];
-      if(d.left) vx -= this.right[0], vz -= this.right[2];
-      const len = Math.sqrt(vx * vx + vz * vz);
-      if(len < 0.0001) return;
-      const s = this.KEYBOARD_SPEED / len;
-      this.position[0] += vx * s;
-      this.position[2] += vz * s;
-      this._dirty = true;
+      return;
     }
+    if(this._lastMoveSceneTime === undefined) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    let dt = sceneTime - this._lastMoveSceneTime;
+    this._lastMoveSceneTime = sceneTime;
+    if(dt <= 0) return;
+    if(dt > 0.1) dt = 0.1;
+    let vx = 0, vz = 0;
+    if(d.forward) vx -= this.back[0], vz -= this.back[2];
+    if(d.backward) vx += this.back[0], vz += this.back[2];
+    if(d.right) vx += this.right[0], vz += this.right[2];
+    if(d.left) vx -= this.right[0], vz -= this.right[2];
+    const len = Math.sqrt(vx * vx + vz * vz);
+    if(len < 0.0001) return;
+    const s = this.KEYBOARD_SPEED * (dt / 0.016) / len;
+    this.position[0] += vx * s;
+    this.position[2] += vz * s;
+    this._dirty = true;
+    this._dirtyAngle = true;
   }
 
   setFollowObject = (obj, matterBridge) => {
@@ -1966,29 +1981,27 @@ export class Camera2DOrthogonaly {
 
   _setupKeyboard() {
     const setDigital = (e, value) => {
+      const d = this._digital;
+      const wasAnyDown = d.forward || d.backward || d.left || d.right;
       switch(e.code) {
-        case 'KeyW': case 'ArrowUp': this._digital.forward = value; break;
-        case 'KeyS': case 'ArrowDown': this._digital.backward = value; break;
-        case 'KeyA': case 'ArrowLeft': this._digital.left = value; break;
-        case 'KeyD': case 'ArrowRight': this._digital.right = value; break;
+        case 'KeyW': case 'ArrowUp': d.forward = value; break;
+        case 'KeyS': case 'ArrowDown': d.backward = value; break;
+        case 'KeyA': case 'ArrowLeft': d.left = value; break;
+        case 'KeyD': case 'ArrowRight': d.right = value; break;
         default: return;
       }
-
-      const d = this._digital;
       const anyDown = d.forward || d.backward || d.left || d.right;
-      if(value && this._keyInterval === null) {
-        this._detachedFromFollow = !this._bridge;  // detach only if no bridge
-        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
-      } else if(!anyDown) {
-        clearInterval(this._keyInterval);
-        this._keyInterval = null;
-        // zero velocity on release
+      if(value && !wasAnyDown) {
+        this._detachedFromFollow = !this._bridge;
+        this._lastMoveSceneTime = undefined;
+      }
+      if(!anyDown) {
+        this._lastMoveSceneTime = undefined;
         if(this._bridge && this._followBodyId !== null) {
           this._bridge._send({type: 'setVelocity', id: this._followBodyId, vx: 0, vy: 0});
         }
       }
     };
-
     window.addEventListener('keydown', e => setDigital(e, true), {passive: true});
     window.addEventListener('keyup', e => setDigital(e, false), {passive: true});
   }
@@ -2043,9 +2056,10 @@ export class Camera2DOrthogonaly {
 
   update() {
     this._updateFollow();
-    if(!this._dirty) return;
+    if(!this._dirty) {this._dirtyAngle = false; return;}
     this._recalculateViewVP();
     this._dirty = false;
+    this._dirtyAngle = false;
   }
 }
 
