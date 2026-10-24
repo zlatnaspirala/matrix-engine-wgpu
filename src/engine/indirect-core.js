@@ -209,9 +209,10 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     this.instanceMeshData[index] = meshIndex;
   }
 
-  flushInstances() {
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
-    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData);
+  flushInstances(count = this.maxInstances) {
+    count = Math.min(count, this.maxInstances);
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData.subarray(0, count * 20));
+    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData.subarray(0, count));
   }
 
   getIndirectBuffer() {return this.indirectBuffer;}
