@@ -41361,7 +41361,7 @@ var CulledRenderPass = class {
             this.cullStats.visible++;
             continue;
           }
-          if (distanceSq2 > this.range * this.range) {
+          if (distanceSq2 > this.range) {
             this.cullStats.culled++;
             continue;
           }

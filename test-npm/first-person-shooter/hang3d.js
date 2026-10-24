@@ -24,7 +24,7 @@ let app = new MatrixEngineWGPU({
   canvasSize: 'fullscreen',
   fastRender: 0.95,
   render: 'culling',
-  cullingRange: 1200,
+  cullingRange: 200,
   dontUsePhysics: true,
   MAX_SPOTLIGHTS: 1,
   MAX_BONES: 0,
@@ -105,6 +105,7 @@ let app = new MatrixEngineWGPU({
   const cam = app.getCamera();
   let preventFire = false;
 
+  
   downloadMeshes({
     cube: './res/meshes/blender/cube.obj',
     ball: './res/meshes/blender/sphepe-mob.obj',
@@ -132,6 +133,8 @@ let app = new MatrixEngineWGPU({
           setTimeout(() => {preventFire = false;}, 350)
         }
       })
+
+
 
       MobileDOM.addButton("JUMP", () => {
         if(app.collisionSystem?._onGround) {
