@@ -15518,7 +15518,7 @@ var MultiLang = class {
   loadMultilang = async function(lang = "en") {
     if (lang == "rs") lang = "sr";
     lang = "res/multilang/" + lang + ".json";
-    console.info(`%cMultilang: ${lang}`, LOG_FUNNY_ARCADE);
+    console.info("%cMultilang: %s", LOG_FUNNY_ARCADE, lang);
     try {
       const r2 = await fetch(lang, { headers: { "Accept": "application/json", "Content-Type": "application/json" } });
       return await r2.json();
@@ -25660,7 +25660,12 @@ var MEEditorClient = class {
         const data = JSON.parse(event.data);
         console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
         if (data && data.ok == true && data.payload && data.payload.redirect == true) {
-          setTimeout(() => location.assign(data.name + ".html"), 2e3);
+          const safeName = typeof data.name === "string" ? data.name.trim() : "";
+          if (/^[A-Za-z0-9_-]+$/.test(safeName)) {
+            setTimeout(() => location.assign(encodeURIComponent(safeName) + ".html"), 2e3);
+          } else {
+            console.error("[EDITOR][INVALID REDIRECT NAME]", data.name);
+          }
         } else if (data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
         } else if (data.listAssetsForGraph) {
