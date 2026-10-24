@@ -52,7 +52,7 @@ export class CulledRenderPass {
           const toObjY = m[13] - this._camPos[1];
           const toObjZ = m[14] - this._camPos[2];
           const distanceSq = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
-          const radius = mesh.boundingSphere?.radius ?? 0;
+          let radius = mesh.boundingSphere?.radius ?? 0;
           if(distanceSq < radius * radius) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
@@ -71,8 +71,7 @@ export class CulledRenderPass {
           const dot = (toObjX / distance) * this._camForward[0] +
             (toObjY / distance) * this._camForward[1] +
             (toObjZ / distance) * this._camForward[2];
-          const radius = mesh.boundingSphere.radius;
-          const threshold = 0.2 - radius / distance;
+          const threshold = 0.2 - mesh.boundingSphere.radius / distance;
           if(dot > threshold) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;

@@ -367,7 +367,7 @@ export class BVHPlayer extends MEMeshObj {
     // naive slerp for small demo, normalize result
     let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
     if(dot < 0) {b = b.map(v => -v); dot = -dot;}
-    if(dot > 0.9995) return lerpVec(a, b, t);
+    if(dot > 0.9995) return this.lerpVec(a, b, t);
     const theta0 = Math.acos(dot);
     const theta = theta0 * t;
     const sinTheta = Math.sin(theta);

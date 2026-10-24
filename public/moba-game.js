@@ -20729,7 +20729,7 @@ var BVHPlayer = class extends MEMeshObj {
       b = b.map((v) => -v);
       dot2 = -dot2;
     }
-    if (dot2 > 0.9995) return lerpVec(a, b, t2);
+    if (dot2 > 0.9995) return this.lerpVec(a, b, t2);
     const theta0 = Math.acos(dot2);
     const theta = theta0 * t2;
     const sinTheta = Math.sin(theta);
@@ -40766,12 +40766,13 @@ var CulledRenderPass = class {
           const toObjY = m[13] - this._camPos[1];
           const toObjZ = m[14] - this._camPos[2];
           const distanceSq2 = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
-          if (distanceSq2 < mesh.boundingSphere.radius) {
+          let radius = mesh.boundingSphere?.radius ?? 0;
+          if (distanceSq2 < radius * radius) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
             continue;
           }
-          if (distanceSq2 > this.range) {
+          if (distanceSq2 > this.range * this.range) {
             this.cullStats.culled++;
             continue;
           }
@@ -40782,8 +40783,7 @@ var CulledRenderPass = class {
             continue;
           }
           const dot2 = toObjX / distance2 * this._camForward[0] + toObjY / distance2 * this._camForward[1] + toObjZ / distance2 * this._camForward[2];
-          const radius = mesh.boundingSphere.radius;
-          const threshold = 0.2 - radius / distance2;
+          const threshold = 0.2 - mesh.boundingSphere.radius / distance2;
           if (dot2 > threshold) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
