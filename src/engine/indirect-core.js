@@ -14,10 +14,8 @@ export class ComputeCullingSystem {
       label: 'instanceBuffer',
       size: maxInstances * 80,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
     });
-    this.instanceData = new Float32Array(this.instanceBuffer.getMappedRange());
-    this.instanceBuffer.unmap();
+    this.instanceData = new Float32Array(maxInstances * 20);
     // Visibility list (culled indices)
     this.visibilityBuffer = device.createBuffer({
       label: 'visibilityBuffer',
@@ -43,10 +41,8 @@ export class ComputeCullingSystem {
       label: 'instanceMeshMap',
       size: maxInstances * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
     });
-    this.instanceMeshData = new Uint32Array(this.instanceMeshMap.getMappedRange());
-    this.instanceMeshMap.unmap();
+    this.instanceMeshData = new Uint32Array(maxInstances);
     // Culling params
     this.cullingParams = device.createBuffer({
       label: 'cullingParams',
