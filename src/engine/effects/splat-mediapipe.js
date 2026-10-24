@@ -24,22 +24,18 @@ export class SplatHandEffect {
     this.splatLayer = splatLayer;
     this.enabled = true;
     this.time = 0;
-
     this.scale = opts.scale ?? 3.0;
     // this.clusterRadius = opts.clusterRadius ?? 0.08;
     this.clusterRadius = opts.clusterRadius ?? 1.0;
     this.origin = opts.origin ?? [0, 1.2, 0];
     this.mirrorX = opts.mirrorX ?? true;
-
     // Live hand landmarks (set from PipeCommander.onResults)
     this._landmarks = null;
-
     const n = splatLayer.vertexCount;
+    this.pipeline = splatLayer.pipeline;
     this._posCPU = new Float32Array(n * 3);
     this._colorCPU = new Float32Array(n * 4);
-
     // Baked per-point cluster assignment + spherical offsets
-
     this._jointRadius = new Float32Array([
       0.025,  // 0  WRIST       — wider, it's the palm anchor
       0.012,  // 1  THUMB_CMC

@@ -65918,7 +65918,7 @@ var loadStreamRenderHost = function() {
 var MapCreator = class {
   /**
    * @param {object} engine   — MatrixEngineWGPU instance
-   * @param {object} mesh     — pre-loaded cube OBJ mesh (m.cube)
+   * @param {object} m     — pre-loaded cube OBJ mesh (m.cube)
    * @param {object} collision — CollisionSystem instance
    * @param {object} [opts]
    * @param {string} [opts.wallTexture]   — path to wall texture
@@ -76543,6 +76543,7 @@ var SplatHandEffect = class {
     this.mirrorX = opts.mirrorX ?? true;
     this._landmarks = null;
     const n3 = splatLayer.vertexCount;
+    this.pipeline = splatLayer.pipeline;
     this._posCPU = new Float32Array(n3 * 3);
     this._colorCPU = new Float32Array(n3 * 4);
     this._jointRadius = new Float32Array([
@@ -78950,7 +78951,7 @@ var loadFaceMask = function() {
         position: { x: 0, y: 5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [1, 1, 1],
+        scale: [2, 2, 2],
         texturesPaths: ["./res/textures/white-metal.png"],
         name: "MYCUBE",
         mesh: m2.facemask,

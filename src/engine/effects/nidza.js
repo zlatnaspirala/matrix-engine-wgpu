@@ -199,7 +199,6 @@ export class SacredGeometryEffect {
   static _pipelineCache = new WeakMap();
   constructor(device, format, cameraBuffer) {
     console.log('%c[SacredGeometryEffect] Initializing...', 'color: cyan; font-weight: bold;');
-
     this.device = device;
     this.format = format;
     this.cameraBuffer = cameraBuffer;

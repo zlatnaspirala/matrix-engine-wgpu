@@ -199,7 +199,7 @@ export var loadFaceMask = function() {
         position: {x: 0, y: 5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [1, 1, 1],
+        scale: [2, 2, 2],
         texturesPaths: ['./res/textures/white-metal.png'],
         name: 'MYCUBE',
         mesh: m.facemask,
