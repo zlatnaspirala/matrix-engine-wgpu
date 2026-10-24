@@ -657,7 +657,7 @@ export class RPGCamera {
   _detachedFromFollow = false;
   _digital = {forward: false, backward: false, left: false, right: false};
   _lastMoveSceneTime = undefined;
-  KEYBOARD_SPEED = 4.5;
+  KEYBOARD_SPEED = 7.5;
 
   mousRollInAction = false;
 
@@ -744,6 +744,7 @@ export class RPGCamera {
 
   _applyDigitalMovement(sceneTime) {
     const d = this._digital;
+    if(this.followMe?.inMove === true) this._dirtyAngle = true;
     if(!d.forward && !d.backward && !d.left && !d.right) {
       this._lastMoveSceneTime = sceneTime;
       return;
