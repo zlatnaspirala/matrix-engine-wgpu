@@ -19135,7 +19135,7 @@ fn main(input: FragmentInput) -> FragOut {
       discard;
   }
   // return vec4f(colorWithFog, alpha);
-  let alpha = 1.0;
+  // let alpha = 1.0;
   return FragOut(
     vec4f(colorWithFog, alpha),
     vec4f(N, 0.0),

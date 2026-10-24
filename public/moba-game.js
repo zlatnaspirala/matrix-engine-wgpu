@@ -7688,7 +7688,7 @@ fn main(input: FragmentInput) -> FragOut {
       discard;
   }
   // return vec4f(colorWithFog, alpha);
-  let alpha = 1.0;
+  // let alpha = 1.0;
   return FragOut(
     vec4f(colorWithFog, alpha),
     vec4f(N, 0.0),
@@ -46574,8 +46574,21 @@ var Character = class extends Hero {
       });
     });
   }
+  faceTarget(target) {
+    const body2 = this.heroe_bodies[0];
+    const targetPosition = target?.heroe_bodies?.[0]?.position || target?.position;
+    if (!body2 || !targetPosition) return;
+    const dx = targetPosition.x - body2.position.x;
+    const dz = targetPosition.z - body2.position.z;
+    if (dx * dx + dz * dz < 1e-8) return;
+    const angle = (Math.atan2(dx, dz) * 180 / Math.PI + 360) % 360;
+    this.heroe_bodies.forEach((subMesh) => {
+      subMesh.rotation.y = angle;
+    });
+  }
   setAttack(on, isSecoundAttackLong = false) {
     this.heroFocusAttackOn = on;
+    this.faceTarget(on);
     this.core.RPG.heroe_bodies.forEach((subMesh) => {
       if (isSecoundAttackLong === false) {
         subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
