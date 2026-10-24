@@ -81,7 +81,9 @@ struct CullingParams {
   cameraPos: vec3f,
   maxDistance: f32,
   drawCount: u32,
-  _pad0: vec3u,
+  _pad0: u32,
+  _pad1: u32,
+  _pad2: u32,
 }
 struct Instance {model: mat4x4<f32>, colorMult : vec4<f32>};
 struct DrawCommand {
