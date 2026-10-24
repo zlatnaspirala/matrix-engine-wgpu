@@ -1024,16 +1024,19 @@ export default class MatrixEngineWGPU {
   }
 
   rebuildIndirectBuffer() {
+    const meshes = this.indirectManager.indirectMeshes;
+    const signature = meshes.map(mesh => `${mesh.name}:${mesh.indexCount || 36}:${mesh.instanceCount || 1}:${this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex}`).join('|');
+    if(signature === this._indirectBufferSignature) return;
+    this._indirectBufferSignature = signature;
     setTimeout(() => {
       let cumulativeInstanceIndex = 0;
-      for(let i = 0;i < this.indirectManager.indirectMeshes.length;i++) {
-        const mesh = this.indirectManager.indirectMeshes[i];
+      for(let i = 0;i < meshes.length;i++) {
+        const mesh = meshes[i];
         const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
         const instanceCount = mesh.instanceCount || 1;
         const indexCount = mesh.indexCount || 36;
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
-        console.log('rebuildIndirectBuffer : mesh.indexCount :' + indexCount + " , mesh.instanceCount : " + instanceCount + " ,  mesh.globalInstanceIndex : " + mesh.globalInstanceIndex);
-        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
+        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, cumulativeInstanceIndex);
         cumulativeInstanceIndex += instanceCount;
       }
       this.computeCulling.flushIndirectBuffer();
