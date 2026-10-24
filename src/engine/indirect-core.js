@@ -8,7 +8,7 @@ export class ComputeCullingSystem {
     this.device = device;
     this.gpuCapabilities = gpuCapabilities;
     this.maxInstances = maxInstances;
-    this.maxDrawCalls = 500;
+    this.maxDrawCalls = maxInstances;
     // Instances
     this.instanceBuffer = device.createBuffer({
       label: 'instanceBuffer',
