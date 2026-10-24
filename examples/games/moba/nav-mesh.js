@@ -271,27 +271,73 @@ export default class NavMesh {
   }
 
   findPath(startPoint, endPoint) {
-    const startPoly = this.findPolygonContainingPoint(startPoint);
-    const endPoly = this.findPolygonContainingPoint(endPoint);
-    if(endPoly === null) {
-      const clamped = this._clampToMeshBoundary(endPoint);
-      if(!clamped) return [];
-      return this.findPath(startPoint, clamped);
+    const originalStart = startPoint;
+    let routeStart = startPoint;
+    let routeEnd = endPoint;
+
+    let startPoly = this.findPolygonContainingPoint(routeStart);
+    let endPoly = this.findPolygonContainingPoint(routeEnd);
+
+    // A hero can be nudged just outside the navmesh by collision resolution.
+    // Project both endpoints back onto the walkable mesh instead of rejecting movement.
+    if(startPoly === null) {
+      routeStart = this._clampToMeshBoundary(routeStart);
+      if(routeStart) startPoly = this.findPolygonContainingPoint(routeStart);
     }
-    if(startPoly === null) return [];
+    if(endPoly === null) {
+      routeEnd = this._clampToMeshBoundary(routeEnd);
+      if(routeEnd) endPoly = this.findPolygonContainingPoint(routeEnd);
+    }
+
+    // Boundary points can fall exactly on triangle edges, which may not be
+    // classified as inside any polygon. Use the nearest polygon center as fallback.
+    const nearestPoly = (point) => {
+      let bestIndex = 0;
+      let bestDistance = Infinity;
+      this.centers.forEach((center, index) => {
+        const dx = center[0] - point[0];
+        const dz = center[2] - point[2];
+        const distance = dx * dx + dz * dz;
+        if(distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+      return bestIndex;
+    };
+
+    if(startPoly === null) {
+      startPoly = nearestPoly(originalStart);
+      routeStart = this.centers[startPoly].slice();
+    }
+    if(endPoly === null) {
+      endPoly = nearestPoly(endPoint);
+      routeEnd = this.centers[endPoly].slice();
+    }
+
     const polyPath = this._findPolyPath(startPoly, endPoly);
     if(polyPath.length === 0) return [];
+
+    let path;
     if(polyPath.length === 1) {
-      return [[startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]],
-      [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]]];
+      path = [
+        [routeStart[0], this._sampleY(routeStart[0], routeStart[2]), routeStart[2]],
+        [routeEnd[0], this._sampleY(routeEnd[0], routeEnd[2]), routeEnd[2]]
+      ];
+    } else {
+      const portals = this._buildPortals(polyPath, routeStart, routeEnd);
+      path = this._stringPull(portals);
+      if(path.length > 0) {
+        path[0] = [routeStart[0], this._sampleY(routeStart[0], routeStart[2]), routeStart[2]];
+        path[path.length - 1] = [routeEnd[0], this._sampleY(routeEnd[0], routeEnd[2]), routeEnd[2]];
+      }
     }
-    const portals = this._buildPortals(polyPath, startPoint, endPoint);
-    const smooth = this._stringPull(portals);
-    if(smooth.length > 0) {
-      smooth[0] = [startPoint[0], this._sampleY(startPoint[0], startPoint[2]), startPoint[2]];
-      smooth[smooth.length - 1] = [endPoint[0], this._sampleY(endPoint[0], endPoint[2]), endPoint[2]];
+
+    if(path.length > 0 &&
+      (originalStart[0] !== routeStart[0] || originalStart[2] !== routeStart[2])) {
+      path.unshift([originalStart[0], originalStart[1], originalStart[2]]);
     }
-    return smooth;
+    return path;
   }
 
   closestPointOnMesh(point) {
