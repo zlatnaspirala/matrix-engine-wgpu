@@ -806,6 +806,7 @@ export class RPGCamera {
         this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
         this._dirty = true;
+        this._dirtyAngle = true;
       });
       this._setupKeyboard();
     } else {
