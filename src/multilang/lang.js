@@ -17,7 +17,7 @@ export class MultiLang {
   loadMultilang = async function(lang = 'en') {
     if(lang == 'rs') lang = 'sr';
     lang = 'res/multilang/' + lang + '.json';
-    console.info(`%cMultilang: ${lang}`, LOG_FUNNY_ARCADE);
+    console.info('%cMultilang: %s', LOG_FUNNY_ARCADE, lang);
     try {
       const r = await fetch(lang, {headers: {'Accept': 'application/json', 'Content-Type': 'application/json'}});
       return await r.json();
