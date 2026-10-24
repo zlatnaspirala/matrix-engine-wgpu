@@ -1034,8 +1034,7 @@ export default class MatrixEngineWGPU {
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
         console.log('rebuildIndirectBuffer : mesh.indexCount :' + indexCount + " , mesh.instanceCount : " + instanceCount + " ,  mesh.globalInstanceIndex : " + mesh.globalInstanceIndex);
         this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
-        // cumulativeInstanceIndex += instanceCount;
-        cumulativeInstanceIndex += 1;
+        cumulativeInstanceIndex += instanceCount;
       }
       this.computeCulling.flushIndirectBuffer();
     }, 150);
