@@ -122,6 +122,7 @@ export async function GPUIndirectDraws() {
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
         const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+        if(drawIndex == null || drawIndex >= this.computeCulling.maxDrawCalls) continue;
         const indirectOffset = drawIndex * 20;
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
@@ -135,6 +136,7 @@ export async function GPUIndirectDraws() {
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if(mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
         const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+        if(drawIndex == null || drawIndex >= this.computeCulling.maxDrawCalls) continue;
         const indirectOffset = drawIndex * 20;
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
