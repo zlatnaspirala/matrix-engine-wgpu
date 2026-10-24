@@ -104,7 +104,7 @@ export async function GPUIndirectDraws() {
 
     this.computeCulling.flushIndirectBuffer();
     this.computeCulling.flushInstances(drawCount);
-    await this.computeCulling.execute(commandEncoder, camera.view, camera.projectionMatrix, camera.position, drawCount, 500.0);
+    await this.computeCulling.execute(commandEncoder, camera.view, camera.projectionMatrix, camera.position, drawCount, this.GPUCullingRad ?? 500.0);
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);

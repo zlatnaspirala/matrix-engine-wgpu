@@ -168,12 +168,11 @@ export default class MatrixEngineWGPU {
       }
     })
 
-    this.GPUCullingRad = MEConfig.GPUCullingRad;
-
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
     this.MEConfig.construct(options);
+    this.GPUCullingRad = this.MEConfig.GPUCullingRad;
     this.label = new MultiLang();
     this.now = 0;
     this.logLoopError = this.MEConfig.logLoopError;
