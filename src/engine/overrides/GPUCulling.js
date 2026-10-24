@@ -71,8 +71,8 @@ export async function GPUIndirectDraws() {
       const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex ?? i;
       if(drawIndex >= this.computeCulling.maxDrawCalls) continue;
       const instanceCount = mesh.instanceCount || 1;
-      let center, radius = mesh.boundingSphere?.radius || 1.0;
       mesh.updateBoundingSphere?.();
+      let center, radius = mesh.boundingSphere?.radius || 1.0;
       const instanceData = mesh.instanceData;
       const stride = mesh.floatsPerInstance || 20;
       if(instanceData && instanceCount >= 1 && instanceData.length >= instanceCount * stride) {
@@ -95,7 +95,7 @@ export async function GPUIndirectDraws() {
         }
       } else {
         const matrix = mesh.modelMatrix || mesh._modelMatrix;
-        center = mesh.boundingSphere?.center || [matrix?.[12] ?? mesh.position?.x ?? 0, matrix?.[13] ?? mesh.position?.y ?? 0, matrix?.[14] ?? mesh.position?.z ?? 0];
+        center = matrix ? [matrix[12], matrix[13], matrix[14]] : [mesh.position?.x ?? 0, mesh.position?.y ?? 0, mesh.position?.z ?? 0];
       }
       this.computeCulling.setMeshDrawCommand(drawIndex, mesh.indexCount, instanceCount);
       this.computeCulling.updateInstance(drawIndex, center, radius, drawIndex);
