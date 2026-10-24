@@ -66,6 +66,7 @@ export class CollisionSystem {
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
+    this._activeHeroContacts = new Set();
     this.pickupEntries = [];
     this._pickupGrid = new Map();
     this._pickupNeighbors = [];
@@ -279,6 +280,7 @@ export class CollisionSystem {
     // dynamic vs dynamic
     this._buildGrid();
     const n = this.entries.length;
+    const heroContacts = new Set();
     for(let i = 0;i < n;i++) {
       const A = this.entries[i];
       this._getNeighborCells(A.pos.x, A.pos.y, A.pos.z, this._grid, this._neighbors);
@@ -295,15 +297,22 @@ export class CollisionSystem {
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;
         if(dx * dx + dz * dz > minDist * minDist) continue;
-        const testCollide = resolvePairRepulsion3D(A.pos, B.pos, minDist, 1.0);
+        const isHeroPair = (A.group === 'local_hero' && B.group === 'enemy') || (A.group === 'enemy' && B.group === 'local_hero');
+        const pairKey = isHeroPair ? `${A.id}|${B.id}` : null;
+        const wasHeroContact = isHeroPair && this._activeHeroContacts.has(pairKey);
+        const testCollide = resolvePairRepulsion3D(A.pos, B.pos, minDist, isHeroPair ? 0.2 : 1.0);
         if(testCollide) {
-          this._eventDetail.A = A;
-          this._eventDetail.B = B;
-          this._event1.detail.data = this._eventDetail;
-          dispatchEvent(this._event1);
+          if(isHeroPair) heroContacts.add(pairKey);
+          if(!isHeroPair || !wasHeroContact) {
+            this._eventDetail.A = A;
+            this._eventDetail.B = B;
+            this._event1.detail.data = this._eventDetail;
+            dispatchEvent(this._event1);
+          }
           // return;
         }
       }
     }
+    this._activeHeroContacts = heroContacts;
   }
 }
