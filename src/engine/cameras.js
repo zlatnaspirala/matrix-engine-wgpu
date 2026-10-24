@@ -1839,10 +1839,9 @@ export class PlaneCamera {
 
   update() {
     this._updateFollow();
-    if(!this._dirty) {this._dirtyAngle = false; return;}
+    if(!this._dirty) return;
     this._recalculateViewVP();
     this._dirty = false;
-    this._dirtyAngle = false;
   }
 }
 
