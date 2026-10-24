@@ -125,7 +125,9 @@ fn isInDistance(pos: vec3f) -> bool {
 @compute @workgroup_size(128)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
   let idx = gid.x;
-  if(idx >= params.drawCount || idx >= arrayLength(&instances)) return;
+  if(idx >= params.drawCount || idx >= arrayLength(&instances)) {
+    return;
+  }
   let inst = instances[idx];
   let position = inst.model[3].xyz;
   let radius = max(inst.colorMult.x, 0.0);
