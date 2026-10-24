@@ -452,8 +452,20 @@ export class Character extends Hero {
     });
   }
 
+  faceTarget(target) {
+    const body = this.heroe_bodies[0];
+    const targetPosition = target?.heroe_bodies?.[0]?.position || target?.position;
+    if(!body || !targetPosition) return;
+    const dx = targetPosition.x - body.position.x;
+    const dz = targetPosition.z - body.position.z;
+    if(dx * dx + dz * dz < 1e-8) return;
+    const angle = (Math.atan2(dx, dz) * 180 / Math.PI + 360) % 360;
+    this.heroe_bodies.forEach(subMesh => {subMesh.rotation.y = angle;});
+  }
+
   setAttack(on, isSecoundAttackLong = false) {
     this.heroFocusAttackOn = on;
+    this.faceTarget(on);
     this.core.RPG.heroe_bodies.forEach(subMesh => {
       if(isSecoundAttackLong === false) {
         subMesh.playAnimationByIndex(this.heroAnimationArrange.attack);
