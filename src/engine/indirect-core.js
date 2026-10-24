@@ -50,11 +50,11 @@ export class ComputeCullingSystem {
     // Culling params
     this.cullingParams = device.createBuffer({
       label: 'cullingParams',
-      size: 144,
+      size: 160,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     this.visibleCount = 0;
-    this.paramData = new Float32Array(36);
+    this.paramData = new Float32Array(40);
     this.zero = new Uint32Array([0]);
     this.createPipeline();
   }
@@ -80,6 +80,8 @@ struct CullingParams {
   projMatrix: mat4x4f,
   cameraPos: vec3f,
   maxDistance: f32,
+  drawCount: u32,
+  _pad0: vec3u,
 }
 struct Instance {model: mat4x4<f32>, colorMult : vec4<f32>};
 struct DrawCommand {
@@ -99,9 +101,16 @@ struct DrawCommand {
 
 fn isInFrustum(pos: vec3f, radius: f32) -> bool {
   let viewPos = (params.viewMatrix * vec4f(pos, 1.0)).xyz;
-  let projPos = params.projMatrix * vec4f(viewPos, 1.0);
-  let ndc = projPos.xyz / projPos.w;
-  return abs(ndc.x) <= 1.2 && abs(ndc.y) <= 1.2 && abs(ndc.z) <= 1.2;
+  let clipPos = params.projMatrix * vec4f(viewPos, 1.0);
+  if(clipPos.w <= 0.0) return false;
+  let ndc = clipPos.xyz / clipPos.w;
+  let safeW = max(clipPos.w, 0.0001);
+  let marginX = radius * abs(params.projMatrix[0][0]) / safeW;
+  let marginY = radius * abs(params.projMatrix[1][1]) / safeW;
+  let marginZ = radius / safeW;
+  return ndc.x >= -1.0 - marginX && ndc.x <= 1.0 + marginX &&
+         ndc.y >= -1.0 - marginY && ndc.y <= 1.0 + marginY &&
+         ndc.z >= -marginZ && ndc.z <= 1.0 + marginZ;
 }
 
 fn isInDistance(pos: vec3f) -> bool {
@@ -112,22 +121,17 @@ fn isInDistance(pos: vec3f) -> bool {
 @compute @workgroup_size(128)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
   let idx = gid.x;
-  let isValid = idx < arrayLength(&instances);
-  if (isValid) {
-    let inst = instances[idx];
-    let position = inst.model[3].xyz;
-    if (isInFrustum(position, 1.0) && isInDistance(position)) {
-      let visIdx = atomicAdd(&visibleCounter, 1u);
-      if (visIdx < arrayLength(&visibleIndices)) {
-          visibleIndices[visIdx] = idx;
-      }
-      let meshIdx = instanceMeshMap[idx];
-      atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
-    }
+  if(idx >= params.drawCount || idx >= arrayLength(&instances)) return;
+  let inst = instances[idx];
+  let position = inst.model[3].xyz;
+  let radius = max(inst.colorMult.x, 0.0);
+  let meshIdx = instanceMeshMap[idx];
+  if(isInFrustum(position, radius) && isInDistance(position)) {
+    let visIdx = atomicAdd(&visibleCounter, 1u);
+    if(visIdx < arrayLength(&visibleIndices)) {visibleIndices[visIdx] = idx;}
+  } else {
+    atomicStore(&indirectCommands[meshIdx].instanceCount, 0u);
   }
-
-  workgroupBarrier();
-  storageBarrier();
 }`;
 }
 
@@ -167,7 +171,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     });
   }
 
-  async execute(commandEncoder, viewMatrix, projMatrix, cameraPos, maxDist = 500.0) {
+  async execute(commandEncoder, viewMatrix, projMatrix, cameraPos, drawCount, maxDist = 500.0) {
     this.paramData.fill(0);
     for(let i = 0;i < 16;i++) this.paramData[i] = viewMatrix[i];
     for(let i = 0;i < 16;i++) this.paramData[16 + i] = projMatrix[i];
@@ -175,12 +179,14 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     this.paramData[33] = cameraPos[1];
     this.paramData[34] = cameraPos[2];
     this.paramData[35] = maxDist;
+    new Uint32Array(this.paramData.buffer)[36] = drawCount;
     this.device.queue.writeBuffer(this.cullingParams, 0, this.paramData);
     this.device.queue.writeBuffer(this.counterBuffer, 0, this.zero);
+    if(drawCount === 0) return;
     const pass = commandEncoder.beginComputePass();
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
-    pass.dispatchWorkgroups(Math.ceil(this.maxInstances / 128));
+    pass.dispatchWorkgroups(Math.ceil(drawCount / 128));
     pass.end();
   }
 
@@ -194,7 +200,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     this.instanceData[offset + 14] = position[2];
     this.instanceData[offset + 15] = 1;
     // colorMult
-    this.instanceData[offset + 16] = 1;
+    this.instanceData[offset + 16] = radius;
     this.instanceData[offset + 17] = 1;
     this.instanceData[offset + 18] = 1;
     this.instanceData[offset + 19] = 1;
@@ -203,7 +209,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
   flushInstances() {
     this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
-    // this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData);
+    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData);
   }
 
   getIndirectBuffer() {return this.indirectBuffer;}
