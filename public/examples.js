@@ -14397,8 +14397,8 @@ var RPGCamera = class _RPGCamera {
   scrollSpeed = 1;
   _detachedFromFollow = false;
   _digital = { forward: false, backward: false, left: false, right: false };
-  _keyInterval = null;
-  KEYBOARD_SPEED = 4.5;
+  _lastMoveSceneTime = void 0;
+  KEYBOARD_SPEED = 7.5;
   mousRollInAction = false;
   _dirty = true;
   constructor(options2 = {}) {
@@ -14472,8 +14472,21 @@ var RPGCamera = class _RPGCamera {
     out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
     return out;
   }
-  _applyDigitalMovement() {
+  _applyDigitalMovement(sceneTime) {
     const d2 = this._digital;
+    if (this.followMe?.inMove === true) this._dirtyAngle = true;
+    if (!d2.forward && !d2.backward && !d2.left && !d2.right) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    if (this._lastMoveSceneTime === void 0) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    let dt2 = sceneTime - this._lastMoveSceneTime;
+    this._lastMoveSceneTime = sceneTime;
+    if (dt2 <= 0) return;
+    if (dt2 > 0.1) dt2 = 0.1;
     let vx = 0, vz = 0;
     if (d2.forward) {
       vx -= this.back[0];
@@ -14493,48 +14506,42 @@ var RPGCamera = class _RPGCamera {
     }
     const len2 = Math.sqrt(vx * vx + vz * vz);
     if (len2 < 1e-4) return;
-    const s2 = this.KEYBOARD_SPEED / len2;
+    const s2 = this.KEYBOARD_SPEED * (dt2 / 0.016) / len2;
     this.position[0] += vx * s2;
     this.position[2] += vz * s2;
     this._dirty = true;
+    this._dirtyAngle = true;
   }
   _setupKeyboard() {
     const setDigital = (e2, value) => {
+      const d2 = this._digital;
+      const wasAnyDown = d2.forward || d2.backward || d2.left || d2.right;
       switch (e2.code) {
         case "KeyW":
-          this._digital.forward = value;
+        case "ArrowUp":
+          d2.forward = value;
           break;
         case "KeyS":
-          this._digital.backward = value;
+        case "ArrowDown":
+          d2.backward = value;
           break;
         case "KeyA":
-          this._digital.left = value;
+        case "ArrowLeft":
+          d2.left = value;
           break;
         case "KeyD":
-          this._digital.right = value;
-          break;
-        case "ArrowUp":
-          this._digital.forward = value;
-          break;
-        case "ArrowDown":
-          this._digital.backward = value;
-          break;
-        case "ArrowLeft":
-          this._digital.left = value;
-          break;
         case "ArrowRight":
-          this._digital.right = value;
+          d2.right = value;
           break;
+        default:
+          return;
       }
-      if (value && this._keyInterval === null) {
+      const anyDown = d2.forward || d2.backward || d2.left || d2.right;
+      if (value && !wasAnyDown) {
         this._detachedFromFollow = true;
-        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
-      } else {
-        const d2 = this._digital;
-        if (!d2.forward && !d2.backward && !d2.left && !d2.right) {
-          clearInterval(this._keyInterval);
-          this._keyInterval = null;
-        }
+        this._lastMoveSceneTime = void 0;
+      } else if (!anyDown) {
+        this._lastMoveSceneTime = void 0;
       }
     };
     window.addEventListener("keydown", (e2) => setDigital(e2, true), { passive: true });
@@ -14552,6 +14559,7 @@ var RPGCamera = class _RPGCamera {
         this.scrollY -= e2.deltaY * this.scrollSpeed * 0.01;
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
         this._dirty = true;
+        this._dirtyAngle = true;
       });
       this._setupKeyboard();
     } else {
@@ -14662,9 +14670,13 @@ var RPGCamera = class _RPGCamera {
   }
   update() {
     this._updateFollow();
-    if (!this._dirty) return;
+    if (!this._dirty) {
+      this._dirtyAngle = false;
+      return;
+    }
     this._recalculateViewVP();
     this._dirty = false;
+    this._dirtyAngle = false;
   }
 };
 var FirstPersonCamera = class _FirstPersonCamera {
@@ -16904,7 +16916,7 @@ for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
 
   // return vec4f(color, materialData.alpha);
   return FragOut(
-    vec4f(finalColor, alpha),
+    vec4f(color, materialData.alpha),
     vec4f(N, 0.0),
     vec4f(input.fragPos, 1.0)
   );
@@ -18474,8 +18486,8 @@ fn main(input: FragmentInput) -> FragOut {
 
   return FragOut(
     vec4f(finalColor, materialData.alpha),
-    vec4f(norm, 0.0)
-    vec4f(input.fragPos, 1.0),
+    vec4f(norm, 0.0),
+    vec4f(input.fragPos, 1.0)
   );
 }
 `;
@@ -57299,6 +57311,7 @@ var CollisionSystem = class {
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
+    this._activeHeroContacts = /* @__PURE__ */ new Set();
     this.pickupEntries = [];
     this._pickupGrid = /* @__PURE__ */ new Map();
     this._pickupNeighbors = [];
@@ -57489,6 +57502,7 @@ var CollisionSystem = class {
     }
     this._buildGrid();
     const n3 = this.entries.length;
+    const heroContacts = /* @__PURE__ */ new Set();
     for (let i2 = 0; i2 < n3; i2++) {
       const A2 = this.entries[i2];
       this._getNeighborCells(A2.pos.x, A2.pos.y, A2.pos.z, this._grid, this._neighbors);
@@ -57504,15 +57518,22 @@ var CollisionSystem = class {
         const dx = A2.pos.x - B2.pos.x;
         const dz = A2.pos.z - B2.pos.z;
         if (dx * dx + dz * dz > minDist * minDist) continue;
-        const testCollide = resolvePairRepulsion3D(A2.pos, B2.pos, minDist, 1);
+        const isHeroPair = A2.group === "local_hero" && B2.group === "enemy" || A2.group === "enemy" && B2.group === "local_hero";
+        const pairKey = isHeroPair ? `${A2.id}|${B2.id}` : null;
+        const wasHeroContact = isHeroPair && this._activeHeroContacts.has(pairKey);
+        const testCollide = resolvePairRepulsion3D(A2.pos, B2.pos, minDist, isHeroPair ? 0.2 : 1);
         if (testCollide) {
-          this._eventDetail.A = A2;
-          this._eventDetail.B = B2;
-          this._event1.detail.data = this._eventDetail;
-          dispatchEvent(this._event1);
+          if (isHeroPair) heroContacts.add(pairKey);
+          if (!isHeroPair || !wasHeroContact) {
+            this._eventDetail.A = A2;
+            this._eventDetail.B = B2;
+            this._event1.detail.data = this._eventDetail;
+            dispatchEvent(this._event1);
+          }
         }
       }
     }
+    this._activeHeroContacts = heroContacts;
   }
 };
 
@@ -62416,7 +62437,7 @@ var loadSprite2 = function() {
           physics: { enabled: false, geometry: "Sphere" }
         });
         let PLAYER = world2D.addMeshObj({
-          material: { type: "standard" },
+          material: { type: "metal" },
           position: { x: 0, y: 4, z: -10 },
           rotation: { x: 0, y: 0, z: 0 },
           rotationSpeed: { x: 0, y: 0, z: 0 },

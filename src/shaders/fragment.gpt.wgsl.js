@@ -206,8 +206,8 @@ fn main(input: FragmentInput) -> FragOut {
 
   return FragOut(
     vec4f(finalColor, materialData.alpha),
-    vec4f(norm, 0.0)
-    vec4f(input.fragPos, 1.0),
+    vec4f(norm, 0.0),
+    vec4f(input.fragPos, 1.0)
   );
 }
 `;

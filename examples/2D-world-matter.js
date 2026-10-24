@@ -84,7 +84,7 @@ export var loadSprite2 = function() {
         });
 
         let PLAYER = world2D.addMeshObj({
-          material: {type: 'standard'},
+          material: {type: 'metal'},
           position: {x: 0, y: 4, z: -10},
           rotation: {x: 0, y: 0, z: 0},
           rotationSpeed: {x: 0, y: 0, z: 0},

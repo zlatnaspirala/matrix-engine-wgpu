@@ -178,7 +178,7 @@ for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
 
   // return vec4f(color, materialData.alpha);
   return FragOut(
-    vec4f(finalColor, alpha),
+    vec4f(color, materialData.alpha),
     vec4f(N, 0.0),
     vec4f(input.fragPos, 1.0)
   );
