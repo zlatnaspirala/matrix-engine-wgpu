@@ -45,7 +45,7 @@ export class FireballSystem {
     this.FBHitEvent = new CustomEvent('fireball-hit', {
       detail: {target: null, damage: 0}
     });
-    this.ready = this.loadBallAnim('https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/glb/ring1.glb')
+    this.ready = this.loadBallAnim('res/meshes/glb/ring1.glb')
       .catch((err) => {
         console.error('Failed to load fireball mesh:', err);
         return null;

@@ -46094,12 +46094,16 @@ var FireballSystem = class _FireballSystem {
     this.FBHitEvent = new CustomEvent("fireball-hit", {
       detail: { target: null, damage: 0 }
     });
-    this.loadBallAnim("https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/glb/ring1.glb");
+    this.ready = this.loadBallAnim("res/meshes/glb/ring1.glb").catch((err) => {
+      console.error("Failed to load fireball mesh:", err);
+      return null;
+    });
     this.projectiles = [];
   }
   // Spawn a new fireball scene object
   async spawn(fromPosition, target) {
-    if (this.projectiles.length >= _FireballSystem.CONFIG.maxActive) return;
+    await this.ready;
+    if (!this.fireballMesh || !target || this.projectiles.length >= _FireballSystem.CONFIG.maxActive) return;
     this.fireballMesh.position.x = fromPosition.x;
     this.fireballMesh.position.y = fromPosition.y;
     this.fireballMesh.position.z = fromPosition.z;
@@ -46552,7 +46556,7 @@ var Character = class extends Hero {
       });
     });
     app.tts.speakHero(app.player.data.hero.toLowerCase(), "attack");
-    if (this.core.RPG.distanceForAction < this.core.RPG.distanceForLongAction) {
+    if (isSecoundAttackLong === true && this.heroe_bodies[0].fireballSystem) {
       this.heroe_bodies[0].fireballSystem.spawn(
         this.heroe_bodies[0].position,
         this.heroFocusAttackOn
