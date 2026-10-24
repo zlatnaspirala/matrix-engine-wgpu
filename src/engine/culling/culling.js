@@ -58,7 +58,7 @@ export class CulledRenderPass {
             this.cullStats.visible++;
             continue;
           }
-          if(distanceSq > this.range * this.range) {
+          if(distanceSq > this.range) {
             this.cullStats.culled++;
             continue;
           }
