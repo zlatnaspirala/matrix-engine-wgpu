@@ -13,34 +13,34 @@
 
 ## Description
 
-WebGPU engine focus performance but also mimic major engines features inspired by the original **matrix-engine** for WebGL. 
+A WebGPU engine focused on performance that also mimics features from major engines, inspired by the original **matrix-engine** for WebGL. 
 It uses the `wgpu-matrix` npm package as a replacement for `gl-matrix` to handle model-view-projection matrices.
 
-Published on npm as: **`matrix-engine-wgpu`** (not always updated on last - recommended is to use github clone)
-From [1.18.7] ver npm package is much more stable and usable. All examples can be done by npm services not just github clone.
-You can also use public provides like `unpkg.com` etc. You can use `PREFIX` for textures or objects paths. The-Beast is friendly with codepen, worker physics bridge will test host origin name is it exsternal or not to fix loading link if not it will use local resource always. See [codepen examples](https://codepen.io/editor/zlatnaspirala/pen/019fc918-e45f-73f4-9987-9a1599ac4a1f).
+Published on npm as **`matrix-engine-wgpu`** (the npm package is not always up to date, so cloning the GitHub repository is recommended).
+Since version [1.18.7], the npm package has been much more stable and usable. All examples can be run using the npm package, not just a GitHub clone.
+You can also use public providers like `unpkg.com`, etc. You can use `PREFIX` for textures or objects paths. The Beast works with CodePen. The worker physics bridge checks whether the host origin is external and adjusts resource paths accordingly; otherwise, it uses local resources. See [codepen examples](https://codepen.io/editor/zlatnaspirala/pen/019fc918-e45f-73f4-9987-9a1599ac4a1f).
 
 - Backend editorX (App level+Shader VisualScripting) (works in local env - desktop browsers) support list: Chrome, Edge, Opera, Firefox desktop.
 
-- Code Creator (TheBeast Code generator) is standalone. Can be used public but user must trust page to enter api key.
-Without api key no ai response. Code creator make project from task and test it direct intro same page.
-Code creator dont even needed to build own js bundle, just use it from watcher build on localhost:3000 by default.
+- Code Creator (The Beast code generator) is standalone. It can be used publicly, but users must trust the page before entering an API key.
+Without an API key, there is no AI response. Code Creator creates a project from a task and tests it directly on the same page.
+Code Creator does not need its own JavaScript bundle; use it from the watcher build, available at `localhost:3000` by default.
 
 ---
 
 ## Done list []
 
 - ✔️ Draw loop per pipeline not per mesh (PipelineManager) with share material feature. Power optimisation
-     on every level like micro optimisation. Mobile browsers real test results make decision on further development.
+     on every level like micro optimisation. Real-world testing in mobile browsers informs further development.
 - ✔️ Support for 3D objects (scene object) standard TRS transformations.
 - ✔️ Ammo.js, cannonES, Jolt and matter.js physics libs integration (app<->bridge<->worker).
-     Physics use webworkers by default. Fixed crossOrigin worker.
+     Physics uses Web Workers by default. The cross-origin worker issue has been fixed.
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
 - ✔️ Bloom, HZB and Volumetric post processing.
 - ✔️ GPU Features: `texture-compression-bc` - (Not active by default).
 - ✔️ Scene Culling feature (see maze example for CPU Culling).
-- ✔️ Effects (sub draw system) Cached pipelines. Effect is standalone webgpu entity with own
-     groups and pipelines. With effects i can add any exsternal demo very easy and quick.
+- ✔️ Effects (a sub-draw system) use cached pipelines. An effect is a standalone WebGPU entity with its own
+     groups and pipelines. With effects, I can add any external demo quickly and easily.
 - ✔️ Web GUI(online) Editor [app exec graph] with Visual Scripting (Named: FlowCodexVertex).
 - ✔️ Web GUI(online) Editor [shader graph] with Visual Scripting (Named: FlowCodexShader).
 - ✔️ Dynamic shadow cast (done also for skinned meshes).
@@ -48,13 +48,13 @@ Code creator dont even needed to build own js bundle, just use it from watcher b
 - ✔️ Basic flow for AI Graph Generator - Simple tasks passed for now with ollama platform. 
      [Open account/open-source/free-service-quota](https://ollama.com/).
 - ✔️ ProceduralMesh objectScene entity with options for vertex morph - Shadows following morph blend.
-- ✔️ MediaPipe implemented - dinamic loading (if not in use no loading script or any related to mediapipe)
-     Make possible to morph from some splat(ply) shape to special mediapipe integrated mesh like 'FACEMESH_TESSELLATION' with real time video texture from webcam or video see `splatFaceEffect` for examples.
+- ✔️ MediaPipe is implemented with dynamic loading (if it is not used, no MediaPipe script or related resources are loaded).
+     This makes it possible to morph a splat (PLY) shape into a special MediaPipe-integrated mesh, such as `FACEMESH_TESSELLATION`, using a real-time video texture from a webcam or video. See `splatFaceEffect` for examples.
 - ✔️ Remote render stream emit example (standard engine networking) and special endpoint for "wachers" `tv-10.html`
-     Replace webcam stream with canvas capture - on endpoint use webRTC and video tag to preview remote render.
-- ✔️ Code creator AI services agent system(use engine from npm)
+     Replace the webcam stream with canvas capture. On the endpoint, use WebRTC and a video element to preview the remote render.
+- ✔️ Code Creator AI services and agent system (uses the engine from npm)
      `npm run creator` for 'http://localhost:3000/' `npm run creator-backend` for backend.
-     create games from simple prompt.
+     Create games from simple prompts.
 
 
 ## Supported browsers for final build:
@@ -101,7 +101,7 @@ The backend is built using **Node.js** 🟢
 
 ## General Features 🧩
 
-- Editor creates and manages files internally (Windows tested only!).
+- The editor creates and manages files internally (tested on Windows only!).
 - Scene container [adding objs -> auto save]
 - SceneObject property container [selected object] [auto save]
 - Assets toolbar added (bottom panel)
@@ -159,7 +159,7 @@ You must clone or download the engine source from the **GitHub repository**.
 
 ### Instructions 📌
 
-Editor use esbuild compiler but still present browserify, both works perfect.
+The editor uses the esbuild compiler, but Browserify is still available; both work well.
 
 - Run the editor with:
 
@@ -170,10 +170,10 @@ npm run editorx
 from the engine root directory.
 EditorX is an alias for FluxCodexVertex backend part (needed three words to keep the name unique)
 Run the scene by pressing F6 or by clicking Run in the left panel
-If you delete all objects from the scene, you must refresh the page and add at least one object again
-Before importing a graph, delete all nodes from the FluxCodexVertex graph
-After deleting everything, click Save to store an empty [] array.
-All changes in graph must be saved manually/clicking for now 💾 (no autosave for graphs).
+If you delete all objects from the scene, you must refresh the page and add at least one object again.
+Before importing a graph, delete all nodes from the FluxCodexVertex graph.
+After deleting everything, click Save to store an empty `[]` array.
+All graph changes must be saved manually by clicking Save for now 💾 (graphs are not autosaved).
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/visual-scripting-fetch.png?raw=true" />
 
@@ -181,9 +181,9 @@ All changes in graph must be saved manually/clicking for now 💾 (no autosave f
 
 ## TheBeast Code Creator
 
-Running Standalone (but it is buildin) use engine from npm service not from src.
+When running standalone (although it is built in), it uses the engine from npm rather than the source.
 Running from the Engine Monorepo:
-If you cloned the full `matrix-engine-wgpu` repo, run these from the **engine root folder**:
+If you cloned the full `matrix-engine-wgpu` repository, run these commands from the **engine root folder**:
 
 ```bash
 npm run creator-install   # First time
@@ -241,7 +241,7 @@ https://maximumroulette.com/apps/webgpu/api-docs/
   app.getSceneObjectByName("Sphere1");
   ```
 
-- Add meshes with `.addMeshObj()`, supporting `.obj` loading, unlit textures, cubes, spheres, etc.
+- Add meshes with `.addMeshObj()`, which supports OBJ loading, unlit textures, cubes, spheres, etc.
 
 - Destroy sceneObj:
   ```js
@@ -253,7 +253,7 @@ https://maximumroulette.com/apps/webgpu/api-docs/
   app.destroyByPrefix("towers");
   // OR
   app.destroyBySufix("_001");
-  // Destroy objects become true after calling flushDestroyQueue function.
+  // Objects are destroyed when you call `flushDestroyQueue()`.
   app.flushDestroyQueue();
   ```
 
@@ -295,12 +295,12 @@ cam.setZ(11);
 cam._dirtyAngle = true;
 ```
 
-For now translation is only with `WASD` keyboard keys.
+For now, translation is controlled only by the `WASD` keys.
 Supported types: `WASD`, `RPGCamera`, `FirstPersonCamera`, `cinematicCamera`
 
 `WASD` also use 'c' and 'v' for up and down camera position.
 
-To change position dont use direct edit on position array.
+To change the position, do not edit the position array directly.
 Use methods:
 
 ```js
@@ -338,9 +338,9 @@ if(cam.setPath) cam.setPath(introPath).play({
 
 ### Object Position
 
-Best way for access physics body object:
+The best way to access a physics body is:
 `app.matrixPhysics.getBodyByName(name)`
-Return idx of body.Use that idx for any call of worker fn.
+It returns the body index. Use that index for any worker-function call.
 
 Control object position:
 ```js
@@ -476,7 +476,7 @@ loadObjFile.lightContainer[0].updater.push(light => {
 
 ### Materials
 
-With last glb feature materials become part of engine also.
+With the latest GLB feature, materials are now part of the engine as well.
 
 ```js
 material: {
@@ -610,7 +610,7 @@ https://gist.github.com/zlatnaspirala/8758bcfb8be81d65c2c428e222abbef2
 
 ### Bloom post processing
 
-Activete with :
+Activate it with:
 
 ```js
 app.activateBloomEffect();
@@ -627,8 +627,8 @@ Fancy results:
 
 ### Volumetric effect
 
-Call from app `app.activateVolumetricEffect()`
-!Note volumetric works only if bloom is activated. Bloom can work alone.
+Call `app.activateVolumetricEffect()` on the app.
+Note: Volumetric effects work only when bloom is activated. Bloom can work on its own.
 
 Passing arguments:
 
@@ -1031,7 +1031,7 @@ Dimension (TextureViewDimension::e2DArray) of [TextureView of Texture "shadowTex
 From 1.7.0 engine powered by networking. Used kurento&Openvidu server for backend.
 Very good for handling streams, channels etc...
 
-All you needed to start kurento and openvidu and interconnect this nodejs server
+All you need to do is start Kurento and OpenVidu and connect them to this Node.js server.
 https://github.com/zlatnaspirala/matrix-stream/blob/main/middleware/server.js
 
 
@@ -1069,7 +1069,7 @@ sceneObject.position.netObject = sceneObject[0].name; // we still need this setu
 sceneObject.position.remoteName = sceneObjecOposite[0].name;
 ```
 
-Use toRemote arg prop in send pass, if not it is default [] emit to all.
+Use the `toRemote` argument in the send call. If it is omitted, the default is `[]`, which emits to everyone.
 
 Intelegent emit for teams (two teams implemented).
 Position will be emited for teams[0] and received for uniq scene obj name.
@@ -1101,7 +1101,7 @@ if (this.teams.length > 0)
 
 ### About URLParams
 
-Buildin Url Param check for multiLang. MultiLang feature is also buildin options.
+Built-in URL parameter checks support multilingual settings. Multilingual support is also available as a built-in option.
 
 Load multilang json file data.
 
@@ -1130,8 +1130,8 @@ Also render config can be controlled:
 Use it :
 `matrix-engine-wgpu/public/examples?demo=1&SHADOW_RES=250`
 
-If you wanna full performance on mobile devices than use in constructor:
-This is width of canvas inself. Value 1 is the best quality case also default if not exist.
+For the best performance on mobile devices, use this constructor option:
+This controls the canvas width. A value of `1` provides the highest quality and is also the default if no value is specified.
 ```js
 fastRender = from 0.1 to 1 - Best for mobile 0.85
 ```
@@ -1193,7 +1193,7 @@ Editor use esbuild.
 You can use `watchify` to bundle JavaScript. (still good)
 +Migration to the ESBUILD (note: it strange becouse it is exe file) but it is popular.
 
-You can setup more games/apps in single bundle or make special end point for specific game/app.
+You can set up multiple games/apps in a single bundle or create a separate endpoint for a specific game/app.
 
 ```json
 "examples": "esbuild examples.js --bundle --outfile=public/examples.js --format=esm --watch",
@@ -1219,9 +1219,9 @@ You can setup more games/apps in single bundle or make special end point for spe
 
 ## Resources
 
-All resources and output go into the `./public` folder — everything you need in one place.
-This is static file storage also all builds make outputs here.
- - For adding new endpoint app/demo you only need to create standard html file with js script name.
+All resources and output go into the `./public` folder—everything you need in one place.
+This is static file storage, and all builds output files here.
+ - To add a new app/demo endpoint, you only need to create a standard HTML file with the JavaScript script name.
 
 ---
 
@@ -1236,7 +1236,7 @@ This is static file storage also all builds make outputs here.
 
 Features done:
 
-- Supporetd on mobile browsers.
+- Supported in mobile browsers.
 - Navigation mesh
 - Hero class
 - GLB animations
@@ -1348,7 +1348,7 @@ saves.
 
 ### Usage Note
 
-You may use, modify, and sell projects based on this code — just keep this notice and included references intact (whole licence paragraph - but you can always remove assets -> remove asset back link).
+You may use, modify, and sell projects based on this code, provided that you keep this notice and the included references intact (the entire license paragraph). You may remove assets and their attribution links if you remove those assets from your project.
 
 - Most important is reference on matrix-engine-wgpu.
 - You need just to copy paste this text to about form on your web page or any other type of app.
@@ -1436,4 +1436,4 @@ Top level main.js instance (Jamb 3d deluxe)
 
 - https://webgpufundamentals.org
 - [WebGPU Ray Tracing](https://maierfelix.github.io/2020-01-13-webgpu-ray-tracing/)
-- For assist not whole code writing - ChatGPT, claude and Gemini.
+- For assistance rather than writing the entire codebase: ChatGPT, Claude, and Gemini.
