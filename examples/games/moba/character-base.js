@@ -468,9 +468,8 @@ export class Character extends Hero {
       })
     });
     app.tts.speakHero(app.player.data.hero.toLowerCase(), 'attack');
-    // test fireball
-    // or bind from exstern becouse can be massive in future !!!!!
-    if(this.core.RPG.distanceForAction < this.core.RPG.distanceForLongAction) {
+    // Fire a projectile only for the long-range attack path.
+    if(isSecoundAttackLong === true && this.heroe_bodies[0].fireballSystem) {
       this.heroe_bodies[0].fireballSystem.spawn(
         this.heroe_bodies[0].position,
         this.heroFocusAttackOn
