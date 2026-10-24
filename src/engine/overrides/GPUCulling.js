@@ -75,7 +75,7 @@ export async function GPUIndirectDraws() {
       mesh.updateBoundingSphere?.();
       const instanceData = mesh.instanceData;
       const stride = mesh.floatsPerInstance || 20;
-      if(instanceData && instanceCount > 1 && instanceData.length >= instanceCount * stride) {
+      if(instanceData && instanceCount >= 1 && instanceData.length >= instanceCount * stride) {
         let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
         for(let j = 0;j < instanceCount;j++) {
           const o = j * stride + 12;
