@@ -32,7 +32,12 @@ export class MEEditorClient {
         const data = JSON.parse(event.data);
         console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
         if(data && data.ok == true && data.payload && data.payload.redirect == true) {
-          setTimeout(() => location.assign(data.name + ".html"), 2000);
+          const safeName = typeof data.name === "string" ? data.name.trim() : "";
+          if (/^[A-Za-z0-9_-]+$/.test(safeName)) {
+            setTimeout(() => location.assign(encodeURIComponent(safeName) + ".html"), 2000);
+          } else {
+            console.error("[EDITOR][INVALID REDIRECT NAME]", data.name);
+          }
         } else if(data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
         } else if(data.listAssetsForGraph) {
