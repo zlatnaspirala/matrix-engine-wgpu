@@ -104,7 +104,9 @@ struct DrawCommand {
 fn isInFrustum(pos: vec3f, radius: f32) -> bool {
   let viewPos = (params.viewMatrix * vec4f(pos, 1.0)).xyz;
   let clipPos = params.projMatrix * vec4f(viewPos, 1.0);
-  if(clipPos.w <= 0.0) return false;
+  if(clipPos.w <= 0.0) {
+    return false;
+  }
   let ndc = clipPos.xyz / clipPos.w;
   let safeW = max(clipPos.w, 0.0001);
   let marginX = radius * abs(params.projMatrix[0][0]) / safeW;
