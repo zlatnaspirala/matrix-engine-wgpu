@@ -40910,15 +40910,13 @@ var ComputeCullingSystem = class {
     this.device = device2;
     this.gpuCapabilities = gpuCapabilities;
     this.maxInstances = maxInstances;
-    this.maxDrawCalls = 500;
+    this.maxDrawCalls = maxInstances;
     this.instanceBuffer = device2.createBuffer({
       label: "instanceBuffer",
       size: maxInstances * 80,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    this.instanceData = new Float32Array(this.instanceBuffer.getMappedRange());
-    this.instanceBuffer.unmap();
+    this.instanceData = new Float32Array(maxInstances * 20);
     this.visibilityBuffer = device2.createBuffer({
       label: "visibilityBuffer",
       size: maxInstances * 4,
@@ -40938,18 +40936,16 @@ var ComputeCullingSystem = class {
     this.instanceMeshMap = device2.createBuffer({
       label: "instanceMeshMap",
       size: maxInstances * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    this.instanceMeshData = new Uint32Array(this.instanceMeshMap.getMappedRange());
-    this.instanceMeshMap.unmap();
+    this.instanceMeshData = new Uint32Array(maxInstances);
     this.cullingParams = device2.createBuffer({
       label: "cullingParams",
-      size: 144,
+      size: 160,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.visibleCount = 0;
-    this.paramData = new Float32Array(36);
+    this.paramData = new Float32Array(40);
     this.zero = new Uint32Array([0]);
     this.createPipeline();
   }
@@ -40971,6 +40967,10 @@ struct CullingParams {
   projMatrix: mat4x4f,
   cameraPos: vec3f,
   maxDistance: f32,
+  drawCount: u32,
+  _pad0: u32,
+  _pad1: u32,
+  _pad2: u32,
 }
 struct Instance {model: mat4x4<f32>, colorMult : vec4<f32>};
 struct DrawCommand {
@@ -40990,9 +40990,18 @@ struct DrawCommand {
 
 fn isInFrustum(pos: vec3f, radius: f32) -> bool {
   let viewPos = (params.viewMatrix * vec4f(pos, 1.0)).xyz;
-  let projPos = params.projMatrix * vec4f(viewPos, 1.0);
-  let ndc = projPos.xyz / projPos.w;
-  return abs(ndc.x) <= 1.2 && abs(ndc.y) <= 1.2 && abs(ndc.z) <= 1.2;
+  let clipPos = params.projMatrix * vec4f(viewPos, 1.0);
+  if(clipPos.w <= 0.0) {
+    return false;
+  }
+  let ndc = clipPos.xyz / clipPos.w;
+  let safeW = max(clipPos.w, 0.0001);
+  let marginX = radius * abs(params.projMatrix[0][0]) / safeW;
+  let marginY = radius * abs(params.projMatrix[1][1]) / safeW;
+  let marginZ = radius / safeW;
+  return ndc.x >= -1.0 - marginX && ndc.x <= 1.0 + marginX &&
+         ndc.y >= -1.0 - marginY && ndc.y <= 1.0 + marginY &&
+         ndc.z >= -marginZ && ndc.z <= 1.0 + marginZ;
 }
 
 fn isInDistance(pos: vec3f) -> bool {
@@ -41003,22 +41012,19 @@ fn isInDistance(pos: vec3f) -> bool {
 @compute @workgroup_size(128)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
   let idx = gid.x;
-  let isValid = idx < arrayLength(&instances);
-  if (isValid) {
-    let inst = instances[idx];
-    let position = inst.model[3].xyz;
-    if (isInFrustum(position, 1.0) && isInDistance(position)) {
-      let visIdx = atomicAdd(&visibleCounter, 1u);
-      if (visIdx < arrayLength(&visibleIndices)) {
-          visibleIndices[visIdx] = idx;
-      }
-      let meshIdx = instanceMeshMap[idx];
-      atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
-    }
+  if(idx >= params.drawCount || idx >= arrayLength(&instances)) {
+    return;
   }
-
-  workgroupBarrier();
-  storageBarrier();
+  let inst = instances[idx];
+  let position = inst.model[3].xyz;
+  let radius = max(inst.colorMult.x, 0.0);
+  let meshIdx = instanceMeshMap[idx];
+  if(isInFrustum(position, radius) && isInDistance(position)) {
+    let visIdx = atomicAdd(&visibleCounter, 1u);
+    if(visIdx < arrayLength(&visibleIndices)) {visibleIndices[visIdx] = idx;}
+  } else {
+    atomicStore(&indirectCommands[meshIdx].instanceCount, 0u);
+  }
 }`;
   }
   createPipeline() {
@@ -41053,7 +41059,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
       compute: { module, entryPoint: "main" }
     });
   }
-  async execute(commandEncoder, viewMatrix, projMatrix, cameraPos, maxDist = 500) {
+  async execute(commandEncoder, viewMatrix, projMatrix, cameraPos, drawCount, maxDist = 500) {
     this.paramData.fill(0);
     for (let i = 0; i < 16; i++) this.paramData[i] = viewMatrix[i];
     for (let i = 0; i < 16; i++) this.paramData[16 + i] = projMatrix[i];
@@ -41061,12 +41067,14 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     this.paramData[33] = cameraPos[1];
     this.paramData[34] = cameraPos[2];
     this.paramData[35] = maxDist;
+    new Uint32Array(this.paramData.buffer)[36] = drawCount;
     this.device.queue.writeBuffer(this.cullingParams, 0, this.paramData);
     this.device.queue.writeBuffer(this.counterBuffer, 0, this.zero);
+    if (drawCount === 0) return;
     const pass = commandEncoder.beginComputePass();
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
-    pass.dispatchWorkgroups(Math.ceil(this.maxInstances / 128));
+    pass.dispatchWorkgroups(Math.ceil(drawCount / 128));
     pass.end();
   }
   updateInstance(index, position, radius, meshIndex = 0) {
@@ -41087,14 +41095,16 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     this.instanceData[offset + 13] = position[1];
     this.instanceData[offset + 14] = position[2];
     this.instanceData[offset + 15] = 1;
-    this.instanceData[offset + 16] = 1;
+    this.instanceData[offset + 16] = radius;
     this.instanceData[offset + 17] = 1;
     this.instanceData[offset + 18] = 1;
     this.instanceData[offset + 19] = 1;
     this.instanceMeshData[index] = meshIndex;
   }
-  flushInstances() {
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
+  flushInstances(count = this.maxInstances) {
+    count = Math.min(count, this.maxInstances);
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData.subarray(0, count * 20));
+    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData.subarray(0, count));
   }
   getIndirectBuffer() {
     return this.indirectBuffer;
@@ -41185,6 +41195,7 @@ async function GPUIndirectDraws() {
       p.end();
     }
     const len2 = this.mainRenderBundle.length;
+    let drawCount = 0;
     for (let i = 0; i < len2; i++) {
       const mesh = this.mainRenderBundle[i];
       mesh.updateInstanceData?.(mesh.modelMatrix);
@@ -41201,10 +41212,45 @@ async function GPUIndirectDraws() {
           effect.simulate?.(commandEncoder);
         }
       }
-      this.computeCulling.setMeshDrawCommand(i, mesh.indexCount, mesh.instanceCount);
+      const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex ?? i;
+      if (drawIndex >= this.computeCulling.maxDrawCalls) continue;
+      const instanceCount = mesh.instanceCount || 1;
+      mesh.updateBoundingSphere?.();
+      let center, radius = mesh.boundingSphere?.radius || 1;
+      const instanceData = mesh.instanceData;
+      const stride = mesh.floatsPerInstance || 20;
+      if (instanceData && instanceCount >= 1 && instanceData.length >= instanceCount * stride) {
+        let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+        for (let j = 0; j < instanceCount; j++) {
+          const o2 = j * stride + 12;
+          minX = Math.min(minX, instanceData[o2]);
+          maxX = Math.max(maxX, instanceData[o2]);
+          minY = Math.min(minY, instanceData[o2 + 1]);
+          maxY = Math.max(maxY, instanceData[o2 + 1]);
+          minZ = Math.min(minZ, instanceData[o2 + 2]);
+          maxZ = Math.max(maxZ, instanceData[o2 + 2]);
+        }
+        center = [(minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5];
+        radius = 0;
+        for (let j = 0; j < instanceCount; j++) {
+          const o2 = j * stride;
+          const dx = instanceData[o2 + 12] - center[0], dy = instanceData[o2 + 13] - center[1], dz = instanceData[o2 + 14] - center[2];
+          const sx = Math.hypot(instanceData[o2], instanceData[o2 + 1], instanceData[o2 + 2]);
+          const sy = Math.hypot(instanceData[o2 + 4], instanceData[o2 + 5], instanceData[o2 + 6]);
+          const sz = Math.hypot(instanceData[o2 + 8], instanceData[o2 + 9], instanceData[o2 + 10]);
+          radius = Math.max(radius, Math.hypot(dx, dy, dz) + (mesh.boundingSphere?.radius || 1) * Math.max(sx, sy, sz));
+        }
+      } else {
+        const matrix = mesh.modelMatrix || mesh._modelMatrix;
+        center = matrix ? [matrix[12], matrix[13], matrix[14]] : [mesh.position?.x ?? 0, mesh.position?.y ?? 0, mesh.position?.z ?? 0];
+      }
+      this.computeCulling.setMeshDrawCommand(drawIndex, mesh.indexCount, instanceCount);
+      this.computeCulling.updateInstance(drawIndex, center, radius, drawIndex);
+      drawCount = Math.max(drawCount, drawIndex + 1);
     }
     this.computeCulling.flushIndirectBuffer();
-    this.computeCulling.flushInstances();
+    this.computeCulling.flushInstances(drawCount);
+    await this.computeCulling.execute(commandEncoder, camera.view, camera.projectionMatrix, camera.position, drawCount, 500);
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -41221,6 +41267,7 @@ async function GPUIndirectDraws() {
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
         const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+        if (drawIndex == null || drawIndex >= this.computeCulling.maxDrawCalls) continue;
         const indirectOffset = drawIndex * 20;
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
@@ -41233,6 +41280,7 @@ async function GPUIndirectDraws() {
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
         const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+        if (drawIndex == null || drawIndex >= this.computeCulling.maxDrawCalls) continue;
         const indirectOffset = drawIndex * 20;
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
@@ -42845,16 +42893,19 @@ var MatrixEngineWGPU = class {
     }
   };
   rebuildIndirectBuffer() {
+    const meshes = this.indirectManager.indirectMeshes;
+    const signature = meshes.map((mesh) => `${mesh.name}:${mesh.indexCount || 36}:${mesh.instanceCount || 1}:${this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex}`).join("|");
+    if (signature === this._indirectBufferSignature) return;
+    this._indirectBufferSignature = signature;
     setTimeout(() => {
       let cumulativeInstanceIndex = 0;
-      for (let i = 0; i < this.indirectManager.indirectMeshes.length; i++) {
-        const mesh = this.indirectManager.indirectMeshes[i];
+      for (let i = 0; i < meshes.length; i++) {
+        const mesh = meshes[i];
         const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
         const instanceCount = mesh.instanceCount || 1;
         const indexCount = mesh.indexCount || 36;
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
-        console.log("rebuildIndirectBuffer : mesh.indexCount :" + indexCount + " , mesh.instanceCount : " + instanceCount + " ,  mesh.globalInstanceIndex : " + mesh.globalInstanceIndex);
-        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
+        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, cumulativeInstanceIndex);
         cumulativeInstanceIndex += instanceCount;
       }
       this.computeCulling.flushIndirectBuffer();

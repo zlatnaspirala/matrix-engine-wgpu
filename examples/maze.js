@@ -113,6 +113,7 @@ export var mazeGame = function() {
               mesh: meshes.cube,
               physics: {enabled: false, mass: 0, geometry: "Cube"}
             });
+            let K = 1;
             maze.collisionSystem.registerStatic((test.name), test.position, 1.0, 'walls',  {x: wallScale[0] * K, y: wallScale[1] * K, z: wallScale[2] * K});
           }
         }

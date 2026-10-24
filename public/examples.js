@@ -1220,7 +1220,7 @@ function Zr(t3, e2, n3) {
           return t5[e3] = n4;
         }
       })(n3, t4);
-      i2 ? i2(e2, r3, t4) : t4 < 500 || U(K2, 3);
+      i2 ? i2(e2, r3, t4) : t4 < 500 || U(K, 3);
     }
   })), (t3 = ke(t3)) && Se(t3, ((t4, n4, r3) => {
     for (ur(e2, e2.g.end()), t4 = 0; t4 < r3.length; t4++) ur(e2, I(r3[t4]) || new Uint8Array(0));
@@ -1860,7 +1860,7 @@ function Jc(t3) {
     da(t3);
   }
 }
-var t2, i, s, o2, a, c, l, f, d, g, y2, _, w, T, A, b, L, F, M, P, B, j, V, X, H, W, z, K2, Y, q, $2, J, Z, Q, tt, et, ot, ct, ut, lt, dt, mt, yt, _t, vt, wt, Tt, At, bt, kt, xt, Lt, Rt, It, Xt, Ht, Wt, zt, Kt, Yt, Qt, pe, ge, me, ye, Ee, Ae, xe, Le, Pe, Ce, Ye, qe, Mn, Xn, Zn, Qn, er, nr, ir, sr, yr, _r, vr, Er, wr, Tr, Ar, br, kr, Sr, Lr, Rr, Mr, Pr, Cr, Or, Nr, Ur, Dr, Br, Gr, Qr, ii, pi, gi, mi, yi, _i, vi, Ei, wi, Ti, Ai, bi, ki, Si, xi, Li, Ri, Ii, Fi, Mi, Pi, Ci, Oi, Bi, Gi, ji, Vi, Wi, zi, Ki, Yi, qi, $i, Ji, Zi, Qi, ts, es, is, ss, os, as, ls, fs, ds, ps, gs, ms, ys, _s, vs, Es, ws, Ts, As, bs, ks, Ss, xs, Ls, Rs, Is, Fs, Ms, Ps, Cs, Os, Ns, Us, Ds, Bs, Gs, js, Vs, Xs, Hs, Ws, zs, Ks, Ys, qs, $s, Js, Zs, Qs, to, eo, no, ro, io, so, oo, ao, co, ho, uo, lo, fo, po, go, mo, yo, _o, vo, Eo, wo, To, Ao, bo, ko, So, xo, Lo, Ro, Io, Fo, Mo, Po, Co, Oo, No, Uo, Do, Yo, qo, Zo, pa, ma, ba, ka, Sa, Oa, Na, Ua, Da, Ka, nc, rc, sc, oc, ac, dc, pc, gc, mc, yc, _c, vc, Ec, wc, Tc, Ac, bc, Sc, xc, Fc, Pc, Cc, Dc, Bc, Gc, jc, Wc, zc, Kc, Yc, qc, Zc;
+var t2, i, s, o2, a, c, l, f, d, g, y2, _, w, T, A, b, L, F, M, P, B, j, V, X, H, W, z, K, Y, q, $2, J, Z, Q, tt, et, ot, ct, ut, lt, dt, mt, yt, _t, vt, wt, Tt, At, bt, kt, xt, Lt, Rt, It, Xt, Ht, Wt, zt, Kt, Yt, Qt, pe, ge, me, ye, Ee, Ae, xe, Le, Pe, Ce, Ye, qe, Mn, Xn, Zn, Qn, er, nr, ir, sr, yr, _r, vr, Er, wr, Tr, Ar, br, kr, Sr, Lr, Rr, Mr, Pr, Cr, Or, Nr, Ur, Dr, Br, Gr, Qr, ii, pi, gi, mi, yi, _i, vi, Ei, wi, Ti, Ai, bi, ki, Si, xi, Li, Ri, Ii, Fi, Mi, Pi, Ci, Oi, Bi, Gi, ji, Vi, Wi, zi, Ki, Yi, qi, $i, Ji, Zi, Qi, ts, es, is, ss, os, as, ls, fs, ds, ps, gs, ms, ys, _s, vs, Es, ws, Ts, As, bs, ks, Ss, xs, Ls, Rs, Is, Fs, Ms, Ps, Cs, Os, Ns, Us, Ds, Bs, Gs, js, Vs, Xs, Hs, Ws, zs, Ks, Ys, qs, $s, Js, Zs, Qs, to, eo, no, ro, io, so, oo, ao, co, ho, uo, lo, fo, po, go, mo, yo, _o, vo, Eo, wo, To, Ao, bo, ko, So, xo, Lo, Ro, Io, Fo, Mo, Po, Co, Oo, No, Uo, Do, Yo, qo, Zo, pa, ma, ba, ka, Sa, Oa, Na, Ua, Da, Ka, nc, rc, sc, oc, ac, dc, pc, gc, mc, yc, _c, vc, Ec, wc, Tc, Ac, bc, Sc, xc, Fc, Pc, Cc, Dc, Bc, Gc, jc, Wc, zc, Kc, Yc, qc, Zc;
 var init_vision_bundle = __esm({
   "node_modules/@mediapipe/tasks-vision/vision_bundle.mjs"() {
     t2 = "undefined" != typeof self ? self : {};
@@ -1893,7 +1893,7 @@ var init_vision_bundle = __esm({
     H = G(void 0, /* @__PURE__ */ Symbol());
     W = G(void 0, "0ub");
     z = G(void 0, "0ubs");
-    K2 = G(void 0, "0ubsb");
+    K = G(void 0, "0ubsb");
     Y = G(void 0, "0actk");
     q = G("m_m", "Pa", true);
     $2 = G();
@@ -2305,9 +2305,9 @@ var init_vision_bundle = __esm({
       if (null != e2) {
         if (e2 instanceof Lr) {
           const r3 = e2.Ra;
-          return void (r3 ? (e2 = r3(e2), null != e2 && pr(t3, n3, Pn(e2, true).buffer)) : U(K2, 3));
+          return void (r3 ? (e2 = r3(e2), null != e2 && pr(t3, n3, Pn(e2, true).buffer)) : U(K, 3));
         }
-        if (Array.isArray(e2)) return void U(K2, 3);
+        if (Array.isArray(e2)) return void U(K, 3);
       }
       li(t3, e2, n3);
     }), kr)];
@@ -4119,13 +4119,13 @@ var require_face_mesh = __commonJS({
         };
         return a2;
       }
-      function K3(a2) {
+      function K2(a2) {
         var b2 = "undefined" != typeof Symbol && Symbol.iterator && a2[Symbol.iterator];
         return b2 ? b2.call(a2) : { next: aa2(a2) };
       }
       function L2(a2) {
         if (!(a2 instanceof Array)) {
-          a2 = K3(a2);
+          a2 = K2(a2);
           for (var b2, c2 = []; !(b2 = a2.next()).done; ) c2.push(b2.value);
           a2 = c2;
         }
@@ -4472,11 +4472,11 @@ var require_face_mesh = __commonJS({
         };
         b2.race = function(f2) {
           return new b2(function(h2, k2) {
-            for (var l2 = K3(f2), n3 = l2.next(); !n3.done; n3 = l2.next()) d2(n3.value).J(h2, k2);
+            for (var l2 = K2(f2), n3 = l2.next(); !n3.done; n3 = l2.next()) d2(n3.value).J(h2, k2);
           });
         };
         b2.all = function(f2) {
-          var h2 = K3(f2), k2 = h2.next();
+          var h2 = K2(f2), k2 = h2.next();
           return k2.done ? d2([]) : new b2(function(l2, n3) {
             function u2(y3) {
               return function(m2) {
@@ -5403,7 +5403,7 @@ var require_face_mesh = __commonJS({
         else throw Error("solutions can only be loaded on a web page or in a web worker");
         this.S = b2;
         if (a2.options) {
-          b2 = K3(Object.keys(a2.options));
+          b2 = K2(Object.keys(a2.options));
           for (var c2 = b2.next(); !c2.done; c2 = b2.next()) {
             c2 = c2.value;
             var d2 = a2.options[c2].default;
@@ -5512,10 +5512,10 @@ var require_face_mesh = __commonJS({
               return N2(w2, $b(d2, d2.g.graph.url), 3);
             }
             2 != w2.g && (e2 = w2.h, d2.i.loadGraph(e2));
-            g2 = K3(Object.keys(d2.B));
+            g2 = K2(Object.keys(d2.B));
             for (f2 = g2.next(); !f2.done; f2 = g2.next()) h2 = f2.value, d2.i.overrideFile(h2, d2.B[h2]);
             d2.B = {};
-            if (d2.g.listeners) for (k2 = K3(d2.g.listeners), l2 = k2.next(); !l2.done; l2 = k2.next()) n3 = l2.value, bc2(d2, n3);
+            if (d2.g.listeners) for (k2 = K2(d2.g.listeners), l2 = k2.next(); !l2.done; l2 = k2.next()) n3 = l2.value, bc2(d2, n3);
             u2 = d2.j;
             d2.j = {};
             d2.setOptions(u2);
@@ -5535,7 +5535,7 @@ var require_face_mesh = __commonJS({
       v2.setOptions = function(a2, b2) {
         var c2 = this;
         if (b2 = b2 || this.g.options) {
-          for (var d2 = [], e2 = [], g2 = {}, f2 = K3(Object.keys(a2)), h2 = f2.next(); !h2.done; g2 = { K: g2.K, L: g2.L }, h2 = f2.next()) {
+          for (var d2 = [], e2 = [], g2 = {}, f2 = K2(Object.keys(a2)), h2 = f2.next(); !h2.done; g2 = { K: g2.K, L: g2.L }, h2 = f2.next()) {
             var k2 = h2.value;
             k2 in this.j && this.j[k2] === a2[k2] || (this.j[k2] = a2[k2], h2 = b2[k2], void 0 !== h2 && (h2.onChange && (g2.K = h2.onChange, g2.L = a2[k2], d2.push(/* @__PURE__ */ (function(l2) {
               return function() {
@@ -5565,7 +5565,7 @@ var require_face_mesh = __commonJS({
                   u2.g = 2;
                   break;
                 }
-                e2 = K3(d2.u);
+                e2 = K2(d2.u);
                 g2 = e2.next();
               case 3:
                 if (g2.done) {
@@ -5583,7 +5583,7 @@ var require_face_mesh = __commonJS({
               case 2:
                 if (d2.A) {
                   h2 = new d2.h.GraphOptionChangeRequestList();
-                  k2 = K3(d2.A);
+                  k2 = K2(d2.A);
                   for (l2 = k2.next(); !l2.done; l2 = k2.next()) n3 = l2.value, h2.push_back(n3);
                   d2.i.changeOptions(h2);
                   h2.delete();
@@ -5637,7 +5637,7 @@ var require_face_mesh = __commonJS({
                 return N2(y3, e2.initialize(), 3);
               case 3:
                 f2 = new e2.h.PacketDataList();
-                h2 = K3(Object.keys(a2));
+                h2 = K2(Object.keys(a2));
                 for (k2 = h2.next(); !k2.done; k2 = h2.next()) if (l2 = k2.value, n3 = e2.g.inputs[l2]) {
                   a: {
                     var m2 = e2;
@@ -5771,10 +5771,10 @@ var require_face_mesh = __commonJS({
                 if (!c2) return F2.return(b2);
                 g2 = {};
                 f2 = 0;
-                h2 = K3(Object.keys(c2));
+                h2 = K2(Object.keys(c2));
                 for (k2 = h2.next(); !k2.done; k2 = h2.next()) l2 = k2.value, n3 = c2[l2], "string" !== typeof n3 && "texture" === n3.type && void 0 !== b2[n3.stream] && ++f2;
                 1 < f2 && (u2.G = false);
-                w2 = K3(Object.keys(c2));
+                w2 = K2(Object.keys(c2));
                 k2 = w2.next();
               case 2:
                 if (k2.done) {
@@ -5895,7 +5895,7 @@ var require_face_mesh = __commonJS({
         });
       }
       function bc2(a2, b2) {
-        for (var c2 = b2.name || "$", d2 = [].concat(L2(b2.wants)), e2 = new a2.h.StringList(), g2 = K3(b2.wants), f2 = g2.next(); !f2.done; f2 = g2.next()) e2.push_back(f2.value);
+        for (var c2 = b2.name || "$", d2 = [].concat(L2(b2.wants)), e2 = new a2.h.StringList(), g2 = K2(b2.wants), f2 = g2.next(); !f2.done; f2 = g2.next()) e2.push_back(f2.value);
         g2 = a2.h.PacketListener.implement({ onResults: function(h2) {
           for (var k2 = {}, l2 = 0; l2 < b2.wants.length; ++l2) k2[d2[l2]] = h2.get(l2);
           var n3 = a2.listeners[c2];
@@ -9331,7 +9331,7 @@ var require_pose = __commonJS({
         return Na2 || (Na2 = new Uint8Array(0));
       }
       var Pa2 = {};
-      var Qa2 = "function" === typeof Uint8Array.prototype.slice, H2 = 0, K3 = 0;
+      var Qa2 = "function" === typeof Uint8Array.prototype.slice, H2 = 0, K2 = 0;
       function Ra2(a2) {
         var b2 = 0 > a2;
         a2 = Math.abs(a2);
@@ -9339,7 +9339,7 @@ var require_pose = __commonJS({
         a2 = Math.floor((a2 - c2) / 4294967296);
         b2 && (c2 = A2(Sa2(c2, a2)), b2 = c2.next().value, a2 = c2.next().value, c2 = b2);
         H2 = c2 >>> 0;
-        K3 = a2 >>> 0;
+        K2 = a2 >>> 0;
       }
       var Ta2 = "function" === typeof BigInt;
       function Sa2(a2, b2) {
@@ -9356,14 +9356,14 @@ var require_pose = __commonJS({
         if (!a2) return Wa2 || (Wa2 = new Ua2(0, 0));
         if (!/^-?\d+$/.test(a2)) return null;
         if (16 > a2.length) Ra2(Number(a2));
-        else if (Ta2) a2 = BigInt(a2), H2 = Number(a2 & BigInt(4294967295)) >>> 0, K3 = Number(a2 >> BigInt(32) & BigInt(4294967295));
+        else if (Ta2) a2 = BigInt(a2), H2 = Number(a2 & BigInt(4294967295)) >>> 0, K2 = Number(a2 >> BigInt(32) & BigInt(4294967295));
         else {
           var b2 = +("-" === a2[0]);
-          K3 = H2 = 0;
-          for (var c2 = a2.length, d2 = b2, e2 = (c2 - b2) % 6 + b2; e2 <= c2; d2 = e2, e2 += 6) d2 = Number(a2.slice(d2, e2)), K3 *= 1e6, H2 = 1e6 * H2 + d2, 4294967296 <= H2 && (K3 += H2 / 4294967296 | 0, H2 %= 4294967296);
-          b2 && (b2 = A2(Sa2(H2, K3)), a2 = b2.next().value, b2 = b2.next().value, H2 = a2, K3 = b2);
+          K2 = H2 = 0;
+          for (var c2 = a2.length, d2 = b2, e2 = (c2 - b2) % 6 + b2; e2 <= c2; d2 = e2, e2 += 6) d2 = Number(a2.slice(d2, e2)), K2 *= 1e6, H2 = 1e6 * H2 + d2, 4294967296 <= H2 && (K2 += H2 / 4294967296 | 0, H2 %= 4294967296);
+          b2 && (b2 = A2(Sa2(H2, K2)), a2 = b2.next().value, b2 = b2.next().value, H2 = a2, K2 = b2);
         }
-        return new Ua2(H2, K3);
+        return new Ua2(H2, K2);
       }
       var Wa2;
       function Xa2(a2, b2) {
@@ -10126,7 +10126,7 @@ var require_pose = __commonJS({
           N2(a2.h, 8 * c2 + 5);
           a2 = a2.h;
           var d2 = +b2;
-          0 === d2 ? 0 < 1 / d2 ? H2 = K3 = 0 : (K3 = 0, H2 = 2147483648) : isNaN(d2) ? (K3 = 0, H2 = 2147483647) : (d2 = (c2 = 0 > d2 ? -2147483648 : 0) ? -d2 : d2, 34028234663852886e22 < d2 ? (K3 = 0, H2 = (c2 | 2139095040) >>> 0) : 11754943508222875e-54 > d2 ? (d2 = Math.round(d2 / Math.pow(2, -149)), K3 = 0, H2 = (c2 | d2) >>> 0) : (b2 = Math.floor(Math.log(d2) / Math.LN2), d2 *= Math.pow(2, -b2), d2 = Math.round(8388608 * d2), 16777216 <= d2 && ++b2, K3 = 0, H2 = (c2 | b2 + 127 << 23 | d2 & 8388607) >>> 0));
+          0 === d2 ? 0 < 1 / d2 ? H2 = K2 = 0 : (K2 = 0, H2 = 2147483648) : isNaN(d2) ? (K2 = 0, H2 = 2147483647) : (d2 = (c2 = 0 > d2 ? -2147483648 : 0) ? -d2 : d2, 34028234663852886e22 < d2 ? (K2 = 0, H2 = (c2 | 2139095040) >>> 0) : 11754943508222875e-54 > d2 ? (d2 = Math.round(d2 / Math.pow(2, -149)), K2 = 0, H2 = (c2 | d2) >>> 0) : (b2 = Math.floor(Math.log(d2) / Math.LN2), d2 *= Math.pow(2, -b2), d2 = Math.round(8388608 * d2), 16777216 <= d2 && ++b2, K2 = 0, H2 = (c2 | b2 + 127 << 23 | d2 & 8388607) >>> 0));
           c2 = H2;
           a2.h.push(c2 >>> 0 & 255);
           a2.h.push(c2 >>> 8 & 255);
@@ -10157,7 +10157,7 @@ var require_pose = __commonJS({
         return true;
       }, function(a2, b2, c2) {
         b2 = T2(b2, c2);
-        null != b2 && ("string" === typeof b2 && Va2(b2), null != b2 && (N2(a2.h, 8 * c2), "number" === typeof b2 ? (a2 = a2.h, Ra2(b2), rb(a2, H2, K3)) : (c2 = Va2(b2), rb(a2.h, c2.i, c2.h))));
+        null != b2 && ("string" === typeof b2 && Va2(b2), null != b2 && (N2(a2.h, 8 * c2), "number" === typeof b2 ? (a2 = a2.h, Ra2(b2), rb(a2, H2, K2)) : (c2 = Va2(b2), rb(a2.h, c2.i, c2.h))));
       }), Bc2 = zc2(function(a2, b2, c2) {
         if (0 !== a2.i) return false;
         V2(b2, c2, nb(a2.h));
@@ -52648,15 +52648,13 @@ var ComputeCullingSystem = class {
     this.device = device2;
     this.gpuCapabilities = gpuCapabilities;
     this.maxInstances = maxInstances;
-    this.maxDrawCalls = 500;
+    this.maxDrawCalls = maxInstances;
     this.instanceBuffer = device2.createBuffer({
       label: "instanceBuffer",
       size: maxInstances * 80,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    this.instanceData = new Float32Array(this.instanceBuffer.getMappedRange());
-    this.instanceBuffer.unmap();
+    this.instanceData = new Float32Array(maxInstances * 20);
     this.visibilityBuffer = device2.createBuffer({
       label: "visibilityBuffer",
       size: maxInstances * 4,
@@ -52676,18 +52674,16 @@ var ComputeCullingSystem = class {
     this.instanceMeshMap = device2.createBuffer({
       label: "instanceMeshMap",
       size: maxInstances * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    this.instanceMeshData = new Uint32Array(this.instanceMeshMap.getMappedRange());
-    this.instanceMeshMap.unmap();
+    this.instanceMeshData = new Uint32Array(maxInstances);
     this.cullingParams = device2.createBuffer({
       label: "cullingParams",
-      size: 144,
+      size: 160,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.visibleCount = 0;
-    this.paramData = new Float32Array(36);
+    this.paramData = new Float32Array(40);
     this.zero = new Uint32Array([0]);
     this.createPipeline();
   }
@@ -52709,6 +52705,10 @@ struct CullingParams {
   projMatrix: mat4x4f,
   cameraPos: vec3f,
   maxDistance: f32,
+  drawCount: u32,
+  _pad0: u32,
+  _pad1: u32,
+  _pad2: u32,
 }
 struct Instance {model: mat4x4<f32>, colorMult : vec4<f32>};
 struct DrawCommand {
@@ -52728,9 +52728,18 @@ struct DrawCommand {
 
 fn isInFrustum(pos: vec3f, radius: f32) -> bool {
   let viewPos = (params.viewMatrix * vec4f(pos, 1.0)).xyz;
-  let projPos = params.projMatrix * vec4f(viewPos, 1.0);
-  let ndc = projPos.xyz / projPos.w;
-  return abs(ndc.x) <= 1.2 && abs(ndc.y) <= 1.2 && abs(ndc.z) <= 1.2;
+  let clipPos = params.projMatrix * vec4f(viewPos, 1.0);
+  if(clipPos.w <= 0.0) {
+    return false;
+  }
+  let ndc = clipPos.xyz / clipPos.w;
+  let safeW = max(clipPos.w, 0.0001);
+  let marginX = radius * abs(params.projMatrix[0][0]) / safeW;
+  let marginY = radius * abs(params.projMatrix[1][1]) / safeW;
+  let marginZ = radius / safeW;
+  return ndc.x >= -1.0 - marginX && ndc.x <= 1.0 + marginX &&
+         ndc.y >= -1.0 - marginY && ndc.y <= 1.0 + marginY &&
+         ndc.z >= -marginZ && ndc.z <= 1.0 + marginZ;
 }
 
 fn isInDistance(pos: vec3f) -> bool {
@@ -52741,22 +52750,19 @@ fn isInDistance(pos: vec3f) -> bool {
 @compute @workgroup_size(128)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
   let idx = gid.x;
-  let isValid = idx < arrayLength(&instances);
-  if (isValid) {
-    let inst = instances[idx];
-    let position = inst.model[3].xyz;
-    if (isInFrustum(position, 1.0) && isInDistance(position)) {
-      let visIdx = atomicAdd(&visibleCounter, 1u);
-      if (visIdx < arrayLength(&visibleIndices)) {
-          visibleIndices[visIdx] = idx;
-      }
-      let meshIdx = instanceMeshMap[idx];
-      atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
-    }
+  if(idx >= params.drawCount || idx >= arrayLength(&instances)) {
+    return;
   }
-
-  workgroupBarrier();
-  storageBarrier();
+  let inst = instances[idx];
+  let position = inst.model[3].xyz;
+  let radius = max(inst.colorMult.x, 0.0);
+  let meshIdx = instanceMeshMap[idx];
+  if(isInFrustum(position, radius) && isInDistance(position)) {
+    let visIdx = atomicAdd(&visibleCounter, 1u);
+    if(visIdx < arrayLength(&visibleIndices)) {visibleIndices[visIdx] = idx;}
+  } else {
+    atomicStore(&indirectCommands[meshIdx].instanceCount, 0u);
+  }
 }`;
   }
   createPipeline() {
@@ -52791,7 +52797,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
       compute: { module, entryPoint: "main" }
     });
   }
-  async execute(commandEncoder, viewMatrix, projMatrix, cameraPos, maxDist = 500) {
+  async execute(commandEncoder, viewMatrix, projMatrix, cameraPos, drawCount, maxDist = 500) {
     this.paramData.fill(0);
     for (let i2 = 0; i2 < 16; i2++) this.paramData[i2] = viewMatrix[i2];
     for (let i2 = 0; i2 < 16; i2++) this.paramData[16 + i2] = projMatrix[i2];
@@ -52799,12 +52805,14 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     this.paramData[33] = cameraPos[1];
     this.paramData[34] = cameraPos[2];
     this.paramData[35] = maxDist;
+    new Uint32Array(this.paramData.buffer)[36] = drawCount;
     this.device.queue.writeBuffer(this.cullingParams, 0, this.paramData);
     this.device.queue.writeBuffer(this.counterBuffer, 0, this.zero);
+    if (drawCount === 0) return;
     const pass = commandEncoder.beginComputePass();
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
-    pass.dispatchWorkgroups(Math.ceil(this.maxInstances / 128));
+    pass.dispatchWorkgroups(Math.ceil(drawCount / 128));
     pass.end();
   }
   updateInstance(index, position, radius, meshIndex = 0) {
@@ -52825,14 +52833,16 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     this.instanceData[offset + 13] = position[1];
     this.instanceData[offset + 14] = position[2];
     this.instanceData[offset + 15] = 1;
-    this.instanceData[offset + 16] = 1;
+    this.instanceData[offset + 16] = radius;
     this.instanceData[offset + 17] = 1;
     this.instanceData[offset + 18] = 1;
     this.instanceData[offset + 19] = 1;
     this.instanceMeshData[index] = meshIndex;
   }
-  flushInstances() {
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
+  flushInstances(count = this.maxInstances) {
+    count = Math.min(count, this.maxInstances);
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData.subarray(0, count * 20));
+    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData.subarray(0, count));
   }
   getIndirectBuffer() {
     return this.indirectBuffer;
@@ -52923,6 +52933,7 @@ async function GPUIndirectDraws() {
       p2.end();
     }
     const len2 = this.mainRenderBundle.length;
+    let drawCount = 0;
     for (let i2 = 0; i2 < len2; i2++) {
       const mesh = this.mainRenderBundle[i2];
       mesh.updateInstanceData?.(mesh.modelMatrix);
@@ -52939,10 +52950,45 @@ async function GPUIndirectDraws() {
           effect.simulate?.(commandEncoder);
         }
       }
-      this.computeCulling.setMeshDrawCommand(i2, mesh.indexCount, mesh.instanceCount);
+      const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex ?? i2;
+      if (drawIndex >= this.computeCulling.maxDrawCalls) continue;
+      const instanceCount = mesh.instanceCount || 1;
+      mesh.updateBoundingSphere?.();
+      let center, radius = mesh.boundingSphere?.radius || 1;
+      const instanceData = mesh.instanceData;
+      const stride = mesh.floatsPerInstance || 20;
+      if (instanceData && instanceCount >= 1 && instanceData.length >= instanceCount * stride) {
+        let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+        for (let j2 = 0; j2 < instanceCount; j2++) {
+          const o3 = j2 * stride + 12;
+          minX = Math.min(minX, instanceData[o3]);
+          maxX = Math.max(maxX, instanceData[o3]);
+          minY = Math.min(minY, instanceData[o3 + 1]);
+          maxY = Math.max(maxY, instanceData[o3 + 1]);
+          minZ = Math.min(minZ, instanceData[o3 + 2]);
+          maxZ = Math.max(maxZ, instanceData[o3 + 2]);
+        }
+        center = [(minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5];
+        radius = 0;
+        for (let j2 = 0; j2 < instanceCount; j2++) {
+          const o3 = j2 * stride;
+          const dx = instanceData[o3 + 12] - center[0], dy = instanceData[o3 + 13] - center[1], dz = instanceData[o3 + 14] - center[2];
+          const sx = Math.hypot(instanceData[o3], instanceData[o3 + 1], instanceData[o3 + 2]);
+          const sy = Math.hypot(instanceData[o3 + 4], instanceData[o3 + 5], instanceData[o3 + 6]);
+          const sz = Math.hypot(instanceData[o3 + 8], instanceData[o3 + 9], instanceData[o3 + 10]);
+          radius = Math.max(radius, Math.hypot(dx, dy, dz) + (mesh.boundingSphere?.radius || 1) * Math.max(sx, sy, sz));
+        }
+      } else {
+        const matrix = mesh.modelMatrix || mesh._modelMatrix;
+        center = matrix ? [matrix[12], matrix[13], matrix[14]] : [mesh.position?.x ?? 0, mesh.position?.y ?? 0, mesh.position?.z ?? 0];
+      }
+      this.computeCulling.setMeshDrawCommand(drawIndex, mesh.indexCount, instanceCount);
+      this.computeCulling.updateInstance(drawIndex, center, radius, drawIndex);
+      drawCount = Math.max(drawCount, drawIndex + 1);
     }
     this.computeCulling.flushIndirectBuffer();
-    this.computeCulling.flushInstances();
+    this.computeCulling.flushInstances(drawCount);
+    await this.computeCulling.execute(commandEncoder, camera.view, camera.projectionMatrix, camera.position, drawCount, 500);
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -52959,6 +53005,7 @@ async function GPUIndirectDraws() {
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
         const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+        if (drawIndex == null || drawIndex >= this.computeCulling.maxDrawCalls) continue;
         const indirectOffset = drawIndex * 20;
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
@@ -52971,6 +53018,7 @@ async function GPUIndirectDraws() {
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
         const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+        if (drawIndex == null || drawIndex >= this.computeCulling.maxDrawCalls) continue;
         const indirectOffset = drawIndex * 20;
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
@@ -54583,16 +54631,19 @@ var MatrixEngineWGPU = class {
     }
   };
   rebuildIndirectBuffer() {
+    const meshes = this.indirectManager.indirectMeshes;
+    const signature = meshes.map((mesh) => `${mesh.name}:${mesh.indexCount || 36}:${mesh.instanceCount || 1}:${this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex}`).join("|");
+    if (signature === this._indirectBufferSignature) return;
+    this._indirectBufferSignature = signature;
     setTimeout(() => {
       let cumulativeInstanceIndex = 0;
-      for (let i2 = 0; i2 < this.indirectManager.indirectMeshes.length; i2++) {
-        const mesh = this.indirectManager.indirectMeshes[i2];
+      for (let i2 = 0; i2 < meshes.length; i2++) {
+        const mesh = meshes[i2];
         const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
         const instanceCount = mesh.instanceCount || 1;
         const indexCount = mesh.indexCount || 36;
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
-        console.log("rebuildIndirectBuffer : mesh.indexCount :" + indexCount + " , mesh.instanceCount : " + instanceCount + " ,  mesh.globalInstanceIndex : " + mesh.globalInstanceIndex);
-        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
+        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, cumulativeInstanceIndex);
         cumulativeInstanceIndex += instanceCount;
       }
       this.computeCulling.flushIndirectBuffer();
@@ -57628,7 +57679,8 @@ var mazeGame = function() {
               mesh: meshes.cube,
               physics: { enabled: false, mass: 0, geometry: "Cube" }
             });
-            maze.collisionSystem.registerStatic(test.name, test.position, 1, "walls", { x: wallScale[0] * K, y: wallScale[1] * K, z: wallScale[2] * K });
+            let K2 = 1;
+            maze.collisionSystem.registerStatic(test.name, test.position, 1, "walls", { x: wallScale[0] * K2, y: wallScale[1] * K2, z: wallScale[2] * K2 });
           }
         }
       }
