@@ -17,7 +17,7 @@ export var mazeGame = function() {
     fastRender: 0.9,
     // render: 'culling',
     render: 'GPUInstancedDraw',
-    GPUCullingRad: 100,
+    GPUCullingRad: 20,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,

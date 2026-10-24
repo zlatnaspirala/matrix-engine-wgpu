@@ -52988,7 +52988,7 @@ async function GPUIndirectDraws() {
     }
     this.computeCulling.flushIndirectBuffer();
     this.computeCulling.flushInstances(drawCount);
-    await this.computeCulling.execute(commandEncoder, camera.view, camera.projectionMatrix, camera.position, drawCount, 500);
+    await this.computeCulling.execute(commandEncoder, camera.view, camera.projectionMatrix, camera.position, drawCount, this.GPUCullingRad ?? 500);
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -53844,11 +53844,11 @@ var MatrixEngineWGPU = class {
         }
       }
     });
-    this.GPUCullingRad = MEConfig.GPUCullingRad;
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
     this.MEConfig.construct(options2);
+    this.GPUCullingRad = this.MEConfig.GPUCullingRad;
     this.label = new MultiLang();
     this.now = 0;
     this.logLoopError = this.MEConfig.logLoopError;
@@ -57595,7 +57595,7 @@ var mazeGame = function() {
     fastRender: 0.9,
     // render: 'culling',
     render: "GPUInstancedDraw",
-    GPUCullingRad: 100,
+    GPUCullingRad: 20,
     dontUsePhysics: true,
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
