@@ -45,13 +45,18 @@ export class FireballSystem {
     this.FBHitEvent = new CustomEvent('fireball-hit', {
       detail: {target: null, damage: 0}
     });
-    this.loadBallAnim('https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/glb/ring1.glb');
+    this.ready = this.loadBallAnim('https://unpkg.com/matrix-engine-wgpu@latest/public/res/meshes/glb/ring1.glb')
+      .catch((err) => {
+        console.error('Failed to load fireball mesh:', err);
+        return null;
+      });
     this.projectiles = [];
   }
 
   // Spawn a new fireball scene object
   async spawn(fromPosition, target) {
-    if(this.projectiles.length >= FireballSystem.CONFIG.maxActive) return;
+    await this.ready;
+    if(!this.fireballMesh || !target || this.projectiles.length >= FireballSystem.CONFIG.maxActive) return;
     this.fireballMesh.position.x = fromPosition.x;
     this.fireballMesh.position.y = fromPosition.y;
     this.fireballMesh.position.z = fromPosition.z;
