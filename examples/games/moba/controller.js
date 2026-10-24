@@ -108,7 +108,7 @@ export class Controller {
         // cases for magic // distance attack
         if(testDistance < this.distanceForLongAction) {
           console.log("Lets say only for maria [SPECIAL DISTANCE ATTACK]")
-          this.core.localHero.setAttack(e.detail.hitObject);
+          this.core.localHero.setAttack(e.detail.hitObject, true);
           return;
         }
         // close contact

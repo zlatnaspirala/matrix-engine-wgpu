@@ -44145,7 +44145,7 @@ var Controller = class {
         let testDistance = this.distance3D(LH.position, e.detail.hitObject.position);
         if (testDistance < this.distanceForLongAction) {
           console.log("Lets say only for maria [SPECIAL DISTANCE ATTACK]");
-          this.core.localHero.setAttack(e.detail.hitObject);
+          this.core.localHero.setAttack(e.detail.hitObject, true);
           return;
         }
         if (testDistance < this.distanceForAction) {
@@ -47136,6 +47136,7 @@ var CollisionSystem = class {
     this._eventDetail = {};
     this._neighbors = [];
     this._staticNeighbors = [];
+    this._activeHeroContacts = /* @__PURE__ */ new Set();
     this.pickupEntries = [];
     this._pickupGrid = /* @__PURE__ */ new Map();
     this._pickupNeighbors = [];
@@ -47326,6 +47327,7 @@ var CollisionSystem = class {
     }
     this._buildGrid();
     const n2 = this.entries.length;
+    const heroContacts = /* @__PURE__ */ new Set();
     for (let i = 0; i < n2; i++) {
       const A = this.entries[i];
       this._getNeighborCells(A.pos.x, A.pos.y, A.pos.z, this._grid, this._neighbors);
@@ -47341,15 +47343,22 @@ var CollisionSystem = class {
         const dx = A.pos.x - B.pos.x;
         const dz = A.pos.z - B.pos.z;
         if (dx * dx + dz * dz > minDist * minDist) continue;
-        const testCollide = resolvePairRepulsion3D(A.pos, B.pos, minDist, 1);
+        const isHeroPair = A.group === "local_hero" && B.group === "enemy" || A.group === "enemy" && B.group === "local_hero";
+        const pairKey = isHeroPair ? `${A.id}|${B.id}` : null;
+        const wasHeroContact = isHeroPair && this._activeHeroContacts.has(pairKey);
+        const testCollide = resolvePairRepulsion3D(A.pos, B.pos, minDist, isHeroPair ? 0.2 : 1);
         if (testCollide) {
-          this._eventDetail.A = A;
-          this._eventDetail.B = B;
-          this._event1.detail.data = this._eventDetail;
-          dispatchEvent(this._event1);
+          if (isHeroPair) heroContacts.add(pairKey);
+          if (!isHeroPair || !wasHeroContact) {
+            this._eventDetail.A = A;
+            this._eventDetail.B = B;
+            this._event1.detail.data = this._eventDetail;
+            dispatchEvent(this._event1);
+          }
         }
       }
     }
+    this._activeHeroContacts = heroContacts;
   }
 };
 
