@@ -56,9 +56,28 @@ export class SlotGame {
       const result = {...ev, grid, stops, inFree, freeSpinsLeft: this.freeSpinsLeft};
       this.emit('result', result);
 
-      if(this.onPresentWin && (ev.lineWins.length || ev.freeSpinsAwarded)) {
+      if(ev.lineWins.length || ev.freeSpinsAwarded) {
         this.setState('PRESENTING');
-        await this.onPresentWin(result);
+        const winningByReel = this.views.map(() => new Set());
+        for(const win of ev.lineWins) {
+          for(const cell of win.cells) {
+            winningByReel[cell.reel].add(this.views[cell.reel].stripIndexForRow(
+              stops[cell.reel], cell.row, this.topIsPrev
+            ));
+          }
+        }
+        if(ev.freeSpinsAwarded) {
+          for(const cell of ev.scatterCells) {
+            winningByReel[cell.reel].add(this.views[cell.reel].stripIndexForRow(
+              stops[cell.reel], cell.row, this.topIsPrev
+            ));
+          }
+        }
+        const animations = winningByReel.flatMap((indices, reelIndex) =>
+          [...indices].map(index => this.views[reelIndex].playWinAt(index))
+        );
+        const presentation = this.onPresentWin ? this.onPresentWin(result) : Promise.resolve();
+        await Promise.all([...animations, presentation]);
       }
     } catch(err) {
       console.error('[slot] spin failed', err);
