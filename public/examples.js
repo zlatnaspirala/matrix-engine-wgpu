@@ -50607,10 +50607,9 @@ var cullingPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for (const className in this.effectsByType) {
-      const pile = this.effectsByType[className];
+    for (const pile of this.effectsByType.values()) {
       if (pile.length === 0) continue;
-      if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+      if (pile[0].effect.constructor.managesRenderPipeline === true) {
         for (const { effect, mesh } of pile) {
           if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -50734,10 +50733,9 @@ var noShadowPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for (const className in this.effectsByType) {
-      const pile = this.effectsByType[className];
+    for (const pile of this.effectsByType.values()) {
       if (pile.length === 0) continue;
-      if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+      if (pile[0].effect.constructor.managesRenderPipeline === true) {
         for (const { effect, mesh } of pile) {
           if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -53008,10 +53006,9 @@ async function GPUIndirectDraws() {
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
     }
-    for (const className in this.effectsByType) {
-      const pile = this.effectsByType[className];
+    for (const pile of this.effectsByType.values()) {
       if (pile.length === 0) continue;
-      if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+      if (pile[0].effect.constructor.managesRenderPipeline === true) {
         for (const { effect, mesh } of pile) {
           if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -53814,7 +53811,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
-    this.effectsByType = { FlameEmitter: [] };
+    this.effectsByType = /* @__PURE__ */ new Map([[FlameEmitter, []]]);
     addEventListener("update-effects", (e2) => {
       for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
@@ -53822,9 +53819,9 @@ var MatrixEngineWGPU = class {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect === null) continue;
-            const className = effect.constructor.name;
-            if (!this.effectsByType[className]) this.effectsByType[className] = [];
-            this.effectsByType[className].push({ effect, mesh });
+            const effectType = effect.constructor;
+            if (!this.effectsByType.has(effectType)) this.effectsByType.set(effectType, []);
+            this.effectsByType.get(effectType).push({ effect, mesh });
           }
         }
       }
@@ -55020,10 +55017,9 @@ var MatrixEngineWGPU = class {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      for (const className in this.effectsByType) {
-        const pile = this.effectsByType[className];
+      for (const pile of this.effectsByType.values()) {
         if (pile.length === 0) continue;
-        if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+        if (pile[0].effect.constructor.managesRenderPipeline === true) {
           for (const { effect, mesh } of pile) {
             if (effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -70876,6 +70872,8 @@ return FragOut(
 // src/engine/effects/waterSimEffect.js
 var SIM_RES = 512;
 var WaterSimEffect = class _WaterSimEffect {
+  // This effect manages its own render pipeline; do not bind the shared effect pipeline.
+  static managesRenderPipeline = true;
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   static _shaderCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, options2 = {}) {
@@ -74052,6 +74050,8 @@ var DragRotateController = class {
 // src/engine/effects/waterSimEffectSphere.js
 var SIM_RES2 = 512;
 var WaterSimSphereEffect = class _WaterSimSphereEffect {
+  // This effect manages its own render pipeline; do not bind the shared effect pipeline.
+  static managesRenderPipeline = true;
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, options2 = {}) {
     this.device = device2;
@@ -75525,6 +75525,8 @@ fn fs_main(vin: VertexOut) -> FragOut {
 `
 );
 var DepthWebcamVoxelEffect = class _DepthWebcamVoxelEffect {
+  // This effect manages its own render pipeline; do not bind the shared effect pipeline.
+  static managesRenderPipeline = true;
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, opts = {}) {
     this.device = device2;
