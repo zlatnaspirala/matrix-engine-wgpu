@@ -3,7 +3,7 @@
  * @author Nikola Lukic 
  * @email zlatnaspirala@gmail.com mart 2024-2026
  * npm import/export sync with
- * @version 1.19.1
+ * @version 2.0.1
  */
 
 import MatrixEngineWGPU from "./src/world.js";
