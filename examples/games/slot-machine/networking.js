@@ -1,22 +1,14 @@
 
-// symbol id -> spritesheet frame. Placeholder until you describe the sprite fields tomorrow.
-export const DEFAULT_FRAME_MAP = {A: 0, K: 1, Q: 2, J: 3, "10": 4, W: 5, S: 6};
-const UNKNOWN_FRAME = 15;
-
 export async function fetchSlotConfig(baseUrl, machineId) {
+  const token = globalThis.SLOT_SIMULATOR_CONFIG_TOKEN;
+  const headers = token ? {"X-Local-Config-Token": token} : {};
   const res = await fetch(`${baseUrl}/slot-api/machines/${machineId}/slot-config`,
-    {
-      credentials: "include",
-      headers: {
-        "X-Local-Config-Token": "SHITHAPPENS"
-      }
-    });
+    {credentials: "include", headers});
   if(!res.ok) throw new Error(`slot-config HTTP ${res.status}`);
   return res.json();
 }
 
-export function adaptSlotConfig(raw, opts = {}) {
-  const frameMap = {...DEFAULT_FRAME_MAP, ...(opts.frameMap || {})};
+export function adaptSlotConfig(raw) {
   const warnings = [];
   const errors = [];
 
@@ -27,21 +19,18 @@ export function adaptSlotConfig(raw, opts = {}) {
   const symbols = new Map(raw.symbols.map(s => [s.id, s]));
   const reelCount = raw.reels.length;
 
-  // Reels: strip ids -> frame indices
+  // Each strip entry is a symbol ID backed by its own 4x4 (16-frame) texture.
   const reels = raw.reels.map(r => {
-    const frames = r.strip.map(id => {
-      if(!symbols.has(id)) {
-        warnings.push(`Reel ${r.id}: unknown symbol "${id}", using placeholder frame`);
-        return UNKNOWN_FRAME;
-      }
-      if(!(id in frameMap)) {
-        warnings.push(`No frame mapped for symbol "${id}", using placeholder frame`);
-        return UNKNOWN_FRAME;
-      }
-      return frameMap[id];
-    });
-    return {id: r.id, strip: [...r.strip], frames, length: r.strip.length};
+    if(!Array.isArray(r.strip) || !r.strip.length) {
+      errors.push(`Reel ${r.id}: empty or missing strip`);
+      return {id: r.id, strip: [], length: 0};
+    }
+    for(const id of r.strip) {
+      if(!symbols.has(id)) warnings.push(`Reel ${r.id}: unknown symbol "${id}" is not in the symbol registry`);
+    }
+    return {id: r.id, strip: [...r.strip], length: r.strip.length};
   });
+  if(errors.length) throw new Error('Invalid slot config: ' + errors.join('; '));
 
   // Paylines: drop disabled ones, check the row count against the reel count
   const paylines = raw.paylines
@@ -55,7 +44,8 @@ export function adaptSlotConfig(raw, opts = {}) {
     })
     .map(l => ({id: l.id, rows: [...l.rows]}));
 
-  const visibleRows = Math.max(...paylines.flatMap(l => l.rows)) + 1;
+  const maxPaylineRow = paylines.length ? Math.max(...paylines.flatMap(l => l.rows)) : 2;
+  const visibleRows = Math.max(1, Number(raw.visibleRows) || maxPaylineRow + 1);
 
   // Paytable: normalize keys to numbers
   const paytable = {};
@@ -75,7 +65,6 @@ export function adaptSlotConfig(raw, opts = {}) {
     reels,
     symbols,
     symbolRoles: {wild: byType('wild'), scatter: byType('scatter')},
-    frameMap,
     paytable,
     paylines,
     freeSpins: raw.freeSpins ?? {enabled: false},
