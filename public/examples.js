@@ -21162,7 +21162,7 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }`;
 
 // src/engine/effects/topology-point.js
-var PointEffect = class {
+var PointEffect = class _PointEffect {
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer) {
     this.device = device2;
@@ -21175,8 +21175,8 @@ var PointEffect = class {
   }
   _initPipeline() {
     const device2 = this.device;
-    if (TopologyEffect._pipelineCache.has(device2)) {
-      const cached = TopologyEffect._pipelineCache.get(device2);
+    if (_PointEffect._pipelineCache.has(device2)) {
+      const cached = _PointEffect._pipelineCache.get(device2);
       this.bindGroupLayout = cached.bindGroupLayout;
       this.shaderModule = cached.shaderModule;
       this.pipelineLayout = cached.pipelineLayout;
@@ -21194,7 +21194,7 @@ var PointEffect = class {
         bindGroupLayouts: [this.bindGroupLayout]
       });
       this.pipeline = device2.createRenderPipeline({
-        label: "Topology Pipeline",
+        label: "PointEffect Pipeline",
         layout: this.pipelineLayout,
         vertex: {
           module: this.shaderModule,
@@ -21230,7 +21230,7 @@ var PointEffect = class {
           format: "depth24plus"
         }
       });
-      TopologyEffect._pipelineCache.set(device2, {
+      _PointEffect._pipelineCache.set(device2, {
         bindGroupLayout: this.bindGroupLayout,
         shaderModule: this.shaderModule,
         pipelineLayout: this.pipelineLayout,
@@ -21273,7 +21273,6 @@ var PointEffect = class {
   }
   render(pass, mesh, viewProjMatrix) {
     if (!mesh.vertexBuffer) {
-      console.warn("PointEffect: mesh has no vertexBuffer");
       return;
     }
     let vertexCount = mesh.vertexCount;
@@ -21284,12 +21283,10 @@ var PointEffect = class {
       vertexCount = mesh.geometry.positions.length / 3;
     }
     if (!vertexCount || vertexCount <= 0) {
-      console.warn("PointEffect: could not determine vertexCount", mesh);
       return;
     }
     const colorBuffer = mesh.vertexNormalsBuffer;
     if (!colorBuffer) {
-      console.warn("PointEffect: mesh has no vertexNormalsBuffer");
       return;
     }
     this.draw(pass, viewProjMatrix, mesh.vertexBuffer, colorBuffer, vertexCount);
@@ -22226,8 +22223,13 @@ var DestructionEffect2 = class _DestructionEffect {
     this.enabled = false;
     this.particles = [];
     this.color = config.color || [0.6, 0.5, 0.4, 1];
-    this.intensity = 1;
+    this.intensity = config.intensity || 1;
     this.cameraBuffer = cameraBuffer;
+    this._local = mat4Impl.create();
+    this._finalMat = mat4Impl.create();
+    this.timeBuffer = new Float32Array([this.time]);
+    this.intensityBuffer = new Float32Array([this.intensity]);
+    this.instanceData = new Float32Array(this.particleCount * 12);
     this._initPipeline();
     this._initParticles();
   }
@@ -22257,32 +22259,9 @@ var DestructionEffect2 = class _DestructionEffect {
           module: this.shaderModule,
           entryPoint: "vsMain",
           buffers: [
-            // Vertex positions (per-vertex, shared quad)
-            {
-              arrayStride: 3 * 4,
-              stepMode: "vertex",
-              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-            },
-            // UVs (per-vertex, shared quad)
-            {
-              arrayStride: 2 * 4,
-              stepMode: "vertex",
-              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }]
-            },
-            // Instance data (per-particle)
-            {
-              arrayStride: 12 * 4,
-              // 3 vec4s = 12 floats
-              stepMode: "instance",
-              attributes: [
-                { shaderLocation: 2, offset: 0, format: "float32x4" },
-                // position + size
-                { shaderLocation: 3, offset: 16, format: "float32x4" },
-                // velocity + life
-                { shaderLocation: 4, offset: 32, format: "float32x4" }
-                // color
-              ]
-            }
+            { arrayStride: 3 * 4, stepMode: "vertex", attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 2 * 4, stepMode: "vertex", attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] },
+            { arrayStride: 12 * 4, stepMode: "instance", attributes: [{ shaderLocation: 2, offset: 0, format: "float32x4" }, { shaderLocation: 3, offset: 16, format: "float32x4" }, { shaderLocation: 4, offset: 32, format: "float32x4" }] }
           ]
         },
         fragment: {
@@ -22303,7 +22282,6 @@ var DestructionEffect2 = class _DestructionEffect {
         primitive: { topology: "triangle-list", cullMode: "none" },
         depthStencil: {
           depthWriteEnabled: false,
-          // Particles don't write depth
           depthCompare: "less",
           format: "depth24plus"
         }
@@ -22390,7 +22368,6 @@ var DestructionEffect2 = class _DestructionEffect {
   _initParticles() {
     for (let i2 = 0; i2 < this.particleCount; i2++) {
       this.particles.push({
-        // Local position offset from parent
         position: [0, 0, 0],
         velocity: [0, 0, 0],
         life: 0,
@@ -22415,7 +22392,6 @@ var DestructionEffect2 = class _DestructionEffect {
       particle.position = [
         r3 * Math.sin(phi) * Math.cos(theta),
         Math.random() * 1,
-        // Slightly upward bias
         r3 * Math.sin(phi) * Math.sin(theta)
       ];
       const speed = 2 + Math.random() * 3;
@@ -22424,7 +22400,6 @@ var DestructionEffect2 = class _DestructionEffect {
       particle.velocity = [
         speed * Math.sin(vPhi) * Math.cos(vTheta),
         speed * Math.abs(Math.sin(vPhi)) * 2,
-        // Upward bias
         speed * Math.sin(vPhi) * Math.sin(vTheta)
       ];
       particle.maxLife = 1 + Math.random() * 1.5;
@@ -22467,44 +22442,39 @@ var DestructionEffect2 = class _DestructionEffect {
     this._updateInstanceBuffer();
   }
   _updateInstanceBuffer() {
-    const instanceData = new Float32Array(this.particleCount * 12);
     for (let i2 = 0; i2 < this.particleCount; i2++) {
       const p2 = this.particles[i2];
       const offset = i2 * 12;
-      instanceData[offset + 0] = p2.position[0];
-      instanceData[offset + 1] = p2.position[1];
-      instanceData[offset + 2] = p2.position[2];
-      instanceData[offset + 3] = p2.size;
-      instanceData[offset + 4] = p2.velocity[0];
-      instanceData[offset + 5] = p2.velocity[1];
-      instanceData[offset + 6] = p2.velocity[2];
-      instanceData[offset + 7] = p2.life;
-      instanceData[offset + 8] = p2.color[0];
-      instanceData[offset + 9] = p2.color[1];
-      instanceData[offset + 10] = p2.color[2];
-      instanceData[offset + 11] = p2.color[3];
+      this.instanceData[offset + 0] = p2.position[0];
+      this.instanceData[offset + 1] = p2.position[1];
+      this.instanceData[offset + 2] = p2.position[2];
+      this.instanceData[offset + 3] = p2.size;
+      this.instanceData[offset + 4] = p2.velocity[0];
+      this.instanceData[offset + 5] = p2.velocity[1];
+      this.instanceData[offset + 6] = p2.velocity[2];
+      this.instanceData[offset + 7] = p2.life;
+      this.instanceData[offset + 8] = p2.color[0];
+      this.instanceData[offset + 9] = p2.color[1];
+      this.instanceData[offset + 10] = p2.color[2];
+      this.instanceData[offset + 11] = p2.color[3];
     }
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, instanceData);
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
   }
   /**
    * Update instance data with parent transform
    * Called by parent object before rendering
    */
   updateInstanceData(baseModelMatrix) {
-    const local2 = mat4Impl.identity();
-    const finalMat = mat4Impl.identity();
-    mat4Impl.multiply(baseModelMatrix, local2, finalMat);
-    const timeBuffer = new Float32Array([this.time]);
+    mat4Impl.identity(this._local);
+    mat4Impl.identity(this._finalMat);
+    mat4Impl.multiply(baseModelMatrix, this._local, this._finalMat);
+    this.timeBuffer[0] = this.time;
     const intensityBuffer = new Float32Array([this.intensity]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMat);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, this.timeBuffer);
     this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
   }
-  /**
-   * Draw particles
-   */
   draw(pass, cameraMatrix) {
-    if (!this.enabled) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);

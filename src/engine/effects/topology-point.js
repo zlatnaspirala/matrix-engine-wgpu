@@ -14,8 +14,8 @@ export class PointEffect {
 
   _initPipeline() {
     const device = this.device;
-    if(TopologyEffect._pipelineCache.has(device)) {
-      const cached = TopologyEffect._pipelineCache.get(device);
+    if(PointEffect._pipelineCache.has(device)) {
+      const cached = PointEffect._pipelineCache.get(device);
       this.bindGroupLayout = cached.bindGroupLayout;
       this.shaderModule = cached.shaderModule;
       this.pipelineLayout = cached.pipelineLayout;
@@ -34,7 +34,7 @@ export class PointEffect {
       });
 
       this.pipeline = device.createRenderPipeline({
-        label: 'Topology Pipeline',
+        label: 'PointEffect Pipeline',
         layout: this.pipelineLayout,
         vertex: {
           module: this.shaderModule,
@@ -71,8 +71,7 @@ export class PointEffect {
         }
       });
 
-      // ========== CACHE THEM ==========
-      TopologyEffect._pipelineCache.set(device, {
+      PointEffect._pipelineCache.set(device, {
         bindGroupLayout: this.bindGroupLayout,
         shaderModule: this.shaderModule,
         pipelineLayout: this.pipelineLayout,
@@ -80,7 +79,6 @@ export class PointEffect {
       });
     }
 
-    // ========== PER-INSTANCE BUFFERS (NOT CACHED) ==========
     this.modelBuffer = device.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -127,7 +125,7 @@ export class PointEffect {
 
   render(pass, mesh, viewProjMatrix) {
     if(!mesh.vertexBuffer) {
-      console.warn('PointEffect: mesh has no vertexBuffer');
+      // console.warn('PointEffect: mesh has no vertexBuffer');
       return;
     }
     let vertexCount = mesh.vertexCount;
@@ -138,12 +136,12 @@ export class PointEffect {
       vertexCount = mesh.geometry.positions.length / 3;
     }
     if(!vertexCount || vertexCount <= 0) {
-      console.warn('PointEffect: could not determine vertexCount', mesh);
+      // console.warn('PointEffect: could not determine vertexCount', mesh);
       return;
     }
     const colorBuffer = mesh.vertexNormalsBuffer;
     if(!colorBuffer) {
-      console.warn('PointEffect: mesh has no vertexNormalsBuffer');
+      // console.warn('PointEffect: mesh has no vertexNormalsBuffer');
       return;
     }
     this.draw(pass, viewProjMatrix, mesh.vertexBuffer, colorBuffer, vertexCount);
@@ -158,7 +156,5 @@ export class PointEffect {
     this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
   }
 
-  setEnabled(enabled) {
-    this.enabled = enabled;
-  }
+  setEnabled(enabled) {this.enabled = enabled}
 }
