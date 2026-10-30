@@ -12,6 +12,7 @@ export class SlotReel {
     this.dir = opts.dir ?? 1;                  // CALIBRATE: 1 or -1, ring direction
     this.extraTurns = opts.extraTurns ?? 1;
     this.stopMs = opts.stopMs ?? 900;
+    this.visibleRows = opts.visibleRows ?? 3;
   }
 
   get sprites() {return [...this.mesh.effects.spriteBatch.sprites.values()];}
@@ -28,7 +29,7 @@ export class SlotReel {
     for(const [i, sprite] of sprites.entries()) {
       const yDeg = (i / N) * 360;
       sprite.pause();
-      sprite.goToFrame(this.cfg.frames[i]);
+      sprite.goToFrame(0);
       sprite.setTargetRotation(90, yDeg - FIX, FIX);
       if(i === sprites.length - 1) {
         animateRotationY(this.mesh.rotation, 90, 1000);
@@ -37,7 +38,26 @@ export class SlotReel {
     }
   }
 
-  angleForStop(s) {return this.angleOffset + this.dir * (s / this.cfg.length) * 360;}
+  stripIndexForRow(stop, row, topIsPrev = true) {
+    const center = Math.floor(this.visibleRows / 2);
+    const offset = (row - center) * (topIsPrev ? 1 : -1);
+    return ((stop + offset) % this.cfg.length + this.cfg.length) % this.cfg.length;
+  }
+
+  playWinAt(stripIndex, {duration = 1500, speed = 12} = {}) {
+    const sprite = this.sprites[stripIndex];
+    if(!sprite) return Promise.resolve();
+    sprite.playRange(0, 16, speed, true);
+    return new Promise(resolve => {
+      setTimeout(() => {
+        sprite.pause();
+        sprite.goToFrame(0);
+        resolve();
+      }, duration);
+    });
+  }
+
+    angleForStop(s) {return this.angleOffset + this.dir * (s / this.cfg.length) * 360;}
 
   snapTo(s) {                       // calibration helper
     this.mesh.rotation.setRotateX(0);
