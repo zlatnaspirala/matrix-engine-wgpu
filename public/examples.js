@@ -37193,6 +37193,19 @@ var METoolTip = class {
 var MEEditorClient = class {
   ws = null;
   updateSceneEvent = new CustomEvent("updateSceneContainer", { detail: {} });
+  allowedProjectNames = /* @__PURE__ */ new Set();
+  redirectToAllowedProject(name2) {
+    const normalized = typeof name2 === "string" ? name2.trim() : "";
+    if (!/^[A-Za-z0-9_-]+$/.test(normalized)) {
+      console.error("[EDITOR][INVALID REDIRECT NAME]", name2);
+      return;
+    }
+    if (!this.allowedProjectNames.has(normalized)) {
+      console.error("[EDITOR][UNAUTHORIZED REDIRECT NAME]", normalized);
+      return;
+    }
+    location.assign(normalized + ".html");
+  }
   constructor(typeOfRun, name2) {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
@@ -37220,11 +37233,7 @@ var MEEditorClient = class {
         console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
         if (data && data.ok == true && data.payload && data.payload.redirect == true) {
           const safeName = typeof data.name === "string" ? data.name.trim() : "";
-          if (/^[A-Za-z0-9_-]+$/.test(safeName)) {
-            setTimeout(() => location.assign(encodeURIComponent(safeName) + ".html"), 2e3);
-          } else {
-            console.error("[EDITOR][INVALID REDIRECT NAME]", data.name);
-          }
+          setTimeout(() => this.redirectToAllowedProject(safeName), 2e3);
         } else if (data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
         } else if (data.listAssetsForGraph) {
@@ -37236,7 +37245,8 @@ var MEEditorClient = class {
             detail: data
           }));
         } else if (data.projects) {
-          const projects = data.payload.filter((item) => item.name !== "readme.md").map((item) => item.name.trim());
+          const projects = data.payload.filter((item) => item.name !== "readme.md").map((item) => item.name.trim()).filter((name3) => /^[A-Za-z0-9_-]+$/.test(name3));
+          this.allowedProjectNames = new Set(projects);
           if (projects.length === 0) {
             console.warn("No projects found");
             return;
@@ -37245,7 +37255,7 @@ var MEEditorClient = class {
           const projectName = prompt(txt);
           if (projectName) {
             console.log("Project name:", projectName);
-            location.assign(projectName + ".html");
+            this.redirectToAllowedProject(projectName);
           } else {
             console.error("Project loading cancelled");
           }
