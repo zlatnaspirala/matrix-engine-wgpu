@@ -50607,10 +50607,9 @@ var cullingPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for (const className in this.effectsByType) {
-      const pile = this.effectsByType[className];
+    for (const pile of this.effectsByType.values()) {
       if (pile.length === 0) continue;
-      if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+      if (pile[0].effect.constructor.managesRenderPipeline === true) {
         for (const { effect, mesh } of pile) {
           if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -50734,10 +50733,9 @@ var noShadowPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for (const className in this.effectsByType) {
-      const pile = this.effectsByType[className];
+    for (const pile of this.effectsByType.values()) {
       if (pile.length === 0) continue;
-      if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+      if (pile[0].effect.constructor.managesRenderPipeline === true) {
         for (const { effect, mesh } of pile) {
           if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -53008,10 +53006,9 @@ async function GPUIndirectDraws() {
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
     }
-    for (const className in this.effectsByType) {
-      const pile = this.effectsByType[className];
+    for (const pile of this.effectsByType.values()) {
       if (pile.length === 0) continue;
-      if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+      if (pile[0].effect.constructor.managesRenderPipeline === true) {
         for (const { effect, mesh } of pile) {
           if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -53814,7 +53811,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
-    this.effectsByType = { FlameEmitter: [] };
+    this.effectsByType = /* @__PURE__ */ new Map([[FlameEmitter, []]]);
     addEventListener("update-effects", (e2) => {
       for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
@@ -53822,9 +53819,9 @@ var MatrixEngineWGPU = class {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect === null) continue;
-            const className = effect.constructor.name;
-            if (!this.effectsByType[className]) this.effectsByType[className] = [];
-            this.effectsByType[className].push({ effect, mesh });
+            const effectType = effect.constructor;
+            if (!this.effectsByType.has(effectType)) this.effectsByType.set(effectType, []);
+            this.effectsByType.get(effectType).push({ effect, mesh });
           }
         }
       }
@@ -55020,10 +55017,9 @@ var MatrixEngineWGPU = class {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      for (const className in this.effectsByType) {
-        const pile = this.effectsByType[className];
+      for (const pile of this.effectsByType.values()) {
         if (pile.length === 0) continue;
-        if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect" || className === "_WaterSimSphereEffect") {
+        if (pile[0].effect.constructor.managesRenderPipeline === true) {
           for (const { effect, mesh } of pile) {
             if (effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -70876,6 +70872,8 @@ return FragOut(
 // src/engine/effects/waterSimEffect.js
 var SIM_RES = 512;
 var WaterSimEffect = class _WaterSimEffect {
+  // This effect manages its own render pipeline; do not bind the shared effect pipeline.
+  static managesRenderPipeline = true;
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   static _shaderCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, options2 = {}) {
@@ -74052,6 +74050,8 @@ var DragRotateController = class {
 // src/engine/effects/waterSimEffectSphere.js
 var SIM_RES2 = 512;
 var WaterSimSphereEffect = class _WaterSimSphereEffect {
+  // This effect manages its own render pipeline; do not bind the shared effect pipeline.
+  static managesRenderPipeline = true;
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, options2 = {}) {
     this.device = device2;
@@ -75525,6 +75525,8 @@ fn fs_main(vin: VertexOut) -> FragOut {
 `
 );
 var DepthWebcamVoxelEffect = class _DepthWebcamVoxelEffect {
+  // This effect manages its own render pipeline; do not bind the shared effect pipeline.
+  static managesRenderPipeline = true;
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, opts = {}) {
     this.device = device2;
@@ -80191,23 +80193,17 @@ var loadPoseToGLB = function() {
 };
 
 // examples/games/slot-machine/networking.js
-var DEFAULT_FRAME_MAP = { A: 0, K: 1, Q: 2, J: 3, "10": 4, W: 5, S: 6 };
-var UNKNOWN_FRAME = 15;
 async function fetchSlotConfig(baseUrl2, machineId2) {
+  const token2 = SLOT_SIMULATOR_CONFIG_TOKEN;
+  const headers = token2 ? { "X-Local-Config-Token": token2 } : {};
   const res = await fetch(
     `${baseUrl2}/slot-api/machines/${machineId2}/slot-config`,
-    {
-      credentials: "include",
-      headers: {
-        "X-Local-Config-Token": "SHITHAPPENS"
-      }
-    }
+    { credentials: "include", headers }
   );
   if (!res.ok) throw new Error(`slot-config HTTP ${res.status}`);
   return res.json();
 }
-function adaptSlotConfig(raw, opts = {}) {
-  const frameMap = { ...DEFAULT_FRAME_MAP, ...opts.frameMap || {} };
+function adaptSlotConfig(raw) {
   const warnings = [];
   const errors = [];
   if (!Array.isArray(raw?.reels) || !raw.reels.length) errors.push("No reels in config");
@@ -80216,19 +80212,16 @@ function adaptSlotConfig(raw, opts = {}) {
   const symbols = new Map(raw.symbols.map((s2) => [s2.id, s2]));
   const reelCount = raw.reels.length;
   const reels = raw.reels.map((r3) => {
-    const frames = r3.strip.map((id2) => {
-      if (!symbols.has(id2)) {
-        warnings.push(`Reel ${r3.id}: unknown symbol "${id2}", using placeholder frame`);
-        return UNKNOWN_FRAME;
-      }
-      if (!(id2 in frameMap)) {
-        warnings.push(`No frame mapped for symbol "${id2}", using placeholder frame`);
-        return UNKNOWN_FRAME;
-      }
-      return frameMap[id2];
-    });
-    return { id: r3.id, strip: [...r3.strip], frames, length: r3.strip.length };
+    if (!Array.isArray(r3.strip) || !r3.strip.length) {
+      errors.push(`Reel ${r3.id}: empty or missing strip`);
+      return { id: r3.id, strip: [], length: 0 };
+    }
+    for (const id2 of r3.strip) {
+      if (!symbols.has(id2)) warnings.push(`Reel ${r3.id}: unknown symbol "${id2}" is not in the symbol registry`);
+    }
+    return { id: r3.id, strip: [...r3.strip], length: r3.strip.length };
   });
+  if (errors.length) throw new Error("Invalid slot config: " + errors.join("; "));
   const paylines = raw.paylines.filter((l2) => l2.enabled !== false).filter((l2) => {
     if (l2.rows.length !== reelCount) {
       warnings.push(`Payline ${l2.id}: ${l2.rows.length} rows vs ${reelCount} reels, skipped`);
@@ -80236,7 +80229,8 @@ function adaptSlotConfig(raw, opts = {}) {
     }
     return true;
   }).map((l2) => ({ id: l2.id, rows: [...l2.rows] }));
-  const visibleRows = Math.max(...paylines.flatMap((l2) => l2.rows)) + 1;
+  const maxPaylineRow = paylines.length ? Math.max(...paylines.flatMap((l2) => l2.rows)) : 2;
+  const visibleRows = Math.max(1, Number(raw.visibleRows) || maxPaylineRow + 1);
   const paytable = {};
   for (const [sym, pays] of Object.entries(raw.paytable || {})) {
     paytable[sym] = Object.fromEntries(Object.entries(pays).map(([k2, v2]) => [Number(k2), v2]));
@@ -80251,7 +80245,6 @@ function adaptSlotConfig(raw, opts = {}) {
     reels,
     symbols,
     symbolRoles: { wild: byType("wild"), scatter: byType("scatter") },
-    frameMap,
     paytable,
     paylines,
     freeSpins: raw.freeSpins ?? { enabled: false },
@@ -80272,6 +80265,7 @@ var SlotReel = class {
     this.dir = opts.dir ?? 1;
     this.extraTurns = opts.extraTurns ?? 1;
     this.stopMs = opts.stopMs ?? 900;
+    this.visibleRows = opts.visibleRows ?? 3;
   }
   get sprites() {
     return [...this.mesh.effects.spriteBatch.sprites.values()];
@@ -80293,13 +80287,30 @@ var SlotReel = class {
     for (const [i2, sprite] of sprites.entries()) {
       const yDeg = i2 / N2 * 360;
       sprite.pause();
-      sprite.goToFrame(this.cfg.frames[i2]);
+      sprite.goToFrame(0);
       sprite.setTargetRotation(90, yDeg - FIX, FIX);
       if (i2 === sprites.length - 1) {
         animateRotationY(this.mesh.rotation, 90, 1e3);
       }
       if (delayPerSprite) await sleep(delayPerSprite);
     }
+  }
+  stripIndexForRow(stop, row2, topIsPrev = true) {
+    const center = Math.floor(this.visibleRows / 2);
+    const offset = (row2 - center) * (topIsPrev ? 1 : -1);
+    return ((stop + offset) % this.cfg.length + this.cfg.length) % this.cfg.length;
+  }
+  playWinAt(stripIndex, { duration = 1500, speed = 12 } = {}) {
+    const sprite = this.sprites[stripIndex];
+    if (!sprite) return Promise.resolve();
+    sprite.playRange(0, 16, speed, true);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        sprite.pause();
+        sprite.goToFrame(0);
+        resolve();
+      }, duration);
+    });
   }
   angleForStop(s2) {
     return this.angleOffset + this.dir * (s2 / this.cfg.length) * 360;
@@ -80456,9 +80467,32 @@ var SlotGame = class {
       this.freeSpinsLeft += ev.freeSpinsAwarded;
       const result2 = { ...ev, grid, stops, inFree, freeSpinsLeft: this.freeSpinsLeft };
       this.emit("result", result2);
-      if (this.onPresentWin && (ev.lineWins.length || ev.freeSpinsAwarded)) {
+      if (ev.lineWins.length || ev.freeSpinsAwarded) {
         this.setState("PRESENTING");
-        await this.onPresentWin(result2);
+        const winningByReel = this.views.map(() => /* @__PURE__ */ new Set());
+        for (const win of ev.lineWins) {
+          for (const cell of win.cells) {
+            winningByReel[cell.reel].add(this.views[cell.reel].stripIndexForRow(
+              stops[cell.reel],
+              cell.row,
+              this.topIsPrev
+            ));
+          }
+        }
+        if (ev.freeSpinsAwarded) {
+          for (const cell of ev.scatterCells) {
+            winningByReel[cell.reel].add(this.views[cell.reel].stripIndexForRow(
+              stops[cell.reel],
+              cell.row,
+              this.topIsPrev
+            ));
+          }
+        }
+        const animations = winningByReel.flatMap(
+          (indices, reelIndex) => [...indices].map((index) => this.views[reelIndex].playWinAt(index))
+        );
+        const presentation = this.onPresentWin ? this.onPresentWin(result2) : Promise.resolve();
+        await Promise.all([...animations, presentation]);
       }
     } catch (err) {
       console.error("[slot] spin failed", err);
@@ -80473,11 +80507,33 @@ var SlotGame = class {
 // examples/games/slot-machine/slot.js
 var baseUrl = "https://slot-simulator.onrender.com";
 var machineId = "6ac80510c453c7d32ec5364a";
+var SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 var sleep3 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
-var SHEET = "./res/textures/slot/reel1-lod0-inv.webp";
 var SPACING = 6;
 var SCALE = 3.5;
 var reelX = (i2, n3) => (i2 - (n3 - 1) / 2) * SPACING;
+async function initializeSymbolReel(mesh, engine, reelCfg) {
+  const batch = new SpritesPack2D(engine.device, "rgba16float", "rgba16float", engine.cameraBuffer);
+  const symbolIds = [...new Set(reelCfg.strip)];
+  for (const id2 of symbolIds) {
+    const path2 = `./res/textures/slot/symbols/${encodeURIComponent(id2)}.webp`;
+    await batch.registerSpritesheet(id2, path2, 4, 4);
+  }
+  const count = reelCfg.strip.length;
+  const radius = 4.5;
+  reelCfg.strip.forEach((id2, index) => {
+    const angle2 = index / count * Math.PI * 2;
+    batch.createSprite(`symbol-${index}`, id2, {
+      currentFrame: 0,
+      autoPlay: false,
+      scale: 1,
+      localOffset: [Math.cos(angle2) * radius, Math.sin(angle2) * radius, 0]
+    });
+  });
+  if (!mesh.effects) mesh.effects = {};
+  mesh.effects.spriteBatch = batch;
+  return batch;
+}
 var loadSlot = function() {
   let slotMachine = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
@@ -80494,7 +80550,6 @@ var loadSlot = function() {
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
     console.log(slot.reelCount, slot.visibleRows, slot.paylines.length);
-    console.log(slot.reels[0].frames);
     slot.warnings.forEach((w2) => console.warn("[slot]", w2));
     const n3 = slot.reelCount;
     slotMachine.addLight();
@@ -80577,35 +80632,26 @@ var loadSlot = function() {
       FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, "rgba16float", "circle2", "./res/textures/star1.png", 3, slotMachine.cameraBuffer);
       FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
       for (const [i2, mesh] of reelMeshes.entries()) {
-        await initializeSpritesForMesh(
-          mesh,
-          app.device,
-          "rgba16float",
-          app.cameraBuffer,
-          SHEET,
-          4,
-          4,
-          "circle",
-          { radius: 4.5, count: slot.reels[i2].length }
-        );
+        await initializeSymbolReel(mesh, slotMachine, slot.reels[i2]);
       }
-      const cam2 = app.getCamera();
+      const cam2 = slotMachine.getCamera();
       cam2.setYaw(-0.03);
       cam2.setPitch(-0.05);
       cam2.setZ(22 * Math.max(1, n3 / 3));
       cam2.setY(16);
       cam2._dirtyAngle = true;
       reelMeshes.forEach((mesh) => mesh.setBlend(1e-3));
+      dispatchEvent(new Event("update-effects"));
       reelMeshes[0].setupPipeline();
-      app.buildRenderBuckets();
-      app.reelMeshes = reelMeshes;
+      slotMachine.buildRenderBuckets();
+      slotMachine.reelMeshes = reelMeshes;
       await sleep3(400);
-      const views = reelMeshes.map((mesh, i2) => new SlotReel(mesh, slot.reels[i2]));
+      const views = reelMeshes.map((mesh, i2) => new SlotReel(mesh, slot.reels[i2], { visibleRows: slot.visibleRows }));
       for (const v2 of views) await v2.layout(60);
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
-      app.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
+      slotMachine.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
       reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
       const game = new SlotGame(slot, views, {
         lineBet: 1,

@@ -1,7 +1,7 @@
+import {SLOT_SIMULATOR_CONFIG_TOKEN} from "./slot";
 
 export async function fetchSlotConfig(baseUrl, machineId) {
-  // Set globalThis.SLOT_SIMULATOR_CONFIG_TOKEN before loadSlot() if the simulator requires this header.
-  const token = globalThis.SLOT_SIMULATOR_CONFIG_TOKEN;
+  const token = SLOT_SIMULATOR_CONFIG_TOKEN;
   const headers = token ? {"X-Local-Config-Token": token} : {};
   const res = await fetch(`${baseUrl}/slot-api/machines/${machineId}/slot-config`,
     {credentials: "include", headers});

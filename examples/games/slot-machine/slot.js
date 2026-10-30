@@ -17,6 +17,7 @@ import {SlotGame} from "./state.js";
  */
 const baseUrl = 'https://slot-simulator.onrender.com';
 const machineId = '6ac80510c453c7d32ec5364a';
+export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SPACING = 6, SCALE = 3.5;
