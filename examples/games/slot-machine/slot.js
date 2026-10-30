@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
-import {initializeSpritesForMesh} from "../../../src/engine/effects/sprite2d2.js";
+import {SpritesPack2D} from "../../../src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "../../../src/engine/procedures/InstancedKinematicOperations.js";
 import {KaleidoscopeEmitter} from "../../../src/engine/effects/kaleidoscopeEffectInstance.js";
 import {randomIntFromTo} from "../../../src/engine/utils.js";
@@ -19,9 +19,33 @@ const baseUrl = 'https://slot-simulator.onrender.com';
 const machineId = '6ac80510c453c7d32ec5364a';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const SHEET = "./res/textures/slot/reel1-lod0-inv.webp";
 const SPACING = 6, SCALE = 3.5;
 const reelX = (i, n) => (i - (n - 1) / 2) * SPACING;
+
+async function initializeSymbolReel(mesh, engine, reelCfg) {
+  const batch = new SpritesPack2D(engine.device, 'rgba16float', 'rgba16float', engine.cameraBuffer);
+  const symbolIds = [...new Set(reelCfg.strip)];
+  for(const id of symbolIds) {
+    const path = `./res/textures/slot/symbols/${encodeURIComponent(id)}.webp`;
+    await batch.registerSpritesheet(id, path, 4, 4);
+  }
+
+  const count = reelCfg.strip.length;
+  const radius = 4.5;
+  reelCfg.strip.forEach((id, index) => {
+    const angle = (index / count) * Math.PI * 2;
+    batch.createSprite(`symbol-${index}`, id, {
+      currentFrame: 0,
+      autoPlay: false,
+      scale: 1,
+      localOffset: [Math.cos(angle) * radius, Math.sin(angle) * radius, 0]
+    });
+  });
+
+  if(!mesh.effects) mesh.effects = {};
+  mesh.effects.spriteBatch = batch;
+  return batch;
+}
 
 export var loadSlot = function() {
 
@@ -123,33 +147,30 @@ export var loadSlot = function() {
       FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, 'rgba16float', 30, slotMachine.cameraBuffer);
 
       for(const [i, mesh] of reelMeshes.entries()) {
-        await initializeSpritesForMesh(
-          mesh, app.device, 'rgba16float', app.cameraBuffer, SHEET, 4, 4, "circle",
-          {radius: 4.5, count: slot.reels[i].length}
-        );
+        await initializeSymbolReel(mesh, slotMachine, slot.reels[i]);
       }
 
-      const cam = app.getCamera();
+      const cam = slotMachine.getCamera();
       cam.setYaw(-0.03); cam.setPitch(-0.05);
       cam.setZ(22 * Math.max(1, n / 3)); cam.setY(16);
       cam._dirtyAngle = true;
 
       reelMeshes.forEach(mesh => mesh.setBlend(0.001));
       reelMeshes[0].setupPipeline();
-      app.buildRenderBuckets();
+      slotMachine.buildRenderBuckets();
 
       // debug
-      app.reelMeshes = reelMeshes;
+      slotMachine.reelMeshes = reelMeshes;
 
       await sleep(400);
 
-      const views = reelMeshes.map((mesh, i) => new SlotReel(mesh, slot.reels[i]));
+      const views = reelMeshes.map((mesh, i) => new SlotReel(mesh, slot.reels[i], {visibleRows: slot.visibleRows}));
       for(const v of views) await v.layout(60);
 
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
-      app.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+      slotMachine.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
       reelMeshes.forEach(r => r.setAmbient(2, 0, 0));
 
       const game = new SlotGame(slot, views, {
