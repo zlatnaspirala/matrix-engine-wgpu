@@ -142,10 +142,9 @@ export async function GPUIndirectDraws() {
       }
     }
 
-    for(const className in this.effectsByType) {
-      const pile = this.effectsByType[className];
+    for(const pile of this.effectsByType.values()) {
       if(pile.length === 0) continue;
-      if(className === '_WaterSimEffect' || className === '_DepthWebcamVoxelEffect' || className === '_WaterSimSphereEffect') {
+      if(pile[0].effect.constructor.managesRenderPipeline === true) {
         for(const {effect, mesh} of pile) {
           if(effect.enabled === false) continue;
           if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
