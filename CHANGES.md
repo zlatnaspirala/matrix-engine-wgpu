@@ -1,5 +1,9 @@
 ## CHANGES [Started from feb 2026]
 
+
+[2.0.1]
+ - 
+
 [2.0.0]
 
 - Removed esmify with esbuild. (fixed critical sec alerts).

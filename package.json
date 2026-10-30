@@ -1,6 +1,6 @@
 {
   "name": "matrix-engine-wgpu",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "2.0.0 beta : migration to esbuild to avoid security bugs with old compile system, effects sunrender system updated every type of effect have own pipeline cache manager this is powerfull for effects mass reuse, GPU culling vs Indirect draws - push it to the limits. AI Code Creator (use engine from npm direct render preview)Cast received for android TV, splat point clouds + color animator and vertex shader animation",
   "main": "index.js",
   "scripts": {
