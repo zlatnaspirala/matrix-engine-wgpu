@@ -6,7 +6,7 @@ const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
 export class SlotReel {
   constructor(mesh, reelCfg, opts = {}) {
     this.mesh = mesh;
-    this.cfg = reelCfg;                        // {strip, frames, length} from the adapter
+    this.cfg = reelCfg;                        // {strip, length} from the server adapter
     this.spinSpeed = opts.spinSpeed ?? 6;      // same units as setRotateX(2.5) in your demo
     this.angleOffset = opts.angleOffset ?? 0;  // CALIBRATE: angle where sprite 0 faces the camera
     this.dir = opts.dir ?? 1;                  // CALIBRATE: 1 or -1, ring direction
@@ -57,7 +57,7 @@ export class SlotReel {
     });
   }
 
-    angleForStop(s) {return this.angleOffset + this.dir * (s / this.cfg.length) * 360;}
+  angleForStop(s) {return this.angleOffset + this.dir * (s / this.cfg.length) * 360;}
 
   snapTo(s) {                       // calibration helper
     this.mesh.rotation.setRotateX(0);
