@@ -19,11 +19,8 @@ const baseUrl = 'https://slot-simulator.onrender.com';
 const machineId = '6ac80510c453c7d32ec5364a';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const SCALE = 3.5;
-const SYMBOL_RING_RADIUS = 1.3;
-const REEL_GAP = 2;
-const REEL_SPACING = SYMBOL_RING_RADIUS * 2 * SCALE + REEL_GAP;
-const reelX = (i, n) => (i - (n - 1) / 2) * REEL_SPACING;
+const SPACING = 6, SCALE = 3.5;
+const reelX = (i, n) => (i - (n - 1) / 2) * SPACING;
 
 async function initializeSymbolReel(mesh, engine, reelCfg) {
   const batch = new SpritesPack2D(engine.device, 'rgba16float', 'rgba16float', engine.cameraBuffer);
@@ -34,7 +31,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   }
 
   const count = reelCfg.strip.length;
-  const radius = SYMBOL_RING_RADIUS;
+  const radius = 4.5;
   reelCfg.strip.forEach((id, index) => {
     const angle = (index / count) * Math.PI * 2;
     batch.createSprite(`symbol-${index}`, id, {
@@ -154,12 +151,13 @@ export var loadSlot = function() {
 
       const cam = slotMachine.getCamera();
       cam.setYaw(-0.03); cam.setPitch(-0.05);
-      // Pull back with the complete reel-bank width so 3–9 reels remain in view.
-      cam.setZ(Math.max(22, (n - 1) * REEL_SPACING * 0.95)); cam.setY(16);
+      cam.setZ(22 * Math.max(1, n / 3)); cam.setY(16);
       cam._dirtyAngle = true;
 
-      reelMeshes.forEach(mesh => mesh.setBlend(0.001));
-      reelMeshes[0].setupPipeline();
+      reelMeshes.forEach(mesh => {
+        mesh.setBlend(0.001);
+        mesh.setupPipeline();
+      });
       slotMachine.buildRenderBuckets();
 
       // debug
