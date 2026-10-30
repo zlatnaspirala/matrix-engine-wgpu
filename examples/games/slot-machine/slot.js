@@ -65,7 +65,6 @@ export var loadSlot = function() {
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
     console.log(slot.reelCount, slot.visibleRows, slot.paylines.length);
-    console.log(slot.reels[0].frames);
     slot.warnings.forEach(w => console.warn('[slot]', w));
     const n = slot.reelCount;
 
