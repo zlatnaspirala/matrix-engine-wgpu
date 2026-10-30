@@ -14,6 +14,8 @@ import {
 const SIM_RES = 512;
 
 export class WaterSimEffect {
+  // This effect manages its own render pipeline; do not bind the shared effect pipeline.
+  static managesRenderPipeline = true;
   static _pipelineCache = new WeakMap();
   static _shaderCache = new WeakMap();
 

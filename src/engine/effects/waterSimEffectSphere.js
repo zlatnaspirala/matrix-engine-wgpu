@@ -8,6 +8,8 @@ import {GeometryFactory} from "../geometry-factory";
 
 const SIM_RES = 512;
 export class WaterSimSphereEffect {
+  // This effect manages its own render pipeline; do not bind the shared effect pipeline.
+  static managesRenderPipeline = true;
   static _pipelineCache = new WeakMap();
   constructor(device, format, options = {}) {
     this.device = device;

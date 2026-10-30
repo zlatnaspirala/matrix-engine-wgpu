@@ -150,7 +150,8 @@ export default class MatrixEngineWGPU {
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
 
-    this.effectsByType = {FlameEmitter: [], };
+    // Group by constructor identity; constructor.name is not stable under minification.
+    this.effectsByType = new Map([[FlameEmitter, []]]);
 
     addEventListener('update-effects', (e) => {
       for(let meshIndex = 0;meshIndex < this.mainRenderBundle.length;meshIndex++) {
@@ -159,10 +160,9 @@ export default class MatrixEngineWGPU {
           for(const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if(effect === null) continue;
-            // Group by CLASS name, not property key!
-            const className = effect.constructor.name;
-            if(!this.effectsByType[className]) this.effectsByType[className] = [];
-            this.effectsByType[className].push({effect, mesh});
+            const effectType = effect.constructor;
+            if(!this.effectsByType.has(effectType)) this.effectsByType.set(effectType, []);
+            this.effectsByType.get(effectType).push({effect, mesh});
           }
         }
       }
@@ -1401,10 +1401,9 @@ export default class MatrixEngineWGPU {
         }
       }
 
-      for(const className in this.effectsByType) {
-        const pile = this.effectsByType[className];
+      for(const pile of this.effectsByType.values()) {
         if(pile.length === 0) continue;
-        if(className === '_WaterSimEffect' || className === '_DepthWebcamVoxelEffect' || className === '_WaterSimSphereEffect') {
+        if(pile[0].effect.constructor.managesRenderPipeline === true) {
           for(const {effect, mesh} of pile) {
             if(effect.enabled === false) continue;
             if(effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
