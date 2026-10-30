@@ -154,10 +154,11 @@ export var loadSlot = function() {
       cam.setZ(22 * Math.max(1, n / 3)); cam.setY(16);
       cam._dirtyAngle = true;
 
-      reelMeshes.forEach(mesh => {
-        mesh.setBlend(0.001);
-        mesh.setupPipeline();
-      });
+      reelMeshes.forEach(mesh => mesh.setBlend(0.001));
+      // All reel sprite batches are attached after mesh creation. Rebuild the
+      // engine's effect registry now so every reel is included in rendering.
+      dispatchEvent(new Event('update-effects'));
+      reelMeshes[0].setupPipeline();
       slotMachine.buildRenderBuckets();
 
       // debug
