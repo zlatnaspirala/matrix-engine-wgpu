@@ -131,6 +131,8 @@ fn fs_main(vin: VertexOut) -> FragOut {
 `;
 
 export class DepthWebcamVoxelEffect {
+  // This effect manages its own render pipeline; do not bind the shared effect pipeline.
+  static managesRenderPipeline = true;
   static _pipelineCache = new WeakMap();
   constructor(device, opts = {}) {
     this.device = device;
