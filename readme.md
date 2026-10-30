@@ -148,6 +148,15 @@ The backend is built using **Node.js** 🟢
 
 ---
 
+### Running examples
+  This is most usually way to start or work with The-Beast.
+  To add new example yuo will need to edit in ./public/examples.html and ./examples.js
+
+```js
+npm run examples
+```
+
+
 ### ⚠️ Important Notes
 
 - Visual Scripting is only available when running the engine **from source**  
