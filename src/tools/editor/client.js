@@ -3,6 +3,20 @@ import {LOG_FUNNY_ARCADE, mb} from "../../engine/utils";
 export class MEEditorClient {
   ws = null;
   updateSceneEvent = new CustomEvent('updateSceneContainer', {detail: {}});
+  allowedProjectNames = new Set();
+
+  redirectToAllowedProject(name) {
+    const normalized = typeof name === "string" ? name.trim() : "";
+    if (!/^[A-Za-z0-9_-]+$/.test(normalized)) {
+      console.error("[EDITOR][INVALID REDIRECT NAME]", name);
+      return;
+    }
+    if (!this.allowedProjectNames.has(normalized)) {
+      console.error("[EDITOR][UNAUTHORIZED REDIRECT NAME]", normalized);
+      return;
+    }
+    location.assign(normalized + ".html");
+  }
 
   constructor(typeOfRun, name) {
     this.ws = new WebSocket("ws://localhost:1243");
@@ -33,11 +47,7 @@ export class MEEditorClient {
         console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
         if(data && data.ok == true && data.payload && data.payload.redirect == true) {
           const safeName = typeof data.name === "string" ? data.name.trim() : "";
-          if (/^[A-Za-z0-9_-]+$/.test(safeName)) {
-            setTimeout(() => location.assign(encodeURIComponent(safeName) + ".html"), 2000);
-          } else {
-            console.error("[EDITOR][INVALID REDIRECT NAME]", data.name);
-          }
+          setTimeout(() => this.redirectToAllowedProject(safeName), 2000);
         } else if(data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
         } else if(data.listAssetsForGraph) {
@@ -52,7 +62,9 @@ export class MEEditorClient {
         } else if(data.projects) {
           const projects = data.payload
             .filter(item => item.name !== 'readme.md')
-            .map(item => item.name.trim());
+            .map(item => item.name.trim())
+            .filter(name => /^[A-Za-z0-9_-]+$/.test(name));
+          this.allowedProjectNames = new Set(projects);
           if(projects.length === 0) {
             console.warn('No projects found');
             return;
@@ -63,7 +75,7 @@ export class MEEditorClient {
           const projectName = prompt(txt);
           if(projectName) {
             console.log("Project name:", projectName);
-            location.assign(projectName + ".html");
+            this.redirectToAllowedProject(projectName);
           } else {
             console.error('Project loading cancelled');
           }
