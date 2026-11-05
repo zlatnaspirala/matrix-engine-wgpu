@@ -96,6 +96,7 @@ export var loadFaceBeast = function() {
         material: {type: 'dark', share: true},
         position: {x: 0, y: -1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
+        scale: [10,1,10],
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/white-metal.png'],
         name: 'floor',
@@ -142,14 +143,14 @@ export var loadFaceBeast = function() {
 
       loadFace.addProceduralMeshObj({
         material: {type: 'standard'},
-        position: {x: 1, y: 4, z: -27},
+        position: {x: 25, y: 25, z: -92},
         rotation: {x: 0, y: 0, z: 0},
-        scale: [3, 8, 3],
-        rotationSpeed: {x: 0, y: 1, z: 0},
+        scale: [9, 17, 9],
+        rotationSpeed: {x: 0, y: 10, z: 0},
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
         meshA: MeshMorpher.cone(1, 3, false),
         meshB: MeshMorpher.cube(1),
-        name: `morph_cone`,
+        name: `morph_coneLeft`,
         physics: {
           enabled: false,
           geometry: "Cone",
@@ -162,6 +163,29 @@ export var loadFaceBeast = function() {
         raycast: {enabled: true, radius: 1}
       });
 
+      loadFace.addProceduralMeshObj({
+        material: {type: 'standard'},
+        position: {x: -25, y: 25, z: -92},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [9, 17, 9],
+        rotationSpeed: {x: 0, y: 10, z: 0},
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_coneRight`,
+        physics: {
+          enabled: false,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1,
+        },
+        raycast: {enabled: true, radius: 1}
+      });
+
+
       MYCUBE = loadFace.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: 4, z: -15},
@@ -171,6 +195,7 @@ export var loadFaceBeast = function() {
         texturesPaths: ['./res/textures/white-metal.png'],
         name: 'MYCUBE',
         mesh: m.cube,
+        raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,
           mass: 0,
@@ -183,8 +208,8 @@ export var loadFaceBeast = function() {
 
       const pillar1 = createPillar(loadFace, m, -20, 6, -30, "pil1");
       const pillar2 = createPillar(loadFace, m, 20, 6, -30, "pil2");
-      const pillar3 = createPillar(loadFace, m, -20, 6, 20, "pil3");
-      const pillar4 = createPillar(loadFace, m, 20, 6, 20, "pil4");
+      const pillar3 = createPillar(loadFace, m, -23, 6, -20, "pil3");
+      const pillar4 = createPillar(loadFace, m, 23, 6, -20, "pil4");
 
       loadFace.activateBloomEffect();
       // app.activateVolumetricEffect({
@@ -210,19 +235,32 @@ export var loadFaceBeast = function() {
         addressModeV: 'clamp-to-edge'
       });
 
+      loadFace.MYCUBE = MYCUBE;
+
       loadAtlasFONT(loadFace.device).then((OUTPUT) => {
-        loadFace.floor.effects.gpuText = new MSDFTextEffect(
+
+        const checker2 = loadFace.floor.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = loadFace.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat',
+        });
+        loadFace.floor.changeTexture(checker2, samplerTest);
+        loadFace.floor.setUVScale(12, 12);
+
+        loadFace.MYCUBE.effects.gpuText = new MSDFTextEffect(
           loadFace.device,
           'rgba16float',
           OUTPUT.msdfTexture,
           sampler,
           loadFace.cameraBuffer,
-          OUTPUT.font, {scale: 0.05, localOffset: [-15, 1, 0]}
+          OUTPUT.font, {scale: 0.05, localOffset: [-20, 9, 0]}
         );
 
-        // app.floor.effects.gpuText.setLocalOffset( -15 ,1,0)
+        // app.MYCUBE.effects.gpuText.setLocalOffset( -15 ,1,0)
 
-        loadFace.floor.effects.gpuText.typeText('SHOOT THE CUBES', 120, () => {
+        loadFace.MYCUBE.effects.gpuText.typeText('SHOOT THE CUBES', 120, () => {
           // console.log('Typing complete!');
           MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);
         });
@@ -277,79 +315,77 @@ export var loadFaceBeast = function() {
           if(gpuText) gpuText.typeText(message, 80);
         }
         function segmentHitsSphere(ax, ay, az, bx, by, bz, cx, cy, cz, radius) {
-          const vx=bx-ax,vy=by-ay,vz=bz-az,wx=cx-ax,wy=cy-ay,wz=cz-az;
-          const lenSq=vx*vx+vy*vy+vz*vz;
-          let t=lenSq>1e-8?(wx*vx+wy*vy+wz*vz)/lenSq:0;
-          if(t<0)t=0;else if(t>1)t=1;
-          const dx=ax+vx*t-cx,dy=ay+vy*t-cy,dz=az+vz*t-cz;
-          return dx*dx+dy*dy+dz*dz<=radius*radius;
+          const vx = bx - ax, vy = by - ay, vz = bz - az, wx = cx - ax, wy = cy - ay, wz = cz - az;
+          const lenSq = vx * vx + vy * vy + vz * vz;
+          let t = lenSq > 1e-8 ? (wx * vx + wy * vy + wz * vz) / lenSq : 0;
+          if(t < 0) t = 0; else if(t > 1) t = 1;
+          const dx = ax + vx * t - cx, dy = ay + vy * t - cy, dz = az + vz * t - cz;
+          return dx * dx + dy * dy + dz * dz <= radius * radius;
         }
         function respawnCube(cube) {
-          const cfg=cube._runnerCfg;
-          cube.position.z=CUBE_RESPAWN_Z+Math.random()*30;
-          cube.position.x=cfg.minX+Math.random()*(cfg.maxX-cfg.minX);
-          cube.position.y=cfg.minY+Math.random()*(cfg.maxY-cfg.minY);
-          cube._runnerSpeed=cfg.speedMin+Math.random()*(cfg.speedMax-cfg.speedMin);
+          const cfg = cube._runnerCfg;
+          cube.position.z = CUBE_RESPAWN_Z + Math.random() * 30;
+          cube.position.x = cfg.minX + Math.random() * (cfg.maxX - cfg.minX);
+          cube.position.y = cfg.minY + Math.random() * (cfg.maxY - cfg.minY);
+          cube._runnerSpeed = cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin);
         }
         function updateLasers(nowSec) {
-          if(dead)return;
-          const activeRunners=runnerSet?.runners;
-          const facePos=MYCUBE.position;
+          if(dead) return;
+          const activeRunners = runnerSet?.runners;
+          const facePos = MYCUBE.position;
           if(activeRunners) {
-            for(let i=0;i<activeRunners.length;i++) {
-              const cube=activeRunners[i];
-              const dx=cube.position.x-facePos.x,dy=cube.position.y-facePos.y,dz=cube.position.z-facePos.z;
-              const hitRadius=FACE_HIT_RADIUS+(cube._runnerScale||1);
-              if(dx*dx+dy*dy+dz*dz<=hitRadius*hitRadius) {
-                energy=Math.max(0,energy-15);
+            for(let i = 0;i < activeRunners.length;i++) {
+              const cube = activeRunners[i];
+              const dx = cube.position.x - facePos.x, dy = cube.position.y - facePos.y, dz = cube.position.z - facePos.z;
+              const hitRadius = FACE_HIT_RADIUS + (cube._runnerScale || 1);
+              if(dx * dx + dy * dy + dz * dz <= hitRadius * hitRadius) {
+                energy = Math.max(0, energy - 15);
                 respawnCube(cube);
-                if(energy===0){dead=true;showGameplayStatus('YOU DIED... ENERGY: 0');laser.cancelAll();}
-                else showGameplayStatus('CUBE HIT! ENERGY: '+energy);
+                if(energy === 0) {dead = true; showGameplayStatus('YOU DIED... ENERGY: 0'); laser.cancelAll();}
+                else showGameplayStatus('CUBE HIT! ENERGY: ' + energy);
                 return;
               }
             }
           }
-          const A=faceEffect.anchors;
-          if(!A.valid||A.mouthOpen<0.5||nowSec-lastFire<FIRE_INTERVAL)return;
-          lastFire=nowSec;
-          for(let sideIndex=0;sideIndex<2;sideIndex++) {
-            const eye=sideIndex===0?A.rightEye:A.leftEye;
+          const A = faceEffect.anchors;
+          if(!A.valid || A.mouthOpen < 0.5 || nowSec - lastFire < FIRE_INTERVAL) return;
+          lastFire = nowSec;
+          for(let sideIndex = 0;sideIndex < 2;sideIndex++) {
+            const eye = sideIndex === 0 ? A.rightEye : A.leftEye;
             // Keep the beams distinct at the eyes, then converge them toward a
             // tight shared target area. A small residual offset preserves two
             // separate collision paths instead of collapsing to one point.
-            const otherEye=sideIndex===0?A.leftEye:A.rightEye;
-            const eyeMidX=(A.rightEye[0]+A.leftEye[0])*0.5;
-            const eyeMidY=(A.rightEye[1]+A.leftEye[1])*0.5;
-            const eyeMidZ=(A.rightEye[2]+A.leftEye[2])*0.5;
-            const TARGET_SPREAD=0.18;
-            const endX=eyeMidX+A.forward[0]*LASER_LENGTH*FIRE_DIRECTION+(eye[0]-eyeMidX)*TARGET_SPREAD;
-            const endY=eyeMidY+A.forward[1]*LASER_LENGTH*FIRE_DIRECTION+(eye[1]-eyeMidY)*TARGET_SPREAD;
-            const endZ=eyeMidZ+A.forward[2]*LASER_LENGTH*FIRE_DIRECTION+(eye[2]-eyeMidZ)*TARGET_SPREAD;
-            laser.fireBeam(eye,[endX,endY,endZ],0.2);
-            if(!activeRunners)continue;
-            for(let i=0;i<activeRunners.length;i++) {
-              const cube=activeRunners[i],radius=(cube._runnerScale||1)*1.05+LASER_HIT_RADIUS;
-              if(segmentHitsSphere(eye[0],eye[1],eye[2],endX,endY,endZ,cube.position.x,cube.position.y,cube.position.z,radius)) {
+            const otherEye = sideIndex === 0 ? A.leftEye : A.rightEye;
+            const eyeMidX = (A.rightEye[0] + A.leftEye[0]) * 0.5;
+            const eyeMidY = (A.rightEye[1] + A.leftEye[1]) * 0.5;
+            const eyeMidZ = (A.rightEye[2] + A.leftEye[2]) * 0.5;
+            const TARGET_SPREAD = 0.18;
+            const endX = eyeMidX + A.forward[0] * LASER_LENGTH * FIRE_DIRECTION + (eye[0] - eyeMidX) * TARGET_SPREAD;
+            const endY = eyeMidY + A.forward[1] * LASER_LENGTH * FIRE_DIRECTION + (eye[1] - eyeMidY) * TARGET_SPREAD;
+            const endZ = eyeMidZ + A.forward[2] * LASER_LENGTH * FIRE_DIRECTION + (eye[2] - eyeMidZ) * TARGET_SPREAD;
+            laser.fireBeam(eye, [endX, endY, endZ], 0.2);
+            if(!activeRunners) continue;
+            for(let i = 0;i < activeRunners.length;i++) {
+              const cube = activeRunners[i], radius = (cube._runnerScale || 1) * 1.05 + LASER_HIT_RADIUS;
+              if(segmentHitsSphere(eye[0], eye[1], eye[2], endX, endY, endZ, cube.position.x, cube.position.y, cube.position.z, radius)) {
                 respawnCube(cube);
                 showGameplayStatus('NICE SHOT! CUBE DESTROYED');
               }
             }
           }
         }
-        app.autoUpdate.push({update:updateLasers})
+        app.autoUpdate.push({update: updateLasers})
 
-        // just for dev console 
-        app.MYCUBE = MYCUBE;
 
         loadFace.MYCUBE.position.thrust = 0.1;
         // app.MYCUBE.position.translateByX(-10)
         app.MYCUBE.rotation.x = 25;
-        
+
         // Hook mediapipe into it
         nui.onResults = (results) => {
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
-        loadFace.activateHZB();
+        // loadFace.activateHZB();
 
         // Important for face uv view!
         MYCUBE.effects.faceEffect.setMode('mesh');
@@ -358,9 +394,9 @@ export var loadFaceBeast = function() {
 
         let cam = app.getCamera();
         cam.setYaw(0);
-        cam.setPitch(0);
-        cam.setZ(4);
-        cam.setY(6);
+        cam.setPitch(-0.3);
+        cam.setZ(34);
+        cam.setY(12);
         app.buildRenderBuckets();
         cam._dirtyAngle = true;
       }, 8000);
@@ -454,11 +490,11 @@ export var loadFaceBeast = function() {
             if(!r.position) continue;
             r.position.z -= r._runnerSpeed;
             if(r.rotation) r.rotation.y += 0.01 + r._runnerSpeed * 0.01;
-            if(r.position.z<r._runnerCfg.endZ) {
-              r.position.z=r._runnerCfg.startZ+Math.random()*30;
-              r.position.x=rand(r._runnerCfg.minX,r._runnerCfg.maxX);
-              r.position.y=rand(r._runnerCfg.minY,r._runnerCfg.maxY);
-              r._runnerSpeed=rand(r._runnerCfg.speedMin,r._runnerCfg.speedMax);
+            if(r.position.z < r._runnerCfg.endZ) {
+              r.position.z = r._runnerCfg.startZ + Math.random() * 30;
+              r.position.x = rand(r._runnerCfg.minX, r._runnerCfg.maxX);
+              r.position.y = rand(r._runnerCfg.minY, r._runnerCfg.maxY);
+              r._runnerSpeed = rand(r._runnerCfg.speedMin, r._runnerCfg.speedMax);
             }
           }
         }

@@ -77461,6 +77461,7 @@ var loadFaceBeast = function() {
         material: { type: "dark", share: true },
         position: { x: 0, y: -1, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
+        scale: [10, 1, 10],
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: ["./res/textures/white-metal.png"],
         name: "floor",
@@ -77502,14 +77503,35 @@ var loadFaceBeast = function() {
     async function onLoadObj(m2) {
       loadFace.addProceduralMeshObj({
         material: { type: "standard" },
-        position: { x: 1, y: 4, z: -27 },
+        position: { x: 25, y: 25, z: -92 },
         rotation: { x: 0, y: 0, z: 0 },
-        scale: [3, 8, 3],
-        rotationSpeed: { x: 0, y: 1, z: 0 },
+        scale: [9, 17, 9],
+        rotationSpeed: { x: 0, y: 10, z: 0 },
         texturesPaths: ["./res/textures/cube-g1_low.webp"],
         meshA: MeshMorpher.cone(1, 3, false),
         meshB: MeshMorpher.cube(1),
-        name: `morph_cone`,
+        name: `morph_coneLeft`,
+        physics: {
+          enabled: false,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      loadFace.addProceduralMeshObj({
+        material: { type: "standard" },
+        position: { x: -25, y: 25, z: -92 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [9, 17, 9],
+        rotationSpeed: { x: 0, y: 10, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1_low.webp"],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_coneRight`,
         physics: {
           enabled: false,
           geometry: "Cone",
@@ -77530,6 +77552,7 @@ var loadFaceBeast = function() {
         texturesPaths: ["./res/textures/white-metal.png"],
         name: "MYCUBE",
         mesh: m2.cube,
+        raycast: { enabled: true, radius: 1 },
         physics: {
           enabled: false,
           mass: 0,
@@ -77540,8 +77563,8 @@ var loadFaceBeast = function() {
       loadFace.SAVE_CUBE = m2.cube;
       const pillar1 = createPillar(loadFace, m2, -20, 6, -30, "pil1");
       const pillar2 = createPillar(loadFace, m2, 20, 6, -30, "pil2");
-      const pillar3 = createPillar(loadFace, m2, -20, 6, 20, "pil3");
-      const pillar4 = createPillar(loadFace, m2, 20, 6, 20, "pil4");
+      const pillar3 = createPillar(loadFace, m2, -23, 6, -20, "pil3");
+      const pillar4 = createPillar(loadFace, m2, 23, 6, -20, "pil4");
       loadFace.activateBloomEffect();
       loadFace.lightContainer[0].setIntensity(1e3);
       app.lightContainer[0].setColorB(1);
@@ -77554,17 +77577,27 @@ var loadFaceBeast = function() {
         addressModeU: "clamp-to-edge",
         addressModeV: "clamp-to-edge"
       });
+      loadFace.MYCUBE = MYCUBE;
       loadAtlasFONT(loadFace.device).then((OUTPUT) => {
-        loadFace.floor.effects.gpuText = new MSDFTextEffect(
+        const checker2 = loadFace.floor.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = loadFace.device.createSampler({
+          magFilter: "nearest",
+          minFilter: "nearest",
+          addressModeU: "repeat",
+          addressModeV: "repeat"
+        });
+        loadFace.floor.changeTexture(checker2, samplerTest);
+        loadFace.floor.setUVScale(12, 12);
+        loadFace.MYCUBE.effects.gpuText = new MSDFTextEffect(
           loadFace.device,
           "rgba16float",
           OUTPUT.msdfTexture,
           sampler,
           loadFace.cameraBuffer,
           OUTPUT.font,
-          { scale: 0.05, localOffset: [-15, 1, 0] }
+          { scale: 0.05, localOffset: [-20, 9, 0] }
         );
-        loadFace.floor.effects.gpuText.typeText("SHOOT THE CUBES", 120, () => {
+        loadFace.MYCUBE.effects.gpuText.typeText("SHOOT THE CUBES", 120, () => {
           MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
         });
       });
@@ -77659,19 +77692,17 @@ var loadFaceBeast = function() {
           }
         }
         app.autoUpdate.push({ update: updateLasers });
-        app.MYCUBE = MYCUBE;
         loadFace.MYCUBE.position.thrust = 0.1;
         app.MYCUBE.rotation.x = 25;
         nui.onResults = (results) => {
           MYCUBE.effects.faceEffect.setFaceData(results);
         };
-        loadFace.activateHZB();
         MYCUBE.effects.faceEffect.setMode("mesh");
         let cam2 = app.getCamera();
         cam2.setYaw(0);
-        cam2.setPitch(0);
-        cam2.setZ(4);
-        cam2.setY(6);
+        cam2.setPitch(-0.3);
+        cam2.setZ(34);
+        cam2.setY(12);
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
       }, 8e3);
