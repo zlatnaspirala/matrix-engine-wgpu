@@ -219,7 +219,7 @@ export var loadFaceBeast = function() {
 
         // app.floor.effects.gpuText.setLocalOffset( -15 ,1,0)
 
-        loadFace.floor.effects.gpuText.typeText(TEXT, 200, () => {
+        loadFace.floor.effects.gpuText.typeText('SHOOT THE CUBES', 120, () => {
           // console.log('Typing complete!');
           MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, 'rgba16float', loadFace.cameraBuffer);
         });
@@ -264,33 +264,53 @@ export var loadFaceBeast = function() {
         MYCUBE.effects.faceEffect = faceEffect;
         MYCUBE.effects.faceEffect.setScale(32);
 
-        // Laser
-        const laser = MYCUBE.effects.laser = new LaserProjectile(app.device, 'rgba16float', app.cameraBuffer);
-        const LASER_LENGTH = 12;
-        const FIRE_INTERVAL = 0.08; // seconds between beam refreshes
-        const FIRE_DIRECTION = 1;   // 1 = out of the face toward the viewer, -1 = into the scene
-        let lastFire = 0;
-
+        // Laser + gameplay. Keep the hot path allocation-light.
+        const laser = MYCUBE.effects.laser = new LaserProjectile(app.device, 'rgba16float', app.cameraBuffer, {maxBeams: 2, width: 0.075, intensity: 3});
+        const LASER_LENGTH = 20, LASER_HIT_RADIUS = 0.28, FIRE_INTERVAL = 0.08;
+        const FIRE_DIRECTION = 1, FACE_HIT_RADIUS = 3.2, CUBE_RESPAWN_Z = 90;
+        let lastFire = 0, energy = 100, dead = false;
+        function showGameplayStatus(message) {
+          const gpuText = app.floor?.effects?.gpuText;
+          if(gpuText) gpuText.typeText(message, 80);
+        }
+        function segmentHitsSphere(ax, ay, az, bx, by, bz, cx, cy, cz, radius) {
+          const vx=bx-ax,vy=by-ay,vz=bz-az,wx=cx-ax,wy=cy-ay,wz=cz-az;
+          const lenSq=vx*vx+vy*vy+vz*vz;
+          let t=lenSq>1e-8?(wx*vx+wy*vy+wz*vz)/lenSq:0;
+          if(t<0)t=0;else if(t>1)t=1;
+          const dx=ax+vx*t-cx,dy=ay+vy*t-cy,dz=az+vz*t-cz;
+          return dx*dx+dy*dy+dz*dz<=radius*radius;
+        }
+        function respawnCube(cube) {
+          const cfg=cube._runnerCfg;
+          cube.position.z=CUBE_RESPAWN_Z+Math.random()*30;
+          cube.position.x=cfg.minX+Math.random()*(cfg.maxX-cfg.minX);
+          cube.position.y=cfg.minY+Math.random()*(cfg.maxY-cfg.minY);
+          cube._runnerSpeed=cfg.speedMin+Math.random()*(cfg.speedMax-cfg.speedMin);
+        }
         function updateLasers(nowSec) {
-          const A = faceEffect.anchors;
-          if(!A.valid) return;
-          // open your mouth to fire
-          if(A.mouthOpen < 0.5) return;
-          if(nowSec - lastFire < FIRE_INTERVAL) return;
-          lastFire = nowSec;
-
-          for(const side of ['right', 'left']) {
-            const eye = side === 'right' ? A.rightEye : A.leftEye;
-            const end = [
-              eye[0] + A.forward[0] * LASER_LENGTH * FIRE_DIRECTION,
-              eye[1] + A.forward[1] * LASER_LENGTH * FIRE_DIRECTION,
-              eye[2] + A.forward[2] * LASER_LENGTH * FIRE_DIRECTION,
-            ];
-            laser.fireBeam(eye, end, 0.2);
+          if(dead)return;
+          const A=faceEffect.anchors;
+          if(!A.valid||A.mouthOpen<0.5||nowSec-lastFire<FIRE_INTERVAL)return;
+          lastFire=nowSec;
+          const activeRunners=runnerSet?.runners;
+          for(let sideIndex=0;sideIndex<2;sideIndex++) {
+            const eye=sideIndex===0?A.rightEye:A.leftEye;
+            const endX=eye[0]+A.forward[0]*LASER_LENGTH*FIRE_DIRECTION;
+            const endY=eye[1]+A.forward[1]*LASER_LENGTH*FIRE_DIRECTION;
+            const endZ=eye[2]+A.forward[2]*LASER_LENGTH*FIRE_DIRECTION;
+            laser.fireBeam(eye,[endX,endY,endZ],0.2);
+            if(!activeRunners)continue;
+            for(let i=0;i<activeRunners.length;i++) {
+              const cube=activeRunners[i],radius=(cube._runnerScale||1)*1.05+LASER_HIT_RADIUS;
+              if(segmentHitsSphere(eye[0],eye[1],eye[2],endX,endY,endZ,cube.position.x,cube.position.y,cube.position.z,radius)) {
+                respawnCube(cube);
+                showGameplayStatus('NICE SHOT! CUBE DESTROYED');
+              }
+            }
           }
         }
-
-        app.autoUpdate.push({update: updateLasers})
+        app.autoUpdate.push({update:updateLasers})
 
         // just for dev console 
         app.MYCUBE = MYCUBE;
@@ -381,6 +401,7 @@ export var loadFaceBeast = function() {
           physics: {enabled: false, mass: 0, geometry: "Cube"}
         });
         obj._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
+        obj._runnerScale = s;
         obj._runnerCfg = cfg;
         obj._runnerColor = determinateType();
         obj._runnerDamage = damageFromColor(obj._runnerColor);
@@ -407,17 +428,19 @@ export var loadFaceBeast = function() {
             if(!r.position) continue;
             r.position.z -= r._runnerSpeed;
             if(r.rotation) r.rotation.y += 0.01 + r._runnerSpeed * 0.01;
-            if(r.position.z < r._runnerCfg.endZ) {
-              // r._runnerColor = determinateType();
-              // r._runnerDamage = damageFromColor(r._runnerColor);
-              // r._runnerSlow = slowFromColor(r._runnerColor);
-              r.position.z = r._runnerCfg.startZ + Math.random() * 30;
-              r.position.x = rand(r._runnerCfg.minX, r._runnerCfg.maxX);
-              r.position.y = rand(r._runnerCfg.minY, r._runnerCfg.maxY);
-              r._runnerSpeed = rand(r._runnerCfg.speedMin, r._runnerCfg.speedMax);
-              const s2 = rand(r._runnerCfg.scaleMin, r._runnerCfg.scaleMax);
-              if(r.scale) r.scale = [s2, s2, s2];
+            const facePos=MYCUBE?.position;
+            if(!dead&&facePos) {
+              const dx=r.position.x-facePos.x,dy=r.position.y-facePos.y,dz=r.position.z-facePos.z;
+              const hitRadius=FACE_HIT_RADIUS+(r._runnerScale||1);
+              if(dx*dx+dy*dy+dz*dz<=hitRadius*hitRadius) {
+                energy=Math.max(0,energy-15);
+                respawnCube(r);
+                if(energy===0){dead=true;showGameplayStatus('YOU DIED... ENERGY: 0');laser.cancelAll();}
+                else showGameplayStatus('CUBE HIT! ENERGY: '+energy);
+                continue;
+              }
             }
+            if(r.position.z<r._runnerCfg.endZ)respawnCube(r);
           }
         }
       };
