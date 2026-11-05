@@ -71,11 +71,20 @@ export function evaluateSpin(slot, grid, {lineBet = 1, inFreeSpins = false} = {}
   };
 }
 
-// Server -> internal format. The payload shape is a GUESS, so paste a real SPIN RESULT and I'll fix this.
+// Server -> internal format. Each stop is the physical strip index facing the
+// center row of that reel; symbol IDs are not unique enough to identify a stop.
 export function normalizeSpinResult(raw, slot) {
   const stops = raw?.stops ?? raw?.reelStops ?? raw?.positions;
   if(!Array.isArray(stops) || stops.length !== slot.reelCount) {
     throw new Error('Unknown spin result shape: ' + JSON.stringify(raw));
   }
+
+  stops.forEach((stop, reelIndex) => {
+    const length = slot.reels[reelIndex]?.strip?.length ?? 0;
+    if(!Number.isInteger(stop) || stop < 0 || stop >= length) {
+      throw new Error(`Invalid stop index for reel ${reelIndex}: ${stop} (strip length ${length})`);
+    }
+  });
+
   return {stops, serverWin: raw.totalWin ?? raw.win ?? null};
 }

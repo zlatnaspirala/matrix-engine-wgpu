@@ -44,7 +44,9 @@ export class SlotGame {
       console.groupEnd();
 
       const {stops} = normalizeSpinResult(raw, this.slot);
-      const inFree = this.freeSpinsLeft > 0;
+      const inFree = typeof raw?.inFree === 'boolean'
+        ? raw.inFree
+        : this.freeSpinsLeft > 0;
       if(inFree) this.freeSpinsLeft--;
 
       this.setState('SPINNING');
@@ -60,67 +62,66 @@ export class SlotGame {
       }));
 
       this.setState('EVALUATING');
-      const grid = getWindow(this.slot, stops, {topIsPrev: this.topIsPrev});
-      const ev = evaluateSpin(this.slot, grid, {lineBet: this.lineBet, inFreeSpins: inFree});
+      // Server spin results are authoritative when they include an evaluation.
+      // Keep local evaluation for keyboard/local test spins.
+      const grid = Array.isArray(raw?.grid)
+        ? raw.grid
+        : getWindow(this.slot, stops, {topIsPrev: this.topIsPrev});
+      const ev = Array.isArray(raw?.lineWins)
+        ? {
+            lineWins: raw.lineWins,
+            scatterCells: Array.isArray(raw.scatterCells) ? raw.scatterCells : [],
+            freeSpinsAwarded: Number(raw.freeSpinsAwarded) || 0,
+            payUnits: Number(raw.payUnits) || 0,
+            totalWin: Number(raw.totalWin) || 0,
+            multiplier: Number(raw.multiplier) || 1
+          }
+        : evaluateSpin(this.slot, grid, {lineBet: this.lineBet, inFreeSpins: inFree});
 
-      // Temporary diagnostics: compare logical row mapping with the physical
-      // sprite instances and the reel mesh rotation after each reel has stopped.
-      console.groupCollapsed('[slot-debug] stopped reels / logical grid');
-      console.log('STOPS:', stops);
-      console.log('GRID (grid[reel][row], columns):', grid);
-      this.views.forEach((view, reelIndex) => {
-        const sprites = view.sprites;
-        const meshRotation = view.mesh.rotation;
-        console.groupCollapsed(
-          `reel ${reelIndex}: stop=${stops[reelIndex]} rotation(deg) x/y/z=${meshRotation.x}/${meshRotation.y}/${meshRotation.z}`
-        );
-        console.table(Array.from({length: this.slot.visibleRows}, (_, row) => {
-          const stripIndex = view.stripIndexForRow(stops[reelIndex], row, this.topIsPrev);
-          const sprite = sprites[stripIndex];
-          return {
-            visibleRow: row,
-            expectedSymbol: this.slot.reels[reelIndex].strip[stripIndex],
-            stripIndex,
-            spriteName: sprite ? `symbol-${stripIndex}` : 'MISSING',
-            localX: sprite?.localOffset?.[0],
-            localY: sprite?.localOffset?.[1],
-            localZ: sprite?.localOffset?.[2]
-          };
-        }));
-        console.groupEnd();
-      });
-      console.log('WIN CELLS:', ev.lineWins.flatMap(win =>
-        win.cells.map(cell => ({
-          reel: cell.reel,
-          row: cell.row,
-          symbol: cell.id,
-          animatedStripIndex: this.views[cell.reel].stripIndexForRow(
-            stops[cell.reel], cell.row, this.topIsPrev
-          )
-        }))
-      ));
-      console.groupEnd();
-
-      this.freeSpinsLeft += ev.freeSpinsAwarded;
+      if(typeof raw?.freeSpinsLeft === 'number') {
+        this.freeSpinsLeft = raw.freeSpinsLeft;
+      } else {
+        this.freeSpinsLeft += ev.freeSpinsAwarded;
+      }
       const result = {...ev, grid, stops, inFree, freeSpinsLeft: this.freeSpinsLeft};
       this.emit('result', result);
 
       if(ev.lineWins.length || ev.freeSpinsAwarded) {
         this.setState('PRESENTING');
         const winningByReel = this.views.map(() => new Set());
-        for(const win of ev.lineWins) {
-          for(const cell of win.cells) {
-            winningByReel[cell.reel].add(this.views[cell.reel].stripIndexForRow(
-              stops[cell.reel], cell.row, this.topIsPrev
-            ));
+        const addWinningCell = (cell, source) => {
+          const {reel, row} = cell;
+          const view = this.views[reel];
+          if(!view || !Number.isInteger(row) || row < 0 || row >= this.slot.visibleRows) {
+            console.warn('[slot] Ignoring invalid winning cell', {source, cell});
+            return;
           }
+
+          const stripIndex = Number.isInteger(cell.stripIndex)
+            ? cell.stripIndex
+            : view.stripIndexForRow(stops[reel], row, this.topIsPrev);
+          const actualSymbol = this.slot.reels[reel].strip[stripIndex];
+          const expectedSymbol = cell.id ?? grid[reel]?.[row];
+
+          // Never animate a physical sprite unless it matches the winning cell.
+          if(!Number.isInteger(stripIndex) || stripIndex < 0 ||
+             stripIndex >= this.slot.reels[reel].strip.length ||
+             actualSymbol !== expectedSymbol) {
+            console.error('[slot] WINNING SPRITE MISMATCH', {
+              source, reel, row, stripIndex,
+              expectedSymbol, actualSymbol, stop: stops[reel]
+            });
+            return;
+          }
+
+          winningByReel[reel].add(stripIndex);
+        };
+
+        for(const win of ev.lineWins) {
+          for(const cell of (win.cells ?? [])) addWinningCell(cell, win.lineId);
         }
         if(ev.freeSpinsAwarded) {
-          for(const cell of ev.scatterCells) {
-            winningByReel[cell.reel].add(this.views[cell.reel].stripIndexForRow(
-              stops[cell.reel], cell.row, this.topIsPrev
-            ));
-          }
+          for(const cell of ev.scatterCells) addWinningCell(cell, 'scatter');
         }
         const animations = winningByReel.flatMap((indices, reelIndex) =>
           [...indices].map(index => this.views[reelIndex].playWinAt(index))
