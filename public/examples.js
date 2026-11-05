@@ -80577,6 +80577,15 @@ var SlotGame = class {
       return;
     }
     try {
+      console.groupCollapsed("[slot-debug] incoming spin");
+      console.log("RAW SERVER RESULT:", raw);
+      console.log("CONFIG:", {
+        reelCount: this.slot.reelCount,
+        visibleRows: this.slot.visibleRows,
+        topIsPrev: this.topIsPrev,
+        stripLengths: this.slot.reels.map((reel) => reel.length)
+      });
+      console.groupEnd();
       const { stops } = normalizeSpinResult(raw, this.slot);
       const inFree = this.freeSpinsLeft > 0;
       if (inFree) this.freeSpinsLeft--;
@@ -80593,6 +80602,43 @@ var SlotGame = class {
       this.setState("EVALUATING");
       const grid = getWindow(this.slot, stops, { topIsPrev: this.topIsPrev });
       const ev = evaluateSpin(this.slot, grid, { lineBet: this.lineBet, inFreeSpins: inFree });
+      console.groupCollapsed("[slot-debug] stopped reels / logical grid");
+      console.log("STOPS:", stops);
+      console.log("GRID (grid[reel][row], columns):", grid);
+      this.views.forEach((view, reelIndex) => {
+        const sprites = view.sprites;
+        const meshRotation = view.mesh.rotation;
+        console.groupCollapsed(
+          `reel ${reelIndex}: stop=${stops[reelIndex]} rotation(deg) x/y/z=${meshRotation.x}/${meshRotation.y}/${meshRotation.z}`
+        );
+        console.table(Array.from({ length: this.slot.visibleRows }, (_2, row2) => {
+          const stripIndex = view.stripIndexForRow(stops[reelIndex], row2, this.topIsPrev);
+          const sprite = sprites[stripIndex];
+          return {
+            visibleRow: row2,
+            expectedSymbol: this.slot.reels[reelIndex].strip[stripIndex],
+            stripIndex,
+            spriteName: sprite ? `symbol-${stripIndex}` : "MISSING",
+            localX: sprite?.localOffset?.[0],
+            localY: sprite?.localOffset?.[1],
+            localZ: sprite?.localOffset?.[2]
+          };
+        }));
+        console.groupEnd();
+      });
+      console.log("WIN CELLS:", ev.lineWins.flatMap(
+        (win) => win.cells.map((cell) => ({
+          reel: cell.reel,
+          row: cell.row,
+          symbol: cell.id,
+          animatedStripIndex: this.views[cell.reel].stripIndexForRow(
+            stops[cell.reel],
+            cell.row,
+            this.topIsPrev
+          )
+        }))
+      ));
+      console.groupEnd();
       this.freeSpinsLeft += ev.freeSpinsAwarded;
       const result2 = { ...ev, grid, stops, inFree, freeSpinsLeft: this.freeSpinsLeft };
       this.emit("result", result2);
