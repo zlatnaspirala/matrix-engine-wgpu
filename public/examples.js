@@ -77407,9 +77407,9 @@ var TEXT = `The Beast Render`;
 var loadFaceBeast = function() {
   let loadFace = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
-    fastRender: 0.9,
-    // dontUsePhysics: true,
-    useCannon: true,
+    fastRender: 0.87,
+    dontUsePhysics: true,
+    // useCannon: true,
     MAX_SPOTLIGHTS: 2,
     MAX_BONES: 0,
     mainCameraParams: {
@@ -77511,7 +77511,7 @@ var loadFaceBeast = function() {
         meshB: MeshMorpher.cube(1),
         name: `morph_cone`,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cone",
           mass: 1,
           radius: 1,
@@ -77613,6 +77613,7 @@ var loadFaceBeast = function() {
         app.autoUpdate.push({ update: updateLasers });
         app.MYCUBE = MYCUBE;
         loadFace.MYCUBE.position.thrust = 0.1;
+        app.MYCUBE.rotation.x = 25;
         nui.onResults = (results) => {
           MYCUBE.effects.faceEffect.setFaceData(results);
         };

@@ -19,9 +19,9 @@ export var loadFaceBeast = function() {
 
   let loadFace = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
-    fastRender: 0.9,
-    // dontUsePhysics: true,
-    useCannon: true,
+    fastRender: 0.87,
+    dontUsePhysics: true,
+    // useCannon: true,
     MAX_SPOTLIGHTS: 2,
     MAX_BONES: 0,
     mainCameraParams: {
@@ -148,7 +148,7 @@ export var loadFaceBeast = function() {
         meshB: MeshMorpher.cube(1),
         name: `morph_cone`,
         physics: {
-          enabled: true,
+          enabled: false,
           geometry: "Cone",
           mass: 1,
           radius: 1,
@@ -297,6 +297,8 @@ export var loadFaceBeast = function() {
 
         loadFace.MYCUBE.position.thrust = 0.1;
         // app.MYCUBE.position.translateByX(-10)
+        app.MYCUBE.rotation.x = 25;
+        
         // Hook mediapipe into it
         nui.onResults = (results) => {
           MYCUBE.effects.faceEffect.setFaceData(results);
