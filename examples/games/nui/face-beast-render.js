@@ -12,6 +12,7 @@ import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfTex
 import {MatrixTTS} from "../../../src/engine/tts.js";
 import {MeshMorpher} from "../../../src/engine/procedural-mesh.js";
 import {LaserProjectile} from "../../../src/engine/effects/laser.js";
+import {CollisionSystem} from "../../../src/engine/collision-sub-system.js";
 
 const TEXT = `The Beast Render`;
 
@@ -33,6 +34,8 @@ export var loadFaceBeast = function() {
   }, () => {
     // MatrixTTS
     // loadFace.tts = new MatrixTTS();
+    loadFace.collisionSystem = new CollisionSystem(loadFace);
+
     let MYCUBE, animator;
     const pipe = new PipeGestureResolver();
     const nui = new PipeCommander(true, null, null, {
@@ -139,10 +142,10 @@ export var loadFaceBeast = function() {
 
       loadFace.addProceduralMeshObj({
         material: {type: 'standard'},
-        position: {x: 1, y: 3, z: -7},
+        position: {x: 1, y: 4, z: -27},
         rotation: {x: 0, y: 0, z: 0},
-        scale: [2, 2, 2],
-        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [3, 8, 3],
+        rotationSpeed: {x: 0, y: 1, z: 0},
         texturesPaths: ['./res/textures/cube-g1_low.webp'],
         meshA: MeshMorpher.cone(1, 3, false),
         meshB: MeshMorpher.cube(1),
@@ -161,7 +164,7 @@ export var loadFaceBeast = function() {
 
       MYCUBE = loadFace.addMeshObj({
         material: {type: 'standard', share: true},
-        position: {x: 0, y: 1, z: -15},
+        position: {x: 0, y: 4, z: -15},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [1, 1, 1],

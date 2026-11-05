@@ -77403,7 +77403,6 @@ var SplatFaceEffect = class {
 };
 
 // examples/games/nui/face-beast-render.js
-var TEXT = `The Beast Render`;
 var loadFaceBeast = function() {
   let loadFace = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
@@ -77419,6 +77418,7 @@ var loadFaceBeast = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
+    loadFace.collisionSystem = new CollisionSystem(loadFace);
     let MYCUBE, animator2;
     const pipe = new PipeGestureResolver();
     const nui = new PipeCommander(true, null, null, {
@@ -77502,10 +77502,10 @@ var loadFaceBeast = function() {
     async function onLoadObj(m2) {
       loadFace.addProceduralMeshObj({
         material: { type: "standard" },
-        position: { x: 1, y: 3, z: -7 },
+        position: { x: 1, y: 4, z: -27 },
         rotation: { x: 0, y: 0, z: 0 },
-        scale: [2, 2, 2],
-        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3, 8, 3],
+        rotationSpeed: { x: 0, y: 1, z: 0 },
         texturesPaths: ["./res/textures/cube-g1_low.webp"],
         meshA: MeshMorpher.cone(1, 3, false),
         meshB: MeshMorpher.cube(1),
@@ -77523,7 +77523,7 @@ var loadFaceBeast = function() {
       });
       MYCUBE = loadFace.addMeshObj({
         material: { type: "standard", share: true },
-        position: { x: 0, y: 1, z: -15 },
+        position: { x: 0, y: 4, z: -15 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         scale: [1, 1, 1],
@@ -77564,7 +77564,7 @@ var loadFaceBeast = function() {
           OUTPUT.font,
           { scale: 0.05, localOffset: [-15, 1, 0] }
         );
-        loadFace.floor.effects.gpuText.typeText(TEXT, 200, () => {
+        loadFace.floor.effects.gpuText.typeText("SHOOT THE CUBES", 120, () => {
           MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
         });
       });
@@ -77589,25 +77589,68 @@ var loadFaceBeast = function() {
         );
         MYCUBE.effects.faceEffect = faceEffect;
         MYCUBE.effects.faceEffect.setScale(32);
-        const laser2 = MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer);
-        const LASER_LENGTH2 = 12;
-        const FIRE_INTERVAL2 = 0.08;
-        const FIRE_DIRECTION2 = 1;
-        let lastFire2 = 0;
+        const laser2 = MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer, { maxBeams: 2, width: 0.075, intensity: 3 });
+        const LASER_LENGTH2 = 20, LASER_HIT_RADIUS = 0.28, FIRE_INTERVAL2 = 0.08;
+        const FIRE_DIRECTION2 = 1, FACE_HIT_RADIUS = 3.2, CUBE_RESPAWN_Z = 90;
+        let lastFire2 = 0, energy = 100, dead = false;
+        function showGameplayStatus(message) {
+          const gpuText = app.floor?.effects?.gpuText;
+          if (gpuText) gpuText.typeText(message, 80);
+        }
+        function segmentHitsSphere(ax, ay, az, bx, by, bz, cx, cy, cz, radius) {
+          const vx = bx - ax, vy = by - ay, vz = bz - az, wx = cx - ax, wy = cy - ay, wz = cz - az;
+          const lenSq2 = vx * vx + vy * vy + vz * vz;
+          let t3 = lenSq2 > 1e-8 ? (wx * vx + wy * vy + wz * vz) / lenSq2 : 0;
+          if (t3 < 0) t3 = 0;
+          else if (t3 > 1) t3 = 1;
+          const dx = ax + vx * t3 - cx, dy = ay + vy * t3 - cy, dz = az + vz * t3 - cz;
+          return dx * dx + dy * dy + dz * dz <= radius * radius;
+        }
+        function respawnCube(cube) {
+          const cfg = cube._runnerCfg;
+          cube.position.z = CUBE_RESPAWN_Z + Math.random() * 30;
+          cube.position.x = cfg.minX + Math.random() * (cfg.maxX - cfg.minX);
+          cube.position.y = cfg.minY + Math.random() * (cfg.maxY - cfg.minY);
+          cube._runnerSpeed = cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin);
+        }
         function updateLasers(nowSec) {
+          if (dead) return;
+          const activeRunners = runnerSet?.runners;
+          const facePos = MYCUBE.position;
+          if (activeRunners) {
+            for (let i2 = 0; i2 < activeRunners.length; i2++) {
+              const cube = activeRunners[i2];
+              const dx = cube.position.x - facePos.x, dy = cube.position.y - facePos.y, dz = cube.position.z - facePos.z;
+              const hitRadius = FACE_HIT_RADIUS + (cube._runnerScale || 1);
+              if (dx * dx + dy * dy + dz * dz <= hitRadius * hitRadius) {
+                energy = Math.max(0, energy - 15);
+                respawnCube(cube);
+                if (energy === 0) {
+                  dead = true;
+                  showGameplayStatus("YOU DIED... ENERGY: 0");
+                  laser2.cancelAll();
+                } else showGameplayStatus("CUBE HIT! ENERGY: " + energy);
+                return;
+              }
+            }
+          }
           const A2 = faceEffect.anchors;
-          if (!A2.valid) return;
-          if (A2.mouthOpen < 0.5) return;
-          if (nowSec - lastFire2 < FIRE_INTERVAL2) return;
+          if (!A2.valid || A2.mouthOpen < 0.5 || nowSec - lastFire2 < FIRE_INTERVAL2) return;
           lastFire2 = nowSec;
-          for (const side of ["right", "left"]) {
-            const eye = side === "right" ? A2.rightEye : A2.leftEye;
-            const end = [
-              eye[0] + A2.forward[0] * LASER_LENGTH2 * FIRE_DIRECTION2,
-              eye[1] + A2.forward[1] * LASER_LENGTH2 * FIRE_DIRECTION2,
-              eye[2] + A2.forward[2] * LASER_LENGTH2 * FIRE_DIRECTION2
-            ];
-            laser2.fireBeam(eye, end, 0.2);
+          for (let sideIndex = 0; sideIndex < 2; sideIndex++) {
+            const eye = sideIndex === 0 ? A2.rightEye : A2.leftEye;
+            const endX = eye[0] + A2.forward[0] * LASER_LENGTH2 * FIRE_DIRECTION2;
+            const endY = eye[1] + A2.forward[1] * LASER_LENGTH2 * FIRE_DIRECTION2;
+            const endZ = eye[2] + A2.forward[2] * LASER_LENGTH2 * FIRE_DIRECTION2;
+            laser2.fireBeam(eye, [endX, endY, endZ], 0.2);
+            if (!activeRunners) continue;
+            for (let i2 = 0; i2 < activeRunners.length; i2++) {
+              const cube = activeRunners[i2], radius = (cube._runnerScale || 1) * 1.05 + LASER_HIT_RADIUS;
+              if (segmentHitsSphere(eye[0], eye[1], eye[2], endX, endY, endZ, cube.position.x, cube.position.y, cube.position.z, radius)) {
+                respawnCube(cube);
+                showGameplayStatus("NICE SHOT! CUBE DESTROYED");
+              }
+            }
           }
         }
         app.autoUpdate.push({ update: updateLasers });
@@ -77700,6 +77743,7 @@ var loadFaceBeast = function() {
           physics: { enabled: false, mass: 0, geometry: "Cube" }
         });
         obj2._runnerSpeed = rand(cfg.speedMin, cfg.speedMax);
+        obj2._runnerScale = s2;
         obj2._runnerCfg = cfg;
         obj2._runnerColor = determinateType();
         obj2._runnerDamage = damageFromColor(obj2._runnerColor);
@@ -77726,8 +77770,6 @@ var loadFaceBeast = function() {
               r3.position.x = rand(r3._runnerCfg.minX, r3._runnerCfg.maxX);
               r3.position.y = rand(r3._runnerCfg.minY, r3._runnerCfg.maxY);
               r3._runnerSpeed = rand(r3._runnerCfg.speedMin, r3._runnerCfg.speedMax);
-              const s2 = rand(r3._runnerCfg.scaleMin, r3._runnerCfg.scaleMax);
-              if (r3.scale) r3.scale = [s2, s2, s2];
             }
           }
         }
@@ -79510,7 +79552,7 @@ var SplatPoseEffect = class {
 };
 
 // examples/games/nui/pose-beast-render.js
-var TEXT2 = `The Beast Render`;
+var TEXT = `The Beast Render`;
 var loadPoseBeast = function() {
   let loadPose = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
@@ -79671,7 +79713,7 @@ var loadPoseBeast = function() {
           OUTPUT.font,
           { scale: 0.05, localOffset: [-15, 1, 0] }
         );
-        loadPose.floor.effects.gpuText.typeText(TEXT2, 200, () => {
+        loadPose.floor.effects.gpuText.typeText(TEXT, 200, () => {
           console.log("Typing complete!");
           MYCUBE.effects.splat = new GaussianSplatScene(loadPose.device, "rgba16float", loadPose.cameraBuffer);
           setTimeout(loadRest, 1e3);
@@ -79855,7 +79897,7 @@ var loadPoseBeast = function() {
 };
 
 // examples/games/nui/pose-to-glb.js
-var TEXT3 = `The Beast Render`;
+var TEXT2 = `The Beast Render`;
 var loadPoseToGLB = function() {
   let loadPose = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
@@ -80036,7 +80078,7 @@ var loadPoseToGLB = function() {
           OUTPUT.font,
           { scale: 0.05, localOffset: [-15, 1, 0] }
         );
-        loadPose.floor.effects.gpuText.typeText(TEXT3, 200, () => {
+        loadPose.floor.effects.gpuText.typeText(TEXT2, 200, () => {
           console.log("Typing complete!");
           setTimeout(loadRest, 1e3);
         });
