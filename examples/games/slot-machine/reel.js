@@ -2,6 +2,17 @@ import {animateRotationY} from "../../../src/engine/procedures/sceneobjectKinema
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const animateValue = (duration, update) => new Promise(resolve => {
+  const start = performance.now();
+  const tick = now => {
+    const t = Math.min(1, (now - start) / duration);
+    update(t);
+    if(t < 1) requestAnimationFrame(tick);
+    else resolve();
+  };
+  requestAnimationFrame(tick);
+});
 
 export class SlotReel {
   constructor(mesh, reelCfg, opts = {}) {
@@ -11,7 +22,12 @@ export class SlotReel {
     this.angleOffset = opts.angleOffset ?? 0;  // CALIBRATE: angle where sprite 0 faces the camera
     this.dir = opts.dir ?? 1;                  // CALIBRATE: 1 or -1, ring direction
     this.extraTurns = opts.extraTurns ?? 1;
-    this.stopMs = opts.stopMs ?? 900;
+    this.stopMs = opts.stopMs ?? 1050;
+    this.startKickSpeed = opts.startKickSpeed ?? 1.8;
+    this.startKickMs = opts.startKickMs ?? 100;
+    this.accelerationMs = opts.accelerationMs ?? 360;
+    this.overshootDegrees = opts.overshootDegrees ?? 1;
+    this.settleMs = opts.settleMs ?? 190;
     this.visibleRows = opts.visibleRows ?? 3;
   }
 
@@ -76,21 +92,37 @@ export class SlotReel {
     this.setAngle(this.angleForStop(s));
   }
 
-  startSpin() {this.mesh.rotation.setRotateX(this.spinSpeed);}
-
-  stopAt(stop) {
-    return new Promise(resolve => {
-      this.mesh.rotation.setRotateX(0);
-      const from = this.getAngle();
-      const target = this.angleForStop(stop);
-      const delta = ((((target - from) % 360) + 360) % 360) + 360 * this.extraTurns;
-      const t0 = performance.now();
-      const tick = now => {
-        const t = Math.min(1, (now - t0) / this.stopMs);
-        this.setAngle(from + delta * easeOutCubic(t));
-        if(t < 1) requestAnimationFrame(tick); else resolve();
-      };
-      requestAnimationFrame(tick);
+  async startSpin() {
+    // A short reverse mechanical kick, followed by a smooth acceleration.
+    this.mesh.rotation.setRotateX(-this.startKickSpeed);
+    await sleep(this.startKickMs);
+    const fromSpeed = -this.startKickSpeed;
+    await animateValue(this.accelerationMs, t => {
+      this.mesh.rotation.setRotateX(
+        fromSpeed + (this.spinSpeed - fromSpeed) * easeInOutCubic(t)
+      );
     });
+    this.mesh.rotation.setRotateX(this.spinSpeed);
+  }
+
+  async stopAt(stop) {
+    this.mesh.rotation.setRotateX(0);
+    const from = this.getAngle();
+    const target = this.angleForStop(stop);
+    const travel = ((((target - from) % 360) + 360) % 360) + 360 * this.extraTurns;
+    const landing = from + travel;
+    const overshoot = landing + this.overshootDegrees;
+    const settleMs = Math.min(this.settleMs, this.stopMs * 0.35);
+    const brakingMs = Math.max(1, this.stopMs - settleMs);
+
+    // Brake into a tiny +1 degree overshoot, then mechanically settle backward
+    // onto the exact backend-selected angle.
+    await animateValue(brakingMs, t => {
+      this.setAngle(from + (overshoot - from) * easeOutCubic(t));
+    });
+    await animateValue(settleMs, t => {
+      this.setAngle(overshoot + (target - overshoot) * easeOutCubic(t));
+    });
+    this.setAngle(target);
   }
 }
