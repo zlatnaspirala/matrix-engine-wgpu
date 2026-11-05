@@ -77639,9 +77639,14 @@ var loadFaceBeast = function() {
           lastFire2 = nowSec;
           for (let sideIndex = 0; sideIndex < 2; sideIndex++) {
             const eye = sideIndex === 0 ? A2.rightEye : A2.leftEye;
-            const endX = eye[0] + A2.forward[0] * LASER_LENGTH2 * FIRE_DIRECTION2;
-            const endY = eye[1] + A2.forward[1] * LASER_LENGTH2 * FIRE_DIRECTION2;
-            const endZ = eye[2] + A2.forward[2] * LASER_LENGTH2 * FIRE_DIRECTION2;
+            const otherEye = sideIndex === 0 ? A2.leftEye : A2.rightEye;
+            const eyeMidX = (A2.rightEye[0] + A2.leftEye[0]) * 0.5;
+            const eyeMidY = (A2.rightEye[1] + A2.leftEye[1]) * 0.5;
+            const eyeMidZ = (A2.rightEye[2] + A2.leftEye[2]) * 0.5;
+            const TARGET_SPREAD = 0.18;
+            const endX = eyeMidX + A2.forward[0] * LASER_LENGTH2 * FIRE_DIRECTION2 + (eye[0] - eyeMidX) * TARGET_SPREAD;
+            const endY = eyeMidY + A2.forward[1] * LASER_LENGTH2 * FIRE_DIRECTION2 + (eye[1] - eyeMidY) * TARGET_SPREAD;
+            const endZ = eyeMidZ + A2.forward[2] * LASER_LENGTH2 * FIRE_DIRECTION2 + (eye[2] - eyeMidZ) * TARGET_SPREAD;
             laser2.fireBeam(eye, [endX, endY, endZ], 0.2);
             if (!activeRunners) continue;
             for (let i2 = 0; i2 < activeRunners.length; i2++) {
