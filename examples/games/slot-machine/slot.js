@@ -149,10 +149,35 @@ export var loadSlot = function() {
       await sleep(600);
 
       laser = FX_MESH.effects.laser = new LaserProjectile(
-        slotMachine.device, 'rgba16float', slotMachine.cameraBuffer, {maxBeams: 2, width: 0.075, intensity: 3});
+        slotMachine.device, 'rgba16float', slotMachine.cameraBuffer, {\n          maxBeams: 24, width: 0.045, intensity: 2.8,\n          colorA: [0.15, 0.95, 1, 1], colorB: [0.05, 0.25, 1, 1]\n        });
 
 
       slotMachine.laser = laser;
+
+      // FX_MESH is a static carrier in front of the reels. Convert world XY
+      // frame coordinates into its local XZ plane (its 90-degree X rotation).
+      const framePoint = (worldX, worldY) => [
+        -worldX / (9 * Math.max(1, n / 3)),
+        -2 / 9, // place the laser slightly in front of the reel faces
+        (worldY - 15) / 9
+      ];
+      const fireFrameEdge = (a, b) => laser.fireBeam(
+        framePoint(a[0], a[1]), framePoint(b[0], b[1]), 0
+      );
+
+      // Four permanent laser edges around each reel.
+      for(let i = 0; i < n; i++) {
+        const cx = reelX(i, n), halfW = 2.55, halfH = 5.35, cy = 15;
+        const corners = [
+          [cx - halfW, cy - halfH],
+          [cx + halfW, cy - halfH],
+          [cx + halfW, cy + halfH],
+          [cx - halfW, cy + halfH]
+        ];
+        for(let edge = 0; edge < 4; edge++) {
+          fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
+        }
+      }
 
       FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, slotMachine.cameraBuffer);
       FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, 'rgba16float', 30, slotMachine.cameraBuffer);
@@ -203,7 +228,32 @@ export var loadSlot = function() {
         console.log('RESULT', r)
         console.log('RESULT', r.grid.map(c => c.join(' ')), 'win', r.totalWin, 'FS', r.freeSpinsLeft)
 
-          laser.fireBeam( [ 0,0,0] , [0, 5, 0], 1.2);
+          // Flash a bright laser across each winning row, briefly highlighting
+          // the exact reel positions reported by the game evaluation.
+          if(r.totalWin > 0) {
+            const flashed = new Set();
+            for(const win of (r.lineWins ?? [])) {
+              for(const cell of (win.cells ?? [])) {
+                const key = `${cell.reel}:${cell.row}`;
+                if(flashed.has(key)) continue;
+                flashed.add(key);
+                const cx = reelX(cell.reel, n);
+                const cy = 15 + (1 - cell.row) * 3.2;
+                laser.fireBeam(
+                  framePoint(cx - 2.35, cy),
+                  framePoint(cx + 2.35, cy),
+                  0.9,
+                  {
+                    colorA: [1, 0.95, 0.25, 1],
+                    colorB: [1, 0.12, 0.45, 1],
+                    width: 0.12,
+                    intensity: 7,
+                    mode: 1
+                  }
+                );
+              }
+            }
+          }
 
       });
 
