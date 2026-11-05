@@ -330,7 +330,7 @@ export var loadFaceBeast = function() {
         });
         app.autoUpdate.push({
           update: function() {
-            const anchors = faceEffect.anchors;
+            const anchors =  app.MYCUBE.effects.faceEffect.anchors;
             if(!anchors.valid) return;
             leftEyeMarker.position.x = anchors.leftEye[0];
             leftEyeMarker.position.y = anchors.leftEye[1];
@@ -340,7 +340,12 @@ export var loadFaceBeast = function() {
             rightEyeMarker.position.z = anchors.rightEye[2];
           }
         });
-        MYCUBE.effects.eyeMarkers = {left: leftEyeMarker, right: rightEyeMarker};
+
+
+        // DONT DO THIS !!!
+        // MYCUBE.effects.eyeMarkers = {left: leftEyeMarker, right: rightEyeMarker};
+        // !!!
+
 
         // Laser + gameplay. Keep the hot path allocation-light.
         const laser = MYCUBE.effects.laser = new LaserProjectile(app.device, 'rgba16float', app.cameraBuffer, {maxBeams: 2, width: 0.075, intensity: 3});
