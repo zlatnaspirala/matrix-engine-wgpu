@@ -290,10 +290,25 @@ export var loadFaceBeast = function() {
         }
         function updateLasers(nowSec) {
           if(dead)return;
+          const activeRunners=runnerSet?.runners;
+          const facePos=MYCUBE.position;
+          if(activeRunners) {
+            for(let i=0;i<activeRunners.length;i++) {
+              const cube=activeRunners[i];
+              const dx=cube.position.x-facePos.x,dy=cube.position.y-facePos.y,dz=cube.position.z-facePos.z;
+              const hitRadius=FACE_HIT_RADIUS+(cube._runnerScale||1);
+              if(dx*dx+dy*dy+dz*dz<=hitRadius*hitRadius) {
+                energy=Math.max(0,energy-15);
+                respawnCube(cube);
+                if(energy===0){dead=true;showGameplayStatus('YOU DIED... ENERGY: 0');laser.cancelAll();}
+                else showGameplayStatus('CUBE HIT! ENERGY: '+energy);
+                return;
+              }
+            }
+          }
           const A=faceEffect.anchors;
           if(!A.valid||A.mouthOpen<0.5||nowSec-lastFire<FIRE_INTERVAL)return;
           lastFire=nowSec;
-          const activeRunners=runnerSet?.runners;
           for(let sideIndex=0;sideIndex<2;sideIndex++) {
             const eye=sideIndex===0?A.rightEye:A.leftEye;
             const endX=eye[0]+A.forward[0]*LASER_LENGTH*FIRE_DIRECTION;
@@ -428,19 +443,12 @@ export var loadFaceBeast = function() {
             if(!r.position) continue;
             r.position.z -= r._runnerSpeed;
             if(r.rotation) r.rotation.y += 0.01 + r._runnerSpeed * 0.01;
-            const facePos=MYCUBE?.position;
-            if(!dead&&facePos) {
-              const dx=r.position.x-facePos.x,dy=r.position.y-facePos.y,dz=r.position.z-facePos.z;
-              const hitRadius=FACE_HIT_RADIUS+(r._runnerScale||1);
-              if(dx*dx+dy*dy+dz*dz<=hitRadius*hitRadius) {
-                energy=Math.max(0,energy-15);
-                respawnCube(r);
-                if(energy===0){dead=true;showGameplayStatus('YOU DIED... ENERGY: 0');laser.cancelAll();}
-                else showGameplayStatus('CUBE HIT! ENERGY: '+energy);
-                continue;
-              }
+            if(r.position.z<r._runnerCfg.endZ) {
+              r.position.z=r._runnerCfg.startZ+Math.random()*30;
+              r.position.x=rand(r._runnerCfg.minX,r._runnerCfg.maxX);
+              r.position.y=rand(r._runnerCfg.minY,r._runnerCfg.maxY);
+              r._runnerSpeed=rand(r._runnerCfg.speedMin,r._runnerCfg.speedMax);
             }
-            if(r.position.z<r._runnerCfg.endZ)respawnCube(r);
           }
         }
       };
