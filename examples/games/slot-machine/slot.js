@@ -9,6 +9,7 @@ import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {adaptSlotConfig, fetchSlotConfig} from "./networking.js";
 import {SlotReel} from "./reel.js";
 import {SlotGame} from "./state.js";
+import {LaserProjectile} from "../../../src/engine/effects/laser.js";
 
 /**
  *
@@ -62,6 +63,8 @@ export var loadSlot = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, async () => {
+
+    let laser;
 
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
@@ -134,6 +137,7 @@ export var loadSlot = function() {
 
       const FX_MESH = slotMachine.addMeshObj({
         material: {type: 'standard'},
+        name: "fx",
         position: {x: 0, y: 15, z: -10}, rotation: {x: 90, y: 0, z: 180}, rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [9 * Math.max(1, n / 3), 9, 9],
         texturesPaths: ['./res/icons/512.webp'], name: 'cubeeffect', mesh: m.plane,
@@ -143,6 +147,13 @@ export var loadSlot = function() {
       });
 
       await sleep(600);
+
+      laser = FX_MESH.effects.laser = new LaserProjectile(
+        slotMachine.device, 'rgba16float', slotMachine.cameraBuffer, {maxBeams: 2, width: 0.075, intensity: 3});
+
+
+      slotMachine.laser = laser;
+
       FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, slotMachine.cameraBuffer);
       FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, 'rgba16float', 30, slotMachine.cameraBuffer);
 
@@ -151,8 +162,10 @@ export var loadSlot = function() {
       }
 
       const cam = slotMachine.getCamera();
-      cam.setYaw(-0.03); cam.setPitch(-0.05);
-      cam.setZ(22 * Math.max(1, n / 3)); cam.setY(16);
+      cam.setYaw(-3.119);
+      cam.setPitch(-0.05);
+      cam.setZ(-52 * Math.max(1, n / 3));
+      cam.setY(16);
       cam._dirtyAngle = true;
 
       reelMeshes.forEach(mesh => mesh.setBlend(0.001));
@@ -187,6 +200,8 @@ export var loadSlot = function() {
       game.on('result', r => {
         console.log('RESULT', r)
         console.log('RESULT', r.grid.map(c => c.join(' ')), 'win', r.totalWin, 'FS', r.freeSpinsLeft)
+
+          laser.fireBeam( [ 0,0,0] , [0, 5, 0], 1.2);
       });
 
       window.slot = slot; window.slotGame = game; window.slotViews = views;

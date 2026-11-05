@@ -80687,7 +80687,7 @@ var SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 var sleep3 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
 var SPACING = 6;
 var SCALE = 3.5;
-var reelX = (i2, n3) => (i2 - (n3 - 1) / 2) * SPACING;
+var reelX = (i2, n3) => ((n3 - 1) / 2 - i2) * SPACING;
 async function initializeSymbolReel(mesh, engine, reelCfg) {
   const batch = new SpritesPack2D(engine.device, "rgba16float", "rgba16float", engine.cameraBuffer);
   const symbolIds = [...new Set(reelCfg.strip)];
@@ -80723,6 +80723,7 @@ var loadSlot = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, async () => {
+    let laser2;
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
     console.log(slot.reelCount, slot.visibleRows, slot.paylines.length);
@@ -80793,6 +80794,7 @@ var loadSlot = function() {
       slotMachine.lightContainer[0].setTarget(0, 0, -10);
       const FX_MESH = slotMachine.addMeshObj({
         material: { type: "standard" },
+        name: "fx",
         position: { x: 0, y: 15, z: -10 },
         rotation: { x: 90, y: 0, z: 180 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
@@ -80805,15 +80807,22 @@ var loadSlot = function() {
         pointerEffect: { enabled: true }
       });
       await sleep3(600);
+      laser2 = FX_MESH.effects.laser = new LaserProjectile(
+        slotMachine.device,
+        "rgba16float",
+        slotMachine.cameraBuffer,
+        { maxBeams: 2, width: 0.075, intensity: 3 }
+      );
+      slotMachine.laser = laser2;
       FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, "rgba16float", "circle2", "./res/textures/star1.png", 3, slotMachine.cameraBuffer);
       FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
       for (const [i2, mesh] of reelMeshes.entries()) {
         await initializeSymbolReel(mesh, slotMachine, slot.reels[i2]);
       }
       const cam2 = slotMachine.getCamera();
-      cam2.setYaw(-0.03);
+      cam2.setYaw(-3.119);
       cam2.setPitch(-0.05);
-      cam2.setZ(22 * Math.max(1, n3 / 3));
+      cam2.setZ(-52 * Math.max(1, n3 / 3));
       cam2.setY(16);
       cam2._dirtyAngle = true;
       reelMeshes.forEach((mesh) => mesh.setBlend(1e-3));
@@ -80840,6 +80849,7 @@ var loadSlot = function() {
       game.on("result", (r3) => {
         console.log("RESULT", r3);
         console.log("RESULT", r3.grid.map((c2) => c2.join(" ")), "win", r3.totalWin, "FS", r3.freeSpinsLeft);
+        laser2.fireBeam([0, 0, 0], [0, 5, 0], 1.2);
       });
       window.slot = slot;
       window.slotGame = game;
