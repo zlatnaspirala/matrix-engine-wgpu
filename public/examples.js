@@ -80391,7 +80391,7 @@ var SlotReel = class {
     this.cfg = reelCfg;
     this.spinSpeed = opts.spinSpeed ?? 6;
     this.angleOffset = opts.angleOffset ?? 0;
-    this.dir = opts.dir ?? 1;
+    this.dir = opts.dir ?? -1;
     this.extraTurns = opts.extraTurns ?? 1;
     this.stopMs = opts.stopMs ?? 900;
     this.visibleRows = opts.visibleRows ?? 3;
@@ -80837,7 +80837,10 @@ var loadSlot = function() {
           await sleep3(1500);
         }
       });
-      game.on("result", (r3) => console.log("RESULT", r3.grid.map((c2) => c2.join(" ")), "win", r3.totalWin, "FS", r3.freeSpinsLeft));
+      game.on("result", (r3) => {
+        console.log("RESULT", r3);
+        console.log("RESULT", r3.grid.map((c2) => c2.join(" ")), "win", r3.totalWin, "FS", r3.freeSpinsLeft);
+      });
       window.slot = slot;
       window.slotGame = game;
       window.slotViews = views;

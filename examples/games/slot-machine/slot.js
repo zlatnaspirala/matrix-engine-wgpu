@@ -184,7 +184,10 @@ export var loadSlot = function() {
           await sleep(1500);
         }
       });
-      game.on('result', r => console.log('RESULT', r.grid.map(c => c.join(' ')), 'win', r.totalWin, 'FS', r.freeSpinsLeft));
+      game.on('result', r => {
+        console.log('RESULT', r)
+        console.log('RESULT', r.grid.map(c => c.join(' ')), 'win', r.totalWin, 'FS', r.freeSpinsLeft)
+      });
 
       window.slot = slot; window.slotGame = game; window.slotViews = views;
       window.addEventListener('keydown', e => {if(e.code === 'Space') game.spin();});

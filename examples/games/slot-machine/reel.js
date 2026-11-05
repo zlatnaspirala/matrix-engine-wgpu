@@ -9,7 +9,7 @@ export class SlotReel {
     this.cfg = reelCfg;                        // {strip, length} from the server adapter
     this.spinSpeed = opts.spinSpeed ?? 6;      // same units as setRotateX(2.5) in your demo
     this.angleOffset = opts.angleOffset ?? 0;  // CALIBRATE: angle where sprite 0 faces the camera
-    this.dir = opts.dir ?? 1;                  // CALIBRATE: 1 or -1, ring direction
+    this.dir = opts.dir ?? -1;                  // CALIBRATE: 1 or -1, ring direction
     this.extraTurns = opts.extraTurns ?? 1;
     this.stopMs = opts.stopMs ?? 900;
     this.visibleRows = opts.visibleRows ?? 3;
