@@ -116,13 +116,13 @@ export class SlotReel {
     const brakingMs = Math.max(1, this.stopMs - settleMs);
 
     // Brake into a tiny +1 degree overshoot, then mechanically settle backward
-    // onto the exact backend-selected angle.
+    // onto the exact backend-selected orientation (same angle modulo 360).
     await animateValue(brakingMs, t => {
       this.setAngle(from + (overshoot - from) * easeOutCubic(t));
     });
     await animateValue(settleMs, t => {
-      this.setAngle(overshoot + (target - overshoot) * easeOutCubic(t));
+      this.setAngle(overshoot + (landing - overshoot) * easeOutCubic(t));
     });
-    this.setAngle(target);
+    this.setAngle(landing);
   }
 }
