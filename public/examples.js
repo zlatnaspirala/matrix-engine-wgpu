@@ -77656,13 +77656,19 @@ var loadFaceBeast = function() {
               const dx = cube.position.x - facePos.x, dy = cube.position.y - facePos.y, dz = cube.position.z - facePos.z;
               const hitRadius = FACE_HIT_RADIUS + (cube._runnerScale || 1);
               if (dx * dx + dy * dy + dz * dz <= hitRadius * hitRadius) {
-                energy = Math.max(0, energy - 15);
+                const isGreen = cube._runnerColor && cube._runnerColor.g > cube._runnerColor.r && cube._runnerColor.g > cube._runnerColor.b;
+                if (isGreen) {
+                  energy = Math.min(100, energy + 15);
+                  showGameplayStatus("GREEN CUBE! ENERGY: " + energy);
+                } else {
+                  energy = Math.max(0, energy - 15);
+                }
                 respawnCube(cube);
-                if (energy === 0) {
+                if (!isGreen && energy === 0) {
                   dead = true;
                   showGameplayStatus("YOU DIED... ENERGY: 0");
                   laser2.cancelAll();
-                } else showGameplayStatus("CUBE HIT! ENERGY: " + energy);
+                } else if (!isGreen) showGameplayStatus("CUBE HIT! ENERGY: " + energy);
                 return;
               }
             }
