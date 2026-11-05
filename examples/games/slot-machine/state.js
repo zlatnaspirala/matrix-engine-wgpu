@@ -13,6 +13,7 @@ export class SlotGame {
     this.views = reelViews;
     this.lineBet = opts.lineBet ?? 1;
     this.minSpinMs = opts.minSpinMs ?? 800;
+    this.startStagger = opts.startStagger ?? 180; // ms between reel starts
     this.stagger = opts.stagger ?? 300;       // ms between reel stops
     this.topIsPrev = opts.topIsPrev ?? true;
     this.onPresentWin = opts.onPresentWin;    // async (evaluation) => {}, awaited
@@ -41,7 +42,13 @@ export class SlotGame {
 
       this.setState('SPINNING');
       this.emit('spinStart', {inFree, freeSpinsLeft: this.freeSpinsLeft});
-      this.views.forEach(v => v.startSpin());
+      // Give each reel its own mechanical kick and acceleration, slightly staggered.
+      const starts = [];
+      for(let i = 0; i < this.views.length; i++) {
+        starts.push(this.views[i].startSpin());
+        if(i < this.views.length - 1) await sleep(this.startStagger);
+      }
+      await Promise.all(starts);
       await sleep(this.minSpinMs);
 
       this.setState('STOPPING');
