@@ -305,6 +305,43 @@ export var loadFaceBeast = function() {
         MYCUBE.effects.faceEffect = faceEffect;
         MYCUBE.effects.faceEffect.setScale(32);
 
+        // Eye anchor followers: lightweight scene objects driven by FaceEffect world anchors.
+        // These are independent objects (not a core-engine hierarchy), so they can later
+        // be replaced with any mesh/effect while keeping the same tracking updater.
+        const eyeMarkerOptions = {
+          material: {type: 'standard', share: true},
+          rotation: {x: 0, y: 0, z: 0},
+          rotationSpeed: {x: 0, y: 0, z: 0},
+          scale: [0.22, 0.22, 0.22],
+          texturesPaths: ['./res/textures/white-metal.png'],
+          physics: {enabled: false, mass: 0, geometry: "Sphere"}
+        };
+        const leftEyeMarker = loadFace.addMeshObj({
+          ...eyeMarkerOptions,
+          position: {x: 0, y: -1000, z: 0},
+          name: 'face-left-eye-marker',
+          mesh: m.ball
+        });
+        const rightEyeMarker = loadFace.addMeshObj({
+          ...eyeMarkerOptions,
+          position: {x: 0, y: -1000, z: 0},
+          name: 'face-right-eye-marker',
+          mesh: m.ball
+        });
+        app.autoUpdate.push({
+          update: function() {
+            const anchors = faceEffect.anchors;
+            if(!anchors.valid) return;
+            leftEyeMarker.position.x = anchors.leftEye[0];
+            leftEyeMarker.position.y = anchors.leftEye[1];
+            leftEyeMarker.position.z = anchors.leftEye[2];
+            rightEyeMarker.position.x = anchors.rightEye[0];
+            rightEyeMarker.position.y = anchors.rightEye[1];
+            rightEyeMarker.position.z = anchors.rightEye[2];
+          }
+        });
+        MYCUBE.effects.eyeMarkers = {left: leftEyeMarker, right: rightEyeMarker};
+
         // Laser + gameplay. Keep the hot path allocation-light.
         const laser = MYCUBE.effects.laser = new LaserProjectile(app.device, 'rgba16float', app.cameraBuffer, {maxBeams: 2, width: 0.075, intensity: 3});
         const LASER_LENGTH = 20, LASER_HIT_RADIUS = 0.28, FIRE_INTERVAL = 0.08;
