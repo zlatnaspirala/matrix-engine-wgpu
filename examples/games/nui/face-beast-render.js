@@ -255,7 +255,7 @@ export var loadFaceBeast = function() {
           OUTPUT.msdfTexture,
           sampler,
           loadFace.cameraBuffer,
-          OUTPUT.font, {scale: 0.05, localOffset: [-20, 9, 0]}
+          OUTPUT.font, {scale: 0.05, localOffset: [-20, 14, 0]}
         );
 
         // app.MYCUBE.effects.gpuText.setLocalOffset( -15 ,1,0)
@@ -311,7 +311,7 @@ export var loadFaceBeast = function() {
         const FIRE_DIRECTION = 1, FACE_HIT_RADIUS = 3.2, CUBE_RESPAWN_Z = 90;
         let lastFire = 0, energy = 100, dead = false;
         function showGameplayStatus(message) {
-          const gpuText = app.floor?.effects?.gpuText;
+          const gpuText = app.MYCUBE?.effects?.gpuText;
           if(gpuText) gpuText.typeText(message, 80);
         }
         function segmentHitsSphere(ax, ay, az, bx, by, bz, cx, cy, cz, radius) {
@@ -402,6 +402,7 @@ export var loadFaceBeast = function() {
         let cam = app.getCamera();
         cam.setYaw(0);
         cam.setPitch(-0.3);
+        cam.setX(0);
         cam.setZ(34);
         cam.setY(12);
         app.buildRenderBuckets();
@@ -482,7 +483,7 @@ export var loadFaceBeast = function() {
         runners.push(obj);
         const rRadius = Math.max(s) || s;
         try {
-          collisionSystem.register(obj.name, obj.position, s * 1.25, 'obstacle');
+          loadFace.collisionSystem.register(obj.name, obj.position, s * 1.25, 'obstacle');
         } catch(err) {
           console.warn('collision register failed', err);
         }
@@ -512,7 +513,7 @@ export var loadFaceBeast = function() {
     }
 
     loadFace.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected');
+      // console.log('ray.hit.event detected');
       if(isRunning === false) {
         runnerSet = spawnRunners(loadFace, loadFace.SAVE_CUBE, {count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5});
         isRunning = true;

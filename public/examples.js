@@ -77595,7 +77595,7 @@ var loadFaceBeast = function() {
           sampler,
           loadFace.cameraBuffer,
           OUTPUT.font,
-          { scale: 0.05, localOffset: [-20, 9, 0] }
+          { scale: 0.05, localOffset: [-20, 14, 0] }
         );
         loadFace.MYCUBE.effects.gpuText.typeText("SHOOT THE CUBES", 120, () => {
           MYCUBE.effects.splat = new GaussianSplatScene(loadFace.device, "rgba16float", loadFace.cameraBuffer);
@@ -77627,7 +77627,7 @@ var loadFaceBeast = function() {
         const FIRE_DIRECTION2 = 1, FACE_HIT_RADIUS = 3.2, CUBE_RESPAWN_Z = 90;
         let lastFire2 = 0, energy = 100, dead = false;
         function showGameplayStatus(message) {
-          const gpuText = app.floor?.effects?.gpuText;
+          const gpuText = app.MYCUBE?.effects?.gpuText;
           if (gpuText) gpuText.typeText(message, 80);
         }
         function segmentHitsSphere(ax, ay, az, bx, by, bz, cx, cy, cz, radius) {
@@ -77707,6 +77707,7 @@ var loadFaceBeast = function() {
         let cam2 = app.getCamera();
         cam2.setYaw(0);
         cam2.setPitch(-0.3);
+        cam2.setX(0);
         cam2.setZ(34);
         cam2.setY(12);
         app.buildRenderBuckets();
@@ -77795,7 +77796,7 @@ var loadFaceBeast = function() {
         runners.push(obj2);
         const rRadius = Math.max(s2) || s2;
         try {
-          collisionSystem.register(obj2.name, obj2.position, s2 * 1.25, "obstacle");
+          loadFace.collisionSystem.register(obj2.name, obj2.position, s2 * 1.25, "obstacle");
         } catch (err) {
           console.warn("collision register failed", err);
         }
@@ -77820,7 +77821,6 @@ var loadFaceBeast = function() {
       return { runners, updater };
     }
     loadFace.canvas.addEventListener("ray.hit.event", (e2) => {
-      console.log("ray.hit.event detected");
       if (isRunning === false) {
         runnerSet = spawnRunners(loadFace, loadFace.SAVE_CUBE, { count: 8, minX: -22, maxX: 22, minY: 0.5, maxY: 3, startZ: 60, endZ: -50, speedMin: 0.55, speedMax: 1.5 });
         isRunning = true;
