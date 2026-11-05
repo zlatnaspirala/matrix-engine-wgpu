@@ -1237,7 +1237,7 @@ This is static file storage, and all builds output files here.
 ## Proof of Concept
 
 🎲 The first full app example will be a WebGPU-powered **Jamb 3d deluxe** game,
-   MOBA 'Forest of hollow blood' , flipper , NUI runner etc.
+   MOBA 'Forest of hollow blood', zombie shooter, flipper , NUI runner etc.
 
 <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/3d-jamb.png?raw=true" />
 
@@ -1277,6 +1277,15 @@ See more details at [FOHB Wiki](https://github.com/zlatnaspirala/matrix-engine-w
 - [MOBA Forest Of Hollow Blood from hosted on maximumroulette.com](https://maximumroulette.com/apps/fohb/)
 
   <img width="860" height="640" src="https://github.com/zlatnaspirala/matrix-engine-wgpu/blob/main/non-project-files/2026-loading-performance.png?raw=true" />
+
+### Render free hosting plan
+
+Fully supported (possible for backend parts - but not yet)
+
+Running backend parts like editorX or any other is not yet secured for public host.
+
+Examples: https://thebeast-ry91.onrender.com/
+
 
 ### Codepen examples:
 - [The Beast Cube + Fire effect + onhit changed effect configuration](https://codepen.io/editor/zlatnaspirala/pen/019f2f4b-2ace-7c39-b304-b4028f7e5456)
