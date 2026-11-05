@@ -23,7 +23,7 @@ export class SlotReel {
     this.dir = opts.dir ?? -1;                  // CALIBRATE: 1 or -1, ring direction
     this.extraTurns = opts.extraTurns ?? 1;
     this.stopMs = opts.stopMs ?? 1050;
-    this.startKickSpeed = opts.startKickSpeed ?? 1.8;
+    this.startKickSpeed = opts.startKickSpeed ?? 0.45;
     this.startKickMs = opts.startKickMs ?? 100;
     this.accelerationMs = opts.accelerationMs ?? 360;
     this.overshootDegrees = opts.overshootDegrees ?? 1;

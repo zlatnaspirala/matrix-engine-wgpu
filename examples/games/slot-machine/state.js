@@ -13,7 +13,7 @@ export class SlotGame {
     this.views = reelViews;
     this.lineBet = opts.lineBet ?? 1;
     this.minSpinMs = opts.minSpinMs ?? 800;
-    this.startStagger = opts.startStagger ?? 180; // ms between reel starts
+    this.startStagger = opts.startStagger ?? 380; // ms between reel starts
     this.stagger = opts.stagger ?? 300;       // ms between reel stops
     this.topIsPrev = opts.topIsPrev ?? true;
     this.onPresentWin = opts.onPresentWin;    // async (evaluation) => {}, awaited
