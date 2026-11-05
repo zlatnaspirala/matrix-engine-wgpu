@@ -80754,20 +80754,6 @@ var loadSlot = function() {
       });
     }
     async function onLoadObj(m2) {
-      slotMachine.addMeshObj({
-        material: { type: "standard", share: true },
-        position: { x: 0, y: -1, z: -20 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: [100, 100, 100],
-        rotationSpeed: { x: 0, y: 0.1, z: 0 },
-        texturesPaths: ["./res/textures/env-maps/sky1_lod_mid.webp"],
-        name: "sky",
-        mesh: m2.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
       const reelMeshes = slot.reels.map((reel, i2) => slotMachine.addMeshObj({
         material: { type: "standard" },
         position: { x: reelX(i2, n3), y: 15, z: -10 },
@@ -80836,14 +80822,15 @@ var loadSlot = function() {
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
-      slotMachine.getSceneObjectByName("sky").setAmbient(2, 0.5, 1);
       reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
       const game = new SlotGame(slot, views, {
         lineBet: 1,
         onPresentWin: async (res) => {
-          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
-          FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
-          await sleep3(1500);
+          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
+          FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
+          await sleep3(2500);
+          FX_MESH.effects.keeffect.setIntensity(1);
+          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
         }
       });
       game.on("result", (r3) => {
@@ -80856,6 +80843,8 @@ var loadSlot = function() {
       window.slotViews = views;
       window.addEventListener("keydown", (e2) => {
         if (e2.code === "Space") game.spin();
+        FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
+        FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       });
       const es2 = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
       es2.addEventListener("spin", (e2) => game.playResult(JSON.parse(e2.data)));
@@ -80863,8 +80852,8 @@ var loadSlot = function() {
     slotMachine.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cubeeffect")) {
-        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
-        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
+        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       }
     });
   });

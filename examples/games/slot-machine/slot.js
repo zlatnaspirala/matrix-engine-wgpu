@@ -96,20 +96,20 @@ export var loadSlot = function() {
     }
 
     async function onLoadObj(m) {
-      slotMachine.addMeshObj({
-        material: {type: 'standard', share: true},
-        position: {x: 0, y: -1, z: -20},
-        rotation: {x: 0, y: 0, z: 0},
-        scale: [100, 100, 100],
-        rotationSpeed: {x: 0, y: 0.1, z: 0},
-        texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-        name: 'sky',
-        mesh: m.ball,
-        physics: {
-          enabled: false,
-          geometry: "Sphere"
-        }
-      });
+      // slotMachine.addMeshObj({
+      //   material: {type: 'standard', share: true},
+      //   position: {x: 0, y: -1, z: -20},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   scale: [100, 100, 100],
+      //   rotationSpeed: {x: 0, y: 0.1, z: 0},
+      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
+      //   name: 'sky',
+      //   mesh: m.ball,
+      //   physics: {
+      //     enabled: false,
+      //     geometry: "Sphere"
+      //   }
+      // });
 
       const reelMeshes = slot.reels.map((reel, i) => slotMachine.addMeshObj({
         material: {type: 'standard'},
@@ -186,15 +186,17 @@ export var loadSlot = function() {
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
-      slotMachine.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+      // slotMachine.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
       reelMeshes.forEach(r => r.setAmbient(2, 0, 0));
 
       const game = new SlotGame(slot, views, {
         lineBet: 1,
         onPresentWin: async res => {
-          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
-          FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
-          await sleep(1500);
+          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
+          FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
+          await sleep(2500);
+          FX_MESH.effects.keeffect.setIntensity(1);
+          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
         }
       });
       game.on('result', r => {
@@ -202,10 +204,15 @@ export var loadSlot = function() {
         console.log('RESULT', r.grid.map(c => c.join(' ')), 'win', r.totalWin, 'FS', r.freeSpinsLeft)
 
           laser.fireBeam( [ 0,0,0] , [0, 5, 0], 1.2);
+
       });
 
       window.slot = slot; window.slotGame = game; window.slotViews = views;
-      window.addEventListener('keydown', e => {if(e.code === 'Space') game.spin();});
+      window.addEventListener('keydown', e => {
+        if(e.code === 'Space') game.spin();
+                FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
+              FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
+      });
 
       const es = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
       es.addEventListener('spin', e => game.playResult(JSON.parse(e.data)));
@@ -214,8 +221,8 @@ export var loadSlot = function() {
     slotMachine.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cubeeffect')) {
-        e.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 36));
-        e.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(3, 23));
+        e.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
+        e.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       }
     });
 
