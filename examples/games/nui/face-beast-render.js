@@ -161,7 +161,7 @@ export var loadFaceBeast = function() {
 
       MYCUBE = loadFace.addMeshObj({
         material: {type: 'standard', share: true},
-        position: {x: 0, y: 5, z: -10},
+        position: {x: 0, y: 1, z: -15},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [1, 1, 1],
@@ -305,7 +305,7 @@ export var loadFaceBeast = function() {
 
         // Important for face uv view!
         MYCUBE.effects.faceEffect.setMode('mesh');
-        MYCUBE.position.translateByY(14);
+        // MYCUBE.position.translateByY(14);
 
 
         let cam = app.getCamera();

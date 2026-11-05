@@ -50,7 +50,7 @@ import {loadFaceBeast} from "./examples/games/nui/face-beast-render.js";
 import {loadGaussianSplatVertAnim2} from "./examples/gaussian-test.js";
 import {loadRoulette} from "./examples/games/ultimate-roulette-2/roulette.js";
 import {loadMSDFText} from "./examples/msdfText.js";
-import {loadFaceMask} from "./examples/face-mask.js";
+import {loadGPUAnimations} from "./examples/face-mask.js";
 import {loadPoseBeast} from "./examples/games/nui/pose-beast-render.js";
 import {loadPoseToGLB} from "./examples/games/nui/pose-to-glb.js";
 import {loadSlot} from "./examples/games/slot-machine/slot.js";
@@ -114,7 +114,7 @@ byId('loadFaceBeast').addEventListener("click", () => switchDemo('43'));
 byId('loadGaussianSplatVertAnim2').addEventListener("click", () => switchDemo('44'));
 byId('loadRoulette').addEventListener("click", () => switchDemo('45'));
 byId('loadMSDFText').addEventListener("click", () => switchDemo('46'));
-byId('loadFaceMask').addEventListener("click", () => switchDemo('47'));
+byId('loadGPUAnimations').addEventListener("click", () => switchDemo('47'));
 byId('loadPoseBeast').addEventListener("click", () => switchDemo('48'));
 byId('loadPoseToGLB').addEventListener("click", () => switchDemo('49'));
 byId('loadSlot').addEventListener("click", () => switchDemo('50'));
@@ -218,7 +218,7 @@ if(urlQuery['demo'] === '1') {
 } else if (urlQuery['demo'] === '46') {
   loadMSDFText();
 } else if (urlQuery['demo'] === '47') {
-  loadFaceMask();
+  loadGPUAnimations();
 } else if (urlQuery['demo'] === '48') {
   loadPoseBeast();
 } else if (urlQuery['demo'] === '49') {

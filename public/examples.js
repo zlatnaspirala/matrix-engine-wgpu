@@ -77523,7 +77523,7 @@ var loadFaceBeast = function() {
       });
       MYCUBE = loadFace.addMeshObj({
         material: { type: "standard", share: true },
-        position: { x: 0, y: 5, z: -10 },
+        position: { x: 0, y: 1, z: -15 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         scale: [1, 1, 1],
@@ -77618,7 +77618,6 @@ var loadFaceBeast = function() {
         };
         loadFace.activateHZB();
         MYCUBE.effects.faceEffect.setMode("mesh");
-        MYCUBE.position.translateByY(14);
         let cam2 = app.getCamera();
         cam2.setYaw(0);
         cam2.setPitch(0);
@@ -78859,7 +78858,7 @@ var SacredGeometryEffect = class _SacredGeometryEffect {
 };
 
 // examples/face-mask.js
-var loadFaceMask = function() {
+var loadGPUAnimations = function() {
   let FACEMASK = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
@@ -80746,7 +80745,7 @@ byId2("loadFaceBeast").addEventListener("click", () => switchDemo("43"));
 byId2("loadGaussianSplatVertAnim2").addEventListener("click", () => switchDemo("44"));
 byId2("loadRoulette").addEventListener("click", () => switchDemo("45"));
 byId2("loadMSDFText").addEventListener("click", () => switchDemo("46"));
-byId2("loadFaceMask").addEventListener("click", () => switchDemo("47"));
+byId2("loadGPUAnimations").addEventListener("click", () => switchDemo("47"));
 byId2("loadPoseBeast").addEventListener("click", () => switchDemo("48"));
 byId2("loadPoseToGLB").addEventListener("click", () => switchDemo("49"));
 byId2("loadSlot").addEventListener("click", () => switchDemo("50"));
@@ -80846,7 +80845,7 @@ if (urlQuery["demo"] === "1") {
 } else if (urlQuery["demo"] === "46") {
   loadMSDFText();
 } else if (urlQuery["demo"] === "47") {
-  loadFaceMask();
+  loadGPUAnimations();
 } else if (urlQuery["demo"] === "48") {
   loadPoseBeast();
 } else if (urlQuery["demo"] === "49") {

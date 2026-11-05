@@ -3,7 +3,7 @@ import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {addRaycastsAABBListener, touchCoordinate} from "../src/engine/raycast.js";
 import {SacredGeometryEffect} from "../src/engine/effects/nidza.js";
 
-export var loadFaceMask = function() {
+export var loadGPUAnimations = function() {
 
   let FACEMASK = new MatrixEngineWGPU({
     canvasSize: 'fullscreen',
