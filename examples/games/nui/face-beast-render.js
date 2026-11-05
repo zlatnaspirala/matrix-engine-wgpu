@@ -36,7 +36,7 @@ export var loadFaceBeast = function() {
     // loadFace.tts = new MatrixTTS();
     loadFace.collisionSystem = new CollisionSystem(loadFace);
 
-    let MYCUBE, animator;
+    let MYCUBE, animator, leftEyeMarker, rightEyeMarker;
     const pipe = new PipeGestureResolver();
     const nui = new PipeCommander(true, null, null, {
       enableVisual: false,
@@ -316,18 +316,22 @@ export var loadFaceBeast = function() {
           texturesPaths: ['./res/textures/white-metal.png'],
           physics: {enabled: false, mass: 0, geometry: "Sphere"}
         };
-        const leftEyeMarker = loadFace.addMeshObj({
+          leftEyeMarker = loadFace.addMeshObj({
           ...eyeMarkerOptions,
           position: {x: 0, y: -1000, z: 0},
           name: 'face-left-eye-marker',
           mesh: m.ball
         });
-        const rightEyeMarker = loadFace.addMeshObj({
+          rightEyeMarker = loadFace.addMeshObj({
           ...eyeMarkerOptions,
           position: {x: 0, y: -1000, z: 0},
           name: 'face-right-eye-marker',
           mesh: m.ball
         });
+
+        rightEyeMarker.setAmbient(10,0,0)
+        leftEyeMarker.setAmbient(10,0,0)
+
         app.autoUpdate.push({
           update: function() {
             const effect = MYCUBE.effects.faceEffect;

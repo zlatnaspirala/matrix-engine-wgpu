@@ -77419,7 +77419,7 @@ var loadFaceBeast = function() {
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
     loadFace.collisionSystem = new CollisionSystem(loadFace);
-    let MYCUBE, animator2;
+    let MYCUBE, animator2, leftEyeMarker, rightEyeMarker;
     const pipe = new PipeGestureResolver();
     const nui = new PipeCommander(true, null, null, {
       enableVisual: false,
@@ -77630,28 +77630,41 @@ var loadFaceBeast = function() {
           texturesPaths: ["./res/textures/white-metal.png"],
           physics: { enabled: false, mass: 0, geometry: "Sphere" }
         };
-        const leftEyeMarker = loadFace.addMeshObj({
+        leftEyeMarker = loadFace.addMeshObj({
           ...eyeMarkerOptions,
           position: { x: 0, y: -1e3, z: 0 },
           name: "face-left-eye-marker",
           mesh: m2.ball
         });
-        const rightEyeMarker = loadFace.addMeshObj({
+        rightEyeMarker = loadFace.addMeshObj({
           ...eyeMarkerOptions,
           position: { x: 0, y: -1e3, z: 0 },
           name: "face-right-eye-marker",
           mesh: m2.ball
         });
+        rightEyeMarker.setAmbient(10, 0, 0);
+        leftEyeMarker.setAmbient(10, 0, 0);
         app.autoUpdate.push({
           update: function() {
-            const anchors = app.MYCUBE.effects.faceEffect.anchors;
-            if (!anchors.valid) return;
-            leftEyeMarker.position.x = anchors.leftEye[0];
-            leftEyeMarker.position.y = anchors.leftEye[1];
-            leftEyeMarker.position.z = anchors.leftEye[2];
-            rightEyeMarker.position.x = anchors.rightEye[0];
-            rightEyeMarker.position.y = anchors.rightEye[1];
-            rightEyeMarker.position.z = anchors.rightEye[2];
+            const effect = MYCUBE.effects.faceEffect;
+            const lm = effect._landmarks;
+            if (!effect.anchors.valid || !lm || lm.length < 478) return;
+            const mx = effect.mirrorX ? -1 : 1;
+            const sc2 = effect.scale;
+            const ox = effect.origin[0], oy = effect.origin[1], oz = effect.origin[2];
+            const rx = (MYCUBE.rotation?.x || 0) * Math.PI / 180;
+            const cosX = Math.cos(rx), sinX = Math.sin(rx);
+            const px = MYCUBE.position.x, py = MYCUBE.position.y, pz = MYCUBE.position.z;
+            const placeEye = (landmark, marker) => {
+              const localX = (landmark.x - 0.5) * mx * sc2 + ox;
+              const localY = -(landmark.y - 0.5) * sc2 + oy;
+              const localZ = -landmark.z * sc2 + oz;
+              marker.position.x = localX + px;
+              marker.position.y = localY * cosX - localZ * sinX + py;
+              marker.position.z = localY * sinX + localZ * cosX + pz;
+            };
+            placeEye(lm[473], leftEyeMarker);
+            placeEye(lm[468], rightEyeMarker);
           }
         });
         const laser2 = MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer, { maxBeams: 2, width: 0.075, intensity: 3 });
