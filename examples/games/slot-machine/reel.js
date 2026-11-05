@@ -45,13 +45,25 @@ export class SlotReel {
   }
 
   playWinAt(stripIndex, {duration = 1500, speed = 12} = {}) {
-    const sprite = this.sprites[stripIndex];
-    if(!sprite) return Promise.resolve();
+    if(!Number.isInteger(stripIndex) || stripIndex < 0 || stripIndex >= this.cfg.length) {
+      console.warn('[slot] Invalid winning strip index:', stripIndex);
+      return Promise.resolve();
+    }
+
+    // Resolve by the stable physical sprite name, never by Map iteration order.
+    const sprite = this.mesh.effects.spriteBatch.getSprite(`symbol-${stripIndex}`);
+    if(!sprite) {
+      console.warn('[slot] Missing winning sprite:', `symbol-${stripIndex}`);
+      return Promise.resolve();
+    }
+
     sprite.playRange(0, 16, speed, true);
     return new Promise(resolve => {
       setTimeout(() => {
         sprite.pause();
         sprite.goToFrame(0);
+        sprite.clearRange();
+        sprite.reset();
         resolve();
       }, duration);
     });
