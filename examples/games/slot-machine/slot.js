@@ -21,7 +21,7 @@ export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SPACING = 6, SCALE = 3.5;
-const reelX = (i, n) => (i - (n - 1) / 2) * SPACING;
+const reelX = (i, n) => ((n - 1) / 2 - i) * SPACING;
 
 async function initializeSymbolReel(mesh, engine, reelCfg) {
   const batch = new SpritesPack2D(engine.device, 'rgba16float', 'rgba16float', engine.cameraBuffer);
