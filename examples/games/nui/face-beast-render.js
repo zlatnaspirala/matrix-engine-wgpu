@@ -314,9 +314,17 @@ export var loadFaceBeast = function() {
           lastFire=nowSec;
           for(let sideIndex=0;sideIndex<2;sideIndex++) {
             const eye=sideIndex===0?A.rightEye:A.leftEye;
-            const endX=eye[0]+A.forward[0]*LASER_LENGTH*FIRE_DIRECTION;
-            const endY=eye[1]+A.forward[1]*LASER_LENGTH*FIRE_DIRECTION;
-            const endZ=eye[2]+A.forward[2]*LASER_LENGTH*FIRE_DIRECTION;
+            // Keep the beams distinct at the eyes, then converge them toward a
+            // tight shared target area. A small residual offset preserves two
+            // separate collision paths instead of collapsing to one point.
+            const otherEye=sideIndex===0?A.leftEye:A.rightEye;
+            const eyeMidX=(A.rightEye[0]+A.leftEye[0])*0.5;
+            const eyeMidY=(A.rightEye[1]+A.leftEye[1])*0.5;
+            const eyeMidZ=(A.rightEye[2]+A.leftEye[2])*0.5;
+            const TARGET_SPREAD=0.18;
+            const endX=eyeMidX+A.forward[0]*LASER_LENGTH*FIRE_DIRECTION+(eye[0]-eyeMidX)*TARGET_SPREAD;
+            const endY=eyeMidY+A.forward[1]*LASER_LENGTH*FIRE_DIRECTION+(eye[1]-eyeMidY)*TARGET_SPREAD;
+            const endZ=eyeMidZ+A.forward[2]*LASER_LENGTH*FIRE_DIRECTION+(eye[2]-eyeMidZ)*TARGET_SPREAD;
             laser.fireBeam(eye,[endX,endY,endZ],0.2);
             if(!activeRunners)continue;
             for(let i=0;i<activeRunners.length;i++) {
