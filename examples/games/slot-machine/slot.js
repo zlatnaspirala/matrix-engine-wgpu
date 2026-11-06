@@ -33,7 +33,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   }
 
   const count = reelCfg.strip.length;
-  const radius = 4.6;
+  const radius = 4.7;
   reelCfg.strip.forEach((id, index) => {
     const angle = (index / count) * Math.PI * 2;
     batch.createSprite(`symbol-${index}`, id, {

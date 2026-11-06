@@ -80445,7 +80445,7 @@ var SlotReel = class {
     const offset = (row2 - center) * (topIsPrev ? 1 : -1);
     return ((stop + offset) % this.cfg.length + this.cfg.length) % this.cfg.length;
   }
-  playWinAt(stripIndex, { duration = 1500, speed = 12 } = {}) {
+  playWinAt(stripIndex, { duration = 2500, speed = 12 } = {}) {
     if (!Number.isInteger(stripIndex) || stripIndex < 0 || stripIndex >= this.cfg.length) {
       console.warn("[slot] Invalid winning strip index:", stripIndex);
       return Promise.resolve();
@@ -80727,7 +80727,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
     await batch.registerSpritesheet(id2, path2, 4, 4);
   }
   const count = reelCfg.strip.length;
-  const radius = 4.6;
+  const radius = 4.7;
   reelCfg.strip.forEach((id2, index) => {
     const angle2 = index / count * Math.PI * 2;
     batch.createSprite(`symbol-${index}`, id2, {

@@ -60,7 +60,7 @@ export class SlotReel {
     return ((stop + offset) % this.cfg.length + this.cfg.length) % this.cfg.length;
   }
 
-  playWinAt(stripIndex, {duration = 1500, speed = 12} = {}) {
+  playWinAt(stripIndex, {duration = 2500, speed = 12} = {}) {
     if(!Number.isInteger(stripIndex) || stripIndex < 0 || stripIndex >= this.cfg.length) {
       console.warn('[slot] Invalid winning strip index:', stripIndex);
       return Promise.resolve();
