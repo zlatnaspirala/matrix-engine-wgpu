@@ -20665,18 +20665,6 @@ var Materials = class {
       this.video.style.top = "-465px";
       this.video.style.left = "50%";
       this.video.play();
-      this.video.addEventListener("canplaythrough", () => {
-        if (this.video.readyState >= 3) {
-          this.externalTexture = this.device.importExternalTexture({ source: this.video });
-          console.log("++++ > 3   ++++  " + this.externalTexture);
-          if (!this.externalTexture) alert("ERROR " + this.externalTexture);
-          this.sampler = this.device.createSampler({
-            magFilter: "linear",
-            minFilter: "linear"
-          });
-          this.createMaterialBindGroupVideo();
-        }
-      }, { once: false });
     } else if (arg.type === "videoElement") {
       this.video = arg.videoElement;
       await this.video.play();
@@ -20783,11 +20771,11 @@ var Materials = class {
         setTimeout(() => {
           try {
             this.updateVideoTexture();
-            this.createMaterialBindGroupVideo();
             this.setupPipeline();
             resolve();
           } catch (err) {
-            return;
+            console.warn("[VideoTexture] Initial frame setup failed:", err);
+            resolve(false);
           }
           const ci1 = document.getElementById("ci1");
           if (ci1) {
@@ -20800,6 +20788,8 @@ var Materials = class {
       });
     });
   }
+  // chatgpt SUGGESTION START
+  // Import and bind the current video frame together, immediately before draw submission.
   updateVideoTexture() {
     this.videoFrameReady = false;
     if (!this.video || this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !this.video.videoWidth || !this.video.videoHeight) {
@@ -20827,6 +20817,7 @@ var Materials = class {
       return false;
     }
   }
+  // chatgpt SUGGESTION end
   updateCanvasInlineTexture() {
     this.externalTexture = this.device.queue.copyExternalImageToTexture(
       { source: this.sourceCanvas },
@@ -33443,17 +33434,6 @@ var MaterialsInstanced = class {
       this.video.style.top = "-20px";
       this.video.style.left = "50%";
       this.video.play();
-      this.video.addEventListener("canplaythrough", () => {
-        if (this.video.readyState >= 3) {
-          this.externalTexture = this.device.importExternalTexture({ source: this.video });
-          if (!this.externalTexture) alert("ERROR " + this.externalTexture);
-          this.sampler = this.device.createSampler({
-            magFilter: "linear",
-            minFilter: "linear"
-          });
-          this.createMaterialBindGroupVideo();
-        }
-      }, { once: false });
     } else if (arg.type === "videoElement") {
       this.video = arg.videoElement;
       await this.video.play();
@@ -33528,10 +33508,34 @@ var MaterialsInstanced = class {
     this.createMaterialBindGroupVideo();
     this.setupPipeline();
   }
+  // chatgpt SUGGESTION START
+  // Refresh the imported frame and its bind group before encoding the draw.
   updateVideoTexture() {
-    this.externalTexture = this.device.importExternalTexture({ source: this.video });
-    this.createMaterialBindGroupVideo();
+    this.videoFrameReady = false;
+    if (!this.video || this.video.readyState < 2 || !this.video.videoWidth || !this.video.videoHeight) {
+      return false;
+    }
+    try {
+      const externalTexture = this.device.importExternalTexture({ source: this.video });
+      if (!externalTexture) return false;
+      const bindGroup = this.device.createBindGroup({
+        layout: this.materialVideoBGL,
+        entries: [
+          { binding: 0, resource: externalTexture },
+          { binding: 1, resource: this.videoSampler },
+          { binding: 2, resource: { buffer: this.postFXModeBuffer } }
+        ]
+      });
+      this.externalTexture = externalTexture;
+      this.materialBindGroup = bindGroup;
+      this.videoFrameReady = true;
+      return true;
+    } catch (err) {
+      console.warn("[VideoTexture][instanced] Frame import failed:", err);
+      return false;
+    }
   }
+  // chatgpt SUGGESTION end
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
     if (!matDef) {
@@ -36014,7 +36018,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     pass.drawIndexedIndirect(indirectBuffer, indirectOffset);
   };
   drawVideoElements = (pass) => {
-    this.updateVideoTexture();
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -50608,6 +50611,7 @@ var cullingPass = function() {
       pass.setPipeline(pipeline);
       let l2 = null;
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         if (mesh.materialBindGroup !== l2) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l2 = mesh.materialBindGroup;
@@ -50621,6 +50625,7 @@ var cullingPass = function() {
     for (const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
       pass.setPipeline(pipeline);
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
@@ -50734,6 +50739,7 @@ var noShadowPass = function() {
       pass.setPipeline(pipeline);
       let l2 = null;
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         if (mesh.materialBindGroup !== l2) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l2 = mesh.materialBindGroup;
@@ -50747,6 +50753,7 @@ var noShadowPass = function() {
     for (const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
       pass.setPipeline(pipeline);
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
@@ -53001,6 +53008,7 @@ async function GPUIndirectDraws() {
       pass.setPipeline(pipeline);
       let l2 = null;
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         if (mesh.materialBindGroup !== l2) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l2 = mesh.materialBindGroup;
@@ -53017,6 +53025,7 @@ async function GPUIndirectDraws() {
     for (const [pipeline, meshes] of this.transparentBuckets) {
       pass.setPipeline(pipeline);
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
@@ -55018,6 +55027,7 @@ var MatrixEngineWGPU = class {
         pass.setPipeline(pipeline);
         let l2 = null;
         for (const mesh of meshes) {
+          if (mesh.isVideo && !mesh.videoFrameReady) continue;
           if (mesh.materialBindGroup !== l2) {
             pass.setBindGroup(1, mesh.materialBindGroup);
             l2 = mesh.materialBindGroup;
@@ -55031,6 +55041,7 @@ var MatrixEngineWGPU = class {
       for (const [pipeline, meshes] of this.transparentBuckets) {
         pass.setPipeline(pipeline);
         for (const mesh of meshes) {
+          if (mesh.isVideo && !mesh.videoFrameReady) continue;
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
