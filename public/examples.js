@@ -80956,7 +80956,10 @@ var loadSlot = function() {
       window.slotGame = game;
       window.slotViews = views;
       window.addEventListener("keydown", (e2) => {
-        if (e2.code === "Space") game.spin();
+        if (e2.code !== "Space") return;
+        e2.preventDefault();
+        if (e2.repeat || game.state !== "IDLE") return;
+        game.spin();
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
         FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       });
