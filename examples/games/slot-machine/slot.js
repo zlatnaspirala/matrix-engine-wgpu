@@ -21,6 +21,11 @@ const baseUrl = 'https://slot-simulator.onrender.com';
 const machineId = '6ac80510c453c7d32ec5364a';
 export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 
+// chatgpt SUGGESTION START
+// Keep the simulator configuration, but do not accept remote-triggered spins by default.
+const ENABLE_REMOTE_SPIN_EVENTS = false;
+// chatgpt SUGGESTION END
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SPACING = 6, SCALE = 3.5;
 const reelX = (i, n) => ((n - 1) / 2 - i) * SPACING;
@@ -139,10 +144,12 @@ export var loadSlot = function() {
         );
 
         // app.MYCUBE.effects.gpuText.setLocalOffset( -15 ,1,0)
-        // ADD FICTIVE DEMO BALANCE FOR FREE GAME
-        floor.effects.gpuText.typeText('Demo balance: 1000', 120, () => {
-          console.log('Typing complete!');
+        // chatgpt SUGGESTION START
+        // Display the local, fictive demo-credit balance (never real money).
+        floor.effects.gpuText.typeText(slotMachine.demoBalanceText ?? 'Demo balance: 1000', 120, () => {
+          console.log('Demo balance display ready');
         });
+        // chatgpt SUGGESTION END
 
         slotMachine.floor = floor;
       });
@@ -295,8 +302,18 @@ export var loadSlot = function() {
       slotMachine.getSceneObjectByName('sky').setAmbient(21, 0.5, 1);
       reelMeshes.forEach(r => r.setAmbient(2, 0, 0));
 
+      // chatgpt SUGGESTION START
+      // Free-play defaults: 1000 demo units, 1 unit stake per local spin.
+      slotMachine.demoBalanceText = 'Demo balance: 1000';
       const game = new SlotGame(slot, views, {
         lineBet: 1,
+        demoBalance: 1000,
+        betAmount: 1,
+        onDemoBalance: balance => {
+          slotMachine.demoBalanceText = `Demo balance: ${balance}`;
+          slotMachine.floor?.effects?.gpuText?.setText(slotMachine.demoBalanceText);
+        },
+        // chatgpt SUGGESTION END
         onPresentWin: async res => {
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
           FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
@@ -352,8 +369,17 @@ export var loadSlot = function() {
         FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       });
 
-      const es = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
-      es.addEventListener('spin', e => game.playResult(JSON.parse(e.data)));
+      // chatgpt SUGGESTION START
+      // Remote spin events are opt-in; keyboard play stays fully local by default.
+      if(ENABLE_REMOTE_SPIN_EVENTS) {
+        const es = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
+        es.addEventListener('spin', e => game.playResult(JSON.parse(e.data)));
+        slotMachine.slotEventSource = es;
+      }
+      game.on('insufficientBalance', ({balance, betAmount}) => {
+        console.info(`[slot-demo] Not enough demo credits: balance=${balance}, bet=${betAmount}`);
+      });
+      // chatgpt SUGGESTION END
     }
 
     slotMachine.canvas.addEventListener("ray.hit.event", (e) => {
