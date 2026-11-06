@@ -1039,7 +1039,9 @@ export default class MEMeshObjInstances extends MaterialsInstanced {
   }
 
   drawVideoElements = (pass) => {
-    this.updateVideoTexture();
+    // chatgpt SUGGESTION START
+    // Video textures are refreshed before the render pass; do not import again mid-pass.
+    // chatgpt SUGGESTION end
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
