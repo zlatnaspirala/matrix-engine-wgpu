@@ -39,7 +39,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   }
 
   const count = reelCfg.strip.length;
-  const radius = 4.7;
+  const radius = 5.6;
   reelCfg.strip.forEach((id, index) => {
     const angle = (index / count) * Math.PI * 2;
     batch.createSprite(`symbol-${index}`, id, {
@@ -70,7 +70,7 @@ export var loadSlot = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, async () => {
 
-    let laser, floor;
+    let laser, floor, cam, introPath;
 
     if(urlQuery['fs'] === '333') {
       // alert('works')
@@ -89,25 +89,25 @@ export var loadSlot = function() {
     addRaycastsAABBListener('canvas1', 'click');
 
     function onGround(m) {
-      slotMachine.addMeshObj({
-        material: {type: 'standard', share: true},
-        position: {x: 0, y: -5, z: -10},
-        rotation: {x: 0, y: 0, z: 0},
-        rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [10, 1, 10],
-        texturesPaths: ['./res/textures/floor1.webp'],
-        name: 'floor',
-        mesh: m.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      })
+      // slotMachine.addMeshObj({
+      //   material: {type: 'standard', share: true},
+      //   position: {x: 0, y: -5, z: -10},
+      //   rotation: {x: 0, y: 0, z: 0},
+      //   rotationSpeed: {x: 0, y: 0, z: 0},
+      //   scale: [10, 1, 10],
+      //   texturesPaths: ['./res/textures/floor1.webp'],
+      //   name: 'floorB',
+      //   mesh: m.cube,
+      //   physics: {
+      //     enabled: false,
+      //     mass: 0,
+      //     geometry: "Cube"
+      //   }
+      // })
 
-            floor =slotMachine.addMeshObj({
+      floor = slotMachine.addMeshObj({
         material: {type: 'standard', share: true},
-        position: {x: 0, y: 2, z: -10},
+        position: {x: 0, y: 0, z: -10},
         rotation: {x: 0, y: 180, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [1, 1, 1],
@@ -140,7 +140,7 @@ export var loadSlot = function() {
           OUTPUT.msdfTexture,
           samplerTest,
           slotMachine.cameraBuffer,
-          OUTPUT.font, {scale: 0.05, localOffset: [-8, 6, 25], localScale : [0.4 , 0.6 , 0.6]}
+          OUTPUT.font, {scale: 0.05, localOffset: [-7, 5, 17], localScale: [0.4, 0.6, 0.6]}
         );
 
         // app.MYCUBE.effects.gpuText.setLocalOffset( -15 ,1,0)
@@ -148,6 +148,9 @@ export var loadSlot = function() {
         // Display the local, fictive demo-credit balance (never real money).
         floor.effects.gpuText.typeText(slotMachine.demoBalanceText ?? 'Demo balance: 1000', 120, () => {
           console.log('Demo balance display ready');
+
+          floor.position.translateByY(-4)
+
         });
         // chatgpt SUGGESTION END
 
@@ -229,7 +232,7 @@ export var loadSlot = function() {
       // frame coordinates into its local XZ plane (its 90-degree X rotation).
       const framePoint = (worldX, worldY) => [
         -worldX / (9 * Math.max(1, n / 3)),
-        2,
+        2.4,
         (worldY - 15) / 9
       ];
       const fireFrameEdge = (a, b) => laser.fireBeam(
@@ -257,13 +260,13 @@ export var loadSlot = function() {
         await initializeSymbolReel(mesh, slotMachine, slot.reels[i]);
       }
 
-      const cam = slotMachine.getCamera();
+      cam = slotMachine.getCamera();
       cam.setYaw(-3.119);
       cam.setPitch(-0.05);
       cam.setZ(-52 * Math.max(1, n / 3));
       cam.setY(16);
 
-      const introPath = new CameraPath([
+      introPath = new CameraPath([
         {position: [0, 5, 20], target: [0, 0, 0]},
         {position: [10, 10, 10], target: [0, 1, 0]},
         {position: [0, 13, -45], target: [0, 12, 0]},
@@ -304,10 +307,18 @@ export var loadSlot = function() {
 
       // chatgpt SUGGESTION START
       // Free-play defaults: 1000 demo units, 1 unit stake per local spin.
-      slotMachine.demoBalanceText = 'Demo balance: 1000';
+      slotMachine.demoBalanceText = 'Demo balance: 100';
+
+      const pulsingPath = new CameraPath([
+        {position: [0, 13, -45], target: [0, 12, 0]},
+        {position: [0, 13, -5], target: [0, 12, 10]},
+        {position: [0, 13, -35], target: [0, 12, 5]},
+        {position: [0, 13, -45], target: [0, 12, 0]},
+      ], {parameterization: 'arc'});
+
       const game = new SlotGame(slot, views, {
-        lineBet: 1,
-        demoBalance: 1000,
+        lineBet: 5,
+        demoBalance: 100,
         betAmount: 1,
         onDemoBalance: balance => {
           slotMachine.demoBalanceText = `Demo balance: ${balance}`;
@@ -315,11 +326,29 @@ export var loadSlot = function() {
         },
         // chatgpt SUGGESTION END
         onPresentWin: async res => {
+          //
+          cam.setPath(pulsingPath).play({
+            speed: 0.1,
+            onEnd: () => console.log('done'),
+          });
+          console.log('on win res', res)
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
           FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
+
+          app.lightContainer[0].setColorR(4011)
+          app.floor.rotation.rotationSpeed.y = 10;
+          await sleep(500);
+          app.floor.rotation.rotationSpeed.y = 20;
+          await sleep(500);
+          app.floor.rotation.rotationSpeed.y = 30;
+
           await sleep(2500);
           FX_MESH.effects.keeffect.setIntensity(1);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
+
+          app.lightContainer[0].setColorR(1)
+          app.floor.rotation.rotationSpeed.y = 0;
+          app.floor.rotation.setRotation(0, 180, 0);
         }
       });
       game.on('result', r => {

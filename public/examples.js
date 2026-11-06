@@ -80620,6 +80620,11 @@ var SlotGame = class {
     this.slot = slot;
     this.views = reelViews;
     this.lineBet = opts.lineBet ?? 1;
+    this.demoBalance = opts.demoBalance ?? 1e3;
+    this.betAmount = opts.betAmount ?? 1;
+    this.onDemoBalance = opts.onDemoBalance ?? (() => {
+    });
+    this.onDemoBalance(this.demoBalance);
     this.minSpinMs = opts.minSpinMs ?? 800;
     this.startStagger = opts.startStagger ?? 380;
     this.stagger = opts.stagger ?? 300;
@@ -80642,12 +80647,30 @@ var SlotGame = class {
     this.emit("state", s2);
   }
   spin() {
-    return this.playResult({ stops: localSpin(this.slot) });
+    return this.playResult({
+      stops: localSpin(this.slot),
+      isLocalDemo: true
+    });
   }
   async playResult(raw) {
     if (this.state !== "IDLE") {
       this.queue.push(raw);
       return;
+    }
+    let demoBetCharged = false;
+    let demoWinningsCredited = false;
+    if (raw?.isLocalDemo) {
+      if (this.demoBalance < this.betAmount) {
+        this.emit("insufficientBalance", {
+          balance: this.demoBalance,
+          betAmount: this.betAmount
+        });
+        return;
+      }
+      this.demoBalance -= this.betAmount;
+      demoBetCharged = true;
+      this.onDemoBalance(this.demoBalance);
+      this.emit("balance", this.demoBalance);
     }
     try {
       console.groupCollapsed("[slot-debug] incoming spin");
@@ -80692,6 +80715,12 @@ var SlotGame = class {
       } else {
         this.freeSpinsLeft += ev.freeSpinsAwarded;
       }
+      if (demoBetCharged) {
+        this.demoBalance += ev.totalWin;
+        demoWinningsCredited = true;
+        this.onDemoBalance(this.demoBalance);
+        this.emit("balance", this.demoBalance);
+      }
       const result2 = { ...ev, grid, stops, inFree, freeSpinsLeft: this.freeSpinsLeft };
       this.emit("result", result2);
       if (ev.lineWins.length || ev.freeSpinsAwarded) {
@@ -80734,6 +80763,11 @@ var SlotGame = class {
         await Promise.all([...animations, presentation]);
       }
     } catch (err) {
+      if (demoBetCharged && !demoWinningsCredited) {
+        this.demoBalance += this.betAmount;
+        this.onDemoBalance(this.demoBalance);
+        this.emit("balance", this.demoBalance);
+      }
       console.error("[slot] spin failed", err);
       this.emit("error", err);
     } finally {
@@ -80747,6 +80781,7 @@ var SlotGame = class {
 var baseUrl = "https://slot-simulator.onrender.com";
 var machineId = "6ac80510c453c7d32ec5364a";
 var SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
+var ENABLE_REMOTE_SPIN_EVENTS = false;
 var sleep3 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
 var SPACING = 6;
 var SCALE = 3.5;
@@ -80759,7 +80794,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
     await batch.registerSpritesheet(id2, path2, 4, 4);
   }
   const count = reelCfg.strip.length;
-  const radius = 4.7;
+  const radius = 5.6;
   reelCfg.strip.forEach((id2, index) => {
     const angle2 = index / count * Math.PI * 2;
     batch.createSprite(`symbol-${index}`, id2, {
@@ -80786,7 +80821,7 @@ var loadSlot = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, async () => {
-    let laser2, floor2;
+    let laser2, floor2, cam2, introPath;
     if (urlQuery["fs"] === "333") {
     }
     const raw = await fetchSlotConfig(baseUrl, machineId);
@@ -80803,24 +80838,9 @@ var loadSlot = function() {
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [35, 0.5, 35] });
     addRaycastsAABBListener("canvas1", "click");
     function onGround(m2) {
-      slotMachine.addMeshObj({
-        material: { type: "standard", share: true },
-        position: { x: 0, y: -5, z: -10 },
-        rotation: { x: 0, y: 0, z: 0 },
-        rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [10, 1, 10],
-        texturesPaths: ["./res/textures/floor1.webp"],
-        name: "floor",
-        mesh: m2.cube,
-        physics: {
-          enabled: false,
-          mass: 0,
-          geometry: "Cube"
-        }
-      });
       floor2 = slotMachine.addMeshObj({
         material: { type: "standard", share: true },
-        position: { x: 0, y: 2, z: -10 },
+        position: { x: 0, y: 0, z: -10 },
         rotation: { x: 0, y: 180, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         scale: [1, 1, 1],
@@ -80850,10 +80870,11 @@ var loadSlot = function() {
           samplerTest,
           slotMachine.cameraBuffer,
           OUTPUT.font,
-          { scale: 0.05, localOffset: [-8, 6, 25], localScale: [0.4, 0.6, 0.6] }
+          { scale: 0.05, localOffset: [-7, 5, 17], localScale: [0.4, 0.6, 0.6] }
         );
-        floor2.effects.gpuText.typeText("Demo balance: 1000", 120, () => {
-          console.log("Typing complete!");
+        floor2.effects.gpuText.typeText(slotMachine.demoBalanceText ?? "Demo balance: 1000", 120, () => {
+          console.log("Demo balance display ready");
+          floor2.position.translateByY(-4);
         });
         slotMachine.floor = floor2;
       });
@@ -80937,7 +80958,7 @@ var loadSlot = function() {
       slotMachine.laser = laser2;
       const framePoint = (worldX, worldY) => [
         -worldX / (9 * Math.max(1, n3 / 3)),
-        2,
+        2.4,
         (worldY - 15) / 9
       ];
       const fireFrameEdge = (a2, b2) => laser2.fireBeam(
@@ -80962,12 +80983,12 @@ var loadSlot = function() {
       for (const [i2, mesh] of reelMeshes.entries()) {
         await initializeSymbolReel(mesh, slotMachine, slot.reels[i2]);
       }
-      const cam2 = slotMachine.getCamera();
+      cam2 = slotMachine.getCamera();
       cam2.setYaw(-3.119);
       cam2.setPitch(-0.05);
       cam2.setZ(-52 * Math.max(1, n3 / 3));
       cam2.setY(16);
-      const introPath = new CameraPath([
+      introPath = new CameraPath([
         { position: [0, 5, 20], target: [0, 0, 0] },
         { position: [10, 10, 10], target: [0, 1, 0] },
         { position: [0, 13, -45], target: [0, 12, 0] }
@@ -80997,14 +81018,42 @@ var loadSlot = function() {
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
       slotMachine.getSceneObjectByName("sky").setAmbient(21, 0.5, 1);
       reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
+      slotMachine.demoBalanceText = "Demo balance: 100";
+      const pulsingPath = new CameraPath([
+        { position: [0, 13, -45], target: [0, 12, 0] },
+        { position: [0, 13, -5], target: [0, 12, 10] },
+        { position: [0, 13, -35], target: [0, 12, 5] },
+        { position: [0, 13, -45], target: [0, 12, 0] }
+      ], { parameterization: "arc" });
       const game = new SlotGame(slot, views, {
-        lineBet: 1,
+        lineBet: 5,
+        demoBalance: 100,
+        betAmount: 1,
+        onDemoBalance: (balance) => {
+          slotMachine.demoBalanceText = `Demo balance: ${balance}`;
+          slotMachine.floor?.effects?.gpuText?.setText(slotMachine.demoBalanceText);
+        },
+        // chatgpt SUGGESTION END
         onPresentWin: async (res) => {
+          cam2.setPath(pulsingPath).play({
+            speed: 0.1,
+            onEnd: () => console.log("done")
+          });
+          console.log("on win res", res);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
           FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
+          app.lightContainer[0].setColorR(4011);
+          app.floor.rotation.rotationSpeed.y = 10;
+          await sleep3(500);
+          app.floor.rotation.rotationSpeed.y = 20;
+          await sleep3(500);
+          app.floor.rotation.rotationSpeed.y = 30;
           await sleep3(2500);
           FX_MESH.effects.keeffect.setIntensity(1);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
+          app.lightContainer[0].setColorR(1);
+          app.floor.rotation.rotationSpeed.y = 0;
+          app.floor.rotation.setRotation(0, 180, 0);
         }
       });
       game.on("result", (r3) => {
@@ -81046,8 +81095,14 @@ var loadSlot = function() {
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
         FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       });
-      const es2 = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
-      es2.addEventListener("spin", (e2) => game.playResult(JSON.parse(e2.data)));
+      if (ENABLE_REMOTE_SPIN_EVENTS) {
+        const es2 = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
+        es2.addEventListener("spin", (e2) => game.playResult(JSON.parse(e2.data)));
+        slotMachine.slotEventSource = es2;
+      }
+      game.on("insufficientBalance", ({ balance, betAmount }) => {
+        console.info(`[slot-demo] Not enough demo credits: balance=${balance}, bet=${betAmount}`);
+      });
     }
     slotMachine.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
