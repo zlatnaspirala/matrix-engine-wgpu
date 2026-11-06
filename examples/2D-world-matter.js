@@ -79,6 +79,7 @@ export var loadSprite2 = function() {
           rotationSpeed: {x: 0, y: 0.1, z: 0},
           texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
           name: 'sky',
+          
           mesh: m.ball,
           physics: {enabled: false, geometry: "Sphere"}
         });

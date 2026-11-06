@@ -371,7 +371,7 @@ export default class Materials {
     // console.log('Material TYPE:', this.material.type);
     if(this.material.type == 'standard') {
       return fragmentWGSL();
-    }else if(this.material.type == 'hell') {
+    } else if(this.material.type == 'hell') {
       return fragmentHellWGSL();
     } else if(this.material.type == 'dark') {
       return fragmentDarkWGSL();
@@ -694,11 +694,49 @@ export default class Materials {
   }
 
   updateVideoTexture() {
-    if(!this.video || this.video.readyState < 4) return;
-    // if(this.video.readyState < 4) return;
-    this.externalTexture = this.device.importExternalTexture({source: this.video});
-    if(!this.externalTexture) return;
-    this.createMaterialBindGroupVideo();
+    //   if(!this.video || this.video.readyState < 4) return;
+    //   // if(this.video.readyState < 4) return;
+    //   this.externalTexture = this.device.importExternalTexture({source: this.video});
+    //   if(!this.externalTexture) return;
+    //   this.createMaterialBindGroupVideo();
+
+    this.videoFrameReady = false;
+
+    if(
+      !this.video ||
+      this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
+      !this.video.videoWidth ||
+      !this.video.videoHeight
+    ) {
+      return false;
+    }
+
+    try {
+      const externalTexture = this.device.importExternalTexture({
+        source: this.video
+      });
+
+      if(!externalTexture) return false;
+
+      const bindGroup = this.device.createBindGroup({
+        layout: this.materialVideoBGL,
+        entries: [
+          {binding: 0, resource: externalTexture},
+          {binding: 1, resource: this.videoSampler},
+          {binding: 2, resource: {buffer: this.postFXModeBuffer}}
+        ]
+      });
+
+      this.externalTexture = externalTexture;
+      this.materialBindGroup = bindGroup;
+      this.videoFrameReady = true;
+
+      return true;
+
+    } catch(err) {
+      console.warn('[VideoTexture] Frame import failed:', err);
+      return false;
+    }
   }
 
   updateCanvasInlineTexture() {

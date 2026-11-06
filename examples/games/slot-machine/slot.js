@@ -105,10 +105,13 @@ export var loadSlot = function() {
         material: {type: 'standard', share: true},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
-        scale: [50, 50, 50],
+        scale: [30, 30, 30],
         rotationSpeed: {x: 0, y: 0.1, z: 0},
         texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
-        //public\res\textures\cube-g1-extra_low.png
+        isVideo: {
+          type: 'video',
+          src: 'res/videos/space.mp4'
+        },
         name: 'sky',
         mesh: m.ball,
         physics: {

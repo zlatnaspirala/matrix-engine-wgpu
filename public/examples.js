@@ -20801,10 +20801,31 @@ var Materials = class {
     });
   }
   updateVideoTexture() {
-    if (!this.video || this.video.readyState < 4) return;
-    this.externalTexture = this.device.importExternalTexture({ source: this.video });
-    if (!this.externalTexture) return;
-    this.createMaterialBindGroupVideo();
+    this.videoFrameReady = false;
+    if (!this.video || this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !this.video.videoWidth || !this.video.videoHeight) {
+      return false;
+    }
+    try {
+      const externalTexture = this.device.importExternalTexture({
+        source: this.video
+      });
+      if (!externalTexture) return false;
+      const bindGroup = this.device.createBindGroup({
+        layout: this.materialVideoBGL,
+        entries: [
+          { binding: 0, resource: externalTexture },
+          { binding: 1, resource: this.videoSampler },
+          { binding: 2, resource: { buffer: this.postFXModeBuffer } }
+        ]
+      });
+      this.externalTexture = externalTexture;
+      this.materialBindGroup = bindGroup;
+      this.videoFrameReady = true;
+      return true;
+    } catch (err) {
+      console.warn("[VideoTexture] Frame import failed:", err);
+      return false;
+    }
   }
   updateCanvasInlineTexture() {
     this.externalTexture = this.device.queue.copyExternalImageToTexture(
@@ -80792,10 +80813,13 @@ var loadSlot = function() {
         material: { type: "standard", share: true },
         position: { x: 0, y: -1, z: -20 },
         rotation: { x: 0, y: 0, z: 0 },
-        scale: [50, 50, 50],
+        scale: [30, 30, 30],
         rotationSpeed: { x: 0, y: 0.1, z: 0 },
         texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
-        //public\res\textures\cube-g1-extra_low.png
+        isVideo: {
+          type: "video",
+          src: "res/videos/space.mp4"
+        },
         name: "sky",
         mesh: m2.ball,
         physics: {
