@@ -281,7 +281,14 @@ export var loadSlot = function() {
 
       window.slot = slot; window.slotGame = game; window.slotViews = views;
       window.addEventListener('keydown', e => {
-        if(e.code === 'Space') game.spin();
+        if(e.code !== 'Space') return;
+
+        // Space is reserved for spinning: prevent page scrolling and ignore
+        // key-repeat / extra presses until reels AND win presentation are done.
+        e.preventDefault();
+        if(e.repeat || game.state !== 'IDLE') return;
+
+        game.spin();
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
         FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       });
