@@ -8,6 +8,13 @@ export class SlotGame {
     this.slot = slot;
     this.views = reelViews;
     this.lineBet = opts.lineBet ?? 1;
+    // chatgpt SUGGESTION START
+    // Local demo credits only: no real-money balance or payment integration.
+    this.demoBalance = opts.demoBalance ?? 1000;
+    this.betAmount = opts.betAmount ?? 1;
+    this.onDemoBalance = opts.onDemoBalance ?? (() => {});
+    this.onDemoBalance(this.demoBalance);
+    // chatgpt SUGGESTION END
     this.minSpinMs = opts.minSpinMs ?? 800;
     this.startStagger = opts.startStagger ?? 380; // ms between reel starts
     this.stagger = opts.stagger ?? 300;           // ms between reel stops
@@ -23,13 +30,34 @@ export class SlotGame {
   emit(evt, data) {(this.listeners[evt] || []).forEach(fn => fn(data));}
   setState(s) {this.state = s; this.emit('state', s);}
 
-  spin() { 
-    // local test spin, same path as the server result
-    return this.playResult({stops: localSpin(this.slot)});
+  spin() {
+    // chatgpt SUGGESTION START
+    // The default keyboard spin is local and uses fictive demo credits.
+    return this.playResult({
+      stops: localSpin(this.slot),
+      isLocalDemo: true
+    });
+    // chatgpt SUGGESTION END
   }
 
   async playResult(raw) {
     if(this.state !== 'IDLE') {this.queue.push(raw); return;}
+    // chatgpt SUGGESTION START
+    let demoBetCharged = false;
+    if(raw?.isLocalDemo) {
+      if(this.demoBalance < this.betAmount) {
+        this.emit('insufficientBalance', {
+          balance: this.demoBalance,
+          betAmount: this.betAmount
+        });
+        return;
+      }
+      this.demoBalance -= this.betAmount;
+      demoBetCharged = true;
+      this.onDemoBalance(this.demoBalance);
+      this.emit('balance', this.demoBalance);
+    }
+    // chatgpt SUGGESTION END
     try {
       console.groupCollapsed('[slot-debug] incoming spin');
       console.log('RAW SERVER RESULT:', raw);
@@ -87,6 +115,14 @@ export class SlotGame {
       } else {
         this.freeSpinsLeft += ev.freeSpinsAwarded;
       }
+      // chatgpt SUGGESTION START
+      // Credit local demo winnings using the evaluator's totalWin in units.
+      if(demoBetCharged) {
+        this.demoBalance += ev.totalWin;
+        this.onDemoBalance(this.demoBalance);
+        this.emit('balance', this.demoBalance);
+      }
+      // chatgpt SUGGESTION END
       const result = {...ev, grid, stops, inFree, freeSpinsLeft: this.freeSpinsLeft};
       this.emit('result', result);
 
@@ -134,6 +170,14 @@ export class SlotGame {
         await Promise.all([...animations, presentation]);
       }
     } catch(err) {
+      // chatgpt SUGGESTION START
+      // Refund the demo stake if the spin failed before a result was credited.
+      if(demoBetCharged) {
+        this.demoBalance += this.betAmount;
+        this.onDemoBalance(this.demoBalance);
+        this.emit('balance', this.demoBalance);
+      }
+      // chatgpt SUGGESTION END
       console.error('[slot] spin failed', err);
       this.emit('error', err);
     } finally {
