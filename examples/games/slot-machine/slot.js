@@ -4,7 +4,7 @@ import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
 import {SpritesPack2D} from "../../../src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "../../../src/engine/procedures/InstancedKinematicOperations.js";
 import {KaleidoscopeEmitter} from "../../../src/engine/effects/kaleidoscopeEffectInstance.js";
-import {CameraPath, randomIntFromTo} from "../../../src/engine/utils.js";
+import {CameraPath, randomIntFromTo, urlQuery} from "../../../src/engine/utils.js";
 import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {adaptSlotConfig, fetchSlotConfig} from "./networking.js";
 import {SlotReel} from "./reel.js";
@@ -12,10 +12,10 @@ import {SlotGame} from "./state.js";
 import {LaserProjectile} from "../../../src/engine/effects/laser.js";
 
 /**
- *
  * Add your domain where you have installer or runned "slot-simulator" application.
  * Add you machine ID created from "slot-simulator".
  */
+
 const baseUrl = 'https://slot-simulator.onrender.com';
 const machineId = '6ac80510c453c7d32ec5364a';
 export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
@@ -65,6 +65,10 @@ export var loadSlot = function() {
   }, async () => {
 
     let laser;
+
+    if(urlQuery['fs'] === '333') {
+      // alert('works')
+    }
 
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
@@ -224,10 +228,14 @@ export var loadSlot = function() {
 
       // debug
       slotMachine.reelMeshes = reelMeshes;
-
       await sleep(400);
 
-      const views = reelMeshes.map((mesh, i) => new SlotReel(mesh, slot.reels[i], {visibleRows: slot.visibleRows}));
+      const views = reelMeshes.map((mesh, i) => new SlotReel(mesh, slot.reels[i],
+        {
+          visibleRows: slot.visibleRows,
+          spinSpeed: 16
+        }
+      ));
       for(const v of views) await v.layout(60);
 
       FX_MESH.effects.circle.updateInstanceCount(8);

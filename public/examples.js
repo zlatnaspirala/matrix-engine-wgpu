@@ -80755,6 +80755,8 @@ var loadSlot = function() {
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, async () => {
     let laser2;
+    if (urlQuery["fs"] === "333") {
+    }
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
     console.log(slot.reelCount, slot.visibleRows, slot.paylines.length);
@@ -80907,7 +80909,14 @@ var loadSlot = function() {
       slotMachine.buildRenderBuckets();
       slotMachine.reelMeshes = reelMeshes;
       await sleep3(400);
-      const views = reelMeshes.map((mesh, i2) => new SlotReel(mesh, slot.reels[i2], { visibleRows: slot.visibleRows }));
+      const views = reelMeshes.map((mesh, i2) => new SlotReel(
+        mesh,
+        slot.reels[i2],
+        {
+          visibleRows: slot.visibleRows,
+          spinSpeed: 16
+        }
+      ));
       for (const v2 of views) await v2.layout(60);
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
