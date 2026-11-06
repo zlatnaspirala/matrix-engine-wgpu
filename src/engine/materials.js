@@ -525,18 +525,9 @@ export default class Materials {
       this.video.style.top = '-465px';
       this.video.style.left = '50%';
       this.video.play();
-      this.video.addEventListener('canplaythrough', () => {
-        if(this.video.readyState >= 3) {
-          this.externalTexture = this.device.importExternalTexture({source: this.video});
-          console.log('++++ > 3   ++++  ' + this.externalTexture);
-          if(!this.externalTexture) alert('ERROR ' + this.externalTexture);
-          this.sampler = this.device.createSampler({
-            magFilter: 'linear',
-            minFilter: 'linear',
-          });
-          this.createMaterialBindGroupVideo();
-        }
-      }, {once: false});
+      // chatgpt SUGGESTION START
+      // External textures are imported only in the render-frame update below.
+      // chatgpt SUGGESTION end
 
     } else if(arg.type === 'videoElement') {
       this.video = arg.videoElement;
@@ -672,11 +663,11 @@ export default class Materials {
 
           try {
             this.updateVideoTexture();
-            this.createMaterialBindGroupVideo();
             this.setupPipeline();
             resolve();
           } catch(err) {
-            return;
+            console.warn('[VideoTexture] Initial frame setup failed:', err);
+            resolve(false);
           }
 
           // Very interest
@@ -693,13 +684,9 @@ export default class Materials {
 
   }
 
+  // chatgpt SUGGESTION START
+  // Import and bind the current video frame together, immediately before draw submission.
   updateVideoTexture() {
-    //   if(!this.video || this.video.readyState < 4) return;
-    //   // if(this.video.readyState < 4) return;
-    //   this.externalTexture = this.device.importExternalTexture({source: this.video});
-    //   if(!this.externalTexture) return;
-    //   this.createMaterialBindGroupVideo();
-
     this.videoFrameReady = false;
 
     if(
@@ -738,6 +725,7 @@ export default class Materials {
       return false;
     }
   }
+  // chatgpt SUGGESTION end
 
   updateCanvasInlineTexture() {
     this.externalTexture = this.device.queue.copyExternalImageToTexture(
