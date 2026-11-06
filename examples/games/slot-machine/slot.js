@@ -4,7 +4,7 @@ import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
 import {SpritesPack2D} from "../../../src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "../../../src/engine/procedures/InstancedKinematicOperations.js";
 import {KaleidoscopeEmitter} from "../../../src/engine/effects/kaleidoscopeEffectInstance.js";
-import {randomIntFromTo} from "../../../src/engine/utils.js";
+import {CameraPath, randomIntFromTo} from "../../../src/engine/utils.js";
 import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {adaptSlotConfig, fetchSlotConfig} from "./networking.js";
 import {SlotReel} from "./reel.js";
@@ -33,7 +33,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   }
 
   const count = reelCfg.strip.length;
-  const radius = 4.5;
+  const radius = 4.6;
   reelCfg.strip.forEach((id, index) => {
     const angle = (index / count) * Math.PI * 2;
     batch.createSprite(`symbol-${index}`, id, {
@@ -58,7 +58,7 @@ export var loadSlot = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: 'WASD',
+      type: 'cinematicCamera',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -84,6 +84,7 @@ export var loadSlot = function() {
         position: {x: 0, y: -5, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [10, 1, 10],
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'floor',
         mesh: m.cube,
@@ -96,20 +97,21 @@ export var loadSlot = function() {
     }
 
     async function onLoadObj(m) {
-      // slotMachine.addMeshObj({
-      //   material: {type: 'standard', share: true},
-      //   position: {x: 0, y: -1, z: -20},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   scale: [100, 100, 100],
-      //   rotationSpeed: {x: 0, y: 0.1, z: 0},
-      //   texturesPaths: ['./res/textures/env-maps/sky1_lod_mid.webp'],
-      //   name: 'sky',
-      //   mesh: m.ball,
-      //   physics: {
-      //     enabled: false,
-      //     geometry: "Sphere"
-      //   }
-      // });
+      slotMachine.addMeshObj({
+        material: {type: 'standard', share: true},
+        position: {x: 0, y: -1, z: -20},
+        rotation: {x: 0, y: 0, z: 0},
+        scale: [50, 50, 50],
+        rotationSpeed: {x: 0, y: 0.1, z: 0},
+        texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
+        //public\res\textures\cube-g1-extra_low.png
+        name: 'sky',
+        mesh: m.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
 
       const reelMeshes = slot.reels.map((reel, i) => slotMachine.addMeshObj({
         material: {type: 'standard'},
@@ -125,14 +127,19 @@ export var loadSlot = function() {
 
       slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
-      slotMachine.activateVolumetricEffect();
+
+      // slotMachine.activateVolumetricEffect();
+      slotMachine.activateVolumetricEffect({
+        density: 0.1, steps: 30, scatterStrength: 1, heightFalloff: 0.2, lightColor: [1, 1.8, 2]
+      })
+
       slotMachine.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       slotMachine.lightContainer[0].behavior.value_ = -1;
       slotMachine.lightContainer[0].updater.push((light) => {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       })
-      slotMachine.lightContainer[0].setPosition(0, 45, -8);
+      slotMachine.lightContainer[0].setPosition(0, 35, -8);
       slotMachine.lightContainer[0].setTarget(0, 0, -10);
 
       const FX_MESH = slotMachine.addMeshObj({
@@ -149,7 +156,9 @@ export var loadSlot = function() {
       await sleep(600);
 
       laser = FX_MESH.effects.laser = new LaserProjectile(
-        slotMachine.device, 'rgba16float', slotMachine.cameraBuffer, {\n          maxBeams: 24, width: 0.045, intensity: 2.8,\n          colorA: [0.15, 0.95, 1, 1], colorB: [0.05, 0.25, 1, 1]\n        });
+        slotMachine.device, 'rgba16float', slotMachine.cameraBuffer, {
+        maxBeams: 24, width: 0.045, intensity: 2.8, colorA: [0.15, 0.95, 1, 1], colorB: [0.05, 0.25, 1, 1]
+      });
 
 
       slotMachine.laser = laser;
@@ -158,7 +167,7 @@ export var loadSlot = function() {
       // frame coordinates into its local XZ plane (its 90-degree X rotation).
       const framePoint = (worldX, worldY) => [
         -worldX / (9 * Math.max(1, n / 3)),
-        -2 / 9, // place the laser slightly in front of the reel faces
+        2,
         (worldY - 15) / 9
       ];
       const fireFrameEdge = (a, b) => laser.fireBeam(
@@ -166,15 +175,15 @@ export var loadSlot = function() {
       );
 
       // Four permanent laser edges around each reel.
-      for(let i = 0; i < n; i++) {
-        const cx = reelX(i, n), halfW = 2.55, halfH = 5.35, cy = 15;
+      for(let i = 0;i < n;i++) {
+        const cx = reelX(i, n), halfW = 2.55, halfH = 7.0, cy = 15;
         const corners = [
           [cx - halfW, cy - halfH],
           [cx + halfW, cy - halfH],
           [cx + halfW, cy + halfH],
           [cx - halfW, cy + halfH]
         ];
-        for(let edge = 0; edge < 4; edge++) {
+        for(let edge = 0;edge < 4;edge++) {
           fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
         }
       }
@@ -191,6 +200,19 @@ export var loadSlot = function() {
       cam.setPitch(-0.05);
       cam.setZ(-52 * Math.max(1, n / 3));
       cam.setY(16);
+
+      const introPath = new CameraPath([
+        {position: [0, 5, 20], target: [0, 0, 0]},
+        {position: [10, 10, 10], target: [0, 1, 0]},
+        {position: [0, 13, -45], target: [0, 12, 0]},
+      ], {parameterization: 'arc'});
+
+      cam.setPath(introPath).play({
+        speed: 0.1,
+        onEnd: () => console.log('done'),
+      });
+
+
       cam._dirtyAngle = true;
 
       reelMeshes.forEach(mesh => mesh.setBlend(0.001));
@@ -211,7 +233,7 @@ export var loadSlot = function() {
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
-      // slotMachine.getSceneObjectByName('sky').setAmbient(2, 0.5, 1);
+      slotMachine.getSceneObjectByName('sky').setAmbient(21, 0.5, 1);
       reelMeshes.forEach(r => r.setAmbient(2, 0, 0));
 
       const game = new SlotGame(slot, views, {
@@ -228,40 +250,40 @@ export var loadSlot = function() {
         console.log('RESULT', r)
         console.log('RESULT', r.grid.map(c => c.join(' ')), 'win', r.totalWin, 'FS', r.freeSpinsLeft)
 
-          // Flash a bright laser across each winning row, briefly highlighting
-          // the exact reel positions reported by the game evaluation.
-          if(r.totalWin > 0) {
-            const flashed = new Set();
-            for(const win of (r.lineWins ?? [])) {
-              for(const cell of (win.cells ?? [])) {
-                const key = `${cell.reel}:${cell.row}`;
-                if(flashed.has(key)) continue;
-                flashed.add(key);
-                const cx = reelX(cell.reel, n);
-                const cy = 15 + (1 - cell.row) * 3.2;
-                laser.fireBeam(
-                  framePoint(cx - 2.35, cy),
-                  framePoint(cx + 2.35, cy),
-                  0.9,
-                  {
-                    colorA: [1, 0.95, 0.25, 1],
-                    colorB: [1, 0.12, 0.45, 1],
-                    width: 0.12,
-                    intensity: 7,
-                    mode: 1
-                  }
-                );
-              }
+        // Flash a bright laser across each winning row, briefly highlighting
+        // the exact reel positions reported by the game evaluation.
+        if(r.totalWin > 0) {
+          const flashed = new Set();
+          for(const win of(r.lineWins ?? [])) {
+            for(const cell of(win.cells ?? [])) {
+              const key = `${cell.reel}:${cell.row}`;
+              if(flashed.has(key)) continue;
+              flashed.add(key);
+              const cx = reelX(cell.reel, n);
+              const cy = 15 + (1 - cell.row) * 3.2;
+              laser.fireBeam(
+                framePoint(cx - 2.35, cy),
+                framePoint(cx + 2.35, cy),
+                0.9,
+                {
+                  colorA: [1, 0.95, 0.25, 1],
+                  colorB: [1, 0.12, 0.45, 1],
+                  width: 0.12,
+                  intensity: 7,
+                  mode: 1
+                }
+              );
             }
           }
+        }
 
       });
 
       window.slot = slot; window.slotGame = game; window.slotViews = views;
       window.addEventListener('keydown', e => {
         if(e.code === 'Space') game.spin();
-                FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
-              FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
+        FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
+        FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       });
 
       const es = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);

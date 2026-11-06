@@ -80385,6 +80385,17 @@ function adaptSlotConfig(raw) {
 // examples/games/slot-machine/reel.js
 var sleep = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
 var easeOutCubic = (t3) => 1 - Math.pow(1 - t3, 3);
+var easeInOutCubic = (t3) => t3 < 0.5 ? 4 * t3 * t3 * t3 : 1 - Math.pow(-2 * t3 + 2, 3) / 2;
+var animateValue = (duration, update) => new Promise((resolve) => {
+  const start = performance.now();
+  const tick = (now) => {
+    const t3 = Math.min(1, (now - start) / duration);
+    update(t3);
+    if (t3 < 1) requestAnimationFrame(tick);
+    else resolve();
+  };
+  requestAnimationFrame(tick);
+});
 var SlotReel = class {
   constructor(mesh, reelCfg, opts = {}) {
     this.mesh = mesh;
@@ -80393,7 +80404,12 @@ var SlotReel = class {
     this.angleOffset = opts.angleOffset ?? 0;
     this.dir = opts.dir ?? -1;
     this.extraTurns = opts.extraTurns ?? 1;
-    this.stopMs = opts.stopMs ?? 900;
+    this.stopMs = opts.stopMs ?? 1050;
+    this.startKickSpeed = opts.startKickSpeed ?? 0.45;
+    this.startKickMs = opts.startKickMs ?? 100;
+    this.accelerationMs = opts.accelerationMs ?? 360;
+    this.overshootDegrees = opts.overshootDegrees ?? 1;
+    this.settleMs = opts.settleMs ?? 190;
     this.visibleRows = opts.visibleRows ?? 3;
   }
   get sprites() {
@@ -80457,24 +80473,33 @@ var SlotReel = class {
     this.mesh.rotation.setRotateX(0);
     this.setAngle(this.angleForStop(s2));
   }
-  startSpin() {
+  async startSpin() {
+    this.mesh.rotation.setRotateX(-this.startKickSpeed);
+    await sleep(this.startKickMs);
+    const fromSpeed = -this.startKickSpeed;
+    await animateValue(this.accelerationMs, (t3) => {
+      this.mesh.rotation.setRotateX(
+        fromSpeed + (this.spinSpeed - fromSpeed) * easeInOutCubic(t3)
+      );
+    });
     this.mesh.rotation.setRotateX(this.spinSpeed);
   }
-  stopAt(stop) {
-    return new Promise((resolve) => {
-      this.mesh.rotation.setRotateX(0);
-      const from = this.getAngle();
-      const target = this.angleForStop(stop);
-      const delta = ((target - from) % 360 + 360) % 360 + 360 * this.extraTurns;
-      const t0 = performance.now();
-      const tick = (now) => {
-        const t3 = Math.min(1, (now - t0) / this.stopMs);
-        this.setAngle(from + delta * easeOutCubic(t3));
-        if (t3 < 1) requestAnimationFrame(tick);
-        else resolve();
-      };
-      requestAnimationFrame(tick);
+  async stopAt(stop) {
+    this.mesh.rotation.setRotateX(0);
+    const from = this.getAngle();
+    const target = this.angleForStop(stop);
+    const travel = ((target - from) % 360 + 360) % 360 + 360 * this.extraTurns;
+    const landing = from + travel;
+    const overshoot = landing + this.overshootDegrees;
+    const settleMs = Math.min(this.settleMs, this.stopMs * 0.35);
+    const brakingMs = Math.max(1, this.stopMs - settleMs);
+    await animateValue(brakingMs, (t3) => {
+      this.setAngle(from + (overshoot - from) * easeOutCubic(t3));
     });
+    await animateValue(settleMs, (t3) => {
+      this.setAngle(overshoot + (landing - overshoot) * easeOutCubic(t3));
+    });
+    this.setAngle(landing);
   }
 };
 
@@ -80564,6 +80589,7 @@ var SlotGame = class {
     this.views = reelViews;
     this.lineBet = opts.lineBet ?? 1;
     this.minSpinMs = opts.minSpinMs ?? 800;
+    this.startStagger = opts.startStagger ?? 380;
     this.stagger = opts.stagger ?? 300;
     this.topIsPrev = opts.topIsPrev ?? true;
     this.onPresentWin = opts.onPresentWin;
@@ -80606,7 +80632,12 @@ var SlotGame = class {
       if (inFree) this.freeSpinsLeft--;
       this.setState("SPINNING");
       this.emit("spinStart", { inFree, freeSpinsLeft: this.freeSpinsLeft });
-      this.views.forEach((v2) => v2.startSpin());
+      const starts = [];
+      for (let i2 = 0; i2 < this.views.length; i2++) {
+        starts.push(this.views[i2].startSpin());
+        if (i2 < this.views.length - 1) await sleep2(this.startStagger);
+      }
+      await Promise.all(starts);
       await sleep2(this.minSpinMs);
       this.setState("STOPPING");
       await Promise.all(this.views.map(async (v2, i2) => {
@@ -80696,7 +80727,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
     await batch.registerSpritesheet(id2, path2, 4, 4);
   }
   const count = reelCfg.strip.length;
-  const radius = 4.5;
+  const radius = 4.6;
   reelCfg.strip.forEach((id2, index) => {
     const angle2 = index / count * Math.PI * 2;
     batch.createSprite(`symbol-${index}`, id2, {
@@ -80718,7 +80749,7 @@ var loadSlot = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: "WASD",
+      type: "cinematicCamera",
       responseCoef: 1e3
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
@@ -80743,6 +80774,7 @@ var loadSlot = function() {
         position: { x: 0, y: -5, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [10, 1, 10],
         texturesPaths: ["./res/textures/floor1.webp"],
         name: "floor",
         mesh: m2.cube,
@@ -80754,6 +80786,21 @@ var loadSlot = function() {
       });
     }
     async function onLoadObj(m2) {
+      slotMachine.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -1, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [50, 50, 50],
+        rotationSpeed: { x: 0, y: 0.1, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
+        //public\res\textures\cube-g1-extra_low.png
+        name: "sky",
+        mesh: m2.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      });
       const reelMeshes = slot.reels.map((reel, i2) => slotMachine.addMeshObj({
         material: { type: "standard" },
         position: { x: reelX(i2, n3), y: 15, z: -10 },
@@ -80769,14 +80816,20 @@ var loadSlot = function() {
       }));
       slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
-      slotMachine.activateVolumetricEffect();
+      slotMachine.activateVolumetricEffect({
+        density: 0.1,
+        steps: 30,
+        scatterStrength: 1,
+        heightFalloff: 0.2,
+        lightColor: [1, 1.8, 2]
+      });
       slotMachine.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       slotMachine.lightContainer[0].behavior.value_ = -1;
       slotMachine.lightContainer[0].updater.push((light) => {
         light.setTargetX(light.behavior.setPath0());
         light.setPosX(light.behavior.setPath0());
       });
-      slotMachine.lightContainer[0].setPosition(0, 45, -8);
+      slotMachine.lightContainer[0].setPosition(0, 35, -8);
       slotMachine.lightContainer[0].setTarget(0, 0, -10);
       const FX_MESH = slotMachine.addMeshObj({
         material: { type: "standard" },
@@ -80797,9 +80850,37 @@ var loadSlot = function() {
         slotMachine.device,
         "rgba16float",
         slotMachine.cameraBuffer,
-        { maxBeams: 2, width: 0.075, intensity: 3 }
+        {
+          maxBeams: 24,
+          width: 0.045,
+          intensity: 2.8,
+          colorA: [0.15, 0.95, 1, 1],
+          colorB: [0.05, 0.25, 1, 1]
+        }
       );
       slotMachine.laser = laser2;
+      const framePoint = (worldX, worldY) => [
+        -worldX / (9 * Math.max(1, n3 / 3)),
+        2,
+        (worldY - 15) / 9
+      ];
+      const fireFrameEdge = (a2, b2) => laser2.fireBeam(
+        framePoint(a2[0], a2[1]),
+        framePoint(b2[0], b2[1]),
+        0
+      );
+      for (let i2 = 0; i2 < n3; i2++) {
+        const cx = reelX(i2, n3), halfW = 2.55, halfH = 7, cy = 15;
+        const corners = [
+          [cx - halfW, cy - halfH],
+          [cx + halfW, cy - halfH],
+          [cx + halfW, cy + halfH],
+          [cx - halfW, cy + halfH]
+        ];
+        for (let edge = 0; edge < 4; edge++) {
+          fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
+        }
+      }
       FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, "rgba16float", "circle2", "./res/textures/star1.png", 3, slotMachine.cameraBuffer);
       FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
       for (const [i2, mesh] of reelMeshes.entries()) {
@@ -80810,6 +80891,15 @@ var loadSlot = function() {
       cam2.setPitch(-0.05);
       cam2.setZ(-52 * Math.max(1, n3 / 3));
       cam2.setY(16);
+      const introPath = new CameraPath([
+        { position: [0, 5, 20], target: [0, 0, 0] },
+        { position: [10, 10, 10], target: [0, 1, 0] },
+        { position: [0, 13, -45], target: [0, 12, 0] }
+      ], { parameterization: "arc" });
+      cam2.setPath(introPath).play({
+        speed: 0.1,
+        onEnd: () => console.log("done")
+      });
       cam2._dirtyAngle = true;
       reelMeshes.forEach((mesh) => mesh.setBlend(1e-3));
       dispatchEvent(new Event("update-effects"));
@@ -80822,6 +80912,7 @@ var loadSlot = function() {
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
+      slotMachine.getSceneObjectByName("sky").setAmbient(21, 0.5, 1);
       reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
       const game = new SlotGame(slot, views, {
         lineBet: 1,
@@ -80836,7 +80927,30 @@ var loadSlot = function() {
       game.on("result", (r3) => {
         console.log("RESULT", r3);
         console.log("RESULT", r3.grid.map((c2) => c2.join(" ")), "win", r3.totalWin, "FS", r3.freeSpinsLeft);
-        laser2.fireBeam([0, 0, 0], [0, 5, 0], 1.2);
+        if (r3.totalWin > 0) {
+          const flashed = /* @__PURE__ */ new Set();
+          for (const win of r3.lineWins ?? []) {
+            for (const cell of win.cells ?? []) {
+              const key = `${cell.reel}:${cell.row}`;
+              if (flashed.has(key)) continue;
+              flashed.add(key);
+              const cx = reelX(cell.reel, n3);
+              const cy = 15 + (1 - cell.row) * 3.2;
+              laser2.fireBeam(
+                framePoint(cx - 2.35, cy),
+                framePoint(cx + 2.35, cy),
+                0.9,
+                {
+                  colorA: [1, 0.95, 0.25, 1],
+                  colorB: [1, 0.12, 0.45, 1],
+                  width: 0.12,
+                  intensity: 7,
+                  mode: 1
+                }
+              );
+            }
+          }
+        }
       });
       window.slot = slot;
       window.slotGame = game;
