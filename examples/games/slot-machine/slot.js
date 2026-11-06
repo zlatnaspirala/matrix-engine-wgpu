@@ -139,7 +139,8 @@ export var loadSlot = function() {
         );
 
         // app.MYCUBE.effects.gpuText.setLocalOffset( -15 ,1,0)
-        floor.effects.gpuText.typeText('Demo balance:', 120, () => {
+        // ADD FICTIVE DEMO BALANCE FOR FREE GAME
+        floor.effects.gpuText.typeText('Demo balance: 1000', 120, () => {
           console.log('Typing complete!');
         });
 

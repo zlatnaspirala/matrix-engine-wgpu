@@ -80852,7 +80852,7 @@ var loadSlot = function() {
           OUTPUT.font,
           { scale: 0.05, localOffset: [-8, 6, 25], localScale: [0.4, 0.6, 0.6] }
         );
-        floor2.effects.gpuText.typeText("Demo balance:", 120, () => {
+        floor2.effects.gpuText.typeText("Demo balance: 1000", 120, () => {
           console.log("Typing complete!");
         });
         slotMachine.floor = floor2;

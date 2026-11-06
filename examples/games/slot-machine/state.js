@@ -1,11 +1,7 @@
-// src/slot/slot-game.js
 import {getWindow, evaluateSpin, localSpin, normalizeSpinResult} from "./math.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// reelViews[i] must implement:
-//   startSpin(): void
-//   stopAt(stopIndex): Promise<void>   (resolves when the reel has landed)
 export class SlotGame {
   constructor(slot, reelViews, opts = {}) {
     if(reelViews.length !== slot.reelCount) throw new Error('reelViews count != reelCount');
@@ -14,11 +10,11 @@ export class SlotGame {
     this.lineBet = opts.lineBet ?? 1;
     this.minSpinMs = opts.minSpinMs ?? 800;
     this.startStagger = opts.startStagger ?? 380; // ms between reel starts
-    this.stagger = opts.stagger ?? 300;       // ms between reel stops
+    this.stagger = opts.stagger ?? 300;           // ms between reel stops
     this.topIsPrev = opts.topIsPrev ?? true;
-    this.onPresentWin = opts.onPresentWin;    // async (evaluation) => {}, awaited
+    this.onPresentWin = opts.onPresentWin;        // async (evaluation) => {}, awaited
     this.freeSpinsLeft = 0;
-    this.state = 'IDLE';                      // IDLE | SPINNING | STOPPING | EVALUATING | PRESENTING
+    this.state = 'IDLE';                          // IDLE | SPINNING | STOPPING | EVALUATING | PRESENTING
     this.queue = [];
     this.listeners = {};
   }
@@ -27,7 +23,8 @@ export class SlotGame {
   emit(evt, data) {(this.listeners[evt] || []).forEach(fn => fn(data));}
   setState(s) {this.state = s; this.emit('state', s);}
 
-  spin() { // local test spin, same path as the server result
+  spin() { 
+    // local test spin, same path as the server result
     return this.playResult({stops: localSpin(this.slot)});
   }
 
