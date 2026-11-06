@@ -10,6 +10,7 @@ import {adaptSlotConfig, fetchSlotConfig} from "./networking.js";
 import {SlotReel} from "./reel.js";
 import {SlotGame} from "./state.js";
 import {LaserProjectile} from "../../../src/engine/effects/laser.js";
+import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfText.js";
 
 /**
  * Add your domain where you have installer or runned "slot-simulator" application.
@@ -64,7 +65,7 @@ export var loadSlot = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, async () => {
 
-    let laser;
+    let laser, floor;
 
     if(urlQuery['fs'] === '333') {
       // alert('works')
@@ -98,6 +99,52 @@ export var loadSlot = function() {
           geometry: "Cube"
         }
       })
+
+            floor =slotMachine.addMeshObj({
+        material: {type: 'standard', share: true},
+        position: {x: 0, y: 2, z: -10},
+        rotation: {x: 0, y: 180, z: 0},
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        scale: [1, 1, 1],
+        texturesPaths: ['./res/textures/floor1.webp'],
+        name: 'floor',
+        mesh: m.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      })
+
+
+      loadAtlasFONT(slotMachine.device).then((OUTPUT) => {
+
+        const checker2 = floor.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = slotMachine.device.createSampler({
+          magFilter: 'nearest',
+          minFilter: 'nearest',
+          addressModeU: 'repeat',
+          addressModeV: 'repeat',
+        });
+        floor.changeTexture(checker2, samplerTest);
+        floor.setUVScale(12, 12);
+
+        floor.effects.gpuText = new MSDFTextEffect(
+          slotMachine.device,
+          'rgba16float',
+          OUTPUT.msdfTexture,
+          samplerTest,
+          slotMachine.cameraBuffer,
+          OUTPUT.font, {scale: 0.05, localOffset: [-8, 6, 25], localScale : [0.4 , 0.6 , 0.6]}
+        );
+
+        // app.MYCUBE.effects.gpuText.setLocalOffset( -15 ,1,0)
+        floor.effects.gpuText.typeText('Demo balance:', 120, () => {
+          console.log('Typing complete!');
+        });
+
+        slotMachine.floor = floor;
+      });
     }
 
     async function onLoadObj(m) {

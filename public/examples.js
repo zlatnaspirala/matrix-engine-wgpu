@@ -80786,7 +80786,7 @@ var loadSlot = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, async () => {
-    let laser2;
+    let laser2, floor2;
     if (urlQuery["fs"] === "333") {
     }
     const raw = await fetchSlotConfig(baseUrl, machineId);
@@ -80817,6 +80817,45 @@ var loadSlot = function() {
           mass: 0,
           geometry: "Cube"
         }
+      });
+      floor2 = slotMachine.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: 2, z: -10 },
+        rotation: { x: 0, y: 180, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 1, 1],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      loadAtlasFONT(slotMachine.device).then((OUTPUT) => {
+        const checker2 = floor2.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = slotMachine.device.createSampler({
+          magFilter: "nearest",
+          minFilter: "nearest",
+          addressModeU: "repeat",
+          addressModeV: "repeat"
+        });
+        floor2.changeTexture(checker2, samplerTest);
+        floor2.setUVScale(12, 12);
+        floor2.effects.gpuText = new MSDFTextEffect(
+          slotMachine.device,
+          "rgba16float",
+          OUTPUT.msdfTexture,
+          samplerTest,
+          slotMachine.cameraBuffer,
+          OUTPUT.font,
+          { scale: 0.05, localOffset: [-8, 6, 25], localScale: [0.4, 0.6, 0.6] }
+        );
+        floor2.effects.gpuText.typeText("Demo balance:", 120, () => {
+          console.log("Typing complete!");
+        });
+        slotMachine.floor = floor2;
       });
     }
     async function onLoadObj(m2) {
