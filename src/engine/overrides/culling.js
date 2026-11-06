@@ -62,7 +62,9 @@ export let cullingPass = function() {
       mesh.updateModelUniformBuffer(i);
       if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       if(mesh.update) mesh.update(now2);
+      // chatgpt SUGGESTION START
       if(mesh.isVideo) mesh.updateVideoTexture();
+      // chatgpt SUGGESTION end
       if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       mesh.updateBoundingSphere?.();
     }
@@ -74,6 +76,9 @@ export let cullingPass = function() {
       pass.setPipeline(pipeline);
       let l = null;
       for(const mesh of meshes) {
+        // chatgpt SUGGESTION START
+        if(mesh.isVideo && !mesh.videoFrameReady) continue;
+        // chatgpt SUGGESTION end
         if(mesh.materialBindGroup !== l) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l = mesh.materialBindGroup;
@@ -87,6 +92,9 @@ export let cullingPass = function() {
     for(const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
       pass.setPipeline(pipeline);
       for(const mesh of meshes) {
+        // chatgpt SUGGESTION START
+        if(mesh.isVideo && !mesh.videoFrameReady) continue;
+        // chatgpt SUGGESTION end
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
@@ -203,7 +211,9 @@ export let noShadowPass = function() {
       mesh.updateModelUniformBuffer(i);
       if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       if(mesh.update) mesh.update(now2);
+      // chatgpt SUGGESTION START
       if(mesh.isVideo) mesh.updateVideoTexture();
+      // chatgpt SUGGESTION end
       if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       mesh.updateBoundingSphere?.();
     }
@@ -217,6 +227,9 @@ export let noShadowPass = function() {
       pass.setPipeline(pipeline);
       let l = null;
       for(const mesh of meshes) {
+        // chatgpt SUGGESTION START
+        if(mesh.isVideo && !mesh.videoFrameReady) continue;
+        // chatgpt SUGGESTION end
         if(mesh.materialBindGroup !== l) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l = mesh.materialBindGroup;
@@ -230,6 +243,9 @@ export let noShadowPass = function() {
     for(const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
       pass.setPipeline(pipeline);
       for(const mesh of meshes) {
+        // chatgpt SUGGESTION START
+        if(mesh.isVideo && !mesh.videoFrameReady) continue;
+        // chatgpt SUGGESTION end
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
