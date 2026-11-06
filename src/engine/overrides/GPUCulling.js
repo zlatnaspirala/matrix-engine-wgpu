@@ -59,7 +59,9 @@ export async function GPUIndirectDraws() {
       mesh.updateModelUniformBuffer(i);
       if(mesh.updateMorphAnimation) mesh.updateMorphAnimation(this.now);
       if(mesh.update) mesh.update(now2);
+      // chatgpt SUGGESTION START
       if(mesh.isVideo) mesh.updateVideoTexture();
+      // chatgpt SUGGESTION end
       if(mesh.sourceCanvas) mesh.updateCanvasInlineTexture();
       if(mesh.effects) {
         for(const effectName in mesh.effects) {
@@ -114,6 +116,9 @@ export async function GPUIndirectDraws() {
       pass.setPipeline(pipeline);
       let l = null;
       for(const mesh of meshes) {
+        // chatgpt SUGGESTION START
+        if(mesh.isVideo && !mesh.videoFrameReady) continue;
+        // chatgpt SUGGESTION end
         if(mesh.materialBindGroup !== l) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l = mesh.materialBindGroup;
@@ -131,6 +136,9 @@ export async function GPUIndirectDraws() {
     for(const [pipeline, meshes] of this.transparentBuckets) {
       pass.setPipeline(pipeline);
       for(const mesh of meshes) {
+        // chatgpt SUGGESTION START
+        if(mesh.isVideo && !mesh.videoFrameReady) continue;
+        // chatgpt SUGGESTION end
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if(mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
