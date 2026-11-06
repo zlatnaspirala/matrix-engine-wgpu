@@ -149,7 +149,10 @@ export var loadSlot = function() {
       await sleep(600);
 
       laser = FX_MESH.effects.laser = new LaserProjectile(
-        slotMachine.device, 'rgba16float', slotMachine.cameraBuffer, {\n          maxBeams: 24, width: 0.045, intensity: 2.8,\n          colorA: [0.15, 0.95, 1, 1], colorB: [0.05, 0.25, 1, 1]\n        });
+        slotMachine.device, 'rgba16float', slotMachine.cameraBuffer, {
+          maxBeams: 24, width: 0.045, intensity: 2.8,
+          colorA: [0.15, 0.95, 1, 1], colorB: [0.05, 0.25, 1, 1]
+        });
 
 
       slotMachine.laser = laser;
@@ -259,9 +262,16 @@ export var loadSlot = function() {
 
       window.slot = slot; window.slotGame = game; window.slotViews = views;
       window.addEventListener('keydown', e => {
-        if(e.code === 'Space') game.spin();
-                FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
-              FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
+        if(e.code !== 'Space') return;
+
+        // Space is reserved for spinning: prevent page scrolling and ignore
+        // key-repeat / extra presses until reels AND win presentation are done.
+        e.preventDefault();
+        if(e.repeat || game.state !== 'IDLE') return;
+
+        game.spin();
+        FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
+        FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       });
 
       const es = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
