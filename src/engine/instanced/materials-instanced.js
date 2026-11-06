@@ -421,19 +421,9 @@ export default class MaterialsInstanced {
       this.video.style.top = '-20px';
       this.video.style.left = '50%';
       this.video.play();
-      this.video.addEventListener('canplaythrough', () => {
-        // console.log('_cideo can playt +++++++++++++++++++++++++++');
-        if(this.video.readyState >= 3) {
-          this.externalTexture = this.device.importExternalTexture({source: this.video});
-          // console.log('++++ > 3   ++++  ' + this.externalTexture);
-          if(!this.externalTexture) alert('ERROR ' + this.externalTexture);
-          this.sampler = this.device.createSampler({
-            magFilter: 'linear',
-            minFilter: 'linear',
-          });
-          this.createMaterialBindGroupVideo();
-        }
-      }, {once: false});
+      // chatgpt SUGGESTION START
+      // External textures are imported only in the render-frame update below.
+      // chatgpt SUGGESTION end
     } else if(arg.type === 'videoElement') {
       this.video = arg.videoElement;
       await this.video.play();
@@ -509,10 +499,42 @@ export default class MaterialsInstanced {
     this.setupPipeline();
   }
 
+  // chatgpt SUGGESTION START
+  // Refresh the imported frame and its bind group before encoding the draw.
   updateVideoTexture() {
-    this.externalTexture = this.device.importExternalTexture({source: this.video});
-    this.createMaterialBindGroupVideo();
+    this.videoFrameReady = false;
+    if(
+      !this.video ||
+      this.video.readyState < 2 ||
+      !this.video.videoWidth ||
+      !this.video.videoHeight
+    ) {
+      return false;
+    }
+
+    try {
+      const externalTexture = this.device.importExternalTexture({source: this.video});
+      if(!externalTexture) return false;
+
+      const bindGroup = this.device.createBindGroup({
+        layout: this.materialVideoBGL,
+        entries: [
+          {binding: 0, resource: externalTexture},
+          {binding: 1, resource: this.videoSampler},
+          {binding: 2, resource: {buffer: this.postFXModeBuffer}}
+        ]
+      });
+
+      this.externalTexture = externalTexture;
+      this.materialBindGroup = bindGroup;
+      this.videoFrameReady = true;
+      return true;
+    } catch(err) {
+      console.warn('[VideoTexture][instanced] Frame import failed:', err);
+      return false;
+    }
   }
+  // chatgpt SUGGESTION end
 
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
