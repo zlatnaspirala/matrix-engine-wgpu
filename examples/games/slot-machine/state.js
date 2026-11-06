@@ -44,6 +44,7 @@ export class SlotGame {
     if(this.state !== 'IDLE') {this.queue.push(raw); return;}
     // chatgpt SUGGESTION START
     let demoBetCharged = false;
+    let demoWinningsCredited = false;
     if(raw?.isLocalDemo) {
       if(this.demoBalance < this.betAmount) {
         this.emit('insufficientBalance', {
@@ -119,6 +120,7 @@ export class SlotGame {
       // Credit local demo winnings using the evaluator's totalWin in units.
       if(demoBetCharged) {
         this.demoBalance += ev.totalWin;
+        demoWinningsCredited = true;
         this.onDemoBalance(this.demoBalance);
         this.emit('balance', this.demoBalance);
       }
@@ -172,7 +174,7 @@ export class SlotGame {
     } catch(err) {
       // chatgpt SUGGESTION START
       // Refund the demo stake if the spin failed before a result was credited.
-      if(demoBetCharged) {
+      if(demoBetCharged && !demoWinningsCredited) {
         this.demoBalance += this.betAmount;
         this.onDemoBalance(this.demoBalance);
         this.emit('balance', this.demoBalance);
