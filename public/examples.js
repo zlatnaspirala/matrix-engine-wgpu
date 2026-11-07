@@ -80929,24 +80929,27 @@ var loadSlot = function() {
       });
     }
     async function onLoadObj(m2) {
-      slotMachine.addMeshObj({
+      let inputArg = {
         material: { type: "standard", share: true },
         position: { x: 0, y: -1, z: -20 },
         rotation: { x: 0, y: 0, z: 0 },
         scale: [30, 30, 30],
         rotationSpeed: { x: 0, y: 0.1, z: 0 },
         texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
-        isVideo: {
-          type: "video",
-          src: "res/videos/space.mp4"
-        },
         name: "sky",
         mesh: m2.ball,
         physics: {
           enabled: false,
           geometry: "Sphere"
         }
-      });
+      };
+      if (isMobile() === false) {
+        inputArg.isVideo = {
+          type: "video",
+          src: "res/videos/space.mp4"
+        };
+      }
+      slotMachine.addMeshObj();
       const reelMeshes = slot.reels.map((reel, i2) => slotMachine.addMeshObj({
         material: { type: "standard" },
         position: { x: reelX(i2, n3), y: 15, z: -10 },
@@ -80962,13 +80965,15 @@ var loadSlot = function() {
       }));
       slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
-      slotMachine.activateVolumetricEffect({
-        density: 0.1,
-        steps: 30,
-        scatterStrength: 1,
-        heightFalloff: 0.2,
-        lightColor: [1, 1.8, 2]
-      });
+      if (isMobile() === false) {
+        slotMachine.activateVolumetricEffect({
+          density: 0.1,
+          steps: 30,
+          scatterStrength: 1,
+          heightFalloff: 0.2,
+          lightColor: [1, 1.8, 2]
+        });
+      }
       slotMachine.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
       slotMachine.lightContainer[0].behavior.value_ = -1;
       slotMachine.lightContainer[0].updater.push((light) => {
@@ -81035,7 +81040,11 @@ var loadSlot = function() {
       cam2 = slotMachine.getCamera();
       cam2.setYaw(-3.119);
       cam2.setPitch(-0.05);
-      cam2.setZ(-52 * Math.max(1, n3 / 3));
+      if (isMobile()) {
+        cam2.setZ(-62 * Math.max(1, n3 / 3));
+      } else {
+        cam2.setZ(-52 * Math.max(1, n3 / 3));
+      }
       cam2.setY(16);
       introPath = new CameraPath([
         { position: [0, 5, 20], target: [0, 0, 0] },

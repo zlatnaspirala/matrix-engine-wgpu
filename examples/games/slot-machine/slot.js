@@ -4,7 +4,7 @@ import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
 import {SpritesPack2D} from "../../../src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "../../../src/engine/procedures/InstancedKinematicOperations.js";
 import {KaleidoscopeEmitter} from "../../../src/engine/effects/kaleidoscopeEffectInstance.js";
-import {CameraPath, randomIntFromTo, sleep, urlQuery} from "../../../src/engine/utils.js";
+import {CameraPath, isMobile, randomIntFromTo, sleep, urlQuery} from "../../../src/engine/utils.js";
 import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {adaptSlotConfig, fetchSlotConfig} from "./networking.js";
 import {SlotReel} from "./reel.js";
@@ -164,24 +164,30 @@ export var loadSlot = function() {
     }
 
     async function onLoadObj(m) {
-      slotMachine.addMeshObj({
+
+      let inputArg = {
         material: {type: 'standard', share: true},
         position: {x: 0, y: -1, z: -20},
         rotation: {x: 0, y: 0, z: 0},
         scale: [30, 30, 30],
         rotationSpeed: {x: 0, y: 0.1, z: 0},
         texturesPaths: ['./res/textures/cube-g1-extra_low.png'],
-        isVideo: {
-          type: 'video',
-          src: 'res/videos/space.mp4'
-        },
         name: 'sky',
         mesh: m.ball,
         physics: {
           enabled: false,
           geometry: "Sphere"
         }
-      });
+      };
+
+      if(isMobile() === false) {
+        inputArg.isVideo = {
+          type: 'video',
+          src: 'res/videos/space.mp4'
+        };
+      }
+
+      slotMachine.addMeshObj();
 
       const reelMeshes = slot.reels.map((reel, i) => slotMachine.addMeshObj({
         material: {type: 'standard'},
@@ -199,9 +205,11 @@ export var loadSlot = function() {
       slotMachine.activateBloomEffect();
 
       // slotMachine.activateVolumetricEffect();
-      slotMachine.activateVolumetricEffect({
-        density: 0.1, steps: 30, scatterStrength: 1, heightFalloff: 0.2, lightColor: [1, 1.8, 2]
-      })
+      if(isMobile() === false) {
+        slotMachine.activateVolumetricEffect({
+          density: 0.1, steps: 30, scatterStrength: 1, heightFalloff: 0.2, lightColor: [1, 1.8, 2]
+        })
+      }
 
       slotMachine.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
       slotMachine.lightContainer[0].behavior.value_ = -1;
@@ -268,7 +276,13 @@ export var loadSlot = function() {
       cam = slotMachine.getCamera();
       cam.setYaw(-3.119);
       cam.setPitch(-0.05);
-      cam.setZ(-52 * Math.max(1, n / 3));
+
+      if(isMobile()) {
+        cam.setZ(-62 * Math.max(1, n / 3));
+      } else {
+        cam.setZ(-52 * Math.max(1, n / 3));
+      }
+
       cam.setY(16);
 
       introPath = new CameraPath([
