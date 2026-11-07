@@ -73,16 +73,44 @@ export class SlotReel {
       return Promise.resolve();
     }
 
+    // chatgpt SUGGESTION START
+    // Keep the reel's normal blue idle tint, while cycling vivid colors only
+    // on the winning physical symbol. The original tint is restored afterward.
+    const defaultTint = [1, 1, 11];
+    const winningColors = [
+      [11, 1, 1],   // red
+      [1, 11, 1],   // green
+      [1, 1, 11],   // blue
+      [11, 1, 11],  // magenta
+      [1, 11, 11]   // cyan
+    ];
+    const mixColor = (a, b, t) => [
+      a[0] + (b[0] - a[0]) * t,
+      a[1] + (b[1] - a[1]) * t,
+      a[2] + (b[2] - a[2]) * t
+    ];
+
     sprite.playRange(0, 16, speed, true);
-    return new Promise(resolve => {
-      setTimeout(() => {
-        sprite.pause();
-        sprite.goToFrame(0);
-        sprite.clearRange();
-        sprite.reset();
-        resolve();
-      }, duration);
+    return animateValue(duration, t => {
+      const phase = t * (winningColors.length - 1);
+      const colorIndex = Math.min(winningColors.length - 2, Math.floor(phase));
+      const color = mixColor(
+        winningColors[colorIndex],
+        winningColors[colorIndex + 1],
+        phase - colorIndex
+      );
+      const pulse = 0.72 + 0.28 * Math.sin(t * Math.PI * 12);
+      sprite.tint = color.map(channel => channel * pulse);
+      sprite.tintStrength = 11.4;
+    }).then(() => {
+      sprite.pause();
+      sprite.goToFrame(0);
+      sprite.clearRange();
+      sprite.reset();
+      sprite.tint = defaultTint.slice();
+      sprite.tintStrength = 11.4;
     });
+    // chatgpt SUGGESTION END
   }
 
   angleForStop(s) {return this.angleOffset + this.dir * (s / this.cfg.length) * 360;}
