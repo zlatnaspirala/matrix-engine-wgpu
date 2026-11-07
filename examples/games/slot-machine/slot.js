@@ -286,7 +286,7 @@ export var loadSlot = function() {
       // The intro path overrides the camera's live position, so use the
       // same device-specific Z value in the path's final keyframe as well.
       const adaptedZ = isMobile()
-        ? -62 * Math.max(1, n / 3)
+        ? -53 * Math.max(1, n / 3)
         : -45;
       cam.setZ(adaptedZ);
       // chatgpt SUGGESTION END
@@ -354,7 +354,7 @@ export var loadSlot = function() {
           // identical to the intro camera pose so the path closes cleanly.
           // chatgpt SUGGESTION START
           const adaptedZ = isMobile()
-            ? -62 * Math.max(1, n / 3)
+            ? -53 * Math.max(1, n / 3)
             : -45;
           // chatgpt SUGGESTION END
           const pulsingPath = new CameraPath([

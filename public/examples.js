@@ -81042,7 +81042,7 @@ var loadSlot = function() {
       cam2 = slotMachine.getCamera();
       cam2.setYaw(-3.119);
       cam2.setPitch(-0.05);
-      const adaptedZ = isMobile() ? -62 * Math.max(1, n3 / 3) : -45;
+      const adaptedZ = isMobile() ? -53 * Math.max(1, n3 / 3) : -45;
       cam2.setZ(adaptedZ);
       cam2.setY(16);
       introPath = new CameraPath([
@@ -81088,7 +81088,7 @@ var loadSlot = function() {
         // chatgpt SUGGESTION END
         onPresentWin: async (res) => {
           console.log("what is res:" + res);
-          const adaptedZ2 = isMobile() ? -62 * Math.max(1, n3 / 3) : -45;
+          const adaptedZ2 = isMobile() ? -53 * Math.max(1, n3 / 3) : -45;
           const pulsingPath = new CameraPath([
             // chatgpt SUGGESTION START
             { position: [0, 13, adaptedZ2], target: [0, 12, 0] },
