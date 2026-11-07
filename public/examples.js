@@ -81081,26 +81081,29 @@ var loadSlot = function() {
         onPresentWin: async (res) => {
           console.log("what is res:" + res);
           const pulsingPath = new CameraPath([
-            // Establishing wide shot.
             { position: [0, 13, -45], target: [0, 12, 0] },
-            // Smooth push-in toward the front of the reels.
             { position: [0, 12, -25], target: [0, 12, 0] },
             { position: [0, 11, -10], target: [0, 13, 0] },
-            // Sweep around the right-front corner and glance across the reels.
-            { position: [5, 12, -8], target: [0, 12, 0] },
-            { position: [7, 14, -3], target: [0, 13, 0] },
-            // Cross the front toward the left for a changing perspective.
-            { position: [2, 15, -6], target: [0, 12, 0] },
+            { position: [5, 12, -8], target: [0, 15, 0] },
+            { position: [7, 14, -3], target: [0, 23, 0] },
+            { position: [2, 15, -6], target: [0, 32, 0] },
             { position: [-6, 12, -7], target: [0, 12, 0] },
             { position: [-5, 10, -3], target: [0, 13, 0] },
-            // Pull away and return to the original framing.
             { position: [0, 13, -24], target: [0, 12, 0] },
             { position: [0, 13, -45], target: [0, 12, 0] }
-          ], { parameterization: "arc", tension: 0.38 });
+            // Use the default 0.5 tension: this engine's spline only interpolates
+            // through keyframes at 0.5, so a lower value misses the endpoints.
+          ], { parameterization: "arc" });
           console.log("on win res pulsingPath", pulsingPath);
-          app.getCamera().setPath(pulsingPath).play({
-            speed: 1,
-            onEnd: () => console.log("done!!!!!")
+          const winCamera = app.getCamera();
+          winCamera.setPath(pulsingPath).play({
+            speed: 0.3,
+            onEnd: () => {
+              winCamera.setPosition(0, 13, -45);
+              winCamera.setTarget(0, 12, 0);
+              winCamera._dirtyAngle = true;
+              console.log("win camera restored to intro pose");
+            }
           });
           console.log("on win res", res);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
@@ -81109,6 +81112,7 @@ var loadSlot = function() {
           app.floor.rotation.rotationSpeed.y = 10;
           await sleep(500);
           app.floor.rotation.rotationSpeed.y = 20;
+          FX_MESH.rotation.rotationSpeed.x = 10;
           await sleep(500);
           app.floor.rotation.rotationSpeed.y = 30;
           await sleep(2500);
@@ -81117,6 +81121,8 @@ var loadSlot = function() {
           app.lightContainer[0].setColorR(1);
           app.floor.rotation.rotationSpeed.y = 0;
           app.floor.rotation.setRotation(0, 180, 0);
+          FX_MESH.rotation.rotationSpeed.x = 0;
+          FX_MESH.rotation.setRotation(90, 0, 180);
         }
       });
       game.on("result", (r3) => {

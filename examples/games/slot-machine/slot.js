@@ -336,9 +336,9 @@ export var loadSlot = function() {
             {position: [0, 13, -45], target: [0, 12, 0]},
             {position: [0, 12, -25], target: [0, 12, 0]},
             {position: [0, 11, -10], target: [0, 13, 0]},
-            {position: [5, 12, -8], target: [0, 12, 0]},
-            {position: [7, 14, -3], target: [0, 13, 0]},
-            {position: [2, 15, -6], target: [0, 12, 0]},
+            {position: [5, 12, -8], target: [0, 15, 0]},
+            {position: [7, 14, -3], target: [0, 23, 0]},
+            {position: [2, 15, -6], target: [0, 32, 0]},
             {position: [-6, 12, -7], target: [0, 12, 0]},
             {position: [-5, 10, -3], target: [0, 13, 0]},
             {position: [0, 13, -24], target: [0, 12, 0]},
@@ -352,7 +352,7 @@ export var loadSlot = function() {
           // chatgpt SUGGESTION START
           const winCamera = app.getCamera();
           winCamera.setPath(pulsingPath).play({
-            speed: 1,
+            speed: 0.3,
             onEnd: () => {
               // Snap both position and look target to the exact intro pose.
               // This also guards against future path edits leaving residual drift.
@@ -375,6 +375,10 @@ export var loadSlot = function() {
 
           await sleep(500);
           app.floor.rotation.rotationSpeed.y = 20;
+
+
+          FX_MESH.rotation.rotationSpeed.x = 10;
+
           await sleep(500);
           app.floor.rotation.rotationSpeed.y = 30;
 
@@ -385,6 +389,10 @@ export var loadSlot = function() {
           app.lightContainer[0].setColorR(1)
           app.floor.rotation.rotationSpeed.y = 0;
           app.floor.rotation.setRotation(0, 180, 0);
+
+          FX_MESH.rotation.rotationSpeed.x = 0;
+          FX_MESH.rotation.setRotation(90, 0, 180);
+
         }
       });
       game.on('result', r => {
