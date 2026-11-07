@@ -1502,11 +1502,22 @@ export class CinematicCamera {
     this._onEnd = options.onEnd ?? null;
     this._t = options.startT ?? 0;
     this._playing = true;
+    // chatgpt SUGGESTION START
+    // The render loop only updates the cinematic camera while it is dirty.
+    // Re-arm it whenever playback starts, including after a previous path ended.
+    this._dirtyAngle = true;
+    // chatgpt SUGGESTION END
     return this;
   }
 
   pause = () => {this._playing = false; return this;}
-  resume = () => {this._playing = true; return this;}
+  resume = () => {
+    this._playing = true;
+    // chatgpt SUGGESTION START
+    this._dirtyAngle = true;
+    // chatgpt SUGGESTION END
+    return this;
+  }
   seekT = (t) => {this._t = t; return this;}
 
   shake = (amplitude, duration, frequency = 15) => {
