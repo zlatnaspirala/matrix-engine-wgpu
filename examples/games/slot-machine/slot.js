@@ -4,7 +4,7 @@ import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
 import {SpritesPack2D} from "../../../src/engine/effects/sprite2d2.js";
 import {InstancedKinematicOperations} from "../../../src/engine/procedures/InstancedKinematicOperations.js";
 import {KaleidoscopeEmitter} from "../../../src/engine/effects/kaleidoscopeEffectInstance.js";
-import {CameraPath, randomIntFromTo, urlQuery} from "../../../src/engine/utils.js";
+import {CameraPath, randomIntFromTo, sleep, urlQuery} from "../../../src/engine/utils.js";
 import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {adaptSlotConfig, fetchSlotConfig} from "./networking.js";
 import {SlotReel} from "./reel.js";
@@ -26,7 +26,6 @@ export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 const ENABLE_REMOTE_SPIN_EVENTS = false;
 // chatgpt SUGGESTION END
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SPACING = 6, SCALE = 3.5;
 const reelX = (i, n) => ((n - 1) / 2 - i) * SPACING;
 
@@ -314,7 +313,7 @@ export var loadSlot = function() {
         {position: [0, 10, -5], target: [0, 22, 10]},
         {position: [0, 13, -35], target: [0, 12, 5]},
         {position: [0, 13, -45], target: [0, 12, 0]},
-      ], {parameterization: 'arc'});
+      ], {parameterization: 'timed'});
 
       const game = new SlotGame(slot, views, {
         lineBet: 5,

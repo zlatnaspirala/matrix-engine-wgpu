@@ -11072,6 +11072,7 @@ function degToRad(degrees) {
 function radToDeg(r3) {
   return r3 * (180 / Math.PI);
 }
+var sleep = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
 var scriptManager = {
   SCRIPT_ID: 0,
   LOAD: function addScript(src, id2, type2, parent, callback) {
@@ -80415,7 +80416,7 @@ function adaptSlotConfig(raw) {
 }
 
 // examples/games/slot-machine/reel.js
-var sleep = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
+var sleep2 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
 var easeOutCubic = (t3) => 1 - Math.pow(1 - t3, 3);
 var easeInOutCubic = (t3) => t3 < 0.5 ? 4 * t3 * t3 * t3 : 1 - Math.pow(-2 * t3 + 2, 3) / 2;
 var animateValue = (duration, update) => new Promise((resolve) => {
@@ -80469,7 +80470,7 @@ var SlotReel = class {
       if (i2 === sprites.length - 1) {
         animateRotationY(this.mesh.rotation, 90, 1e3);
       }
-      if (delayPerSprite) await sleep(delayPerSprite);
+      if (delayPerSprite) await sleep2(delayPerSprite);
     }
   }
   stripIndexForRow(stop, row2, topIsPrev = true) {
@@ -80507,7 +80508,7 @@ var SlotReel = class {
   }
   async startSpin() {
     this.mesh.rotation.setRotateX(-this.startKickSpeed);
-    await sleep(this.startKickMs);
+    await sleep2(this.startKickMs);
     const fromSpeed = -this.startKickSpeed;
     await animateValue(this.accelerationMs, (t3) => {
       this.mesh.rotation.setRotateX(
@@ -80613,7 +80614,7 @@ function normalizeSpinResult(raw, slot) {
 }
 
 // examples/games/slot-machine/state.js
-var sleep2 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
+var sleep3 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
 var SlotGame = class {
   constructor(slot, reelViews, opts = {}) {
     if (reelViews.length !== slot.reelCount) throw new Error("reelViews count != reelCount");
@@ -80690,13 +80691,13 @@ var SlotGame = class {
       const starts = [];
       for (let i2 = 0; i2 < this.views.length; i2++) {
         starts.push(this.views[i2].startSpin());
-        if (i2 < this.views.length - 1) await sleep2(this.startStagger);
+        if (i2 < this.views.length - 1) await sleep3(this.startStagger);
       }
       await Promise.all(starts);
-      await sleep2(this.minSpinMs);
+      await sleep3(this.minSpinMs);
       this.setState("STOPPING");
       await Promise.all(this.views.map(async (v2, i2) => {
-        await sleep2(i2 * this.stagger);
+        await sleep3(i2 * this.stagger);
         await v2.stopAt(stops[i2]);
         this.emit("reelStop", { reel: i2, stop: stops[i2] });
       }));
@@ -80782,7 +80783,6 @@ var baseUrl = "https://slot-simulator.onrender.com";
 var machineId = "6ac80510c453c7d32ec5364a";
 var SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 var ENABLE_REMOTE_SPIN_EVENTS = false;
-var sleep3 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
 var SPACING = 6;
 var SCALE = 3.5;
 var reelX = (i2, n3) => ((n3 - 1) / 2 - i2) * SPACING;
@@ -80942,7 +80942,7 @@ var loadSlot = function() {
         physics: { enabled: false, mass: 0, geometry: "Cube" },
         pointerEffect: { enabled: true }
       });
-      await sleep3(600);
+      await sleep(600);
       laser2 = FX_MESH.effects.laser = new LaserProjectile(
         slotMachine.device,
         "rgba16float",
@@ -81003,7 +81003,7 @@ var loadSlot = function() {
       reelMeshes[0].setupPipeline();
       slotMachine.buildRenderBuckets();
       slotMachine.reelMeshes = reelMeshes;
-      await sleep3(400);
+      await sleep(400);
       const views = reelMeshes.map((mesh, i2) => new SlotReel(
         mesh,
         slot.reels[i2],
@@ -81045,11 +81045,11 @@ var loadSlot = function() {
           FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
           app.lightContainer[0].setColorR(4011);
           app.floor.rotation.rotationSpeed.y = 10;
-          await sleep3(500);
+          await sleep(500);
           app.floor.rotation.rotationSpeed.y = 20;
-          await sleep3(500);
+          await sleep(500);
           app.floor.rotation.rotationSpeed.y = 30;
-          await sleep3(2500);
+          await sleep(2500);
           FX_MESH.effects.keeffect.setIntensity(1);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
           app.lightContainer[0].setColorR(1);

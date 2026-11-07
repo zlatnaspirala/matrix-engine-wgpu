@@ -89,6 +89,8 @@ export function createAppEvent(name, myDetails) {
   return new CustomEvent(name, {detail: {eventName: name, data: myDetails, }, bubbles: true, });
 }
 
+export const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 /**
  *
  * Load script in runtime.
