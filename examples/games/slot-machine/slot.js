@@ -329,12 +329,33 @@ export var loadSlot = function() {
         onPresentWin: async res => {
           //
           console.log("what is res:" + res)
+          // chatgpt SUGGESTION START
+          // Cinematic win fly-through: push toward the reels, sweep around
+          // their front from right to left, then settle back at the exact
+          // opening camera pose. Keep the target on the machine while the
+          // camera position changes so the reels remain the visual focus.
           const pulsingPath = new CameraPath([
+            // Establishing wide shot.
             {position: [0, 13, -45], target: [0, 12, 0]},
-            {position: [0, 10, -5], target: [0, 22, 10]},
-            {position: [0, 13, -35], target: [0, 12, 5]},
+
+            // Smooth push-in toward the front of the reels.
+            {position: [0, 12, -25], target: [0, 12, 0]},
+            {position: [0, 11, -10], target: [0, 13, 0]},
+
+            // Sweep around the right-front corner and glance across the reels.
+            {position: [5, 12, -8], target: [0, 12, 0]},
+            {position: [7, 14, -3], target: [0, 13, 0]},
+
+            // Cross the front toward the left for a changing perspective.
+            {position: [2, 15, -6], target: [0, 12, 0]},
+            {position: [-6, 12, -7], target: [0, 12, 0]},
+            {position: [-5, 10, -3], target: [0, 13, 0]},
+
+            // Pull away and return to the original framing.
+            {position: [0, 13, -24], target: [0, 12, 0]},
             {position: [0, 13, -45], target: [0, 12, 0]},
-          ], {parameterization: 'arc'});
+          ], {parameterization: 'arc', tension: 0.38});
+          // chatgpt SUGGESTION END
           console.log('on win res pulsingPath', pulsingPath)
 
           app.getCamera().setPath(pulsingPath).play({
