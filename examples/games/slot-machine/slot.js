@@ -18,7 +18,9 @@ import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfTex
  * Add you machine ID created from "slot-simulator".
  */
 const baseUrl = 'https://slot-simulator.onrender.com';
-const machineId = '6ac80510c453c7d32ec5364a';
+const machineId1 = new URLSearchParams(window.location.search).get("machineId");
+console.log('machineId1', machineId1)
+const machineId = machineId1 || '6ac80510c453c7d32ec5364a';
 export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 
 let game;

@@ -80810,7 +80810,9 @@ var SlotGame = class {
 
 // examples/games/slot-machine/slot.js
 var baseUrl = "https://slot-simulator.onrender.com";
-var machineId = "6ac80510c453c7d32ec5364a";
+var machineId1 = new URLSearchParams(window.location.search).get("machineId");
+console.log("machineId1", machineId1);
+var machineId = machineId1 || "6ac80510c453c7d32ec5364a";
 var SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
 var game;
 var ENABLE_REMOTE_SPIN_EVENTS = false;
