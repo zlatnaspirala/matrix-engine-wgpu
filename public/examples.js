@@ -80812,6 +80812,7 @@ var SlotGame = class {
 var baseUrl = "https://slot-simulator.onrender.com";
 var machineId = "6ac80510c453c7d32ec5364a";
 var SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
+var game;
 var ENABLE_REMOTE_SPIN_EVENTS = false;
 var SPACING = 6;
 var SCALE = 3.5;
@@ -80965,6 +80966,7 @@ var loadSlot = function() {
       }));
       slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
+      if (isMobile()) slotMachine.bloomPass.setBlurRadius(3);
       if (isMobile() === false) {
         slotMachine.activateVolumetricEffect({
           density: 0.1,
@@ -81040,7 +81042,7 @@ var loadSlot = function() {
       cam2 = slotMachine.getCamera();
       cam2.setYaw(-3.119);
       cam2.setPitch(-0.05);
-      const adaptedZ = isMobile() ? -82 * Math.max(1, n3 / 3) : -45;
+      const adaptedZ = isMobile() ? -62 * Math.max(1, n3 / 3) : -45;
       cam2.setZ(adaptedZ);
       cam2.setY(16);
       introPath = new CameraPath([
@@ -81075,7 +81077,7 @@ var loadSlot = function() {
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
       reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
       slotMachine.demoBalanceText = "Demo balance: 100";
-      const game = new SlotGame(slot, views, {
+      game = new SlotGame(slot, views, {
         lineBet: 5,
         demoBalance: 100,
         betAmount: 1,
@@ -81086,7 +81088,7 @@ var loadSlot = function() {
         // chatgpt SUGGESTION END
         onPresentWin: async (res) => {
           console.log("what is res:" + res);
-          const adaptedZ2 = isMobile() ? -82 * Math.max(1, n3 / 3) : -45;
+          const adaptedZ2 = isMobile() ? -62 * Math.max(1, n3 / 3) : -45;
           const pulsingPath = new CameraPath([
             // chatgpt SUGGESTION START
             { position: [0, 13, adaptedZ2], target: [0, 12, 0] },
@@ -81187,8 +81189,8 @@ var loadSlot = function() {
     slotMachine.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cubeeffect")) {
-        e2.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
-        e2.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
+        if (game.state !== "IDLE") return;
+        game.spin();
       }
     });
   });

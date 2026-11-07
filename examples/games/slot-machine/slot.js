@@ -20,6 +20,7 @@ import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfTex
 const baseUrl = 'https://slot-simulator.onrender.com';
 const machineId = '6ac80510c453c7d32ec5364a';
 export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
+let game;
 
 // chatgpt SUGGESTION START
 // Keep the simulator configuration, but do not accept remote-triggered spins by default.
@@ -206,6 +207,9 @@ export var loadSlot = function() {
       slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
 
+
+      if (isMobile()) slotMachine.bloomPass.setBlurRadius(3)
+
       // slotMachine.activateVolumetricEffect();
       if(isMobile() === false) {
         slotMachine.activateVolumetricEffect({
@@ -282,7 +286,7 @@ export var loadSlot = function() {
       // The intro path overrides the camera's live position, so use the
       // same device-specific Z value in the path's final keyframe as well.
       const adaptedZ = isMobile()
-        ? -82 * Math.max(1, n / 3)
+        ? -62 * Math.max(1, n / 3)
         : -45;
       cam.setZ(adaptedZ);
       // chatgpt SUGGESTION END
@@ -333,7 +337,7 @@ export var loadSlot = function() {
       // Free-play defaults: 1000 demo units, 1 unit stake per local spin.
       slotMachine.demoBalanceText = 'Demo balance: 100';
 
-      const game = new SlotGame(slot, views, {
+      game = new SlotGame(slot, views, {
         lineBet: 5,
         demoBalance: 100,
         betAmount: 1,
@@ -350,7 +354,7 @@ export var loadSlot = function() {
           // identical to the intro camera pose so the path closes cleanly.
           // chatgpt SUGGESTION START
           const adaptedZ = isMobile()
-            ? -82 * Math.max(1, n / 3)
+            ? -62 * Math.max(1, n / 3)
             : -45;
           // chatgpt SUGGESTION END
           const pulsingPath = new CameraPath([
@@ -481,8 +485,8 @@ export var loadSlot = function() {
     slotMachine.canvas.addEventListener("ray.hit.event", (e) => {
       console.log('ray.hit.event detected');
       if(e.detail.hitObject.name.startsWith('cubeeffect')) {
-        e.detail.hitObject.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
-        e.detail.hitObject.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
+        if(game.state !== 'IDLE') return;
+        game.spin();
       }
     });
 
