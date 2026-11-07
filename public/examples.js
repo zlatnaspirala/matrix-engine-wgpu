@@ -80979,7 +80979,6 @@ var loadSlot = function() {
       slotMachine.lightContainer[0].setTarget(0, 0, -10);
       const FX_MESH = slotMachine.addMeshObj({
         material: { type: "standard" },
-        name: "fx",
         position: { x: 0, y: 15, z: -10 },
         rotation: { x: 90, y: 0, z: 180 },
         rotationSpeed: { x: 0, y: 0, z: 0 },

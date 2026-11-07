@@ -214,7 +214,6 @@ export var loadSlot = function() {
 
       const FX_MESH = slotMachine.addMeshObj({
         material: {type: 'standard'},
-        name: "fx",
         position: {x: 0, y: 15, z: -10}, rotation: {x: 90, y: 0, z: 180}, rotationSpeed: {x: 0, y: 0, z: 0},
         scale: [9 * Math.max(1, n / 3), 9, 9],
         texturesPaths: ['./res/icons/512.webp'], name: 'cubeeffect', mesh: m.plane,
@@ -314,6 +313,8 @@ export var loadSlot = function() {
       // chatgpt SUGGESTION START
       // Free-play defaults: 1000 demo units, 1 unit stake per local spin.
       slotMachine.demoBalanceText = 'Demo balance: 100';
+
+      // FX_MESH
 
 
 
