@@ -80864,19 +80864,15 @@ var loadSlot = function() {
     let laser2, floor2, cam2, introPath, spinSpeed = 16, delayReel = 60;
     if (urlQuery["reelSpeed"]) {
       spinSpeed = parseInt(urlQuery["reelSpeed"]);
-      console.log("COnfiguration for graphics : reelSpeed", spinSpeed);
     }
     if (urlQuery["delayReel"]) {
       delayReel = parseInt(urlQuery["delayReel"]);
-      console.log("COnfiguration for graphics : delayReel", delayReel);
     }
     if (urlQuery["effectType"]) {
-      console.log("COnfiguration for graphics : effectType", effectType);
       effectType = urlQuery["effectType"];
     }
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
-    console.log(slot.reelCount, slot.visibleRows, slot.paylines.length);
     slot.warnings.forEach((w2) => console.warn("[slot]", w2));
     const n3 = slot.reelCount;
     slotMachine.addLight();
@@ -80920,10 +80916,9 @@ var loadSlot = function() {
           samplerTest,
           slotMachine.cameraBuffer,
           OUTPUT.font,
-          { scale: 0.05, localOffset: [-7, 5, 17], localScale: [0.4, 0.6, 0.6] }
+          { scale: 0.05, localOffset: [isMobile() ? -9 : -8, 5, 17], localScale: isMobile() ? [0.6, 0.8, 0.8] : [0.5, 0.7, 0.7] }
         );
         floor2.effects.gpuText.typeText(slotMachine.demoBalanceText ?? "Demo balance: 1000", 120, () => {
-          console.log("Demo balance display ready");
           floor2.position.translateByY(-4);
         });
         slotMachine.floor = floor2;
@@ -80964,9 +80959,10 @@ var loadSlot = function() {
         physics: { enabled: false, mass: 0, geometry: "Cube" },
         pointerEffect: { enabled: true }
       }));
-      slotMachine.lightContainer[0].setIntensity(15);
+      if (isMobile()) slotMachine.lightContainer[0].setIntensity(8);
+      else slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
-      if (isMobile()) slotMachine.bloomPass.setBlurRadius(3);
+      if (isMobile()) slotMachine.bloomPass.setBlurRadius(2);
       if (isMobile() === false) {
         slotMachine.activateVolumetricEffect({
           density: 0.1,
@@ -81034,7 +81030,6 @@ var loadSlot = function() {
           fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
         }
       }
-      FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, "rgba16float", "circle2", "./res/textures/star1.png", 3, slotMachine.cameraBuffer);
       FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
       for (const [i2, mesh] of reelMeshes.entries()) {
         await initializeSymbolReel(mesh, slotMachine, slot.reels[i2]);
@@ -81048,9 +81043,7 @@ var loadSlot = function() {
       introPath = new CameraPath([
         { position: [0, 5, 20], target: [0, 0, 0] },
         { position: [10, 10, 10], target: [0, 1, 0] },
-        // chatgpt SUGGESTION START
         { position: [0, 13, adaptedZ], target: [0, 12, 0] }
-        // chatgpt SUGGESTION END
       ], { parameterization: "arc" });
       cam2.setPath(introPath).play({
         speed: 0.1,
@@ -81072,9 +81065,6 @@ var loadSlot = function() {
         }
       ));
       for (const v2 of views) await v2.layout(delayReel);
-      FX_MESH.effects.circle.updateInstanceCount(8);
-      new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
-      FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
       reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
       slotMachine.demoBalanceText = "Demo balance: 100";
       game = new SlotGame(slot, views, {
@@ -81085,14 +81075,10 @@ var loadSlot = function() {
           slotMachine.demoBalanceText = `Demo balance: ${balance}`;
           slotMachine.floor?.effects?.gpuText?.setText(slotMachine.demoBalanceText);
         },
-        // chatgpt SUGGESTION END
         onPresentWin: async (res) => {
-          console.log("what is res:" + res);
           const adaptedZ2 = isMobile() ? -53 * Math.max(1, n3 / 3) : -45;
           const pulsingPath = new CameraPath([
-            // chatgpt SUGGESTION START
             { position: [0, 13, adaptedZ2], target: [0, 12, 0] },
-            // chatgpt SUGGESTION END
             { position: [0, 12, -25], target: [0, 12, 0] },
             { position: [0, 11, -10], target: [0, 13, 0] },
             { position: [5, 12, -8], target: [0, 15, 0] },
@@ -81101,15 +81087,11 @@ var loadSlot = function() {
             { position: [-6, 12, -7], target: [0, 12, 0] },
             { position: [-5, 10, -3], target: [0, 13, 0] },
             { position: [0, 13, -24], target: [0, 12, 0] },
-            // chatgpt SUGGESTION START
             { position: [0, 13, adaptedZ2], target: [0, 12, 0] }
-            // chatgpt SUGGESTION END
             // Use the default 0.5 tension: this engine's spline only interpolates
             // through keyframes at 0.5, so a lower value misses the endpoints.
           ], { parameterization: "arc" });
-          console.log("on win res pulsingPath", pulsingPath);
           const winCamera = app.getCamera();
-          console.log("on win res", res);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
           FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
           app.lightContainer[0].setColorR(4011);
@@ -81139,8 +81121,6 @@ var loadSlot = function() {
         }
       });
       game.on("result", (r3) => {
-        console.log("RESULT", r3);
-        console.log("RESULT", r3.grid.map((c2) => c2.join(" ")), "win", r3.totalWin, "FS", r3.freeSpinsLeft);
         if (r3.totalWin > 0) {
           const flashed = /* @__PURE__ */ new Set();
           for (const win of r3.lineWins ?? []) {

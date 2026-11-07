@@ -2,10 +2,10 @@ import MatrixEngineWGPU from "../../../src/world.js";
 import {downloadMeshes} from '../../../src/engine/loader-obj.js';
 import {addRaycastsAABBListener} from "../../../src/engine/raycast.js";
 import {SpritesPack2D} from "../../../src/engine/effects/sprite2d2.js";
-import {InstancedKinematicOperations} from "../../../src/engine/procedures/InstancedKinematicOperations.js";
+// import {InstancedKinematicOperations} from "../../../src/engine/procedures/InstancedKinematicOperations.js";
 import {KaleidoscopeEmitter} from "../../../src/engine/effects/kaleidoscopeEffectInstance.js";
 import {CameraPath, isMobile, randomIntFromTo, sleep, urlQuery} from "../../../src/engine/utils.js";
-import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
+// import {GenGeoTexture2} from "../../../src/engine/effects/gen-tex2.js";
 import {adaptSlotConfig, fetchSlotConfig} from "./networking.js";
 import {SlotReel} from "./reel.js";
 import {SlotGame} from "./state.js";
@@ -13,20 +13,16 @@ import {LaserProjectile} from "../../../src/engine/effects/laser.js";
 import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfText.js";
 
 /**
+ * This example is open source.
  * Add your domain where you have installer or runned "slot-simulator" application.
  * Add you machine ID created from "slot-simulator".
  */
-
 const baseUrl = 'https://slot-simulator.onrender.com';
 const machineId = '6ac80510c453c7d32ec5364a';
 export const SLOT_SIMULATOR_CONFIG_TOKEN = "SHITHAPPENS";
+
 let game;
-
-// chatgpt SUGGESTION START
-// Keep the simulator configuration, but do not accept remote-triggered spins by default.
 const ENABLE_REMOTE_SPIN_EVENTS = false;
-// chatgpt SUGGESTION END
-
 const SPACING = 6, SCALE = 3.5;
 const reelX = (i, n) => ((n - 1) / 2 - i) * SPACING;
 
@@ -35,7 +31,6 @@ let effectType = 'default';
 async function initializeSymbolReel(mesh, engine, reelCfg) {
   let addPath = '';
   if(effectType === 'default') {
-    // console.log('effectType!!!!!!it is default!!!!!', effectType)
     addPath = '';
   } else {
     addPath = effectType + '/';
@@ -52,8 +47,6 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   const radius = 5.6;
   reelCfg.strip.forEach((id, index) => {
     const angle = (index / count) * Math.PI * 2;
-    // chatgpt SUGGESTION START
-    // Apply the requested idle tint to every physical symbol as it is created.
     batch.createSprite(`symbol-${index}`, id, {
       currentFrame: 0,
       autoPlay: false,
@@ -62,7 +55,6 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
       tintStrength: 11.4,
       localOffset: [Math.cos(angle) * radius, Math.sin(angle) * radius, 0]
     });
-    // chatgpt SUGGESTION END
   });
 
   if(!mesh.effects) mesh.effects = {};
@@ -89,23 +81,20 @@ export var loadSlot = function() {
     // Configuration
     if(urlQuery['reelSpeed']) {
       spinSpeed = parseInt(urlQuery['reelSpeed']);
-      console.log('COnfiguration for graphics : reelSpeed', spinSpeed)
+      // console.log('COnfiguration for graphics : reelSpeed', spinSpeed)
     }
-
     if(urlQuery['delayReel']) {
       delayReel = parseInt(urlQuery['delayReel']);
-      console.log('COnfiguration for graphics : delayReel', delayReel)
+      // console.log('COnfiguration for graphics : delayReel', delayReel)
     }
-
     if(urlQuery['effectType']) {
       // not in use for now
-      console.log('COnfiguration for graphics : effectType', effectType)
+      // console.log('COnfiguration for graphics : effectType', effectType)
       effectType = urlQuery['effectType'];
     }
 
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
-    console.log(slot.reelCount, slot.visibleRows, slot.paylines.length);
     slot.warnings.forEach(w => console.warn('[slot]', w));
     const n = slot.reelCount;
 
@@ -149,17 +138,13 @@ export var loadSlot = function() {
           OUTPUT.msdfTexture,
           samplerTest,
           slotMachine.cameraBuffer,
-          OUTPUT.font, {scale: 0.05, localOffset: [-7, 5, 17], localScale: [0.4, 0.6, 0.6]}
+          OUTPUT.font, {scale: 0.05, localOffset: [isMobile() ? -9 : -8, 5, 17], localScale: isMobile() ? [0.6, 0.8, 0.8] : [0.5, 0.7, 0.7]}
         );
 
-        // app.MYCUBE.effects.gpuText.setLocalOffset( -15 ,1,0)
-        // chatgpt SUGGESTION START
-        // Display the local, fictive demo-credit balance (never real money).
         floor.effects.gpuText.typeText(slotMachine.demoBalanceText ?? 'Demo balance: 1000', 120, () => {
-          console.log('Demo balance display ready');
+          // console.log('Demo balance display ready');
           floor.position.translateByY(-4);
         });
-        // chatgpt SUGGESTION END
         slotMachine.floor = floor;
       });
     }
@@ -186,11 +171,8 @@ export var loadSlot = function() {
           type: 'video',
           src: 'res/videos/space.mp4'
         };
-
         slotMachine.addMeshObj(inputArg);
       }
-
-
 
       const reelMeshes = slot.reels.map((reel, i) => slotMachine.addMeshObj({
         material: {type: 'standard'},
@@ -204,13 +186,10 @@ export var loadSlot = function() {
         pointerEffect: {enabled: true}
       }));
 
-      slotMachine.lightContainer[0].setIntensity(15);
+      // postprocessing
+      if(isMobile()) slotMachine.lightContainer[0].setIntensity(8); else slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
-
-
-      if (isMobile()) slotMachine.bloomPass.setBlurRadius(3)
-
-      // slotMachine.activateVolumetricEffect();
+      if(isMobile()) slotMachine.bloomPass.setBlurRadius(2);
       if(isMobile() === false) {
         slotMachine.activateVolumetricEffect({
           density: 0.1, steps: 30, scatterStrength: 1, heightFalloff: 0.2, lightColor: [1, 1.8, 2]
@@ -272,7 +251,7 @@ export var loadSlot = function() {
         }
       }
 
-      FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, slotMachine.cameraBuffer);
+      // FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, slotMachine.cameraBuffer);
       FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, 'rgba16float', 30, slotMachine.cameraBuffer);
 
       for(const [i, mesh] of reelMeshes.entries()) {
@@ -282,30 +261,20 @@ export var loadSlot = function() {
       cam = slotMachine.getCamera();
       cam.setYaw(-3.119);
       cam.setPitch(-0.05);
-      // chatgpt SUGGESTION START
       // The intro path overrides the camera's live position, so use the
       // same device-specific Z value in the path's final keyframe as well.
-      const adaptedZ = isMobile()
-        ? -53 * Math.max(1, n / 3)
-        : -45;
+      const adaptedZ = isMobile() ? -53 * Math.max(1, n / 3) : -45;
       cam.setZ(adaptedZ);
-      // chatgpt SUGGESTION END
       cam.setY(16);
-
       introPath = new CameraPath([
         {position: [0, 5, 20], target: [0, 0, 0]},
         {position: [10, 10, 10], target: [0, 1, 0]},
-        // chatgpt SUGGESTION START
         {position: [0, 13, adaptedZ], target: [0, 12, 0]},
-        // chatgpt SUGGESTION END
       ], {parameterization: 'arc'});
-
       cam.setPath(introPath).play({
         speed: 0.1,
         onEnd: () => console.log('done'),
       });
-
-
       cam._dirtyAngle = true;
 
       reelMeshes.forEach(mesh => mesh.setBlend(0.001));
@@ -327,13 +296,10 @@ export var loadSlot = function() {
       ));
       for(const v of views) await v.layout(delayReel);
 
-      FX_MESH.effects.circle.updateInstanceCount(8);
-      new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
-      FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
-      // slotMachine.getSceneObjectByName('sky').setAmbient(21, 0.5, 1);
+      // FX_MESH.effects.circle.updateInstanceCount(8);
+      // new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
+      // FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
       reelMeshes.forEach(r => r.setAmbient(2, 0, 0));
-
-      // chatgpt SUGGESTION START
       // Free-play defaults: 1000 demo units, 1 unit stake per local spin.
       slotMachine.demoBalanceText = 'Demo balance: 100';
 
@@ -345,22 +311,15 @@ export var loadSlot = function() {
           slotMachine.demoBalanceText = `Demo balance: ${balance}`;
           slotMachine.floor?.effects?.gpuText?.setText(slotMachine.demoBalanceText);
         },
-        // chatgpt SUGGESTION END
         onPresentWin: async res => {
-          //
-          console.log("what is res:" + res)
+          // console.log("what is res:" + res)
           // chatgpt SUGGESTION START
           // Cinematic win fly-through. Keep the first and last keyframes
           // identical to the intro camera pose so the path closes cleanly.
           // chatgpt SUGGESTION START
-          const adaptedZ = isMobile()
-            ? -53 * Math.max(1, n / 3)
-            : -45;
-          // chatgpt SUGGESTION END
+          const adaptedZ = isMobile() ? -53 * Math.max(1, n / 3) : -45;
           const pulsingPath = new CameraPath([
-            // chatgpt SUGGESTION START
             {position: [0, 13, adaptedZ], target: [0, 12, 0]},
-            // chatgpt SUGGESTION END
             {position: [0, 12, -25], target: [0, 12, 0]},
             {position: [0, 11, -10], target: [0, 13, 0]},
             {position: [5, 12, -8], target: [0, 15, 0]},
@@ -369,33 +328,24 @@ export var loadSlot = function() {
             {position: [-6, 12, -7], target: [0, 12, 0]},
             {position: [-5, 10, -3], target: [0, 13, 0]},
             {position: [0, 13, -24], target: [0, 12, 0]},
-            // chatgpt SUGGESTION START
             {position: [0, 13, adaptedZ], target: [0, 12, 0]},
-            // chatgpt SUGGESTION END
-          // Use the default 0.5 tension: this engine's spline only interpolates
-          // through keyframes at 0.5, so a lower value misses the endpoints.
+            // Use the default 0.5 tension: this engine's spline only interpolates
+            // through keyframes at 0.5, so a lower value misses the endpoints.
           ], {parameterization: 'arc'});
-          // chatgpt SUGGESTION END
-          console.log('on win res pulsingPath', pulsingPath)
 
-          // chatgpt SUGGESTION START
           const winCamera = app.getCamera();
-          // chatgpt SUGGESTION END
-          console.log('on win res', res)
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
           FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
-
           app.lightContainer[0].setColorR(4011)
           app.floor.rotation.rotationSpeed.y = 10;
 
-          // app.reelMeshes[1].effects.spriteBatch.sprites.get("symbol-2").tint = [11,1,1]
-          // app.reelMeshes[1].effects.spriteBatch.sprites.get("symbol-2").tintStrength = .4
-
           await sleep(500);
+
           app.floor.rotation.rotationSpeed.y = 20;
           FX_MESH.rotation.rotationSpeed.x = 10;
 
           await sleep(500);
+
           winCamera.setPath(pulsingPath).play({
             speed: 0.35,
             onEnd: () => {
@@ -410,22 +360,19 @@ export var loadSlot = function() {
           app.floor.rotation.rotationSpeed.y = 30;
 
           await sleep(2500);
+
           FX_MESH.effects.keeffect.setIntensity(1);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
-
           app.lightContainer[0].setColorR(1)
           app.floor.rotation.rotationSpeed.y = 0;
           app.floor.rotation.setRotation(0, 180, 0);
-
           FX_MESH.rotation.rotationSpeed.x = 0;
           FX_MESH.rotation.setRotation(90, 0, 180);
 
         }
       });
       game.on('result', r => {
-        console.log('RESULT', r)
-        console.log('RESULT', r.grid.map(c => c.join(' ')), 'win', r.totalWin, 'FS', r.freeSpinsLeft)
-
+        // console.log('RESULT', r.grid.map(c => c.join(' ')), 'win', r.totalWin, 'FS', r.freeSpinsLeft)
         // Flash a bright laser across each winning row, briefly highlighting
         // the exact reel positions reported by the game evaluation.
         if(r.totalWin > 0) {
@@ -452,34 +399,34 @@ export var loadSlot = function() {
             }
           }
         }
-
       });
 
+      // debug
       window.slot = slot; window.slotGame = game; window.slotViews = views;
       window.addEventListener('keydown', e => {
         if(e.code !== 'Space') return;
-
         // Space is reserved for spinning: prevent page scrolling and ignore
         // key-repeat / extra presses until reels AND win presentation are done.
         e.preventDefault();
-        if(e.repeat || game.state !== 'IDLE') return;
 
+        // Spin
+        if(e.repeat || game.state !== 'IDLE') return;
         game.spin();
+
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
         FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
       });
 
-      // chatgpt SUGGESTION START
       // Remote spin events are opt-in; keyboard play stays fully local by default.
       if(ENABLE_REMOTE_SPIN_EVENTS) {
         const es = new EventSource(`${baseUrl}/slot-api/machines/${machineId}/events`);
         es.addEventListener('spin', e => game.playResult(JSON.parse(e.data)));
         slotMachine.slotEventSource = es;
       }
+
       game.on('insufficientBalance', ({balance, betAmount}) => {
         console.info(`[slot-demo] Not enough demo credits: balance=${balance}, bet=${betAmount}`);
       });
-      // chatgpt SUGGESTION END
     }
 
     slotMachine.canvas.addEventListener("ray.hit.event", (e) => {
@@ -489,7 +436,6 @@ export var loadSlot = function() {
         game.spin();
       }
     });
-
   })
   window.app = slotMachine;
 }
