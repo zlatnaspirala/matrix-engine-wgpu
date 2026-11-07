@@ -185,9 +185,11 @@ export var loadSlot = function() {
           type: 'video',
           src: 'res/videos/space.mp4'
         };
+
+        slotMachine.addMeshObj(inputArg);
       }
 
-      slotMachine.addMeshObj();
+
 
       const reelMeshes = slot.reels.map((reel, i) => slotMachine.addMeshObj({
         material: {type: 'standard'},
@@ -278,7 +280,7 @@ export var loadSlot = function() {
       cam.setPitch(-0.05);
 
       if(isMobile()) {
-        cam.setZ(-62 * Math.max(1, n / 3));
+        cam.setZ(-82 * Math.max(1, n / 3));
       } else {
         cam.setZ(-52 * Math.max(1, n / 3));
       }
@@ -321,16 +323,12 @@ export var loadSlot = function() {
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
-      slotMachine.getSceneObjectByName('sky').setAmbient(21, 0.5, 1);
+      // slotMachine.getSceneObjectByName('sky').setAmbient(21, 0.5, 1);
       reelMeshes.forEach(r => r.setAmbient(2, 0, 0));
 
       // chatgpt SUGGESTION START
       // Free-play defaults: 1000 demo units, 1 unit stake per local spin.
       slotMachine.demoBalanceText = 'Demo balance: 100';
-
-      // FX_MESH
-
-
 
       const game = new SlotGame(slot, views, {
         lineBet: 5,

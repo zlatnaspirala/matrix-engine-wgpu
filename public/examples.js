@@ -80948,8 +80948,8 @@ var loadSlot = function() {
           type: "video",
           src: "res/videos/space.mp4"
         };
+        slotMachine.addMeshObj(inputArg);
       }
-      slotMachine.addMeshObj();
       const reelMeshes = slot.reels.map((reel, i2) => slotMachine.addMeshObj({
         material: { type: "standard" },
         position: { x: reelX(i2, n3), y: 15, z: -10 },
@@ -81041,7 +81041,7 @@ var loadSlot = function() {
       cam2.setYaw(-3.119);
       cam2.setPitch(-0.05);
       if (isMobile()) {
-        cam2.setZ(-62 * Math.max(1, n3 / 3));
+        cam2.setZ(-82 * Math.max(1, n3 / 3));
       } else {
         cam2.setZ(-52 * Math.max(1, n3 / 3));
       }
@@ -81074,7 +81074,6 @@ var loadSlot = function() {
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;
-      slotMachine.getSceneObjectByName("sky").setAmbient(21, 0.5, 1);
       reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
       slotMachine.demoBalanceText = "Demo balance: 100";
       const game = new SlotGame(slot, views, {
