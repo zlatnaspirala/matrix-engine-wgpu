@@ -80825,11 +80825,11 @@ var loadSlot = function() {
   }, async () => {
     let laser2, floor2, cam2, introPath, spinSpeed = 16, delayReel = 60, effectType = "default";
     if (urlQuery["reelSpeed"]) {
-      spinSpeed = urlQuery["reelSpeed"];
+      spinSpeed = parseInt(urlQuery["reelSpeed"]);
       console.log("COnfiguration for graphics : reelSpeed", spinSpeed);
     }
     if (urlQuery["delayReel"]) {
-      delayReel = urlQuery["delayReel"];
+      delayReel = parseInt(urlQuery["delayReel"]);
       console.log("COnfiguration for graphics : delayReel", delayReel);
     }
     if (urlQuery["effectType"]) {

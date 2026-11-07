@@ -72,12 +72,12 @@ export var loadSlot = function() {
 
     // Configuration
     if(urlQuery['reelSpeed']) {
-      spinSpeed = urlQuery['reelSpeed'];
+      spinSpeed = parseInt(urlQuery['reelSpeed']);
       console.log('COnfiguration for graphics : reelSpeed', spinSpeed)
     }
 
     if(urlQuery['delayReel']) {
-      delayReel = urlQuery['delayReel'];
+      delayReel = parseInt(urlQuery['delayReel']);
       console.log('COnfiguration for graphics : delayReel', delayReel)
     }
 
