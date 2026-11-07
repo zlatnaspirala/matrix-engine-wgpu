@@ -268,13 +268,22 @@ export var loadSlot = function() {
       cam = slotMachine.getCamera();
       cam.setYaw(-3.119);
       cam.setPitch(-0.05);
-      cam.setZ(-52 * Math.max(1, n / 3));
+      // chatgpt SUGGESTION START
+      // The intro path overrides the camera's live position, so use the
+      // same device-specific Z value in the path's final keyframe as well.
+      const adaptedZ = isMobile()
+        ? -82 * Math.max(1, n / 3)
+        : -45;
+      cam.setZ(adaptedZ);
+      // chatgpt SUGGESTION END
       cam.setY(16);
 
       introPath = new CameraPath([
         {position: [0, 5, 20], target: [0, 0, 0]},
         {position: [10, 10, 10], target: [0, 1, 0]},
-        {position: [0, 13, -45], target: [0, 12, 0]},
+        // chatgpt SUGGESTION START
+        {position: [0, 13, adaptedZ], target: [0, 12, 0]},
+        // chatgpt SUGGESTION END
       ], {parameterization: 'arc'});
 
       cam.setPath(introPath).play({
@@ -333,8 +342,15 @@ export var loadSlot = function() {
           // chatgpt SUGGESTION START
           // Cinematic win fly-through. Keep the first and last keyframes
           // identical to the intro camera pose so the path closes cleanly.
+          // chatgpt SUGGESTION START
+          const adaptedZ = isMobile()
+            ? -82 * Math.max(1, n / 3)
+            : -45;
+          // chatgpt SUGGESTION END
           const pulsingPath = new CameraPath([
-            {position: [0, 13, -45], target: [0, 12, 0]},
+            // chatgpt SUGGESTION START
+            {position: [0, 13, adaptedZ], target: [0, 12, 0]},
+            // chatgpt SUGGESTION END
             {position: [0, 12, -25], target: [0, 12, 0]},
             {position: [0, 11, -10], target: [0, 13, 0]},
             {position: [5, 12, -8], target: [0, 15, 0]},
@@ -343,7 +359,9 @@ export var loadSlot = function() {
             {position: [-6, 12, -7], target: [0, 12, 0]},
             {position: [-5, 10, -3], target: [0, 13, 0]},
             {position: [0, 13, -24], target: [0, 12, 0]},
-            {position: [0, 13, -45], target: [0, 12, 0]},
+            // chatgpt SUGGESTION START
+            {position: [0, 13, adaptedZ], target: [0, 12, 0]},
+            // chatgpt SUGGESTION END
           // Use the default 0.5 tension: this engine's spline only interpolates
           // through keyframes at 0.5, so a lower value misses the endpoints.
           ], {parameterization: 'arc'});
@@ -357,8 +375,10 @@ export var loadSlot = function() {
             onEnd: () => {
               // Snap both position and look target to the exact intro pose.
               // This also guards against future path edits leaving residual drift.
-              winCamera.setPosition(0, 13, -45);
+              // chatgpt SUGGESTION START
+              winCamera.setPosition(0, 13, adaptedZ);
               winCamera.setTarget(0, 12, 0);
+              // chatgpt SUGGESTION END
               winCamera._dirtyAngle = true;
               console.log('win camera restored to intro pose');
             },
