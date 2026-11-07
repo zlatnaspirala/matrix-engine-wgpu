@@ -330,38 +330,39 @@ export var loadSlot = function() {
           //
           console.log("what is res:" + res)
           // chatgpt SUGGESTION START
-          // Cinematic win fly-through: push toward the reels, sweep around
-          // their front from right to left, then settle back at the exact
-          // opening camera pose. Keep the target on the machine while the
-          // camera position changes so the reels remain the visual focus.
+          // Cinematic win fly-through. Keep the first and last keyframes
+          // identical to the intro camera pose so the path closes cleanly.
           const pulsingPath = new CameraPath([
-            // Establishing wide shot.
             {position: [0, 13, -45], target: [0, 12, 0]},
-
-            // Smooth push-in toward the front of the reels.
             {position: [0, 12, -25], target: [0, 12, 0]},
             {position: [0, 11, -10], target: [0, 13, 0]},
-
-            // Sweep around the right-front corner and glance across the reels.
             {position: [5, 12, -8], target: [0, 12, 0]},
             {position: [7, 14, -3], target: [0, 13, 0]},
-
-            // Cross the front toward the left for a changing perspective.
             {position: [2, 15, -6], target: [0, 12, 0]},
             {position: [-6, 12, -7], target: [0, 12, 0]},
             {position: [-5, 10, -3], target: [0, 13, 0]},
-
-            // Pull away and return to the original framing.
             {position: [0, 13, -24], target: [0, 12, 0]},
             {position: [0, 13, -45], target: [0, 12, 0]},
-          ], {parameterization: 'arc', tension: 0.38});
+          // Use the default 0.5 tension: this engine's spline only interpolates
+          // through keyframes at 0.5, so a lower value misses the endpoints.
+          ], {parameterization: 'arc'});
           // chatgpt SUGGESTION END
           console.log('on win res pulsingPath', pulsingPath)
 
-          app.getCamera().setPath(pulsingPath).play({
+          // chatgpt SUGGESTION START
+          const winCamera = app.getCamera();
+          winCamera.setPath(pulsingPath).play({
             speed: 1,
-            onEnd: () => console.log('done!!!!!'),
+            onEnd: () => {
+              // Snap both position and look target to the exact intro pose.
+              // This also guards against future path edits leaving residual drift.
+              winCamera.setPosition(0, 13, -45);
+              winCamera.setTarget(0, 12, 0);
+              winCamera._dirtyAngle = true;
+              console.log('win camera restored to intro pose');
+            },
           });
+          // chatgpt SUGGESTION END
           console.log('on win res', res)
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
           FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
