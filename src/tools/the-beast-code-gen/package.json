@@ -17,7 +17,7 @@
     "@tailwindcss/vite": "^4.1.14",
     "dotenv": "^17.2.3",
     "express": "^4.22.3",
-    "matrix-engine-wgpu": "^1.18.7",
+    "matrix-engine-wgpu": "^2.0.1",
     "vite": "^6.4.5",
     "fs": "^0.0.1-security",
     "ollama": "^0.6.3",
