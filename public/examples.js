@@ -80490,15 +80490,43 @@ var SlotReel = class {
       console.warn("[slot] Missing winning sprite:", `symbol-${stripIndex}`);
       return Promise.resolve();
     }
+    const defaultTint = [1, 1, 11];
+    const winningColors = [
+      [11, 1, 1],
+      // red
+      [1, 11, 1],
+      // green
+      [1, 1, 11],
+      // blue
+      [11, 1, 11],
+      // magenta
+      [1, 11, 11]
+      // cyan
+    ];
+    const mixColor = (a2, b2, t3) => [
+      a2[0] + (b2[0] - a2[0]) * t3,
+      a2[1] + (b2[1] - a2[1]) * t3,
+      a2[2] + (b2[2] - a2[2]) * t3
+    ];
     sprite.playRange(0, 16, speed, true);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        sprite.pause();
-        sprite.goToFrame(0);
-        sprite.clearRange();
-        sprite.reset();
-        resolve();
-      }, duration);
+    return animateValue(duration, (t3) => {
+      const phase = t3 * (winningColors.length - 1);
+      const colorIndex = Math.min(winningColors.length - 2, Math.floor(phase));
+      const color = mixColor(
+        winningColors[colorIndex],
+        winningColors[colorIndex + 1],
+        phase - colorIndex
+      );
+      const pulse = 0.72 + 0.28 * Math.sin(t3 * Math.PI * 12);
+      sprite.tint = color.map((channel) => channel * pulse);
+      sprite.tintStrength = 11.4;
+    }).then(() => {
+      sprite.pause();
+      sprite.goToFrame(0);
+      sprite.clearRange();
+      sprite.reset();
+      sprite.tint = defaultTint.slice();
+      sprite.tintStrength = 11.4;
     });
   }
   angleForStop(s2) {
@@ -80810,6 +80838,8 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
       currentFrame: 0,
       autoPlay: false,
       scale: 1,
+      tint: [1, 1, 11],
+      tintStrength: 11.4,
       localOffset: [Math.cos(angle2) * radius, Math.sin(angle2) * radius, 0]
     });
   });
