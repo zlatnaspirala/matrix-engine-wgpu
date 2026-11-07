@@ -81095,15 +81095,6 @@ var loadSlot = function() {
           ], { parameterization: "arc" });
           console.log("on win res pulsingPath", pulsingPath);
           const winCamera = app.getCamera();
-          winCamera.setPath(pulsingPath).play({
-            speed: 0.3,
-            onEnd: () => {
-              winCamera.setPosition(0, 13, -45);
-              winCamera.setTarget(0, 12, 0);
-              winCamera._dirtyAngle = true;
-              console.log("win camera restored to intro pose");
-            }
-          });
           console.log("on win res", res);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
           FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
@@ -81113,6 +81104,15 @@ var loadSlot = function() {
           app.floor.rotation.rotationSpeed.y = 20;
           FX_MESH.rotation.rotationSpeed.x = 10;
           await sleep(500);
+          winCamera.setPath(pulsingPath).play({
+            speed: 0.35,
+            onEnd: () => {
+              winCamera.setPosition(0, 13, -45);
+              winCamera.setTarget(0, 12, 0);
+              winCamera._dirtyAngle = true;
+              console.log("win camera restored to intro pose");
+            }
+          });
           app.floor.rotation.rotationSpeed.y = 30;
           await sleep(2500);
           FX_MESH.effects.keeffect.setIntensity(1);
