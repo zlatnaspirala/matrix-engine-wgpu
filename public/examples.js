@@ -53852,9 +53852,9 @@ var MatrixEngineWGPU = class {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect === null) continue;
-            const effectType2 = effect.constructor;
-            if (!this.effectsByType.has(effectType2)) this.effectsByType.set(effectType2, []);
-            this.effectsByType.get(effectType2).push({ effect, mesh });
+            const effectType = effect.constructor;
+            if (!this.effectsByType.has(effectType)) this.effectsByType.set(effectType, []);
+            this.effectsByType.get(effectType).push({ effect, mesh });
           }
         }
       }
@@ -80823,17 +80823,18 @@ var loadSlot = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, async () => {
-    let laser2, floor2, cam2, introPath, spinSpeed = 16, delayReel = 60;
+    let laser2, floor2, cam2, introPath, spinSpeed = 16, delayReel = 60, effectType = "default";
     if (urlQuery["reelSpeed"]) {
-      console.log("COnfiguration for graphics : reelSpeed", urlQuery["reelSpeed"]);
       spinSpeed = urlQuery["reelSpeed"];
+      console.log("COnfiguration for graphics : reelSpeed", spinSpeed);
     }
     if (urlQuery["delayReel"]) {
-      console.log("COnfiguration for graphics : delayReel", delayReel);
       delayReel = urlQuery["delayReel"];
+      console.log("COnfiguration for graphics : delayReel", delayReel);
     }
     if (urlQuery["effectType"]) {
       console.log("COnfiguration for graphics : effectType", effectType);
+      effectType = urlQuery["effectType"];
     }
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
