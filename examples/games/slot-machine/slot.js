@@ -29,11 +29,21 @@ const ENABLE_REMOTE_SPIN_EVENTS = false;
 const SPACING = 6, SCALE = 3.5;
 const reelX = (i, n) => ((n - 1) / 2 - i) * SPACING;
 
+let effectType = 'default';
+
 async function initializeSymbolReel(mesh, engine, reelCfg) {
+  let addPath = '';
+  if (effectType === 'default') {
+    // console.log('effectType!!!!!!it is default!!!!!', effectType)
+    addPath = '';
+  } else {
+    addPath = effectType + '/';
+  }
+
   const batch = new SpritesPack2D(engine.device, 'rgba16float', 'rgba16float', engine.cameraBuffer);
   const symbolIds = [...new Set(reelCfg.strip)];
   for(const id of symbolIds) {
-    const path = `./res/textures/slot/symbols/${encodeURIComponent(id)}.webp`;
+    const path = `./res/textures/slot/symbols/${addPath}${encodeURIComponent(id)}.webp`;
     await batch.registerSpritesheet(id, path, 4, 4);
   }
 
@@ -68,7 +78,7 @@ export var loadSlot = function() {
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, async () => {
-    let laser, floor, cam, introPath, spinSpeed = 16, delayReel = 60, effectType = 'default';
+    let laser, floor, cam, introPath, spinSpeed = 16, delayReel = 60;
 
     // Configuration
     if(urlQuery['reelSpeed']) {
@@ -100,22 +110,6 @@ export var loadSlot = function() {
     addRaycastsAABBListener('canvas1', 'click');
 
     function onGround(m) {
-      // slotMachine.addMeshObj({
-      //   material: {type: 'standard', share: true},
-      //   position: {x: 0, y: -5, z: -10},
-      //   rotation: {x: 0, y: 0, z: 0},
-      //   rotationSpeed: {x: 0, y: 0, z: 0},
-      //   scale: [10, 1, 10],
-      //   texturesPaths: ['./res/textures/floor1.webp'],
-      //   name: 'floorB',
-      //   mesh: m.cube,
-      //   physics: {
-      //     enabled: false,
-      //     mass: 0,
-      //     geometry: "Cube"
-      //   }
-      // })
-
       floor = slotMachine.addMeshObj({
         material: {type: 'standard', share: true},
         position: {x: 0, y: 0, z: -10},
@@ -132,9 +126,7 @@ export var loadSlot = function() {
         }
       })
 
-
       loadAtlasFONT(slotMachine.device).then((OUTPUT) => {
-
         const checker2 = floor.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
         let samplerTest = slotMachine.device.createSampler({
           magFilter: 'nearest',
@@ -159,12 +151,9 @@ export var loadSlot = function() {
         // Display the local, fictive demo-credit balance (never real money).
         floor.effects.gpuText.typeText(slotMachine.demoBalanceText ?? 'Demo balance: 1000', 120, () => {
           console.log('Demo balance display ready');
-
-          floor.position.translateByY(-4)
-
+          floor.position.translateByY(-4);
         });
         // chatgpt SUGGESTION END
-
         slotMachine.floor = floor;
       });
     }
@@ -334,6 +323,7 @@ export var loadSlot = function() {
         // chatgpt SUGGESTION END
         onPresentWin: async res => {
           //
+          console.log("what is res:" + res)
           const pulsingPath = new CameraPath([
             {position: [0, 13, -45], target: [0, 12, 0]},
             {position: [0, 10, -5], target: [0, 22, 10]},
@@ -352,6 +342,10 @@ export var loadSlot = function() {
 
           app.lightContainer[0].setColorR(4011)
           app.floor.rotation.rotationSpeed.y = 10;
+
+          // app.reelMeshes[1].effects.spriteBatch.sprites.get("symbol-2").tint = [11,1,1]
+          // app.reelMeshes[1].effects.spriteBatch.sprites.get("symbol-2").tintStrength = .4
+
           await sleep(500);
           app.floor.rotation.rotationSpeed.y = 20;
           await sleep(500);

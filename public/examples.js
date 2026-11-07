@@ -53852,9 +53852,9 @@ var MatrixEngineWGPU = class {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect === null) continue;
-            const effectType = effect.constructor;
-            if (!this.effectsByType.has(effectType)) this.effectsByType.set(effectType, []);
-            this.effectsByType.get(effectType).push({ effect, mesh });
+            const effectType2 = effect.constructor;
+            if (!this.effectsByType.has(effectType2)) this.effectsByType.set(effectType2, []);
+            this.effectsByType.get(effectType2).push({ effect, mesh });
           }
         }
       }
@@ -80788,11 +80788,18 @@ var ENABLE_REMOTE_SPIN_EVENTS = false;
 var SPACING = 6;
 var SCALE = 3.5;
 var reelX = (i2, n3) => ((n3 - 1) / 2 - i2) * SPACING;
+var effectType = "default";
 async function initializeSymbolReel(mesh, engine, reelCfg) {
+  let addPath = "";
+  if (effectType === "default") {
+    addPath = "";
+  } else {
+    addPath = effectType + "/";
+  }
   const batch = new SpritesPack2D(engine.device, "rgba16float", "rgba16float", engine.cameraBuffer);
   const symbolIds = [...new Set(reelCfg.strip)];
   for (const id2 of symbolIds) {
-    const path2 = `./res/textures/slot/symbols/${encodeURIComponent(id2)}.webp`;
+    const path2 = `./res/textures/slot/symbols/${addPath}${encodeURIComponent(id2)}.webp`;
     await batch.registerSpritesheet(id2, path2, 4, 4);
   }
   const count = reelCfg.strip.length;
@@ -80823,7 +80830,7 @@ var loadSlot = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, async () => {
-    let laser2, floor2, cam2, introPath, spinSpeed = 16, delayReel = 60, effectType = "default";
+    let laser2, floor2, cam2, introPath, spinSpeed = 16, delayReel = 60;
     if (urlQuery["reelSpeed"]) {
       spinSpeed = parseInt(urlQuery["reelSpeed"]);
       console.log("COnfiguration for graphics : reelSpeed", spinSpeed);
@@ -81042,6 +81049,7 @@ var loadSlot = function() {
         },
         // chatgpt SUGGESTION END
         onPresentWin: async (res) => {
+          console.log("what is res:" + res);
           const pulsingPath = new CameraPath([
             { position: [0, 13, -45], target: [0, 12, 0] },
             { position: [0, 10, -5], target: [0, 22, 10] },
