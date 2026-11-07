@@ -69,10 +69,21 @@ export var loadSlot = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, async () => {
 
-    let laser, floor, cam, introPath;
+    let laser, floor, cam, introPath, spinSpeed = 16;
 
+    // spinSpeed
     if(urlQuery['reelSpeed']) {
-      console.log('COnfiguration for graphics : reelSpeed', reelSpeed)
+      console.log('COnfiguration for graphics : reelSpeed', urlQuery['reelSpeed'])
+      spinSpeed = urlQuery['reelSpeed'];
+    }
+
+    
+    if(urlQuery['spinningInterval']) {
+      console.log('COnfiguration for graphics : spinningInterval', spinningInterval)
+    }
+    
+    if(urlQuery['effectType']) {
+      console.log('COnfiguration for graphics : effectType', effectType)
     }
 
     const raw = await fetchSlotConfig(baseUrl, machineId);
@@ -225,6 +236,7 @@ export var loadSlot = function() {
       });
 
 
+      slotMachine.floor.effects.gpuText.setColor(1,11,1);
       slotMachine.laser = laser;
 
       // FX_MESH is a static carrier in front of the reels. Convert world XY
@@ -293,7 +305,7 @@ export var loadSlot = function() {
       const views = reelMeshes.map((mesh, i) => new SlotReel(mesh, slot.reels[i],
         {
           visibleRows: slot.visibleRows,
-          spinSpeed: 16
+          spinSpeed: spinSpeed
         }
       ));
       for(const v of views) await v.layout(60);

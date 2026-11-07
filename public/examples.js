@@ -53852,9 +53852,9 @@ var MatrixEngineWGPU = class {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect === null) continue;
-            const effectType = effect.constructor;
-            if (!this.effectsByType.has(effectType)) this.effectsByType.set(effectType, []);
-            this.effectsByType.get(effectType).push({ effect, mesh });
+            const effectType2 = effect.constructor;
+            if (!this.effectsByType.has(effectType2)) this.effectsByType.set(effectType2, []);
+            this.effectsByType.get(effectType2).push({ effect, mesh });
           }
         }
       }
@@ -80823,8 +80823,16 @@ var loadSlot = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, async () => {
-    let laser2, floor2, cam2, introPath;
-    if (urlQuery["fs"] === "333") {
+    let laser2, floor2, cam2, introPath, spinSpeed = 16;
+    if (urlQuery["reelSpeed"]) {
+      console.log("COnfiguration for graphics : reelSpeed", urlQuery["reelSpeed"]);
+      spinSpeed = urlQuery["reelSpeed"];
+    }
+    if (urlQuery["spinningInterval"]) {
+      console.log("COnfiguration for graphics : spinningInterval", spinningInterval);
+    }
+    if (urlQuery["effectType"]) {
+      console.log("COnfiguration for graphics : effectType", effectType);
     }
     const raw = await fetchSlotConfig(baseUrl, machineId);
     const slot = adaptSlotConfig(raw);
@@ -80957,6 +80965,7 @@ var loadSlot = function() {
           colorB: [0.05, 0.25, 1, 1]
         }
       );
+      slotMachine.floor.effects.gpuText.setColor(1, 11, 1);
       slotMachine.laser = laser2;
       const framePoint = (worldX, worldY) => [
         -worldX / (9 * Math.max(1, n3 / 3)),
@@ -81011,7 +81020,7 @@ var loadSlot = function() {
         slot.reels[i2],
         {
           visibleRows: slot.visibleRows,
-          spinSpeed: 16
+          spinSpeed
         }
       ));
       for (const v2 of views) await v2.layout(60);
