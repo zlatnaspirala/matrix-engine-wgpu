@@ -81040,16 +81040,15 @@ var loadSlot = function() {
       cam2 = slotMachine.getCamera();
       cam2.setYaw(-3.119);
       cam2.setPitch(-0.05);
-      if (isMobile()) {
-        cam2.setZ(-82 * Math.max(1, n3 / 3));
-      } else {
-        cam2.setZ(-52 * Math.max(1, n3 / 3));
-      }
+      const adaptedZ = isMobile() ? -82 * Math.max(1, n3 / 3) : -45;
+      cam2.setZ(adaptedZ);
       cam2.setY(16);
       introPath = new CameraPath([
         { position: [0, 5, 20], target: [0, 0, 0] },
         { position: [10, 10, 10], target: [0, 1, 0] },
-        { position: [0, 13, -45], target: [0, 12, 0] }
+        // chatgpt SUGGESTION START
+        { position: [0, 13, adaptedZ], target: [0, 12, 0] }
+        // chatgpt SUGGESTION END
       ], { parameterization: "arc" });
       cam2.setPath(introPath).play({
         speed: 0.1,
@@ -81087,8 +81086,11 @@ var loadSlot = function() {
         // chatgpt SUGGESTION END
         onPresentWin: async (res) => {
           console.log("what is res:" + res);
+          const adaptedZ2 = isMobile() ? -82 * Math.max(1, n3 / 3) : -45;
           const pulsingPath = new CameraPath([
-            { position: [0, 13, -45], target: [0, 12, 0] },
+            // chatgpt SUGGESTION START
+            { position: [0, 13, adaptedZ2], target: [0, 12, 0] },
+            // chatgpt SUGGESTION END
             { position: [0, 12, -25], target: [0, 12, 0] },
             { position: [0, 11, -10], target: [0, 13, 0] },
             { position: [5, 12, -8], target: [0, 15, 0] },
@@ -81097,7 +81099,9 @@ var loadSlot = function() {
             { position: [-6, 12, -7], target: [0, 12, 0] },
             { position: [-5, 10, -3], target: [0, 13, 0] },
             { position: [0, 13, -24], target: [0, 12, 0] },
-            { position: [0, 13, -45], target: [0, 12, 0] }
+            // chatgpt SUGGESTION START
+            { position: [0, 13, adaptedZ2], target: [0, 12, 0] }
+            // chatgpt SUGGESTION END
             // Use the default 0.5 tension: this engine's spline only interpolates
             // through keyframes at 0.5, so a lower value misses the endpoints.
           ], { parameterization: "arc" });
