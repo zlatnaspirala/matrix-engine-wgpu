@@ -311,7 +311,7 @@ export var loadSlot = function() {
 
       const pulsingPath = new CameraPath([
         {position: [0, 13, -45], target: [0, 12, 0]},
-        {position: [0, 13, -5], target: [0, 12, 10]},
+        {position: [0, 10, -5], target: [0, 22, 10]},
         {position: [0, 13, -35], target: [0, 12, 5]},
         {position: [0, 13, -45], target: [0, 12, 0]},
       ], {parameterization: 'arc'});
@@ -327,9 +327,10 @@ export var loadSlot = function() {
         // chatgpt SUGGESTION END
         onPresentWin: async res => {
           //
+          console.log('on win res pulsingPath', pulsingPath)
           cam.setPath(pulsingPath).play({
-            speed: 0.1,
-            onEnd: () => console.log('done'),
+            speed: 0.5,
+            onEnd: () => console.log('done!!!!!'),
           });
           console.log('on win res', res)
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
