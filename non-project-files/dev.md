@@ -1,5 +1,11 @@
 
 
+Uncaught (in promise) AbortError: The play() request was interrupted because video-only background media was paused to save power. https://goo.gl/LdLk22
+
+
+
+
+
 sasmsung s25 ultra 
 chrome WORK
 
