@@ -80823,13 +80823,14 @@ var loadSlot = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, async () => {
-    let laser2, floor2, cam2, introPath, spinSpeed = 16;
+    let laser2, floor2, cam2, introPath, spinSpeed = 16, delayReel = 60;
     if (urlQuery["reelSpeed"]) {
       console.log("COnfiguration for graphics : reelSpeed", urlQuery["reelSpeed"]);
       spinSpeed = urlQuery["reelSpeed"];
     }
-    if (urlQuery["spinningInterval"]) {
-      console.log("COnfiguration for graphics : spinningInterval", spinningInterval);
+    if (urlQuery["delayReel"]) {
+      console.log("COnfiguration for graphics : delayReel", delayReel);
+      delayReel = urlQuery["delayReel"];
     }
     if (urlQuery["effectType"]) {
       console.log("COnfiguration for graphics : effectType", effectType);
@@ -81023,7 +81024,7 @@ var loadSlot = function() {
           spinSpeed
         }
       ));
-      for (const v2 of views) await v2.layout(60);
+      for (const v2 of views) await v2.layout(delayReel);
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
       FX_MESH.effects.circle.instanceTargets[0].isDyrty = true;

@@ -69,7 +69,7 @@ export var loadSlot = function() {
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
   }, async () => {
 
-    let laser, floor, cam, introPath, spinSpeed = 16;
+    let laser, floor, cam, introPath, spinSpeed = 16, delayReel= 60;
 
     // spinSpeed
     if(urlQuery['reelSpeed']) {
@@ -78,11 +78,13 @@ export var loadSlot = function() {
     }
 
     
-    if(urlQuery['spinningInterval']) {
-      console.log('COnfiguration for graphics : spinningInterval', spinningInterval)
+    if(urlQuery['delayReel']) {
+      console.log('COnfiguration for graphics : delayReel', delayReel)
+      delayReel = urlQuery['delayReel'];
     }
     
     if(urlQuery['effectType']) {
+      // not in use for now
       console.log('COnfiguration for graphics : effectType', effectType)
     }
 
@@ -308,7 +310,7 @@ export var loadSlot = function() {
           spinSpeed: spinSpeed
         }
       ));
-      for(const v of views) await v.layout(60);
+      for(const v of views) await v.layout(delayReel);
 
       FX_MESH.effects.circle.updateInstanceCount(8);
       new InstancedKinematicOperations(FX_MESH.effects.circle.instanceTargets).orbit();
