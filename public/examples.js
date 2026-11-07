@@ -15223,6 +15223,7 @@ var CinematicCamera = class _CinematicCamera {
     this._onEnd = options2.onEnd ?? null;
     this._t = options2.startT ?? 0;
     this._playing = true;
+    this._dirtyAngle = true;
     return this;
   };
   pause = () => {
@@ -15231,6 +15232,7 @@ var CinematicCamera = class _CinematicCamera {
   };
   resume = () => {
     this._playing = true;
+    this._dirtyAngle = true;
     return this;
   };
   seekT = (t3) => {
@@ -81019,12 +81021,6 @@ var loadSlot = function() {
       slotMachine.getSceneObjectByName("sky").setAmbient(21, 0.5, 1);
       reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
       slotMachine.demoBalanceText = "Demo balance: 100";
-      const pulsingPath = new CameraPath([
-        { position: [0, 13, -45], target: [0, 12, 0] },
-        { position: [0, 10, -5], target: [0, 22, 10] },
-        { position: [0, 13, -35], target: [0, 12, 5] },
-        { position: [0, 13, -45], target: [0, 12, 0] }
-      ], { parameterization: "arc" });
       const game = new SlotGame(slot, views, {
         lineBet: 5,
         demoBalance: 100,
@@ -81035,9 +81031,15 @@ var loadSlot = function() {
         },
         // chatgpt SUGGESTION END
         onPresentWin: async (res) => {
+          const pulsingPath = new CameraPath([
+            { position: [0, 13, -45], target: [0, 12, 0] },
+            { position: [0, 10, -5], target: [0, 22, 10] },
+            { position: [0, 13, -35], target: [0, 12, 5] },
+            { position: [0, 13, -45], target: [0, 12, 0] }
+          ], { parameterization: "arc" });
           console.log("on win res pulsingPath", pulsingPath);
-          cam2.setPath(pulsingPath).play({
-            speed: 0.5,
+          app.getCamera().setPath(pulsingPath).play({
+            speed: 1,
             onEnd: () => console.log("done!!!!!")
           });
           console.log("on win res", res);

@@ -308,12 +308,7 @@ export var loadSlot = function() {
       // Free-play defaults: 1000 demo units, 1 unit stake per local spin.
       slotMachine.demoBalanceText = 'Demo balance: 100';
 
-      const pulsingPath = new CameraPath([
-        {position: [0, 13, -45], target: [0, 12, 0]},
-        {position: [0, 10, -5], target: [0, 22, 10]},
-        {position: [0, 13, -35], target: [0, 12, 5]},
-        {position: [0, 13, -45], target: [0, 12, 0]},
-      ], {parameterization: 'timed'});
+
 
       const game = new SlotGame(slot, views, {
         lineBet: 5,
@@ -326,9 +321,18 @@ export var loadSlot = function() {
         // chatgpt SUGGESTION END
         onPresentWin: async res => {
           //
-          console.log('on win res pulsingPath', pulsingPath)
-          cam.setPath(pulsingPath).play({
-            speed: 0.5,
+     
+
+          const pulsingPath = new CameraPath([
+            {position: [0, 13, -45], target: [0, 12, 0]},
+            {position: [0, 10, -5], target: [0, 22, 10]},
+            {position: [0, 13, -35], target: [0, 12, 5]},
+            {position: [0, 13, -45], target: [0, 12, 0]},
+          ], {parameterization: 'arc'});
+               console.log('on win res pulsingPath', pulsingPath)
+
+          app.getCamera().setPath(pulsingPath).play({
+            speed: 1,
             onEnd: () => console.log('done!!!!!'),
           });
           console.log('on win res', res)
