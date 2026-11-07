@@ -6,6 +6,7 @@
   "scripts": {
     "examples": "esbuild examples.js --bundle --outfile=public/examples.js --format=esm --watch",
     "build:examples": "esbuild examples.js --bundle --minify --sourcemap --drop:console --target=es2022 --format=esm --outfile=public/examples.js && cp public/examples.html public/index.html",
+    "build:examples:logs": "esbuild examples.js --bundle --minify --sourcemap --target=es2022 --format=esm --outfile=public/examples.js && cp public/examples.html public/index.html",
     "android-tv-cast": "esbuild android-tv-cast.js --bundle --outfile=public/android-tv-cast.js --format=esm --watch",
     "jamb": "esbuild ./examples/games/jamb/jamb.js --bundle --outfile=public/yacht.js --format=esm --watch",
     "demo1": "esbuild demo1.js --bundle --outfile=public/app.js --format=esm --watch",

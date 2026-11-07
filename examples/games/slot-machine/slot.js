@@ -71,8 +71,8 @@ export var loadSlot = function() {
 
     let laser, floor, cam, introPath;
 
-    if(urlQuery['fs'] === '333') {
-      // alert('works')
+    if(urlQuery['reelSpeed']) {
+      console.log('COnfiguration for graphics : reelSpeed', reelSpeed)
     }
 
     const raw = await fetchSlotConfig(baseUrl, machineId);
