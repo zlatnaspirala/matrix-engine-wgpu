@@ -51,12 +51,17 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   const radius = 5.6;
   reelCfg.strip.forEach((id, index) => {
     const angle = (index / count) * Math.PI * 2;
+    // chatgpt SUGGESTION START
+    // Apply the requested idle tint to every physical symbol as it is created.
     batch.createSprite(`symbol-${index}`, id, {
       currentFrame: 0,
       autoPlay: false,
       scale: 1,
+      tint: [1, 1, 11],
+      tintStrength: 11.4,
       localOffset: [Math.cos(angle) * radius, Math.sin(angle) * radius, 0]
     });
+    // chatgpt SUGGESTION END
   });
 
   if(!mesh.effects) mesh.effects = {};
