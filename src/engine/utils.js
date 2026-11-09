@@ -1072,3 +1072,16 @@ export function distance3D(a, b) {
   const dz = a.z - b.z;
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
+
+export async function loadTextureView(device, url) {
+  const bmp = await createImageBitmap(await (await fetch(url)).blob());
+  const tex = device.createTexture({
+    size: [bmp.width, bmp.height],
+    format: 'rgba8unorm',
+    usage: GPUTextureUsage.TEXTURE_BINDING |
+           GPUTextureUsage.COPY_DST |
+           GPUTextureUsage.RENDER_ATTACHMENT, // required by copyExternalImageToTexture
+  });
+  device.queue.copyExternalImageToTexture({source: bmp}, {texture: tex}, [bmp.width, bmp.height]);
+  return tex.createView();
+}

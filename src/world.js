@@ -347,7 +347,7 @@ export default class MatrixEngineWGPU {
     if(MEConfig.SINGLE_CAMERA == true) {
       if('firstPersonCamera' == this.options.mainCameraParams.type) {
         this.cameras = {
-          firstPersonCamera: new FirstPersonCamera({ usePointerEvents: this.options.mainCameraParams.usePointerEvents,  position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
+          firstPersonCamera: new FirstPersonCamera({usePointerEvents: this.options.mainCameraParams.usePointerEvents, position: initialCameraPosition, canvas: canvas, pitch: 0.18, yaw: -0.1, isActive: 'firstPersonCamera' == this.options.mainCameraParams.type ? 'init active cam' : null}),
         };
       } else if('WASD' == this.options.mainCameraParams.type) {
         this.cameras = {
@@ -1750,7 +1750,7 @@ export default class MatrixEngineWGPU {
         steps: 32,
         scatterStrength: 1.2,
         heightFalloff: 0.08,
-        lightColor: [1.0, 0.88, 0.65],
+        lightColor: [1.0, 1.0, 1.0],
       }
     } else {p = arg}
     if(this.volumetricPass.enabled != true) {

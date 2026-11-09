@@ -1,7 +1,7 @@
 import MatrixEngineWGPU from "../src/world.js";
 import {downloadMeshes} from '../src/engine/loader-obj.js';
 import {uploadGLBModel} from "../src/engine/loaders/webgpu-gltf.js";
-import {getOrientation, isMobile, OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
+import {getOrientation, isMobile, loadTextureView, OSCILLATOR, randomIntFromTo} from "../src/engine/utils.js";
 import {followPath, loadNavMesh} from "../src/engine/buildin/navigation-plane/navigation.js";
 import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {MobileDOM} from "../src/engine/cameras.js";
@@ -105,7 +105,7 @@ export var volumetrixTexProj = function() {
 
     let monster = null;
 
-    setTimeout(() => {
+    setTimeout(async() => {
       monster = app.getSceneObjectByName('monster_MutantMesh');
       monster.sharedBones = false;
       monster.updateMaxInstances(isMobile() === true ? 50 : 100);
@@ -121,13 +121,31 @@ export var volumetrixTexProj = function() {
       app.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
 
 
-      app.activateVolumetricEffect({
-        density: 20,
-        steps: 128,
-        scatterStrength: 0.3,
-        heightFalloff: 0.5,
-        lightColor: [250, 20, 6]
-      })
+      // app.activateVolumetricEffect({
+      //   density: 20,
+      //   steps: 128,
+      //   scatterStrength: 0.3,
+      //   heightFalloff: 0.5,
+      //   lightColor: [250, 20, 6]
+      // })
+      app.TEST_activateVolumetricEffect({
+        density: 0.03,
+        steps: 32,
+        scatterStrength: 1.2,
+        heightFalloff: 0.08,
+        lightColor: [1.0, 1.0, 1.0]}
+      );
+
+      app.volumetricPass.setDensity(34);
+
+      const view = await loadTextureView(app.device, 'res/textures/shooter/hang3d.png');
+      app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
+      app.volumetricPass.setTextureProjectionIntensity(111.0); // 0..2
+      // app.volumetricPass.disableTextureProjection();
+
+
+
+
 
       app.monster.playAnimationByIndex(3);
 
