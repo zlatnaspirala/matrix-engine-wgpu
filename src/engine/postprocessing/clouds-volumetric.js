@@ -47,8 +47,8 @@ export class CloudsVolumetric {
     this.width = width;
     this.height = height;
     this.enabled = options.enabled ?? true;
-    this.qualityScale = Math.max(0.2, Math.min(1, options.qualityScale ?? (this.isMobile ? 0.25 : 0.35)));
     this.isMobile = this._detectMobile();
+    this.qualityScale = Math.max(0.2, Math.min(1, options.qualityScale ?? (this.isMobile ? 0.25 : 0.35)));
     this.params = {
       coverage: options.coverage ?? 0.58,
       density: options.density ?? 1.15,
