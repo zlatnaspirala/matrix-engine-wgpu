@@ -56,14 +56,14 @@ export class CloudsVolumetric {
       cloudTop: options.cloudTop ?? 58,
       noiseScale: options.noiseScale ?? 0.018,
       windSpeed: options.windSpeed ?? 0.8,
-      steps: options.steps ?? (this.isMobile ? 20 : 32),
+      steps: Math.max(8, Math.min(64, Math.round(options.steps ?? (this.isMobile ? 20 : 32)))),
       scattering: options.scattering ?? 1.25,
     };
     this.sunDirection = new Float32Array(options.sunDirection ?? [-0.45, 0.8, -0.3]);
     this.sunColor = new Float32Array(options.sunColor ?? [1.0, 0.91, 0.76]);
     this._time = 0;
+    this._manualTime = null;
     this._scratch = new Float32Array(16);
-    this._matrixScratch = new Float32Array(16);
     this._computeSize();
 
     this.sampler = device.createSampler({
@@ -296,6 +296,7 @@ export class CloudsVolumetric {
   }
 
   setTime(seconds) {
+    this._manualTime = seconds;
     this._time = seconds;
     this._updateParams();
     return this;
@@ -322,7 +323,11 @@ export class CloudsVolumetric {
     this.device.queue.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
     if(light?.direction) this.setSunDirection(...light.direction);
     if(light?.color) this.setSunColor(...light.color);
-    this._time = (typeof performance !== 'undefined' ? performance.now() : Date.now()) * 0.001;
+    if(this._manualTime === null) {
+      this._time = (typeof performance !== 'undefined' ? performance.now() : Date.now()) * 0.001;
+    } else {
+      this._time = this._manualTime;
+    }
     this._updateParams();
 
     if(!this._marchBG || !this._compositeBG) {
