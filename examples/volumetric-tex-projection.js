@@ -105,7 +105,7 @@ export var volumetrixTexProj = function() {
 
     let monster = null;
 
-    setTimeout(async() => {
+    setTimeout(async () => {
       monster = app.getSceneObjectByName('monster_MutantMesh');
       monster.sharedBones = false;
       monster.updateMaxInstances(isMobile() === true ? 50 : 100);
@@ -128,24 +128,31 @@ export var volumetrixTexProj = function() {
       //   heightFalloff: 0.5,
       //   lightColor: [250, 20, 6]
       // })
-      app.TEST_activateVolumetricEffect({
-        density: 0.03,
-        steps: 32,
+      // app.activateVolumetricEffectTexProj({
+      //   density: 0.03,
+      //   steps: 32,
+      //   scatterStrength: 1.2,
+      //   heightFalloff: 0.08,
+      //   lightColor: [1.0, 1.0, 1.0]}
+      // );
+
+      app.activateVolumetricClouds({
+        qualityScale: 0.35,
+        steps: 24,
+        coverage: 0.58,
+        cloudBase: 44,
+        cloudTop: 28,
+        noiseScale: 0.035,
+        windSpeed: 0.8,
         scatterStrength: 1.2,
-        heightFalloff: 0.08,
-        lightColor: [1.0, 1.0, 1.0]}
-      );
+      })
 
       app.volumetricPass.setDensity(34);
 
-      const view = await loadTextureView(app.device, 'res/textures/shooter/hang3d.png');
-      app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
-      app.volumetricPass.setTextureProjectionIntensity(111.0); // 0..2
+      // const view = await loadTextureView(app.device, 'res/textures/shooter/hang3d.png');
+      // app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
+      // app.volumetricPass.setTextureProjectionIntensity(111.0); // 0..2
       // app.volumetricPass.disableTextureProjection();
-
-
-
-
 
       app.monster.playAnimationByIndex(3);
 

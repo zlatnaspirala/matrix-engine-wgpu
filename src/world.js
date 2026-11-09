@@ -37,6 +37,7 @@ import {GPUCapabilities} from "./engine/GPUCapabilities.js";
 import {ComputeCullingSystem, IndirectRenderingManager} from "./engine/indirect-core.js";
 import {GPUIndirectDraws} from "./engine/overrides/GPUCulling.js";
 import {AdvancedVolumetricPass} from "./engine/postprocessing/volumetric-advanced.js";
+import {CloudsVolumetric} from "./engine/postprocessing/clouds-volumetric.js";
 
 /**
  *
@@ -1741,7 +1742,7 @@ export default class MatrixEngineWGPU {
     }
   }
 
-  TEST_activateVolumetricEffect = (arg) => {
+  activateVolumetricEffectTexProj = (arg) => {
     if(this.bloomPass.enabled != true) {console.warn(`%cTheBeast: You must enable bloom before volumetric.`); return;}
     let p;
     if(typeof arg === 'undefined') {
@@ -1759,4 +1760,26 @@ export default class MatrixEngineWGPU {
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
   }
+
+  activateVolumetricClouds = (arg) => {
+    if(this.bloomPass.enabled !== true) {
+      console.warn('%cTheBeast: You must enable bloom before volumetric clouds.'); return;
+    }
+    const p = {
+      qualityScale: 0.35,
+      steps: 24,
+      coverage: 0.58,
+      cloudBase: 24,
+      cloudTop: 58,
+      noiseScale: 0.035,
+      windSpeed: 0.8,
+      scatterStrength: 1.2,
+      // User overrides
+      ...(arg || {})
+    };
+    if(this.volumetricPass?.enabled === true) {return;}
+    this.volumetricPass = new CloudsVolumetric(this.canvas.width, this.canvas.height, this.device, p);
+    this.volumetricPass.enabled = true;
+    this.bloomPass._invalidateSceneBindGroups( this.volumetricPass.getOutputView());
+  };
 }

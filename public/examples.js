@@ -11598,17 +11598,6 @@ var CameraPath = class _CameraPath {
     return 1;
   }
 };
-async function loadTextureView(device2, url) {
-  const bmp = await createImageBitmap(await (await fetch(url)).blob());
-  const tex = device2.createTexture({
-    size: [bmp.width, bmp.height],
-    format: "rgba8unorm",
-    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-    // required by copyExternalImageToTexture
-  });
-  device2.queue.copyExternalImageToTexture({ source: bmp }, { texture: tex }, [bmp.width, bmp.height]);
-  return tex.createView();
-}
 
 // src/me-config.js
 window.urlQ = urlQuery;
@@ -53764,6 +53753,471 @@ function advancedCompositeFragWGSL() {
   );
 }
 
+// src/engine/postprocessing/clouds-volumetric.js
+var CLOUD_PARAMS_WGSL = `
+struct CloudParams {
+  // coverage, density, cloudBase, cloudTop
+  shape: vec4<f32>,
+  // noiseScale, windSpeed, time, raySteps
+  motion: vec4<f32>,
+  // sunDirection.xyz, scattering strength
+  lighting: vec4<f32>,
+  // targetWidth, targetHeight, qualityScale, phase
+  render: vec4<f32>,
+};
+`;
+var CloudsVolumetric = class {
+  constructor(width, height, device2, options2 = {}, sceneView = null) {
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.enabled = options2.enabled ?? true;
+    this.isMobile = this._detectMobile();
+    this.qualityScale = Math.max(0.2, Math.min(1, options2.qualityScale ?? (this.isMobile ? 0.25 : 0.35)));
+    this.params = {
+      coverage: options2.coverage ?? 0.58,
+      density: options2.density ?? 1.15,
+      cloudBase: options2.cloudBase ?? 24,
+      cloudTop: options2.cloudTop ?? 58,
+      noiseScale: options2.noiseScale ?? 0.018,
+      windSpeed: options2.windSpeed ?? 0.8,
+      steps: Math.max(8, Math.min(64, Math.round(options2.steps ?? (this.isMobile ? 16 : 24)))),
+      scattering: options2.scattering ?? 1.25
+    };
+    this.sunDirection = new Float32Array(options2.sunDirection ?? [-0.45, 0.8, -0.3]);
+    this.sunColor = new Float32Array(options2.sunColor ?? [1, 0.91, 0.76]);
+    this._time = 0;
+    this._manualTime = null;
+    this._scratch = new Float32Array(16);
+    this._computeSize();
+    this.sampler = device2.createSampler({
+      label: "CloudsVolumetric.linearSampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "clamp-to-edge",
+      addressModeV: "clamp-to-edge"
+    });
+    this.paramsBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.params",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.invViewProjBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.invViewProjection",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.sunColorBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.sunColor",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._passDesc = {
+      label: "CloudsVolumetric.pass",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    };
+    this._allocTextures();
+    this.marchPipeline = this._createMarchPipeline();
+    this.compositePipeline = this._createCompositePipeline();
+    this._sceneView = null;
+    this._depthView = null;
+    this._marchBG = null;
+    this._compositeBG = null;
+    this._updateParams();
+    this._updateSunColor();
+    if (sceneView) this.setCompositeInput(sceneView);
+  }
+  _detectMobile() {
+    if (typeof navigator === "undefined") return false;
+    return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "");
+  }
+  _computeSize() {
+    this.renderWidth = Math.max(1, Math.ceil(this.width * this.qualityScale));
+    this.renderHeight = Math.max(1, Math.ceil(this.height * this.qualityScale));
+  }
+  _createTexture(width, height, label) {
+    return this.device.createTexture({
+      label,
+      size: [width, height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _allocTextures() {
+    this.cloudTexture = this._createTexture(this.renderWidth, this.renderHeight, "CloudsVolumetric.lowRes");
+    this.cloudView = this.cloudTexture.createView();
+    this.outputTexture = this._createTexture(this.width, this.height, "CloudsVolumetric.composite");
+    this.outputView = this.outputTexture.createView();
+  }
+  _freeTextures() {
+    this.cloudTexture?.destroy();
+    this.outputTexture?.destroy();
+  }
+  _createFullscreenPipeline(label, fragmentCode, entries) {
+    const bgl = this.device.createBindGroupLayout({ label: `CloudsVolumetric.${label}.BGL`, entries });
+    return this.device.createRenderPipeline({
+      label: `CloudsVolumetric.${label}`,
+      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bgl] }),
+      vertex: {
+        module: this.device.createShaderModule({ code: cloudsFullscreenVertexWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({ code: fragmentCode }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  _createMarchPipeline() {
+    const F2 = GPUShaderStage.FRAGMENT;
+    return this._createFullscreenPipeline("marchPipeline", cloudsMarchFragmentWGSL(), [
+      { binding: 0, visibility: F2, texture: { sampleType: "depth" } },
+      { binding: 1, visibility: F2, buffer: { type: "uniform" } },
+      { binding: 2, visibility: F2, buffer: { type: "uniform" } },
+      { binding: 3, visibility: F2, buffer: { type: "uniform" } }
+    ]);
+  }
+  _createCompositePipeline() {
+    const F2 = GPUShaderStage.FRAGMENT;
+    return this._createFullscreenPipeline("compositePipeline", cloudsCompositeFragmentWGSL(), [
+      { binding: 0, visibility: F2, texture: { sampleType: "float" } },
+      { binding: 1, visibility: F2, texture: { sampleType: "float" } },
+      { binding: 2, visibility: F2, sampler: { type: "filtering" } }
+    ]);
+  }
+  _updateParams() {
+    const p2 = this._scratch;
+    p2[0] = this.params.coverage;
+    p2[1] = this.params.density;
+    p2[2] = this.params.cloudBase;
+    p2[3] = Math.max(this.params.cloudBase + 0.1, this.params.cloudTop);
+    p2[4] = this.params.noiseScale;
+    p2[5] = this.params.windSpeed;
+    p2[6] = this._time;
+    p2[7] = this.params.steps;
+    p2[8] = this.sunDirection[0];
+    p2[9] = this.sunDirection[1];
+    p2[10] = this.sunDirection[2];
+    p2[11] = this.params.scattering;
+    p2[12] = this.renderWidth;
+    p2[13] = this.renderHeight;
+    p2[14] = this.qualityScale;
+    p2[15] = 0;
+    this.device.queue.writeBuffer(this.paramsBuffer, 0, p2);
+  }
+  _updateSunColor() {
+    this.device.queue.writeBuffer(
+      this.sunColorBuffer,
+      0,
+      new Float32Array([this.sunColor[0], this.sunColor[1], this.sunColor[2], 0])
+    );
+  }
+  _buildBindGroups(sceneView, depthView) {
+    if (depthView && (depthView !== this._depthView || !this._marchBG)) {
+      this._depthView = depthView;
+      this._marchBG = this.device.createBindGroup({
+        layout: this.marchPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: depthView },
+          { binding: 1, resource: { buffer: this.invViewProjBuffer } },
+          { binding: 2, resource: { buffer: this.paramsBuffer } },
+          { binding: 3, resource: { buffer: this.sunColorBuffer } }
+        ]
+      });
+    }
+    if (sceneView && (sceneView !== this._sceneView || !this._compositeBG)) {
+      this._sceneView = sceneView;
+      this._compositeBG = this.device.createBindGroup({
+        layout: this.compositePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sceneView },
+          { binding: 1, resource: this.cloudView },
+          { binding: 2, resource: this.sampler }
+        ]
+      });
+    }
+  }
+  setCompositeInput(sceneView) {
+    this._buildBindGroups(sceneView, null);
+    return this;
+  }
+  setCoverage(value) {
+    this.params.coverage = Math.max(0, Math.min(1, value));
+    this._updateParams();
+    return this;
+  }
+  setDensity(value) {
+    this.params.density = Math.max(0, value);
+    this._updateParams();
+    return this;
+  }
+  setCloudLayer(base, top) {
+    this.params.cloudBase = base;
+    this.params.cloudTop = Math.max(base + 0.1, top);
+    this._updateParams();
+    return this;
+  }
+  setNoiseScale(value) {
+    this.params.noiseScale = Math.max(1e-3, value);
+    this._updateParams();
+    return this;
+  }
+  setWindSpeed(value) {
+    this.params.windSpeed = value;
+    this._updateParams();
+    return this;
+  }
+  setSteps(value) {
+    this.params.steps = Math.max(8, Math.min(64, Math.round(value)));
+    this._updateParams();
+    return this;
+  }
+  setScattering(value) {
+    this.params.scattering = Math.max(0, value);
+    this._updateParams();
+    return this;
+  }
+  setSunDirection(x3, y3, z2) {
+    const len2 = Math.hypot(x3, y3, z2) || 1;
+    this.sunDirection[0] = x3 / len2;
+    this.sunDirection[1] = y3 / len2;
+    this.sunDirection[2] = z2 / len2;
+    this._updateParams();
+    return this;
+  }
+  setSunColor(r3, g2, b2) {
+    this.sunColor.set([r3, g2, b2]);
+    this._updateSunColor();
+    return this;
+  }
+  setTime(seconds) {
+    this._manualTime = seconds;
+    this._time = seconds;
+    this._updateParams();
+    return this;
+  }
+  setQualityScale(scale4) {
+    this.qualityScale = Math.max(0.2, Math.min(1, scale4));
+    this.resize(this.width, this.height);
+    return this;
+  }
+  getOutputView() {
+    return this.outputView;
+  }
+  render(encoder, sceneView, depthView, camera, light = null) {
+    if (!this.enabled) return this.outputView;
+    if (!camera?.invViewProjectionMatrix) {
+      throw new Error("CloudsVolumetric.render requires camera.invViewProjectionMatrix");
+    }
+    if (sceneView) this._buildBindGroups(sceneView, null);
+    this._buildBindGroups(null, depthView);
+    this.device.queue.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
+    if (light?.direction) this.setSunDirection(...light.direction);
+    if (light?.color) this.setSunColor(...light.color);
+    if (this._manualTime === null) {
+      this._time = (typeof performance !== "undefined" ? performance.now() : Date.now()) * 1e-3;
+    } else {
+      this._time = this._manualTime;
+    }
+    this._updateParams();
+    if (!this._marchBG || !this._compositeBG) {
+      throw new Error("CloudsVolumetric needs sceneView and depthView bind groups before rendering");
+    }
+    this._passDesc.label = "CloudsVolumetric.march";
+    this._passDesc.colorAttachments[0].view = this.cloudView;
+    let pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.marchPipeline);
+    pass.setBindGroup(0, this._marchBG);
+    pass.draw(6);
+    pass.end();
+    this._passDesc.label = "CloudsVolumetric.composite";
+    this._passDesc.colorAttachments[0].view = this.outputView;
+    pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.compositePipeline);
+    pass.setBindGroup(0, this._compositeBG);
+    pass.draw(6);
+    pass.end();
+    return this.outputView;
+  }
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this._computeSize();
+    this._freeTextures();
+    this._allocTextures();
+    this._sceneView = null;
+    this._depthView = null;
+    this._marchBG = null;
+    this._compositeBG = null;
+    this._updateParams();
+    return this;
+  }
+  destroy() {
+    this._freeTextures();
+    this.paramsBuffer?.destroy();
+    this.invViewProjBuffer?.destroy();
+    this.sunColorBuffer?.destroy();
+  }
+};
+function cloudsFullscreenVertexWGSL() {
+  return `
+    @vertex
+    fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+        vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `;
+}
+function cloudsMarchFragmentWGSL() {
+  return `
+  ${CLOUD_PARAMS_WGSL}
+  @group(0) @binding(0) var depthTex: texture_depth_2d;
+  @group(0) @binding(1) var<uniform> invViewProj: mat4x4<f32>;
+  @group(0) @binding(2) var<uniform> params: CloudParams;
+  @group(0) @binding(3) var<uniform> sunColor: vec4<f32>;
+
+  fn worldFromDepth(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+    let ndc = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+    let world = invViewProj * ndc;
+    return world.xyz / max(abs(world.w), 0.000001) * sign(world.w);
+  }
+
+  fn hash31(p: vec3<f32>) -> f32 {
+    var q = fract(p * 0.1031);
+    q = q + vec3<f32>(dot(q, q.yzx + vec3<f32>(33.33)));
+    return fract((q.x + q.y) * q.z);
+  }
+
+  fn noise3(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (vec3<f32>(3.0) - 2.0 * f);
+    let a = hash31(i);
+    let b = hash31(i + vec3<f32>(1.0, 0.0, 0.0));
+    let c = hash31(i + vec3<f32>(0.0, 1.0, 0.0));
+    let d = hash31(i + vec3<f32>(1.0, 1.0, 0.0));
+    let e = hash31(i + vec3<f32>(0.0, 0.0, 1.0));
+    let f1 = hash31(i + vec3<f32>(1.0, 0.0, 1.0));
+    let g = hash31(i + vec3<f32>(0.0, 1.0, 1.0));
+    let h = hash31(i + vec3<f32>(1.0, 1.0, 1.0));
+    let x00 = mix(a, b, u.x);
+    let x10 = mix(c, d, u.x);
+    let x01 = mix(e, f1, u.x);
+    let x11 = mix(g, h, u.x);
+    return mix(mix(x00, x10, u.y), mix(x01, x11, u.y), u.z);
+  }
+
+  fn cloudNoise(p: vec3<f32>) -> f32 {
+    let coarse = noise3(p) * 0.68;
+    let detail = noise3(p * 2.03 + vec3<f32>(17.1, 9.2, 13.7)) * 0.32;
+    return coarse + detail;
+  }
+
+  fn cloudWindOffset() -> vec3<f32> {
+    return vec3<f32>(params.motion.y * params.motion.z, 0.0, params.motion.y * params.motion.z * 0.37);
+  }
+
+  fn cloudVerticalProfile(worldPos: vec3<f32>) -> f32 {
+    let layerHeight = params.shape.w - params.shape.z;
+    let h = clamp((worldPos.y - params.shape.z) / max(layerHeight, 0.001), 0.0, 1.0);
+    return smoothstep(0.0, 0.13, h) * (1.0 - smoothstep(0.72, 1.0, h));
+  }
+
+  fn densityAt(worldPos: vec3<f32>) -> f32 {
+    let p = worldPos * params.motion.x + cloudWindOffset();
+    let n = cloudNoise(p);
+    let broad = smoothstep(0.46 - params.shape.x * 0.34, 0.80, n);
+    return max(0.0, broad * cloudVerticalProfile(worldPos) * params.shape.y);
+  }
+
+  // Lower-cost coarse density for the two-point light transmittance estimate.
+  fn shadowDensityAt(worldPos: vec3<f32>) -> f32 {
+    let p = worldPos * (params.motion.x * 0.72) + cloudWindOffset();
+    let n = noise3(p);
+    let broad = smoothstep(0.43 - params.shape.x * 0.28, 0.78, n);
+    return broad * cloudVerticalProfile(worldPos) * params.shape.y;
+  }
+
+  fn intersectCloudLayer(ro: vec3<f32>, rd: vec3<f32>, maxDistance: f32) -> vec2<f32> {
+    if(abs(rd.y) < 0.0001) {
+      if(ro.y < params.shape.z || ro.y > params.shape.w) { return vec2<f32>(1.0, 0.0); }
+      return vec2<f32>(0.0, maxDistance);
+    }
+    let a = (params.shape.z - ro.y) / rd.y;
+    let b = (params.shape.w - ro.y) / rd.y;
+    let nearT = max(0.0, min(a, b));
+    let farT = min(maxDistance, max(a, b));
+    return vec2<f32>(nearT, max(0.0, farT - nearT));
+  }
+
+  @fragment
+  fn main(@builtin(position) pixel: vec4<f32>) -> @location(0) vec4<f32> {
+    let uv = pixel.xy / params.render.xy;
+    let depthSize = vec2<f32>(textureDimensions(depthTex));
+    let depthPx = vec2<i32>(clamp(uv * depthSize, vec2<f32>(0.0), depthSize - vec2<f32>(1.0)));
+    let sceneDepth = textureLoad(depthTex, depthPx, 0);
+    let nearPos = worldFromDepth(uv, 0.0);
+    let scenePos = worldFromDepth(uv, sceneDepth);
+    let rayVector = scenePos - nearPos;
+    let rayLength = length(rayVector);
+    let rayDir = normalize(rayVector);
+    let hit = intersectCloudLayer(nearPos, rayDir, rayLength);
+    if(hit.y <= 0.001) { return vec4<f32>(0.0); }
+
+    let stepLength = hit.y / max(params.motion.w, 8.0);
+    let jitter = fract(sin(dot(pixel.xy, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    var transmittance = 1.0;
+    var radiance = vec3<f32>(0.0);
+    for(var i = 0; i < i32(params.motion.w); i++) {
+      let t = hit.x + (f32(i) + jitter) * stepLength;
+      let p = nearPos + rayDir * t;
+      let density = densityAt(p);
+      if(density > 0.001) {
+        let opticalDepth = density * stepLength * 0.035;
+        let attenuation = exp(-opticalDepth);
+        let sunDir = normalize(params.lighting.xyz);
+        var lightTrans = 1.0;
+        let lightP = p + sunDir * 4.5;
+        lightTrans = exp(-shadowDensityAt(lightP) * 0.22);
+        let phase = 0.35 + 0.65 * pow(max(dot(rayDir, sunDir), 0.0), 4.0);
+        let powder = 1.0 - exp(-opticalDepth * 2.0);
+        let light = sunColor.rgb * params.lighting.w * lightTrans * phase;
+        radiance += transmittance * (1.0 - attenuation) * (light + vec3<f32>(0.34, 0.39, 0.48) * powder);
+        transmittance *= attenuation;
+      }
+      if(transmittance < 0.025) { break; }
+    }
+    return vec4<f32>(radiance, 1.0 - transmittance);
+  }
+  `;
+}
+function cloudsCompositeFragmentWGSL() {
+  return `
+  @group(0) @binding(0) var sceneTex: texture_2d<f32>;
+  @group(0) @binding(1) var cloudTex: texture_2d<f32>;
+  @group(0) @binding(2) var samp: sampler;
+
+  @fragment
+  fn main(@builtin(position) pixel: vec4<f32>) -> @location(0) vec4<f32> {
+    let uv = pixel.xy / vec2<f32>(textureDimensions(sceneTex));
+    let scene = textureSample(sceneTex, samp, uv);
+    let clouds = textureSample(cloudTex, samp, uv);
+    let color = scene.rgb * (1.0 - clouds.a) + clouds.rgb;
+    return vec4<f32>(color, scene.a);
+  }
+  `;
+}
+
 // src/world.js
 var APP_READY = false;
 if (MEConfig.CACHE !== true && location.hostname != "localhost") {
@@ -55466,7 +55920,7 @@ var MatrixEngineWGPU = class {
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
   };
-  TEST_activateVolumetricEffect = (arg) => {
+  activateVolumetricEffectTexProj = (arg) => {
     if (this.bloomPass.enabled != true) {
       console.warn(`%cTheBeast: You must enable bloom before volumetric.`);
       return;
@@ -55488,6 +55942,30 @@ var MatrixEngineWGPU = class {
       this.volumetricPass.enabled = true;
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
+  };
+  activateVolumetricClouds = (arg) => {
+    if (this.bloomPass.enabled !== true) {
+      console.warn("%cTheBeast: You must enable bloom before volumetric clouds.");
+      return;
+    }
+    const p2 = {
+      qualityScale: 0.35,
+      steps: 24,
+      coverage: 0.58,
+      cloudBase: 24,
+      cloudTop: 58,
+      noiseScale: 0.035,
+      windSpeed: 0.8,
+      scatterStrength: 1.2,
+      // User overrides
+      ...arg || {}
+    };
+    if (this.volumetricPass?.enabled === true) {
+      return;
+    }
+    this.volumetricPass = new CloudsVolumetric(this.canvas.width, this.canvas.height, this.device, p2);
+    this.volumetricPass.enabled = true;
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
   };
 };
 
@@ -81310,19 +81788,17 @@ var volumetrixTexProj = function() {
       app2.cameras.WASD.setYaw(0);
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
-      app2.TEST_activateVolumetricEffect(
-        {
-          density: 0.03,
-          steps: 32,
-          scatterStrength: 1.2,
-          heightFalloff: 0.08,
-          lightColor: [1, 1, 1]
-        }
-      );
+      app2.activateVolumetricClouds({
+        qualityScale: 0.35,
+        steps: 24,
+        coverage: 0.58,
+        cloudBase: 44,
+        cloudTop: 28,
+        noiseScale: 0.035,
+        windSpeed: 0.8,
+        scatterStrength: 1.2
+      });
       app2.volumetricPass.setDensity(34);
-      const view = await loadTextureView(app2.device, "res/textures/shooter/hang3d.png");
-      app2.volumetricPass.setProjectionTexture(view, app2.lightContainer[0].viewProjMatrix);
-      app2.volumetricPass.setTextureProjectionIntensity(111);
       app2.monster.playAnimationByIndex(3);
       app2.monster.position.onPositionReach = () => {
         app2.monster.playAnimationByIndex(3);
