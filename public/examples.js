@@ -54011,7 +54011,8 @@ var CloudsVolumetric = class {
   getOutputView() {
     return this.outputView;
   }
-  render(encoder, sceneView, depthView, camera, light = null) {
+  //   render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
+  render(encoder, sceneView, depthView, shadowArrayView = null, camera, light = null) {
     if (!this.enabled) return this.outputView;
     if (!camera?.invViewProjectionMatrix) {
       throw new Error("CloudsVolumetric.render requires camera.invViewProjectionMatrix");
