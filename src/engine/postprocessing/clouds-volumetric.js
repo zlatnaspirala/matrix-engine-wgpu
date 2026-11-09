@@ -431,16 +431,30 @@ function cloudsMarchFragmentWGSL() {
     return sum / 1.0;
   }
 
-  fn densityAt(worldPos: vec3<f32>) -> f32 {
+  fn cloudWindOffset() -> vec3<f32> {
+    return vec3<f32>(params.motion.y * params.motion.z, 0.0, params.motion.y * params.motion.z * 0.37);
+  }
+
+  fn cloudVerticalProfile(worldPos: vec3<f32>) -> f32 {
     let layerHeight = params.shape.w - params.shape.z;
     let h = clamp((worldPos.y - params.shape.z) / max(layerHeight, 0.001), 0.0, 1.0);
-    let vertical = smoothstep(0.0, 0.13, h) * (1.0 - smoothstep(0.72, 1.0, h));
-    let wind = vec3<f32>(params.motion.y * params.motion.z, 0.0, params.motion.y * params.motion.z * 0.37);
-    let p = worldPos * params.motion.x + wind;
+    return smoothstep(0.0, 0.13, h) * (1.0 - smoothstep(0.72, 1.0, h));
+  }
+
+  fn densityAt(worldPos: vec3<f32>) -> f32 {
+    let p = worldPos * params.motion.x + cloudWindOffset();
     let n = cloudNoise(p);
     let broad = smoothstep(0.48 - params.shape.x * 0.32, 0.82, n);
     let erosion = smoothstep(0.22, 0.78, noise3(p * 2.7 + vec3<f32>(5.0, 1.7, 8.1)));
-    return max(0.0, broad * mix(0.72, 1.0, erosion) * vertical * params.shape.y);
+    return max(0.0, broad * mix(0.72, 1.0, erosion) * cloudVerticalProfile(worldPos) * params.shape.y);
+  }
+
+  // Lower-cost coarse density for the two-point light transmittance estimate.
+  fn shadowDensityAt(worldPos: vec3<f32>) -> f32 {
+    let p = worldPos * (params.motion.x * 0.72) + cloudWindOffset();
+    let n = noise3(p);
+    let broad = smoothstep(0.43 - params.shape.x * 0.28, 0.78, n);
+    return broad * cloudVerticalProfile(worldPos) * params.shape.y;
   }
 
   fn intersectCloudLayer(ro: vec3<f32>, rd: vec3<f32>, maxDistance: f32) -> vec2<f32> {
@@ -482,9 +496,9 @@ function cloudsMarchFragmentWGSL() {
         let attenuation = exp(-opticalDepth);
         let sunDir = normalize(params.lighting.xyz);
         var lightTrans = 1.0;
-        for(var j = 1; j <= 3; j++) {
-          let lightP = p + sunDir * (f32(j) * 2.8);
-          lightTrans *= exp(-densityAt(lightP) * 0.12);
+        for(var j = 1; j <= 2; j++) {
+          let lightP = p + sunDir * (f32(j) * 3.5);
+          lightTrans *= exp(-shadowDensityAt(lightP) * 0.16);
         }
         let phase = 0.35 + 0.65 * pow(max(dot(rayDir, sunDir), 0.0), 4.0);
         let powder = 1.0 - exp(-opticalDepth * 2.0);
