@@ -402,7 +402,9 @@ function cloudsMarchFragmentWGSL() {
   }
 
   fn hash31(p: vec3<f32>) -> f32 {
-    return fract(sin(dot(p, vec3<f32>(127.1, 311.7, 74.7))) * 43758.5453);
+    var q = fract(p * 0.1031);
+    q = q + vec3<f32>(dot(q, q.yzx + vec3<f32>(33.33)));
+    return fract((q.x + q.y) * q.z);
   }
 
   fn noise3(p: vec3<f32>) -> f32 {
@@ -501,10 +503,8 @@ function cloudsMarchFragmentWGSL() {
         let attenuation = exp(-opticalDepth);
         let sunDir = normalize(params.lighting.xyz);
         var lightTrans = 1.0;
-        for(var j = 1; j <= 2; j++) {
-          let lightP = p + sunDir * (f32(j) * 3.5);
-          lightTrans *= exp(-shadowDensityAt(lightP) * 0.16);
-        }
+        let lightP = p + sunDir * 4.5;
+        lightTrans = exp(-shadowDensityAt(lightP) * 0.22);
         let phase = 0.35 + 0.65 * pow(max(dot(rayDir, sunDir), 0.0), 4.0);
         let powder = 1.0 - exp(-opticalDepth * 2.0);
         let light = sunColor.rgb * params.lighting.w * lightTrans * phase;
