@@ -47,7 +47,7 @@ export class CloudsVolumetric {
     this.width = width;
     this.height = height;
     this.enabled = options.enabled ?? true;
-    this.qualityScale = Math.max(0.25, Math.min(1, options.qualityScale ?? 0.5));
+    this.qualityScale = Math.max(0.2, Math.min(1, options.qualityScale ?? (this.isMobile ? 0.25 : 0.35)));
     this.isMobile = this._detectMobile();
     this.params = {
       coverage: options.coverage ?? 0.58,
@@ -56,7 +56,7 @@ export class CloudsVolumetric {
       cloudTop: options.cloudTop ?? 58,
       noiseScale: options.noiseScale ?? 0.018,
       windSpeed: options.windSpeed ?? 0.8,
-      steps: Math.max(8, Math.min(64, Math.round(options.steps ?? (this.isMobile ? 20 : 32)))),
+      steps: Math.max(8, Math.min(64, Math.round(options.steps ?? (this.isMobile ? 16 : 24)))),
       scattering: options.scattering ?? 1.25,
     };
     this.sunDirection = new Float32Array(options.sunDirection ?? [-0.45, 0.8, -0.3]);
@@ -303,7 +303,7 @@ export class CloudsVolumetric {
   }
 
   setQualityScale(scale) {
-    this.qualityScale = Math.max(0.25, Math.min(1, scale));
+    this.qualityScale = Math.max(0.2, Math.min(1, scale));
     this.resize(this.width, this.height);
     return this;
   }
@@ -427,15 +427,9 @@ function cloudsMarchFragmentWGSL() {
   }
 
   fn cloudNoise(p: vec3<f32>) -> f32 {
-    var sum = 0.0;
-    var amp = 0.57;
-    var q = p;
-    for(var octave = 0; octave < 3; octave++) {
-      sum += noise3(q) * amp;
-      q = q * 2.03 + vec3<f32>(17.1, 9.2, 13.7);
-      amp *= 0.5;
-    }
-    return sum / 1.0;
+    let coarse = noise3(p) * 0.68;
+    let detail = noise3(p * 2.03 + vec3<f32>(17.1, 9.2, 13.7)) * 0.32;
+    return coarse + detail;
   }
 
   fn cloudWindOffset() -> vec3<f32> {
@@ -451,9 +445,8 @@ function cloudsMarchFragmentWGSL() {
   fn densityAt(worldPos: vec3<f32>) -> f32 {
     let p = worldPos * params.motion.x + cloudWindOffset();
     let n = cloudNoise(p);
-    let broad = smoothstep(0.48 - params.shape.x * 0.32, 0.82, n);
-    let erosion = smoothstep(0.22, 0.78, noise3(p * 2.7 + vec3<f32>(5.0, 1.7, 8.1)));
-    return max(0.0, broad * mix(0.72, 1.0, erosion) * cloudVerticalProfile(worldPos) * params.shape.y);
+    let broad = smoothstep(0.46 - params.shape.x * 0.34, 0.80, n);
+    return max(0.0, broad * cloudVerticalProfile(worldPos) * params.shape.y);
   }
 
   // Lower-cost coarse density for the two-point light transmittance estimate.
