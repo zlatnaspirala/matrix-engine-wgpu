@@ -55,9 +55,11 @@ import {MANABarEffect} from "./src/engine/effects/mana-bar.js";
 import {HPBarEffect} from "./src/engine/effects/energy-bar.js";
 import {FlameEffect} from "./src/engine/effects/flame.js";
 import {FlameEmitter} from "./src/engine/effects/flame-emmiter.js";
+import {CloudsVolumetric} from "./src/engine/postprocessing/clouds-volumetric.js";
 
 export {
   MatrixEngineWGPU,
+  CloudsVolumetric,
   MEConfig,
   touchCoordinate,
   addRaycastsListener,
