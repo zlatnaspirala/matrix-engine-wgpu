@@ -147,6 +147,10 @@ export var volumetrixTexProj = function() {
       //   scatterStrength: 1.2,
       // })
 
+      app.activateVolumetricClouds2({
+        coverage: 0.55, cloudBase: 120, cloudThickness: 60
+      })
+
       // app.volumetricPass.setDensity(34);
 
       // const view = await loadTextureView(app.device, 'res/textures/shooter/hang3d.png');

@@ -38,6 +38,7 @@ import {ComputeCullingSystem, IndirectRenderingManager} from "./engine/indirect-
 import {GPUIndirectDraws} from "./engine/overrides/GPUCulling.js";
 import {AdvancedVolumetricPass} from "./engine/postprocessing/volumetric-advanced.js";
 import {CloudsVolumetric} from "./engine/postprocessing/clouds-volumetric.js";
+import {CloudsVolumetric2} from "./engine/postprocessing/cloudes-volumetric-2.js";
 
 /**
  *
@@ -1780,28 +1781,21 @@ export default class MatrixEngineWGPU {
     if(this.volumetricPass?.enabled === true) {return;}
     this.volumetricPass = new CloudsVolumetric(this.canvas.width, this.canvas.height, this.device, p);
     this.volumetricPass.enabled = true;
-    this.bloomPass._invalidateSceneBindGroups( this.volumetricPass.getOutputView());
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
   };
 
-    activateVolumetricClouds = (arg) => {
+  activateVolumetricClouds2 = (arg) => {
     if(this.bloomPass.enabled !== true) {
       console.warn('%cTheBeast: You must enable bloom before volumetric clouds.'); return;
     }
     const p = {
-      qualityScale: 0.35,
-      steps: 24,
-      coverage: 0.58,
-      cloudBase: 24,
-      cloudTop: 58,
-      noiseScale: 0.035,
-      windSpeed: 0.8,
-      scatterStrength: 1.2,
+      coverage: 0.55, cloudBase: 120, cloudThickness: 60,
       // User overrides
       ...(arg || {})
     };
     if(this.volumetricPass?.enabled === true) {return;}
     this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p);
     this.volumetricPass.enabled = true;
-    this.bloomPass._invalidateSceneBindGroups( this.volumetricPass.getOutputView());
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
   };
 }
