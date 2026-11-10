@@ -509,7 +509,8 @@ function cloudsMarchFragmentWGSL() {
       let density = densityAt(p);
 
       if(density > 0.001) {
-        let opticalDepth = density * stepLength * 0.035;
+        // The previous 0.035 extinction was too weak for this world-space step length.
+        let opticalDepth = density * stepLength * 0.35;
         let attenuation = exp(-opticalDepth);
         let sunDir = normalize(params.lighting.xyz);
         let lightP = p + sunDir * 4.5;
@@ -526,9 +527,7 @@ function cloudsMarchFragmentWGSL() {
       if(transmittance < 0.025) { break; }
     }
 
-    // DIAGNOSTIC: show accumulated opacity as grayscale, independent of lighting.
-    let opacityValue = 1.0 - transmittance;
-    return vec4<f32>(vec3<f32>(opacityValue), 1.0);
+    return vec4<f32>(radiance, 1.0 - transmittance);
   }
   `;
 }
