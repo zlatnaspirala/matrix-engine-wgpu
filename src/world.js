@@ -1794,7 +1794,7 @@ export default class MatrixEngineWGPU {
       ...(arg || {})
     };
     if(this.volumetricPass?.enabled === true) {return;}
-    this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p);
+    this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView);
     this.volumetricPass.enabled = true;
     this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
   };

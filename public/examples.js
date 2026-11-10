@@ -56696,7 +56696,7 @@ var MatrixEngineWGPU = class {
     if (this.volumetricPass?.enabled === true) {
       return;
     }
-    this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p2);
+    this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p2, this.sceneTextureView);
     this.volumetricPass.enabled = true;
     this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
   };
