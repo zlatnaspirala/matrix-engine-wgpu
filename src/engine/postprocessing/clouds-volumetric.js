@@ -497,37 +497,19 @@ function cloudsMarchFragmentWGSL() {
     if(hit.y <= 0.001) { return vec4<f32>(0.0); }
 
 
+    // DIAGNOSTIC: visualize only average 3D cloud density.
+    // Lighting and height visualization are intentionally disabled for this test.
     let stepLength = hit.y / max(params.motion.w, 8.0);
     let jitter = fract(sin(dot(pixel.xy, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-    var transmittance = 1.0;
-    var radiance = vec3<f32>(0.0);
+    var densitySum = 0.0;
     for(var i = 0; i < i32(params.motion.w); i++) {
       let t = hit.x + (f32(i) + jitter) * stepLength;
       let p = nearPos + rayDir * t;
-      let density = densityAt(p);
-      radiance += vec3<f32>(density * 0.08);
-      radiance += vec3<f32>(clamp((p.y - params.shape.z) /(params.shape.w - params.shape.z), 0.0, 1.0));
-      
-      if(density > 0.001) {
-        let opticalDepth = density * stepLength * 0.035;
-        let attenuation = exp(-opticalDepth);
-        let sunDir = normalize(params.lighting.xyz);
-        var lightTrans = 1.0;
-        let lightP = p + sunDir * 4.5;
-        lightTrans = exp(-shadowDensityAt(lightP) * 0.22);
-        let phase = 0.35 + 0.65 * pow(max(dot(rayDir, sunDir), 0.0), 4.0);
-        let powder = 1.0 - exp(-opticalDepth * 2.0);
-        let light = sunColor.rgb * params.lighting.w * lightTrans * phase;
-        radiance += transmittance * (1.0 - attenuation) * (light + vec3<f32>(0.34, 0.39, 0.48) * powder);
-        transmittance *= attenuation;
-      }
-      if(transmittance < 0.025) { break; }
+      densitySum += densityAt(p);
     }
-    // return vec4<f32>(radiance, 1.0 - transmittance);
-    // return vec4<f32>(1.0, 0.0, 1.0, 1.0);
-    // return vec4<f32>(0.0, 1.0, 0.0, 1.0); // GREEN: intersection
-    // return vec4<f32>(1.0, 0.0, 0.0, 1.0);
-    return vec4<f32>(radiance, 1.0);
+    let averageDensity = densitySum / max(params.motion.w, 1.0);
+    let diagnostic = clamp(averageDensity * 6.0, 0.0, 1.0);
+    return vec4<f32>(vec3<f32>(diagnostic), 1.0);
   }
   `;
 }
