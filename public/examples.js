@@ -81789,17 +81789,6 @@ var volumetrixTexProj = function() {
       app2.cameras.WASD.setYaw(0);
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
-      app2.activateVolumetricClouds({
-        qualityScale: 0.35,
-        steps: 24,
-        coverage: 0.58,
-        cloudBase: 44,
-        cloudTop: 28,
-        noiseScale: 0.035,
-        windSpeed: 0.8,
-        scatterStrength: 1.2
-      });
-      app2.volumetricPass.setDensity(34);
       app2.monster.playAnimationByIndex(3);
       app2.monster.position.onPositionReach = () => {
         app2.monster.playAnimationByIndex(3);
@@ -81854,7 +81843,6 @@ var volumetrixTexProj = function() {
             if (scaleIdx > totalInstances) scaleIdx = 1;
           }
         };
-        app2.autoUpdate.push(scaleCharacters);
       }
     }, 1e3);
   });

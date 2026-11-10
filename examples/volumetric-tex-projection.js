@@ -136,18 +136,18 @@ export var volumetrixTexProj = function() {
       //   lightColor: [1.0, 1.0, 1.0]}
       // );
 
-      app.activateVolumetricClouds({
-        qualityScale: 0.35,
-        steps: 24,
-        coverage: 0.58,
-        cloudBase: 44,
-        cloudTop: 28,
-        noiseScale: 0.035,
-        windSpeed: 0.8,
-        scatterStrength: 1.2,
-      })
+      // app.activateVolumetricClouds({
+      //   qualityScale: 0.35,
+      //   steps: 24,
+      //   coverage: 0.58,
+      //   cloudBase: 44,
+      //   cloudTop: 28,
+      //   noiseScale: 0.035,
+      //   windSpeed: 0.8,
+      //   scatterStrength: 1.2,
+      // })
 
-      app.volumetricPass.setDensity(34);
+      // app.volumetricPass.setDensity(34);
 
       // const view = await loadTextureView(app.device, 'res/textures/shooter/hang3d.png');
       // app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
@@ -221,7 +221,7 @@ export var volumetrixTexProj = function() {
             if(scaleIdx > totalInstances) scaleIdx = 1;
           }
         }
-        app.autoUpdate.push(scaleCharacters)
+        // app.autoUpdate.push(scaleCharacters)
       }
     }, 1000);
   });
