@@ -2,7 +2,7 @@
 
 **Author:** Nikola Lukić
 📧 [zlatnaspirala@gmail.com](mailto:zlatnaspirala@gmail.com)
-📅 Version: 2.0.0 Beta 2026 Alias `The Beast`
+📅 Version: 2.1.0 2026 Alias `The Beast`
 
 ---
 
@@ -36,7 +36,7 @@ Code Creator does not need its own JavaScript bundle; use it from the watcher bu
 - ✔️ Ammo.js, cannonES, Jolt and matter.js physics libs integration (app<->bridge<->worker).
      Physics uses Web Workers by default. The cross-origin worker issue has been fixed.
 - ✔️ Networking with Kurento/OpenVidu/Own middleware Nodejs -> frontend.
-- ✔️ Bloom, HZB and Volumetric post processing.
+- ✔️ Bloom, HZB, FXAA and Volumetric post processing.
 - ✔️ GPU Features: `texture-compression-bc` - (Not active by default).
 - ✔️ Scene Culling feature (see maze example for CPU Culling).
 - ✔️ Effects (a sub-draw system) use cached pipelines. An effect is a standalone WebGPU entity with its own
@@ -1439,6 +1439,9 @@ You may use, modify, and sell projects based on this code, provided that you kee
 
   One of buildin shaders use original source (material: {type: 'hell'})
   https://www.shadertoy.com/view/4ttGWM
+
+  FluidEffect class inspired by great job of Pavel (super fast solution):
+  https://github.com/PavelDoGreat/WebGL-Fluid-Simulation
 
 ---
 

@@ -22519,9 +22519,7 @@ var DestructionEffect2 = class _DestructionEffect {
 };
 
 // src/shaders/flame-effect/flameEffect.js
-var flameEffect = (
-  /* wgsl */
-  `
+var flameEffect = `
 
 struct Camera {
   viewProj : mat4x4<f32>
@@ -22690,8 +22688,7 @@ fn fsMain(input : VSOut) -> FragOut {
     vec4f(input.fragPos, 1.0)
   );
 }
-`
-);
+`;
 
 // src/engine/geometry-factory.js
 var GeometryFactory = class _GeometryFactory {
@@ -53131,8 +53128,7 @@ var AdvancedVolumetricPass = class {
     this.device = device2;
     this.width = width;
     this.height = height;
-    this.isMobile = this._detectMobileDevice();
-    this.qualityScale = Math.max(0.25, Math.min(1, options2.qualityScale ?? (this.isMobile ? 0.5 : 1)));
+    this.qualityScale = Math.max(0.25, Math.min(1, options2.qualityScale ?? (isMobile() ? 0.5 : 1)));
     this._computeEffectiveSize();
     this._time = 0;
     this._timeScratch = new Float32Array(1);
@@ -53158,13 +53154,13 @@ var AdvancedVolumetricPass = class {
     });
     this.params = {
       density: options2.density ?? 0.02,
-      steps: this.isMobile ? options2.steps ?? 16 : options2.steps ?? 32,
+      steps: isMobile() ? options2.steps ?? 16 : options2.steps ?? 32,
       scatterStrength: options2.scatterStrength ?? 1,
       heightFalloff: options2.heightFalloff ?? 0.08,
       range: options2.range ?? 50,
       temporalBlend: options2.temporalBlend ?? 0.8,
       useTemporalReprojection: options2.useTemporalReprojection ?? true,
-      mobileOptimizations: options2.mobileOptimizations ?? this.isMobile,
+      mobileOptimizations: options2.mobileOptimizations ?? isMobile(),
       useTextureProjection: options2.useTextureProjection ?? false,
       textureProjectionIntensity: options2.textureProjectionIntensity ?? 1
     };
@@ -53228,12 +53224,6 @@ var AdvancedVolumetricPass = class {
     this._updateLightColor();
     this._buildBindGroups(sceneView);
   }
-  // ───────────────────────── setup helpers ─────────────────────────
-  _detectMobileDevice() {
-    if (typeof navigator === "undefined") return false;
-    const ua2 = navigator.userAgent || "";
-    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua2);
-  }
   _computeEffectiveSize() {
     this.effectiveWidth = Math.max(1, Math.ceil(this.width * this.qualityScale));
     this.effectiveHeight = Math.max(1, Math.ceil(this.height * this.qualityScale));
@@ -53289,7 +53279,6 @@ var AdvancedVolumetricPass = class {
       mk(cl, sceneView, this.volumetricTexView)
     ];
   }
-  // ───────────────────────── public API ─────────────────────────
   init() {
     return this;
   }
@@ -53572,9 +53561,7 @@ var AdvancedVolumetricPass = class {
   }
 };
 function fullscreenVertWGSL2() {
-  return (
-    /* wgsl */
-    `
+  return `
     @vertex
     fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
       var pos = array<vec2<f32>, 6>(
@@ -53583,13 +53570,10 @@ function fullscreenVertWGSL2() {
       );
       return vec4(pos[i], 0.0, 1.0);
     }
-  `
-  );
+  `;
 }
 function advancedMarchFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
   ${PARAMS_WGSL}
 
   @group(0) @binding(0)  var depthTex:   texture_depth_2d;
@@ -53705,13 +53689,10 @@ fn sampleProjection(wp: vec3<f32>) -> vec3<f32> {
 
     return vec4<f32>(accum, 1.0 - trans);
   }
-  `
-  );
+  `;
 }
 function temporalBlendFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
   ${PARAMS_WGSL}
 
   @group(0) @binding(0) var currentTex: texture_2d<f32>;
@@ -53726,13 +53707,10 @@ function temporalBlendFragWGSL() {
     let history = textureSample(historyTex, samp, uv);
     return max(mix(current, history, params.temporalBlend), vec4(0.0));
   }
-  `
-  );
+  `;
 }
 function advancedCompositeFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
   ${PARAMS_WGSL}
 
   @group(0) @binding(0) var sceneTex: texture_2d<f32>;
@@ -53749,8 +53727,7 @@ function advancedCompositeFragWGSL() {
     // vol.rgb = scattered light | vol.a = fog opacity
     return vec4<f32>(scene.rgb * (1.0 - vol.a) + vol.rgb, scene.a);
   }
-  `
-  );
+  `;
 }
 
 // src/engine/postprocessing/clouds-volumetric.js
@@ -54642,9 +54619,7 @@ var CloudsVolumetric2 = class {
   }
 };
 function fullscreenVertWGSL3() {
-  return (
-    /* wgsl */
-    `
+  return `
     @vertex
     fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
       var pos = array<vec2<f32>, 6>(
@@ -54653,12 +54628,9 @@ function fullscreenVertWGSL3() {
       );
       return vec4(pos[i], 0.0, 1.0);
     }
-  `
-  );
+  `;
 }
-var PARAMS_WGSL2 = (
-  /* wgsl */
-  `
+var PARAMS_WGSL2 = `
 struct P {
   invViewProj: mat4x4<f32>,
   prevViewProj: mat4x4<f32>,
@@ -54679,12 +54651,9 @@ fn worldPos(uv: vec2<f32>, depth: f32) -> vec3<f32> {
   let w = u.invViewProj * ndc;
   return w.xyz / w.w;
 }
-`
-);
+`;
 function noiseGenWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
 @group(0) @binding(0) var outTex: texture_storage_3d<rgba8unorm, write>;
 
 fn pcg3d(vin: vec3<u32>) -> vec3<u32> {
@@ -54775,13 +54744,10 @@ fn detail(@builtin(global_invocation_id) id: vec3<u32>) {
   let b = worley(p, 16, 23u);
   textureStore(outTex, id, vec4<f32>(r, g, b, 1.0));
 }
-`
-  );
+`;
 }
 function marchFragWGSL2() {
-  return (
-    /* wgsl */
-    `
+  return `
 ${PARAMS_WGSL2}
 @group(0) @binding(1) var depthTex: texture_depth_2d;
 @group(0) @binding(2) var shapeTex: texture_3d<f32>;
@@ -54894,13 +54860,10 @@ fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   let fade = 1.0 - smoothstep(0.5 * u.march.z, u.march.z, tmin);
   return vec4<f32>(L * fade, (1.0 - T) * fade);
 }
-`
-  );
+`;
 }
 function temporalFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
 ${PARAMS_WGSL2}
 @group(0) @binding(1) var curTex: texture_2d<f32>;
 @group(0) @binding(2) var histTex: texture_2d<f32>;
@@ -54935,13 +54898,10 @@ fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   let hist = clamp(textureSampleLevel(histTex, samp, puv, 0.0), mn, mx);
   return mix(cur, hist, u.misc.x);
 }
-`
-  );
+`;
 }
 function compositeFragWGSL2() {
-  return (
-    /* wgsl */
-    `
+  return `
 ${PARAMS_WGSL2}
 @group(0) @binding(1) var sceneTex: texture_2d<f32>;
 @group(0) @binding(2) var cloudTex: texture_2d<f32>;
@@ -54955,8 +54915,7 @@ fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   // cl.rgb = in-scattered light (already weighted by transmittance), cl.a = opacity
   return vec4<f32>(scene.rgb * (1.0 - cl.a) + cl.rgb, scene.a);
 }
-`
-  );
+`;
 }
 
 // src/engine/postprocessing/fxaa.js
@@ -55063,9 +55022,7 @@ var FXAAPass = class {
   }
 };
 function fxaaWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
   struct FXAAParams {
     edgeMin: f32,
     edgeRel: f32,
@@ -55138,8 +55095,7 @@ function fxaaWGSL() {
     let outRgb = select(rgbB, rgbA, lB < lMin || lB > lMax);
     return vec4<f32>(outRgb, 1.0);
   }
-  `
-  );
+  `;
 }
 
 // src/world.js
@@ -55609,7 +55565,6 @@ var MatrixEngineWGPU = class {
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
-        // {binding: 5, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}}
       ]
     });
   }
@@ -55638,7 +55593,7 @@ var MatrixEngineWGPU = class {
     const requiredFeatures = [];
     for (const feature of GPU_FEATURES.GROUP_1) {
       if (this.adapter.features.has(feature)) {
-        console.log(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
+        console.info(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
         requiredFeatures.push(feature);
       }
     }
@@ -55676,10 +55631,10 @@ var MatrixEngineWGPU = class {
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 2.1.0 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open \n - Npm ready, codepen fully supported with physics worker.\n - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n - Code Creator - standalone (use engine from npm) ai top level code generator.\n - Creative power with intuitive visual scripting work flow and ai graph generetor.\n - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n\u{1F525} Mobile support: chrome-android tested. \u{1F525}",
+      "%cMatrix Engine WGPU - Gate is open \n - Npm ready, codepen fully supported with physics worker.\n - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n - Code Creator - standalone (use engine from npm) ai top level code generator.\n - Creative power with intuitive visual scripting work flow and ai graph generetor.\n - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, FXAA, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n\u{1F525} Mobile support: chrome-android tested. \u{1F525}",
       LOG_FUNNY
     );
     console.log(
@@ -56358,10 +56313,8 @@ var MatrixEngineWGPU = class {
   updateLights() {
     for (let i2 = 0; i2 < this.MAX_SPOTLIGHTS; i2++) {
       const light = this.lightContainer[i2];
-      if (light?.update) {
-        const vpDirty = light.update();
-        if (vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
-      }
+      const vpDirty = light.update();
+      if (vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
       this._lightsData.set(i2 < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i2 * 36);
     }
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
@@ -57784,6 +57737,534 @@ function _normalize(v2) {
   v2[2] /= len2;
   return v2;
 }
+
+// src/engine/effects/fluid-.js
+var MAX_SPLATS = 8;
+var WG = 8;
+var COMMON_WGSL = (
+  /* wgsl */
+  `
+fn ci(c: vec2<i32>, d: vec2<i32>) -> vec2<i32> {
+  return clamp(c, vec2<i32>(0, 0), d - vec2<i32>(1, 1));
+}
+`
+);
+var ADVECT_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var<uniform> u: vec4<f32>; // x: dt, y: dissipation
+@group(0) @binding(1) var velTex: texture_2d<f32>;
+@group(0) @binding(2) var srcTex: texture_2d<f32>;
+@group(0) @binding(3) var dst: texture_storage_2d<rgba16float, write>;
+@group(0) @binding(4) var samp: sampler;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let dd = textureDimensions(dst);
+  if (id.x >= dd.x || id.y >= dd.y) { return; }
+  let uv = (vec2<f32>(id.xy) + 0.5) / vec2<f32>(dd);
+  let velTexel = 1.0 / vec2<f32>(textureDimensions(velTex));
+  let v = textureSampleLevel(velTex, samp, uv, 0.0).xy;
+  let coord = uv - u.x * v * velTexel;
+  let r = textureSampleLevel(srcTex, samp, coord, 0.0) / (1.0 + u.y * u.x);
+  textureStore(dst, vec2<i32>(id.xy), r);
+}`;
+var CURL_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var vel: texture_2d<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(vel));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let L = textureLoad(vel, ci(c + vec2<i32>(-1, 0), d), 0).y;
+  let R = textureLoad(vel, ci(c + vec2<i32>(1, 0), d), 0).y;
+  let T = textureLoad(vel, ci(c + vec2<i32>(0, 1), d), 0).x;
+  let B = textureLoad(vel, ci(c + vec2<i32>(0, -1), d), 0).x;
+  textureStore(dst, c, vec4<f32>(0.5 * (R - L - T + B), 0.0, 0.0, 1.0));
+}`;
+var VORTICITY_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var<uniform> u: vec4<f32>; // x: curl strength, y: dt
+@group(0) @binding(1) var vel: texture_2d<f32>;
+@group(0) @binding(2) var curlTex: texture_2d<f32>;
+@group(0) @binding(3) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(vel));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let L = textureLoad(curlTex, ci(c + vec2<i32>(-1, 0), d), 0).x;
+  let R = textureLoad(curlTex, ci(c + vec2<i32>(1, 0), d), 0).x;
+  let T = textureLoad(curlTex, ci(c + vec2<i32>(0, 1), d), 0).x;
+  let B = textureLoad(curlTex, ci(c + vec2<i32>(0, -1), d), 0).x;
+  let C = textureLoad(curlTex, c, 0).x;
+  var force = 0.5 * vec2<f32>(abs(T) - abs(B), abs(R) - abs(L));
+  force = force / (length(force) + 0.0001);
+  force = force * u.x * C;
+  force.y = -force.y;
+  var v = textureLoad(vel, c, 0).xy + force * u.y;
+  v = clamp(v, vec2<f32>(-1000.0), vec2<f32>(1000.0));
+  textureStore(dst, c, vec4<f32>(v, 0.0, 1.0));
+}`;
+var DIVERGENCE_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var vel: texture_2d<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(vel));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let C = textureLoad(vel, c, 0).xy;
+  var L = textureLoad(vel, ci(c + vec2<i32>(-1, 0), d), 0).x;
+  var R = textureLoad(vel, ci(c + vec2<i32>(1, 0), d), 0).x;
+  var T = textureLoad(vel, ci(c + vec2<i32>(0, 1), d), 0).y;
+  var B = textureLoad(vel, ci(c + vec2<i32>(0, -1), d), 0).y;
+  // reflective walls
+  if (c.x - 1 < 0)   { L = -C.x; }
+  if (c.x + 1 >= d.x) { R = -C.x; }
+  if (c.y + 1 >= d.y) { T = -C.y; }
+  if (c.y - 1 < 0)   { B = -C.y; }
+  textureStore(dst, c, vec4<f32>(0.5 * (R - L + T - B), 0.0, 0.0, 1.0));
+}`;
+var SCALE_WGSL = (
+  /* wgsl */
+  `
+@group(0) @binding(0) var<uniform> u: vec4<f32>; // x: factor
+@group(0) @binding(1) var src: texture_2d<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = textureDimensions(src);
+  if (id.x >= d.x || id.y >= d.y) { return; }
+  let c = vec2<i32>(id.xy);
+  textureStore(dst, c, textureLoad(src, c, 0) * u.x);
+}`
+);
+var PRESSURE_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var pres: texture_2d<f32>;
+@group(0) @binding(1) var divTex: texture_2d<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(pres));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let L = textureLoad(pres, ci(c + vec2<i32>(-1, 0), d), 0).x;
+  let R = textureLoad(pres, ci(c + vec2<i32>(1, 0), d), 0).x;
+  let T = textureLoad(pres, ci(c + vec2<i32>(0, 1), d), 0).x;
+  let B = textureLoad(pres, ci(c + vec2<i32>(0, -1), d), 0).x;
+  let div = textureLoad(divTex, c, 0).x;
+  textureStore(dst, c, vec4<f32>((L + R + B + T - div) * 0.25, 0.0, 0.0, 1.0));
+}`;
+var GRADIENT_WGSL = COMMON_WGSL + /* wgsl */
+`
+@group(0) @binding(0) var pres: texture_2d<f32>;
+@group(0) @binding(1) var vel: texture_2d<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = vec2<i32>(textureDimensions(vel));
+  let c = vec2<i32>(id.xy);
+  if (c.x >= d.x || c.y >= d.y) { return; }
+  let L = textureLoad(pres, ci(c + vec2<i32>(-1, 0), d), 0).x;
+  let R = textureLoad(pres, ci(c + vec2<i32>(1, 0), d), 0).x;
+  let T = textureLoad(pres, ci(c + vec2<i32>(0, 1), d), 0).x;
+  let B = textureLoad(pres, ci(c + vec2<i32>(0, -1), d), 0).x;
+  let v = textureLoad(vel, c, 0).xy - vec2<f32>(R - L, T - B);
+  textureStore(dst, c, vec4<f32>(v, 0.0, 1.0));
+}`;
+var SPLAT_WGSL = (
+  /* wgsl */
+  `
+struct Splat {
+  point: vec2<f32>,
+  aspect: f32,
+  radius: f32,
+  color: vec4<f32>,
+};
+@group(0) @binding(0) var<uniform> s: Splat;
+@group(0) @binding(1) var src: texture_2d<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d<rgba16float, write>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  let d = textureDimensions(dst);
+  if (id.x >= d.x || id.y >= d.y) { return; }
+  let c = vec2<i32>(id.xy);
+  let uv = (vec2<f32>(id.xy) + 0.5) / vec2<f32>(d);
+  var p = uv - s.point;
+  p.x = p.x * s.aspect;
+  let g = exp(-dot(p, p) / s.radius) * s.color.rgb;
+  let base = textureLoad(src, c, 0).rgb;
+  textureStore(dst, c, vec4<f32>(base + g, 1.0));
+}`
+);
+var DISPLAY_WGSL = (
+  /* wgsl */
+  `
+@group(0) @binding(0) var<uniform> mvp: mat4x4<f32>;
+@group(0) @binding(1) var dye: texture_2d<f32>;
+@group(0) @binding(2) var samp: sampler;
+
+struct VOut {
+  @builtin(position) pos: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+};
+
+@vertex
+fn vs(@builtin(vertex_index) i: u32) -> VOut {
+  var q = array<vec2<f32>, 6>(
+    vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+    vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0));
+  var o: VOut;
+  o.pos = mvp * vec4<f32>(q[i], 0.0, 1.0);
+  o.uv = q[i] * 0.5 + 0.5;   // texture row 0 == bottom, no flip needed
+  return o;
+}
+
+struct FOut {
+  @location(0) color: vec4<f32>,
+  @location(1) normal: vec4<f32>,
+  @location(2) wpos: vec4<f32>,
+};
+
+@fragment
+fn fs(in: VOut) -> FOut {
+  let c = max(textureSample(dye, samp, in.uv).rgb, vec3<f32>(0.0));
+  let a = clamp(max(c.r, max(c.g, c.b)), 0.0, 1.0);
+  var o: FOut;
+  o.color = vec4<f32>(c, a);          // premultiplied-style
+  o.normal = vec4<f32>(0.0);
+  o.wpos = vec4<f32>(0.0);
+  return o;
+}`
+);
+var FluidEffect = class _FluidEffect {
+  // world.js checks this on the constructor: we draw with our own pipeline.
+  static managesRenderPipeline = true;
+  constructor(device2, options2 = {}) {
+    this.device = device2;
+    this.enabled = true;
+    const mobile = typeof navigator !== "undefined" && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    this.opt = {
+      simRes: options2.simRes ?? (mobile ? 96 : 128),
+      dyeRes: options2.dyeRes ?? (mobile ? 384 : 512),
+      aspect: options2.aspect ?? 1,
+      densityDissipation: options2.densityDissipation ?? 1,
+      velocityDissipation: options2.velocityDissipation ?? 0.2,
+      pressure: options2.pressure ?? 0.8,
+      pressureIterations: options2.pressureIterations ?? (mobile ? 12 : 20),
+      curl: options2.curl ?? 30,
+      splatRadius: options2.splatRadius ?? 0.25,
+      splatForce: options2.splatForce ?? 6e3,
+      colorFormatDepth: options2.depthFormat ?? "depth24plus",
+      colorTargets: options2.colorTargets ?? 3
+      // main pass has 3 color attachments
+    };
+    this.simW = this.opt.simRes;
+    this.simH = this.opt.simRes;
+    this.dyeW = this.opt.dyeRes;
+    this.dyeH = this.opt.dyeRes;
+    this._vi = 0;
+    this._di = 0;
+    this._pi = 0;
+    this._last = performance.now();
+    this._pending = [];
+    this._mvpScratch = mat4Impl.create();
+    this._model = mat4Impl.identity();
+    this._localMatrix = mat4Impl.create();
+    this._finalMatrix = mat4Impl.identity();
+    this.localOffset = options2.localOffset ?? [0, 0, 0];
+    this.localRotation = options2.localRotation ?? [0, 0, 0];
+    this.activeRotate = options2.activeRotate ?? [0, 0, 0];
+    const sc2 = options2.scale ?? 1;
+    this.scale = Array.isArray(sc2) ? sc2 : [sc2, sc2, sc2];
+    this._f4 = new Float32Array(4);
+    this._splatScratch = new Float32Array(8);
+    this._time = 0;
+    this._createResources();
+    this._createPipelines();
+    this._createBindGroups();
+  }
+  /** x,y in 0..1 (y up). dx,dy = movement delta (roughly -1..1). color = [r,g,b] */
+  splat(x3, y3, dx, dy, color) {
+    if (this._pending.length >= MAX_SPLATS) return;
+    this._pending.push({ x: x3, y: y3, dx, dy, color });
+  }
+  randomSplats(n3 = 5) {
+    for (let i2 = 0; i2 < n3; i2++) {
+      const c2 = _FluidEffect.generateColor();
+      c2[0] *= 10;
+      c2[1] *= 10;
+      c2[2] *= 10;
+      this.splat(
+        Math.random(),
+        Math.random(),
+        1e3 * (Math.random() - 0.5) / this.opt.splatForce * 6,
+        1e3 * (Math.random() - 0.5) / this.opt.splatForce * 6,
+        c2
+      );
+    }
+  }
+  /** Mouse / touch over a canvas that fully covers the fluid plane (fullscreen use). */
+  attachPointer(canvas) {
+    let lx = 0, ly = 0, down = false;
+    const pos2 = (e2) => {
+      const r3 = canvas.getBoundingClientRect();
+      return [(e2.clientX - r3.left) / r3.width, 1 - (e2.clientY - r3.top) / r3.height];
+    };
+    canvas.addEventListener("pointerdown", (e2) => {
+      down = true;
+      [lx, ly] = pos2(e2);
+    });
+    addEventListener("pointerup", () => {
+      down = false;
+    });
+    canvas.addEventListener("pointermove", (e2) => {
+      if (!down) return;
+      const [x3, y3] = pos2(e2);
+      const c2 = _FluidEffect.generateColor();
+      this.splat(x3, y3, (x3 - lx) * this.opt.splatForce, (y3 - ly) * this.opt.splatForce, c2);
+      lx = x3;
+      ly = y3;
+    });
+  }
+  static generateColor() {
+    const h2 = Math.random(), s2 = 1, v2 = 1;
+    const i2 = Math.floor(h2 * 6), f2 = h2 * 6 - i2;
+    const p2 = v2 * (1 - s2), q2 = v2 * (1 - f2 * s2), t3 = v2 * (1 - (1 - f2) * s2);
+    let r3, g2, b2;
+    switch (i2 % 6) {
+      case 0:
+        r3 = v2;
+        g2 = t3;
+        b2 = p2;
+        break;
+      case 1:
+        r3 = q2;
+        g2 = v2;
+        b2 = p2;
+        break;
+      case 2:
+        r3 = p2;
+        g2 = v2;
+        b2 = t3;
+        break;
+      case 3:
+        r3 = p2;
+        g2 = q2;
+        b2 = v2;
+        break;
+      case 4:
+        r3 = t3;
+        g2 = p2;
+        b2 = v2;
+        break;
+      default:
+        r3 = v2;
+        g2 = p2;
+        b2 = q2;
+    }
+    return [r3 * 0.15, g2 * 0.15, b2 * 0.15];
+  }
+  // ---------------------------------------------------------------- engine hooks
+  updateInstanceData(baseModelMatrix) {
+    const local2 = this._localMatrix;
+    const finalMat = this._finalMatrix;
+    mat4Impl.identity(local2);
+    mat4Impl.identity(finalMat);
+    mat4Impl.translate(local2, this.localOffset, local2);
+    mat4Impl.rotateX(local2, this.localRotation[0], local2);
+    mat4Impl.rotateY(local2, this.localRotation[1], local2);
+    mat4Impl.rotateZ(local2, this.localRotation[2], local2);
+    if (this.activeRotate[0] !== 0) mat4Impl.rotateX(local2, this.activeRotate[0] * this._time, local2);
+    if (this.activeRotate[1] !== 0) mat4Impl.rotateY(local2, this.activeRotate[1] * this._time, local2);
+    if (this.activeRotate[2] !== 0) mat4Impl.rotateZ(local2, this.activeRotate[2] * this._time, local2);
+    mat4Impl.scale(local2, this.scale, local2);
+    mat4Impl.multiply(baseModelMatrix, local2, finalMat);
+  }
+  setScale(s2) {
+    this.scale = Array.isArray(s2) ? s2 : [s2, s2, s2];
+  }
+  /** Called by world.js frame loop on the command encoder before the main pass. */
+  simulate(encoder) {
+    if (!this.enabled) return;
+    const now = performance.now();
+    const dt2 = Math.min((now - this._last) / 1e3, 0.016666);
+    this._last = now;
+    this._time += dt2;
+    const o3 = this.opt;
+    const q2 = this.device.queue;
+    this._f4.set([dt2, o3.velocityDissipation, 0, 0]);
+    q2.writeBuffer(this.uAdvVel, 0, this._f4);
+    this._f4.set([dt2, o3.densityDissipation, 0, 0]);
+    q2.writeBuffer(this.uAdvDye, 0, this._f4);
+    this._f4.set([o3.curl, dt2, 0, 0]);
+    q2.writeBuffer(this.uVort, 0, this._f4);
+    this._f4.set([o3.pressure, 0, 0, 0]);
+    q2.writeBuffer(this.uScale, 0, this._f4);
+    const pass = encoder.beginComputePass({ label: "fluid" });
+    for (let s2 = 0; s2 < this._pending.length; s2++) {
+      const sp = this._pending[s2];
+      const a2 = this._splatScratch;
+      a2[0] = sp.x;
+      a2[1] = sp.y;
+      a2[2] = o3.aspect;
+      a2[3] = (o3.aspect > 1 ? o3.splatRadius * o3.aspect : o3.splatRadius) / 100;
+      a2[4] = sp.dx;
+      a2[5] = sp.dy;
+      a2[6] = 0;
+      a2[7] = 1;
+      q2.writeBuffer(this.splatVelU[s2], 0, a2);
+      a2[4] = sp.color[0];
+      a2[5] = sp.color[1];
+      a2[6] = sp.color[2];
+      q2.writeBuffer(this.splatDyeU[s2], 0, a2);
+      this._dispatch(pass, this.pSplat, this.bgSplatVel[s2][this._vi], this.simW, this.simH);
+      this._vi ^= 1;
+      this._dispatch(pass, this.pSplat, this.bgSplatDye[s2][this._di], this.dyeW, this.dyeH);
+      this._di ^= 1;
+    }
+    this._pending.length = 0;
+    this._dispatch(pass, this.pCurl, this.bgCurl[this._vi], this.simW, this.simH);
+    this._dispatch(pass, this.pVort, this.bgVort[this._vi], this.simW, this.simH);
+    this._vi ^= 1;
+    this._dispatch(pass, this.pDiv, this.bgDiv[this._vi], this.simW, this.simH);
+    this._dispatch(pass, this.pScale, this.bgScale[this._pi], this.simW, this.simH);
+    this._pi ^= 1;
+    for (let i2 = 0; i2 < o3.pressureIterations; i2++) {
+      this._dispatch(pass, this.pPressure, this.bgPressure[this._pi], this.simW, this.simH);
+      this._pi ^= 1;
+    }
+    this._dispatch(pass, this.pGrad, this.bgGrad[this._pi * 2 + this._vi], this.simW, this.simH);
+    this._vi ^= 1;
+    this._dispatch(pass, this.pAdvect, this.bgAdvVel[this._vi], this.simW, this.simH);
+    this._vi ^= 1;
+    this._dispatch(pass, this.pAdvect, this.bgAdvDye[this._vi * 2 + this._di], this.dyeW, this.dyeH);
+    this._di ^= 1;
+    pass.end();
+  }
+  /** Called inside the main render pass. */
+  render(pass, mesh, VP) {
+    if (!this.enabled) return;
+    mat4Impl.multiply(VP, this._finalMatrix, this._mvpScratch);
+    this.device.queue.writeBuffer(this.mvpBuffer, 0, this._mvpScratch);
+    pass.setPipeline(this.displayPipeline);
+    pass.setBindGroup(0, this.bgDisplay[this._di]);
+    pass.draw(6);
+  }
+  destroy() {
+    for (const t3 of [...this.vel, ...this.dye, ...this.pres, this.divT, this.curlT]) t3.destroy();
+    this.enabled = false;
+  }
+  // ---------------------------------------------------------------- internals
+  _tex(w2, h2, label) {
+    return this.device.createTexture({
+      label,
+      size: [w2, h2],
+      format: "rgba16float",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING
+    });
+  }
+  _ubuf(size2, label) {
+    return this.device.createBuffer({ label, size: size2, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  }
+  _createResources() {
+    const d2 = this.device;
+    this.vel = [this._tex(this.simW, this.simH, "fluid vel0"), this._tex(this.simW, this.simH, "fluid vel1")];
+    this.pres = [this._tex(this.simW, this.simH, "fluid p0"), this._tex(this.simW, this.simH, "fluid p1")];
+    this.divT = this._tex(this.simW, this.simH, "fluid div");
+    this.curlT = this._tex(this.simW, this.simH, "fluid curl");
+    this.dye = [this._tex(this.dyeW, this.dyeH, "fluid dye0"), this._tex(this.dyeW, this.dyeH, "fluid dye1")];
+    this.velV = this.vel.map((t3) => t3.createView());
+    this.presV = this.pres.map((t3) => t3.createView());
+    this.dyeV = this.dye.map((t3) => t3.createView());
+    this.divV = this.divT.createView();
+    this.curlV = this.curlT.createView();
+    this.linear = d2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.uAdvVel = this._ubuf(16, "fluid advVel");
+    this.uAdvDye = this._ubuf(16, "fluid advDye");
+    this.uVort = this._ubuf(16, "fluid vort");
+    this.uScale = this._ubuf(16, "fluid scale");
+    this.mvpBuffer = this._ubuf(64, "fluid mvp");
+    this.splatVelU = Array.from({ length: MAX_SPLATS }, (_2, i2) => this._ubuf(32, "fluid splatVel" + i2));
+    this.splatDyeU = Array.from({ length: MAX_SPLATS }, (_2, i2) => this._ubuf(32, "fluid splatDye" + i2));
+  }
+  _compute(code, label) {
+    return this.device.createComputePipeline({
+      label,
+      layout: "auto",
+      compute: { module: this.device.createShaderModule({ label, code }), entryPoint: "main" }
+    });
+  }
+  _createPipelines() {
+    this.pAdvect = this._compute(ADVECT_WGSL, "fluid advect");
+    this.pCurl = this._compute(CURL_WGSL, "fluid curl");
+    this.pVort = this._compute(VORTICITY_WGSL, "fluid vorticity");
+    this.pDiv = this._compute(DIVERGENCE_WGSL, "fluid divergence");
+    this.pScale = this._compute(SCALE_WGSL, "fluid scale");
+    this.pPressure = this._compute(PRESSURE_WGSL, "fluid pressure");
+    this.pGrad = this._compute(GRADIENT_WGSL, "fluid gradient");
+    this.pSplat = this._compute(SPLAT_WGSL, "fluid splat");
+    const module = this.device.createShaderModule({ label: "fluid display", code: DISPLAY_WGSL });
+    const blend = {
+      color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
+      alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+    };
+    const targets = [{ format: "rgba16float", blend }];
+    for (let i2 = 1; i2 < this.opt.colorTargets; i2++) targets.push({ format: "rgba16float", writeMask: 0 });
+    this.displayPipeline = this.device.createRenderPipeline({
+      label: "fluid display",
+      layout: "auto",
+      vertex: { module, entryPoint: "vs" },
+      fragment: { module, entryPoint: "fs", targets },
+      primitive: { topology: "triangle-list", cullMode: "none" },
+      depthStencil: { format: this.opt.colorFormatDepth, depthWriteEnabled: false, depthCompare: "less" }
+    });
+  }
+  _bg(pipeline, entries, label) {
+    return this.device.createBindGroup({
+      label,
+      layout: pipeline.getBindGroupLayout(0),
+      entries: entries.map((resource, binding) => ({ binding, resource }))
+    });
+  }
+  _createBindGroups() {
+    const V2 = this.velV, D2 = this.dyeV, P2 = this.presV, buf = (b2) => ({ buffer: b2 });
+    const two = (fn2) => [fn2(0), fn2(1)];
+    this.bgCurl = two((v2) => this._bg(this.pCurl, [V2[v2], this.curlV]));
+    this.bgVort = two((v2) => this._bg(this.pVort, [buf(this.uVort), V2[v2], this.curlV, V2[1 - v2]]));
+    this.bgDiv = two((v2) => this._bg(this.pDiv, [V2[v2], this.divV]));
+    this.bgScale = two((p2) => this._bg(this.pScale, [buf(this.uScale), P2[p2], P2[1 - p2]]));
+    this.bgPressure = two((p2) => this._bg(this.pPressure, [P2[p2], this.divV, P2[1 - p2]]));
+    this.bgGrad = [0, 1, 2, 3].map((i2) => {
+      const p2 = i2 >> 1, v2 = i2 & 1;
+      return this._bg(this.pGrad, [P2[p2], V2[v2], V2[1 - v2]]);
+    });
+    this.bgAdvVel = two((v2) => this._bg(this.pAdvect, [buf(this.uAdvVel), V2[v2], V2[v2], V2[1 - v2], this.linear]));
+    this.bgAdvDye = [0, 1, 2, 3].map((i2) => {
+      const v2 = i2 >> 1, d2 = i2 & 1;
+      return this._bg(this.pAdvect, [buf(this.uAdvDye), V2[v2], D2[d2], D2[1 - d2], this.linear]);
+    });
+    this.bgSplatVel = this.splatVelU.map((u2) => two((v2) => this._bg(this.pSplat, [buf(u2), V2[v2], V2[1 - v2]])));
+    this.bgSplatDye = this.splatDyeU.map((u2) => two((d2) => this._bg(this.pSplat, [buf(u2), D2[d2], D2[1 - d2]])));
+    this.bgDisplay = two((d2) => this._bg(this.displayPipeline, [buf(this.mvpBuffer), D2[d2], this.linear]));
+  }
+  _dispatch(pass, pipeline, bindGroup, w2, h2) {
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.dispatchWorkgroups(Math.ceil(w2 / WG), Math.ceil(h2 / WG));
+  }
+};
 
 // examples/load-obj-file.js
 var loadObjFile = function() {
@@ -76933,9 +77414,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   cells[idx] = mix(targetF, prev, params.smoothing);
 }
 `;
-var RENDER_SHADER = (
-  /* wgsl */
-  `
+var RENDER_SHADER = `
 struct SceneUniforms {
   viewProj: mat4x4<f32>,
   baseModel: mat4x4<f32>,
@@ -77021,8 +77500,7 @@ fn fs_main(vin: VertexOut) -> FragOut {
   out.worldPos = vec4<f32>(vin.worldPos, 1.0);
   return out;
 }
-`
-);
+`;
 var DepthWebcamVoxelEffect = class _DepthWebcamVoxelEffect {
   // This effect manages its own render pipeline; do not bind the shared effect pipeline.
   static managesRenderPipeline = true;
@@ -82816,6 +83294,190 @@ var volumetrixTexProj = function() {
   window.app = app2;
 };
 
+// examples/fluid-effects.js
+var loadFluidEffectExample = function() {
+  let loadObjFile2 = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, () => {
+    loadObjFile2.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      loadObjFile2.addMeshObj({
+        material: { type: "mirror", share: true },
+        envMapParams: {
+          baseColorMix: 0.6,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        position: { x: 0, y: -5, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+    }
+    async function onLoadObj(m2) {
+      let MYCUBE = loadObjFile2.addMeshObj({
+        material: { type: "mirror" },
+        position: { x: 0, y: 4, z: -10 },
+        rotation: { x: 0, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [3, 5, 3],
+        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        name: "cube",
+        mesh: m2.cube,
+        envMapParams: {
+          baseColorMix: 0.1,
+          // CLEAR SKY
+          mirrorTint: [0.9, 0.95, 1],
+          // Slight cool tint
+          reflectivity: 0.75,
+          // 25% reflection blend
+          illuminateColor: [0.3, 0.7, 1],
+          // Soft cyan
+          illuminateStrength: 1.5,
+          // Gentle rim
+          illuminatePulse: 0.1,
+          // No pulse (static)
+          fresnelPower: 5,
+          // Medium-sharp edge
+          envLodBias: 1.5,
+          usePlanarReflection: false
+          // Must be false - WIP
+        },
+        raycast: { enabled: true, radius: 1 },
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        },
+        pointerEffect: {
+          enabled: true,
+          // flameEmitter: true,
+          // bloodBurst: true
+          flameEffect: true
+        }
+      });
+      loadObjFile2.lightContainer[0].setIntensity(15);
+      loadObjFile2.activateBloomEffect();
+      loadObjFile2.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
+      loadObjFile2.lightContainer[0].behavior.value_ = -1;
+      loadObjFile2.lightContainer[0].updater.push((light) => {
+        light.setTargetX(light.behavior.setPath0());
+        light.setPosX(light.behavior.setPath0());
+      });
+      loadObjFile2.lightContainer[0].setPosition(0, 15, -10);
+      loadObjFile2.lightContainer[0].setTarget(0, 0, -10);
+      setTimeout(() => {
+        app.MYCUBE = MYCUBE;
+        const center = [0, 2, -20];
+        let time = 0;
+        const totalBeams = 25;
+        const spiralRadius = 8;
+        const heightStep = 0.6;
+        function animateSpiralLasers() {
+          time += 0.03;
+          for (let i2 = 0; i2 < totalBeams; i2++) {
+            setTimeout(() => {
+              const t3 = i2 / totalBeams;
+              const angle2 = time + t3 * Math.PI * 6;
+              const currentRadius = spiralRadius * t3;
+              const fromX = center[0] + Math.cos(angle2) * currentRadius;
+              const fromY = center[1] + i2 * heightStep;
+              const fromZ = center[2] + Math.sin(angle2) * currentRadius;
+              const nextAngle = angle2 + 0.4;
+              const nextRadius = spiralRadius * (t3 + 0.05);
+              const toX = center[0] + Math.cos(nextAngle) * nextRadius;
+              const toY = center[1] + (i2 + 1) * heightStep;
+              const toZ = center[2] + Math.sin(nextAngle) * nextRadius;
+              const hueShift = (time * 50 + i2 * 10) % 360;
+              app.MYCUBE.effects.laser.fireBeam(
+                [fromX, fromY, fromZ],
+                [toX, toY, toZ],
+                0.8,
+                // Short lifespan guarantees lasers disappear and update instantly
+                {
+                  colorA: [Math.floor(Math.abs(Math.sin(time + t3) * 255)), Math.floor(Math.abs(Math.sin(time + t3) * 255)), 100],
+                  colorB: [randomIntFromTo(150, 200), randomIntFromTo(50, 100), randomIntFromTo(50, 100)],
+                  width: 1.6,
+                  intensity: 1.5,
+                  scrollSpeed: 1
+                  // Fast texture scroll along the laser body
+                }
+              );
+            }, 100 * i2);
+          }
+          setTimeout(() => {
+            animateSpiralLasers();
+          }, 1e3);
+        }
+        MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile2.device, "rgba16float", 20, loadObjFile2.cameraBuffer);
+        MYCUBE.effects.fluid = new FluidEffect(app.device, { simRes: 128, dyeRes: 512, splatRadius: 2 });
+        MYCUBE.effects.fluid.attachPointer(app.canvas);
+        MYCUBE.effects.fluid.randomSplats(5);
+        dispatchEvent(new CustomEvent("update-effects"));
+        MYCUBE.setAmbient(2, 3, 0.5);
+        let cam2 = app.getCamera();
+        cam2.setYaw(-0.03);
+        cam2.setPitch(-0.49);
+        cam2.setZ(0);
+        cam2.setY(10);
+        app.buildRenderBuckets();
+        cam2._dirtyAngle = true;
+      }, 700);
+    }
+    loadObjFile2.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cube")) {
+        e2.detail.hitObject.effects.flameEmitterBlue.recreateVertexDataCrazzy(5);
+        app.MYCUBE.effects.flameEmitterBlue.instanceTargets.forEach((ins) => {
+          ins.color[0] = randomIntFromTo(0, 1);
+          ins.color[1] = randomIntFromTo(0, 1);
+          ins.color[2] = randomIntFromTo(1e3, 2e3);
+        });
+        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
+        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
+      }
+    });
+  });
+  window.app = loadObjFile2;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -82836,6 +83498,7 @@ byId2("video-texture").addEventListener("click", () => switchDemo("4"));
 byId2("objs-anim").addEventListener("click", () => switchDemo("5"));
 byId2("glb-loader").addEventListener("click", () => switchDemo("6"));
 byId2("procedural-mesh").addEventListener("click", () => switchDemo("7"));
+byId2("fluid-effect").addEventListener("click", () => switchDemo("8"));
 byId2("myLights").addEventListener("click", () => switchDemo("9"));
 byId2("snake-light").addEventListener("click", () => switchDemo("10"));
 byId2("snake-light-instanced").addEventListener("click", () => switchDemo("11"));
@@ -82902,7 +83565,7 @@ if (urlQuery["demo"] === "1") {
 } else if (urlQuery["demo"] === "7") {
   procMesh();
 } else if (urlQuery["demo"] === "8") {
-  loadObjFile();
+  loadFluidEffectExample();
 } else if (urlQuery["demo"] === "9") {
   myLights();
 } else if (urlQuery["demo"] === "10") {

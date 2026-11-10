@@ -1,4 +1,4 @@
-export const flameEffect = /* wgsl */`
+export const flameEffect = `
 
 struct Camera {
   viewProj : mat4x4<f32>

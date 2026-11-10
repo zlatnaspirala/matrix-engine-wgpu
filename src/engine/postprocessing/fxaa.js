@@ -95,7 +95,7 @@ export class FXAAPass {
 }
 
 function fxaaWGSL() {
-  return /* wgsl */`
+  return `
   struct FXAAParams {
     edgeMin: f32,
     edgeRel: f32,

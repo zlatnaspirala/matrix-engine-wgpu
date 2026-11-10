@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <link rel="manifest" href="manifest.web" />
   <title>Matrix Engine Powered by webGPU (Alias: The Beast engine). Created by Nikola Lukic zlatnaspirala@gmail.com </title>
@@ -20,6 +21,7 @@
   <link rel="icon" type="image/png" sizes="256x256" href="res/icons/512.webp" />
   <script src="./hacker-timer/hack-timer-worker.min.js"></script>
 </head>
+
 <body allow="autoplay">
   <div class="header" style="display: contents;text-align: center;font-size: large;">
     The Beast <span>+Android Chrome</span> <a style="color:black;font-size: small;" href="https://github.com/zlatnaspirala/matrix-engine-wgpu">Source and Credits github project</a>
@@ -39,6 +41,7 @@
     <button class="btn" id="loadWaterEffects">Water effect</button>
     <button class="btn" id="loadParticles">Particless effect</button>
     <button class="btn" id="procedural-mesh">Procedural-mesh-morph</button>
+    <button class="btn" id="fluid-effect">Fluid-effect</button>
     <button class="btn" id="myLights">My Lights</button>
     <button class="btn" id="snake-light">Snake Lights</button>
     <button class="btn" id="snake-light-instanced">Snake Lights - Instanced</button>
@@ -109,11 +112,12 @@
 
     document.getElementById('sliderMenu1').addEventListener('click', () => {
       if(document.getElementById('examples').style.left == "0px") {
-        document.getElementById('examples').style.left = "-160px";
+        document.getElementById('examples').style.left = "-180px";
       } else {
         document.getElementById('examples').style.left = "0px";
       }
     }, {passive: true});
   </script>
 </body>
+
 </html>

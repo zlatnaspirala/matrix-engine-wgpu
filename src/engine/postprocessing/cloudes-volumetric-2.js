@@ -407,7 +407,7 @@ export class CloudsVolumetric2 {
 // ═══════════════════════════ WGSL ═══════════════════════════
 
 export function fullscreenVertWGSL() {
-  return /* wgsl */`
+  return `
     @vertex
     fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
       var pos = array<vec2<f32>, 6>(
@@ -419,7 +419,7 @@ export function fullscreenVertWGSL() {
   `;
 }
 
-const PARAMS_WGSL = /* wgsl */`
+const PARAMS_WGSL = `
 struct P {
   invViewProj: mat4x4<f32>,
   prevViewProj: mat4x4<f32>,
@@ -443,7 +443,7 @@ fn worldPos(uv: vec2<f32>, depth: f32) -> vec3<f32> {
 `;
 
 function noiseGenWGSL() {
-  return /* wgsl */`
+  return `
 @group(0) @binding(0) var outTex: texture_storage_3d<rgba8unorm, write>;
 
 fn pcg3d(vin: vec3<u32>) -> vec3<u32> {
@@ -538,7 +538,7 @@ fn detail(@builtin(global_invocation_id) id: vec3<u32>) {
 }
 
 function marchFragWGSL() {
-  return /* wgsl */`
+  return `
 ${PARAMS_WGSL}
 @group(0) @binding(1) var depthTex: texture_depth_2d;
 @group(0) @binding(2) var shapeTex: texture_3d<f32>;
@@ -655,7 +655,7 @@ fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
 }
 
 function temporalFragWGSL() {
-  return /* wgsl */`
+  return `
 ${PARAMS_WGSL}
 @group(0) @binding(1) var curTex: texture_2d<f32>;
 @group(0) @binding(2) var histTex: texture_2d<f32>;
@@ -694,7 +694,7 @@ fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
 }
 
 function compositeFragWGSL() {
-  return /* wgsl */`
+  return `
 ${PARAMS_WGSL}
 @group(0) @binding(1) var sceneTex: texture_2d<f32>;
 @group(0) @binding(2) var cloudTex: texture_2d<f32>;

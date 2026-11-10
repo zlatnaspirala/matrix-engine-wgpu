@@ -55,6 +55,7 @@ import {loadPoseBeast} from "./examples/games/nui/pose-beast-render.js";
 import {loadPoseToGLB} from "./examples/games/nui/pose-to-glb.js";
 import {loadSlot} from "./examples/games/slot-machine/slot.js";
 import {volumetrixTexProj} from "./examples/volumetric-tex-projection.js";
+import {loadFluidEffectExample} from "./examples/fluid-effects.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -75,6 +76,7 @@ byId('video-texture').addEventListener("click", () => switchDemo('4'));
 byId('objs-anim').addEventListener("click", () => switchDemo('5'));
 byId('glb-loader').addEventListener("click", () => switchDemo('6'));
 byId('procedural-mesh').addEventListener("click", () => switchDemo('7'));
+byId('fluid-effect').addEventListener("click", () => switchDemo('8'));
 byId('myLights').addEventListener("click", () => switchDemo('9'));
 byId('snake-light').addEventListener("click", () => switchDemo('10'));
 byId('snake-light-instanced').addEventListener("click", () => switchDemo('11'));
@@ -138,7 +140,7 @@ if(urlQuery['demo'] === '1') {
 } else if(urlQuery['demo'] === '7') {
   procMesh();
 } else if(urlQuery['demo'] === '8') {
-  loadObjFile();
+  loadFluidEffectExample();
 } else if(urlQuery['demo'] === '9') {
   myLights();
 } else if(urlQuery['demo'] === '10') {

@@ -2,7 +2,7 @@ import {GPU_FEATURES, gpuSettings, MEConfig} from "./me-config.js";
 import {mat4, vec3} from "wgpu-matrix";
 import {CinematicCamera, FirstPersonCamera, PlaneCamera, RPGCamera, WASDCamera} from "./engine/cameras.js";
 import MEMeshObj from "./engine/mesh-obj.js";
-import {LOG_FUNNY_BIG_ARCADE, LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, LOG_FUNNY_SMALL, LOG_FUNNY_BIG_TERMINAL, byId, meLoader, checkLock, mobileLock, preventZoom, getOrientation} from "./engine/utils.js";
+import {LOG_FUNNY_ARCADE, LOG_FUNNY_BIG_NEON, LOG_WARN, genName, mb, urlQuery, LOG_FUNNY, LOG_FUNNY_EXTRABIG, randomIntFromTo, isMobile, MeshType, byId, meLoader, checkLock, mobileLock, preventZoom, getOrientation} from "./engine/utils.js";
 import {MultiLang} from "./multilang/lang.js";
 import {MatrixSounds} from "./sounds/sounds.js";
 import {downloadMeshes, play} from "./engine/loader-obj.js";
@@ -42,7 +42,7 @@ import {CloudsVolumetric2} from "./engine/postprocessing/cloudes-volumetric-2.js
 import {FXAAPass} from "./engine/postprocessing/fxaa.js";
 
 /**
- *
+ * The world of Beast.
  * Main engine root class.
  * @author Nikola Lukic 2026
  * @email zlatnaspirala@gmail.com
@@ -186,6 +186,7 @@ export default class MatrixEngineWGPU {
       console.error("[webgpu][alphaMode] Wrong enum Valid:'opaque','premultiplied'!");
       return;
     }
+    // Small codepen buildin adaptation.
     if(typeof options.useContex == 'undefined') options.useContex = "webgpu";
     if(typeof options.dontUsePhysics === 'undefined') {
       if(typeof options.useJolt !== 'undefined') {
@@ -509,13 +510,11 @@ export default class MatrixEngineWGPU {
         {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: {type: 'uniform'}}
       ]
     });
-
     this.dummyClothBuffer = this.device.createBuffer({
       label: "Dummy Cloth",
       size: 16,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-
     this.uniformBufferBindGroupLayout = this.device.createBindGroupLayout({
       label: 'uniformBufferBindGroupLayout[mesh]',
       entries: [
@@ -524,7 +523,7 @@ export default class MatrixEngineWGPU {
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
-      ],
+      ]
     });
     // GLB INSTANCED
     this.uniformBufferBindGroupLayoutInstanced = this.device.createBindGroupLayout({
@@ -534,9 +533,8 @@ export default class MatrixEngineWGPU {
         {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}},
         {binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
         {binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {type: 'uniform'}},
-        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}},
-        // {binding: 5, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}}
-      ],
+        {binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {type: 'read-only-storage'}}
+      ]
     });
   }
 
@@ -566,7 +564,7 @@ export default class MatrixEngineWGPU {
     const requiredFeatures = [];
     for(const feature of GPU_FEATURES.GROUP_1) {
       if(this.adapter.features.has(feature)) {
-        console.log(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
+        console.info(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
         requiredFeatures.push(feature);
       }
     }
@@ -609,7 +607,7 @@ export default class MatrixEngineWGPU {
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c 🧬 Matrix-Engine-Wgpu 🧬 ", LOG_FUNNY_BIG_NEON);
     console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
+    console.log("%c Version 2.1.0 [The Beast] ", LOG_FUNNY);
     console.log("%c👽", LOG_FUNNY_EXTRABIG);
     console.log(
       "%cMatrix Engine WGPU - Gate is open \n" +
@@ -617,7 +615,7 @@ export default class MatrixEngineWGPU {
       " - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n" +
       " - Code Creator - standalone (use engine from npm) ai top level code generator.\n" +
       " - Creative power with intuitive visual scripting work flow and ai graph generetor.\n" +
-      " - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
+      " - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, FXAA, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n" +
       "   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n" +
       "🔥 Mobile support: chrome-android tested. 🔥", LOG_FUNNY);
     console.log(
@@ -965,13 +963,8 @@ export default class MatrixEngineWGPU {
   }
 
   getSceneObjectByName = (name) => {return this.mainRenderBundle.find((sceneObject) => sceneObject.name === name)}
-
-  getSceneObjectIfIncludes = (str) => {
-    return this.mainRenderBundle.filter((o) => o.name.includes(str) === true);
-  }
-
+  getSceneObjectIfIncludes = (str) => {return this.mainRenderBundle.filter((o) => o.name.includes(str) === true)}
   getSceneLightByName = (name) => {return this.lightContainer.find((l) => l.name === name)}
-
   getNameFromPath(p) {return p.split(/[/\\]/).pop().replace(/\.[^/.]+$/, "");}
 
   removeSceneObjectByName = (name) => {
@@ -1296,13 +1289,12 @@ export default class MatrixEngineWGPU {
   };
 
   updateLights() {
-    // const floatsPerLight = 36;
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
       const light = this.lightContainer[i];
-      if(light?.update) {
+      // if(light?.update) {
         const vpDirty = light.update();
         if(vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
-      }
+      // }
       this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i * 36);
     }
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);

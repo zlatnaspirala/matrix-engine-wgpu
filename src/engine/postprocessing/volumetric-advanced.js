@@ -1,3 +1,4 @@
+import {isMobile} from "../utils";
 /**
  *
  * AdvancedVolumetricPass - volumetric lighting for mobile & desktop
@@ -20,9 +21,9 @@
  *
  * NOTE: resize()/setQualityScale() recreate compositeOutputTex. Anything that holds
  * getOutputView() (e.g. BloomPass._invalidateSceneBindGroups) must be refreshed after.
+ * Shared uniform layout (16 floats = 64 bytes). Keep in sync with _updateParams().
  */
 
-// Shared uniform layout (16 floats = 64 bytes). Keep in sync with _updateParams().
 const PARAMS_WGSL = `
 struct Params {
   density: f32,
@@ -50,18 +51,11 @@ export class AdvancedVolumetricPass {
     this.device = device;
     this.width = width;
     this.height = height;
-
-    // ─ Device capability ─
-    this.isMobile = this._detectMobileDevice();
-    this.qualityScale = Math.max(0.25, Math.min(1.0, options.qualityScale ?? (this.isMobile ? 0.5 : 1.0)));
+    this.qualityScale = Math.max(0.25, Math.min(1.0, options.qualityScale ?? (isMobile() ? 0.5 : 1.0)));
     this._computeEffectiveSize();
-
     this._time = 0;
     this._timeScratch = new Float32Array(1);
 
-
-
-    // ─ Samplers ─
     this.linearSampler = device.createSampler({
       label: 'AdvancedVolumetricPass.linearSampler',
       magFilter: 'linear',
@@ -86,13 +80,13 @@ export class AdvancedVolumetricPass {
     // ─ Parameters ─
     this.params = {
       density: options.density ?? 0.02,
-      steps: this.isMobile ? (options.steps ?? 16) : (options.steps ?? 32),
+      steps: isMobile() ? (options.steps ?? 16) : (options.steps ?? 32),
       scatterStrength: options.scatterStrength ?? 1.0,
       heightFalloff: options.heightFalloff ?? 0.08,
       range: options.range ?? 50,
       temporalBlend: options.temporalBlend ?? 0.8,
       useTemporalReprojection: options.useTemporalReprojection ?? true,
-      mobileOptimizations: options.mobileOptimizations ?? this.isMobile,
+      mobileOptimizations: options.mobileOptimizations ?? isMobile(),
       useTextureProjection: options.useTextureProjection ?? false,
       textureProjectionIntensity: options.textureProjectionIntensity ?? 1.0,
     };
@@ -103,7 +97,6 @@ export class AdvancedVolumetricPass {
       direction: [0.0, -1.0, 0.5],
     };
 
-    // ─ Scratch (zero allocation in render) ─
     this._paramScratch = new Float32Array(16);
     this._lightDir = new Float32Array(4);
     this._lightPos = new Float32Array(4);
@@ -119,7 +112,6 @@ export class AdvancedVolumetricPass {
       }]
     };
 
-    // ─ Uniform buffers ─
     const ub = (label, size) => device.createBuffer({
       label: `AdvancedVolumetricPass.${label}`,
       size,
@@ -132,11 +124,8 @@ export class AdvancedVolumetricPass {
     this.lightDirBuffer = ub('lightDirBuffer', 16);
     this.lightColorBuffer = ub('lightColorBuffer', 16);
     this.lightPosBuffer = ub('lightPosBuffer', 16);
-
-    // Identity so an unset projection matrix is harmless.
     this._projectionMatrix.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     device.queue.writeBuffer(this.projectionMatrixBuffer, 0, this._projectionMatrix);
-
     // Dummy projection texture: the march layout always declares bindings 8-10.
     this._dummyProjTex = device.createTexture({
       label: 'AdvancedVolumetricPass.dummyProjTex',
@@ -153,10 +142,7 @@ export class AdvancedVolumetricPass {
     this._dummyProjView = this._dummyProjTex.createView();
     this._projectionTexView = null;
 
-    // ─ Textures ─
     this._allocTextures();
-
-    // ─ Pipelines ─
     this.marchPipeline = this._createMarchPipeline();
     this.temporalPipeline = this._createTemporalPipeline();
     this.compositePipeline = this._createCompositePipeline();
@@ -170,14 +156,6 @@ export class AdvancedVolumetricPass {
     this._updateParams();
     this._updateLightColor();
     this._buildBindGroups(sceneView);
-  }
-
-  // ───────────────────────── setup helpers ─────────────────────────
-
-  _detectMobileDevice() {
-    if(typeof navigator === 'undefined') return false;
-    const ua = navigator.userAgent || '';
-    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua);
   }
 
   _computeEffectiveSize() {
@@ -195,18 +173,16 @@ export class AdvancedVolumetricPass {
   }
 
   _allocTextures() {
-    // March output (effective resolution)
     this.volumetricTex = this._createTexture(this.effectiveWidth, this.effectiveHeight);
     this.volumetricTexView = this.volumetricTex.createView();
-
     // Temporal history, ping-pong (effective resolution)
     this._histTex = [
       this._createTexture(this.effectiveWidth, this.effectiveHeight),
       this._createTexture(this.effectiveWidth, this.effectiveHeight),
     ];
     this._histViews = this._histTex.map(t => t.createView());
-    this._hi = 0; // index of the history that holds the most recent result
-
+    // index of the history that holds the most recent result
+    this._hi = 0;
     // Composite output (full resolution)
     this.compositeOutputTex = this._createTexture(this.width, this.height);
     this.compositeOutputTexView = this.compositeOutputTex.createView();
@@ -245,12 +221,8 @@ export class AdvancedVolumetricPass {
     ];
   }
 
-  // ───────────────────────── public API ─────────────────────────
-
   init() {return this;}
-
   getOutputView() {return this.compositeOutputTexView;}
-
   setCompositeInput(sceneView) {this._buildBindGroups(sceneView);}
 
   setProjectionTexture(textureView, projectionMatrix) {
@@ -309,7 +281,7 @@ export class AdvancedVolumetricPass {
     this._computeEffectiveSize();
     this._freeTextures();
     this._allocTextures();
-    this._updateParams(); // targetW/targetH/qualityScale changed
+    this._updateParams();
     this._buildBindGroups(this._sceneView);
     this._marchBG = null;
   }
@@ -469,7 +441,6 @@ export class AdvancedVolumetricPass {
 
   render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
     if(sceneView && sceneView !== this._sceneView) this._buildBindGroups(sceneView);
-
     const q = this.device.queue;
     q.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
     q.writeBuffer(this.lightViewProjBuffer, 0, light.viewProjectionMatrix);
@@ -480,7 +451,6 @@ export class AdvancedVolumetricPass {
     this._lightDir[3] = 0.0;
     q.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
 
-
     this._time = performance.now() * 0.001;
     this._timeScratch[0] = this._time;
     this.device.queue.writeBuffer(this.paramsBuffer, 13 * 4, this._timeScratch);
@@ -490,14 +460,12 @@ export class AdvancedVolumetricPass {
       this._lightPos[0] = lp[0];
       this._lightPos[1] = lp[1];
       this._lightPos[2] = lp[2];
-      this._lightPos[3] = 1.0; // w = 1 -> range attenuation enabled
+      this._lightPos[3] = 1.0;
     } else {
       this._lightPos[3] = 0.0;
     }
     q.writeBuffer(this.lightPosBuffer, 0, this._lightPos);
-
     this.setMarchInputs(depthView, shadowArrayView);
-
     // Phase 1: ray march (effective resolution)
     {
       const pass = this._beginPass(encoder, this.volumetricTexView, 'volumetric-march');
@@ -506,7 +474,6 @@ export class AdvancedVolumetricPass {
       pass.draw(6);
       pass.end();
     }
-
     // Phase 2: temporal accumulation. Read history[read], write history[write].
     let compositeBG = this._compositeBGs[2];
     if(this.params.useTemporalReprojection) {
@@ -520,7 +487,6 @@ export class AdvancedVolumetricPass {
       compositeBG = this._compositeBGs[write];
       this._hi = write;
     }
-
     // Phase 3: composite + upsample (full resolution)
     {
       const pass = this._beginPass(encoder, this.compositeOutputTexView, 'volumetric-composite');
@@ -533,7 +499,7 @@ export class AdvancedVolumetricPass {
 }
 
 export function fullscreenVertWGSL() {
-  return /* wgsl */`
+  return `
     @vertex
     fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
       var pos = array<vec2<f32>, 6>(
@@ -546,7 +512,7 @@ export function fullscreenVertWGSL() {
 }
 
 function advancedMarchFragWGSL() {
-  return /* wgsl */`
+  return `
   ${PARAMS_WGSL}
 
   @group(0) @binding(0)  var depthTex:   texture_depth_2d;
@@ -666,7 +632,7 @@ fn sampleProjection(wp: vec3<f32>) -> vec3<f32> {
 }
 
 function temporalBlendFragWGSL() {
-  return /* wgsl */`
+  return `
   ${PARAMS_WGSL}
 
   @group(0) @binding(0) var currentTex: texture_2d<f32>;
@@ -685,7 +651,7 @@ function temporalBlendFragWGSL() {
 }
 
 function advancedCompositeFragWGSL() {
-  return /* wgsl */`
+  return `
   ${PARAMS_WGSL}
 
   @group(0) @binding(0) var sceneTex: texture_2d<f32>;
