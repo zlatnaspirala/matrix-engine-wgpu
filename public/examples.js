@@ -83447,7 +83447,18 @@ var loadFluidEffectExample = function() {
           }, 1e3);
         }
         MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile2.device, "rgba16float", 20, loadObjFile2.cameraBuffer);
-        MYCUBE.effects.fluid = new FluidEffect(app.device, { simRes: 128, dyeRes: 512, splatRadius: 2 });
+        MYCUBE.effects.fluid = new FluidEffect(
+          app.device,
+          {
+            simRes: 128,
+            dyeRes: 512,
+            splatRadius: 2,
+            localOffset: [0, 3, 0],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 3
+          }
+        );
         MYCUBE.effects.fluid.attachPointer(app.canvas);
         MYCUBE.effects.fluid.randomSplats(5);
         dispatchEvent(new CustomEvent("update-effects"));

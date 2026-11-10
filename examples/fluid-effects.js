@@ -184,9 +184,18 @@ export var loadFluidEffectExample = function() {
         //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
         //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
 
-        MYCUBE.effects.fluid = new FluidEffect(app.device, {simRes: 128, dyeRes: 512, splatRadius:2});
+        MYCUBE.effects.fluid = new FluidEffect(app.device,
+          {
+            simRes: 128, dyeRes: 512, splatRadius: 2,
+            localOffset: [0, 3, 0],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 3
+          });
         MYCUBE.effects.fluid.attachPointer(app.canvas);   // mouse/touch, for fullscreen planes
         MYCUBE.effects.fluid.randomSplats(5);             // demo
+
+
         dispatchEvent(new CustomEvent('update-effects'));
 
         MYCUBE.setAmbient(2, 3, 0.5);
