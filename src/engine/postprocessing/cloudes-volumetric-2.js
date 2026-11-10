@@ -61,7 +61,7 @@ export class CloudsVolumetric2 {
       detailAmount: options.detailAmount ?? 0.35,
       viewSteps: options.viewSteps ?? (this.isMobile ? 16 : 32),
       lightSteps: options.lightSteps ?? (this.isMobile ? 3 : 4),
-      maxDistance: options.maxDistance ?? 4000,
+      maxDistance: options.maxDistance ?? 2000,
       phaseG: options.phaseG ?? 0.55,
       temporal: options.temporal ?? true,
       temporalBlend: options.temporalBlend ?? 0.9,
@@ -316,7 +316,7 @@ export class CloudsVolumetric2 {
     });
   }
 
-  _writeUniforms(camera) {
+  _writeUniforms(light , camera) {
     const u = this._u, p = this.params;
     const now = performance.now();
     const dt = Math.min(0.1, (now - this._lastTime) * 0.001);
@@ -326,7 +326,7 @@ export class CloudsVolumetric2 {
     this._wind[1] += (p.windDir[1] / wl) * p.windSpeed * dt;
 
     u.set(camera.invViewProjectionMatrix, 0);
-    u.set(this._hasPrev ? this._prevVP : camera.viewProjectionMatrix, 16);
+    u.set(this._hasPrev ? this._prevVP : light.viewProjectionMatrix, 16);
     u[32] = this.sunDirection[0]; u[33] = this.sunDirection[1]; u[34] = this.sunDirection[2]; u[35] = 0;
     u[36] = this.sunColor[0] * this.sunIntensity;
     u[37] = this.sunColor[1] * this.sunIntensity;
@@ -346,7 +346,7 @@ export class CloudsVolumetric2 {
     u[63] = 0;
     u[64] = this.width; u[65] = this.height; u[66] = this.lowW; u[67] = this.lowH;
     this.device.queue.writeBuffer(this.uniformBuffer, 0, u);
-    this._prevVP.set(camera.viewProjectionMatrix);
+    this._prevVP.set(light.viewProjectionMatrix);
   }
 
   /**
@@ -354,12 +354,10 @@ export class CloudsVolumetric2 {
    * @param {GPUTextureView} depthView  main depth view (depth24plus)
    * @param {{invViewProjectionMatrix: Float32Array, viewProjectionMatrix: Float32Array}} camera
    */
-  render(encoder, sceneView = null,  depthView, shadowArrayView = null,  camera) {
+  render(encoder, sceneView = null,  depthView, shadowArrayView = null,  camera, light) {
     //  render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
-
     this._setMarchInputs(depthView);
-    this._writeUniforms(camera);
-
+    this._writeUniforms(light, camera);
     {
       this._marchPassDesc.colorAttachments[0].view = this.marchView;
       const pass = encoder.beginRenderPass(this._marchPassDesc);

@@ -54238,7 +54238,7 @@ var CloudsVolumetric2 = class {
       detailAmount: options2.detailAmount ?? 0.35,
       viewSteps: options2.viewSteps ?? (this.isMobile ? 16 : 32),
       lightSteps: options2.lightSteps ?? (this.isMobile ? 3 : 4),
-      maxDistance: options2.maxDistance ?? 4e3,
+      maxDistance: options2.maxDistance ?? 2e3,
       phaseG: options2.phaseG ?? 0.55,
       temporal: options2.temporal ?? true,
       temporalBlend: options2.temporalBlend ?? 0.9,
@@ -54515,7 +54515,7 @@ var CloudsVolumetric2 = class {
       ]
     });
   }
-  _writeUniforms(camera) {
+  _writeUniforms(light, camera) {
     const u2 = this._u, p2 = this.params;
     const now = performance.now();
     const dt2 = Math.min(0.1, (now - this._lastTime) * 1e-3);
@@ -54524,7 +54524,7 @@ var CloudsVolumetric2 = class {
     this._wind[0] += p2.windDir[0] / wl * p2.windSpeed * dt2;
     this._wind[1] += p2.windDir[1] / wl * p2.windSpeed * dt2;
     u2.set(camera.invViewProjectionMatrix, 0);
-    u2.set(this._hasPrev ? this._prevVP : camera.viewProjectionMatrix, 16);
+    u2.set(this._hasPrev ? this._prevVP : light.viewProjectionMatrix, 16);
     u2[32] = this.sunDirection[0];
     u2[33] = this.sunDirection[1];
     u2[34] = this.sunDirection[2];
@@ -54562,16 +54562,16 @@ var CloudsVolumetric2 = class {
     u2[66] = this.lowW;
     u2[67] = this.lowH;
     this.device.queue.writeBuffer(this.uniformBuffer, 0, u2);
-    this._prevVP.set(camera.viewProjectionMatrix);
+    this._prevVP.set(light.viewProjectionMatrix);
   }
   /**
    * @param {GPUCommandEncoder} encoder
    * @param {GPUTextureView} depthView  main depth view (depth24plus)
    * @param {{invViewProjectionMatrix: Float32Array, viewProjectionMatrix: Float32Array}} camera
    */
-  render(encoder, sceneView = null, depthView, shadowArrayView = null, camera) {
+  render(encoder, sceneView = null, depthView, shadowArrayView = null, camera, light) {
     this._setMarchInputs(depthView);
-    this._writeUniforms(camera);
+    this._writeUniforms(light, camera);
     {
       this._marchPassDesc.colorAttachments[0].view = this.marchView;
       const pass = encoder.beginRenderPass(this._marchPassDesc);
