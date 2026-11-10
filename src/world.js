@@ -1743,7 +1743,7 @@ export default class MatrixEngineWGPU {
     }
   }
 
-  activateVolumetricEffectTexProj = (arg) => {
+  activateVolumetricTexProj = (arg) => {
     if(this.bloomPass.enabled != true) {console.warn(`%cTheBeast: You must enable bloom before volumetric.`); return;}
     let p;
     if(typeof arg === 'undefined') {

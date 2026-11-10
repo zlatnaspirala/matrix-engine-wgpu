@@ -56634,7 +56634,7 @@ var MatrixEngineWGPU = class {
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
   };
-  activateVolumetricEffectTexProj = (arg) => {
+  activateVolumetricTexProj = (arg) => {
     if (this.bloomPass.enabled != true) {
       console.warn(`%cTheBeast: You must enable bloom before volumetric.`);
       return;
@@ -82521,8 +82521,16 @@ var volumetrixTexProj = function() {
       app2.cameras.WASD.setYaw(0);
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
-      app2.activateVolumetricClouds2({ coverage: 0.55, cloudBase: 120, cloudThickness: 60 });
-      app2.volumetricPass.setCloudLayer(-21, 100);
+      app2.activateVolumetricClouds({
+        qualityScale: 0.35,
+        steps: 24,
+        coverage: 0.58,
+        cloudBase: 44,
+        cloudTop: 28,
+        noiseScale: 0.035,
+        windSpeed: 0.8,
+        scatterStrength: 1.2
+      });
       app2.monster.playAnimationByIndex(3);
       app2.monster.position.onPositionReach = () => {
         app2.monster.playAnimationByIndex(3);
