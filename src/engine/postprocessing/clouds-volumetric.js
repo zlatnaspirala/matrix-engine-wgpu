@@ -488,12 +488,19 @@ function cloudsMarchFragmentWGSL() {
     let depthSize = vec2<f32>(textureDimensions(depthTex));
     let depthPx = vec2<i32>(clamp(uv * depthSize, vec2<f32>(0.0), depthSize - vec2<f32>(1.0)));
     let sceneDepth = textureLoad(depthTex, depthPx, 0);
+
+    // Match CloudsVolumetric2: derive the ray from the near and far clip
+    // planes, and only use scene depth as a limit when opaque geometry exists.
     let nearPos = worldFromDepth(uv, 0.0);
-    let scenePos = worldFromDepth(uv, sceneDepth);
-    let rayVector = scenePos - nearPos;
-    let rayLength = length(rayVector);
-    let rayDir = normalize(rayVector);
-    let hit = intersectCloudLayer(nearPos, rayDir, rayLength);
+    let farPos = worldFromDepth(uv, 1.0);
+    let rayDir = normalize(farPos - nearPos);
+
+    var sceneDistance = 1e9;
+    if(sceneDepth < 1.0) {
+      sceneDistance = length(worldFromDepth(uv, sceneDepth) - nearPos);
+    }
+
+    let hit = intersectCloudLayer(nearPos, rayDir, sceneDistance);
     if(hit.y <= 0.001) { return vec4<f32>(0.0); }
 
 
