@@ -526,7 +526,9 @@ function cloudsMarchFragmentWGSL() {
       if(transmittance < 0.025) { break; }
     }
 
-    return vec4<f32>(radiance, 1.0 - transmittance);
+    // DIAGNOSTIC: show accumulated opacity as grayscale, independent of lighting.
+    let opacityValue = 1.0 - transmittance;
+    return vec4<f32>(vec3<f32>(opacityValue), 1.0);
   }
   `;
 }
