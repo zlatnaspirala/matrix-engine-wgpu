@@ -54141,6 +54141,18 @@ function cloudsMarchFragmentWGSL() {
     return max(0.0, broad * cloudVerticalProfile(worldPos) * params.shape.y);
   }
 
+  // fn densityAt(worldPos: vec3<f32>) -> f32 {
+  //   let h = clamp(
+  //       (worldPos.y - params.shape.z) /
+  //       max(params.shape.w - params.shape.z, 0.001),
+  //       0.0,
+  //       1.0
+  //   );
+
+//     return smoothstep(0.0, 0.2, h) *
+//            (1.0 - smoothstep(0.7, 1.0, h));
+// }
+
   // Lower-cost coarse density for the two-point light transmittance estimate.
   fn shadowDensityAt(worldPos: vec3<f32>) -> f32 {
     let p = worldPos * (params.motion.x * 0.72) + cloudWindOffset();
@@ -54175,6 +54187,7 @@ function cloudsMarchFragmentWGSL() {
     let hit = intersectCloudLayer(nearPos, rayDir, rayLength);
     if(hit.y <= 0.001) { return vec4<f32>(0.0); }
 
+
     let stepLength = hit.y / max(params.motion.w, 8.0);
     let jitter = fract(sin(dot(pixel.xy, vec2<f32>(12.9898, 78.233))) * 43758.5453);
     var transmittance = 1.0;
@@ -54183,6 +54196,9 @@ function cloudsMarchFragmentWGSL() {
       let t = hit.x + (f32(i) + jitter) * stepLength;
       let p = nearPos + rayDir * t;
       let density = densityAt(p);
+      radiance += vec3<f32>(density * 0.08);
+      radiance += vec3<f32>(clamp((p.y - params.shape.z) /(params.shape.w - params.shape.z), 0.0, 1.0));
+      
       if(density > 0.001) {
         let opticalDepth = density * stepLength * 0.035;
         let attenuation = exp(-opticalDepth);
@@ -54198,7 +54214,11 @@ function cloudsMarchFragmentWGSL() {
       }
       if(transmittance < 0.025) { break; }
     }
-    return vec4<f32>(radiance, 1.0 - transmittance);
+    // return vec4<f32>(radiance, 1.0 - transmittance);
+    // return vec4<f32>(1.0, 0.0, 1.0, 1.0);
+    // return vec4<f32>(0.0, 1.0, 0.0, 1.0); // GREEN: intersection
+    // return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    return vec4<f32>(radiance, 1.0);
   }
   `;
 }
