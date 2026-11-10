@@ -508,8 +508,8 @@ function cloudsMarchFragmentWGSL() {
       densitySum += densityAt(p);
     }
     let averageDensity = densitySum / max(params.motion.w, 1.0);
-    let diagnostic = clamp(averageDensity * 6.0, 0.0, 1.0);
-    return vec4<f32>(vec3<f32>(diagnostic), 1.0);
+    let diagnosticValue = clamp(averageDensity * 6.0, 0.0, 1.0);
+    return vec4<f32>(vec3<f32>(diagnosticValue), 1.0);
   }
   `;
 }
