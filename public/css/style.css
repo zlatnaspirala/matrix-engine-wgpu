@@ -1696,7 +1696,7 @@ svg.connections {
 .node-fields {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
   margin-bottom: 6px;
 }
 

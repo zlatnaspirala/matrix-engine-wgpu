@@ -1548,15 +1548,15 @@ export default class FluxCodexVertex {
 
         const fieldWrap = document.createElement("div");
         fieldWrap.className = "node-field";
-        fieldWrap.style.cssText = "display:flex;flex-direction:column;gap:2px;margin:3px 0;min-width:0;";
+        fieldWrap.style.cssText = "display:flex;flex-direction:column;gap:2px;margin:3px 4px;min-width:0;";
 
         const label = document.createElement("span");
         label.className = "field-label";
         label.textContent = field.key;
-        label.style.cssText = "font-size:10px;line-height:1.2;opacity:0.7;";
+        label.style.cssText = "font-size:9px;line-height:1;opacity:0.9;margin-top:-5px;text-align: left;";
 
         input.style.width = "100%";
-        label.title = field.key;
+        label.title = field.key + ':';
         fieldWrap.append(label, input);
         fieldsWrap.appendChild(fieldWrap);
       });

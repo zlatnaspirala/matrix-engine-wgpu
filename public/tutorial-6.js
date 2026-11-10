@@ -199,10 +199,9 @@ var urlQuery = (function() {
   return query_string;
 })();
 var LOG_WARN = "background: gray; color: yellow; font-size:10px";
-var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:18px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background: black;";
-var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background: black;";
+var LOG_FUNNY = "font-family: stormfaze;color: #f1f033; font-size:15px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 2px 2px 4px #c160a6, 6px 2px 0px #123de3;background:linear-gradient(90deg,#111,#222);";
+var LOG_FUNNY_SMALL = "font-family: stormfaze;color: #f1f033; font-size:10px;text-shadow: 2px 2px 4px #f335f4, 4px 4px 4px #d64444, 1px 1px 2px #c160a6, 3px 1px 0px #123de3;background:linear-gradient(90deg,#111,#222); ";
 var LOG_FUNNY_ARCADE = "font-family: system-ui; font-size:16px; font-weight:400;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
-var LOG_FUNNY_BIG_ARCADE = "font-family: system-ui; font-size:24px; font-weight:600;color:#ffffff;text-shadow: 2px 2px 6px #000;background:linear-gradient(90deg,#111,#222); padding:12px 18px;";
 var LOG_FUNNY_BIG_NEON = "font-family: stormfaze; font-size:30px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
 var LOG_FUNNY_EXTRABIG = "font-family: stormfaze; font-size:230px; font-weight:900;color:#00ffff;text-shadow: 0 0 5px #01d6d6ff, 0 0 10px #00ffff, 4px 4px 0 #ff00ff;background:black; padding:14px 18px;";
 function genName(length2) {
@@ -288,7 +287,7 @@ var mb = {
   t: {},
   setContent: function(content, t) {
     var iMsg = document.createElement("div");
-    iMsg.innerHTML = content;
+    iMsg.textContent = String(content);
     iMsg.id = `msgbox-loc-${mb.c}`;
     mb.root().appendChild(iMsg);
     iMsg.classList.add("animate1");
@@ -453,7 +452,8 @@ var MEConfig = {
   fsManager: new FullScreenManagerElement(),
   SHADOW_RES: isMobile() == true ? 256 : 512,
   MAX_BONES: isMobile() == true ? 70 : 100,
-  MAX_SPOTLIGHTS: isMobile() == true ? 18 : 20,
+  MAX_SPOTLIGHTS: isMobile() == true ? 4 : 10,
+  GPUCullingRad: 200,
   PHYSICS_GROUND_Y: -1,
   PHYSICS_GROUND_BYX: 100,
   PHYSICS_GROUND_BYZ: 100,
@@ -469,19 +469,15 @@ var MEConfig = {
   construct: function(options2 = {}) {
     if (urlQ["GRAVITY_Y_AXIS"]) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
-      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["PHYSICS_GROUND_BYX"]) {
       this.PHYSICS_GROUND_BYX = parseInt(urlQ["PHYSICS_GROUND_BYX"]);
-      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["PHYSICS_GROUND_BYZ"]) {
       this.PHYSICS_GROUND_BYZ = parseInt(urlQ["PHYSICS_GROUND_BYZ"]);
-      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["SHADOW_RES"]) {
       this.SHADOW_RES = parseInt(urlQ["SHADOW_RES"]);
-      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["MAX_SPOTLIGHTS"]) {
       this.MAX_SPOTLIGHTS = parseInt(urlQ["MAX_SPOTLIGHTS"]);
@@ -489,35 +485,36 @@ var MEConfig = {
     if (options2.MAX_SPOTLIGHTS) {
       this.MAX_SPOTLIGHTS = options2.MAX_SPOTLIGHTS;
     }
-    console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
     if (urlQ["MAX_BONES"]) {
       this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
     }
     if (options2.MAX_BONES) {
       this.MAX_BONES = options2.MAX_BONES;
     }
-    console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
+    if (urlQ["GPUCullingRad"]) {
+      this.GPUCullingRad = parseInt(urlQ["GPUCullingRad"]);
+    }
+    if (options2.GPUCullingRad) {
+      this.GPUCullingRad = options2.GPUCullingRad;
+    }
     if (urlQ["TOUCH_SENS"]) {
       this.TOUCH_SENS = parseInt(urlQ["TOUCH_SENS"]);
     }
     if (options2.TOUCH_SENS) {
       this.TOUCH_SENS = options2.TOUCH_SENS;
     }
-    console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
     if (urlQ["MOUSE_SENS"]) {
       this.MOUSE_SENS = parseInt(urlQ["MOUSE_SENS"]);
     }
     if (options2.MOUSE_SENS) {
       this.MOUSE_SENS = options2.MOUSE_SENS;
     }
-    console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
     if (urlQ["CAM_SPEED"]) {
       this.CAM_SPEED = parseInt(urlQ["CAM_SPEED"]);
     }
     if (options2.CAM_SPEED) {
       this.CAM_SPEED = options2.CAM_SPEED;
     }
-    console.log(`%cCAM_SPEED : ${this.CAM_SPEED}`, LOG_FUNNY_ARCADE);
     if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
     }
@@ -539,7 +536,6 @@ var MEConfig = {
     }
     if (urlQ["PHYSICS_GROUND_Y"] != null) {
       this.PHYSICS_GROUND_Y = parseFloat(urlQ["PHYSICS_GROUND_Y"]);
-      console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
     }
   },
   checkOffScreen: function() {
@@ -2339,23 +2335,22 @@ var WASDCamera = class _WASDCamera {
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   invProj = new Float32Array(16);
-  _moveVelScratch = new Float32Array(3);
-  _dirty = true;
   right = vec3Impl.fromValues(1, 0, 0);
   up = vec3Impl.fromValues(0, 1, 0);
   back = vec3Impl.fromValues(0, 0, 1);
   _rotYScratch = mat4Impl.create();
   _rotXScratch = mat4Impl.create();
   _viewScratch = mat4Impl.create();
-  _digital = { forward: false, backward: false, left: false, right: false, up: false, down: false };
+  _digital = 0;
   _mouseDown = false;
   _lookDisabled = false;
-  // when true, pointer drag no longer rotates the camera
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
-  _dirtyAngle = false;
+  _dirtyAngle = true;
+  usePointerEvents = false;
+  static HALF_PI = Math.PI * 0.5;
   constructor(options2 = {}) {
     if (options2.position) {
       this.position[0] = options2.position[0];
@@ -2372,10 +2367,15 @@ var WASDCamera = class _WASDCamera {
     } else {
       this.noEvent = false;
     }
-    if (this.canvas) this._setupInput(this.canvas);
+    if (this.canvas) {
+      this._setupInput(this.canvas);
+    }
     this._recalculateViewVP();
-    if (isMobile() == true && options2.isActive == "init active cam") {
-      MobileDOM.createWASD(this, { marginR: 0, marginD: 0 });
+    if (isMobile() === true && options2.isActive == "init active cam") {
+      MobileDOM.createWASD(this, {
+        marginR: 0,
+        marginD: 0
+      });
     }
   }
   setProjection(fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) {
@@ -2410,19 +2410,26 @@ var WASDCamera = class _WASDCamera {
     return out;
   }
   _recalculateViewVP() {
-    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
-    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
-    this.right[0] = cy;
-    this.right[1] = 0;
-    this.right[2] = -sy;
-    this.up[0] = sy * sp;
-    this.up[1] = cp;
-    this.up[2] = cy * sp;
-    this.back[0] = sy * cp;
-    this.back[1] = -sp;
-    this.back[2] = cy * cp;
-    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
+    const yaw = this.yaw;
+    const pitch = this.pitch;
+    const cy = Math.cos(yaw);
+    const sy = Math.sin(yaw);
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const rx = this.right;
+    const uy = this.up;
+    const bz = this.back;
+    const p = this.position;
     const vs = this.view;
+    rx[0] = cy;
+    rx[1] = 0;
+    rx[2] = -sy;
+    uy[0] = sy * sp;
+    uy[1] = cp;
+    uy[2] = cy * sp;
+    bz[0] = sy * cp;
+    bz[1] = -sp;
+    bz[2] = cy * cp;
     vs[0] = rx[0];
     vs[4] = rx[1];
     vs[8] = rx[2];
@@ -2443,12 +2450,14 @@ var WASDCamera = class _WASDCamera {
   }
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
-    let touchStartX = 0, touchStartY = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
     if (isMobile() === true) {
       canvas.addEventListener("touchstart", (e) => {
         if (e.touches.length > 0) {
-          touchStartX = e.touches[0].clientX;
-          touchStartY = e.touches[0].clientY;
+          const touch = e.touches[0];
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
         }
       }, { passive: false });
       canvas.addEventListener("touchmove", (e) => {
@@ -2459,8 +2468,12 @@ var WASDCamera = class _WASDCamera {
           const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
           this.yaw -= dx * this.rotationSpeed;
           this.pitch -= dy * this.rotationSpeed;
-          this.yaw %= Math.PI * 2;
-          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+          const HALF_PI = _WASDCamera.HALF_PI;
+          if (this.pitch > HALF_PI) {
+            this.pitch = HALF_PI;
+          } else if (this.pitch < -HALF_PI) {
+            this.pitch = -HALF_PI;
+          }
           this._dirtyAngle = true;
           touchStartX = touch.clientX;
           touchStartY = touch.clientY;
@@ -2469,142 +2482,207 @@ var WASDCamera = class _WASDCamera {
       }, { passive: false });
     }
     if (isMobile() === false) {
-      canvas.addEventListener("contextmenu", (e) => {
+      canvas.oncontextmenu = (e) => {
         e.preventDefault();
-      });
-      canvas.addEventListener("pointerdown", (e) => {
-        if (e.pointerType === "mouse") {
-          this._mouseDown = true;
-          if (canvas.requestPointerLock) {
-          } else {
-            canvas.setPointerCapture(e.pointerId);
+      };
+      if (this.usePointerEvents === true) {
+        this._setupPointerEvents(canvas);
+      } else {
+        this._setupMouseEvents(canvas);
+      }
+    }
+    if (this.noEvent !== true) {
+      window.addEventListener(
+        "keydown",
+        (e) => {
+          if (e.repeat) return;
+          let bit = 0;
+          switch (e.code) {
+            case "ArrowUp":
+            case "KeyW":
+              bit = 1;
+              break;
+            case "ArrowDown":
+            case "KeyS":
+              bit = 2;
+              break;
+            case "ArrowLeft":
+            case "KeyA":
+              bit = 4;
+              break;
+            case "ArrowRight":
+            case "KeyD":
+              bit = 8;
+              break;
+            case "KeyV":
+              bit = 16;
+              break;
+            case "KeyC":
+              bit = 32;
+              break;
+            default:
+              return;
           }
-        }
-      }, { passive: false });
-      canvas.addEventListener("pointermove", (e) => {
-        if (window.__isDragging === true) {
-          console.log("prevent dragging");
-          return;
-        }
-        if (e.pointerType === "mouse" && this._mouseDown) {
-          if (this._lookDisabled) {
+          this._digital |= bit;
+        },
+        { passive: true }
+      );
+      window.addEventListener("keyup", (e) => {
+        let bit = 0;
+        switch (e.code) {
+          case "ArrowUp":
+          case "KeyW":
+            bit = 1;
+            break;
+          case "ArrowDown":
+          case "KeyS":
+            bit = 2;
+            break;
+          case "ArrowLeft":
+          case "KeyA":
+            bit = 4;
+            break;
+          case "ArrowRight":
+          case "KeyD":
+            bit = 8;
+            break;
+          case "KeyV":
+            bit = 16;
+            break;
+          case "KeyC":
+            bit = 32;
+            break;
+          default:
             return;
-          }
-          const dx = e.movementX * this.MOUSE_SENS;
-          const dy = e.movementY * this.MOUSE_SENS;
-          this.yaw -= dx * this.rotationSpeed;
-          this.pitch -= dy * this.rotationSpeed;
-          this.yaw %= Math.PI * 2;
-          this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
-          this._dirtyAngle = true;
         }
+        this._digital &= ~bit;
       }, { passive: true });
-      canvas.addEventListener("pointerup", (e) => {
+    }
+  }
+  // CLASSIC MOUSE EVENTS
+  _setupMouseEvents(canvas) {
+    canvas.onmousedown = (e) => {
+      if (e.button !== 0) return;
+      this._mouseDown = true;
+    };
+    canvas.onmousemove = (e) => {
+      if (window.__isDragging === true) return;
+      if (!this._mouseDown) return;
+      if (this._lookDisabled) return;
+      const dx = e.movementX;
+      const dy = e.movementY;
+      this.yaw -= dx * this.MOUSE_SENS * this.rotationSpeed;
+      this.pitch -= dy * this.MOUSE_SENS * this.rotationSpeed;
+      const HALF_PI = _WASDCamera.HALF_PI;
+      if (this.pitch > HALF_PI) {
+        this.pitch = HALF_PI;
+      } else if (this.pitch < -HALF_PI) {
+        this.pitch = -HALF_PI;
+      }
+      this._dirtyAngle = true;
+    };
+    canvas.onmouseup = () => {
+      this._mouseDown = false;
+    };
+    canvas.onmouseleave = () => {
+      this._mouseDown = false;
+    };
+  }
+  // POINTER EVENTS
+  _setupPointerEvents(canvas) {
+    canvas.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse") return;
+      this._mouseDown = true;
+      if (canvas.setPointerCapture) {
+        canvas.setPointerCapture(e.pointerId);
+      }
+    }, { passive: true });
+    canvas.addEventListener(
+      "pointermove",
+      (e) => {
+        if (window.__isDragging === true) return;
+        if (e.pointerType !== "mouse") return;
+        if (!this._mouseDown) return;
+        if (this._lookDisabled) return;
+        const dx = e.movementX;
+        const dy = e.movementY;
+        this.yaw -= dx * this.MOUSE_SENS * this.rotationSpeed;
+        this.pitch -= dy * this.MOUSE_SENS * this.rotationSpeed;
+        const HALF_PI = _WASDCamera.HALF_PI;
+        if (this.pitch > HALF_PI) {
+          this.pitch = HALF_PI;
+        } else if (this.pitch < -HALF_PI) {
+          this.pitch = -HALF_PI;
+        }
+        this._dirtyAngle = true;
+      },
+      { passive: true }
+    );
+    canvas.addEventListener(
+      "pointerup",
+      (e) => {
         if (e.pointerType === "mouse") {
           this._mouseDown = false;
         }
-      }, { passive: true });
-    }
-    this._keyInterval = null;
-    const setDigital = (e, value) => {
-      switch (e.code) {
-        case "ArrowUp":
-          this._digital.forward = value;
-          break;
-        case "ArrowDown":
-          this._digital.backward = value;
-          break;
-        case "ArrowLeft":
-          this._digital.left = value;
-          break;
-        case "ArrowRight":
-          this._digital.right = value;
-          break;
-        case "KeyW":
-          this._digital.forward = value;
-          break;
-        case "KeyS":
-          this._digital.backward = value;
-          break;
-        case "KeyA":
-          this._digital.left = value;
-          break;
-        case "KeyD":
-          this._digital.right = value;
-          break;
-        case "KeyV":
-          this._digital.up = value;
-          break;
-        case "KeyC":
-          this._digital.down = value;
-          break;
-      }
-      if (value == true && this._keyInterval === null) {
-        this._keyInterval = setInterval(() => {
-          this._dirty = true;
-          this._dirtyAngle = true;
-          this._applyDigitalMovement();
-        }, 16);
-      } else {
-        const d = this._digital;
-        if (!d.forward && !d.backward && !d.left && !d.right && !d.up && !d.down) {
-          clearInterval(this._keyInterval);
-          this._keyInterval = null;
-          this._dirty = false;
-          this._dirtyAngle = false;
+      },
+      { passive: true }
+    );
+    canvas.addEventListener(
+      "pointercancel",
+      (e) => {
+        if (e.pointerType === "mouse") {
+          this._mouseDown = false;
         }
-      }
-    };
-    if (this.noEvent !== true) {
-      window.addEventListener("keydown", (e) => setDigital(e, true), { passive: true });
-      window.addEventListener("keyup", (e) => setDigital(e, false), { passive: true });
-    }
+      },
+      { passive: true }
+    );
   }
+  // WASD MOVEMENT
   _applyDigitalMovement() {
     const d = this._digital;
-    let vx = 0, vy = 0, vz = 0;
-    if (d.forward) {
-      vx -= this.back[0];
-      vy -= this.back[1];
-      vz -= this.back[2];
+    if (d === 0) return;
+    const right2 = this.right;
+    const up = this.up;
+    const back = this.back;
+    const p = this.position;
+    let vx = 0;
+    let vy = 0;
+    let vz = 0;
+    if (d & 1) {
+      vx -= back[0];
+      vy -= back[1];
+      vz -= back[2];
     }
-    if (d.backward) {
-      vx += this.back[0];
-      vy += this.back[1];
-      vz += this.back[2];
+    if (d & 2) {
+      vx += back[0];
+      vy += back[1];
+      vz += back[2];
     }
-    if (d.right) {
-      vx += this.right[0];
-      vy += this.right[1];
-      vz += this.right[2];
+    if (d & 4) {
+      vx -= right2[0];
+      vy -= right2[1];
+      vz -= right2[2];
     }
-    if (d.left) {
-      vx -= this.right[0];
-      vy -= this.right[1];
-      vz -= this.right[2];
+    if (d & 8) {
+      vx += right2[0];
+      vy += right2[1];
+      vz += right2[2];
     }
-    if (d.up) {
-      vx += this.up[0];
-      vy += this.up[1];
-      vz += this.up[2];
+    if (d & 16) {
+      vx += up[0];
+      vy += up[1];
+      vz += up[2];
     }
-    if (d.down) {
-      vx -= this.up[0];
-      vy -= this.up[1];
-      vz -= this.up[2];
+    if (d & 32) {
+      vx -= up[0];
+      vy -= up[1];
+      vz -= up[2];
     }
-    const len2 = Math.sqrt(vx * vx + vy * vy + vz * vz);
-    if (len2 < 1e-4) return;
     const s = this.movementSpeed;
-    this.position[0] += vx * s;
-    this.position[1] += vy * s;
-    this.position[2] += vz * s;
-    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
-    this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
-    this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
-    this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
-    _WASDCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
-    this._dirty = false;
+    p[0] += vx * s;
+    p[1] += vy * s;
+    p[2] += vz * s;
+    this._dirtyAngle = true;
   }
   update() {
     if (!this._dirtyAngle) return;
@@ -2637,7 +2715,7 @@ var WASDCamera = class _WASDCamera {
     this.yaw = y2;
     this._dirtyAngle = true;
   };
-  // new: clean on/off toggle for camera look, replaces window.__isDragging hack
+  // LOOK CONTROL
   setLookEnabled = (enabled) => {
     this._lookDisabled = !enabled;
   };
@@ -2668,8 +2746,8 @@ var RPGCamera = class _RPGCamera {
   scrollSpeed = 1;
   _detachedFromFollow = false;
   _digital = { forward: false, backward: false, left: false, right: false };
-  _keyInterval = null;
-  KEYBOARD_SPEED = 4.5;
+  _lastMoveSceneTime = void 0;
+  KEYBOARD_SPEED = 7.5;
   mousRollInAction = false;
   _dirty = true;
   constructor(options2 = {}) {
@@ -2743,8 +2821,21 @@ var RPGCamera = class _RPGCamera {
     out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
     return out;
   }
-  _applyDigitalMovement() {
+  _applyDigitalMovement(sceneTime) {
     const d = this._digital;
+    if (this.followMe?.inMove === true) this._dirtyAngle = true;
+    if (!d.forward && !d.backward && !d.left && !d.right) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    if (this._lastMoveSceneTime === void 0) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    let dt = sceneTime - this._lastMoveSceneTime;
+    this._lastMoveSceneTime = sceneTime;
+    if (dt <= 0) return;
+    if (dt > 0.1) dt = 0.1;
     let vx = 0, vz = 0;
     if (d.forward) {
       vx -= this.back[0];
@@ -2764,48 +2855,42 @@ var RPGCamera = class _RPGCamera {
     }
     const len2 = Math.sqrt(vx * vx + vz * vz);
     if (len2 < 1e-4) return;
-    const s = this.KEYBOARD_SPEED / len2;
+    const s = this.KEYBOARD_SPEED * (dt / 0.016) / len2;
     this.position[0] += vx * s;
     this.position[2] += vz * s;
     this._dirty = true;
+    this._dirtyAngle = true;
   }
   _setupKeyboard() {
     const setDigital = (e, value) => {
+      const d = this._digital;
+      const wasAnyDown = d.forward || d.backward || d.left || d.right;
       switch (e.code) {
         case "KeyW":
-          this._digital.forward = value;
+        case "ArrowUp":
+          d.forward = value;
           break;
         case "KeyS":
-          this._digital.backward = value;
+        case "ArrowDown":
+          d.backward = value;
           break;
         case "KeyA":
-          this._digital.left = value;
+        case "ArrowLeft":
+          d.left = value;
           break;
         case "KeyD":
-          this._digital.right = value;
-          break;
-        case "ArrowUp":
-          this._digital.forward = value;
-          break;
-        case "ArrowDown":
-          this._digital.backward = value;
-          break;
-        case "ArrowLeft":
-          this._digital.left = value;
-          break;
         case "ArrowRight":
-          this._digital.right = value;
+          d.right = value;
           break;
+        default:
+          return;
       }
-      if (value && this._keyInterval === null) {
+      const anyDown = d.forward || d.backward || d.left || d.right;
+      if (value && !wasAnyDown) {
         this._detachedFromFollow = true;
-        this._keyInterval = setInterval(() => this._applyDigitalMovement(), 16);
-      } else {
-        const d = this._digital;
-        if (!d.forward && !d.backward && !d.left && !d.right) {
-          clearInterval(this._keyInterval);
-          this._keyInterval = null;
-        }
+        this._lastMoveSceneTime = void 0;
+      } else if (!anyDown) {
+        this._lastMoveSceneTime = void 0;
       }
     };
     window.addEventListener("keydown", (e) => setDigital(e, true), { passive: true });
@@ -2823,6 +2908,7 @@ var RPGCamera = class _RPGCamera {
         this.scrollY -= e.deltaY * this.scrollSpeed * 0.01;
         this.scrollY = Math.max(this.minY, Math.min(this.maxY, this.scrollY));
         this._dirty = true;
+        this._dirtyAngle = true;
       });
       this._setupKeyboard();
     } else {
@@ -2933,9 +3019,13 @@ var RPGCamera = class _RPGCamera {
   }
   update() {
     this._updateFollow();
-    if (!this._dirty) return;
+    if (!this._dirty) {
+      this._dirtyAngle = false;
+      return;
+    }
     this._recalculateViewVP();
     this._dirty = false;
+    this._dirtyAngle = false;
   }
 };
 var FirstPersonCamera = class _FirstPersonCamera {
@@ -2947,25 +3037,32 @@ var FirstPersonCamera = class _FirstPersonCamera {
   VP = new Float32Array(16);
   projectionMatrix = new Float32Array(16);
   invProj = new Float32Array(16);
-  _moveVelScratch = new Float32Array(3);
-  _dirty = true;
   right = vec3Impl.fromValues(1, 0, 0);
   up = vec3Impl.fromValues(0, 1, 0);
   back = vec3Impl.fromValues(0, 0, 1);
   _rotYScratch = mat4Impl.create();
   _rotXScratch = mat4Impl.create();
   _viewScratch = mat4Impl.create();
-  _digital = { forward: false, backward: false, left: false, right: false };
-  _lastX = 0;
-  _lastY = 0;
+  // Bitmask:
+  // 1 = forward, 2 = backward, 4 = left, 8 = right
+  _digital = 0;
   _mouseDown = false;
-  _pointerLastScratch = { x: 0, y: 0 };
+  _lookDisabled = false;
+  _jumpVelocity = 0;
+  _jumpVelocityAMP = 1;
+  _isGrounded = false;
+  usePointerEvents = false;
   MOUSE_SENS = MEConfig.MOUSE_SENS;
   TOUCH_SENS = MEConfig.TOUCH_SENS;
   movementSpeed = MEConfig.CAM_SPEED;
   rotationSpeed = 1;
-  _dirtyAngle = false;
+  _dirtyAngle = true;
+  static HALF_PI = Math.PI * 0.5;
+  static DIAG = 0.7071067811865476;
   constructor(options2 = {}) {
+    if (options2.usePointerEvents) {
+      this.usePointerEvents = options2.usePointerEvents;
+    }
     if (options2.position) {
       this.position[0] = options2.position[0];
       this.position[1] = options2.position[1];
@@ -2976,43 +3073,25 @@ var FirstPersonCamera = class _FirstPersonCamera {
     this.canvas = options2.canvas;
     this.aspect = options2.canvas ? options2.canvas.width / options2.canvas.height : 1;
     this.setProjection(2 * Math.PI / 5, this.aspect, 0.3, 200);
-    this._jumpVelocity = 0;
-    this._isGrounded = false;
-    if (this.canvas) this._setupInput(this.canvas);
+    this._onKeyDown = this._handleKeyDown.bind(this);
+    this._onKeyUp = this._handleKeyUp.bind(this);
+    if (this.canvas) {
+      this._setupInput(this.canvas);
+    }
     this._recalculateViewVP();
-    if (isMobile() == true && options2.isActive == "init active cam") {
-      MobileDOM.createWASD(this, { margin: 50, forMobileJoystick: true, color: "red" });
+    if (isMobile() === true && options2.isActive === "init active cam") {
+      MobileDOM.createWASD(this, {
+        margin: 50,
+        forMobileJoystick: true,
+        color: "red"
+      });
     }
   }
-  setPitch = (p) => {
-    this.pitch = p;
-    this._dirtyAngle = true;
-  };
-  setYaw = (y2) => {
-    this.yaw = y2;
-    this._dirtyAngle = true;
-  };
   setProjection = (fov = 2 * Math.PI / 5, aspect = 1, near = 1, far = 1e3) => {
     mat4Impl.perspective(fov, aspect, near, far, this.projectionMatrix);
+    this._dirtyAngle = true;
     this._recalculateViewVP();
-  };
-  setPosition = (x2, y2, z) => {
-    this.position[0] = x2;
-    this.position[1] = y2;
-    this.position[2] = z;
-    this._dirtyAngle = true;
-  };
-  setX = (x2) => {
-    this.position[0] = x2;
-    this._dirtyAngle = true;
-  };
-  setY = (y2) => {
-    this.position[1] = y2;
-    this._dirtyAngle = true;
-  };
-  setZ = (z) => {
-    this.position[2] = z;
-    this._dirtyAngle = true;
+    this._dirtyAngle = false;
   };
   static mat4MultiplySafe(a, b, out) {
     const a00 = a[0], a01 = a[4], a02 = a[8], a03 = a[12];
@@ -3042,19 +3121,26 @@ var FirstPersonCamera = class _FirstPersonCamera {
     return out;
   }
   _recalculateViewVP() {
-    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
-    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
-    this.right[0] = cy;
-    this.right[1] = 0;
-    this.right[2] = -sy;
-    this.up[0] = sy * sp;
-    this.up[1] = cp;
-    this.up[2] = cy * sp;
-    this.back[0] = sy * cp;
-    this.back[1] = -sp;
-    this.back[2] = cy * cp;
-    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
+    const yaw = this.yaw;
+    const pitch = this.pitch;
+    const cy = Math.cos(yaw);
+    const sy = Math.sin(yaw);
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const rx = this.right;
+    const uy = this.up;
+    const bz = this.back;
+    const p = this.position;
     const vs = this.view;
+    rx[0] = cy;
+    rx[1] = 0;
+    rx[2] = -sy;
+    uy[0] = sy * sp;
+    uy[1] = cp;
+    uy[2] = cy * sp;
+    bz[0] = sy * cp;
+    bz[1] = -sp;
+    bz[2] = cy * cp;
     vs[0] = rx[0];
     vs[4] = rx[1];
     vs[8] = rx[2];
@@ -3071,15 +3157,34 @@ var FirstPersonCamera = class _FirstPersonCamera {
     vs[7] = 0;
     vs[11] = 0;
     vs[15] = 1;
-    _FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
+    _FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, vs, this.VP);
   }
+  // INPUT SETUP
   _setupInput(canvas) {
     canvas.style.touchAction = "none";
+    const mobile = isMobile() === true;
+    if (mobile) {
+      this._setupTouchEvents(canvas);
+    } else {
+      canvas.oncontextmenu = (e) => e.preventDefault();
+      if (this.usePointerEvents) {
+        this._setupPointerEvents(canvas);
+      } else {
+        this._setupMouseEvents(canvas);
+      }
+    }
+    window.addEventListener("keydown", this._onKeyDown, { passive: true });
+    window.addEventListener("keyup", this._onKeyUp, { passive: true });
+  }
+  _setupTouchEvents(canvas) {
     let lookTouchId = null;
-    let touchStartX = 0, touchStartY = 0;
-    if (isMobile() === true) canvas.addEventListener("touchstart", (e) => {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    canvas.addEventListener("touchstart", (e) => {
       if (lookTouchId !== null) return;
-      for (const t of e.changedTouches) {
+      const touches = e.changedTouches;
+      for (let i = 0; i < touches.length; i++) {
+        const t = touches[i];
         if (t.target === canvas) {
           lookTouchId = t.identifier;
           touchStartX = t.clientX;
@@ -3088,178 +3193,249 @@ var FirstPersonCamera = class _FirstPersonCamera {
         }
       }
     }, { passive: false });
-    if (isMobile() === true) canvas.addEventListener("touchmove", (e) => {
-      if (lookTouchId === null) return;
+    canvas.addEventListener("touchmove", (e) => {
+      if (lookTouchId === null || this._lookDisabled) return;
+      const touches = e.touches;
       let touch = null;
-      for (const t of e.touches) {
-        if (t.identifier === lookTouchId) {
-          touch = t;
+      for (let i = 0; i < touches.length; i++) {
+        if (touches[i].identifier === lookTouchId) {
+          touch = touches[i];
           break;
         }
       }
-      if (!touch) return;
+      if (touch === null) return;
       const dx = (touch.clientX - touchStartX) * this.TOUCH_SENS;
       const dy = (touch.clientY - touchStartY) * this.TOUCH_SENS;
       this.yaw -= dx * this.rotationSpeed;
       this.pitch -= dy * this.rotationSpeed;
-      this.yaw %= Math.PI * 2;
-      this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+      this._clampPitch();
       this._dirtyAngle = true;
       touchStartX = touch.clientX;
       touchStartY = touch.clientY;
       e.preventDefault();
     }, { passive: false });
     const clearLookTouch = (e) => {
-      for (const t of e.changedTouches) {
-        if (t.identifier === lookTouchId) {
+      const touches = e.changedTouches;
+      for (let i = 0; i < touches.length; i++) {
+        if (touches[i].identifier === lookTouchId) {
           lookTouchId = null;
           break;
         }
       }
     };
-    if (isMobile() === true) canvas.addEventListener("touchend", clearLookTouch, { passive: true });
-    if (isMobile() === true) canvas.addEventListener("touchcancel", clearLookTouch, { passive: true });
-    if (isMobile() === false) canvas.addEventListener("pointerdown", (e) => {
-      if (e.pointerType === "mouse") {
-        this._mouseDown = true;
-        if (canvas.requestPointerLock) {
-          canvas.requestPointerLock();
-        } else {
-          canvas.setPointerCapture(e.pointerId);
-        }
-      }
-    }, { passive: false });
-    if (isMobile() === false) canvas.addEventListener("pointermove", (e) => {
-      if (e.pointerType === "mouse") {
-        console.log("prevent dragging");
-        if (window.__isDragging === true) {
-          return;
-        }
-        const dx = e.movementX * this.MOUSE_SENS;
-        const dy = e.movementY * this.MOUSE_SENS;
-        this.yaw -= dx * this.rotationSpeed;
-        this.pitch -= dy * this.rotationSpeed;
+    canvas.addEventListener("touchend", clearLookTouch, { passive: true });
+    canvas.addEventListener("touchcancel", clearLookTouch, { passive: true });
+  }
+  _clampPitch() {
+    const halfPi = _FirstPersonCamera.HALF_PI;
+    if (this.pitch > halfPi) {
+      this.pitch = halfPi;
+    } else if (this.pitch < -halfPi) {
+      this.pitch = -halfPi;
+    }
+  }
+  _setupMouseEvents(canvas) {
+    if (isMobile() === false) {
+      canvas.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+      });
+      const onMouseMove = (e) => {
+        if (window.__isDragging === true) return;
+        this.yaw -= e.movementX * this.MOUSE_SENS * this.rotationSpeed;
+        this.pitch -= e.movementY * this.MOUSE_SENS * this.rotationSpeed;
         this.yaw %= Math.PI * 2;
-        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+        this.pitch = Math.max(
+          -Math.PI / 2,
+          Math.min(Math.PI / 2, this.pitch)
+        );
         this._dirtyAngle = true;
+      };
+      canvas.addEventListener("mousemove", onMouseMove, { passive: true });
+    }
+  }
+  _setupPointerEvents(canvas) {
+    canvas.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      this._mouseDown = true;
+      if (canvas.requestPointerLock) {
+        canvas.requestPointerLock();
+      } else if (canvas.setPointerCapture) {
+        canvas.setPointerCapture(e.pointerId);
       }
     }, { passive: true });
-    if (isMobile() === false) canvas.addEventListener("pointerup", (e) => {
+    canvas.addEventListener("pointermove", (e) => {
+      if (window.__isDragging === true) return;
+      if (e.pointerType !== "mouse") return;
+      if (this._lookDisabled) return;
+      this.yaw -= e.movementX * this.MOUSE_SENS * this.rotationSpeed;
+      this.pitch -= e.movementY * this.MOUSE_SENS * this.rotationSpeed;
+      this._clampPitch();
+      this._dirtyAngle = true;
+    }, { passive: true });
+    const stopLook = (e) => {
       if (e.pointerType === "mouse") {
         this._mouseDown = false;
       }
-    }, { passive: true });
-    this._keyInterval = null;
-    this.setDigital = (e, value) => {
-      switch (e.code) {
-        case "KeyW":
-          this._digital.forward = value;
-          break;
-        case "KeyS":
-          this._digital.backward = value;
-          break;
-        case "KeyA":
-          this._digital.left = value;
-          break;
-        case "KeyD":
-          this._digital.right = value;
-          break;
-        case "ArrowUp":
-          this._digital.forward = value;
-          break;
-        case "ArrowDown":
-          this._digital.backward = value;
-          break;
-        case "ArrowLeft":
-          this._digital.left = value;
-          break;
-        case "ArrowRight":
-          this._digital.right = value;
-          break;
-        case "Space":
-          if (value === true && window.app?.collisionSystem?._onGround) {
-            window.app.collisionSystem._gravityAcc = 0.22;
-            window.app.collisionSystem._onGround = false;
-            this._dirty = true;
-            this._dirtyAngle = true;
-          }
-          break;
-      }
-      if (value == true && this._keyInterval === null) {
-        this._keyInterval = setInterval(() => {
-          this._dirty = true;
-          this._dirtyAngle = true;
-          this._applyDigitalMovement();
-        }, 16);
-      } else {
-        const d = this._digital;
-        if (!d.forward && !d.backward && !d.left && !d.right) {
-          clearInterval(this._keyInterval);
-          this._keyInterval = null;
-          this._dirty = false;
-          this._dirtyAngle = false;
-        }
-      }
     };
-    this._onKeyDown = (e) => this.setDigital(e, true);
-    this._onKeyUp = (e) => this.setDigital(e, false);
-    window.addEventListener("keydown", this._onKeyDown, { passive: true });
-    window.addEventListener("keyup", this._onKeyUp, { passive: true });
+    canvas.addEventListener("pointerup", stopLook, { passive: true });
+    canvas.addEventListener("pointercancel", stopLook, { passive: true });
   }
-  removeKeyboard() {
-    clearInterval(this._keyInterval);
-    this._keyInterval = null;
-    window.removeEventListener("keydown", this._onKeyDown);
-    window.removeEventListener("keyup", this._onKeyUp);
-    this._onKeyDown = null;
-    this._onKeyUp = null;
-    this._dirty = false;
-    this._dirtyAngle = false;
+  _getKeyBit(code) {
+    switch (code) {
+      case "KeyW":
+      case "ArrowUp":
+        return 1;
+      case "KeyS":
+      case "ArrowDown":
+        return 2;
+      case "KeyA":
+      case "ArrowLeft":
+        return 4;
+      case "KeyD":
+      case "ArrowRight":
+        return 8;
+      case "Space":
+        return 16;
+      default:
+        return 0;
+    }
   }
-  forceViewUpdate() {
-    this._dirtyAngle = true;
-    this._dirty = true;
-    this._recalculateViewVP();
+  _handleKeyDown(e) {
+    if (e.code === "Space") {
+      if (window.app?.collisionSystem?._onGround) {
+        window.app.collisionSystem._gravityAcc = 0.22;
+        window.app.collisionSystem._onGround = false;
+        this._jumpVelocity = 1;
+        this._dirtyAngle = true;
+      }
+    }
+    const bit = this._getKeyBit(e.code);
+    if (bit !== 0) {
+      this._digital |= bit;
+    }
   }
-  _applyDigitalMovement() {
+  _handleKeyUp(e) {
+    if (e.code === "Space") {
+      return;
+    }
+    const bit = this._getKeyBit(e.code);
+    if (bit !== 0) {
+      this._digital &= ~bit;
+    }
+  }
+  setDigital(e, value) {
+    if (e.code === "Space") {
+      if (value === true && window.app?.collisionSystem?._onGround) {
+        window.app.collisionSystem._gravityAcc = 0.22;
+        window.app.collisionSystem._onGround = false;
+        this._dirtyAngle = true;
+      }
+      return;
+    }
+    const bit = this._getKeyBit(e.code);
+    if (bit === 0) return;
+    if (value) {
+      this._digital |= bit;
+    } else {
+      this._digital &= ~bit;
+    }
+  }
+  _applyDigitalMovement(sceneTime) {
     const d = this._digital;
-    let vx = 0, vz = 0;
+    if (d === 0) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    if (this._lastMoveSceneTime === void 0) {
+      this._lastMoveSceneTime = sceneTime;
+      return;
+    }
+    let dt = sceneTime - this._lastMoveSceneTime;
+    this._lastMoveSceneTime = sceneTime;
+    if (dt <= 0) return;
+    if (dt > 0.1) dt = 0.1;
     const fx = -this.back[0];
     const fz = -this.back[2];
-    const flen = Math.sqrt(fx * fx + fz * fz);
-    const fnx = flen > 1e-4 ? fx / flen : 0;
-    const fnz = flen > 1e-4 ? fz / flen : 0;
-    if (d.forward) {
-      vx += fnx;
-      vz += fnz;
+    let vx = 0;
+    let vz = 0;
+    if (d & 1) {
+      vx += fx;
+      vz += fz;
     }
-    if (d.backward) {
-      vx -= fnx;
-      vz -= fnz;
+    if (d & 2) {
+      vx -= fx;
+      vz -= fz;
     }
-    if (d.right) {
-      vx += this.right[0];
-      vz += this.right[2];
-    }
-    if (d.left) {
+    if (d & 4) {
       vx -= this.right[0];
       vz -= this.right[2];
     }
+    if (d & 8) {
+      vx += this.right[0];
+      vz += this.right[2];
+    }
     const len2 = Math.sqrt(vx * vx + vz * vz);
-    if (len2 < 1e-4) return;
-    const s = this.movementSpeed / len2;
-    this.position[0] += vx * s;
-    this.position[2] += vz * s;
+    if (len2 > 1e-4) {
+      const speed = this.movementSpeed * (dt / 0.016) / len2;
+      this.position[0] += vx * speed;
+      this.position[2] += vz * speed;
+      this._dirtyAngle = true;
+    }
     if (this._jumpVelocity !== 0) {
       this.position[1] += this._jumpVelocity;
       this._jumpVelocity = 0;
+      this._dirtyAngle = true;
+    } else {
+      this._dirtyAngle = true;
     }
-    const rx = this.right, uy = this.up, bz = this.back, p = this.position;
-    this.view[12] = -(rx[0] * p[0] + rx[1] * p[1] + rx[2] * p[2]);
-    this.view[13] = -(uy[0] * p[0] + uy[1] * p[1] + uy[2] * p[2]);
-    this.view[14] = -(bz[0] * p[0] + bz[1] * p[1] + bz[2] * p[2]);
-    _FirstPersonCamera.mat4MultiplySafe(this.projectionMatrix, this.view, this.VP);
   }
+  removeKeyboard() {
+    window.removeEventListener("keydown", this._onKeyDown);
+    window.removeEventListener("keyup", this._onKeyUp);
+    this._digital = 0;
+    this._onKeyDown = null;
+    this._onKeyUp = null;
+  }
+  forceViewUpdate() {
+    this._recalculateViewVP();
+    this._dirtyAngle = false;
+  }
+  setPitch = (p) => {
+    this.pitch = p;
+    this._clampPitch();
+    this._dirtyAngle = true;
+  };
+  setYaw = (y2) => {
+    this.yaw = y2;
+    this._dirtyAngle = true;
+  };
+  setPosition = (x2, y2, z) => {
+    this.position[0] = x2;
+    this.position[1] = y2;
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+  setX = (x2) => {
+    this.position[0] = x2;
+    this._dirtyAngle = true;
+  };
+  setY = (y2) => {
+    this.position[1] = y2;
+    this._dirtyAngle = true;
+  };
+  setZ = (z) => {
+    this.position[2] = z;
+    this._dirtyAngle = true;
+  };
+  setLookEnabled = (enabled) => {
+    this._lookDisabled = !enabled;
+  };
+  disableLook = () => {
+    this._lookDisabled = true;
+  };
+  enableLook = () => {
+    this._lookDisabled = false;
+  };
   update() {
     if (!this._dirtyAngle) return;
     this._recalculateViewVP();
@@ -3380,7 +3556,6 @@ var CinematicCamera = class _CinematicCamera {
     this._roll = r2;
     this._dirtyAngle = true;
   };
-  // ── path control ─────────────────────────────────────────────────────────────
   setPath = (path2) => {
     this._path = path2;
     this._t = 0;
@@ -3396,6 +3571,7 @@ var CinematicCamera = class _CinematicCamera {
     this._onEnd = options2.onEnd ?? null;
     this._t = options2.startT ?? 0;
     this._playing = true;
+    this._dirtyAngle = true;
     return this;
   };
   pause = () => {
@@ -3404,6 +3580,7 @@ var CinematicCamera = class _CinematicCamera {
   };
   resume = () => {
     this._playing = true;
+    this._dirtyAngle = true;
     return this;
   };
   seekT = (t) => {
@@ -3563,7 +3740,7 @@ var CinematicCamera = class _CinematicCamera {
     }
     if (!this._dirtyAngle) return;
     this._recalculateViewVP();
-    this._dirtyAngle = false;
+    this._dirtyAngle = this._playing || this._shake.active;
   }
   _applyPathSample() {
     const s = this._path.sample(this._t);
@@ -3795,7 +3972,9 @@ var PlaneCamera = class {
     this._dirty = false;
   }
 };
+var DIGITAL_BITS = { forward: 1, backward: 2, left: 4, right: 8 };
 var MobileDOM = {
+  _wasd: null,
   eventDown: null,
   eventUp: null,
   eventCancel: null,
@@ -3822,13 +4001,27 @@ var MobileDOM = {
       touchAction: "none"
     });
     const defs = [
-      ["W", "\u25B2", 2, 1, "forward"],
-      ["A", "\u25C0", 1, 2, "left"],
-      ["S", "\u25BC", 2, 2, "backward"],
-      ["D", "\u25B6", 3, 2, "right"]
+      ["\u25B2", 2, 1, "forward"],
+      ["\u25C0", 1, 2, "left"],
+      ["\u25BC", 2, 2, "backward"],
+      ["\u25B6", 3, 2, "right"]
     ];
+    const idle = `rgba(255,255,255,${opacity * 0.4})`;
+    const active = `rgba(255,255,255,${opacity})`;
+    const setBit = (action, on) => {
+      const bit = DIGITAL_BITS[action];
+      if (!bit) return;
+      if (on) {
+        if (camera._digital === 0) camera._lastMoveSceneTime = void 0;
+        camera._digital |= bit;
+      } else {
+        camera._digital &= ~bit;
+      }
+      buttons[action].style.background = on ? active : idle;
+    };
     const buttons = {};
-    for (const [, label, col, row2, action] of defs) {
+    const handlers = [];
+    for (const [label, col, row2, action] of defs) {
       const btn = document.createElement("div");
       btn.id = label;
       btn.dataset.action = action;
@@ -3842,7 +4035,7 @@ var MobileDOM = {
         justifyContent: "center",
         fontSize: `${size2 * 0.38}px`,
         color,
-        background: `rgba(255,255,255,${opacity * 0.4})`,
+        background: idle,
         border: `2px solid rgba(255,255,255,${opacity})`,
         borderRadius: `${size2 * 0.18}px`,
         cursor: "pointer",
@@ -3851,74 +4044,31 @@ var MobileDOM = {
       btn.textContent = label;
       buttons[action] = btn;
       if (!forMobileJoystick) {
-        const press = () => {
-          camera._digital[action] = true;
-          btn.style.background = `rgba(255,255,255,${opacity})`;
-          if (camera._keyInterval === null) {
-            camera._keyInterval = setInterval(() => {
-              camera._dirty = true;
-              camera._dirtyAngle = true;
-              camera._applyDigitalMovement();
-            }, 16);
-          }
-        };
-        const release = () => {
-          camera._digital[action] = false;
-          btn.style.background = `rgba(255,255,255,${opacity * 0.4})`;
-          const d = camera._digital;
-          if (!d.forward && !d.backward && !d.left && !d.right) {
-            clearInterval(camera._keyInterval);
-            camera._keyInterval = null;
-            camera._dirty = false;
-          }
-        };
-        MobileDOM.eventDown = (e) => {
+        const down = (e) => {
+          console.log("pad down", e.pointerId, document.elementFromPoint(e.clientX, e.clientY)?.dataset?.action);
           e.stopPropagation();
-          press();
           btn.setPointerCapture(e.pointerId);
+          setBit(action, true);
         };
-        MobileDOM.eventUp = (e) => {
-          release();
-        };
-        MobileDOM.eventCancel = (e) => {
-          release();
-        };
-        btn.addEventListener("pointerdown", MobileDOM.eventDown, { passive: true });
-        btn.addEventListener("pointerup", MobileDOM.eventUp, { passive: true });
-        btn.addEventListener("pointercancel", MobileDOM.eventCancel, { passive: true });
+        const up = () => setBit(action, false);
+        btn.addEventListener("pointerdown", down, { passive: true });
+        btn.addEventListener("pointerup", up, { passive: true });
+        btn.addEventListener("pointercancel", up, { passive: true });
+        handlers.push([btn, "pointerdown", down], [btn, "pointerup", up], [btn, "pointercancel", up]);
       }
       wrap.appendChild(btn);
     }
     if (forMobileJoystick) {
+      console.log("pad down forMobileJoystick true");
       let activePointerId = null;
       let activeAction = null;
       const setActive = (action) => {
         if (activeAction === action) return;
-        if (activeAction) {
-          camera._digital[activeAction] = false;
-          buttons[activeAction].style.background = `rgba(255,255,255,${opacity * 0.4})`;
-        }
+        if (activeAction) setBit(activeAction, false);
         activeAction = action;
-        if (activeAction) {
-          camera._digital[activeAction] = true;
-          buttons[activeAction].style.background = `rgba(255,255,255,${opacity})`;
-        }
-        if (activeAction && camera._keyInterval === null) {
-          camera._keyInterval = setInterval(() => {
-            camera._dirty = true;
-            camera._dirtyAngle = true;
-            camera._applyDigitalMovement();
-          }, 16);
-        } else if (!activeAction && camera._keyInterval !== null) {
-          clearInterval(camera._keyInterval);
-          camera._keyInterval = null;
-          camera._dirty = false;
-        }
+        if (activeAction) setBit(activeAction, true);
       };
-      const actionAt = (x2, y2) => {
-        const el2 = document.elementFromPoint(x2, y2);
-        return el2?.dataset?.action ?? null;
-      };
+      const actionAt = (x2, y2) => document.elementFromPoint(x2, y2)?.dataset?.action ?? null;
       const onDown = (e) => {
         e.stopPropagation();
         activePointerId = e.pointerId;
@@ -3934,36 +4084,28 @@ var MobileDOM = {
         activePointerId = null;
         setActive(null);
       };
-      MobileDOM.eventDown = onDown;
-      MobileDOM.eventUp = onUp;
-      MobileDOM.eventCancel = onUp;
       wrap.addEventListener("pointerdown", onDown, { passive: true });
       wrap.addEventListener("pointermove", onMove, { passive: true });
       wrap.addEventListener("pointerup", onUp, { passive: true });
       wrap.addEventListener("pointercancel", onUp, { passive: true });
+      handlers.push(
+        [wrap, "pointerdown", onDown],
+        [wrap, "pointermove", onMove],
+        [wrap, "pointerup", onUp],
+        [wrap, "pointercancel", onUp]
+      );
     }
+    MobileDOM._wasd = { camera, handlers, wrap };
     document.body.appendChild(wrap);
     return wrap;
   },
   destroyWASD() {
-    if (byId("mobileControls") == null) return;
-    byId("\u25B2").removeEventListener("pointerdown", MobileDOM.eventDown);
-    byId("\u25B2").removeEventListener("pointerup", MobileDOM.eventUp);
-    byId("\u25B2").removeEventListener("pointercancel", MobileDOM.eventCancel);
-    byId("\u25C0").removeEventListener("pointerdown", MobileDOM.eventDown);
-    byId("\u25C0").removeEventListener("pointerup", MobileDOM.eventUp);
-    byId("\u25C0").removeEventListener("pointercancel", MobileDOM.eventCancel);
-    byId("\u25BC").removeEventListener("pointerdown", MobileDOM.eventDown);
-    byId("\u25BC").removeEventListener("pointerup", MobileDOM.eventUp);
-    byId("\u25BC").removeEventListener("pointercancel", MobileDOM.eventCancel);
-    byId("\u25B6").removeEventListener("pointerdown", MobileDOM.eventDown);
-    byId("\u25B6").removeEventListener("pointerup", MobileDOM.eventUp);
-    byId("\u25B6").removeEventListener("pointercancel", MobileDOM.eventCancel);
-    byId("\u25B2").remove();
-    byId("\u25C0").remove();
-    byId("\u25BC").remove();
-    byId("\u25B6").remove();
-    byId("mobileControls").remove();
+    const w = MobileDOM._wasd;
+    if (!w) return;
+    for (const [el2, type2, fn] of w.handlers) el2.removeEventListener(type2, fn);
+    w.camera._digital = 0;
+    w.wrap.remove();
+    MobileDOM._wasd = null;
   },
   addButton(label, onClick, onRelease = () => {
   }, options2 = {}, onMove = () => {
@@ -5125,7 +5267,7 @@ for (var i: u32 = 0u; i < MAX_SPOTLIGHTS; i = i + 1u) {
 
   // return vec4f(color, materialData.alpha);
   return FragOut(
-    vec4f(finalColor, alpha),
+    vec4f(color, materialData.alpha),
     vec4f(N, 0.0),
     vec4f(input.fragPos, 1.0)
   );
@@ -6695,8 +6837,8 @@ fn main(input: FragmentInput) -> FragOut {
 
   return FragOut(
     vec4f(finalColor, materialData.alpha),
-    vec4f(norm, 0.0)
-    vec4f(input.fragPos, 1.0),
+    vec4f(norm, 0.0),
+    vec4f(input.fragPos, 1.0)
   );
 }
 `;
@@ -7344,7 +7486,7 @@ fn main(input: FragmentInput) -> FragOut {
       discard;
   }
   // return vec4f(colorWithFog, alpha);
-  let alpha = 1.0;
+  // let alpha = 1.0;
   return FragOut(
     vec4f(colorWithFog, alpha),
     vec4f(N, 0.0),
@@ -8581,7 +8723,7 @@ var Materials = class {
     return texture;
   }
   /**
-   * @description
+   *
    * Change ONLY base color texture (binding = 3)
    * Does NOT rebuild pipeline or layout
    **/
@@ -8874,18 +9016,6 @@ var Materials = class {
       this.video.style.top = "-465px";
       this.video.style.left = "50%";
       this.video.play();
-      this.video.addEventListener("canplaythrough", () => {
-        if (this.video.readyState >= 3) {
-          this.externalTexture = this.device.importExternalTexture({ source: this.video });
-          console.log("++++ > 3   ++++  " + this.externalTexture);
-          if (!this.externalTexture) alert("ERROR " + this.externalTexture);
-          this.sampler = this.device.createSampler({
-            magFilter: "linear",
-            minFilter: "linear"
-          });
-          this.createMaterialBindGroupVideo();
-        }
-      }, { once: false });
     } else if (arg.type === "videoElement") {
       this.video = arg.videoElement;
       await this.video.play();
@@ -8992,11 +9122,11 @@ var Materials = class {
         setTimeout(() => {
           try {
             this.updateVideoTexture();
-            this.createMaterialBindGroupVideo();
             this.setupPipeline();
             resolve();
           } catch (err) {
-            return;
+            console.warn("[VideoTexture] Initial frame setup failed:", err);
+            resolve(false);
           }
           const ci1 = document.getElementById("ci1");
           if (ci1) {
@@ -9009,12 +9139,36 @@ var Materials = class {
       });
     });
   }
+  // chatgpt SUGGESTION START
+  // Import and bind the current video frame together, immediately before draw submission.
   updateVideoTexture() {
-    if (!this.video || this.video.readyState < 4) return;
-    this.externalTexture = this.device.importExternalTexture({ source: this.video });
-    if (!this.externalTexture) return;
-    this.createMaterialBindGroupVideo();
+    this.videoFrameReady = false;
+    if (!this.video || this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !this.video.videoWidth || !this.video.videoHeight) {
+      return false;
+    }
+    try {
+      const externalTexture = this.device.importExternalTexture({
+        source: this.video
+      });
+      if (!externalTexture) return false;
+      const bindGroup = this.device.createBindGroup({
+        layout: this.materialVideoBGL,
+        entries: [
+          { binding: 0, resource: externalTexture },
+          { binding: 1, resource: this.videoSampler },
+          { binding: 2, resource: { buffer: this.postFXModeBuffer } }
+        ]
+      });
+      this.externalTexture = externalTexture;
+      this.materialBindGroup = bindGroup;
+      this.videoFrameReady = true;
+      return true;
+    } catch (err) {
+      console.warn("[VideoTexture] Frame import failed:", err);
+      return false;
+    }
   }
+  // chatgpt SUGGESTION end
   updateCanvasInlineTexture() {
     this.externalTexture = this.device.queue.copyExternalImageToTexture(
       { source: this.sourceCanvas },
@@ -9371,7 +9525,8 @@ fn fsMain(input : VSOut) -> @location(0) vec4<f32> {
 }`;
 
 // ../../../engine/effects/topology-point.js
-var PointEffect = class {
+var PointEffect = class _PointEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, cameraBuffer) {
     this.device = device2;
     this.format = format;
@@ -9382,71 +9537,86 @@ var PointEffect = class {
     this._initPipeline();
   }
   _initPipeline() {
-    this.modelBuffer = this.device.createBuffer({
+    const device2 = this.device;
+    if (_PointEffect._pipelineCache.has(device2)) {
+      const cached = _PointEffect._pipelineCache.get(device2);
+      this.bindGroupLayout = cached.bindGroupLayout;
+      this.shaderModule = cached.shaderModule;
+      this.pipelineLayout = cached.pipelineLayout;
+      this.pipeline = cached.pipeline;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {} }
+        ]
+      });
+      this.shaderModule = device2.createShaderModule({ code: pointEffectShader });
+      this.pipelineLayout = device2.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
+        label: "PointEffect Pipeline",
+        layout: this.pipelineLayout,
+        vertex: {
+          module: this.shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 3 * 4,
+              stepMode: "instance",
+              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
+            },
+            {
+              arrayStride: 3 * 4,
+              stepMode: "instance",
+              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
+            }
+          ]
+        },
+        fragment: {
+          module: this.shaderModule,
+          entryPoint: "fsMain",
+          targets: [{
+            format: this.format,
+            blend: {
+              color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+              alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
+            }
+          }, { format: "rgba16float" }, { format: "rgba16float" }]
+        },
+        primitive: { topology: "triangle-strip" },
+        depthStencil: {
+          depthWriteEnabled: false,
+          depthCompare: "less-equal",
+          format: "depth24plus"
+        }
+      });
+      _PointEffect._pipelineCache.set(device2, {
+        bindGroupLayout: this.bindGroupLayout,
+        shaderModule: this.shaderModule,
+        pipelineLayout: this.pipelineLayout,
+        pipeline: this.pipeline
+      });
+    }
+    this.modelBuffer = device2.createBuffer({
       size: 64,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.pointSettingsBuffer = this.device.createBuffer({
+    this.pointSettingsBuffer = device2.createBuffer({
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this._pointSettingsScratch[0] = this.pointSize;
-    this.device.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    device2.queue.writeBuffer(this.pointSettingsBuffer, 0, this._pointSettingsScratch);
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.modelBuffer } },
         { binding: 2, resource: { buffer: this.pointSettingsBuffer } }
       ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: pointEffectShader });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      label: "Topology Pipeline",
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 3 * 4,
-            stepMode: "instance",
-            attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-          },
-          {
-            arrayStride: 3 * 4,
-            stepMode: "instance",
-            attributes: [{ shaderLocation: 1, offset: 0, format: "float32x3" }]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [{
-          format: this.format,
-          blend: {
-            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
-            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
-          }
-        }, { format: "rgba16float" }, { format: "rgba16float" }]
-      },
-      primitive: { topology: "triangle-strip" },
-      depthStencil: {
-        depthWriteEnabled: false,
-        depthCompare: "less-equal",
-        format: "depth24plus"
-      }
     });
   }
   updateInstanceData(baseModelMatrix) {
@@ -9459,7 +9629,6 @@ var PointEffect = class {
       return;
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, vertexBuffer);
     pass.setVertexBuffer(1, colorBuffer);
@@ -9467,7 +9636,6 @@ var PointEffect = class {
   }
   render(pass, mesh, viewProjMatrix) {
     if (!mesh.vertexBuffer) {
-      console.warn("PointEffect: mesh has no vertexBuffer");
       return;
     }
     let vertexCount = mesh.vertexCount;
@@ -9478,12 +9646,10 @@ var PointEffect = class {
       vertexCount = mesh.geometry.positions.length / 3;
     }
     if (!vertexCount || vertexCount <= 0) {
-      console.warn("PointEffect: could not determine vertexCount", mesh);
       return;
     }
     const colorBuffer = mesh.vertexNormalsBuffer;
     if (!colorBuffer) {
-      console.warn("PointEffect: mesh has no vertexNormalsBuffer");
       return;
     }
     this.draw(pass, viewProjMatrix, mesh.vertexBuffer, colorBuffer, vertexCount);
@@ -10420,8 +10586,13 @@ var DestructionEffect2 = class _DestructionEffect {
     this.enabled = false;
     this.particles = [];
     this.color = config.color || [0.6, 0.5, 0.4, 1];
-    this.intensity = 1;
+    this.intensity = config.intensity || 1;
     this.cameraBuffer = cameraBuffer;
+    this._local = mat4Impl.create();
+    this._finalMat = mat4Impl.create();
+    this.timeBuffer = new Float32Array([this.time]);
+    this.intensityBuffer = new Float32Array([this.intensity]);
+    this.instanceData = new Float32Array(this.particleCount * 12);
     this._initPipeline();
     this._initParticles();
   }
@@ -10451,32 +10622,9 @@ var DestructionEffect2 = class _DestructionEffect {
           module: this.shaderModule,
           entryPoint: "vsMain",
           buffers: [
-            // Vertex positions (per-vertex, shared quad)
-            {
-              arrayStride: 3 * 4,
-              stepMode: "vertex",
-              attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }]
-            },
-            // UVs (per-vertex, shared quad)
-            {
-              arrayStride: 2 * 4,
-              stepMode: "vertex",
-              attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }]
-            },
-            // Instance data (per-particle)
-            {
-              arrayStride: 12 * 4,
-              // 3 vec4s = 12 floats
-              stepMode: "instance",
-              attributes: [
-                { shaderLocation: 2, offset: 0, format: "float32x4" },
-                // position + size
-                { shaderLocation: 3, offset: 16, format: "float32x4" },
-                // velocity + life
-                { shaderLocation: 4, offset: 32, format: "float32x4" }
-                // color
-              ]
-            }
+            { arrayStride: 3 * 4, stepMode: "vertex", attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
+            { arrayStride: 2 * 4, stepMode: "vertex", attributes: [{ shaderLocation: 1, offset: 0, format: "float32x2" }] },
+            { arrayStride: 12 * 4, stepMode: "instance", attributes: [{ shaderLocation: 2, offset: 0, format: "float32x4" }, { shaderLocation: 3, offset: 16, format: "float32x4" }, { shaderLocation: 4, offset: 32, format: "float32x4" }] }
           ]
         },
         fragment: {
@@ -10497,7 +10645,6 @@ var DestructionEffect2 = class _DestructionEffect {
         primitive: { topology: "triangle-list", cullMode: "none" },
         depthStencil: {
           depthWriteEnabled: false,
-          // Particles don't write depth
           depthCompare: "less",
           format: "depth24plus"
         }
@@ -10584,7 +10731,6 @@ var DestructionEffect2 = class _DestructionEffect {
   _initParticles() {
     for (let i = 0; i < this.particleCount; i++) {
       this.particles.push({
-        // Local position offset from parent
         position: [0, 0, 0],
         velocity: [0, 0, 0],
         life: 0,
@@ -10609,7 +10755,6 @@ var DestructionEffect2 = class _DestructionEffect {
       particle.position = [
         r2 * Math.sin(phi) * Math.cos(theta),
         Math.random() * 1,
-        // Slightly upward bias
         r2 * Math.sin(phi) * Math.sin(theta)
       ];
       const speed = 2 + Math.random() * 3;
@@ -10618,7 +10763,6 @@ var DestructionEffect2 = class _DestructionEffect {
       particle.velocity = [
         speed * Math.sin(vPhi) * Math.cos(vTheta),
         speed * Math.abs(Math.sin(vPhi)) * 2,
-        // Upward bias
         speed * Math.sin(vPhi) * Math.sin(vTheta)
       ];
       particle.maxLife = 1 + Math.random() * 1.5;
@@ -10661,46 +10805,40 @@ var DestructionEffect2 = class _DestructionEffect {
     this._updateInstanceBuffer();
   }
   _updateInstanceBuffer() {
-    const instanceData = new Float32Array(this.particleCount * 12);
     for (let i = 0; i < this.particleCount; i++) {
       const p = this.particles[i];
       const offset = i * 12;
-      instanceData[offset + 0] = p.position[0];
-      instanceData[offset + 1] = p.position[1];
-      instanceData[offset + 2] = p.position[2];
-      instanceData[offset + 3] = p.size;
-      instanceData[offset + 4] = p.velocity[0];
-      instanceData[offset + 5] = p.velocity[1];
-      instanceData[offset + 6] = p.velocity[2];
-      instanceData[offset + 7] = p.life;
-      instanceData[offset + 8] = p.color[0];
-      instanceData[offset + 9] = p.color[1];
-      instanceData[offset + 10] = p.color[2];
-      instanceData[offset + 11] = p.color[3];
+      this.instanceData[offset + 0] = p.position[0];
+      this.instanceData[offset + 1] = p.position[1];
+      this.instanceData[offset + 2] = p.position[2];
+      this.instanceData[offset + 3] = p.size;
+      this.instanceData[offset + 4] = p.velocity[0];
+      this.instanceData[offset + 5] = p.velocity[1];
+      this.instanceData[offset + 6] = p.velocity[2];
+      this.instanceData[offset + 7] = p.life;
+      this.instanceData[offset + 8] = p.color[0];
+      this.instanceData[offset + 9] = p.color[1];
+      this.instanceData[offset + 10] = p.color[2];
+      this.instanceData[offset + 11] = p.color[3];
     }
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, instanceData);
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
   }
   /**
    * Update instance data with parent transform
    * Called by parent object before rendering
    */
   updateInstanceData(baseModelMatrix) {
-    const local2 = mat4Impl.identity();
-    const finalMat = mat4Impl.identity();
-    mat4Impl.multiply(baseModelMatrix, local2, finalMat);
-    const timeBuffer = new Float32Array([this.time]);
+    mat4Impl.identity(this._local);
+    mat4Impl.identity(this._finalMat);
+    mat4Impl.multiply(baseModelMatrix, this._local, this._finalMat);
+    this.timeBuffer[0] = this.time;
     const intensityBuffer = new Float32Array([this.intensity]);
-    this.device.queue.writeBuffer(this.modelBuffer, 0, finalMat);
-    this.device.queue.writeBuffer(this.modelBuffer, 64, timeBuffer);
+    this.device.queue.writeBuffer(this.modelBuffer, 0, this._finalMat);
+    this.device.queue.writeBuffer(this.modelBuffer, 64, this.timeBuffer);
     this.device.queue.writeBuffer(this.modelBuffer, 80, intensityBuffer);
   }
-  /**
-   * Draw particles
-   */
   draw(pass, cameraMatrix) {
-    if (!this.enabled) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -10708,29 +10846,17 @@ var DestructionEffect2 = class _DestructionEffect {
     pass.setIndexBuffer(this.indexBuffer, "uint16");
     pass.drawIndexed(this.indexCount, this.particleCount);
   }
-  /**
-   * Main render method (called by parent)
-   */
   render(pass, mesh, viewProjMatrix, dt = 0.016) {
     if (!this.enabled) return;
     this.update(dt);
     this.draw(pass, viewProjMatrix);
   }
-  /**
-   * Set effect intensity
-   */
   setIntensity(v) {
     this.intensity = v;
   }
-  /**
-   * Check if effect is still active
-   */
   isActive() {
     return this.enabled;
   }
-  /**
-   * Reset effect
-   */
   reset() {
     this.enabled = false;
     this.time = 0;
@@ -10741,9 +10867,7 @@ var DestructionEffect2 = class _DestructionEffect {
 };
 
 // ../../../shaders/flame-effect/flameEffect.js
-var flameEffect = (
-  /* wgsl */
-  `
+var flameEffect = `
 
 struct Camera {
   viewProj : mat4x4<f32>
@@ -10912,8 +11036,7 @@ fn fsMain(input : VSOut) -> FragOut {
     vec4f(input.fragPos, 1.0)
   );
 }
-`
-);
+`;
 
 // ../../../engine/geometry-factory.js
 var GeometryFactory = class _GeometryFactory {
@@ -12777,7 +12900,6 @@ fn fsMain(input : VSOut) -> FragOut {
 
 // ../../../engine/effects/flame-emmiter.js
 var FlameEmitter = class _FlameEmitter {
-  // Static cache - one pipeline per device
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, maxParticles = 20, cameraBuffer) {
     this.device = device2;
@@ -12901,27 +13023,30 @@ var FlameEmitter = class _FlameEmitter {
     return vertexData;
   }
   _initPipeline() {
-    if (_FlameEmitter._pipelineCache.has(this.device)) {
-      const cached = _FlameEmitter._pipelineCache.get(this.device);
+    const device2 = this.device;
+    if (_FlameEmitter._pipelineCache.has(device2)) {
+      const cached = _FlameEmitter._pipelineCache.get(device2);
       this.pipeline = cached.pipeline;
       this.bindGroupLayout = cached.bindGroupLayout;
-      this.pipelineLayout = cached.pipelineLayout;
-      this.shaderModule = cached.shaderModule;
     } else {
-      this.bindGroupLayout = this.device.createBindGroupLayout({
+      this.bindGroupLayout = device2.createBindGroupLayout({
         label: "flame-emmiter bindGroupLayout",
         entries: [
           { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          // { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: 'uniform' } },
           { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } }
         ]
       });
-      this.shaderModule = this.device.createShaderModule({ code: flameEffectInstance });
-      this.pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
-      this.pipeline = this.device.createRenderPipeline({
+      const shaderModule = device2.createShaderModule({ code: flameEffectInstance });
+      const pipelineLayout = device2.createPipelineLayout({
+        label: "flame-emmiter pipelineLayout",
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
         label: "flame-emmiter pipeline",
-        layout: this.pipelineLayout,
+        layout: pipelineLayout,
         vertex: {
-          module: this.shaderModule,
+          module: shaderModule,
           entryPoint: "vsMain",
           buffers: [
             { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] },
@@ -12929,22 +13054,14 @@ var FlameEmitter = class _FlameEmitter {
           ]
         },
         fragment: {
-          module: this.shaderModule,
+          module: shaderModule,
           entryPoint: "fsMain",
           targets: [
             {
               format: this.format,
               blend: {
-                color: {
-                  srcFactor: "src-alpha",
-                  dstFactor: "one",
-                  operation: "add"
-                },
-                alpha: {
-                  srcFactor: "one",
-                  dstFactor: "one-minus-src-alpha",
-                  operation: "add"
-                }
+                color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
+                alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }
               }
             },
             { format: "rgba16float" },
@@ -12954,25 +13071,37 @@ var FlameEmitter = class _FlameEmitter {
         primitive: { topology: "triangle-list" },
         depthStencil: { depthWriteEnabled: false, depthCompare: "less", format: "depth24plus" }
       });
-      _FlameEmitter._pipelineCache.set(this.device, {
+      _FlameEmitter._pipelineCache.set(device2, {
         pipeline: this.pipeline,
-        bindGroupLayout: this.bindGroupLayout,
-        pipelineLayout: this.pipelineLayout,
-        shaderModule: this.shaderModule
+        bindGroupLayout: this.bindGroupLayout
       });
     }
     const vertexData = this.recreateVertexDataRND(1);
-    this.vertexBuffer = this.device.createBuffer({ size: vertexData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
+    this.vertexBuffer = device2.createBuffer({
+      label: "flame-emmiter vertexBuffer",
+      size: vertexData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.vertexBuffer, 0, vertexData);
     const uvData = new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]);
-    this.uvBuffer = this.device.createBuffer({ size: uvData.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(this.uvBuffer, 0, uvData);
+    this.uvBuffer = device2.createBuffer({
+      size: uvData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.uvBuffer, 0, uvData);
     const indexData = new Uint16Array([0, 2, 1, 1, 2, 3]);
-    this.indexBuffer = this.device.createBuffer({ size: Math.ceil(indexData.byteLength / 4) * 4, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-    this.device.queue.writeBuffer(this.indexBuffer, 0, indexData);
+    this.indexBuffer = device2.createBuffer({
+      size: Math.ceil(indexData.byteLength / 4) * 4,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+    });
+    device2.queue.writeBuffer(this.indexBuffer, 0, indexData);
     this.indexCount = indexData.length;
-    this.modelBuffer = this.device.createBuffer({ label: "flame-emmiter modeBuffer", size: this.maxParticles * this.floatsPerInstance * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
-    this.bindGroup = this.device.createBindGroup({
+    this.modelBuffer = device2.createBuffer({
+      label: "flame-emmiter modelBuffer",
+      size: this.maxParticles * this.floatsPerInstance * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    });
+    this.bindGroup = device2.createBindGroup({
       label: "flame-emmiter bindGroup",
       layout: this.bindGroupLayout,
       entries: [
@@ -12982,7 +13111,7 @@ var FlameEmitter = class _FlameEmitter {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceTargets.length, this.maxParticles);
@@ -13031,7 +13160,6 @@ var FlameEmitter = class _FlameEmitter {
       p.rotation += dt * this.rotSpeed;
     }
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -13083,6 +13211,21 @@ var FlameEmitter = class _FlameEmitter {
         this.baseRotation = [0, 0, Math.PI / 2];
         break;
     }
+  }
+  destroy() {
+    if (!this.enabled) return;
+    this.enabled = false;
+    this.vertexBuffer?.destroy();
+    this.uvBuffer?.destroy();
+    this.indexBuffer?.destroy();
+    this.modelBuffer?.destroy();
+    this.vertexBuffer = null;
+    this.uvBuffer = null;
+    this.indexBuffer = null;
+    this.modelBuffer = null;
+    this.bindGroup = null;
+    this.instanceTargets.length = 0;
+    this.instanceData = null;
   }
 };
 
@@ -13278,7 +13421,6 @@ var PointerEffect = class {
   draw(pass, cameraMatrix, modelMatrix) {
     this.device.queue.writeBuffer(this.cameraBuffer, 0, cameraMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -13395,7 +13537,8 @@ fn fsMain(input: VertexOutput) -> FragmentOutput {
 `;
 
 // ../../../engine/effects/msdfText.js
-var MSDFTextEffect = class {
+var MSDFTextEffect = class _MSDFTextEffect {
+  static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, msdfTexture, sampler, cameraBuffer, font, options2 = {}) {
     this.device = device2;
     this.format = format;
@@ -13405,10 +13548,14 @@ var MSDFTextEffect = class {
     this.font = font;
     this.enabled = true;
     this.scale = options2.scale ?? 15e-4;
+    this.localOffset = options2.localOffset ?? [0, 0, 0];
+    this.localRotation = options2.localRotation ?? [0, 0, 0];
+    this.localScale = options2.localScale ?? [1, 1, 1];
+    this._localMat = mat4Impl.identity();
+    this._finalMat = mat4Impl.identity();
+    this._parentMat = mat4Impl.identity();
     this.glyphXOffsetFix = {
       "I": 8
-      // "J": -3,
-      // "T": -2
     };
     this.fixedAdvancePx = options2.fixedAdvancePx ?? 40;
     this.trackingPx = options2.trackingPx ?? 0;
@@ -13418,16 +13565,18 @@ var MSDFTextEffect = class {
     this.glyphCount = 0;
     this.floatsPerGlyph = 8;
     this.instanceData = new Float32Array(this.maxGlyphs * this.floatsPerGlyph);
-    this.parentMatrixBuffer = device2.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.parentMatrixBuffer = device2.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
     this.colorBuffer = device2.createBuffer({
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    this.device.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
+    device2.queue.writeBuffer(this.colorBuffer, 0, new Float32Array(this.color));
     this._identity = mat4Impl.create();
     this._init();
   }
-  // TYPING ANIMATION - character by character
   typeText(text, delayMs = 100, onComplete = null) {
     if (this.isTyping) {
       clearInterval(this.typeInterval);
@@ -13449,7 +13598,6 @@ var MSDFTextEffect = class {
       this.setText(text.substring(0, this.typeIndex + 1));
     }, delayMs);
   }
-  // Stop typing animation
   stopTyping() {
     if (this.typeInterval) {
       clearInterval(this.typeInterval);
@@ -13457,6 +13605,70 @@ var MSDFTextEffect = class {
     }
   }
   _init() {
+    const device2 = this.device;
+    if (_MSDFTextEffect._pipelineCache.has(device2)) {
+      const cached = _MSDFTextEffect._pipelineCache.get(device2);
+      this.pipeline = cached.pipeline;
+      this.bindGroupLayout = cached.bindGroupLayout;
+    } else {
+      this.bindGroupLayout = device2.createBindGroupLayout({
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
+          { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+          { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+          { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
+        ]
+      });
+      const shaderModule = device2.createShaderModule({ code: MSDFFRAG });
+      const pipelineLayout = device2.createPipelineLayout({
+        bindGroupLayouts: [this.bindGroupLayout]
+      });
+      this.pipeline = device2.createRenderPipeline({
+        layout: pipelineLayout,
+        vertex: {
+          module: shaderModule,
+          entryPoint: "vsMain",
+          buffers: [
+            {
+              arrayStride: 8,
+              attributes: [
+                { shaderLocation: 0, format: "float32x2", offset: 0 }
+              ]
+            },
+            {
+              arrayStride: 8,
+              attributes: [
+                { shaderLocation: 1, format: "float32x2", offset: 0 }
+              ]
+            }
+          ]
+        },
+        fragment: {
+          module: shaderModule,
+          entryPoint: "fsMain",
+          targets: [
+            { format: this.format },
+            { format: "rgba16float" },
+            { format: "rgba16float" }
+          ]
+        },
+        primitive: {
+          topology: "triangle-list",
+          cullMode: "none"
+        },
+        depthStencil: {
+          format: "depth24plus",
+          depthWriteEnabled: false,
+          depthCompare: "less"
+        }
+      });
+      _MSDFTextEffect._pipelineCache.set(device2, {
+        pipeline: this.pipeline,
+        bindGroupLayout: this.bindGroupLayout
+      });
+    }
     const vertexData = new Float32Array([
       -0.5,
       0.5,
@@ -13485,7 +13697,7 @@ var MSDFTextEffect = class {
       2,
       3
     ]);
-    this.vertexBuffer = this.device.createBuffer({
+    this.vertexBuffer = device2.createBuffer({
       label: "vb_msdf",
       size: vertexData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -13493,14 +13705,14 @@ var MSDFTextEffect = class {
     });
     new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
     this.vertexBuffer.unmap();
-    this.uvBuffer = this.device.createBuffer({
+    this.uvBuffer = device2.createBuffer({
       size: uvData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
     new Float32Array(this.uvBuffer.getMappedRange()).set(uvData);
     this.uvBuffer.unmap();
-    this.indexBuffer = this.device.createBuffer({
+    this.indexBuffer = device2.createBuffer({
       size: indexData.byteLength,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
@@ -13508,22 +13720,12 @@ var MSDFTextEffect = class {
     new Uint16Array(this.indexBuffer.getMappedRange()).set(indexData);
     this.indexBuffer.unmap();
     this.indexCount = indexData.length;
-    this.glyphBuffer = this.device.createBuffer({
+    this.glyphBuffer = device2.createBuffer({
       size: this.maxGlyphs * this.floatsPerGlyph * 4,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    const bindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {} },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
-        { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: {} },
-        { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: {} }
-      ]
-    });
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+    this.bindGroup = device2.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         { binding: 0, resource: { buffer: this.cameraBuffer } },
         { binding: 1, resource: { buffer: this.glyphBuffer } },
@@ -13532,57 +13734,6 @@ var MSDFTextEffect = class {
         { binding: 4, resource: { buffer: this.parentMatrixBuffer } },
         { binding: 5, resource: { buffer: this.colorBuffer } }
       ]
-    });
-    const shaderModule = this.device.createShaderModule({ code: MSDFFRAG });
-    const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout]
-    });
-    this.pipeline = this.device.createRenderPipeline({
-      layout: pipelineLayout,
-      vertex: {
-        module: shaderModule,
-        entryPoint: "vsMain",
-        buffers: [
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 0,
-                format: "float32x2",
-                offset: 0
-              }
-            ]
-          },
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 1,
-                format: "float32x2",
-                offset: 0
-              }
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: shaderModule,
-        entryPoint: "fsMain",
-        targets: [
-          { format: this.format },
-          { format: "rgba16float" },
-          { format: "rgba16float" }
-        ]
-      },
-      primitive: {
-        topology: "triangle-list",
-        cullMode: "none"
-      },
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "less"
-      }
     });
   }
   setText(text) {
@@ -13601,8 +13752,7 @@ var MSDFTextEffect = class {
     let cursorX = 0;
     let count = 0;
     for (let i = 0; i < text.length; i++) {
-      if (count >= this.maxGlyphs)
-        break;
+      if (count >= this.maxGlyphs) break;
       const charCode = text.charCodeAt(i);
       const metrics = font.getCharMetrics(charCode);
       if (!metrics) continue;
@@ -13637,18 +13787,33 @@ var MSDFTextEffect = class {
     const floatCount = this.glyphCount * this.floatsPerGlyph;
     this.device.queue.writeBuffer(this.glyphBuffer, 0, this.instanceData.buffer, 0, floatCount * 4);
   }
+  _buildLocalMatrix() {
+    const m = this._localMat;
+    mat4Impl.identity(m);
+    mat4Impl.translate(m, this.localOffset, m);
+    mat4Impl.rotateX(m, this.localRotation[0], m);
+    mat4Impl.rotateY(m, this.localRotation[1], m);
+    mat4Impl.rotateZ(m, this.localRotation[2], m);
+    mat4Impl.scale(m, this.localScale, m);
+    return m;
+  }
+  setLocalOffset(x2, y2, z) {
+    this.localOffset[0] = x2;
+    this.localOffset[1] = y2;
+    this.localOffset[2] = z;
+  }
+  setLocalRotation(rx, ry, rz) {
+    this.localRotation[0] = rx;
+    this.localRotation[1] = ry;
+    this.localRotation[2] = rz;
+  }
   updateInstanceData(baseModelMatrix) {
-    this.device.queue.writeBuffer(
-      this.parentMatrixBuffer,
-      0,
-      baseModelMatrix
-    );
+    const local2 = this._buildLocalMatrix();
+    mat4Impl.multiply(baseModelMatrix, local2, this._finalMat);
+    this.device.queue.writeBuffer(this.parentMatrixBuffer, 0, this._finalMat);
   }
   render(pass, mesh, viewProjMatrix) {
-    if (!this.enabled || this.glyphCount === 0) {
-      return;
-    }
-    pass.setPipeline(this.pipeline);
+    if (!this.enabled || this.glyphCount === 0) return;
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -13765,7 +13930,6 @@ fn fsMain(input : VSOut) -> FragOut {
 
 // ../../../engine/effects/blood-target.js
 var BloodBurst = class _BloodBurst {
-  // Static cache - one pipeline per device
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
   constructor(device2, format, maxParticles = 64, cameraBuffer) {
     this.device = device2;
@@ -13793,7 +13957,6 @@ var BloodBurst = class _BloodBurst {
     this._finalMatrix = mat4Impl.create();
     this._initPipeline();
   }
-  // one-shot burst spawn — hook this at your hitscan/animationEnd impact point
   spawn(origin, baseModelMatrix, count = 20, speed = 6) {
     let spawned = 0;
     for (const p of this.pool) {
@@ -13883,7 +14046,6 @@ var BloodBurst = class _BloodBurst {
     }
     if (!this.activeCount) return;
     this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjMatrix);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -13977,7 +14139,7 @@ var BloodBurst = class _BloodBurst {
     });
     setTimeout(() => {
       dispatchEvent(new CustomEvent("update-effects", {}));
-    }, 200);
+    }, 30);
   }
 };
 
@@ -14611,7 +14773,7 @@ var MEMeshObj = class extends Materials {
         if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
           this.effects.pointEffect = new PointEffect(device2, "rgba16float", this.cameraBuffer);
         }
-        if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true || app && app.editor.methodsManager && app.editor.methodsManager.editorType === "created from editor") {
+        if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true || app && app.editor && app.editor.methodsManager && app.editor.methodsManager.editorType === "created from editor") {
           this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float", this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
@@ -15133,7 +15295,7 @@ var MultiLang = class {
   loadMultilang = async function(lang = "en") {
     if (lang == "rs") lang = "sr";
     lang = "res/multilang/" + lang + ".json";
-    console.info(`%cMultilang: ${lang}`, LOG_FUNNY_ARCADE);
+    console.info("%cMultilang: %s", LOG_FUNNY_ARCADE, lang);
     try {
       const r2 = await fetch(lang, { headers: { "Accept": "application/json", "Content-Type": "application/json" } });
       return await r2.json();
@@ -20344,7 +20506,7 @@ var BVHPlayer = class extends MEMeshObj {
       b = b.map((v) => -v);
       dot2 = -dot2;
     }
-    if (dot2 > 0.9995) return lerpVec(a, b, t);
+    if (dot2 > 0.9995) return this.lerpVec(a, b, t);
     const theta0 = Math.acos(dot2);
     const theta = theta0 * t;
     const sinTheta = Math.sin(theta);
@@ -21478,17 +21640,6 @@ var MaterialsInstanced = class {
       this.video.style.top = "-20px";
       this.video.style.left = "50%";
       this.video.play();
-      this.video.addEventListener("canplaythrough", () => {
-        if (this.video.readyState >= 3) {
-          this.externalTexture = this.device.importExternalTexture({ source: this.video });
-          if (!this.externalTexture) alert("ERROR " + this.externalTexture);
-          this.sampler = this.device.createSampler({
-            magFilter: "linear",
-            minFilter: "linear"
-          });
-          this.createMaterialBindGroupVideo();
-        }
-      }, { once: false });
     } else if (arg.type === "videoElement") {
       this.video = arg.videoElement;
       await this.video.play();
@@ -21563,10 +21714,34 @@ var MaterialsInstanced = class {
     this.createMaterialBindGroupVideo();
     this.setupPipeline();
   }
+  // chatgpt SUGGESTION START
+  // Refresh the imported frame and its bind group before encoding the draw.
   updateVideoTexture() {
-    this.externalTexture = this.device.importExternalTexture({ source: this.video });
-    this.createMaterialBindGroupVideo();
+    this.videoFrameReady = false;
+    if (!this.video || this.video.readyState < 2 || !this.video.videoWidth || !this.video.videoHeight) {
+      return false;
+    }
+    try {
+      const externalTexture = this.device.importExternalTexture({ source: this.video });
+      if (!externalTexture) return false;
+      const bindGroup = this.device.createBindGroup({
+        layout: this.materialVideoBGL,
+        entries: [
+          { binding: 0, resource: externalTexture },
+          { binding: 1, resource: this.videoSampler },
+          { binding: 2, resource: { buffer: this.postFXModeBuffer } }
+        ]
+      });
+      this.externalTexture = externalTexture;
+      this.materialBindGroup = bindGroup;
+      this.videoFrameReady = true;
+      return true;
+    } catch (err) {
+      console.warn("[VideoTexture][instanced] Frame import failed:", err);
+      return false;
+    }
   }
+  // chatgpt SUGGESTION end
   getMaterialTexture(glb, materialIndex) {
     const matDef = glb.glbJsonData.materials[materialIndex];
     if (!matDef) {
@@ -22102,6 +22277,9 @@ var GenGeo = class _GenGeo {
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 30);
   }
   updateInstanceData = (baseModelMatrix) => {
     const count = Math.min(this.instanceCount, this.maxInstances);
@@ -22496,7 +22674,6 @@ var MANABarEffect = class _MANABarEffect {
     this.device.queue.writeBuffer(this.modelBuffer, 0, modelMatrix);
     this.device.queue.writeBuffer(this.modelBuffer, 64, this._colorScratch);
     this.device.queue.writeBuffer(this.modelBuffer, 80, this._progressScratch);
-    pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.uvBuffer);
@@ -23784,7 +23961,7 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
           this.effects.energyBar = new HPBarEffect(device2, pf, this.cameraBuffer);
           this.effects.manaBar = new MANABarEffect(device2, pf, this.cameraBuffer);
         }
-        if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true || app && app.editor.methodsManager && app.editor.methodsManager.editorType === "created from editor") {
+        if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true || app && app.editor && app.editor.methodsManager && app.editor.methodsManager.editorType === "created from editor") {
           this.effects.gizmoEffect = new GizmoEffect(device2, "rgba16float", this.cameraBuffer);
         }
         if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
@@ -24047,7 +24224,6 @@ var MEMeshObjInstances = class extends MaterialsInstanced {
     pass.drawIndexedIndirect(indirectBuffer, indirectOffset);
   };
   drawVideoElements = (pass) => {
-    this.updateVideoTexture();
     pass.setVertexBuffer(0, this.vertexBuffer);
     pass.setVertexBuffer(1, this.vertexNormalsBuffer);
     pass.setVertexBuffer(2, this.vertexTexCoordsBuffer);
@@ -24346,9 +24522,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         inverseBindMatrix: n2.inverseBindMatrix ? new Float32Array(n2.inverseBindMatrix) : null
       }));
       this.instanceNodes.push(clonedNodes);
-      this.instanceBoneMatrices.push(
-        new Float32Array(this.MAX_BONES * 16)
-      );
+      this.instanceBoneMatrices.push(new Float32Array(this.MAX_BONES * 16));
     }
   }
   initInverseBindMatrices(skinIndex = 0) {
@@ -24390,9 +24564,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
   };
   playAnimationByName = (animationName) => {
     const animations = this.glb.glbJsonData.animations;
-    const index = animations.findIndex(
-      (anim) => anim.name === animationName
-    );
+    const index = animations.findIndex((anim) => anim.name === animationName);
     if (index === -1) {
       console.warn(`Animation '${animationName}' not found`);
       return;
@@ -24424,6 +24596,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     out[15] = 1;
   }
   update(now) {
+    if (this._poseOn) this._solvePose();
     var inTime = this._animationLength;
     if (this.sharedState.animationStarted == false && this.sharedState.emitAnimationEvent == true) {
       this.sharedState.animationStarted = true;
@@ -24482,7 +24655,7 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
         result2 = new Uint8Array(slice);
         break;
       default:
-        throw new Error("Unsupported componentType: " + accessor.componentType);
+        throw new Error("Unsupported componentType:" + accessor.componentType);
     }
     glb._accessorCache.set(accessorIndex, result2);
     return result2;
@@ -24697,6 +24870,15 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
       const tr = node2.translation;
       const sc = node2.scale;
       const rot2 = node2.rotation;
+      if (this._poseOn) {
+        const o2 = nodeIndex * 4, pl = this._poseLocal;
+        rot2[0] = pl[o2];
+        rot2[1] = pl[o2 + 1];
+        rot2[2] = pl[o2 + 2];
+        rot2[3] = pl[o2 + 3];
+        this.composeTRS(tr, rot2, sc, node2.transform);
+        continue;
+      }
       const tChannels = this._translationChannels[nodeIndex] || [];
       const sChannels = this._scaleChannels[nodeIndex] || [];
       const rChannels = this._rotationChannels[nodeIndex] || [];
@@ -24772,24 +24954,436 @@ var BVHPlayerInstances = class extends MEMeshObjInstances {
     }
     for (let j = 0; j < skeleton.length; j++) {
       const jointNode = nodes[skeleton[j]];
-      mat4Impl.multiply(
-        jointNode.worldMatrix,
-        jointNode.inverseBindMatrix,
-        this._tempMat
-      );
+      mat4Impl.multiply(jointNode.worldMatrix, jointNode.inverseBindMatrix, this._tempMat);
       boneMatrices.set(this._tempMat, j * 16);
     }
     const byteOffset = instanceIndex * this.MAX_BONES * 64;
-    this.device.queue.writeBuffer(
-      this.bonesBuffer,
-      byteOffset,
-      boneMatrices.buffer,
-      boneMatrices.byteOffset,
-      boneMatrices.byteLength
-    );
+    this.device.queue.writeBuffer(this.bonesBuffer, byteOffset, boneMatrices.buffer, boneMatrices.byteOffset, boneMatrices.byteLength);
     return boneMatrices;
   }
+  enablePoseDrive(opts = {}) {
+    this._restFromBindPose();
+    const jn = this.glb.glbJsonData.nodes;
+    const n2 = this.nodes.length;
+    this._poseSmooth = opts.smooth ?? 0.4;
+    this._poseMirror = opts.mirror ?? false;
+    this._poseZSign = opts.zSign ?? -1;
+    this._poseMinVis = opts.minVisibility ?? 0.5;
+    this._poseWL = null;
+    this._poseLM = null;
+    this._poseRestLocal = new Float32Array(n2 * 4);
+    this._poseRestWorld = new Float32Array(n2 * 4);
+    this._poseNewWorld = new Float32Array(n2 * 4);
+    this._poseLocal = new Float32Array(n2 * 4);
+    this._poseFrom = new Int8Array(n2).fill(-1);
+    this._poseTo = new Int8Array(n2).fill(-1);
+    this._poseRestDir = new Float32Array(n2 * 3);
+    this._qTmp = new Float32Array(8);
+    const world = new Array(n2), L = mat4Impl.create();
+    const isJoint = new Set(this.skeleton);
+    for (const i of this._sortedNodes) {
+      const nd = this.nodes[i], p = nd.parent;
+      if (isJoint.has(i)) this.composeTRS(nd.translation, nd.rotation, nd.scale, L);
+      else mat4Impl.copy(nd.transform, L);
+      world[i] = p != null ? mat4Impl.multiply(world[p], L) : mat4Impl.copy(L);
+      const dl = this.decomposeMatrix(L).rotation;
+      const dw = this.decomposeMatrix(world[i]).rotation;
+      this._poseRestLocal.set(dl, i * 4);
+      this._poseLocal.set(dl, i * 4);
+      this._poseRestWorld.set(dw, i * 4);
+    }
+    const jointSet = new Set(this.skeleton);
+    const found = {};
+    for (const i of this.skeleton) {
+      const t = _poseTokens(jn[i].name);
+      const side = t.includes("left") || t.includes("l") ? "L" : t.includes("right") || t.includes("r") ? "R" : null;
+      if (!side) continue;
+      const part = t.filter((x2) => x2 !== "left" && x2 !== "right" && x2 !== "l" && x2 !== "r").join("");
+      for (const key in _POSE_SLOTS) {
+        if (_POSE_SLOTS[key].names.includes(part) && !(key + side in found)) found[key + side] = i;
+      }
+    }
+    if (opts.override) for (const id2 in opts.override) {
+      const i = jn.findIndex((x2) => x2.name === opts.override[id2]);
+      if (i >= 0) found[id2] = i;
+    }
+    const missing = [];
+    for (const key in _POSE_SLOTS) for (const side of ["L", "R"]) {
+      const i = found[key + side];
+      if (i === void 0) {
+        missing.push(key + side);
+        continue;
+      }
+      const nextId = _POSE_SLOTS[key].next ? _POSE_SLOTS[key].next + side : null;
+      let c = nextId && found[nextId] !== void 0 ? found[nextId] : -1;
+      if (c < 0) {
+        for (const ch of this.nodes[i].children || []) if (jointSet.has(ch)) {
+          c = ch;
+          break;
+        }
+      }
+      if (c < 0) {
+        missing.push(key + side + "(no child)");
+        continue;
+      }
+      let dx = world[c][12] - world[i][12], dy = world[c][13] - world[i][13], dz = world[c][14] - world[i][14];
+      const l = Math.hypot(dx, dy, dz) || 1;
+      this._poseRestDir.set([dx / l, dy / l, dz / l], i * 3);
+      this._poseFrom[i] = _POSE_SLOTS[key][side][0];
+      this._poseTo[i] = _POSE_SLOTS[key][side][1];
+    }
+    if (missing.length) console.warn(`[${this.name}] pose drive: unmapped`, missing, "-> use opts.override");
+    this._poseKind = new Int8Array(n2);
+    this._poseT = new Float32Array(n2);
+    this._rv = new Float32Array(15);
+    this._tv = new Float32Array(15);
+    this._dq = new Float32Array(12);
+    this._lmS = new Float32Array(18);
+    this._fdS = new Float32Array(12);
+    this._poseTorso = false;
+    let hips = -1, head = -1;
+    const spine = [], neck = [];
+    for (const i of this._sortedNodes) {
+      if (!jointSet.has(i)) continue;
+      const t = _poseTokens(jn[i].name);
+      if (t.includes("left") || t.includes("right")) continue;
+      const k = t.join("");
+      if (hips < 0 && (k === "hips" || k === "pelvis")) hips = i;
+      else if (/^(spine|chest|upperchest)/.test(k)) spine.push(i);
+      else if (/^neck/.test(k)) neck.push(i);
+      else if (head < 0 && k === "head") head = i;
+    }
+    const F = found;
+    if (hips >= 0 && head >= 0 && F.thighL !== void 0 && F.thighR !== void 0 && F.upperArmL !== void 0 && F.upperArmR !== void 0) {
+      const P = (i, a) => world[i][12 + a], rv = this._rv;
+      const hm = [0, 1, 2].map((a) => (P(F.thighL, a) + P(F.thighR, a)) / 2);
+      const am = [0, 1, 2].map((a) => (P(F.upperArmL, a) + P(F.upperArmR, a)) / 2);
+      const nrm = (v) => {
+        const l = Math.hypot(...v) || 1;
+        return v.map((x2) => x2 / l);
+      };
+      rv.set(nrm(am.map((x2, a) => x2 - hm[a])), 0);
+      rv.set([0, 1, 2].map((a) => P(F.thighL, a) - P(F.thighR, a)), 3);
+      const cs = [0, 1, 2].map((a) => P(F.upperArmL, a) - P(F.upperArmR, a));
+      rv.set(cs, 6);
+      rv.set(cs, 12);
+      rv.set(nrm([0, 1, 2].map((a) => P(head, a) - am[a])), 9);
+      this._poseKind[hips] = 2;
+      this._poseT[hips] = 0;
+      spine.forEach((i, k) => {
+        this._poseKind[i] = 2;
+        this._poseT[i] = (k + 1) / spine.length;
+      });
+      neck.forEach((i, k) => {
+        this._poseKind[i] = 3;
+        this._poseT[i] = (k + 1) / (neck.length + 1);
+      });
+      this._poseKind[head] = 3;
+      this._poseT[head] = 1;
+      this._poseTorso = true;
+    } else console.warn(`[${this.name}] pose drive: torso/head not resolved (hips/head/thigh/arm missing)`);
+    for (const inst of this.instanceNodes) {
+      for (let i = 0; i < n2; i++) {
+        inst[i].translation.set(this.nodes[i].translation);
+        inst[i].rotation.set(this.nodes[i].rotation);
+        inst[i].scale.set(this.nodes[i].scale);
+      }
+    }
+    this._poseOn = true;
+  }
+  disablePoseDrive() {
+    this._poseOn = false;
+  }
+  // call from pipe.onResults
+  setPoseResults(results) {
+    this._poseWL = results?.worldLandmarks?.[0] ?? null;
+    this._poseLM = results?.landmarks?.[0] ?? null;
+  }
+  _solvePose() {
+    const wl = this._poseWL;
+    if (!wl) return;
+    const lm = this._poseLM, sorted = this._sortedNodes, nodes = this.nodes;
+    const rw = this._poseRestWorld, nw = this._poseNewWorld, pl = this._poseLocal, q = this._qTmp;
+    const from = this._poseFrom, to = this._poseTo, rd = this._poseRestDir;
+    const kinds = this._poseKind, T = this._poseT, dq = this._dq;
+    const mx = this._poseMirror ? -1 : 1, zs = this._poseZSign, minVis = this._poseMinVis;
+    const k = 1 - this._poseSmooth;
+    let torsoOK = false, headOK = false;
+    if (this._poseTorso && _vis(lm, 11, minVis) && _vis(lm, 12, minVis) && _vis(lm, 23, minVis) && _vis(lm, 24, minVis)) {
+      torsoOK = true;
+      const L = this._lmS, tv = this._tv, S = this._fdS, idx = [11, 12, 23, 24, 7, 8];
+      for (let n2 = 0; n2 < 6; n2++) {
+        const p = wl[idx[n2]];
+        L[n2 * 3] = mx * p.x;
+        L[n2 * 3 + 1] = -p.y;
+        L[n2 * 3 + 2] = zs * p.z;
+      }
+      let ux = (L[0] + L[3]) / 2 - (L[6] + L[9]) / 2, uy = (L[1] + L[4]) / 2 - (L[7] + L[10]) / 2, uz = (L[2] + L[5]) / 2 - (L[8] + L[11]) / 2;
+      let l = Math.hypot(ux, uy, uz) || 1;
+      tv[0] = ux / l;
+      tv[1] = uy / l;
+      tv[2] = uz / l;
+      tv[3] = L[6] - L[9];
+      tv[4] = L[7] - L[10];
+      tv[5] = L[8] - L[11];
+      tv[6] = L[0] - L[3];
+      tv[7] = L[1] - L[4];
+      tv[8] = L[2] - L[5];
+      _frameDelta(this._rv, 0, 3, tv, 0, 3, dq, 0, S);
+      _frameDelta(this._rv, 0, 6, tv, 0, 6, dq, 4, S);
+      if (_vis(lm, 7, minVis) && _vis(lm, 8, minVis)) {
+        headOK = true;
+        ux = (L[12] + L[15]) / 2 - (L[0] + L[3]) / 2;
+        uy = (L[13] + L[16]) / 2 - (L[1] + L[4]) / 2;
+        uz = (L[14] + L[17]) / 2 - (L[2] + L[5]) / 2;
+        l = Math.hypot(ux, uy, uz) || 1;
+        tv[9] = ux / l;
+        tv[10] = uy / l;
+        tv[11] = uz / l;
+        tv[12] = L[12] - L[15];
+        tv[13] = L[13] - L[16];
+        tv[14] = L[14] - L[17];
+        _frameDelta(this._rv, 9, 12, tv, 9, 12, dq, 8, S);
+      }
+    }
+    for (let s = 0; s < sorted.length; s++) {
+      const i = sorted[s], p = nodes[i].parent, f = from[i], kind = kinds[i];
+      let have = false;
+      if (f >= 0) {
+        const t = to[i];
+        if (_vis(lm, f, minVis) && _vis(lm, t, minVis)) {
+          const a = wl[f], b = wl[t];
+          let dx = mx * (b.x - a.x), dy = -(b.y - a.y), dz = zs * (b.z - a.z);
+          const l = Math.hypot(dx, dy, dz);
+          if (l > 1e-5) {
+            dx /= l;
+            dy /= l;
+            dz /= l;
+            _qFromTo(rd[i * 3], rd[i * 3 + 1], rd[i * 3 + 2], dx, dy, dz, q, 0);
+            have = true;
+          }
+        }
+      } else if (kind === 2 && torsoOK) {
+        q[0] = dq[0];
+        q[1] = dq[1];
+        q[2] = dq[2];
+        q[3] = dq[3];
+        _nlerp(q, 0, dq, 4, T[i]);
+        have = true;
+      } else if (kind === 3 && headOK) {
+        q[0] = dq[4];
+        q[1] = dq[5];
+        q[2] = dq[6];
+        q[3] = dq[7];
+        _nlerp(q, 0, dq, 8, T[i]);
+        have = true;
+      }
+      if (have) {
+        _qmul(q, 0, rw, i * 4, q, 4);
+        if (p != null) _qmulConjA(nw, p * 4, q, 4, q, 0);
+        else {
+          q[0] = q[4];
+          q[1] = q[5];
+          q[2] = q[6];
+          q[3] = q[7];
+        }
+        _nlerp(pl, i * 4, q, 0, k);
+      }
+      if (p != null) _qmul(nw, p * 4, pl, i * 4, nw, i * 4);
+      else {
+        nw[i * 4] = pl[i * 4];
+        nw[i * 4 + 1] = pl[i * 4 + 1];
+        nw[i * 4 + 2] = pl[i * 4 + 2];
+        nw[i * 4 + 3] = pl[i * 4 + 3];
+      }
+    }
+  }
+  _restFromBindPose() {
+    const n2 = this.nodes.length, W = new Array(n2), tmp = mat4Impl.create(), L = mat4Impl.create();
+    const isJoint = new Set(this.skeleton);
+    for (const i of this._sortedNodes) {
+      const nd = this.nodes[i], p = nd.parent;
+      if (isJoint.has(i)) {
+        const k = this.skeleton.indexOf(i);
+        W[i] = mat4Impl.inverse(this.inverseBindMatrices.subarray(k * 16, k * 16 + 16));
+        if (p != null) mat4Impl.multiply(mat4Impl.inverse(W[p]), W[i], L);
+        else mat4Impl.copy(W[i], L);
+        const d = this.decomposeMatrix(L);
+        nd.translation.set(d.translation);
+        nd.rotation.set(d.rotation);
+        nd.scale.set(d.scale);
+      } else {
+        W[i] = p != null ? mat4Impl.multiply(W[p], nd.transform) : mat4Impl.copy(nd.transform);
+      }
+    }
+  }
+  debugPoseRest() {
+    const nodes = this.instanceNodes[0];
+    let worst = 0, name2 = "";
+    for (const j of this.skeleton) {
+      const m = mat4Impl.multiply(nodes[j].worldMatrix, nodes[j].inverseBindMatrix);
+      let d = 0;
+      for (let k = 0; k < 16; k++) d = Math.max(d, Math.abs(m[k] - (k % 5 === 0 ? 1 : 0)));
+      if (d > worst) {
+        worst = d;
+        name2 = this.glb.glbJsonData.nodes[j].name;
+      }
+    }
+    console.log("pose rest error", worst, name2);
+  }
+  debugPoseRest2() {
+    const nodes = this.instanceNodes[0], jn = this.glb.glbJsonData.nodes;
+    const I = mat4Impl.create(), m = mat4Impl.create(), L = mat4Impl.create();
+    let shown = 0;
+    for (const i of this._sortedNodes) {
+      const k = this.skeleton.indexOf(i);
+      if (k < 0) continue;
+      mat4Impl.multiply(nodes[i].worldMatrix, nodes[i].inverseBindMatrix, m);
+      let err = 0;
+      for (let e = 0; e < 16; e++) err = Math.max(err, Math.abs(m[e] - I[e]));
+      if (err > 0.01 && shown++ < 5) {
+        const n2 = nodes[i];
+        this.composeTRS(n2.translation, n2.rotation, n2.scale, L);
+        const det = L[0] * (L[5] * L[10] - L[6] * L[9]) - L[4] * (L[1] * L[10] - L[2] * L[9]) + L[8] * (L[1] * L[6] - L[2] * L[5]);
+        console.log(
+          jn[i].name,
+          "err",
+          err.toFixed(4),
+          "scale",
+          Array.from(n2.scale).map((v) => +v.toFixed(3)),
+          "rotLen",
+          Math.hypot(...n2.rotation).toFixed(4),
+          "localDet",
+          det.toFixed(3),
+          "parent",
+          n2.parent != null ? jn[n2.parent].name : null
+        );
+      }
+    }
+  }
 };
+var _POSE_NOISE = /* @__PURE__ */ new Set(["mixamorig", "j", "bip", "bip01", "def", "mch", "cc", "base", "rig", "armature", "c"]);
+var _POSE_SLOTS = {
+  upperArm: { L: [11, 13], R: [12, 14], names: ["arm", "upperarm"], next: "foreArm" },
+  foreArm: { L: [13, 15], R: [14, 16], names: ["forearm", "lowerarm"], next: null },
+  thigh: { L: [23, 25], R: [24, 26], names: ["upleg", "upperleg", "thigh"], next: "shin" },
+  shin: { L: [25, 27], R: [26, 28], names: ["leg", "lowerleg", "calf", "shin"], next: null }
+};
+function _poseTokens(name2) {
+  return (name2 || "").replace(/^.*[:|]/, "").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter((t) => t && !_POSE_NOISE.has(t));
+}
+function _qmul(a, ao, b, bo, o2, oo) {
+  const ax = a[ao], ay = a[ao + 1], az = a[ao + 2], aw = a[ao + 3];
+  const bx = b[bo], by = b[bo + 1], bz = b[bo + 2], bw = b[bo + 3];
+  o2[oo] = aw * bx + ax * bw + ay * bz - az * by;
+  o2[oo + 1] = aw * by - ax * bz + ay * bw + az * bx;
+  o2[oo + 2] = aw * bz + ax * by - ay * bx + az * bw;
+  o2[oo + 3] = aw * bw - ax * bx - ay * by - az * bz;
+}
+function _qmulConjA(a, ao, b, bo, o2, oo) {
+  const ax = -a[ao], ay = -a[ao + 1], az = -a[ao + 2], aw = a[ao + 3];
+  const bx = b[bo], by = b[bo + 1], bz = b[bo + 2], bw = b[bo + 3];
+  o2[oo] = aw * bx + ax * bw + ay * bz - az * by;
+  o2[oo + 1] = aw * by - ax * bz + ay * bw + az * bx;
+  o2[oo + 2] = aw * bz + ax * by - ay * bx + az * bw;
+  o2[oo + 3] = aw * bw - ax * bx - ay * by - az * bz;
+}
+function _qFromTo(ux, uy, uz, vx, vy, vz, o2, oo) {
+  const d = ux * vx + uy * vy + uz * vz;
+  if (d > 0.999999) {
+    o2[oo] = 0;
+    o2[oo + 1] = 0;
+    o2[oo + 2] = 0;
+    o2[oo + 3] = 1;
+    return;
+  }
+  if (d < -0.999999) {
+    let ax, ay, az;
+    if (Math.abs(ux) < 0.9) {
+      ax = 0;
+      ay = uz;
+      az = -uy;
+    } else {
+      ax = -uz;
+      ay = 0;
+      az = ux;
+    }
+    const l2 = Math.hypot(ax, ay, az) || 1;
+    o2[oo] = ax / l2;
+    o2[oo + 1] = ay / l2;
+    o2[oo + 2] = az / l2;
+    o2[oo + 3] = 0;
+    return;
+  }
+  const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx, w = 1 + d;
+  const l = Math.hypot(cx, cy, cz, w) || 1;
+  o2[oo] = cx / l;
+  o2[oo + 1] = cy / l;
+  o2[oo + 2] = cz / l;
+  o2[oo + 3] = w / l;
+}
+function _nlerp(c, co, t, to, k) {
+  let tx = t[to], ty = t[to + 1], tz = t[to + 2], tw = t[to + 3];
+  if (c[co] * tx + c[co + 1] * ty + c[co + 2] * tz + c[co + 3] * tw < 0) {
+    tx = -tx;
+    ty = -ty;
+    tz = -tz;
+    tw = -tw;
+  }
+  const x2 = c[co] + (tx - c[co]) * k, y2 = c[co + 1] + (ty - c[co + 1]) * k;
+  const z = c[co + 2] + (tz - c[co + 2]) * k, w = c[co + 3] + (tw - c[co + 3]) * k;
+  const l = Math.hypot(x2, y2, z, w) || 1;
+  c[co] = x2 / l;
+  c[co + 1] = y2 / l;
+  c[co + 2] = z / l;
+  c[co + 3] = w / l;
+}
+function _vrot(q, qo, x2, y2, z, o2, oo) {
+  const qx = q[qo], qy = q[qo + 1], qz = q[qo + 2], qw = q[qo + 3];
+  const tx = 2 * (qy * z - qz * y2), ty = 2 * (qz * x2 - qx * z), tz = 2 * (qx * y2 - qy * x2);
+  o2[oo] = x2 + qw * tx + (qy * tz - qz * ty);
+  o2[oo + 1] = y2 + qw * ty + (qz * tx - qx * tz);
+  o2[oo + 2] = z + qw * tz + (qx * ty - qy * tx);
+}
+function _vis(lm, i, m) {
+  return !lm || (lm[i].visibility ?? 1) >= m;
+}
+function _frameDelta(A, au, as, B, bu, bs, O, oo, S) {
+  const tx = B[bu], ty = B[bu + 1], tz = B[bu + 2];
+  _qFromTo(A[au], A[au + 1], A[au + 2], tx, ty, tz, S, 0);
+  _vrot(S, 0, A[as], A[as + 1], A[as + 2], S, 4);
+  let sx = S[4], sy = S[5], sz = S[6], d = sx * tx + sy * ty + sz * tz;
+  sx -= d * tx;
+  sy -= d * ty;
+  sz -= d * tz;
+  let px = B[bs], py = B[bs + 1], pz = B[bs + 2];
+  d = px * tx + py * ty + pz * tz;
+  px -= d * tx;
+  py -= d * ty;
+  pz -= d * tz;
+  const ls = Math.hypot(sx, sy, sz), lp = Math.hypot(px, py, pz);
+  if (ls < 1e-6 || lp < 1e-6) {
+    O[oo] = S[0];
+    O[oo + 1] = S[1];
+    O[oo + 2] = S[2];
+    O[oo + 3] = S[3];
+    return;
+  }
+  sx /= ls;
+  sy /= ls;
+  sz /= ls;
+  px /= lp;
+  py /= lp;
+  pz /= lp;
+  const cx = sy * pz - sz * py, cy = sz * px - sx * pz, cz = sx * py - sy * px;
+  const ang = Math.atan2(cx * tx + cy * ty + cz * tz, sx * px + sy * py + sz * pz) * 0.5;
+  const sn = Math.sin(ang);
+  S[8] = tx * sn;
+  S[9] = ty * sn;
+  S[10] = tz * sn;
+  S[11] = Math.cos(ang);
+  _qmul(S, 8, S, 0, O, oo);
+}
 
 // ../../../engine/plugin/tooltip/ToolTip.js
 var METoolTip = class {
@@ -24829,6 +25423,19 @@ var METoolTip = class {
 var MEEditorClient = class {
   ws = null;
   updateSceneEvent = new CustomEvent("updateSceneContainer", { detail: {} });
+  allowedProjectNames = /* @__PURE__ */ new Set();
+  redirectToAllowedProject(name2) {
+    const normalized = typeof name2 === "string" ? name2.trim() : "";
+    if (!/^[A-Za-z0-9_-]+$/.test(normalized)) {
+      console.error("[EDITOR][INVALID REDIRECT NAME]", name2);
+      return;
+    }
+    if (!this.allowedProjectNames.has(normalized)) {
+      console.error("[EDITOR][UNAUTHORIZED REDIRECT NAME]", normalized);
+      return;
+    }
+    location.assign(normalized + ".html");
+  }
   constructor(typeOfRun, name2) {
     this.ws = new WebSocket("ws://localhost:1243");
     this.ws.onopen = () => {
@@ -24855,7 +25462,8 @@ var MEEditorClient = class {
         const data = JSON.parse(event.data);
         console.log("%c[EDITOR][WS MESSAGE]", LOG_FUNNY_ARCADE, data);
         if (data && data.ok == true && data.payload && data.payload.redirect == true) {
-          setTimeout(() => location.assign(data.name + ".html"), 2e3);
+          const safeName = typeof data.name === "string" ? data.name.trim() : "";
+          setTimeout(() => this.redirectToAllowedProject(safeName), 2e3);
         } else if (data.payload && data.payload == "stop-watch done") {
           mb.show("watch-stoped");
         } else if (data.listAssetsForGraph) {
@@ -24867,7 +25475,8 @@ var MEEditorClient = class {
             detail: data
           }));
         } else if (data.projects) {
-          const projects = data.payload.filter((item) => item.name !== "readme.md").map((item) => item.name.trim());
+          const projects = data.payload.filter((item) => item.name !== "readme.md").map((item) => item.name.trim()).filter((name3) => /^[A-Za-z0-9_-]+$/.test(name3));
+          this.allowedProjectNames = new Set(projects);
           if (projects.length === 0) {
             console.warn("No projects found");
             return;
@@ -24876,7 +25485,7 @@ var MEEditorClient = class {
           const projectName = prompt(txt);
           if (projectName) {
             console.log("Project name:", projectName);
-            location.assign(projectName + ".html");
+            this.redirectToAllowedProject(projectName);
           } else {
             console.error("Project loading cancelled");
           }
@@ -29119,7 +29728,17 @@ var FluxCodexVertex = class {
         if (field.key === "objectPreview") {
           spec.objectPreviewEl = input;
         }
-        fieldsWrap.appendChild(input);
+        const fieldWrap = document.createElement("div");
+        fieldWrap.className = "node-field";
+        fieldWrap.style.cssText = "display:flex;flex-direction:column;gap:2px;margin:3px 4px;min-width:0;";
+        const label = document.createElement("span");
+        label.className = "field-label";
+        label.textContent = field.key;
+        label.style.cssText = "font-size:9px;line-height:1;opacity:0.9;margin-top:-5px;text-align: left;";
+        input.style.width = "100%";
+        label.title = field.key + ":";
+        fieldWrap.append(label, input);
+        fieldsWrap.appendChild(fieldWrap);
       });
       body.appendChild(fieldsWrap);
     }
@@ -34910,29 +35529,24 @@ var BloomPass = class {
     this.device = device2;
     this.width = width;
     this.height = height;
+    this.clearValue = { r: 0, g: 0, b: 0, a: 1 };
+    this.loadOp = "clear";
+    this.storeOp = "store";
+    this._renderPassDesc = {
+      colorAttachments: [{ view: null, loadOp: this.loadOp, storeOp: this.storeOp, clearValue: this.clearValue }]
+    };
     this.brightTex = this._createTexture();
     this.blurTexA = this._createTexture();
     this.blurTexB = this._createTexture();
-    this.sampler = device2.createSampler({
-      magFilter: "linear",
-      minFilter: "linear"
-    });
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear" });
     this.intensityBuffer = this._createUniformBuffer([intensity]);
     this.blurDirX = this._createUniformBuffer([1, 0]);
     this.blurDirY = this._createUniformBuffer([0, 1]);
     this._brightView = this.brightTex.createView();
     this._blurAView = this.blurTexA.createView();
     this._blurBView = this.blurTexB.createView();
-    this.params = {
-      intensity,
-      threshold: 0.6,
-      knee: 0.5,
-      blurRadius: 6
-    };
-    this.paramBuffer = this.device.createBuffer({
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    this.params = { intensity, threshold: 0.6, knee: 0.5, blurRadius: 6 };
+    this.paramBuffer = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this._paramScratch = new Float32Array(4);
     this._updateParams();
     this.brightPipeline = this._createPipeline(
@@ -34962,10 +35576,7 @@ var BloomPass = class {
       ]
     );
     this._brightBG = this._brightBindGroup(sceneView);
-    this._combineBG = this._combineBindGroup(
-      sceneView,
-      this._blurBView
-    );
+    this._combineBG = this._combineBindGroup(sceneView, this._blurBView);
     this._blurXBindGroup = this._blurBindGroup(this._brightView, this.blurDirX);
     this._blurYBindGroup = this._blurBindGroup(this._blurAView, this.blurDirY);
   }
@@ -35025,11 +35636,7 @@ var BloomPass = class {
     this._updateParams();
   };
   _createUniformBuffer(data) {
-    const buffer = this.device.createBuffer({
-      size: 16,
-      // std140 safe
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    const buffer = this.device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.device.queue.writeBuffer(buffer, 0, new Float32Array(data));
     return buffer;
   }
@@ -35066,14 +35673,8 @@ var BloomPass = class {
     });
   }
   _beginFullscreenPass(encoder, targetView) {
-    return encoder.beginRenderPass({
-      colorAttachments: [{
-        view: targetView,
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: { r: 0, g: 0, b: 0, a: 1 }
-      }]
-    });
+    this._renderPassDesc.colorAttachments[0].view = targetView;
+    return encoder.beginRenderPass(this._renderPassDesc);
   }
   render(encoder, finalTargetView) {
     {
@@ -35187,13 +35788,9 @@ function combinePassWGSL() {
   fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
     let size = vec2<f32>(textureDimensions(origTex));
     let uv = p.xy / size;
-
     let origColor = textureSample(origTex, samp, uv).rgb;
     let bloomColor = textureSample(bloomTex, samp, uv).rgb;
-
-    // additive bloom
     let color = origColor + bloomColor * bloom.intensity;
-
     return vec4(color, 1.0);
   }
 `;
@@ -35678,7 +36275,7 @@ var ProceduralMeshObj = class extends Materials {
       if (typeof this.pointerEffect.pointEffect !== "undefined" && this.pointerEffect.pointEffect == true) {
         this.effects.pointEffect = new PointEffect(this.device, "rgba16float", this.cameraBuffer);
       }
-      if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true || app && app.editor.methodsManager && app.editor.methodsManager.editorType === "created from editor") {
+      if (typeof this.pointerEffect.gizmoEffect !== "undefined" && this.pointerEffect.gizmoEffect == true || app && app.editor && app.editor.methodsManager && app.editor.methodsManager.editorType === "created from editor") {
         this.effects.gizmoEffect = new GizmoEffect(this.device, "rgba16float", this.cameraBuffer);
       }
       if (typeof this.pointerEffect.flameEffect !== "undefined" && this.pointerEffect.flameEffect == true) {
@@ -37601,6 +38198,24 @@ var VolumetricPass = class {
     this.volumetricTex = this._createTexture(width, height);
     this.volumetricTexView = this.volumetricTex.createView();
     this.sceneView = sceneView;
+    this._marchPassDesc = {
+      label: "march",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    };
+    this._compositePassDesc = {
+      label: "composite",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    };
     this.sampler = device2.createSampler({
       label: "VolumetricPass.linearSampler",
       magFilter: "linear",
@@ -37863,16 +38478,18 @@ var VolumetricPass = class {
     this._lightDir[2] = light.direction[2];
     this._lightDir[3] = 0;
     this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
+    this.setMarchInputs(depthView, shadowArrayView);
     {
-      const pass = this._beginPass(encoder, this.volumetricTexView, "march");
+      this._marchPassDesc.colorAttachments[0].view = this.volumetricTexView;
+      const pass = encoder.beginRenderPass(this._marchPassDesc);
       pass.setPipeline(this.marchPipeline);
-      this.setMarchInputs(depthView, shadowArrayView);
       pass.setBindGroup(0, this._marchBG);
       pass.draw(6);
       pass.end();
     }
     {
-      const pass = this._beginPass(encoder, this.compositeOutputTexView, "composite");
+      this._compositePassDesc.colorAttachments[0].view = this.compositeOutputTexView;
+      const pass = encoder.beginRenderPass(this._compositePassDesc);
       pass.setPipeline(this.compositePipeline);
       pass.setBindGroup(0, this._compositeBG);
       pass.draw(6);
@@ -37894,9 +38511,7 @@ var VolumetricPass = class {
   }
 };
 function fullscreenVertWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
     @vertex
     fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
       var pos = array<vec2<f32>, 6>(
@@ -37905,13 +38520,10 @@ function fullscreenVertWGSL() {
       );
       return vec4(pos[i], 0.0, 1.0);
     }
-  `
-  );
+  `;
 }
 function marchFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
   @group(0) @binding(0) var depthTex:   texture_depth_2d;
   @group(0) @binding(1) var shadowTex:  texture_depth_2d_array;
   @group(0) @binding(2) var cmpSamp:    sampler_comparison;
@@ -37981,25 +38593,17 @@ function marchFragWGSL() {
       let distToLight = length(p - /* lightPos */ vec3(0.0)); // needs light pos not dir
       let rangeAtten = clamp(1.0 - (distToLight / params.range), 0.0, 1.0);
       let rangeAtten2 = rangeAtten * rangeAtten;
-
       let s = trans * (1.0 - ext) * lit * params.scatterStrength * rangeAtten2 * f32(d > 0.0001);
-
-      // let s   = trans * (1.0 - ext) * lit * params.scatterStrength * f32(d > 0.0001);
 
       accum += s * lightColor.rgb;
       trans *= select(1.0, ext, d > 0.0001);
     }
 
     return vec4<f32>(accum, 1.0 - trans);
-  }
-  `
-  );
+  }`;
 }
 function compositeFragWGSL() {
-  return (
-    /* wgsl */
-    `
-
+  return `
   @group(0) @binding(0) var sceneTex: texture_2d<f32>;
   @group(0) @binding(1) var volTex:   texture_2d<f32>;
   @group(0) @binding(2) var samp:     sampler;
@@ -38014,8 +38618,7 @@ function compositeFragWGSL() {
     // vol.rgb = scattered light | vol.a = fog opacity
     return vec4<f32>(scene.rgb * (1.0 - vol.a) + vol.rgb, scene.a);
   }
-  `
-  );
+  `;
 }
 
 // ../../../engine/overrides/min-render.js
@@ -38028,8 +38631,13 @@ var zeroPass = function() {
     let commandEncoder = this.device.createCommandEncoder();
     this.updateLights();
     const camera = this.getCamera();
-    if (camera._dirtyAngle || camera._dirty) this.getTransformationMatrix(camera, now2);
-    camera.update();
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
+      camera.update();
+      this.getTransformationMatrix(camera, now2);
+    }
     const len2 = this.mainRenderBundle.length;
     for (let i = 0; i < len2; i++) {
       const mesh = this.mainRenderBundle[i];
@@ -38106,9 +38714,12 @@ var cullingPass = function() {
     const camera = this.getCamera();
     this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
     this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-    if (camera._dirtyAngle || camera._dirty) {
-      this.getTransformationMatrix(camera, now2);
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
       camera.update();
+      this.getTransformationMatrix(camera, now2);
     }
     for (let i = 0; i < this.lightContainer.length; i++) {
       const light = this.lightContainer[i];
@@ -38161,6 +38772,7 @@ var cullingPass = function() {
       pass.setPipeline(pipeline);
       let l = null;
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         if (mesh.materialBindGroup !== l) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l = mesh.materialBindGroup;
@@ -38174,6 +38786,7 @@ var cullingPass = function() {
     for (const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
       pass.setPipeline(pipeline);
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
@@ -38181,15 +38794,21 @@ var cullingPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if (mesh.effects) {
-        for (const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if (effect === null || effect.enabled === false) continue;
+    for (const pile of this.effectsByType.values()) {
+      if (pile.length === 0) continue;
+      if (pile[0].effect.constructor.managesRenderPipeline === true) {
+        for (const { effect, mesh } of pile) {
+          if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
           effect.render(pass, mesh, camera.VP);
         }
+        continue;
+      }
+      pass.setPipeline(pile[0].effect.pipeline);
+      for (const { effect, mesh } of pile) {
+        if (effect.enabled === false) continue;
+        if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+        effect.render(pass, mesh, camera.VP, 0.016);
       }
     }
     pass.end();
@@ -38281,6 +38900,7 @@ var noShadowPass = function() {
       pass.setPipeline(pipeline);
       let l = null;
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         if (mesh.materialBindGroup !== l) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l = mesh.materialBindGroup;
@@ -38294,6 +38914,7 @@ var noShadowPass = function() {
     for (const [pipeline, meshes] of this.culledRenderPass.visibleTransparentMeshes) {
       pass.setPipeline(pipeline);
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
@@ -38301,15 +38922,21 @@ var noShadowPass = function() {
         mesh.drawElements(pass);
       }
     }
-    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if (mesh.effects) {
-        for (const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if (effect === null || effect.enabled === false) continue;
+    for (const pile of this.effectsByType.values()) {
+      if (pile.length === 0) continue;
+      if (pile[0].effect.constructor.managesRenderPipeline === true) {
+        for (const { effect, mesh } of pile) {
+          if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
           effect.render(pass, mesh, camera.VP);
         }
+        continue;
+      }
+      pass.setPipeline(pile[0].effect.pipeline);
+      for (const { effect, mesh } of pile) {
+        if (effect.enabled === false) continue;
+        if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+        effect.render(pass, mesh, camera.VP, 0.016);
       }
     }
     pass.end();
@@ -38374,8 +39001,13 @@ var nanoPass = function() {
     let commandEncoder = this.device.createCommandEncoder();
     this.updateLights();
     const camera = this.getCamera();
-    this.getTransformationMatrix(camera, now2);
-    camera.update();
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
+      camera.update();
+      this.getTransformationMatrix(camera, now2);
+    }
     const len2 = this.mainRenderBundle.length;
     for (let i = 0; i < len2; i++) {
       const mesh = this.mainRenderBundle[i];
@@ -38861,8 +39493,13 @@ var mobile1 = function() {
     if (this.matrixPhysics) this.matrixPhysics.updatePhysics();
     this.updateLights();
     const camera = this.getCamera();
-    if (camera._dirtyAngle) this.getTransformationMatrix(camera, now2);
-    camera.update();
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
+      camera.update();
+      this.getTransformationMatrix(camera, now2);
+    }
     for (let i = 0; i < this.lightContainer.length; i++) {
       const light = this.lightContainer[i];
       const pass2 = commandEncoder.beginRenderPass(this._shadowPassDescs[i]);
@@ -39244,6 +39881,25 @@ var SSRPass = class {
     this.ssrOutputView = this.ssrOutputTexture.createView();
     this.depthBlitBindGroup = null;
     this.data = new Float32Array(40);
+    this._computePassDesc = { label: "HZB build" };
+    this._ssrPassDesc = {
+      label: "SSR Composite Pass",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: [0, 0, 0, 0]
+      }]
+    };
+    this._blitPassDesc = {
+      label: "Depth blit Pass",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: [1, 0, 0, 1]
+      }]
+    };
     this._computeHZBMipParams();
     this._createHZB();
     this._createSSRConfig();
@@ -39298,7 +39954,7 @@ var SSRPass = class {
       });
       this.device.queue.writeBuffer(buffer, 0, new Uint32Array([dstW, dstH, 0, 0]));
       const bindGroup = this.device.createBindGroup({
-        label: `HZB Build BG ${mip}`,
+        label: `HZB BG ${mip}`,
         layout: this.hzbPipeline.getBindGroupLayout(0),
         entries: [
           { binding: 0, resource: { buffer } },
@@ -39398,18 +40054,11 @@ var SSRPass = class {
   render(commandEncoder, { sceneTextureView, normalTextureView, mainDepthView, mainDepthTexture, worldPosTextureView }) {
     this._blitDepth(commandEncoder, mainDepthTexture, mainDepthView);
     this._buildHZB(commandEncoder);
-    this._renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView, mainDepthView);
+    this._renderSSR(commandEncoder, sceneTextureView, normalTextureView, worldPosTextureView);
   }
   _blitDepth(commandEncoder, depthTexture, depthView) {
-    const pass = commandEncoder.beginRenderPass({
-      label: "Depth blit Pass",
-      colorAttachments: [{
-        view: this.hzbMipWriteViews[0],
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: [1, 0, 0, 1]
-      }]
-    });
+    this._blitPassDesc.colorAttachments[0].view = this.hzbMipWriteViews[0];
+    const pass = commandEncoder.beginRenderPass(this._blitPassDesc);
     pass.setPipeline(this.blitPipeline);
     pass.setBindGroup(0, this.depthBlitBindGroup);
     pass.draw(3);
@@ -39417,22 +40066,22 @@ var SSRPass = class {
   }
   _computeHZBMipParams() {
     this._hzbMipParams = [];
+    this._hzbWgX = new Uint32Array(this.mipCount - 1);
+    this._hzbWgY = new Uint32Array(this.mipCount - 1);
     for (let mip = 1; mip < this.mipCount; mip++) {
       const dstW = Math.max(1, this.width >> mip);
       const dstH = Math.max(1, this.height >> mip);
-      this._hzbMipParams.push({
-        wgX: Math.ceil(dstW / 8),
-        wgY: Math.ceil(dstH / 8)
-      });
+      this._hzbWgX[mip - 1] = Math.ceil(dstW / 8);
+      this._hzbWgY[mip - 1] = Math.ceil(dstH / 8);
     }
   }
   _buildHZB(commandEncoder) {
-    const pass = commandEncoder.beginComputePass({ label: "HZB build" });
+    const pass = commandEncoder.beginComputePass(this._computePassDesc);
     pass.setPipeline(this.hzbPipeline);
     for (let mip = 1; mip < this.mipCount; mip++) {
-      const { wgX, wgY } = this._hzbMipParams[mip - 1];
-      pass.setBindGroup(0, this.hzbMipBindGroups[mip - 1]);
-      pass.dispatchWorkgroups(wgX, wgY);
+      const idx = mip - 1;
+      pass.setBindGroup(0, this.hzbMipBindGroups[idx]);
+      pass.dispatchWorkgroups(this._hzbWgX[idx], this._hzbWgY[idx]);
     }
     pass.end();
   }
@@ -39456,15 +40105,8 @@ var SSRPass = class {
       this._lastWorldPosView = worldPosTextureView;
       this._ssrBGDirty = false;
     }
-    const pass = commandEncoder.beginRenderPass(this._ssrPassDesc ??= {
-      label: "SSR Composite Pass",
-      colorAttachments: [{
-        view: this.ssrOutputView,
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: [0, 0, 0, 0]
-      }]
-    });
+    this._ssrPassDesc.colorAttachments[0].view = this.ssrOutputView;
+    const pass = commandEncoder.beginRenderPass(this._ssrPassDesc);
     pass.setPipeline(this.ssrPipeline);
     pass.setBindGroup(0, this._ssrBindGroup);
     pass.draw(3);
@@ -39770,6 +40412,9 @@ var KaleidoscopeEffect = class _KaleidoscopeEffect {
         { binding: 1, resource: { buffer: this.modelBuffer } }
       ]
     });
+    setTimeout(() => {
+      dispatchEvent(new CustomEvent("update-effects", {}));
+    }, 30);
   }
   _uploadVertex(data) {
     const buf = this.device.createBuffer({
@@ -39899,7 +40544,8 @@ var CulledRenderPass = class {
           const toObjY = m[13] - this._camPos[1];
           const toObjZ = m[14] - this._camPos[2];
           const distanceSq2 = toObjX * toObjX + toObjY * toObjY + toObjZ * toObjZ;
-          if (distanceSq2 < mesh.boundingSphere.radius) {
+          let radius = mesh.boundingSphere?.radius ?? 0;
+          if (distanceSq2 < radius * radius) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
             continue;
@@ -39915,8 +40561,7 @@ var CulledRenderPass = class {
             continue;
           }
           const dot2 = toObjX / distance2 * this._camForward[0] + toObjY / distance2 * this._camForward[1] + toObjZ / distance2 * this._camForward[2];
-          const radius = mesh.boundingSphere.radius;
-          const threshold = 0.2 - radius / distance2;
+          const threshold = 0.2 - mesh.boundingSphere.radius / distance2;
           if (dot2 > threshold) {
             visibleMeshes.push(mesh);
             this.cullStats.visible++;
@@ -40006,7 +40651,6 @@ var GPUCapabilities = class {
     this.group2 = /* @__PURE__ */ new Set();
     this.group3 = /* @__PURE__ */ new Set();
     this.enabled = /* @__PURE__ */ new Set();
-    console.log("GPU features:", this.supported);
   }
   supports(feature) {
     return this.supported.has(feature);
@@ -40044,15 +40688,13 @@ var ComputeCullingSystem = class {
     this.device = device2;
     this.gpuCapabilities = gpuCapabilities;
     this.maxInstances = maxInstances;
-    this.maxDrawCalls = 500;
+    this.maxDrawCalls = maxInstances;
     this.instanceBuffer = device2.createBuffer({
       label: "instanceBuffer",
       size: maxInstances * 80,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    this.instanceData = new Float32Array(this.instanceBuffer.getMappedRange());
-    this.instanceBuffer.unmap();
+    this.instanceData = new Float32Array(maxInstances * 20);
     this.visibilityBuffer = device2.createBuffer({
       label: "visibilityBuffer",
       size: maxInstances * 4,
@@ -40072,18 +40714,16 @@ var ComputeCullingSystem = class {
     this.instanceMeshMap = device2.createBuffer({
       label: "instanceMeshMap",
       size: maxInstances * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
-    this.instanceMeshData = new Uint32Array(this.instanceMeshMap.getMappedRange());
-    this.instanceMeshMap.unmap();
+    this.instanceMeshData = new Uint32Array(maxInstances);
     this.cullingParams = device2.createBuffer({
       label: "cullingParams",
-      size: 144,
+      size: 160,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
     this.visibleCount = 0;
-    this.paramData = new Float32Array(36);
+    this.paramData = new Float32Array(40);
     this.zero = new Uint32Array([0]);
     this.createPipeline();
   }
@@ -40105,6 +40745,10 @@ struct CullingParams {
   projMatrix: mat4x4f,
   cameraPos: vec3f,
   maxDistance: f32,
+  drawCount: u32,
+  _pad0: u32,
+  _pad1: u32,
+  _pad2: u32,
 }
 struct Instance {model: mat4x4<f32>, colorMult : vec4<f32>};
 struct DrawCommand {
@@ -40124,9 +40768,18 @@ struct DrawCommand {
 
 fn isInFrustum(pos: vec3f, radius: f32) -> bool {
   let viewPos = (params.viewMatrix * vec4f(pos, 1.0)).xyz;
-  let projPos = params.projMatrix * vec4f(viewPos, 1.0);
-  let ndc = projPos.xyz / projPos.w;
-  return abs(ndc.x) <= 1.2 && abs(ndc.y) <= 1.2 && abs(ndc.z) <= 1.2;
+  let clipPos = params.projMatrix * vec4f(viewPos, 1.0);
+  if(clipPos.w <= 0.0) {
+    return false;
+  }
+  let ndc = clipPos.xyz / clipPos.w;
+  let safeW = max(clipPos.w, 0.0001);
+  let marginX = radius * abs(params.projMatrix[0][0]) / safeW;
+  let marginY = radius * abs(params.projMatrix[1][1]) / safeW;
+  let marginZ = radius / safeW;
+  return ndc.x >= -1.0 - marginX && ndc.x <= 1.0 + marginX &&
+         ndc.y >= -1.0 - marginY && ndc.y <= 1.0 + marginY &&
+         ndc.z >= -marginZ && ndc.z <= 1.0 + marginZ;
 }
 
 fn isInDistance(pos: vec3f) -> bool {
@@ -40137,22 +40790,19 @@ fn isInDistance(pos: vec3f) -> bool {
 @compute @workgroup_size(128)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
   let idx = gid.x;
-  let isValid = idx < arrayLength(&instances);
-  if (isValid) {
-    let inst = instances[idx];
-    let position = inst.model[3].xyz;
-    if (isInFrustum(position, 1.0) && isInDistance(position)) {
-      let visIdx = atomicAdd(&visibleCounter, 1u);
-      if (visIdx < arrayLength(&visibleIndices)) {
-          visibleIndices[visIdx] = idx;
-      }
-      let meshIdx = instanceMeshMap[idx];
-      atomicAdd(&indirectCommands[meshIdx].instanceCount, 1u);
-    }
+  if(idx >= params.drawCount || idx >= arrayLength(&instances)) {
+    return;
   }
-
-  workgroupBarrier();
-  storageBarrier();
+  let inst = instances[idx];
+  let position = inst.model[3].xyz;
+  let radius = max(inst.colorMult.x, 0.0);
+  let meshIdx = instanceMeshMap[idx];
+  if(isInFrustum(position, radius) && isInDistance(position)) {
+    let visIdx = atomicAdd(&visibleCounter, 1u);
+    if(visIdx < arrayLength(&visibleIndices)) {visibleIndices[visIdx] = idx;}
+  } else {
+    atomicStore(&indirectCommands[meshIdx].instanceCount, 0u);
+  }
 }`;
   }
   createPipeline() {
@@ -40187,7 +40837,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
       compute: { module, entryPoint: "main" }
     });
   }
-  async execute(commandEncoder, viewMatrix, projMatrix, cameraPos, maxDist = 500) {
+  async execute(commandEncoder, viewMatrix, projMatrix, cameraPos, drawCount, maxDist = 500) {
     this.paramData.fill(0);
     for (let i = 0; i < 16; i++) this.paramData[i] = viewMatrix[i];
     for (let i = 0; i < 16; i++) this.paramData[16 + i] = projMatrix[i];
@@ -40195,12 +40845,14 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     this.paramData[33] = cameraPos[1];
     this.paramData[34] = cameraPos[2];
     this.paramData[35] = maxDist;
+    new Uint32Array(this.paramData.buffer)[36] = drawCount;
     this.device.queue.writeBuffer(this.cullingParams, 0, this.paramData);
     this.device.queue.writeBuffer(this.counterBuffer, 0, this.zero);
+    if (drawCount === 0) return;
     const pass = commandEncoder.beginComputePass();
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
-    pass.dispatchWorkgroups(Math.ceil(this.maxInstances / 128));
+    pass.dispatchWorkgroups(Math.ceil(drawCount / 128));
     pass.end();
   }
   updateInstance(index, position, radius, meshIndex = 0) {
@@ -40221,14 +40873,16 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     this.instanceData[offset + 13] = position[1];
     this.instanceData[offset + 14] = position[2];
     this.instanceData[offset + 15] = 1;
-    this.instanceData[offset + 16] = 1;
+    this.instanceData[offset + 16] = radius;
     this.instanceData[offset + 17] = 1;
     this.instanceData[offset + 18] = 1;
     this.instanceData[offset + 19] = 1;
     this.instanceMeshData[index] = meshIndex;
   }
-  flushInstances() {
-    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData);
+  flushInstances(count = this.maxInstances) {
+    count = Math.min(count, this.maxInstances);
+    this.device.queue.writeBuffer(this.instanceBuffer, 0, this.instanceData.subarray(0, count * 20));
+    this.device.queue.writeBuffer(this.instanceMeshMap, 0, this.instanceMeshData.subarray(0, count));
   }
   getIndirectBuffer() {
     return this.indirectBuffer;
@@ -40282,9 +40936,12 @@ async function GPUIndirectDraws() {
     this.updateLights();
     this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
     this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-    if (camera._dirtyAngle || camera._dirty) {
-      this.getTransformationMatrix(camera, now2);
+    if (camera._digital) {
+      camera._applyDigitalMovement(this.now);
+    }
+    if (camera._dirtyAngle) {
       camera.update();
+      this.getTransformationMatrix(camera, now2);
     }
     for (let i = 0; i < this.lightContainer.length; i++) {
       const light = this.lightContainer[i];
@@ -40316,6 +40973,7 @@ async function GPUIndirectDraws() {
       p.end();
     }
     const len2 = this.mainRenderBundle.length;
+    let drawCount = 0;
     for (let i = 0; i < len2; i++) {
       const mesh = this.mainRenderBundle[i];
       mesh.updateInstanceData?.(mesh.modelMatrix);
@@ -40332,10 +40990,45 @@ async function GPUIndirectDraws() {
           effect.simulate?.(commandEncoder);
         }
       }
-      this.computeCulling.setMeshDrawCommand(i, mesh.indexCount, mesh.instanceCount);
+      const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex ?? i;
+      if (drawIndex >= this.computeCulling.maxDrawCalls) continue;
+      const instanceCount = mesh.instanceCount || 1;
+      mesh.updateBoundingSphere?.();
+      let center, radius = mesh.boundingSphere?.radius || 1;
+      const instanceData = mesh.instanceData;
+      const stride = mesh.floatsPerInstance || 20;
+      if (instanceData && instanceCount >= 1 && instanceData.length >= instanceCount * stride) {
+        let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+        for (let j = 0; j < instanceCount; j++) {
+          const o2 = j * stride + 12;
+          minX = Math.min(minX, instanceData[o2]);
+          maxX = Math.max(maxX, instanceData[o2]);
+          minY = Math.min(minY, instanceData[o2 + 1]);
+          maxY = Math.max(maxY, instanceData[o2 + 1]);
+          minZ = Math.min(minZ, instanceData[o2 + 2]);
+          maxZ = Math.max(maxZ, instanceData[o2 + 2]);
+        }
+        center = [(minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5];
+        radius = 0;
+        for (let j = 0; j < instanceCount; j++) {
+          const o2 = j * stride;
+          const dx = instanceData[o2 + 12] - center[0], dy = instanceData[o2 + 13] - center[1], dz = instanceData[o2 + 14] - center[2];
+          const sx = Math.hypot(instanceData[o2], instanceData[o2 + 1], instanceData[o2 + 2]);
+          const sy = Math.hypot(instanceData[o2 + 4], instanceData[o2 + 5], instanceData[o2 + 6]);
+          const sz = Math.hypot(instanceData[o2 + 8], instanceData[o2 + 9], instanceData[o2 + 10]);
+          radius = Math.max(radius, Math.hypot(dx, dy, dz) + (mesh.boundingSphere?.radius || 1) * Math.max(sx, sy, sz));
+        }
+      } else {
+        const matrix = mesh.modelMatrix || mesh._modelMatrix;
+        center = matrix ? [matrix[12], matrix[13], matrix[14]] : [mesh.position?.x ?? 0, mesh.position?.y ?? 0, mesh.position?.z ?? 0];
+      }
+      this.computeCulling.setMeshDrawCommand(drawIndex, mesh.indexCount, instanceCount);
+      this.computeCulling.updateInstance(drawIndex, center, radius, drawIndex);
+      drawCount = Math.max(drawCount, drawIndex + 1);
     }
     this.computeCulling.flushIndirectBuffer();
-    this.computeCulling.flushInstances();
+    this.computeCulling.flushInstances(drawCount);
+    await this.computeCulling.execute(commandEncoder, camera.view, camera.projectionMatrix, camera.position, drawCount, this.GPUCullingRad ?? 500);
     this.mainRenderPassDesc.colorAttachments[0].view = this.sceneTextureView;
     let pass = commandEncoder.beginRenderPass(this.mainRenderPassDesc);
     pass.setBindGroup(0, this.sceneBindGroup);
@@ -40344,6 +41037,7 @@ async function GPUIndirectDraws() {
       pass.setPipeline(pipeline);
       let l = null;
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         if (mesh.materialBindGroup !== l) {
           pass.setBindGroup(1, mesh.materialBindGroup);
           l = mesh.materialBindGroup;
@@ -40352,6 +41046,7 @@ async function GPUIndirectDraws() {
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
         const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+        if (drawIndex == null || drawIndex >= this.computeCulling.maxDrawCalls) continue;
         const indirectOffset = drawIndex * 20;
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
@@ -40359,24 +41054,32 @@ async function GPUIndirectDraws() {
     for (const [pipeline, meshes] of this.transparentBuckets) {
       pass.setPipeline(pipeline);
       for (const mesh of meshes) {
+        if (mesh.isVideo && !mesh.videoFrameReady) continue;
         pass.setBindGroup(1, mesh.materialBindGroup);
         pass.setBindGroup(2, mesh.modelBindGroup);
         if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
         if (mesh.material.type === "water") pass.setBindGroup(3, mesh.waterBindGroup);
         const drawIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
+        if (drawIndex == null || drawIndex >= this.computeCulling.maxDrawCalls) continue;
         const indirectOffset = drawIndex * 20;
         mesh.drawElementsIndirect(pass, indirectBuffer, indirectOffset);
       }
     }
-    for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
-      const mesh = this.mainRenderBundle[meshIndex];
-      if (mesh.effects) {
-        for (const effectName in mesh.effects) {
-          const effect = mesh.effects[effectName];
-          if (effect === null || effect.enabled === false) continue;
+    for (const pile of this.effectsByType.values()) {
+      if (pile.length === 0) continue;
+      if (pile[0].effect.constructor.managesRenderPipeline === true) {
+        for (const { effect, mesh } of pile) {
+          if (effect.enabled === false) continue;
           if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
           effect.render(pass, mesh, camera.VP);
         }
+        continue;
+      }
+      pass.setPipeline(pile[0].effect.pipeline);
+      for (const { effect, mesh } of pile) {
+        if (effect.enabled === false) continue;
+        if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
+        effect.render(pass, mesh, camera.VP, 0.016);
       }
     }
     pass.end();
@@ -40428,22 +41131,36 @@ async function GPUIndirectDraws() {
 }
 
 // ../../../engine/postprocessing/volumetric-advanced.js
+var PARAMS_WGSL = `
+struct Params {
+  density: f32,
+  steps: f32,
+  scatterStrength: f32,
+  heightFalloff: f32,
+  range: f32,
+  temporalBlend: f32,
+  useTemporalReprojection: f32,
+  mobileOptimizations: f32,
+  qualityScale: f32,
+  useTextureProjection: f32,
+  textureProjectionIntensity: f32,
+  targetW: f32,
+  targetH: f32,
+  time: f32,
+  projectionMode: f32,
+  pad2: f32,
+}
+`;
 var AdvancedVolumetricPass = class {
   constructor(width, height, device2, options2 = {}, sceneView) {
     this.enabled = false;
     this.device = device2;
     this.width = width;
     this.height = height;
-    this.isMobile = this._detectMobileDevice();
-    this.qualityScale = options2.qualityScale ?? (this.isMobile ? 0.5 : 1);
-    this.effectiveWidth = Math.ceil(width * this.qualityScale);
-    this.effectiveHeight = Math.ceil(height * this.qualityScale);
-    this.volumetricTex = this._createTexture(this.effectiveWidth, this.effectiveHeight, "rgba16float");
-    this.volumetricTexView = this.volumetricTex.createView();
-    this.historyTex = this._createTexture(this.effectiveWidth, this.effectiveHeight, "rgba16float");
-    this.historyTexView = this.historyTex.createView();
-    this.compositeOutputTex = this._createTexture(width, height, "rgba16float");
-    this.compositeOutputTexView = this.compositeOutputTex.createView();
+    this.qualityScale = Math.max(0.25, Math.min(1, options2.qualityScale ?? (isMobile() ? 0.5 : 1)));
+    this._computeEffectiveSize();
+    this._time = 0;
+    this._timeScratch = new Float32Array(1);
     this.linearSampler = device2.createSampler({
       label: "AdvancedVolumetricPass.linearSampler",
       magFilter: "linear",
@@ -40452,8 +41169,10 @@ var AdvancedVolumetricPass = class {
       addressModeV: "clamp-to-edge"
     });
     this.depthSampler = device2.createSampler({
-      label: "AdvancedVolumetricPass.depthSampler",
-      compare: "less-equal"
+      label: "AdvancedVolumetricPass.shadowCompareSampler",
+      compare: "less-equal",
+      magFilter: "linear",
+      minFilter: "linear"
     });
     this.projectionSampler = device2.createSampler({
       label: "AdvancedVolumetricPass.projectionSampler",
@@ -40464,69 +41183,81 @@ var AdvancedVolumetricPass = class {
     });
     this.params = {
       density: options2.density ?? 0.02,
-      steps: this.isMobile ? options2.steps ?? 16 : options2.steps ?? 32,
+      steps: isMobile() ? options2.steps ?? 16 : options2.steps ?? 32,
       scatterStrength: options2.scatterStrength ?? 1,
       heightFalloff: options2.heightFalloff ?? 0.08,
       range: options2.range ?? 50,
       temporalBlend: options2.temporalBlend ?? 0.8,
       useTemporalReprojection: options2.useTemporalReprojection ?? true,
-      mobileOptimizations: options2.mobileOptimizations ?? this.isMobile,
+      mobileOptimizations: options2.mobileOptimizations ?? isMobile(),
       useTextureProjection: options2.useTextureProjection ?? false,
       textureProjectionIntensity: options2.textureProjectionIntensity ?? 1
     };
+    this.params.projectionMode = options2.projectionMode ?? 0;
     this.lightParams = {
       color: options2.lightColor ?? [1, 0.85, 0.6],
       direction: [0, -1, 0.5]
     };
-    this._projectionTexView = null;
-    this._projectionMatrix = new Float32Array(16);
-    this.paramsBuffer = device2.createBuffer({
-      label: "AdvancedVolumetricPass.paramsBuffer",
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.invViewProjBuffer = device2.createBuffer({
-      label: "AdvancedVolumetricPass.invViewProjBuffer",
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.lightViewProjBuffer = device2.createBuffer({
-      label: "AdvancedVolumetricPass.lightViewProjBuffer",
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.projectionMatrixBuffer = device2.createBuffer({
-      label: "AdvancedVolumetricPass.projectionMatrixBuffer",
-      size: 64,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.lightDirBuffer = device2.createBuffer({
-      label: "AdvancedVolumetricPass.lightDirBuffer",
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    this.lightColorBuffer = device2.createBuffer({
-      label: "AdvancedVolumetricPass.lightColorBuffer",
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
+    this._paramScratch = new Float32Array(16);
     this._lightDir = new Float32Array(4);
-    this._marchBG = null;
-    this._compositeBG = null;
-    this._temporalBG = null;
-    this._updateParams();
-    this._updateLightColor();
+    this._lightPos = new Float32Array(4);
+    this._lightColor = new Float32Array(4);
+    this._projectionMatrix = new Float32Array(16);
+    this._passDesc = {
+      label: "",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    };
+    const ub = (label, size2) => device2.createBuffer({
+      label: `AdvancedVolumetricPass.${label}`,
+      size: size2,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.paramsBuffer = ub("paramsBuffer", 64);
+    this.invViewProjBuffer = ub("invViewProjBuffer", 64);
+    this.lightViewProjBuffer = ub("lightViewProjBuffer", 64);
+    this.projectionMatrixBuffer = ub("projectionMatrixBuffer", 64);
+    this.lightDirBuffer = ub("lightDirBuffer", 16);
+    this.lightColorBuffer = ub("lightColorBuffer", 16);
+    this.lightPosBuffer = ub("lightPosBuffer", 16);
+    this._projectionMatrix.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    device2.queue.writeBuffer(this.projectionMatrixBuffer, 0, this._projectionMatrix);
+    this._dummyProjTex = device2.createTexture({
+      label: "AdvancedVolumetricPass.dummyProjTex",
+      size: [1, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+    });
+    device2.queue.writeTexture(
+      { texture: this._dummyProjTex },
+      new Uint8Array([255, 255, 255, 255]),
+      { bytesPerRow: 4 },
+      [1, 1]
+    );
+    this._dummyProjView = this._dummyProjTex.createView();
+    this._projectionTexView = null;
+    this._allocTextures();
     this.marchPipeline = this._createMarchPipeline();
     this.temporalPipeline = this._createTemporalPipeline();
     this.compositePipeline = this._createCompositePipeline();
-    this.setCompositeInput(sceneView);
+    this._marchBG = null;
+    this._depthView = null;
+    this._shadowView = null;
+    this._lastProjTexView = null;
+    this._sceneView = null;
+    this._updateParams();
+    this._updateLightColor();
+    this._buildBindGroups(sceneView);
   }
-  _detectMobileDevice() {
-    if (typeof navigator === "undefined") return false;
-    const ua = navigator.userAgent || "";
-    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
+  _computeEffectiveSize() {
+    this.effectiveWidth = Math.max(1, Math.ceil(this.width * this.qualityScale));
+    this.effectiveHeight = Math.max(1, Math.ceil(this.height * this.qualityScale));
   }
-  _createTexture(w, h, format) {
+  _createTexture(w, h, format = "rgba16float") {
     return this.device.createTexture({
       label: `AdvancedVolumetricPass.texture[${w}x${h}]`,
       size: [w, h],
@@ -40534,7 +41265,58 @@ var AdvancedVolumetricPass = class {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
     });
   }
-  // Texture Projection API
+  _allocTextures() {
+    this.volumetricTex = this._createTexture(this.effectiveWidth, this.effectiveHeight);
+    this.volumetricTexView = this.volumetricTex.createView();
+    this._histTex = [
+      this._createTexture(this.effectiveWidth, this.effectiveHeight),
+      this._createTexture(this.effectiveWidth, this.effectiveHeight)
+    ];
+    this._histViews = this._histTex.map((t) => t.createView());
+    this._hi = 0;
+    this.compositeOutputTex = this._createTexture(this.width, this.height);
+    this.compositeOutputTexView = this.compositeOutputTex.createView();
+  }
+  _freeTextures() {
+    this.volumetricTex?.destroy();
+    this._histTex?.forEach((t) => t.destroy());
+    this.compositeOutputTex?.destroy();
+  }
+  /**
+   * Temporal + composite bind groups. Rebuilt on construct, resize and when the scene view changes.
+   *   temporal[i]  : current march + history[i]  (renders into history[1 - i])
+   *   composite[i] : scene + history[i]
+   *   composite[2] : scene + raw march (temporal disabled)
+   */
+  _buildBindGroups(sceneView) {
+    this._sceneView = sceneView;
+    const mk = (layout, a, b) => this.device.createBindGroup({
+      layout,
+      entries: [
+        { binding: 0, resource: a },
+        { binding: 1, resource: b },
+        { binding: 2, resource: this.linearSampler },
+        { binding: 3, resource: { buffer: this.paramsBuffer } }
+      ]
+    });
+    const tl = this.temporalPipeline.getBindGroupLayout(0);
+    const cl = this.compositePipeline.getBindGroupLayout(0);
+    this._temporalBGs = [0, 1].map((i) => mk(tl, this.volumetricTexView, this._histViews[i]));
+    this._compositeBGs = [
+      mk(cl, sceneView, this._histViews[0]),
+      mk(cl, sceneView, this._histViews[1]),
+      mk(cl, sceneView, this.volumetricTexView)
+    ];
+  }
+  init() {
+    return this;
+  }
+  getOutputView() {
+    return this.compositeOutputTexView;
+  }
+  setCompositeInput(sceneView) {
+    this._buildBindGroups(sceneView);
+  }
   setProjectionTexture(textureView, projectionMatrix) {
     this._projectionTexView = textureView;
     if (projectionMatrix) {
@@ -40546,20 +41328,21 @@ var AdvancedVolumetricPass = class {
     this._marchBG = null;
   }
   disableTextureProjection() {
+    this._projectionTexView = null;
     this.params.useTextureProjection = false;
     this._updateParams();
     this._marchBG = null;
   }
-  setTextureProjectionIntensity(intensity) {
-    this.params.textureProjectionIntensity = Math.max(0, Math.min(2, intensity));
+  setTextureProjectionIntensity = (v) => {
+    this.params.textureProjectionIntensity = Math.max(0, Math.min(2, v));
     this._updateParams();
-  }
+  };
   setDensity = (v) => {
     this.params.density = v;
     this._updateParams();
   };
   setSteps = (v) => {
-    this.params.steps = Math.max(v, 8);
+    this.params.steps = Math.max(v, 4);
     this._updateParams();
   };
   setScatterStrength = (v) => {
@@ -40578,6 +41361,10 @@ var AdvancedVolumetricPass = class {
     this.params.temporalBlend = Math.max(0, Math.min(1, v));
     this._updateParams();
   };
+  setTemporal = (on) => {
+    this.params.useTemporalReprojection = !!on;
+    this._updateParams();
+  };
   setLightColor = (r2, g, b) => {
     this.lightParams.color = [r2, g, b];
     this._updateLightColor();
@@ -40590,212 +41377,189 @@ var AdvancedVolumetricPass = class {
     this._lightDir[3] = 0;
     this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
   };
+  setQualityScale(scale4) {
+    this.qualityScale = Math.max(0.25, Math.min(1, scale4));
+    this.resize(this.width, this.height);
+  }
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this._computeEffectiveSize();
+    this._freeTextures();
+    this._allocTextures();
+    this._updateParams();
+    this._buildBindGroups(this._sceneView);
+    this._marchBG = null;
+  }
+  destroy() {
+    this._freeTextures();
+    this._dummyProjTex?.destroy();
+    for (const b of [
+      this.paramsBuffer,
+      this.invViewProjBuffer,
+      this.lightViewProjBuffer,
+      this.projectionMatrixBuffer,
+      this.lightDirBuffer,
+      this.lightColorBuffer,
+      this.lightPosBuffer
+    ]) b?.destroy();
+  }
   _updateParams() {
-    this.device.queue.writeBuffer(this.paramsBuffer, 0, new Float32Array([
-      this.params.density,
-      this.params.steps,
-      this.params.scatterStrength,
-      this.params.heightFalloff,
-      this.params.range,
-      this.params.temporalBlend,
-      this.params.useTemporalReprojection ? 1 : 0,
-      this.params.mobileOptimizations ? 1 : 0,
-      this.qualityScale,
-      this.params.useTextureProjection ? 1 : 0,
-      this.params.textureProjectionIntensity,
-      0,
-      0,
-      0,
-      0,
-      0
-    ]));
+    const a = this._paramScratch;
+    a[0] = this.params.density;
+    a[1] = this.params.steps;
+    a[2] = this.params.scatterStrength;
+    a[3] = this.params.heightFalloff;
+    a[4] = this.params.range;
+    a[5] = this.params.temporalBlend;
+    a[6] = this.params.useTemporalReprojection ? 1 : 0;
+    a[7] = this.params.mobileOptimizations ? 1 : 0;
+    a[8] = this.qualityScale;
+    a[9] = this.params.useTextureProjection ? 1 : 0;
+    a[10] = this.params.textureProjectionIntensity;
+    a[11] = this.effectiveWidth;
+    a[12] = this.effectiveHeight;
+    a[13] = this._time;
+    a[14] = this.params.projectionMode;
+    a[15] = 0;
+    this.device.queue.writeBuffer(this.paramsBuffer, 0, a);
   }
   _updateLightColor() {
-    this.device.queue.writeBuffer(
-      this.lightColorBuffer,
-      0,
-      new Float32Array([...this.lightParams.color, 0])
-    );
-  }
-  setCompositeInput(sceneView) {
-    this._compositeBG = this.device.createBindGroup({
-      layout: this.compositePipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: sceneView },
-        { binding: 1, resource: this.compositeOutputTexView },
-        { binding: 2, resource: this.linearSampler },
-        { binding: 3, resource: { buffer: this.paramsBuffer } }
-      ]
-    });
+    const c = this.lightParams.color;
+    this._lightColor[0] = c[0];
+    this._lightColor[1] = c[1];
+    this._lightColor[2] = c[2];
+    this._lightColor[3] = 0;
+    this.device.queue.writeBuffer(this.lightColorBuffer, 0, this._lightColor);
   }
   setMarchInputs(depthView, shadowArrayView) {
-    if (this._depthView !== depthView || this._shadowView !== shadowArrayView || this._lastProjTexView !== this._projectionTexView || !this._marchBG) {
+    if (!this._marchBG || this._depthView !== depthView || this._shadowView !== shadowArrayView || this._lastProjTexView !== this._projectionTexView) {
       this._depthView = depthView;
       this._shadowView = shadowArrayView;
       this._lastProjTexView = this._projectionTexView;
-      const entries = [
-        { binding: 0, resource: depthView },
-        { binding: 1, resource: shadowArrayView },
-        { binding: 2, resource: this.device.createSampler({ compare: "less-equal" }) },
-        { binding: 3, resource: { buffer: this.invViewProjBuffer } },
-        { binding: 4, resource: { buffer: this.lightViewProjBuffer } },
-        { binding: 5, resource: { buffer: this.lightDirBuffer } },
-        { binding: 6, resource: { buffer: this.lightColorBuffer } },
-        { binding: 7, resource: { buffer: this.paramsBuffer } }
-      ];
-      if (this._projectionTexView) {
-        entries.push(
-          { binding: 8, resource: this._projectionTexView },
-          { binding: 9, resource: this.projectionSampler },
-          { binding: 10, resource: { buffer: this.projectionMatrixBuffer } }
-        );
-      }
       this._marchBG = this.device.createBindGroup({
+        label: "AdvancedVolumetricPass.marchBindGroup",
         layout: this.marchPipeline.getBindGroupLayout(0),
-        entries
-      });
-    }
-    if (!this._temporalBG) {
-      this._temporalBG = this.device.createBindGroup({
-        layout: this.temporalPipeline.getBindGroupLayout(0),
         entries: [
-          { binding: 0, resource: this.volumetricTexView },
-          { binding: 1, resource: this.historyTexView },
-          { binding: 2, resource: this.linearSampler },
-          { binding: 3, resource: { buffer: this.paramsBuffer } }
+          { binding: 0, resource: depthView },
+          { binding: 1, resource: shadowArrayView },
+          { binding: 2, resource: this.depthSampler },
+          { binding: 3, resource: { buffer: this.invViewProjBuffer } },
+          { binding: 4, resource: { buffer: this.lightViewProjBuffer } },
+          { binding: 5, resource: { buffer: this.lightDirBuffer } },
+          { binding: 6, resource: { buffer: this.lightColorBuffer } },
+          { binding: 7, resource: { buffer: this.paramsBuffer } },
+          { binding: 8, resource: this._projectionTexView ?? this._dummyProjView },
+          { binding: 9, resource: this.projectionSampler },
+          { binding: 10, resource: { buffer: this.projectionMatrixBuffer } },
+          { binding: 11, resource: { buffer: this.lightPosBuffer } }
         ]
       });
     }
   }
-  _beginPass(encoder, targetView, label) {
-    return encoder.beginRenderPass({
-      label,
-      colorAttachments: [{
-        view: targetView,
-        loadOp: "clear",
-        storeOp: "store",
-        clearValue: { r: 0, g: 0, b: 0, a: 0 }
-      }]
+  setProjectionEffect = (mode) => {
+    this.params.projectionMode = mode;
+    this._updateParams();
+  };
+  _createFullscreenPipeline(label, bgl, fragCode) {
+    return this.device.createRenderPipeline({
+      label: `AdvancedVolumetricPass.${label}Pipeline`,
+      layout: this.device.createPipelineLayout({
+        label: `AdvancedVolumetricPass.${label}PipelineLayout`,
+        bindGroupLayouts: [bgl]
+      }),
+      vertex: {
+        module: this.device.createShaderModule({ label: `AdvancedVolumetricPass.${label}Vert`, code: fullscreenVertWGSL2() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({ label: `AdvancedVolumetricPass.${label}Frag`, code: fragCode }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
     });
   }
   _createMarchPipeline() {
-    const entries = [
-      { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth" } },
-      { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "depth", viewDimension: "2d-array" } },
-      { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "comparison" } },
-      { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-      { binding: 4, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-      { binding: 5, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-      { binding: 6, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-      { binding: 7, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-      { binding: 8, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-      { binding: 9, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-      { binding: 10, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
-    ];
+    const F = GPUShaderStage.FRAGMENT;
     const bgl = this.device.createBindGroupLayout({
       label: "AdvancedVolumetricPass.marchBGL",
-      entries
+      entries: [
+        { binding: 0, visibility: F, texture: { sampleType: "depth" } },
+        { binding: 1, visibility: F, texture: { sampleType: "depth", viewDimension: "2d-array" } },
+        { binding: 2, visibility: F, sampler: { type: "comparison" } },
+        { binding: 3, visibility: F, buffer: { type: "uniform" } },
+        { binding: 4, visibility: F, buffer: { type: "uniform" } },
+        { binding: 5, visibility: F, buffer: { type: "uniform" } },
+        { binding: 6, visibility: F, buffer: { type: "uniform" } },
+        { binding: 7, visibility: F, buffer: { type: "uniform" } },
+        { binding: 8, visibility: F, texture: { sampleType: "float" } },
+        { binding: 9, visibility: F, sampler: { type: "filtering" } },
+        { binding: 10, visibility: F, buffer: { type: "uniform" } },
+        { binding: 11, visibility: F, buffer: { type: "uniform" } }
+      ]
     });
-    return this.device.createRenderPipeline({
-      label: "AdvancedVolumetricPass.marchPipeline",
-      layout: this.device.createPipelineLayout({
-        label: "AdvancedVolumetricPass.marchPipelineLayout",
-        bindGroupLayouts: [bgl]
-      }),
-      vertex: {
-        module: this.device.createShaderModule({
-          label: "AdvancedVolumetricPass.marchVert",
-          code: fullscreenVertWGSL2()
-        }),
-        entryPoint: "vert"
-      },
-      fragment: {
-        module: this.device.createShaderModule({
-          label: "AdvancedVolumetricPass.marchFrag",
-          code: advancedMarchFragWGSL()
-        }),
-        entryPoint: "main",
-        targets: [{ format: "rgba16float" }]
-      },
-      primitive: { topology: "triangle-list" }
-    });
+    return this._createFullscreenPipeline("march", bgl, advancedMarchFragWGSL());
   }
   _createTemporalPipeline() {
+    const F = GPUShaderStage.FRAGMENT;
     const bgl = this.device.createBindGroupLayout({
       label: "AdvancedVolumetricPass.temporalBGL",
       entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+        { binding: 0, visibility: F, texture: { sampleType: "float" } },
+        { binding: 1, visibility: F, texture: { sampleType: "float" } },
+        { binding: 2, visibility: F, sampler: { type: "filtering" } },
+        { binding: 3, visibility: F, buffer: { type: "uniform" } }
       ]
     });
-    return this.device.createRenderPipeline({
-      label: "AdvancedVolumetricPass.temporalPipeline",
-      layout: this.device.createPipelineLayout({
-        label: "AdvancedVolumetricPass.temporalPipelineLayout",
-        bindGroupLayouts: [bgl]
-      }),
-      vertex: {
-        module: this.device.createShaderModule({
-          label: "AdvancedVolumetricPass.temporalVert",
-          code: fullscreenVertWGSL2()
-        }),
-        entryPoint: "vert"
-      },
-      fragment: {
-        module: this.device.createShaderModule({
-          label: "AdvancedVolumetricPass.temporalFrag",
-          code: temporalBlendFragWGSL()
-        }),
-        entryPoint: "main",
-        targets: [{ format: "rgba16float" }]
-      },
-      primitive: { topology: "triangle-list" }
-    });
+    return this._createFullscreenPipeline("temporal", bgl, temporalBlendFragWGSL());
   }
   _createCompositePipeline() {
+    const F = GPUShaderStage.FRAGMENT;
     const bgl = this.device.createBindGroupLayout({
       label: "AdvancedVolumetricPass.compositeBGL",
       entries: [
-        { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-        { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-        { binding: 3, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } }
+        { binding: 0, visibility: F, texture: { sampleType: "float" } },
+        { binding: 1, visibility: F, texture: { sampleType: "float" } },
+        { binding: 2, visibility: F, sampler: { type: "filtering" } },
+        { binding: 3, visibility: F, buffer: { type: "uniform" } }
       ]
     });
-    return this.device.createRenderPipeline({
-      label: "AdvancedVolumetricPass.compositePipeline",
-      layout: this.device.createPipelineLayout({
-        label: "AdvancedVolumetricPass.compositePipelineLayout",
-        bindGroupLayouts: [bgl]
-      }),
-      vertex: {
-        module: this.device.createShaderModule({
-          label: "AdvancedVolumetricPass.compositeVert",
-          code: fullscreenVertWGSL2()
-        }),
-        entryPoint: "vert"
-      },
-      fragment: {
-        module: this.device.createShaderModule({
-          label: "AdvancedVolumetricPass.compositeFrag",
-          code: advancedCompositeFragWGSL()
-        }),
-        entryPoint: "main",
-        targets: [{ format: "rgba16float" }]
-      },
-      primitive: { topology: "triangle-list" }
-    });
+    return this._createFullscreenPipeline("composite", bgl, advancedCompositeFragWGSL());
+  }
+  setProjectionMatrix(m) {
+    this._projectionMatrix.set(m);
+    this.device.queue.writeBuffer(this.projectionMatrixBuffer, 0, this._projectionMatrix);
+  }
+  _beginPass(encoder, targetView, label) {
+    const d = this._passDesc;
+    d.label = label;
+    d.colorAttachments[0].view = targetView;
+    return encoder.beginRenderPass(d);
   }
   render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
-    this.device.queue.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
-    this.device.queue.writeBuffer(this.lightViewProjBuffer, 0, light.viewProjectionMatrix);
+    if (sceneView && sceneView !== this._sceneView) this._buildBindGroups(sceneView);
+    const q = this.device.queue;
+    q.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
+    q.writeBuffer(this.lightViewProjBuffer, 0, light.viewProjectionMatrix);
     this._lightDir[0] = light.direction[0];
     this._lightDir[1] = light.direction[1];
     this._lightDir[2] = light.direction[2];
     this._lightDir[3] = 0;
-    this.device.queue.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
+    q.writeBuffer(this.lightDirBuffer, 0, this._lightDir);
+    this._time = performance.now() * 1e-3;
+    this._timeScratch[0] = this._time;
+    this.device.queue.writeBuffer(this.paramsBuffer, 13 * 4, this._timeScratch);
+    const lp = light.position;
+    if (lp) {
+      this._lightPos[0] = lp[0];
+      this._lightPos[1] = lp[1];
+      this._lightPos[2] = lp[2];
+      this._lightPos[3] = 1;
+    } else {
+      this._lightPos[3] = 0;
+    }
+    q.writeBuffer(this.lightPosBuffer, 0, this._lightPos);
     this.setMarchInputs(depthView, shadowArrayView);
     {
       const pass = this._beginPass(encoder, this.volumetricTexView, "volumetric-march");
@@ -40804,52 +41568,29 @@ var AdvancedVolumetricPass = class {
       pass.draw(6);
       pass.end();
     }
+    let compositeBG = this._compositeBGs[2];
     if (this.params.useTemporalReprojection) {
-      const pass = this._beginPass(encoder, this.historyTexView, "temporal-blend");
+      const read = this._hi;
+      const write = 1 - read;
+      const pass = this._beginPass(encoder, this._histViews[write], "volumetric-temporal");
       pass.setPipeline(this.temporalPipeline);
-      pass.setBindGroup(0, this._temporalBG);
+      pass.setBindGroup(0, this._temporalBGs[read]);
       pass.draw(6);
       pass.end();
-      [this.volumetricTex, this.historyTex] = [this.historyTex, this.volumetricTex];
-      this.volumetricTexView = this.volumetricTex.createView();
-      this.historyTexView = this.historyTex.createView();
+      compositeBG = this._compositeBGs[write];
+      this._hi = write;
     }
     {
       const pass = this._beginPass(encoder, this.compositeOutputTexView, "volumetric-composite");
       pass.setPipeline(this.compositePipeline);
-      pass.setBindGroup(0, this._compositeBG);
+      pass.setBindGroup(0, compositeBG);
       pass.draw(6);
       pass.end();
     }
   }
-  init() {
-    return this;
-  }
-  resize(width, height) {
-    this.width = width;
-    this.height = height;
-    this.effectiveWidth = Math.ceil(width * this.qualityScale);
-    this.effectiveHeight = Math.ceil(height * this.qualityScale);
-    this.volumetricTex = this._createTexture(this.effectiveWidth, this.effectiveHeight, "rgba16float");
-    this.volumetricTexView = this.volumetricTex.createView();
-    this.historyTex = this._createTexture(this.effectiveWidth, this.effectiveHeight, "rgba16float");
-    this.historyTexView = this.historyTex.createView();
-    this.compositeOutputTex = this._createTexture(width, height, "rgba16float");
-    this.compositeOutputTexView = this.compositeOutputTex.createView();
-  }
-  getOutputView() {
-    return this.compositeOutputTexView;
-  }
-  setQualityScale(scale4) {
-    this.qualityScale = Math.max(0.25, Math.min(1, scale4));
-    this._updateParams();
-    this.resize(this.width, this.height);
-  }
 };
 function fullscreenVertWGSL2() {
-  return (
-    /* wgsl */
-    `
+  return `
     @vertex
     fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
       var pos = array<vec2<f32>, 6>(
@@ -40858,112 +41599,117 @@ function fullscreenVertWGSL2() {
       );
       return vec4(pos[i], 0.0, 1.0);
     }
-  `
-  );
+  `;
 }
 function advancedMarchFragWGSL() {
-  return (
-    /* wgsl */
-    `
-  @group(0) @binding(0) var depthTex:   texture_depth_2d;
-  @group(0) @binding(1) var shadowTex:  texture_depth_2d_array;
-  @group(0) @binding(2) var cmpSamp:    sampler_comparison;
-  @group(0) @binding(3) var<uniform> invViewProj:   mat4x4<f32>;
-  @group(0) @binding(4) var<uniform> lightViewProj: mat4x4<f32>;
-  @group(0) @binding(5) var<uniform> lightDir:      vec4<f32>;
-  @group(0) @binding(6) var<uniform> lightColor:    vec4<f32>;
-  @group(0) @binding(7) var<uniform> params:        Params;
-  @group(0) @binding(8) var projTex:                texture_2d<f32>;
-  @group(0) @binding(9) var projSamp:               sampler;
-  @group(0) @binding(10) var<uniform> projMatrix:   mat4x4<f32>;
+  return `
+  ${PARAMS_WGSL}
 
-  struct Params {
-    density: f32,
-    steps: f32,
-    scatterStrength: f32,
-    heightFalloff: f32,
-    range: f32,
-    temporalBlend: f32,
-    useTemporalReprojection: f32,
-    mobileOptimizations: f32,
-    qualityScale: f32,
-    useTextureProjection: f32,
-    textureProjectionIntensity: f32,
-    _pad: f32,
-    _pad2: f32, _pad3: f32, _pad4: f32, _pad5: f32,
-  }
+  @group(0) @binding(0)  var depthTex:   texture_depth_2d;
+  @group(0) @binding(1)  var shadowTex:  texture_depth_2d_array;
+  @group(0) @binding(2)  var cmpSamp:    sampler_comparison;
+  @group(0) @binding(3)  var<uniform> invViewProj:   mat4x4<f32>;
+  @group(0) @binding(4)  var<uniform> lightViewProj: mat4x4<f32>;
+  @group(0) @binding(5)  var<uniform> lightDir:      vec4<f32>;
+  @group(0) @binding(6)  var<uniform> lightColor:    vec4<f32>;
+  @group(0) @binding(7)  var<uniform> params:        Params;
+  @group(0) @binding(8)  var projTex:                texture_2d<f32>;
+  @group(0) @binding(9)  var projSamp:               sampler;
+  @group(0) @binding(10) var<uniform> projMatrix:    mat4x4<f32>;
+  @group(0) @binding(11) var<uniform> lightPos:      vec4<f32>; // w = 1 -> valid
 
-  fn worldPos(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+  fn worldFromDepth(uv: vec2<f32>, depth: f32) -> vec3<f32> {
     let ndc = vec4(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
-    let world = invViewProj * ndc;
-    return world.xyz / world.w;
+    let w = invViewProj * ndc;
+    return w.xyz / w.w;
   }
 
   fn fogDensity(p: vec3<f32>) -> f32 {
-    let height = max(p.y, 0.0);
-    return params.density * exp(-height * params.heightFalloff);
+    return params.density * exp(-max(p.y, 0.0) * params.heightFalloff);
   }
 
-  fn sampleProjectionTexture(worldPos: vec3<f32>) -> vec3<f32> {
-    if (params.useTextureProjection < 0.5) { return vec3(1.0); }
-    
-    let projPos = projMatrix * vec4(worldPos, 1.0);
-    let projUv = (projPos.xy / projPos.w) * 0.5 + 0.5;
-    
-    // Clamp to valid range with fade-out
-    let bounds = step(0.0, projUv) * step(projUv, vec2(1.0));
-    let fade = bounds.x * bounds.y;
-    
-    let projColor = textureSample(projTex, projSamp, projUv).rgb;
-    return mix(vec3(1.0), projColor, fade * params.textureProjectionIntensity);
-  }
+ fn rot2(a: f32) -> mat2x2<f32> {
+  let c = cos(a); let s = sin(a);
+  return mat2x2<f32>(c, s, -s, c);
+}
 
-  fn sampleShadow(worldPos: vec3<f32>) -> f32 {
-    let ls = lightViewProj * vec4(worldPos, 1.0);
+fn sampleProjection(wp: vec3<f32>) -> vec3<f32> {
+  if (params.useTextureProjection < 0.5) { return vec3(1.0); }
+  let pp = projMatrix * vec4(wp, 1.0);
+  let uv0 = (pp.xy / pp.w) * vec2(0.5, -0.5) + 0.5;
+  let inside = step(vec2(0.0), uv0) * step(uv0, vec2(1.0));
+  let fade = inside.x * inside.y * f32(pp.w > 0.0);   // mask uses the unmodified UV
+
+  let t = params.time;
+  let mode = i32(params.projectionMode);
+  var uv = uv0;
+  if (mode == 1) { uv = rot2(t * 0.5) * (uv0 - 0.5) + 0.5; }   // spinning gobo
+  if (mode == 2) { uv = fract(uv0 + vec2(t * 0.05, 0.0)); }    // scrolling clouds
+
+  var c = textureSampleLevel(projTex, projSamp, uv, 0.0).rgb;
+  if (mode == 3) { c *= 0.75 + 0.25 * sin(t * 6.0); }          // pulse / flicker
+  if (mode == 4) {                                              // chromatic split
+    let o = vec2(0.01, 0.0);
+    c = vec3(textureSampleLevel(projTex, projSamp, uv + o, 0.0).r, c.g,
+             textureSampleLevel(projTex, projSamp, uv - o, 0.0).b);
+  }
+  // 1.0 outside the frustum = plain fog. Use vec3(0.0) there for a hard spotlight cutout.
+  // return mix(vec3(1.0), c, fade * params.textureProjectionIntensity);
+  let k = clamp(fade * params.textureProjectionIntensity, 0.0, 1.0);
+  let boost = max(params.textureProjectionIntensity, 1.0);
+  return mix(vec3(1.0), c * boost, k);
+}
+
+  // 1 = lit, 0 = shadowed or outside the light frustum.
+  fn sampleShadow(wp: vec3<f32>) -> f32 {
+    let ls = lightViewProj * vec4(wp, 1.0);
     let lp = ls.xyz / ls.w;
     let suv = lp.xy * 0.5 + 0.5;
-
-    let inBounds = f32(suv.x >= 0.0 && suv.x <= 1.0 && suv.y >= 0.0 && suv.y <= 1.0);
-    if (inBounds < 0.5) { return 0.0; }
-
-    let shadow = textureSampleCompare(shadowTex, cmpSamp, suv, 0, lp.z - 0.002);
-    return shadow * inBounds;
+    let inBounds = f32(
+      suv.x >= 0.0 && suv.x <= 1.0 &&
+      suv.y >= 0.0 && suv.y <= 1.0 &&
+      lp.z >= 0.0 && lp.z <= 1.0
+    );
+    let s = textureSampleCompareLevel(shadowTex, cmpSamp, suv, 0, lp.z - 0.002);
+    return s * inBounds;
   }
 
   @fragment
   fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
-    let sz = vec2<f32>(textureDimensions(depthTex));
-    let uv = fc.xy / sz;
-    let depth = textureLoad(depthTex, vec2<i32>(fc.xy), 0);
+    // The pass renders at effective (possibly half) resolution; depth is full resolution.
+    let tgtSize = vec2<f32>(params.targetW, params.targetH);
+    let depthSize = vec2<f32>(textureDimensions(depthTex));
+    let uv = fc.xy / tgtSize;
+    let px = vec2<i32>(clamp(uv * depthSize, vec2(0.0), depthSize - vec2(1.0)));
+    let depth = textureLoad(depthTex, px, 0);
 
-    let ro = worldPos(uv, 0.0);
-    let rt = worldPos(uv, depth);
+    let ro = worldFromDepth(uv, 0.0);
+    let rt = worldFromDepth(uv, depth);
     let rlen = length(rt - ro);
     let rdir = normalize(rt - ro);
-    
+
     let steps = max(i32(params.steps), 4);
-    let step = rlen / f32(steps);
+    let stepLen = rlen / f32(steps);
 
     var accum = vec3<f32>(0.0);
     var trans = 1.0;
-
     let densityThreshold = select(0.00001, 0.0001, params.mobileOptimizations > 0.5);
 
     for (var i = 0; i < steps; i++) {
-      let p = ro + rdir * ((f32(i) + 0.5) * step);
+      let p = ro + rdir * ((f32(i) + 0.5) * stepLen);
 
-      let d = fogDensity(p) * step;
+      let d = fogDensity(p) * stepLen;
       if (d < densityThreshold) { continue; }
 
       let ext = exp(-d);
       let lit = sampleShadow(p);
-      let projTex = sampleProjectionTexture(p);
+      let proj = sampleProjection(p);
 
-      let distToLight = length(p);
-      let rangeAtten = clamp(1.0 - (distToLight / params.range), 0.0, 1.0);
-      let rangeAtten2 = rangeAtten * rangeAtten;
+      // Range falloff from the light position (disabled when no position was supplied).
+      let distToLight = length(p - lightPos.xyz);
+      let rangeAtten = select(1.0, clamp(1.0 - distToLight / params.range, 0.0, 1.0), lightPos.w > 0.5);
 
-      let scatter = trans * (1.0 - ext) * lit * params.scatterStrength * rangeAtten2 * projTex;
+      let scatter = trans * (1.0 - ext) * lit * params.scatterStrength * rangeAtten * rangeAtten * proj;
       accum += scatter * lightColor.rgb;
       trans *= ext;
 
@@ -40972,91 +41718,1413 @@ function advancedMarchFragWGSL() {
 
     return vec4<f32>(accum, 1.0 - trans);
   }
-  `
-  );
+  `;
 }
 function temporalBlendFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
+  ${PARAMS_WGSL}
+
   @group(0) @binding(0) var currentTex: texture_2d<f32>;
   @group(0) @binding(1) var historyTex: texture_2d<f32>;
   @group(0) @binding(2) var samp: sampler;
-  
-  struct Params {
-    density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32,
-    range: f32, temporalBlend: f32, useTemporalReprojection: f32, mobileOptimizations: f32,
-    qualityScale: f32, useTextureProjection: f32, textureProjectionIntensity: f32,
-    _pad: f32, _pad2: f32, _pad3: f32, _pad4: f32, _pad5: f32,
-  }
-  
   @group(0) @binding(3) var<uniform> params: Params;
 
   @fragment
   fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
-    let sz = vec2<f32>(textureDimensions(currentTex));
-    let uv = fc.xy / sz;
-    
+    let uv = fc.xy / vec2<f32>(textureDimensions(currentTex));
     let current = textureSample(currentTex, samp, uv);
     let history = textureSample(historyTex, samp, uv);
-    
-    let blended = mix(current, history, params.temporalBlend);
-    let clamped = clamp(blended, vec4(0.0), vec4(2.0));
-    
-    return clamped;
+    return max(mix(current, history, params.temporalBlend), vec4(0.0));
   }
-  `
-  );
+  `;
 }
 function advancedCompositeFragWGSL() {
-  return (
-    /* wgsl */
-    `
+  return `
+  ${PARAMS_WGSL}
+
   @group(0) @binding(0) var sceneTex: texture_2d<f32>;
   @group(0) @binding(1) var volTex: texture_2d<f32>;
   @group(0) @binding(2) var samp: sampler;
-  
-  struct Params {
-    density: f32, steps: f32, scatterStrength: f32, heightFalloff: f32,
-    range: f32, temporalBlend: f32, useTemporalReprojection: f32, mobileOptimizations: f32,
-    qualityScale: f32, useTextureProjection: f32, textureProjectionIntensity: f32,
-    _pad: f32, _pad2: f32, _pad3: f32, _pad4: f32, _pad5: f32,
-  }
-  
   @group(0) @binding(3) var<uniform> params: Params;
-
-  fn upsampleBilinear(uv: vec2<f32>) -> vec4<f32> {
-    let texSize = vec2<f32>(textureDimensions(volTex));
-    let scaledUv = uv * params.qualityScale;
-    
-    let texelUv = scaledUv * texSize;
-    let frac = fract(texelUv);
-    let base = floor(texelUv);
-    
-    let c00 = textureSampleLevel(volTex, samp, base / texSize, 0.0);
-    let c10 = textureSampleLevel(volTex, samp, (base + vec2(1.0, 0.0)) / texSize, 0.0);
-    let c01 = textureSampleLevel(volTex, samp, (base + vec2(0.0, 1.0)) / texSize, 0.0);
-    let c11 = textureSampleLevel(volTex, samp, (base + vec2(1.0, 1.0)) / texSize, 0.0);
-    
-    let c0 = mix(c00, c10, frac.x);
-    let c1 = mix(c01, c11, frac.x);
-    return mix(c0, c1, frac.y);
-  }
 
   @fragment
   fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
-    let sceneSz = vec2<f32>(textureDimensions(sceneTex));
-    let sceneUv = fc.xy / sceneSz;
-    
-    let scene = textureSample(sceneTex, samp, sceneUv);
-    let vol = upsampleBilinear(sceneUv);
-    
-    let composite = scene.rgb * (1.0 - vol.a) + vol.rgb;
-    
-    return vec4<f32>(composite, scene.a);
+    // UVs are normalized, so the linear sampler upsamples the half-res volume for free.
+    let uv = fc.xy / vec2<f32>(textureDimensions(sceneTex));
+    let scene = textureSample(sceneTex, samp, uv);
+    let vol = textureSample(volTex, samp, uv);
+    // vol.rgb = scattered light | vol.a = fog opacity
+    return vec4<f32>(scene.rgb * (1.0 - vol.a) + vol.rgb, scene.a);
   }
-  `
-  );
+  `;
+}
+
+// ../../../engine/postprocessing/clouds-volumetric.js
+var CLOUD_PARAMS_WGSL = `
+struct CloudParams {
+  // coverage, density, cloudBase, cloudTop
+  shape: vec4<f32>,
+  // noiseScale, windSpeed, time, raySteps
+  motion: vec4<f32>,
+  // sunDirection.xyz, scattering strength
+  lighting: vec4<f32>,
+  // targetWidth, targetHeight, qualityScale, phase
+  render: vec4<f32>,
+};
+`;
+var CloudsVolumetric = class {
+  constructor(width, height, device2, options2 = {}, sceneView = null) {
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.enabled = options2.enabled ?? true;
+    this.isMobile = this._detectMobile();
+    this.qualityScale = Math.max(0.2, Math.min(1, options2.qualityScale ?? (this.isMobile ? 0.25 : 0.35)));
+    this.params = {
+      coverage: options2.coverage ?? 0.58,
+      density: options2.density ?? 1.15,
+      cloudBase: options2.cloudBase ?? 24,
+      cloudTop: options2.cloudTop ?? 58,
+      noiseScale: options2.noiseScale ?? 0.018,
+      windSpeed: options2.windSpeed ?? 0.8,
+      steps: Math.max(8, Math.min(64, Math.round(options2.steps ?? (this.isMobile ? 16 : 24)))),
+      scattering: options2.scattering ?? 1.25
+    };
+    this.sunDirection = new Float32Array(options2.sunDirection ?? [-0.45, 0.8, -0.3]);
+    this.sunColor = new Float32Array(options2.sunColor ?? [1, 0.91, 0.76]);
+    this._time = 0;
+    this._manualTime = null;
+    this._scratch = new Float32Array(16);
+    this._computeSize();
+    this.sampler = device2.createSampler({
+      label: "CloudsVolumetric.linearSampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "clamp-to-edge",
+      addressModeV: "clamp-to-edge"
+    });
+    this.paramsBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.params",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.invViewProjBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.invViewProjection",
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this.sunColorBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.sunColor",
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._passDesc = {
+      label: "CloudsVolumetric.pass",
+      colorAttachments: [{
+        view: null,
+        loadOp: "clear",
+        storeOp: "store",
+        clearValue: { r: 0, g: 0, b: 0, a: 0 }
+      }]
+    };
+    this._allocTextures();
+    this.marchPipeline = this._createMarchPipeline();
+    this.compositePipeline = this._createCompositePipeline();
+    this._sceneView = null;
+    this._depthView = null;
+    this._marchBG = null;
+    this._compositeBG = null;
+    this._updateParams();
+    this._updateSunColor();
+    if (sceneView) this.setCompositeInput(sceneView);
+  }
+  _detectMobile() {
+    if (typeof navigator === "undefined") return false;
+    return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "");
+  }
+  _computeSize() {
+    this.renderWidth = Math.max(1, Math.ceil(this.width * this.qualityScale));
+    this.renderHeight = Math.max(1, Math.ceil(this.height * this.qualityScale));
+  }
+  _createTexture(width, height, label) {
+    return this.device.createTexture({
+      label,
+      size: [width, height],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _allocTextures() {
+    this.cloudTexture = this._createTexture(this.renderWidth, this.renderHeight, "CloudsVolumetric.lowRes");
+    this.cloudView = this.cloudTexture.createView();
+    this.outputTexture = this._createTexture(this.width, this.height, "CloudsVolumetric.composite");
+    this.outputView = this.outputTexture.createView();
+  }
+  _freeTextures() {
+    this.cloudTexture?.destroy();
+    this.outputTexture?.destroy();
+  }
+  _createFullscreenPipeline(label, fragmentCode, entries) {
+    const bgl = this.device.createBindGroupLayout({ label: `CloudsVolumetric.${label}.BGL`, entries });
+    return this.device.createRenderPipeline({
+      label: `CloudsVolumetric.${label}`,
+      layout: this.device.createPipelineLayout({ bindGroupLayouts: [bgl] }),
+      vertex: {
+        module: this.device.createShaderModule({ code: cloudsFullscreenVertexWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: this.device.createShaderModule({ code: fragmentCode }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+  }
+  _createMarchPipeline() {
+    const F = GPUShaderStage.FRAGMENT;
+    return this._createFullscreenPipeline("marchPipeline", cloudsMarchFragmentWGSL(), [
+      { binding: 0, visibility: F, texture: { sampleType: "depth" } },
+      { binding: 1, visibility: F, buffer: { type: "uniform" } },
+      { binding: 2, visibility: F, buffer: { type: "uniform" } },
+      { binding: 3, visibility: F, buffer: { type: "uniform" } }
+    ]);
+  }
+  _createCompositePipeline() {
+    const F = GPUShaderStage.FRAGMENT;
+    return this._createFullscreenPipeline("compositePipeline", cloudsCompositeFragmentWGSL(), [
+      { binding: 0, visibility: F, texture: { sampleType: "float" } },
+      { binding: 1, visibility: F, texture: { sampleType: "float" } },
+      { binding: 2, visibility: F, sampler: { type: "filtering" } }
+    ]);
+  }
+  _updateParams() {
+    const p = this._scratch;
+    p[0] = this.params.coverage;
+    p[1] = this.params.density;
+    p[2] = this.params.cloudBase;
+    p[3] = Math.max(this.params.cloudBase + 0.1, this.params.cloudTop);
+    p[4] = this.params.noiseScale;
+    p[5] = this.params.windSpeed;
+    p[6] = this._time;
+    p[7] = this.params.steps;
+    p[8] = this.sunDirection[0];
+    p[9] = this.sunDirection[1];
+    p[10] = this.sunDirection[2];
+    p[11] = this.params.scattering;
+    p[12] = this.renderWidth;
+    p[13] = this.renderHeight;
+    p[14] = this.qualityScale;
+    p[15] = 0;
+    this.device.queue.writeBuffer(this.paramsBuffer, 0, p);
+  }
+  _updateSunColor() {
+    this.device.queue.writeBuffer(
+      this.sunColorBuffer,
+      0,
+      new Float32Array([this.sunColor[0], this.sunColor[1], this.sunColor[2], 0])
+    );
+  }
+  _buildBindGroups(sceneView, depthView) {
+    if (depthView && (depthView !== this._depthView || !this._marchBG)) {
+      this._depthView = depthView;
+      this._marchBG = this.device.createBindGroup({
+        layout: this.marchPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: depthView },
+          { binding: 1, resource: { buffer: this.invViewProjBuffer } },
+          { binding: 2, resource: { buffer: this.paramsBuffer } },
+          { binding: 3, resource: { buffer: this.sunColorBuffer } }
+        ]
+      });
+    }
+    if (sceneView && (sceneView !== this._sceneView || !this._compositeBG)) {
+      this._sceneView = sceneView;
+      this._compositeBG = this.device.createBindGroup({
+        layout: this.compositePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sceneView },
+          { binding: 1, resource: this.cloudView },
+          { binding: 2, resource: this.sampler }
+        ]
+      });
+    }
+  }
+  setCompositeInput(sceneView) {
+    this._buildBindGroups(sceneView, null);
+    return this;
+  }
+  setCoverage(value) {
+    this.params.coverage = Math.max(0, Math.min(1, value));
+    this._updateParams();
+    return this;
+  }
+  setDensity(value) {
+    this.params.density = Math.max(0, value);
+    this._updateParams();
+    return this;
+  }
+  setCloudLayer(base, top) {
+    this.params.cloudBase = base;
+    this.params.cloudTop = Math.max(base + 0.1, top);
+    this._updateParams();
+    return this;
+  }
+  setNoiseScale(value) {
+    this.params.noiseScale = Math.max(1e-3, value);
+    this._updateParams();
+    return this;
+  }
+  setWindSpeed(value) {
+    this.params.windSpeed = value;
+    this._updateParams();
+    return this;
+  }
+  setSteps(value) {
+    this.params.steps = Math.max(8, Math.min(64, Math.round(value)));
+    this._updateParams();
+    return this;
+  }
+  setScattering(value) {
+    this.params.scattering = Math.max(0, value);
+    this._updateParams();
+    return this;
+  }
+  setSunDirection(x2, y2, z) {
+    const len2 = Math.hypot(x2, y2, z) || 1;
+    this.sunDirection[0] = x2 / len2;
+    this.sunDirection[1] = y2 / len2;
+    this.sunDirection[2] = z / len2;
+    this._updateParams();
+    return this;
+  }
+  setSunColor(r2, g, b) {
+    this.sunColor.set([r2, g, b]);
+    this._updateSunColor();
+    return this;
+  }
+  setTime(seconds) {
+    this._manualTime = seconds;
+    this._time = seconds;
+    this._updateParams();
+    return this;
+  }
+  setQualityScale(scale4) {
+    this.qualityScale = Math.max(0.2, Math.min(1, scale4));
+    this.resize(this.width, this.height);
+    return this;
+  }
+  getOutputView() {
+    return this.outputView;
+  }
+  //   render(encoder, sceneView, depthView, shadowArrayView, camera, light) {
+  render(encoder, sceneView, depthView, shadowArrayView = null, camera, light = null) {
+    if (!this.enabled) return this.outputView;
+    if (!camera?.invViewProjectionMatrix) {
+      throw new Error("CloudsVolumetric.render requires camera.invViewProjectionMatrix");
+    }
+    if (sceneView) this._buildBindGroups(sceneView, null);
+    this._buildBindGroups(null, depthView);
+    this.device.queue.writeBuffer(this.invViewProjBuffer, 0, camera.invViewProjectionMatrix);
+    if (light?.direction) this.setSunDirection(...light.direction);
+    if (light?.color) this.setSunColor(...light.color);
+    if (this._manualTime === null) {
+      this._time = (typeof performance !== "undefined" ? performance.now() : Date.now()) * 1e-3;
+    } else {
+      this._time = this._manualTime;
+    }
+    this._updateParams();
+    if (!this._marchBG || !this._compositeBG) {
+      throw new Error("CloudsVolumetric needs sceneView and depthView bind groups before rendering");
+    }
+    this._passDesc.label = "CloudsVolumetric.march";
+    this._passDesc.colorAttachments[0].view = this.cloudView;
+    let pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.marchPipeline);
+    pass.setBindGroup(0, this._marchBG);
+    pass.draw(6);
+    pass.end();
+    this._passDesc.label = "CloudsVolumetric.composite";
+    this._passDesc.colorAttachments[0].view = this.outputView;
+    pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.compositePipeline);
+    pass.setBindGroup(0, this._compositeBG);
+    pass.draw(6);
+    pass.end();
+    return this.outputView;
+  }
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this._computeSize();
+    this._freeTextures();
+    this._allocTextures();
+    this._sceneView = null;
+    this._depthView = null;
+    this._marchBG = null;
+    this._compositeBG = null;
+    this._updateParams();
+    return this;
+  }
+  destroy() {
+    this._freeTextures();
+    this.paramsBuffer?.destroy();
+    this.invViewProjBuffer?.destroy();
+    this.sunColorBuffer?.destroy();
+  }
+};
+function cloudsFullscreenVertexWGSL() {
+  return `
+    @vertex
+    fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+        vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `;
+}
+function cloudsMarchFragmentWGSL() {
+  return `
+  ${CLOUD_PARAMS_WGSL}
+  @group(0) @binding(0) var depthTex: texture_depth_2d;
+  @group(0) @binding(1) var<uniform> invViewProj: mat4x4<f32>;
+  @group(0) @binding(2) var<uniform> params: CloudParams;
+  @group(0) @binding(3) var<uniform> sunColor: vec4<f32>;
+
+  fn worldFromDepth(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+    let ndc = vec4<f32>(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+    let world = invViewProj * ndc;
+    return world.xyz / max(abs(world.w), 0.000001) * sign(world.w);
+  }
+
+  fn hash31(p: vec3<f32>) -> f32 {
+    var q = fract(p * 0.1031);
+    q = q + vec3<f32>(dot(q, q.yzx + vec3<f32>(33.33)));
+    return fract((q.x + q.y) * q.z);
+  }
+
+  fn noise3(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (vec3<f32>(3.0) - 2.0 * f);
+    let a = hash31(i);
+    let b = hash31(i + vec3<f32>(1.0, 0.0, 0.0));
+    let c = hash31(i + vec3<f32>(0.0, 1.0, 0.0));
+    let d = hash31(i + vec3<f32>(1.0, 1.0, 0.0));
+    let e = hash31(i + vec3<f32>(0.0, 0.0, 1.0));
+    let f1 = hash31(i + vec3<f32>(1.0, 0.0, 1.0));
+    let g = hash31(i + vec3<f32>(0.0, 1.0, 1.0));
+    let h = hash31(i + vec3<f32>(1.0, 1.0, 1.0));
+    let x00 = mix(a, b, u.x);
+    let x10 = mix(c, d, u.x);
+    let x01 = mix(e, f1, u.x);
+    let x11 = mix(g, h, u.x);
+    return mix(mix(x00, x10, u.y), mix(x01, x11, u.y), u.z);
+  }
+
+  fn cloudNoise(p: vec3<f32>) -> f32 {
+    let coarse = noise3(p) * 0.68;
+    let detail = noise3(p * 2.03 + vec3<f32>(17.1, 9.2, 13.7)) * 0.32;
+    return coarse + detail;
+  }
+
+  fn cloudWindOffset() -> vec3<f32> {
+    return vec3<f32>(params.motion.y * params.motion.z, 0.0, params.motion.y * params.motion.z * 0.37);
+  }
+
+  fn cloudVerticalProfile(worldPos: vec3<f32>) -> f32 {
+    let layerHeight = params.shape.w - params.shape.z;
+    let h = clamp((worldPos.y - params.shape.z) / max(layerHeight, 0.001), 0.0, 1.0);
+    return smoothstep(0.0, 0.13, h) * (1.0 - smoothstep(0.72, 1.0, h));
+  }
+
+  fn densityAt(worldPos: vec3<f32>) -> f32 {
+    let p = worldPos * params.motion.x + cloudWindOffset();
+    let n = cloudNoise(p);
+    let broad = smoothstep(0.46 - params.shape.x * 0.34, 0.80, n);
+    return max(0.0, broad * cloudVerticalProfile(worldPos) * params.shape.y);
+  }
+
+  // fn densityAt(worldPos: vec3<f32>) -> f32 {
+  //   let h = clamp(
+  //       (worldPos.y - params.shape.z) /
+  //       max(params.shape.w - params.shape.z, 0.001),
+  //       0.0,
+  //       1.0
+  //   );
+
+//     return smoothstep(0.0, 0.2, h) *
+//            (1.0 - smoothstep(0.7, 1.0, h));
+// }
+
+  // Lower-cost coarse density for the two-point light transmittance estimate.
+  fn shadowDensityAt(worldPos: vec3<f32>) -> f32 {
+    let p = worldPos * (params.motion.x * 0.72) + cloudWindOffset();
+    let n = noise3(p);
+    let broad = smoothstep(0.43 - params.shape.x * 0.28, 0.78, n);
+    return broad * cloudVerticalProfile(worldPos) * params.shape.y;
+  }
+
+  fn intersectCloudLayer(ro: vec3<f32>, rd: vec3<f32>, maxDistance: f32) -> vec2<f32> {
+    if(abs(rd.y) < 0.0001) {
+      if(ro.y < params.shape.z || ro.y > params.shape.w) { return vec2<f32>(1.0, 0.0); }
+      return vec2<f32>(0.0, maxDistance);
+    }
+    let a = (params.shape.z - ro.y) / rd.y;
+    let b = (params.shape.w - ro.y) / rd.y;
+    let nearT = max(0.0, min(a, b));
+    let farT = min(maxDistance, max(a, b));
+    return vec2<f32>(nearT, max(0.0, farT - nearT));
+  }
+
+  @fragment
+  fn main(@builtin(position) pixel: vec4<f32>) -> @location(0) vec4<f32> {
+    let uv = pixel.xy / params.render.xy;
+    let depthSize = vec2<f32>(textureDimensions(depthTex));
+    let depthPx = vec2<i32>(clamp(uv * depthSize, vec2<f32>(0.0), depthSize - vec2<f32>(1.0)));
+    let sceneDepth = textureLoad(depthTex, depthPx, 0);
+
+    // Match CloudsVolumetric2: derive the ray from the near and far clip
+    // planes, and only use scene depth as a limit when opaque geometry exists.
+    let nearPos = worldFromDepth(uv, 0.0);
+    let farPos = worldFromDepth(uv, 1.0);
+    let rayDir = normalize(farPos - nearPos);
+
+    var sceneDistance = 1e9;
+    if(sceneDepth < 1.0) {
+      sceneDistance = length(worldFromDepth(uv, sceneDepth) - nearPos);
+    }
+
+    let hit = intersectCloudLayer(nearPos, rayDir, sceneDistance);
+    if(hit.y <= 0.001) { return vec4<f32>(0.0); }
+
+
+    // Volumetric front-to-back integration using the verified 3D density field.
+    let stepLength = hit.y / max(params.motion.w, 8.0);
+    let jitter = fract(sin(dot(pixel.xy, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    var transmittance = 1.0;
+    var radiance = vec3<f32>(0.0);
+
+    for(var i = 0; i < i32(params.motion.w); i++) {
+      let t = hit.x + (f32(i) + jitter) * stepLength;
+      let p = nearPos + rayDir * t;
+      let density = densityAt(p);
+
+      if(density > 0.001) {
+        // The previous 0.035 extinction was too weak for this world-space step length.
+        let opticalDepth = density * stepLength * 0.35;
+        let attenuation = exp(-opticalDepth);
+        let sunDir = normalize(params.lighting.xyz);
+        let lightP = p + sunDir * 4.5;
+        let lightTrans = exp(-shadowDensityAt(lightP) * 0.22);
+        let phase = 0.35 + 0.65 * pow(max(dot(rayDir, sunDir), 0.0), 4.0);
+        let powder = 1.0 - exp(-opticalDepth * 2.0);
+        let light = sunColor.rgb * params.lighting.w * lightTrans * phase;
+
+        radiance += transmittance * (1.0 - attenuation) *
+          (light + vec3<f32>(0.34, 0.39, 0.48) * powder);
+        transmittance *= attenuation;
+      }
+
+      if(transmittance < 0.025) { break; }
+    }
+
+    return vec4<f32>(radiance, 1.0 - transmittance);
+  }
+  `;
+}
+function cloudsCompositeFragmentWGSL() {
+  return `
+  @group(0) @binding(0) var sceneTex: texture_2d<f32>;
+  @group(0) @binding(1) var cloudTex: texture_2d<f32>;
+  @group(0) @binding(2) var samp: sampler;
+
+  @fragment
+  fn main(@builtin(position) pixel: vec4<f32>) -> @location(0) vec4<f32> {
+    let uv = pixel.xy / vec2<f32>(textureDimensions(sceneTex));
+    let scene = textureSample(sceneTex, samp, uv);
+    let clouds = textureSample(cloudTex, samp, uv);
+    let color = scene.rgb * (1.0 - clouds.a) + clouds.rgb;
+    return vec4<f32>(color, scene.a);
+  }
+  `;
+}
+
+// ../../../engine/postprocessing/cloudes-volumetric-2.js
+var CloudsVolumetric2 = class {
+  constructor(width, height, device2, options2 = {}, sceneView) {
+    this.enabled = false;
+    this.device = device2;
+    this.width = width;
+    this.height = height;
+    this.isMobile = this._detectMobileDevice();
+    this.qualityScale = options2.qualityScale ?? (this.isMobile ? 0.4 : 0.5);
+    this.params = {
+      cloudBase: options2.cloudBase ?? 120,
+      cloudThickness: options2.cloudThickness ?? 60,
+      coverage: options2.coverage ?? 0.55,
+      density: options2.density ?? 0.04,
+      shapeScale: options2.shapeScale ?? 1 / 900,
+      detailScale: options2.detailScale ?? 1 / 180,
+      detailAmount: options2.detailAmount ?? 0.35,
+      viewSteps: options2.viewSteps ?? (this.isMobile ? 16 : 32),
+      lightSteps: options2.lightSteps ?? (this.isMobile ? 3 : 4),
+      maxDistance: options2.maxDistance ?? 2e3,
+      phaseG: options2.phaseG ?? 0.55,
+      temporal: options2.temporal ?? true,
+      temporalBlend: options2.temporalBlend ?? 0.9,
+      windSpeed: options2.windSpeed ?? 8,
+      windDir: options2.windDir ?? [1, 0.3]
+    };
+    const sd = options2.sunDirection ?? [0.4, 0.6, 0.3];
+    const sdl = Math.hypot(sd[0], sd[1], sd[2]) || 1;
+    this.sunDirection = [sd[0] / sdl, sd[1] / sdl, sd[2] / sdl];
+    this.sunColor = options2.sunColor ?? [1, 0.95, 0.85];
+    this.sunIntensity = options2.sunIntensity ?? 2.2;
+    this.ambientColor = options2.ambientColor ?? [0.45, 0.55, 0.75];
+    this.ambientIntensity = options2.ambientIntensity ?? 0.6;
+    this._u = new Float32Array(68);
+    this._prevVP = new Float32Array(16);
+    this._hasPrev = false;
+    this._wind = [0, 0];
+    this._frame = 0;
+    this._lastTime = performance.now();
+    this._historyIdx = 0;
+    this._depthView = null;
+    this._marchBG = null;
+    this.sampler = device2.createSampler({
+      label: "CloudsVolumetric.sampler",
+      magFilter: "linear",
+      minFilter: "linear",
+      addressModeU: "repeat",
+      addressModeV: "repeat",
+      addressModeW: "repeat"
+    });
+    this.uniformBuffer = device2.createBuffer({
+      label: "CloudsVolumetric.uniform",
+      size: 272,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._marchPassDesc = {
+      label: "clouds-march",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }]
+    };
+    this._temporalPassDesc = {
+      label: "clouds-temporal",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }]
+    };
+    this._compositePassDesc = {
+      label: "clouds-composite",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }]
+    };
+    this._createNoiseTextures();
+    this._createTargets();
+    this._createPipelines();
+    this._buildStaticBindGroups();
+    this.setCompositeInput(sceneView);
+  }
+  init() {
+    return this;
+  }
+  // ───────────────────────── setters ─────────────────────────
+  setCoverage = (v) => {
+    this.params.coverage = Math.max(0, Math.min(0.98, v));
+  };
+  setDensity = (v) => {
+    this.params.density = v;
+  };
+  setCloudLayer = (base, thickness) => {
+    this.params.cloudBase = base;
+    this.params.cloudThickness = Math.max(1, thickness);
+  };
+  setSunDirection = (x2, y2, z) => {
+    const l = Math.hypot(x2, y2, z) || 1;
+    this.sunDirection = [x2 / l, y2 / l, z / l];
+  };
+  setSunColor = (r2, g, b, intensity) => {
+    this.sunColor = [r2, g, b];
+    if (intensity !== void 0) this.sunIntensity = intensity;
+  };
+  setAmbientColor = (r2, g, b, intensity) => {
+    this.ambientColor = [r2, g, b];
+    if (intensity !== void 0) this.ambientIntensity = intensity;
+  };
+  setWind = (speed, dx, dz) => {
+    this.params.windSpeed = speed;
+    if (dx !== void 0) this.params.windDir = [dx, dz ?? 0];
+  };
+  setSteps = (view, light) => {
+    this.params.viewSteps = Math.max(4, view | 0);
+    if (light !== void 0) this.params.lightSteps = Math.max(1, light | 0);
+  };
+  setMaxDistance = (v) => {
+    this.params.maxDistance = Math.max(10, v);
+  };
+  setNoiseScale = (shape, detail) => {
+    this.params.shapeScale = shape;
+    if (detail !== void 0) this.params.detailScale = detail;
+  };
+  setDetailAmount = (v) => {
+    this.params.detailAmount = Math.max(0, Math.min(1, v));
+  };
+  setPhaseG = (v) => {
+    this.params.phaseG = Math.max(0, Math.min(0.95, v));
+  };
+  setTemporal = (v) => {
+    this.params.temporal = !!v;
+    this._hasPrev = false;
+  };
+  setTemporalBlend = (v) => {
+    this.params.temporalBlend = Math.max(0, Math.min(0.98, v));
+  };
+  setQualityScale(scale4) {
+    this.qualityScale = Math.max(0.25, Math.min(1, scale4));
+    this.resize(this.width, this.height);
+  }
+  getOutputView() {
+    return this.compositeOutputTexView;
+  }
+  _detectMobileDevice() {
+    if (typeof navigator === "undefined") return false;
+    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test((navigator.userAgent || "").toLowerCase());
+  }
+  // ───────────────────────── resources ─────────────────────────
+  _createNoiseTextures() {
+    const d = this.device;
+    this.shapeTex = d.createTexture({
+      label: "CloudsVolumetric.shape64",
+      dimension: "3d",
+      size: [64, 64, 64],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.detailTex = d.createTexture({
+      label: "CloudsVolumetric.detail32",
+      dimension: "3d",
+      size: [32, 32, 32],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+    });
+    this.shapeView = this.shapeTex.createView({ dimension: "3d" });
+    this.detailView = this.detailTex.createView({ dimension: "3d" });
+    const module = d.createShaderModule({ label: "CloudsVolumetric.noiseGen", code: noiseGenWGSL() });
+    const mk = (entryPoint) => d.createComputePipeline({
+      label: "CloudsVolumetric." + entryPoint,
+      layout: "auto",
+      compute: { module, entryPoint }
+    });
+    const shapePipe = mk("shape");
+    const detailPipe = mk("detail");
+    const shapeBG = d.createBindGroup({ layout: shapePipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: this.shapeView }] });
+    const detailBG = d.createBindGroup({ layout: detailPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: this.detailView }] });
+    const enc = d.createCommandEncoder({ label: "CloudsVolumetric.noiseGenEncoder" });
+    const pass = enc.beginComputePass({ label: "clouds-noise-gen" });
+    pass.setPipeline(shapePipe);
+    pass.setBindGroup(0, shapeBG);
+    pass.dispatchWorkgroups(16, 16, 16);
+    pass.setPipeline(detailPipe);
+    pass.setBindGroup(0, detailBG);
+    pass.dispatchWorkgroups(8, 8, 8);
+    pass.end();
+    d.queue.submit([enc.finish()]);
+  }
+  _tex(w, h, label) {
+    return this.device.createTexture({
+      label,
+      size: [w, h],
+      format: "rgba16float",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+    });
+  }
+  _createTargets() {
+    this.lowW = Math.max(1, Math.ceil(this.width * this.qualityScale));
+    this.lowH = Math.max(1, Math.ceil(this.height * this.qualityScale));
+    this.marchTex = this._tex(this.lowW, this.lowH, "CloudsVolumetric.march");
+    this.marchView = this.marchTex.createView();
+    this.accumTex = [
+      this._tex(this.lowW, this.lowH, "CloudsVolumetric.accumA"),
+      this._tex(this.lowW, this.lowH, "CloudsVolumetric.accumB")
+    ];
+    this.accumView = [this.accumTex[0].createView(), this.accumTex[1].createView()];
+    this.compositeOutputTex = this._tex(this.width, this.height, "CloudsVolumetric.compositeOut");
+    this.compositeOutputTexView = this.compositeOutputTex.createView();
+    this._hasPrev = false;
+  }
+  _createPipelines() {
+    const d = this.device;
+    const F = GPUShaderStage.FRAGMENT;
+    const marchBGL = d.createBindGroupLayout({
+      label: "CloudsVolumetric.marchBGL",
+      entries: [
+        { binding: 0, visibility: F, buffer: { type: "uniform" } },
+        { binding: 1, visibility: F, texture: { sampleType: "depth" } },
+        { binding: 2, visibility: F, texture: { sampleType: "float", viewDimension: "3d" } },
+        { binding: 3, visibility: F, texture: { sampleType: "float", viewDimension: "3d" } },
+        { binding: 4, visibility: F, sampler: { type: "filtering" } }
+      ]
+    });
+    const postBGL = d.createBindGroupLayout({
+      label: "CloudsVolumetric.postBGL",
+      entries: [
+        { binding: 0, visibility: F, buffer: { type: "uniform" } },
+        { binding: 1, visibility: F, texture: { sampleType: "float" } },
+        { binding: 2, visibility: F, texture: { sampleType: "float" } },
+        { binding: 3, visibility: F, sampler: { type: "filtering" } }
+      ]
+    });
+    this._marchBGL = marchBGL;
+    this._postBGL = postBGL;
+    const vertModule = d.createShaderModule({ label: "CloudsVolumetric.vert", code: fullscreenVertWGSL3() });
+    const make = (label, bgl, code) => d.createRenderPipeline({
+      label,
+      layout: d.createPipelineLayout({ bindGroupLayouts: [bgl] }),
+      vertex: { module: vertModule, entryPoint: "vert" },
+      fragment: {
+        module: d.createShaderModule({ label: label + ".frag", code }),
+        entryPoint: "main",
+        targets: [{ format: "rgba16float" }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this.marchPipeline = make("CloudsVolumetric.march", marchBGL, marchFragWGSL2());
+    this.temporalPipeline = make("CloudsVolumetric.temporal", postBGL, temporalFragWGSL());
+    this.compositePipeline = make("CloudsVolumetric.composite", postBGL, compositeFragWGSL2());
+  }
+  _buildStaticBindGroups() {
+    const d = this.device;
+    const ub = { buffer: this.uniformBuffer };
+    this._temporalBG = [0, 1].map((i) => d.createBindGroup({
+      label: "CloudsVolumetric.temporalBG" + i,
+      layout: this._postBGL,
+      entries: [
+        { binding: 0, resource: ub },
+        { binding: 1, resource: this.marchView },
+        { binding: 2, resource: this.accumView[i] },
+        { binding: 3, resource: this.sampler }
+      ]
+    }));
+    this._marchBG = null;
+  }
+  /** Scene color that the clouds are composited over (sceneTextureView or volumetric output). */
+  setCompositeInput(sceneView) {
+    this._sceneView = sceneView;
+    const d = this.device;
+    const ub = { buffer: this.uniformBuffer };
+    this._compositeBG = [
+      d.createBindGroup({ layout: this._postBGL, entries: [
+        { binding: 0, resource: ub },
+        { binding: 1, resource: sceneView },
+        { binding: 2, resource: this.accumView[0] },
+        { binding: 3, resource: this.sampler }
+      ] }),
+      d.createBindGroup({ layout: this._postBGL, entries: [
+        { binding: 0, resource: ub },
+        { binding: 1, resource: sceneView },
+        { binding: 2, resource: this.accumView[1] },
+        { binding: 3, resource: this.sampler }
+      ] }),
+      d.createBindGroup({ layout: this._postBGL, entries: [
+        { binding: 0, resource: ub },
+        { binding: 1, resource: sceneView },
+        { binding: 2, resource: this.marchView },
+        { binding: 3, resource: this.sampler }
+      ] })
+    ];
+  }
+  _setMarchInputs(depthView) {
+    if (this._depthView === depthView && this._marchBG) return;
+    this._depthView = depthView;
+    this._marchBG = this.device.createBindGroup({
+      label: "CloudsVolumetric.marchBG",
+      layout: this._marchBGL,
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuffer } },
+        { binding: 1, resource: depthView },
+        { binding: 2, resource: this.shapeView },
+        { binding: 3, resource: this.detailView },
+        { binding: 4, resource: this.sampler }
+      ]
+    });
+  }
+  _writeUniforms(light, camera) {
+    const u = this._u, p = this.params;
+    const now = performance.now();
+    const dt = Math.min(0.1, (now - this._lastTime) * 1e-3);
+    this._lastTime = now;
+    const wl = Math.hypot(p.windDir[0], p.windDir[1]) || 1;
+    this._wind[0] += p.windDir[0] / wl * p.windSpeed * dt;
+    this._wind[1] += p.windDir[1] / wl * p.windSpeed * dt;
+    u.set(camera.invViewProjectionMatrix, 0);
+    u.set(this._hasPrev ? this._prevVP : light.viewProjectionMatrix, 16);
+    u[32] = this.sunDirection[0];
+    u[33] = this.sunDirection[1];
+    u[34] = this.sunDirection[2];
+    u[35] = 0;
+    u[36] = this.sunColor[0] * this.sunIntensity;
+    u[37] = this.sunColor[1] * this.sunIntensity;
+    u[38] = this.sunColor[2] * this.sunIntensity;
+    u[39] = p.phaseG;
+    u[40] = this.ambientColor[0] * this.ambientIntensity;
+    u[41] = this.ambientColor[1] * this.ambientIntensity;
+    u[42] = this.ambientColor[2] * this.ambientIntensity;
+    u[43] = 0;
+    u[44] = p.cloudBase;
+    u[45] = p.cloudThickness;
+    u[46] = p.coverage;
+    u[47] = p.density;
+    u[48] = p.shapeScale;
+    u[49] = p.detailScale;
+    u[50] = p.detailAmount;
+    u[51] = now * 1e-3;
+    u[52] = this._wind[0];
+    u[53] = 0;
+    u[54] = this._wind[1];
+    u[55] = 0;
+    u[56] = p.viewSteps;
+    u[57] = p.lightSteps;
+    u[58] = p.maxDistance;
+    u[59] = this._frame % 64;
+    u[60] = p.temporalBlend;
+    u[61] = p.temporal ? 1 : 0;
+    u[62] = this._hasPrev ? 1 : 0;
+    u[63] = 0;
+    u[64] = this.width;
+    u[65] = this.height;
+    u[66] = this.lowW;
+    u[67] = this.lowH;
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, u);
+    this._prevVP.set(light.viewProjectionMatrix);
+  }
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTextureView} depthView  main depth view (depth24plus)
+   * @param {{invViewProjectionMatrix: Float32Array, viewProjectionMatrix: Float32Array}} camera
+   */
+  render(encoder, sceneView = null, depthView, shadowArrayView = null, camera, light) {
+    this._setMarchInputs(depthView);
+    this._writeUniforms(light, camera);
+    {
+      this._marchPassDesc.colorAttachments[0].view = this.marchView;
+      const pass = encoder.beginRenderPass(this._marchPassDesc);
+      pass.setPipeline(this.marchPipeline);
+      pass.setBindGroup(0, this._marchBG);
+      pass.draw(6);
+      pass.end();
+    }
+    let compositeBG;
+    if (this.params.temporal) {
+      const r2 = this._historyIdx, w = 1 - r2;
+      this._temporalPassDesc.colorAttachments[0].view = this.accumView[w];
+      const pass = encoder.beginRenderPass(this._temporalPassDesc);
+      pass.setPipeline(this.temporalPipeline);
+      pass.setBindGroup(0, this._temporalBG[r2]);
+      pass.draw(6);
+      pass.end();
+      compositeBG = this._compositeBG[w];
+      this._historyIdx = w;
+    } else {
+      compositeBG = this._compositeBG[2];
+    }
+    {
+      this._compositePassDesc.colorAttachments[0].view = this.compositeOutputTexView;
+      const pass = encoder.beginRenderPass(this._compositePassDesc);
+      pass.setPipeline(this.compositePipeline);
+      pass.setBindGroup(0, compositeBG);
+      pass.draw(6);
+      pass.end();
+    }
+    this._hasPrev = true;
+    this._frame++;
+  }
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    this._createTargets();
+    this._buildStaticBindGroups();
+    this.setCompositeInput(this._sceneView);
+    this._historyIdx = 0;
+  }
+};
+function fullscreenVertWGSL3() {
+  return `
+    @vertex
+    fn vert(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
+      var pos = array<vec2<f32>, 6>(
+        vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0),
+        vec2(-1.0, 1.0), vec2(1.0, -1.0), vec2(1.0, 1.0)
+      );
+      return vec4(pos[i], 0.0, 1.0);
+    }
+  `;
+}
+var PARAMS_WGSL2 = `
+struct P {
+  invViewProj: mat4x4<f32>,
+  prevViewProj: mat4x4<f32>,
+  sunDir: vec4<f32>,     // xyz toward sun
+  sunColor: vec4<f32>,   // rgb * intensity, w = phase g
+  ambient: vec4<f32>,    // rgb * intensity
+  cloud: vec4<f32>,      // base, thickness, coverage, density
+  noise: vec4<f32>,      // shapeScale, detailScale, detailAmount, time(s)
+  wind: vec4<f32>,       // offset x, 0, offset z, _
+  march: vec4<f32>,      // viewSteps, lightSteps, maxDist, frame
+  misc: vec4<f32>,       // temporalBlend, useTemporal, hasHistory, _
+  res: vec4<f32>,        // fullW, fullH, lowW, lowH
+};
+@group(0) @binding(0) var<uniform> u: P;
+
+fn worldPos(uv: vec2<f32>, depth: f32) -> vec3<f32> {
+  let ndc = vec4(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0, depth, 1.0);
+  let w = u.invViewProj * ndc;
+  return w.xyz / w.w;
+}
+`;
+function noiseGenWGSL() {
+  return `
+@group(0) @binding(0) var outTex: texture_storage_3d<rgba8unorm, write>;
+
+fn pcg3d(vin: vec3<u32>) -> vec3<u32> {
+  var v = vin * 1664525u + vec3<u32>(1013904223u);
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  v = v ^ (v >> vec3<u32>(16u));
+  v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+  return v;
+}
+
+fn hash3(c: vec3<i32>, seed: u32) -> vec3<f32> {
+  let h = pcg3d(vec3<u32>(c) + vec3<u32>(seed * 977u, seed * 7919u, seed * 104729u));
+  return vec3<f32>(h) * (1.0 / 4294967295.0);
+}
+
+fn wrapi(c: vec3<i32>, f: i32) -> vec3<i32> {
+  let ff = vec3<i32>(f);
+  return ((c % ff) + ff) % ff;
+}
+
+// tileable Worley, returns 1 - nearestDistance (billowy cells)
+fn worley(p: vec3<f32>, freq: i32, seed: u32) -> f32 {
+  let q = p * f32(freq);
+  let ic = vec3<i32>(floor(q));
+  let fc = fract(q);
+  var d = 1e9;
+  for (var z = -1; z <= 1; z++) {
+    for (var y = -1; y <= 1; y++) {
+      for (var x = -1; x <= 1; x++) {
+        let n = vec3<i32>(x, y, z);
+        let feat = hash3(wrapi(ic + n, freq), seed);
+        let diff = vec3<f32>(n) + feat - fc;
+        d = min(d, dot(diff, diff));
+      }
+    }
+  }
+  return 1.0 - clamp(sqrt(d), 0.0, 1.0);
+}
+
+fn corner(i: vec3<i32>, o: vec3<i32>, freq: i32, seed: u32) -> f32 {
+  return hash3(wrapi(i + o, freq), seed).x;
+}
+
+// tileable value noise
+fn vnoise(p: vec3<f32>, freq: i32, seed: u32) -> f32 {
+  let q = p * f32(freq);
+  let i = vec3<i32>(floor(q));
+  let f = fract(q);
+  let s = f * f * (3.0 - 2.0 * f);
+  let c000 = corner(i, vec3<i32>(0, 0, 0), freq, seed);
+  let c100 = corner(i, vec3<i32>(1, 0, 0), freq, seed);
+  let c010 = corner(i, vec3<i32>(0, 1, 0), freq, seed);
+  let c110 = corner(i, vec3<i32>(1, 1, 0), freq, seed);
+  let c001 = corner(i, vec3<i32>(0, 0, 1), freq, seed);
+  let c101 = corner(i, vec3<i32>(1, 0, 1), freq, seed);
+  let c011 = corner(i, vec3<i32>(0, 1, 1), freq, seed);
+  let c111 = corner(i, vec3<i32>(1, 1, 1), freq, seed);
+  let x00 = mix(c000, c100, s.x);
+  let x10 = mix(c010, c110, s.x);
+  let x01 = mix(c001, c101, s.x);
+  let x11 = mix(c011, c111, s.x);
+  return mix(mix(x00, x10, s.y), mix(x01, x11, s.y), s.z);
+}
+
+// R: value-noise dilated by Worley fbm ("Perlin-Worley" style), GBA: Worley fbm octaves
+@compute @workgroup_size(4, 4, 4)
+fn shape(@builtin(global_invocation_id) id: vec3<u32>) {
+  let dim = textureDimensions(outTex);
+  if (any(id >= dim)) { return; }
+  let p = (vec3<f32>(id) + 0.5) / vec3<f32>(dim);
+  let g = worley(p, 4, 1u);
+  let b = worley(p, 8, 2u);
+  let a = worley(p, 16, 3u);
+  let wf = g * 0.625 + b * 0.25 + a * 0.125;
+  let vn = vnoise(p, 4, 11u) * 0.65 + vnoise(p, 8, 12u) * 0.35;
+  let r = wf + vn * (1.0 - wf);
+  textureStore(outTex, id, vec4<f32>(r, g, b, a));
+}
+
+// RGB: Worley octaves used to erode the base shape
+@compute @workgroup_size(4, 4, 4)
+fn detail(@builtin(global_invocation_id) id: vec3<u32>) {
+  let dim = textureDimensions(outTex);
+  if (any(id >= dim)) { return; }
+  let p = (vec3<f32>(id) + 0.5) / vec3<f32>(dim);
+  let r = worley(p, 4, 21u);
+  let g = worley(p, 8, 22u);
+  let b = worley(p, 16, 23u);
+  textureStore(outTex, id, vec4<f32>(r, g, b, 1.0));
+}
+`;
+}
+function marchFragWGSL2() {
+  return `
+${PARAMS_WGSL2}
+@group(0) @binding(1) var depthTex: texture_depth_2d;
+@group(0) @binding(2) var shapeTex: texture_3d<f32>;
+@group(0) @binding(3) var detailTex: texture_3d<f32>;
+@group(0) @binding(4) var samp: sampler;
+
+const PI = 3.14159265;
+
+fn remap(v: f32, a: f32, b: f32, c: f32, d: f32) -> f32 {
+  return c + (v - a) / (b - a) * (d - c);
+}
+
+fn hg(c: f32, g: f32) -> f32 {
+  let g2 = g * g;
+  return (1.0 - g2) / (4.0 * PI * pow(max(1.0 + g2 - 2.0 * g * c, 1e-3), 1.5));
+}
+
+fn cloudDensity(p: vec3<f32>, h: f32, withDetail: bool) -> f32 {
+  let pos = p + u.wind.xyz;
+  let sh = textureSampleLevel(shapeTex, samp, pos * u.noise.x, 0.0);
+  let lowFbm = sh.g * 0.625 + sh.b * 0.25 + sh.a * 0.125;
+  var d = remap(sh.r, -(1.0 - lowFbm), 1.0, 0.0, 1.0);
+  // rounded bottom, tapering top
+  let grad = clamp(remap(h, 0.0, 0.12, 0.0, 1.0), 0.0, 1.0) * clamp(remap(h, 0.55, 1.0, 1.0, 0.0), 0.0, 1.0);
+  d = d * grad;
+  let cov = clamp(u.cloud.z, 0.0, 0.98);
+  d = clamp(remap(d, 1.0 - cov, 1.0, 0.0, 1.0), 0.0, 1.0) * cov;
+  if (withDetail && d > 0.0) {
+    let dt = textureSampleLevel(detailTex, samp, pos * u.noise.y, 0.0);
+    let dfbm = dt.r * 0.625 + dt.g * 0.25 + dt.b * 0.125;
+    let erode = mix(dfbm, 1.0 - dfbm, clamp(h * 10.0, 0.0, 1.0));
+    d = clamp(remap(d, erode * u.noise.z, 1.0, 0.0, 1.0), 0.0, 1.0);
+  }
+  return d * u.cloud.w;
+}
+
+fn lightOpticalDepth(p: vec3<f32>) -> f32 {
+  let n = max(i32(u.march.y), 1);
+  let sd = u.sunDir.xyz;
+  let top = u.cloud.x + u.cloud.y;
+  var len = u.cloud.y * 1.5;
+  if (sd.y > 0.05) { len = min(len, (top - p.y) / sd.y); }
+  let stepL = len / f32(n);
+  var tau = 0.0;
+  for (var i = 0; i < n; i++) {
+    let q = p + sd * ((f32(i) + 0.5) * stepL);
+    let h = (q.y - u.cloud.x) / u.cloud.y;
+    if (h < 0.0 || h > 1.0) { continue; }
+    tau += cloudDensity(q, h, false) * stepL;
+  }
+  return tau;
+}
+
+fn ign(px: vec2<f32>, frame: f32) -> f32 {
+  let q = px + frame * 5.588238;
+  return fract(52.9829189 * fract(dot(q, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+@fragment
+fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+  let uv = fc.xy / u.res.zw;
+  let fullDim = vec2<i32>(u.res.xy);
+  let dpx = clamp(vec2<i32>(uv * u.res.xy), vec2<i32>(0), fullDim - vec2<i32>(1));
+  let depth = textureLoad(depthTex, dpx, 0);
+
+  let ro = worldPos(uv, 0.0);
+  let dir = normalize(worldPos(uv, 1.0) - ro);
+
+  var sceneDist = 1e9;
+  if (depth < 1.0) { sceneDist = length(worldPos(uv, depth) - ro); }
+
+  let base = u.cloud.x;
+  let top = u.cloud.x + u.cloud.y;
+  if (abs(dir.y) < 1e-4) { return vec4<f32>(0.0); }
+  let t0 = (base - ro.y) / dir.y;
+  let t1 = (top - ro.y) / dir.y;
+  let tmin = max(min(t0, t1), 0.0);
+  let tmax = min(min(max(t0, t1), sceneDist), u.march.z);
+  if (tmax <= tmin) { return vec4<f32>(0.0); }
+
+  let steps = max(i32(u.march.x), 4);
+  let stepLen = (tmax - tmin) / f32(steps);
+  let jitter = ign(fc.xy, u.march.w);
+
+  let cosA = dot(dir, u.sunDir.xyz);
+  // three scattering octaves (Wrenninge): extinction a^i, contribution b^i, anisotropy g*c^i
+  let g0 = u.sunColor.w;
+  let ph0 = 4.0 * PI * hg(cosA, g0);
+  let ph1 = 4.0 * PI * hg(cosA, g0 * 0.5);
+  let ph2 = 4.0 * PI * hg(cosA, g0 * 0.25);
+
+  var T = 1.0;
+  var L = vec3<f32>(0.0);
+  for (var i = 0; i < steps; i++) {
+    let t = tmin + (f32(i) + jitter) * stepLen;
+    let p = ro + dir * t;
+    let h = (p.y - base) / u.cloud.y;
+    let dens = cloudDensity(p, h, true);
+    if (dens > 0.0005) {
+      let tau = lightOpticalDepth(p);
+      let e = (exp(-tau) * ph0 + 0.5 * exp(-tau * 0.5) * ph1 + 0.25 * exp(-tau * 0.25) * ph2) * 0.5714;
+      let lighting = u.sunColor.rgb * e + u.ambient.rgb * mix(0.4, 1.0, clamp(h, 0.0, 1.0));
+      let ext = exp(-dens * stepLen);
+      L += T * lighting * (1.0 - ext);
+      T *= ext;
+      if (T < 0.02) { break; }
+    }
+  }
+
+  let fade = 1.0 - smoothstep(0.5 * u.march.z, u.march.z, tmin);
+  return vec4<f32>(L * fade, (1.0 - T) * fade);
+}
+`;
+}
+function temporalFragWGSL() {
+  return `
+${PARAMS_WGSL2}
+@group(0) @binding(1) var curTex: texture_2d<f32>;
+@group(0) @binding(2) var histTex: texture_2d<f32>;
+@group(0) @binding(3) var samp: sampler;
+
+@fragment
+fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+  let ip = vec2<i32>(fc.xy);
+  let dim = vec2<i32>(textureDimensions(curTex));
+  let cur = textureLoad(curTex, ip, 0);
+  if (u.misc.y < 0.5 || u.misc.z < 0.5) { return cur; }
+
+  var mn = cur;
+  var mx = cur;
+  for (var dy = -1; dy <= 1; dy++) {
+    for (var dx = -1; dx <= 1; dx++) {
+      let c = textureLoad(curTex, clamp(ip + vec2<i32>(dx, dy), vec2<i32>(0), dim - vec2<i32>(1)), 0);
+      mn = min(mn, c);
+      mx = max(mx, c);
+    }
+  }
+
+  let uv = fc.xy / vec2<f32>(dim);
+  let dir = normalize(worldPos(uv, 1.0) - worldPos(uv, 0.0));
+  // clouds are far away: reproject by rotation only (w = 0), ignore camera translation
+  let pc = u.prevViewProj * vec4<f32>(dir, 0.0);
+  if (pc.w <= 0.0) { return cur; }
+  let nd = pc.xy / pc.w;
+  let puv = vec2<f32>(nd.x * 0.5 + 0.5, 0.5 - nd.y * 0.5);
+  if (puv.x < 0.0 || puv.y < 0.0 || puv.x > 1.0 || puv.y > 1.0) { return cur; }
+
+  let hist = clamp(textureSampleLevel(histTex, samp, puv, 0.0), mn, mx);
+  return mix(cur, hist, u.misc.x);
+}
+`;
+}
+function compositeFragWGSL2() {
+  return `
+${PARAMS_WGSL2}
+@group(0) @binding(1) var sceneTex: texture_2d<f32>;
+@group(0) @binding(2) var cloudTex: texture_2d<f32>;
+@group(0) @binding(3) var samp: sampler;
+
+@fragment
+fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
+  let uv = fc.xy / vec2<f32>(textureDimensions(sceneTex));
+  let scene = textureSampleLevel(sceneTex, samp, uv, 0.0);
+  let cl = textureSampleLevel(cloudTex, samp, uv, 0.0);
+  // cl.rgb = in-scattered light (already weighted by transmittance), cl.a = opacity
+  return vec4<f32>(scene.rgb * (1.0 - cl.a) + cl.rgb, scene.a);
+}
+`;
+}
+
+// ../../../engine/postprocessing/fxaa.js
+var FXAAPass = class {
+  constructor(device2, targetFormat) {
+    this.enabled = false;
+    this.device = device2;
+    this.params = {
+      edgeMin: 0.0312,
+      // skip very dark edges
+      edgeRel: 0.125,
+      // relative contrast threshold (lower = more AA, softer)
+      spanMax: 8,
+      // max search distance in texels
+      reduceMul: 1 / 8,
+      reduceMin: 1 / 128
+    };
+    this._scratch = new Float32Array(8);
+    this.paramBuffer = device2.createBuffer({
+      label: "FXAA params",
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateParams();
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.pipeline = device2.createRenderPipeline({
+      label: "FXAA pipeline",
+      layout: "auto",
+      vertex: {
+        module: device2.createShaderModule({ code: fullscreenQuadWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: device2.createShaderModule({ code: fxaaWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: targetFormat }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this._passDesc = {
+      label: "FXAA pass",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
+    };
+    this._bg = null;
+    this._lastHdr = null;
+    this._lastSSR = null;
+  }
+  _updateParams() {
+    const p = this.params, s = this._scratch;
+    s[0] = p.edgeMin;
+    s[1] = p.edgeRel;
+    s[2] = p.spanMax;
+    s[3] = p.reduceMul;
+    s[4] = p.reduceMin;
+    this.device.queue.writeBuffer(this.paramBuffer, 0, s);
+  }
+  setEdgeThresholdMin = (v) => {
+    this.params.edgeMin = v;
+    this._updateParams();
+  };
+  setEdgeThreshold = (v) => {
+    this.params.edgeRel = v;
+    this._updateParams();
+  };
+  setSpanMax = (v) => {
+    this.params.spanMax = v;
+    this._updateParams();
+  };
+  setReduceMul = (v) => {
+    this.params.reduceMul = v;
+    this._updateParams();
+  };
+  setReduceMin = (v) => {
+    this.params.reduceMin = v;
+    this._updateParams();
+  };
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTextureView} hdrView    bloomOutput view if bloom enabled, else sceneTextureView
+   * @param {GPUTextureView} ssrView    ssrOutputView or the dummy 1x1 view
+   * @param {GPUTextureView} targetView canvas view
+   */
+  render(encoder, hdrView, ssrView, targetView) {
+    if (this._lastHdr !== hdrView || this._lastSSR !== ssrView || !this._bg) {
+      this._bg = this.device.createBindGroup({
+        label: "FXAA bindgroup",
+        layout: this.pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: hdrView },
+          { binding: 1, resource: this.sampler },
+          { binding: 2, resource: ssrView },
+          { binding: 3, resource: { buffer: this.paramBuffer } }
+        ]
+      });
+      this._lastHdr = hdrView;
+      this._lastSSR = ssrView;
+    }
+    this._passDesc.colorAttachments[0].view = targetView;
+    const pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this._bg);
+    pass.draw(6);
+    pass.end();
+  }
+};
+function fxaaWGSL() {
+  return `
+  struct FXAAParams {
+    edgeMin: f32,
+    edgeRel: f32,
+    spanMax: f32,
+    reduceMul: f32,
+    reduceMin: f32,
+    _a: f32, _b: f32, _c: f32,
+  };
+
+  @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+  @group(0) @binding(1) var samp   : sampler;
+  @group(0) @binding(2) var ssrTex : texture_2d<f32>;
+  @group(0) @binding(3) var<uniform> fx : FXAAParams;
+
+  // Same composite + tonemap as the present pass. textureSampleLevel is used
+  // everywhere because FXAA branches non-uniformly (textureSample would be invalid).
+  fn fetch(uv: vec2<f32>) -> vec3<f32> {
+    let hdr = textureSampleLevel(hdrTex, samp, uv, 0.0).rgb;
+    let ssr = textureSampleLevel(ssrTex, samp, uv, 0.0);
+    let c = mix(hdr, ssr.rgb, ssr.a);
+    return c / (c + vec3<f32>(1.0));
+  }
+
+  fn luma(c: vec3<f32>) -> f32 {
+    return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+  }
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let texel = 1.0 / vec2<f32>(textureDimensions(hdrTex));
+    let uv = p.xy * texel;
+
+    let rgbM  = fetch(uv);
+    let rgbNW = fetch(uv + vec2<f32>(-1.0, -1.0) * texel);
+    let rgbNE = fetch(uv + vec2<f32>( 1.0, -1.0) * texel);
+    let rgbSW = fetch(uv + vec2<f32>(-1.0,  1.0) * texel);
+    let rgbSE = fetch(uv + vec2<f32>( 1.0,  1.0) * texel);
+
+    let lM  = luma(rgbM);
+    let lNW = luma(rgbNW);
+    let lNE = luma(rgbNE);
+    let lSW = luma(rgbSW);
+    let lSE = luma(rgbSE);
+
+    let lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
+    let lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+
+    // Not an edge: leave pixel untouched
+    if (lMax - lMin < max(fx.edgeMin, lMax * fx.edgeRel)) {
+      return vec4<f32>(rgbM, 1.0);
+    }
+
+    var dir = vec2<f32>(
+      -((lNW + lNE) - (lSW + lSE)),
+       ((lNW + lSW) - (lNE + lSE))
+    );
+    let dirReduce = max((lNW + lNE + lSW + lSE) * 0.25 * fx.reduceMul, fx.reduceMin);
+    let rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+    dir = clamp(dir * rcpDirMin, vec2<f32>(-fx.spanMax), vec2<f32>(fx.spanMax)) * texel;
+
+    let rgbA = 0.5 * (
+      fetch(uv + dir * (1.0 / 3.0 - 0.5)) +
+      fetch(uv + dir * (2.0 / 3.0 - 0.5))
+    );
+    let rgbB = rgbA * 0.5 + 0.25 * (
+      fetch(uv + dir * -0.5) +
+      fetch(uv + dir *  0.5)
+    );
+    let lB = luma(rgbB);
+    let outRgb = select(rgbB, rgbA, lB < lMin || lB > lMax);
+    return vec4<f32>(outRgb, 1.0);
+  }
+  `;
 }
 
 // ../../../world.js
@@ -41167,9 +43235,7 @@ var MatrixEngineWGPU = class {
       this.physicsBodiesChain = physicsBodiesChain.bind(this);
     }
     this.generatorWallNONPHYSICS = generatorWallNONPHYSICS.bind(this);
-    this.effectsByType = {
-      FlameEmitter: []
-    };
+    this.effectsByType = /* @__PURE__ */ new Map([[FlameEmitter, []]]);
     addEventListener("update-effects", (e) => {
       for (let meshIndex = 0; meshIndex < this.mainRenderBundle.length; meshIndex++) {
         const mesh = this.mainRenderBundle[meshIndex];
@@ -41177,18 +43243,18 @@ var MatrixEngineWGPU = class {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect === null) continue;
-            const className = effect.constructor.name;
-            if (!this.effectsByType[className]) this.effectsByType[className] = [];
-            this.effectsByType[className].push({ effect, mesh });
+            const effectType = effect.constructor;
+            if (!this.effectsByType.has(effectType)) this.effectsByType.set(effectType, []);
+            this.effectsByType.get(effectType).push({ effect, mesh });
           }
         }
       }
     });
-    this.GPUCullingRad = 200;
     this.editorAddOBJ = addOBJ.bind(this);
     this.editorAddProceduralMesh = addProceduralOBJ.bind(this);
     this.MEConfig = MEConfig;
     this.MEConfig.construct(options2);
+    this.GPUCullingRad = this.MEConfig.GPUCullingRad;
     this.label = new MultiLang();
     this.now = 0;
     this.logLoopError = this.MEConfig.logLoopError;
@@ -41355,7 +43421,7 @@ var MatrixEngineWGPU = class {
     if (MEConfig.SINGLE_CAMERA == true) {
       if ("firstPersonCamera" == this.options.mainCameraParams.type) {
         this.cameras = {
-          firstPersonCamera: new FirstPersonCamera({ position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "firstPersonCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
+          firstPersonCamera: new FirstPersonCamera({ usePointerEvents: this.options.mainCameraParams.usePointerEvents, position: initialCameraPosition, canvas, pitch: 0.18, yaw: -0.1, isActive: "firstPersonCamera" == this.options.mainCameraParams.type ? "init active cam" : null })
         };
       } else if ("WASD" == this.options.mainCameraParams.type) {
         this.cameras = {
@@ -41528,7 +43594,6 @@ var MatrixEngineWGPU = class {
         { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } },
         { binding: 4, visibility: GPUShaderStage.VERTEX, buffer: { type: "read-only-storage" } }
-        // {binding: 5, visibility: GPUShaderStage.VERTEX, buffer: {type: "read-only-storage"}}
       ]
     });
   }
@@ -41557,7 +43622,7 @@ var MatrixEngineWGPU = class {
     const requiredFeatures = [];
     for (const feature of GPU_FEATURES.GROUP_1) {
       if (this.adapter.features.has(feature)) {
-        console.log(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
+        console.info(`%cGPU Feature enabled: ${feature}.`, LOG_FUNNY_ARCADE);
         requiredFeatures.push(feature);
       }
     }
@@ -41592,20 +43657,20 @@ var MatrixEngineWGPU = class {
     this.shadersPack = {};
     this.lastFrameMS = 0;
     this._camVP = mat4Impl.create();
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
+    console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
     console.log("%c \u{1F9EC} Matrix-Engine-Wgpu \u{1F9EC} ", LOG_FUNNY_BIG_NEON);
-    console.log("%c ---------------------------------------------------------------------------------------------- ", LOG_FUNNY);
-    console.log("%c Version 2.0.0 [The Beast] ", LOG_FUNNY);
+    console.log("%c ----------------------------------------------------------------------------------------------------------------- ", LOG_FUNNY);
+    console.log("%c Version 2.1.0 [The Beast] ", LOG_FUNNY);
     console.log("%c\u{1F47D}", LOG_FUNNY_EXTRABIG);
     console.log(
-      "%cMatrix Engine WGPU - Gate is open...\nNpm ready, codepen fully supported (physics worker).\nOptimised MediaPipe buildin library implemented.\nCode Creator - standalone (use engine from npm) ai top level code generator.\nCreative power with intuitive visual scripting work flow and ai graph generetor.\nNew Features: NUI-Commander Game runner, Mediapipe, Culling render mode CPU + GPU, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\nMobile support: chrome-android tested. Just solutions and high performance. \u{1F525}",
-      LOG_FUNNY_BIG_ARCADE
+      "%cMatrix Engine WGPU - Gate is open \n - Npm ready, codepen fully supported with physics worker.\n - Optimised MediaPipe buildin library implemented (use buildin render or use the beast render).\n - Code Creator - standalone (use engine from npm) ai top level code generator.\n - Creative power with intuitive visual scripting work flow and ai graph generetor.\n - New Features: NUI-Commander Game runner, Mediapipe Face/Pose/Hand, Culling render mode CPU/GPU, FXAA, Horizontal-Z-Buffer ray/reflection, sprite2DPack (effect pass) .\n   2DSprite batch manager, new game template for Jumping Cube game and PlaneCamera (3d projection but follow in 2d plane x/y).\n\u{1F525} Mobile support: chrome-android tested. \u{1F525}",
+      LOG_FUNNY
     );
     console.log(
-      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
+      "%cMatrix Engine WGPU - Initial configuration :\n - SHADOW_RES : " + this.MEConfig.SHADOW_RES + "\n - MAX_BONES  : " + this.MEConfig.MAX_BONES + "\n - MAX_SPOTLIGHTS  : " + this.MEConfig.MAX_SPOTLIGHTS + "\n - TOUCH_SENS  : " + this.MEConfig.TOUCH_SENS + "\n - MOUSE_SENS  : " + this.MEConfig.MOUSE_SENS + "\n - fs  : " + this.MEConfig.FORCE_FULL_SCREEN + "\n - GPUCullingRad  : " + this.MEConfig.GPUCullingRad + "\n - CAM_SPEED  : " + this.MEConfig.CAM_SPEED + "\n - LOAD_AFTER_CLICK_MOBILE  : " + this.MEConfig.LOAD_AFTER_CLICK_MOBILE + "\n - PHYSICS_GROUND_BYX PHYSICS_GROUND_BYZ : " + this.MEConfig.PHYSICS_GROUND_BYX + ", " + this.MEConfig.PHYSICS_GROUND_BYX,
       LOG_FUNNY_ARCADE
     );
-    console.log("%cYou can direct configure Matrix-Engine in url configuration params :\n", LOG_FUNNY_ARCADE);
+    console.log("%cYou can direct configure Matrix-Engine with url configuration params:\n", LOG_FUNNY_ARCADE);
     console.log("%c fs (fullscreen)              ----  /examples?demo=1&fs=true  \n", LOG_FUNNY_ARCADE);
     console.log("%c shadowSize (size of shadows) ----  /examples?demo=1&SHADOW_RES=128  \n", LOG_FUNNY_ARCADE);
     console.log("%cSource code: \u{1F449} GitHub:\nhttps://github.com/zlatnaspirala/matrix-engine-wgpu", LOG_FUNNY_ARCADE);
@@ -41688,6 +43753,7 @@ var MatrixEngineWGPU = class {
     };
     this.volumetricPass = { enabled: false };
     this.volumetricPass2 = { enabled: false };
+    this.fxaaPass = { enabled: false };
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "rgba16float",
@@ -41971,17 +44037,20 @@ var MatrixEngineWGPU = class {
     }
   };
   rebuildIndirectBuffer() {
+    const meshes = this.indirectManager.indirectMeshes;
+    const signature = meshes.map((mesh) => `${mesh.name}:${mesh.indexCount || 36}:${mesh.instanceCount || 1}:${this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex}`).join("|");
+    if (signature === this._indirectBufferSignature) return;
+    this._indirectBufferSignature = signature;
     setTimeout(() => {
       let cumulativeInstanceIndex = 0;
-      for (let i = 0; i < this.indirectManager.indirectMeshes.length; i++) {
-        const mesh = this.indirectManager.indirectMeshes[i];
+      for (let i = 0; i < meshes.length; i++) {
+        const mesh = meshes[i];
         const meshIndex = this.indirectManager.meshToIndexMap.get(mesh.name) ?? mesh.indirectDrawIndex;
         const instanceCount = mesh.instanceCount || 1;
         const indexCount = mesh.indexCount || 36;
         mesh.globalInstanceIndex = cumulativeInstanceIndex;
-        console.log("rebuildIndirectBuffer : mesh.indexCount :" + indexCount + " , mesh.instanceCount : " + instanceCount + " ,  mesh.globalInstanceIndex : " + mesh.globalInstanceIndex);
-        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, mesh.globalInstanceIndex);
-        cumulativeInstanceIndex += 1;
+        this.computeCulling.setMeshDrawCommand(meshIndex, indexCount, instanceCount, cumulativeInstanceIndex);
+        cumulativeInstanceIndex += instanceCount;
       }
       this.computeCulling.flushIndirectBuffer();
     }, 150);
@@ -42212,6 +44281,8 @@ var MatrixEngineWGPU = class {
         { binding: 2, resource: this.dummySSRTexture.createView() }
       ]
     });
+    this._dummySSRView = this.dummySSRTexture.createView();
+    this._bloomOutputView = this.bloomOutputTex.createView();
   }
   async run(callback) {
     this._lastPipeline = null;
@@ -42291,9 +44362,12 @@ var MatrixEngineWGPU = class {
       this.updateLights();
       this._sceneData[44] = (performance.now() - this.startTime) / 1e3;
       this.device.queue.writeBuffer(this.globalSceneUniformBuffer, 0, this._sceneData.buffer, this._sceneData.byteOffset, this._sceneData.byteLength);
-      if (camera._dirtyAngle || camera._dirty) {
-        this.getTransformationMatrix(camera, now2);
+      if (camera._digital) {
+        camera._applyDigitalMovement(this.now);
+      }
+      if (camera._dirtyAngle) {
         camera.update();
+        this.getTransformationMatrix(camera, now2);
       }
       for (let i = 0; i < this.lightContainer.length; i++) {
         const light = this.lightContainer[i];
@@ -42349,6 +44423,7 @@ var MatrixEngineWGPU = class {
         pass.setPipeline(pipeline);
         let l = null;
         for (const mesh of meshes) {
+          if (mesh.isVideo && !mesh.videoFrameReady) continue;
           if (mesh.materialBindGroup !== l) {
             pass.setBindGroup(1, mesh.materialBindGroup);
             l = mesh.materialBindGroup;
@@ -42362,6 +44437,7 @@ var MatrixEngineWGPU = class {
       for (const [pipeline, meshes] of this.transparentBuckets) {
         pass.setPipeline(pipeline);
         for (const mesh of meshes) {
+          if (mesh.isVideo && !mesh.videoFrameReady) continue;
           pass.setBindGroup(1, mesh.materialBindGroup);
           pass.setBindGroup(2, mesh.modelBindGroup);
           if (mesh.material.type === "mirror") pass.setBindGroup(3, mesh.mirrorBindGroup);
@@ -42369,10 +44445,9 @@ var MatrixEngineWGPU = class {
           mesh.drawElements(pass, this.lightContainer);
         }
       }
-      for (const className in this.effectsByType) {
-        const pile = this.effectsByType[className];
+      for (const pile of this.effectsByType.values()) {
         if (pile.length === 0) continue;
-        if (className === "_WaterSimEffect" || className === "_DepthWebcamVoxelEffect") {
+        if (pile[0].effect.constructor.managesRenderPipeline === true) {
           for (const { effect, mesh } of pile) {
             if (effect.enabled === false) continue;
             if (effect.updateInstanceData) effect.updateInstanceData(mesh.modelMatrix);
@@ -42421,13 +44496,19 @@ var MatrixEngineWGPU = class {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+      if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
       this.finalPS.colorAttachments[0].view = this._canvasView;
-      pass = commandEncoder.beginRenderPass(this.finalPS);
-      pass.setPipeline(this.presentPipeline);
-      pass.setBindGroup(0, this._activeBindGroup);
-      pass.draw(6);
-      pass.end();
+      if (this.fxaaPass.enabled === true) {
+        const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+        const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+        this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+      } else {
+        pass = commandEncoder.beginRenderPass(this.finalPS);
+        pass.setPipeline(this.presentPipeline);
+        pass.setBindGroup(0, this._activeBindGroup);
+        pass.draw(6);
+        pass.end();
+      }
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
       this.submitQueue[0] = null;
@@ -42756,7 +44837,7 @@ var MatrixEngineWGPU = class {
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
   };
-  TEST_activateVolumetricEffect = (arg) => {
+  activateVolumetricTexProj = (arg) => {
     if (this.bloomPass.enabled != true) {
       console.warn(`%cTheBeast: You must enable bloom before volumetric.`);
       return;
@@ -42768,7 +44849,7 @@ var MatrixEngineWGPU = class {
         steps: 32,
         scatterStrength: 1.2,
         heightFalloff: 0.08,
-        lightColor: [1, 0.88, 0.65]
+        lightColor: [1, 1, 1]
       };
     } else {
       p = arg;
@@ -42779,32 +44860,59 @@ var MatrixEngineWGPU = class {
       this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.compositeOutputTexView);
     }
   };
+  activateVolumetricClouds = (arg) => {
+    if (this.bloomPass.enabled !== true) {
+      console.warn("%cTheBeast: You must enable bloom before volumetric clouds.");
+      return;
+    }
+    const p = {
+      qualityScale: 0.35,
+      steps: 24,
+      coverage: 0.58,
+      cloudBase: 24,
+      cloudTop: 58,
+      noiseScale: 0.035,
+      windSpeed: 0.8,
+      scatterStrength: 1.2,
+      // User overrides
+      ...arg || {}
+    };
+    if (this.volumetricPass?.enabled === true) {
+      return;
+    }
+    this.volumetricPass = new CloudsVolumetric(this.canvas.width, this.canvas.height, this.device, p);
+    this.volumetricPass.enabled = true;
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
+  };
+  activateVolumetricClouds2 = (arg) => {
+    if (this.bloomPass.enabled !== true) {
+      console.warn("%cTheBeast: You must enable bloom before volumetric clouds.");
+      return;
+    }
+    const p = {
+      coverage: 0.55,
+      cloudBase: 120,
+      cloudThickness: 60,
+      // User overrides
+      ...arg || {}
+    };
+    if (this.volumetricPass?.enabled === true) {
+      return;
+    }
+    this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p, this.sceneTextureView);
+    this.volumetricPass.enabled = true;
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
+  };
+  activateFXAA = () => {
+    if (this.fxaaPass.enabled != true) {
+      this.fxaaPass = new FXAAPass(this.device, isMobile() == true ? "rgba8unorm" : "bgra8unorm");
+      this.fxaaPass.enabled = true;
+    }
+  };
 };
 
 // ../../../../projects/tutorial-6/graph.js
-var graph_default = {
-  nodes: {
-    node_1: {
-      id: "node_1",
-      title: "onLoad",
-      x: 299.34460239409304,
-      y: 127.5731482201762,
-      category: "event",
-      inputs: [],
-      outputs: [{ name: "exec", type: "action" }]
-    }
-  },
-  links: [],
-  nodeCounter: 2,
-  linkCounter: 1,
-  pan: [0, 0],
-  variables: {
-    number: {},
-    boolean: {},
-    string: {},
-    object: {}
-  }
-};
+var graph_default = { "nodes": { "node_1": { "id": "node_1", "title": "onLoad", "x": 299.34460239409304, "y": 127.5731482201762, "category": "event", "inputs": [], "outputs": [{ "name": "exec", "type": "action" }] }, "node_2": { "id": "node_2", "x": 664.8073741386632, "y": 132.3609644047295, "title": "Add OBJ", "category": "action", "inputs": [{ "name": "exec", "type": "action" }, { "name": "path", "type": "string" }, { "name": "material", "type": "string" }, { "name": "pos", "type": "object" }, { "name": "rot", "type": "object" }, { "name": "rotSpeed", "type": "object" }, { "name": "texturePath", "type": "string" }, { "name": "name", "type": "string" }, { "name": "raycast", "type": "boolean" }, { "name": "scale", "type": "object" }, { "name": "isPhysicsBody", "type": "boolean" }, { "name": "isInstancedObj", "type": "boolean" }], "outputs": [{ "name": "execOut", "type": "action" }, { "name": "complete", "type": "action" }, { "name": "error", "type": "action" }], "fields": [{ "key": "path", "value": "res/meshes/blender/cube.obj" }, { "key": "material", "value": "standard" }, { "key": "pos", "value": "{x:0, y:0, z:-20}" }, { "key": "rot", "value": "{x:0, y:0, z:0}" }, { "key": "rotSpeed", "value": "{x:0, y:0, z:0}" }, { "key": "texturePath", "value": "res/textures/default.png" }, { "key": "name", "value": "TEST" }, { "key": "raycast", "value": true }, { "key": "scale", "value": [1, 1, 1] }, { "key": "isPhysicsBody", "type": false }, { "key": "isInstancedObj", "type": false }, { "key": "created", "value": false }], "noselfExec": "true" } }, "links": [{ "id": "link_1", "from": { "node": "node_1", "pin": "exec", "type": "action", "out": true }, "to": { "node": "node_2", "pin": "exec" }, "type": "action" }], "nodeCounter": 3, "linkCounter": 2, "pan": [-280, -29], "variables": { "number": {}, "boolean": {}, "string": {}, "object": {} } };
 
 // ../../../../projects/tutorial-6/shader-graphs.js
 var shaderGraphsProdc = [
@@ -42871,40 +44979,21 @@ var app2 = new MatrixEngineWGPU(
           }
         });
       }, { scale: [25, 1, 25] });
-      downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, (m) => {
-        let texturesPaths = ["./res/textures/cube-g1-extra_low.png"];
-        app3.addMeshObj({
-          position: { x: 0, y: 0, z: -20 },
-          rotation: { x: 0, y: 0, z: 0 },
-          rotationSpeed: { x: 0, y: 0, z: 0 },
-          texturesPaths: [texturesPaths],
-          name: "nikola",
-          mesh: m.cube,
-          raycast: { enabled: true, radius: 1 },
-          physics: { enabled: false, geometry: "Cube" }
-        });
-      }, { scale: [1, 1, 1] });
       setTimeout(() => {
         try {
-          app3.getSceneObjectByName("FLOOR").position.SetY(-0.7000000000000007);
+          app3.getSceneObjectByName("FLOOR").position.SetX(-0.8750000000000018);
         } catch (e) {
         }
       }, 800);
       setTimeout(() => {
         try {
-          app3.getSceneObjectByName("nikola").position.SetZ(-19.649999999999945);
+          app3.getSceneObjectByName("FLOOR").position.SetZ(-20.455000000000002);
         } catch (e) {
         }
       }, 800);
       setTimeout(() => {
         try {
-          app3.getSceneObjectByName("nikola").position.SetY(3.989999999999993);
-        } catch (e) {
-        }
-      }, 800);
-      setTimeout(() => {
-        try {
-          app3.getSceneObjectByName("nikola").position.SetX(-3.8850000000000047);
+          app3.getSceneObjectByName("FLOOR").position.SetY(-0.8400000000000005);
         } catch (e) {
         }
       }, 800);

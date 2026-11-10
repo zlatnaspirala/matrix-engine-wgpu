@@ -1291,10 +1291,10 @@ export default class MatrixEngineWGPU {
   updateLights() {
     for(let i = 0;i < this.MAX_SPOTLIGHTS;i++) {
       const light = this.lightContainer[i];
-      // if(light?.update) {
+      if(light?.update) {
         const vpDirty = light.update();
         if(vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
-      // }
+      }
       this._lightsData.set(i < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i * 36);
     }
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);

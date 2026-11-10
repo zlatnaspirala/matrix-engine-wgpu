@@ -71,62 +71,44 @@ export const MEConfig = {
   construct: function(options = {}) {
     if(urlQ['GRAVITY_Y_AXIS']) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ['GRAVITY_Y_AXIS']);
-      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
+      // console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
     }
     if(urlQ['PHYSICS_GROUND_BYX']) {
       this.PHYSICS_GROUND_BYX = parseInt(urlQ['PHYSICS_GROUND_BYX']);
-      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE);
+      // console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE);
     }
     if(urlQ['PHYSICS_GROUND_BYZ']) {
       this.PHYSICS_GROUND_BYZ = parseInt(urlQ['PHYSICS_GROUND_BYZ']);
-      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
+      // console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
     }
     if(urlQ['SHADOW_RES']) {
       this.SHADOW_RES = parseInt(urlQ['SHADOW_RES']);
-      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
+      // console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
     }
-    if(urlQ['MAX_SPOTLIGHTS']) {
-      this.MAX_SPOTLIGHTS = parseInt(urlQ['MAX_SPOTLIGHTS']);
-    }
-    if(options.MAX_SPOTLIGHTS) {
-      this.MAX_SPOTLIGHTS = options.MAX_SPOTLIGHTS;
-    }
-    console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
-    if(urlQ['MAX_BONES']) {
-      this.MAX_BONES = parseInt(urlQ['MAX_BONES']);
-    }
-    if(options.MAX_BONES) {
-      this.MAX_BONES = options.MAX_BONES;
-    }
-    console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
-
+    if(urlQ['MAX_SPOTLIGHTS']) {this.MAX_SPOTLIGHTS = parseInt(urlQ['MAX_SPOTLIGHTS']);}
+    if(options.MAX_SPOTLIGHTS) {this.MAX_SPOTLIGHTS = options.MAX_SPOTLIGHTS;}
+    // console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
+    if(urlQ['MAX_BONES']) {this.MAX_BONES = parseInt(urlQ['MAX_BONES']);}
+    if(options.MAX_BONES) {this.MAX_BONES = options.MAX_BONES;}
+    // console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
     if(urlQ['GPUCullingRad']) {this.GPUCullingRad = parseInt(urlQ['GPUCullingRad']);}
     if(options.GPUCullingRad) {this.GPUCullingRad = options.GPUCullingRad;}
-    console.log(`%cGPUCullingRad : ${this.GPUCullingRad}`, LOG_FUNNY_ARCADE);
-
+    // console.log(`%cGPUCullingRad : ${this.GPUCullingRad}`, LOG_FUNNY_ARCADE);
     if(urlQ['TOUCH_SENS']) {this.TOUCH_SENS = parseInt(urlQ['TOUCH_SENS']);}
     if(options.TOUCH_SENS) {this.TOUCH_SENS = options.TOUCH_SENS;}
-    console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
-
+    // console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
     if(urlQ['MOUSE_SENS']) {this.MOUSE_SENS = parseInt(urlQ['MOUSE_SENS']);}
     if(options.MOUSE_SENS) {this.MOUSE_SENS = options.MOUSE_SENS;}
-    console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
-
-    if(urlQ['CAM_SPEED']) {
-      this.CAM_SPEED = parseInt(urlQ['CAM_SPEED']);
-    }
-    if(options.CAM_SPEED) {
-      this.CAM_SPEED = options.CAM_SPEED;
-    }
-    console.log(`%cCAM_SPEED : ${this.CAM_SPEED}`, LOG_FUNNY_ARCADE);
-
+    // console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
+    if(urlQ['CAM_SPEED']) {this.CAM_SPEED = parseInt(urlQ['CAM_SPEED']);}
+    if(options.CAM_SPEED) {this.CAM_SPEED = options.CAM_SPEED;}
+    // console.log(`%cCAM_SPEED : ${this.CAM_SPEED}`, LOG_FUNNY_ARCADE);
     if(urlQ['LOAD_AFTER_CLICK_MOBILE']) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ['LOAD_AFTER_CLICK_MOBILE'];
     }
     if(options.LOAD_AFTER_CLICK_MOBILE) {
       this.LOAD_AFTER_CLICK_MOBILE = options.LOAD_AFTER_CLICK_MOBILE;
     }
-
     if(urlQ['fs']) {
       this.FORCE_FULL_SCREEN = Boolean(urlQ['fs']);
       console.log(`%cForce fullScreen : ${this.FORCE_FULL_SCREEN}`, LOG_FUNNY_ARCADE);
@@ -140,7 +122,7 @@ export const MEConfig = {
     }
     if(urlQ['PHYSICS_GROUND_Y'] != null) {
       this.PHYSICS_GROUND_Y = parseFloat(urlQ['PHYSICS_GROUND_Y']);
-      console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
+      // console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
     }
   },
 
