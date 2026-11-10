@@ -146,11 +146,11 @@ export var volumetrixTexProj = function() {
         qualityScale: 0.35,
         steps: 24,
         coverage: 0.58,
-        cloudBase: 44,
+        cloudBase: 2,
         cloudTop: 28,
         noiseScale: 0.035,
         windSpeed: 0.8,
-        scatterStrength: 1.2,
+        scatterStrength: 0.2,
       })
 
       // app.activateVolumetricClouds2({coverage: 0.55, cloudBase: 120, cloudThickness: 60})

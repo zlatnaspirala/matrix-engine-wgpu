@@ -66,7 +66,7 @@ const switchDemo = (id) => {
   }
 };
 
-const hideMenu = () => {document.getElementById('examples').style.left = "-150px"}
+const hideMenu = () => {document.getElementById('examples').style.left = "-170px"}
 
 byId('loadObjFile').addEventListener("click", () => switchDemo('1'));
 byId('physicsPlayground').addEventListener("click", () => switchDemo('2'));
@@ -120,12 +120,8 @@ byId('loadPoseBeast').addEventListener("click", () => switchDemo('48'));
 byId('loadPoseToGLB').addEventListener("click", () => switchDemo('49'));
 byId('loadSlot').addEventListener("click", () => switchDemo('50'));
 byId('volumetrixTexProj').addEventListener("click", () => switchDemo('51'));
-
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
-// byId('moba').addEventListener("click", () => window.open('https://goldenspiral.itch.io/forest-of-hollow-blood', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
-
-window.loadObjFile = loadObjFile;
 
 if(urlQuery['demo'] === '1') {
   loadObjFile();

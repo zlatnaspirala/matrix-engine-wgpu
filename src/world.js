@@ -39,6 +39,7 @@ import {GPUIndirectDraws} from "./engine/overrides/GPUCulling.js";
 import {AdvancedVolumetricPass} from "./engine/postprocessing/volumetric-advanced.js";
 import {CloudsVolumetric} from "./engine/postprocessing/clouds-volumetric.js";
 import {CloudsVolumetric2} from "./engine/postprocessing/cloudes-volumetric-2.js";
+import {FXAAPass} from "./engine/postprocessing/fxaa.js";
 
 /**
  *
@@ -719,6 +720,8 @@ export default class MatrixEngineWGPU {
     this.volumetricPass = {enabled: false};
     this.volumetricPass2 = {enabled: false};
 
+    this.fxaaPass = {enabled: false};
+
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: 'rgba16float',
@@ -1235,7 +1238,10 @@ export default class MatrixEngineWGPU {
         {binding: 1, resource: this.presentSampler},
         {binding: 2, resource: this.dummySSRTexture.createView()},
       ]
-    })
+    });
+
+    this._dummySSRView = this.dummySSRTexture.createView();
+    this._bloomOutputView = this.bloomOutputTex.createView();
   }
 
   async run(callback) {
@@ -1466,13 +1472,26 @@ export default class MatrixEngineWGPU {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+      // if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+      if(this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
       this.finalPS.colorAttachments[0].view = this._canvasView;
-      pass = commandEncoder.beginRenderPass(this.finalPS);
-      pass.setPipeline(this.presentPipeline);
-      pass.setBindGroup(0, this._activeBindGroup);
-      pass.draw(6);
-      pass.end();
+      if(this.fxaaPass.enabled === true) {
+        const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+        const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+        this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+      } else {
+        pass = commandEncoder.beginRenderPass(this.finalPS);
+        pass.setPipeline(this.presentPipeline);
+        pass.setBindGroup(0, this._activeBindGroup);
+        pass.draw(6);
+        pass.end();
+      }
+      // this.finalPS.colorAttachments[0].view = this._canvasView;
+      // pass = commandEncoder.beginRenderPass(this.finalPS);
+      // pass.setPipeline(this.presentPipeline);
+      // pass.setBindGroup(0, this._activeBindGroup);
+      // pass.draw(6);
+      // pass.end();
 
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
@@ -1798,4 +1817,11 @@ export default class MatrixEngineWGPU {
     this.volumetricPass.enabled = true;
     this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
   };
+
+  activateFXAA = () => {
+    if(this.fxaaPass.enabled != true) {
+      this.fxaaPass = new FXAAPass(this.device, isMobile() == true ? 'rgba8unorm' : 'bgra8unorm');
+      this.fxaaPass.enabled = true;
+    }
+  }
 }

@@ -54179,46 +54179,53 @@ function cloudsMarchFragmentWGSL() {
     let depthSize = vec2<f32>(textureDimensions(depthTex));
     let depthPx = vec2<i32>(clamp(uv * depthSize, vec2<f32>(0.0), depthSize - vec2<f32>(1.0)));
     let sceneDepth = textureLoad(depthTex, depthPx, 0);
+
+    // Match CloudsVolumetric2: derive the ray from the near and far clip
+    // planes, and only use scene depth as a limit when opaque geometry exists.
     let nearPos = worldFromDepth(uv, 0.0);
-    let scenePos = worldFromDepth(uv, sceneDepth);
-    let rayVector = scenePos - nearPos;
-    let rayLength = length(rayVector);
-    let rayDir = normalize(rayVector);
-    let hit = intersectCloudLayer(nearPos, rayDir, rayLength);
+    let farPos = worldFromDepth(uv, 1.0);
+    let rayDir = normalize(farPos - nearPos);
+
+    var sceneDistance = 1e9;
+    if(sceneDepth < 1.0) {
+      sceneDistance = length(worldFromDepth(uv, sceneDepth) - nearPos);
+    }
+
+    let hit = intersectCloudLayer(nearPos, rayDir, sceneDistance);
     if(hit.y <= 0.001) { return vec4<f32>(0.0); }
 
 
+    // Volumetric front-to-back integration using the verified 3D density field.
     let stepLength = hit.y / max(params.motion.w, 8.0);
     let jitter = fract(sin(dot(pixel.xy, vec2<f32>(12.9898, 78.233))) * 43758.5453);
     var transmittance = 1.0;
     var radiance = vec3<f32>(0.0);
+
     for(var i = 0; i < i32(params.motion.w); i++) {
       let t = hit.x + (f32(i) + jitter) * stepLength;
       let p = nearPos + rayDir * t;
       let density = densityAt(p);
-      radiance += vec3<f32>(density * 0.08);
-      radiance += vec3<f32>(clamp((p.y - params.shape.z) /(params.shape.w - params.shape.z), 0.0, 1.0));
-      
+
       if(density > 0.001) {
-        let opticalDepth = density * stepLength * 0.035;
+        // The previous 0.035 extinction was too weak for this world-space step length.
+        let opticalDepth = density * stepLength * 0.35;
         let attenuation = exp(-opticalDepth);
         let sunDir = normalize(params.lighting.xyz);
-        var lightTrans = 1.0;
         let lightP = p + sunDir * 4.5;
-        lightTrans = exp(-shadowDensityAt(lightP) * 0.22);
+        let lightTrans = exp(-shadowDensityAt(lightP) * 0.22);
         let phase = 0.35 + 0.65 * pow(max(dot(rayDir, sunDir), 0.0), 4.0);
         let powder = 1.0 - exp(-opticalDepth * 2.0);
         let light = sunColor.rgb * params.lighting.w * lightTrans * phase;
-        radiance += transmittance * (1.0 - attenuation) * (light + vec3<f32>(0.34, 0.39, 0.48) * powder);
+
+        radiance += transmittance * (1.0 - attenuation) *
+          (light + vec3<f32>(0.34, 0.39, 0.48) * powder);
         transmittance *= attenuation;
       }
+
       if(transmittance < 0.025) { break; }
     }
-    // return vec4<f32>(radiance, 1.0 - transmittance);
-    // return vec4<f32>(1.0, 0.0, 1.0, 1.0);
-    // return vec4<f32>(0.0, 1.0, 0.0, 1.0); // GREEN: intersection
-    // return vec4<f32>(1.0, 0.0, 0.0, 1.0);
-    return vec4<f32>(radiance, 1.0);
+
+    return vec4<f32>(radiance, 1.0 - transmittance);
   }
   `;
 }
@@ -54952,6 +54959,189 @@ fn main(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   );
 }
 
+// src/engine/postprocessing/fxaa.js
+var FXAAPass = class {
+  constructor(device2, targetFormat) {
+    this.enabled = false;
+    this.device = device2;
+    this.params = {
+      edgeMin: 0.0312,
+      // skip very dark edges
+      edgeRel: 0.125,
+      // relative contrast threshold (lower = more AA, softer)
+      spanMax: 8,
+      // max search distance in texels
+      reduceMul: 1 / 8,
+      reduceMin: 1 / 128
+    };
+    this._scratch = new Float32Array(8);
+    this.paramBuffer = device2.createBuffer({
+      label: "FXAA params",
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    this._updateParams();
+    this.sampler = device2.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.pipeline = device2.createRenderPipeline({
+      label: "FXAA pipeline",
+      layout: "auto",
+      vertex: {
+        module: device2.createShaderModule({ code: fullscreenQuadWGSL() }),
+        entryPoint: "vert"
+      },
+      fragment: {
+        module: device2.createShaderModule({ code: fxaaWGSL() }),
+        entryPoint: "main",
+        targets: [{ format: targetFormat }]
+      },
+      primitive: { topology: "triangle-list" }
+    });
+    this._passDesc = {
+      label: "FXAA pass",
+      colorAttachments: [{ view: null, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }]
+    };
+    this._bg = null;
+    this._lastHdr = null;
+    this._lastSSR = null;
+  }
+  _updateParams() {
+    const p2 = this.params, s2 = this._scratch;
+    s2[0] = p2.edgeMin;
+    s2[1] = p2.edgeRel;
+    s2[2] = p2.spanMax;
+    s2[3] = p2.reduceMul;
+    s2[4] = p2.reduceMin;
+    this.device.queue.writeBuffer(this.paramBuffer, 0, s2);
+  }
+  setEdgeThresholdMin = (v2) => {
+    this.params.edgeMin = v2;
+    this._updateParams();
+  };
+  setEdgeThreshold = (v2) => {
+    this.params.edgeRel = v2;
+    this._updateParams();
+  };
+  setSpanMax = (v2) => {
+    this.params.spanMax = v2;
+    this._updateParams();
+  };
+  setReduceMul = (v2) => {
+    this.params.reduceMul = v2;
+    this._updateParams();
+  };
+  setReduceMin = (v2) => {
+    this.params.reduceMin = v2;
+    this._updateParams();
+  };
+  /**
+   * @param {GPUCommandEncoder} encoder
+   * @param {GPUTextureView} hdrView    bloomOutput view if bloom enabled, else sceneTextureView
+   * @param {GPUTextureView} ssrView    ssrOutputView or the dummy 1x1 view
+   * @param {GPUTextureView} targetView canvas view
+   */
+  render(encoder, hdrView, ssrView, targetView) {
+    if (this._lastHdr !== hdrView || this._lastSSR !== ssrView || !this._bg) {
+      this._bg = this.device.createBindGroup({
+        label: "FXAA bindgroup",
+        layout: this.pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: hdrView },
+          { binding: 1, resource: this.sampler },
+          { binding: 2, resource: ssrView },
+          { binding: 3, resource: { buffer: this.paramBuffer } }
+        ]
+      });
+      this._lastHdr = hdrView;
+      this._lastSSR = ssrView;
+    }
+    this._passDesc.colorAttachments[0].view = targetView;
+    const pass = encoder.beginRenderPass(this._passDesc);
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this._bg);
+    pass.draw(6);
+    pass.end();
+  }
+};
+function fxaaWGSL() {
+  return (
+    /* wgsl */
+    `
+  struct FXAAParams {
+    edgeMin: f32,
+    edgeRel: f32,
+    spanMax: f32,
+    reduceMul: f32,
+    reduceMin: f32,
+    _a: f32, _b: f32, _c: f32,
+  };
+
+  @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+  @group(0) @binding(1) var samp   : sampler;
+  @group(0) @binding(2) var ssrTex : texture_2d<f32>;
+  @group(0) @binding(3) var<uniform> fx : FXAAParams;
+
+  // Same composite + tonemap as the present pass. textureSampleLevel is used
+  // everywhere because FXAA branches non-uniformly (textureSample would be invalid).
+  fn fetch(uv: vec2<f32>) -> vec3<f32> {
+    let hdr = textureSampleLevel(hdrTex, samp, uv, 0.0).rgb;
+    let ssr = textureSampleLevel(ssrTex, samp, uv, 0.0);
+    let c = mix(hdr, ssr.rgb, ssr.a);
+    return c / (c + vec3<f32>(1.0));
+  }
+
+  fn luma(c: vec3<f32>) -> f32 {
+    return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+  }
+
+  @fragment
+  fn main(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> {
+    let texel = 1.0 / vec2<f32>(textureDimensions(hdrTex));
+    let uv = p.xy * texel;
+
+    let rgbM  = fetch(uv);
+    let rgbNW = fetch(uv + vec2<f32>(-1.0, -1.0) * texel);
+    let rgbNE = fetch(uv + vec2<f32>( 1.0, -1.0) * texel);
+    let rgbSW = fetch(uv + vec2<f32>(-1.0,  1.0) * texel);
+    let rgbSE = fetch(uv + vec2<f32>( 1.0,  1.0) * texel);
+
+    let lM  = luma(rgbM);
+    let lNW = luma(rgbNW);
+    let lNE = luma(rgbNE);
+    let lSW = luma(rgbSW);
+    let lSE = luma(rgbSE);
+
+    let lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
+    let lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+
+    // Not an edge: leave pixel untouched
+    if (lMax - lMin < max(fx.edgeMin, lMax * fx.edgeRel)) {
+      return vec4<f32>(rgbM, 1.0);
+    }
+
+    var dir = vec2<f32>(
+      -((lNW + lNE) - (lSW + lSE)),
+       ((lNW + lSW) - (lNE + lSE))
+    );
+    let dirReduce = max((lNW + lNE + lSW + lSE) * 0.25 * fx.reduceMul, fx.reduceMin);
+    let rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+    dir = clamp(dir * rcpDirMin, vec2<f32>(-fx.spanMax), vec2<f32>(fx.spanMax)) * texel;
+
+    let rgbA = 0.5 * (
+      fetch(uv + dir * (1.0 / 3.0 - 0.5)) +
+      fetch(uv + dir * (2.0 / 3.0 - 0.5))
+    );
+    let rgbB = rgbA * 0.5 + 0.25 * (
+      fetch(uv + dir * -0.5) +
+      fetch(uv + dir *  0.5)
+    );
+    let lB = luma(rgbB);
+    let outRgb = select(rgbB, rgbA, lB < lMin || lB > lMax);
+    return vec4<f32>(outRgb, 1.0);
+  }
+  `
+  );
+}
+
 // src/world.js
 var APP_READY = false;
 if (MEConfig.CACHE !== true && location.hostname != "localhost") {
@@ -55579,6 +55769,7 @@ var MatrixEngineWGPU = class {
     };
     this.volumetricPass = { enabled: false };
     this.volumetricPass2 = { enabled: false };
+    this.fxaaPass = { enabled: false };
     this.bloomOutputTex = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "rgba16float",
@@ -56106,6 +56297,8 @@ var MatrixEngineWGPU = class {
         { binding: 2, resource: this.dummySSRTexture.createView() }
       ]
     });
+    this._dummySSRView = this.dummySSRTexture.createView();
+    this._bloomOutputView = this.bloomOutputTex.createView();
   }
   async run(callback) {
     this._lastPipeline = null;
@@ -56319,13 +56512,19 @@ var MatrixEngineWGPU = class {
         this._lastCanvasTex = canvasTexture;
         this._canvasView = canvasTexture.createView();
       }
-      if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this.bloomOutputTex.createView());
+      if (this.bloomPass.enabled === true) this.bloomPass.render(commandEncoder, this._bloomOutputView);
       this.finalPS.colorAttachments[0].view = this._canvasView;
-      pass = commandEncoder.beginRenderPass(this.finalPS);
-      pass.setPipeline(this.presentPipeline);
-      pass.setBindGroup(0, this._activeBindGroup);
-      pass.draw(6);
-      pass.end();
+      if (this.fxaaPass.enabled === true) {
+        const hdrView = this.bloomPass.enabled ? this._bloomOutputView : this.sceneTextureView;
+        const ssrView = this.ssrPass.enabled ? this.ssrPass.ssrOutputView : this._dummySSRView;
+        this.fxaaPass.render(commandEncoder, hdrView, ssrView, this._canvasView);
+      } else {
+        pass = commandEncoder.beginRenderPass(this.finalPS);
+        pass.setPipeline(this.presentPipeline);
+        pass.setBindGroup(0, this._activeBindGroup);
+        pass.draw(6);
+        pass.end();
+      }
       this.submitQueue[0] = commandEncoder.finish();
       this.device.queue.submit(this.submitQueue);
       this.submitQueue[0] = null;
@@ -56719,6 +56918,12 @@ var MatrixEngineWGPU = class {
     this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p2, this.sceneTextureView);
     this.volumetricPass.enabled = true;
     this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
+  };
+  activateFXAA = () => {
+    if (this.fxaaPass.enabled != true) {
+      this.fxaaPass = new FXAAPass(this.device, isMobile() == true ? "rgba8unorm" : "bgra8unorm");
+      this.fxaaPass.enabled = true;
+    }
   };
 };
 
@@ -82545,11 +82750,11 @@ var volumetrixTexProj = function() {
         qualityScale: 0.35,
         steps: 24,
         coverage: 0.58,
-        cloudBase: 44,
+        cloudBase: 2,
         cloudTop: 28,
         noiseScale: 0.035,
         windSpeed: 0.8,
-        scatterStrength: 1.2
+        scatterStrength: 0.2
       });
       app2.monster.playAnimationByIndex(3);
       app2.monster.position.onPositionReach = () => {
@@ -82622,7 +82827,7 @@ var switchDemo = (id2) => {
   }
 };
 var hideMenu = () => {
-  document.getElementById("examples").style.left = "-150px";
+  document.getElementById("examples").style.left = "-170px";
 };
 byId2("loadObjFile").addEventListener("click", () => switchDemo("1"));
 byId2("physicsPlayground").addEventListener("click", () => switchDemo("2"));
@@ -82682,7 +82887,6 @@ byId2("loadSlot").addEventListener("click", () => switchDemo("50"));
 byId2("volumetrixTexProj").addEventListener("click", () => switchDemo("51"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
-window.loadObjFile = loadObjFile;
 if (urlQuery["demo"] === "1") {
   loadObjFile();
 } else if (urlQuery["demo"] === "2") {
