@@ -146,17 +146,14 @@ export var volumetrixTexProj = function() {
       //   windSpeed: 0.8,
       //   scatterStrength: 1.2,
       // })
-
-      app.activateVolumetricClouds2({
-        coverage: 0.55, cloudBase: 120, cloudThickness: 60
-      })
-
       // app.volumetricPass.setDensity(34);
-
       // const view = await loadTextureView(app.device, 'res/textures/shooter/hang3d.png');
       // app.volumetricPass.setProjectionTexture(view, app.lightContainer[0].viewProjMatrix);
       // app.volumetricPass.setTextureProjectionIntensity(111.0); // 0..2
       // app.volumetricPass.disableTextureProjection();
+
+      app.activateVolumetricClouds2({coverage: 0.55, cloudBase: 120, cloudThickness: 60})
+      app.volumetricPass.setCloudLayer(-21, 100);
 
       app.monster.playAnimationByIndex(3);
 

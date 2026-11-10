@@ -82521,11 +82521,8 @@ var volumetrixTexProj = function() {
       app2.cameras.WASD.setYaw(0);
       app2.cameras.WASD.setPitch(-0.55);
       app2.cameras.WASD.setPosition(CENTER.x, 22, CENTER.z + 26);
-      app2.activateVolumetricClouds2({
-        coverage: 0.55,
-        cloudBase: 120,
-        cloudThickness: 60
-      });
+      app2.activateVolumetricClouds2({ coverage: 0.55, cloudBase: 120, cloudThickness: 60 });
+      app2.volumetricPass.setCloudLayer(-21, 100);
       app2.monster.playAnimationByIndex(3);
       app2.monster.position.onPositionReach = () => {
         app2.monster.playAnimationByIndex(3);
