@@ -55968,6 +55968,30 @@ var MatrixEngineWGPU = class {
     this.volumetricPass.enabled = true;
     this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
   };
+  activateVolumetricClouds = (arg) => {
+    if (this.bloomPass.enabled !== true) {
+      console.warn("%cTheBeast: You must enable bloom before volumetric clouds.");
+      return;
+    }
+    const p2 = {
+      qualityScale: 0.35,
+      steps: 24,
+      coverage: 0.58,
+      cloudBase: 24,
+      cloudTop: 58,
+      noiseScale: 0.035,
+      windSpeed: 0.8,
+      scatterStrength: 1.2,
+      // User overrides
+      ...arg || {}
+    };
+    if (this.volumetricPass?.enabled === true) {
+      return;
+    }
+    this.volumetricPass = new CloudsVolumetric2(this.canvas.width, this.canvas.height, this.device, p2);
+    this.volumetricPass.enabled = true;
+    this.bloomPass._invalidateSceneBindGroups(this.volumetricPass.getOutputView());
+  };
 };
 
 // examples/camera-texture.js
