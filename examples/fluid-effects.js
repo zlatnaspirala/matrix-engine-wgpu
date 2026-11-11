@@ -258,6 +258,74 @@ export var loadFluidEffectExample = function() {
         }
         MYCUBE.effects.fluidSpiralRight.addEmitter(emmiterSpiralRight)
 
+        // 5x5 fluid display grid. The original three effects above stay untouched.
+        // Reuse their positions and fill the remaining 22 cells around them.
+        const fluidGridX = [-16, -8, 0, 8, 16];
+        const fluidGridY = [-7, -3, 1, 5, 9];
+        const existingFluidCells = new Set(['-8,1', '0,1', '8,1']);
+        let fluidGridIndex = 0;
+
+        for (const y of fluidGridY) {
+          for (const x of fluidGridX) {
+            if (existingFluidCells.has(`${x},${y}`)) continue;
+
+            const fluid = new FluidEffect(app.device, {
+              simRes: 64,
+              dyeRes: 256,
+              splatRadius: 0.16,
+              localOffset: [x, y, 0],
+              localRotation: [0, 0, 0],
+              activeRotate: [0, 0, 0],
+              scale: 1.7
+            });
+
+            MYCUBE.effects[`fluidGrid${fluidGridIndex}`] = fluid;
+
+            // Alternate motion presets to give each cell a distinct look.
+            const preset = fluidGridIndex % 4;
+            if (preset === 0) {
+              fluid.addSpiral({
+                x: 0.5, y: 0.5,
+                rStart: 0.02, rEnd: 0.34,
+                speed: 2.2, duration: 4,
+                strength: 260, radial: 0.2,
+                arms: 2, color: [1.4, 0.25, 0.8]
+              });
+            } else if (preset === 1) {
+              fluid.addFire({
+                x: 0.5, y: 0.08, height: 0.62,
+                duration: 0.9, pause: 0.35,
+                strength: 90, spread: 0.12,
+                color: [0.15, 0.8, 1.5]
+              });
+            } else if (preset === 2) {
+              fluid.addEmitter({
+                color: [0.3, 1.2, 0.35],
+                interval: 0.025,
+                orbit: {cx: 0.5, cy: 0.5, r: 0.24, speed: 1.4, strength: 230}
+              });
+            } else {
+              fluid.addEmitter({
+                color: [1.5, 0.65, 0.12],
+                interval: 0.02,
+                jitter: 0.35,
+                sweep: {
+                  from: [0.15, 0.12],
+                  to: [0.85, 0.82],
+                  duration: 1.8,
+                  pause: 0.5,
+                  strength: 110,
+                  spread: 0.18
+                }
+              });
+            }
+
+            fluidGridIndex++;
+          }
+        }
+
+        console.log(`[fluid-effects] 5x5 grid ready: ${fluidGridIndex + 3} fluid planes (3 original + ${fluidGridIndex} new)`);
+
         // // Orbiting emitter that swirls on its own, with random colors
         // MYCUBE.effects.fluid.addEmitter({
         //   orbit: {cx: 0.5, cy: 0.5, r: 0.25, speed: 1, strength: 40},
