@@ -83459,7 +83459,7 @@ var volumetrixTexProj = function() {
 
 // examples/fluid-effects.js
 var loadFluidEffectExample = function() {
-  let loadObjFile2 = new MatrixEngineWGPU({
+  let fluidEffectDemo = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
     dontUsePhysics: true,
@@ -83471,7 +83471,7 @@ var loadFluidEffectExample = function() {
     },
     clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
   }, () => {
-    loadObjFile2.addLight();
+    fluidEffectDemo.addLight();
     downloadMeshes(
       { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj" },
       onLoadObj,
@@ -83480,7 +83480,7 @@ var loadFluidEffectExample = function() {
     downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [30, 0.5, 30] });
     addRaycastsAABBListener("canvas1", "click");
     function onGround(m2) {
-      loadObjFile2.addMeshObj({
+      fluidEffectDemo.addMeshObj({
         material: { type: "mirror", share: true },
         envMapParams: {
           baseColorMix: 0.6,
@@ -83501,7 +83501,7 @@ var loadFluidEffectExample = function() {
           usePlanarReflection: false
           // Must be false - WIP
         },
-        position: { x: 0, y: -5, z: -10 },
+        position: { x: 0, y: -18, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
@@ -83515,7 +83515,7 @@ var loadFluidEffectExample = function() {
       });
     }
     async function onLoadObj(m2) {
-      let MYCUBE = loadObjFile2.addMeshObj({
+      let MYCUBE = fluidEffectDemo.addMeshObj({
         material: { type: "standard" },
         position: { x: 0, y: 1, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -83533,16 +83533,10 @@ var loadFluidEffectExample = function() {
         pointerEffect: { enabled: true }
       });
       MYCUBE.setBlend(1e-3);
-      loadObjFile2.lightContainer[0].setIntensity(15);
-      loadObjFile2.activateBloomEffect();
-      loadObjFile2.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
-      loadObjFile2.lightContainer[0].behavior.value_ = -1;
-      loadObjFile2.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      });
-      loadObjFile2.lightContainer[0].setPosition(0, 15, -10);
-      loadObjFile2.lightContainer[0].setTarget(0, 0, -10);
+      fluidEffectDemo.lightContainer[0].setIntensity(15);
+      fluidEffectDemo.activateBloomEffect();
+      fluidEffectDemo.lightContainer[0].setPosition(0, 15, -10);
+      fluidEffectDemo.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         app.MYCUBE = MYCUBE;
         const center = [0, 2, -20];
@@ -83586,7 +83580,6 @@ var loadFluidEffectExample = function() {
             animateSpiralLasers();
           }, 1e3);
         }
-        MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile2.device, "rgba16float", 10, loadObjFile2.cameraBuffer);
         MYCUBE.effects.fluid = new FluidEffect(
           app.device,
           {
@@ -83700,32 +83693,90 @@ var loadFluidEffectExample = function() {
           }
         };
         MYCUBE.effects.fluidSpiralRight.addEmitter(emmiterSpiralRight);
+        const fluidGridX = [-16, -8, 0, 8, 16];
+        const fluidGridY = [-7, -3, 1, 5, 9];
+        const existingFluidCells = /* @__PURE__ */ new Set(["-8,1", "0,1", "8,1"]);
+        let fluidGridIndex = 0;
+        for (const y3 of fluidGridY) {
+          for (const x3 of fluidGridX) {
+            if (existingFluidCells.has(`${x3},${y3}`)) continue;
+            const fluid = new FluidEffect(app.device, {
+              simRes: 64,
+              dyeRes: 256,
+              splatRadius: 0.16,
+              localOffset: [x3, y3, 0],
+              localRotation: [0, 0, 0],
+              activeRotate: [0, 0, 0],
+              scale: 1.7
+            });
+            MYCUBE.effects[`fluidGrid${fluidGridIndex}`] = fluid;
+            const preset = fluidGridIndex % 4;
+            if (preset === 0) {
+              fluid.addSpiral({
+                x: 0.5,
+                y: 0.5,
+                rStart: 0.02,
+                rEnd: 0.34,
+                speed: 2.2,
+                duration: 4,
+                strength: 260,
+                radial: 0.2,
+                arms: 2,
+                color: [1.4, 0.25, 0.8]
+              });
+            } else if (preset === 1) {
+              fluid.addFire({
+                x: 0.5,
+                y: 0.08,
+                height: 0.62,
+                duration: 0.9,
+                pause: 0.35,
+                strength: 90,
+                spread: 0.12,
+                color: [0.15, 0.8, 1.5]
+              });
+            } else if (preset === 2) {
+              fluid.addEmitter({
+                color: [0.3, 1.2, 0.35],
+                interval: 0.025,
+                orbit: { cx: 0.5, cy: 0.5, r: 0.24, speed: 1.4, strength: 230 }
+              });
+            } else {
+              fluid.addEmitter({
+                color: [1.5, 0.65, 0.12],
+                interval: 0.02,
+                jitter: 0.35,
+                sweep: {
+                  from: [0.15, 0.12],
+                  to: [0.85, 0.82],
+                  duration: 1.8,
+                  pause: 0.5,
+                  strength: 110,
+                  spread: 0.18
+                }
+              });
+            }
+            fluidGridIndex++;
+          }
+        }
+        console.log(`[fluid-effects] 5x5 grid ready: ${fluidGridIndex + 3} fluid planes (3 original + ${fluidGridIndex} new)`);
         dispatchEvent(new CustomEvent("update-effects"));
-        MYCUBE.setAmbient(2, 3, 0.5);
         let cam2 = app.getCamera();
-        cam2.setYaw(-0.03);
-        cam2.setPitch(-0.49);
-        cam2.setZ(0);
-        cam2.setY(10);
+        cam2.setYaw(-0);
+        cam2.setPitch(-0.1);
+        cam2.setZ(16);
+        cam2.setY(5);
         app.buildRenderBuckets();
         cam2._dirtyAngle = true;
       }, 700);
     }
-    loadObjFile2.canvas.addEventListener("ray.hit.event", (e2) => {
+    fluidEffectDemo.canvas.addEventListener("ray.hit.event", (e2) => {
       console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
-        e2.detail.hitObject.effects.flameEmitterBlue.recreateVertexDataCrazzy(5);
-        app.MYCUBE.effects.flameEmitterBlue.instanceTargets.forEach((ins) => {
-          ins.color[0] = randomIntFromTo(0, 1);
-          ins.color[1] = randomIntFromTo(0, 1);
-          ins.color[2] = randomIntFromTo(1e3, 2e3);
-        });
-        e2.detail.hitObject.setAmbient(randomIntFromTo(1, 7), randomIntFromTo(1, 2), randomIntFromTo(1, 5));
-        app.bloomPass.setBlurRadius(randomIntFromTo(1, 5));
       }
     });
   });
-  window.app = loadObjFile2;
+  window.app = fluidEffectDemo;
 };
 
 // examples.js
