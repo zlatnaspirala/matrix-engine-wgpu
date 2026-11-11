@@ -83520,7 +83520,7 @@ var loadFluidEffectExample = function() {
         position: { x: 0, y: 1, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [1, 2, 1],
+        scale: [3, 2.5, 2],
         texturesPaths: ["./res/textures/floor1.webp"],
         name: "cube",
         mesh: m2.cube,
@@ -83539,69 +83539,18 @@ var loadFluidEffectExample = function() {
       fluidEffectDemo.lightContainer[0].setTarget(0, 0, -10);
       setTimeout(() => {
         app.MYCUBE = MYCUBE;
-        const center = [0, 2, -20];
-        let time = 0;
-        const totalBeams = 25;
-        const spiralRadius = 8;
-        const heightStep = 0.6;
-        function animateSpiralLasers() {
-          time += 0.03;
-          for (let i2 = 0; i2 < totalBeams; i2++) {
-            setTimeout(() => {
-              const t3 = i2 / totalBeams;
-              const angle2 = time + t3 * Math.PI * 6;
-              const currentRadius = spiralRadius * t3;
-              const fromX = center[0] + Math.cos(angle2) * currentRadius;
-              const fromY = center[1] + i2 * heightStep;
-              const fromZ = center[2] + Math.sin(angle2) * currentRadius;
-              const nextAngle = angle2 + 0.4;
-              const nextRadius = spiralRadius * (t3 + 0.05);
-              const toX = center[0] + Math.cos(nextAngle) * nextRadius;
-              const toY = center[1] + (i2 + 1) * heightStep;
-              const toZ = center[2] + Math.sin(nextAngle) * nextRadius;
-              const hueShift = (time * 50 + i2 * 10) % 360;
-              app.MYCUBE.effects.laser.fireBeam(
-                [fromX, fromY, fromZ],
-                [toX, toY, toZ],
-                0.8,
-                // Short lifespan guarantees lasers disappear and update instantly
-                {
-                  colorA: [Math.floor(Math.abs(Math.sin(time + t3) * 255)), Math.floor(Math.abs(Math.sin(time + t3) * 255)), 100],
-                  colorB: [randomIntFromTo(150, 200), randomIntFromTo(50, 100), randomIntFromTo(50, 100)],
-                  width: 1.6,
-                  intensity: 1.5,
-                  scrollSpeed: 1
-                  // Fast texture scroll along the laser body
-                }
-              );
-            }, 100 * i2);
-          }
-          setTimeout(() => {
-            animateSpiralLasers();
-          }, 1e3);
-        }
-        MYCUBE.effects.fluid = new FluidEffect(
-          app.device,
-          {
-            simRes: 128,
-            dyeRes: 512,
-            splatRadius: 1,
-            localOffset: [0, 1, 0],
-            localRotation: [0, 0, 0],
-            activeRotate: [0, 0, 0],
-            scale: 2
-          }
-        );
+        app.MYCUBE.effects.laser = new LaserProjectile(app.device, "rgba16float", app.cameraBuffer);
+        app.MYCUBE.effects.laser.fireBeam([0, 3, 0], [0, 3, -10]);
         MYCUBE.effects.fluidSpiral = new FluidEffect(
           app.device,
           {
             simRes: 128,
             dyeRes: 512,
             splatRadius: 1,
-            localOffset: [-8, 1, 0],
+            localOffset: [-8, 1, -20],
             localRotation: [0, 0, 0],
             activeRotate: [0, 0, 0],
-            scale: 2
+            scale: 7
           }
         );
         MYCUBE.effects.fluidSpiralRight = new FluidEffect(
@@ -83610,7 +83559,19 @@ var loadFluidEffectExample = function() {
             simRes: 128,
             dyeRes: 512,
             splatRadius: 0.1,
-            localOffset: [8, 1, 0],
+            localOffset: [8, 1, -20],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 7
+          }
+        );
+        MYCUBE.effects.fluid = new FluidEffect(
+          app.device,
+          {
+            simRes: 128,
+            dyeRes: 512,
+            splatRadius: 1,
+            localOffset: [0, 1, 0],
             localRotation: [0, 0, 0],
             activeRotate: [0, 0, 0],
             scale: 2
@@ -83693,7 +83654,7 @@ var loadFluidEffectExample = function() {
           }
         };
         MYCUBE.effects.fluidSpiralRight.addEmitter(emmiterSpiralRight);
-        const fluidGridX = [-16, -8, 0, 8, 16];
+        const fluidGridX = [-12, -6, 0, 6, 12];
         const fluidGridY = [-7, -3, 1, 5, 9];
         const existingFluidCells = /* @__PURE__ */ new Set(["-8,1", "0,1", "8,1"]);
         let fluidGridIndex = 0;
@@ -83771,8 +83732,9 @@ var loadFluidEffectExample = function() {
       }, 700);
     }
     fluidEffectDemo.canvas.addEventListener("ray.hit.event", (e2) => {
-      console.log("ray.hit.event detected");
       if (e2.detail.hitObject.name.startsWith("cube")) {
+        console.log("ray.hit.event detected");
+        app.MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1, 0.1, 0.1]);
       }
     });
   });

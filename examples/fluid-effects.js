@@ -65,7 +65,7 @@ export var loadFluidEffectExample = function() {
         position: {x: 0, y: 1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [1, 2, 1],
+        scale: [3, 2.5, 2],
         texturesPaths: ['./res/textures/floor1.webp'],
         name: 'cube',
         mesh: m.cube,
@@ -95,69 +95,84 @@ export var loadFluidEffectExample = function() {
         app.MYCUBE = MYCUBE;
         // MYCUBE.effects.circle = new GenGeoTexture2(fluidEffectDemo.device, 'rgba16float', 'circle2', './res/textures/star1.png', 1, app.cameraBuffer);
         // MYCUBE.effects.circle  = new GenGeo(fluidEffectDemo.device, 'rgba16float', 'sphere', 2, fluidEffectDemo.cameraBuffer);
-        // app.MYCUBE.effects.laser = new LaserProjectile(app.device, 'rgba16float', app.cameraBuffer);
-        // app.MYCUBE.effects.laser.fireBeam([0,3,0], [0,3, -10])
+        app.MYCUBE.effects.laser = new LaserProjectile(app.device, 'rgba16float', app.cameraBuffer);
+        app.MYCUBE.effects.laser.fireBeam([0,3,0], [0,3, -10])
         // Configuration for the spiral laser animation
-        const center = [0, 2, -20]; // Center point of the spiral structure
-        let time = 0;
-        const totalBeams = 25;       // Number of active segments making up the spiral contour
-        const spiralRadius = 8;      // Maximum spread of the spiral
-        const heightStep = 0.6;      // Vertical distance between spiral loops
+        // const center = [0, 2, -20]; // Center point of the spiral structure
+        // let time = 0;
+        // const totalBeams = 25;       // Number of active segments making up the spiral contour
+        // const spiralRadius = 8;      // Maximum spread of the spiral
+        // const heightStep = 0.6;      // Vertical distance between spiral loops
+        // function animateSpiralLasers() {
+        //   // Advance time/phase to rotate and crawl the spiral
+        //   time += 0.03;
 
-        function animateSpiralLasers() {
-          // Advance time/phase to rotate and crawl the spiral
-          time += 0.03;
+        //   for(let i = 0;i < totalBeams;i++) {
+        //     setTimeout(() => {
+        //       // Calculate fractional position along the spiral (0 to 1)
+        //       const t = i / totalBeams;
 
-          for(let i = 0;i < totalBeams;i++) {
-            setTimeout(() => {
-              // Calculate fractional position along the spiral (0 to 1)
-              const t = i / totalBeams;
+        //       // Angle and radius calculation for a 3D spiral contour (Helix)
+        //       const angle = time + (t * Math.PI * 6); // 3 full twists
+        //       const currentRadius = spiralRadius * t;   // Expands outward from center
 
-              // Angle and radius calculation for a 3D spiral contour (Helix)
-              const angle = time + (t * Math.PI * 6); // 3 full twists
-              const currentRadius = spiralRadius * t;   // Expands outward from center
+        //       // "From" position (inner/bottom start of the segment)
+        //       const fromX = center[0] + Math.cos(angle) * currentRadius;
+        //       const fromY = center[1] + (i * heightStep);
+        //       const fromZ = center[2] + Math.sin(angle) * currentRadius;
 
-              // "From" position (inner/bottom start of the segment)
-              const fromX = center[0] + Math.cos(angle) * currentRadius;
-              const fromY = center[1] + (i * heightStep);
-              const fromZ = center[2] + Math.sin(angle) * currentRadius;
+        //       // "To" position (connects to the next step up/out to form the contour chain)
+        //       const nextAngle = angle + 0.4;
+        //       const nextRadius = spiralRadius * (t + 0.05);
+        //       const toX = center[0] + Math.cos(nextAngle) * nextRadius;
+        //       const toY = center[1] + ((i + 1) * heightStep);
+        //       const toZ = center[2] + Math.sin(nextAngle) * nextRadius;
 
-              // "To" position (connects to the next step up/out to form the contour chain)
-              const nextAngle = angle + 0.4;
-              const nextRadius = spiralRadius * (t + 0.05);
-              const toX = center[0] + Math.cos(nextAngle) * nextRadius;
-              const toY = center[1] + ((i + 1) * heightStep);
-              const toZ = center[2] + Math.sin(nextAngle) * nextRadius;
-
-              // Psychedelic color shifting tied to the time loop
-              const hueShift = (time * 50 + i * 10) % 360;
+        //       // Psychedelic color shifting tied to the time loop
+        //       const hueShift = (time * 50 + i * 10) % 360;
 
 
-              // Fire the beam with a short life (0.08s) so it disappears quickly and slides seamlessly
-              app.MYCUBE.effects.laser.fireBeam(
-                [fromX, fromY, fromZ],
-                [toX, toY, toZ],
-                0.8, // Short lifespan guarantees lasers disappear and update instantly
-                {
-                  colorA: [Math.floor(Math.abs(Math.sin(time + t) * 255)), Math.floor(Math.abs(Math.sin(time + t) * 255)), 100],
-                  colorB: [randomIntFromTo(150, 200), randomIntFromTo(50, 100), randomIntFromTo(50, 100)],
-                  width: 1.6,
-                  intensity: 1.5,
-                  scrollSpeed: 1.0 // Fast texture scroll along the laser body
-                }
-              );
-            }, 100 * i)
+        //       // Fire the beam with a short life (0.08s) so it disappears quickly and slides seamlessly
+        //       app.MYCUBE.effects.laser.fireBeam(
+        //         [fromX, fromY, fromZ],
+        //         [toX, toY, toZ],
+        //         0.8, // Short lifespan guarantees lasers disappear and update instantly
+        //         {
+        //           colorA: [Math.floor(Math.abs(Math.sin(time + t) * 255)), Math.floor(Math.abs(Math.sin(time + t) * 255)), 100],
+        //           colorB: [randomIntFromTo(150, 200), randomIntFromTo(50, 100), randomIntFromTo(50, 100)],
+        //           width: 1.6,
+        //           intensity: 1.5,
+        //           scrollSpeed: 1.0 // Fast texture scroll along the laser body
+        //         }
+        //       );
+        //     }, 100 * i)
+        //   }
+        //   // Loop continuously
+        //   setTimeout(() => {animateSpiralLasers()}, 1000);
+        // }
+        // // animateSpiralLasers()
 
-          }
+        MYCUBE.effects.fluidSpiral = new FluidEffect(app.device,
+          {
+            simRes: 128, dyeRes: 512, splatRadius: 1,
+            localOffset: [-8, 1, -20],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 7
+          });
 
-          // Loop continuously
-          setTimeout(() => {animateSpiralLasers()}, 1000);
-        }
+        MYCUBE.effects.fluidSpiralRight = new FluidEffect(app.device,
+          {
+            simRes: 128, dyeRes: 512, splatRadius: 0.1,
+            localOffset: [8, 1, -20],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 7
+          });
 
-        // Kick off the animation loop
-        // animateSpiralLasers();
-        // MYCUBE.effects.flameEmitterBlue = new FlameEmitter(fluidEffectDemo.device, "rgba16float", 10, fluidEffectDemo.cameraBuffer);
 
+
+          
         MYCUBE.effects.fluid = new FluidEffect(app.device,
           {
             simRes: 128, dyeRes: 512, splatRadius: 1,
@@ -166,26 +181,6 @@ export var loadFluidEffectExample = function() {
             activeRotate: [0, 0, 0],
             scale: 2
           });
-
-        MYCUBE.effects.fluidSpiral = new FluidEffect(app.device,
-          {
-            simRes: 128, dyeRes: 512, splatRadius: 1,
-            localOffset: [-8, 1, 0],
-            localRotation: [0, 0, 0],
-            activeRotate: [0, 0, 0],
-            scale: 2
-          });
-
-        MYCUBE.effects.fluidSpiralRight = new FluidEffect(app.device,
-          {
-            simRes: 128, dyeRes: 512, splatRadius: 0.1,
-            localOffset: [8, 1, 0],
-            localRotation: [0, 0, 0],
-            activeRotate: [0, 0, 0],
-            scale: 2
-          });
-
-
 
         MYCUBE.effects.fluid.attachPointer(app.canvas);
 
@@ -255,7 +250,7 @@ export var loadFluidEffectExample = function() {
 
         // 5x5 fluid display grid. The original three effects above stay untouched.
         // Reuse their positions and fill the remaining 22 cells around them.
-        const fluidGridX = [-16, -8, 0, 8, 16];
+        const fluidGridX = [-12, -6, 0, 6, 12];
         const fluidGridY = [-7, -3, 1, 5, 9];
         const existingFluidCells = new Set(['-8,1', '0,1', '8,1']);
         let fluidGridIndex = 0;
@@ -342,8 +337,10 @@ export var loadFluidEffectExample = function() {
     }
 
     fluidEffectDemo.canvas.addEventListener("ray.hit.event", (e) => {
-      console.log('ray.hit.event detected');
+  
       if(e.detail.hitObject.name.startsWith('cube')) {
+            console.log('ray.hit.event detected');
+        app.MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1.0, 0.1, 0.1]);
         // app.MYCUBE.effects.flameEmitter.instanceTargets.forEach((ins) => {
         //   ins.color[0] = randomIntFromTo(1, 10)
         //   ins.color[1] = randomIntFromTo(1, 10)
