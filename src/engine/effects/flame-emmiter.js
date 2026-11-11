@@ -5,7 +5,7 @@ import {LOG_FUNNY_ARCADE, randomFloatFromTo} from "../utils";
 export class FlameEmitter {
   static _pipelineCache = new WeakMap();
 
-  constructor(device, format, maxParticles = 20, cameraBuffer) {
+  constructor(device, format, maxParticles = 10, cameraBuffer) {
     this.device = device;
     this.format = format;
     this.time = 0;

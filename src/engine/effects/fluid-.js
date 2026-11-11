@@ -251,6 +251,7 @@ export class FluidEffect {
     this._pi = 0; // pressure read index
     this._last = performance.now();
     this._pending = [];
+    this._emitters = [];
     this._mvpScratch = mat4.create();
     this._model = mat4.identity();
     this._localMatrix = mat4.create();
@@ -269,10 +270,161 @@ export class FluidEffect {
     this._createBindGroups();
   }
 
+  // ---------------------------------------------------------------- public API
   /** x,y in 0..1 (y up). dx,dy = movement delta (roughly -1..1). color = [r,g,b] */
   splat(x, y, dx, dy, color) {
     if (this._pending.length >= MAX_SPLATS) return;
     this._pending.push({x, y, dx, dy, color});
+  }
+
+  /**
+   * Continuous code-driven source. Returns the emitter object (pass it to removeEmitter).
+   * cfg: {
+   *   x, y            position 0..1 (y up)
+   *   dx, dy          splat velocity (pointer drag gives roughly 30-300)
+   *   color           [r,g,b] or null for a new random color each splat
+   *   colorScale      multiplier for random colors (default 1)
+   *   interval        seconds between splats (default 0 = every frame)
+   *   jitter          random velocity spread 0..1 (default 0)
+   *   orbit           {cx, cy, r, speed, strength}  moves x,y on a circle and pushes tangentially
+   * }
+   */
+  addEmitter(cfg = {}) {
+    const e = {
+      x: 0.5, y: 0.5, dx: 0, dy: 100, color: null, colorScale: 1,
+      interval: 0, jitter: 0, orbit: null, _t: 0, ...cfg,
+    };
+    this._emitters.push(e);
+    return e;
+  }
+
+  /** Spiral / galaxy preset. Outward by default; rStart > rEnd for inward; arms for multiple arms. */
+  addSpiral(cfg = {}) {
+    return this.addEmitter({
+      color: cfg.color ?? null,
+      colorScale: cfg.colorScale ?? 1,
+      interval: cfg.interval ?? 0.016,
+      spiral: {
+        cx: cfg.x ?? 0.5, cy: cfg.y ?? 0.5,
+        rStart: cfg.rStart ?? 0.02, rEnd: cfg.rEnd ?? 0.35,
+        speed: cfg.speed ?? 3,
+        duration: cfg.duration ?? 3,
+        pause: cfg.pause ?? 0,
+        strength: cfg.strength ?? 400,
+        radial: cfg.radial ?? 0.3,
+        arms: cfg.arms ?? 2,
+        reverse: cfg.reverse ?? false,
+      },
+    });
+  }
+
+  /** Fire preset: repeated gentle bottom-to-top drags with pauses. */
+  addFire(cfg = {}) {
+    const x = cfg.x ?? 0.5, y = cfg.y ?? 0.05, h = cfg.height ?? 0.5;
+    return this.addEmitter({
+      color: cfg.color ?? [1.6, 0.45, 0.08],
+      interval: cfg.interval ?? 0.016,
+      jitter: cfg.jitter ?? 0.25,
+      sweep: {
+        from: [x, y], to: [x, y + h],
+        duration: cfg.duration ?? 0.6,
+        pause: cfg.pause ?? 0.3,
+        strength: cfg.strength ?? 120,
+        spread: cfg.spread ?? 0.03,
+      },
+    });
+  }
+
+  removeEmitter(e) {
+    const i = this._emitters.indexOf(e);
+    if (i !== -1) this._emitters.splice(i, 1);
+  }
+
+  clearEmitters() {this._emitters.length = 0;}
+
+  /** One-shot radial burst from a point. */
+  burst(x = 0.5, y = 0.5, count = 6, strength = 400, color = null) {
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2;
+      const c = color ?? FluidEffect.generateColor().map(v => v * 8);
+      this.splat(x, y, Math.cos(a) * strength, Math.sin(a) * strength, c);
+    }
+  }
+
+  _runEmitters(dt) {
+    for (const e of this._emitters) {
+      e._t += dt;
+      if (e._t < e.interval) continue;
+      e._t = 0;
+      let x = e.x, y = e.y, dx = e.dx, dy = e.dy;
+      if (e.sweep) {
+        // Simulated finger drag along a line, then a pause, repeated forever.
+        const s = e.sweep;
+        const dur = s.duration ?? 0.6;
+        const cycle = dur + (s.pause ?? 0.3);
+        if (e._t0 === undefined) e._t0 = this._time - Math.random() * cycle;
+        const st = this._time - e._t0;
+        const ci = Math.floor(st / cycle);
+        if (ci !== e._ci) {
+          e._ci = ci;
+          e._ox = (Math.random() - 0.5) * 2 * (s.spread ?? 0);
+        }
+        const phase = st - ci * cycle;
+        if (phase > dur) continue;                 // pause
+        const t = phase / dur;
+        const vx = s.to[0] - s.from[0], vy = s.to[1] - s.from[1];
+        const len = Math.hypot(vx, vy) || 1;
+        const str = s.strength ?? 120;
+        x = s.from[0] + vx * t + e._ox;
+        y = s.from[1] + vy * t;
+        dx = (vx / len) * str;
+        dy = (vy / len) * str;
+      } else if (e.spiral) {
+        // Splat point travels along a spiral, pushing fluid tangentially (+ optional radial push).
+        const s = e.spiral;
+        const dur = s.duration ?? 3;
+        const cycle = dur + (s.pause ?? 0);
+        if (e._t0 === undefined) e._t0 = this._time;
+        const st = this._time - e._t0;
+        const ci = Math.floor(st / cycle);
+        const phase = st - ci * cycle;
+        if (phase > dur) continue;                       // pause between spirals
+        const t = phase / dur;
+        const r0 = s.rStart ?? 0.02, r1 = s.rEnd ?? 0.35;
+        const r = r0 + (r1 - r0) * t;                    // rEnd < rStart = inward spiral
+        const dir = s.reverse ? -1 : 1;
+        const base = (s.speed ?? 3) * phase * dir + (s.angle ?? 0);
+        const str = s.strength ?? 400;
+        const rad = s.radial ?? 0.3;                     // 0 = pure swirl, >0 outward push, <0 inward
+        const arms = Math.max(1, s.arms ?? 1);
+        let col = e.color ?? FluidEffect.generateColor().map(v => v * 8 * e.colorScale);
+        for (let k = 0; k < arms; k++) {
+          const a = base + (k / arms) * Math.PI * 2;
+          const ca = Math.cos(a), sa = Math.sin(a);
+          const ax = (s.cx ?? 0.5) + ca * r, ay = (s.cy ?? 0.5) + sa * r;
+          const adx = (-sa * dir + ca * rad) * str;
+          const ady = (ca * dir + sa * rad) * str;
+          if (k === 0) {x = ax; y = ay; dx = adx; dy = ady;}
+          else this.splat(ax, ay, adx, ady, col);
+        }
+        e._colTmp = col;
+      } else if (e.orbit) {
+        const o = e.orbit;
+        const a = this._time * (o.speed ?? 1);
+        const s = o.strength ?? 400;
+        x = o.cx + Math.cos(a) * o.r;
+        y = o.cy + Math.sin(a) * o.r;
+        dx = -Math.sin(a) * s;
+        dy = Math.cos(a) * s;
+      }
+      if (e.jitter > 0) {
+        dx += (Math.random() - 0.5) * 2 * e.jitter * Math.abs(dx || dy);
+        dy += (Math.random() - 0.5) * 2 * e.jitter * Math.abs(dy || dx);
+      }
+      const col = e._colTmp ?? e.color ?? FluidEffect.generateColor().map(v => v * 8 * e.colorScale);
+      e._colTmp = undefined;
+      this.splat(x, y, dx, dy, col);
+    }
   }
 
   randomSplats(n = 5) {
@@ -345,6 +497,7 @@ export class FluidEffect {
     const dt = Math.min((now - this._last) / 1000, 0.016666);
     this._last = now;
     this._time += dt;
+    if (this._emitters.length) this._runEmitters(dt);
     const o = this.opt;
     const q = this.device.queue;
 

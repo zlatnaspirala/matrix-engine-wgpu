@@ -4,13 +4,11 @@ import {addRaycastsAABBListener} from "../src/engine/raycast.js";
 import {isMobile, randomIntFromTo} from "../src/engine/utils.js";
 import {GenGeoTexture2} from "../src/engine/effects/gen-tex2.js";
 import {FlameEmitter} from "../src/engine/effects/flame-emmiter.js";
-import {HPBarEffect} from "../src/engine/effects/energy-bar.js";
 import {FlameEffect} from "../src/engine/effects/flame.js";
 import {GenGeoTexture} from "../src/engine/effects/gen-tex.js";
 import {GenGeo} from "../src/engine/effects/gen.js";
 import {KaleidoscopeEffect} from "../src/engine/effects/KaleidoscopeEffect.js";
 import {LaserProjectile} from "../src/engine/effects/laser.js";
-import {MANABarEffect} from "../src/engine/effects/mana-bar.js";
 import {FluidEffect} from "../src/engine/effects/fluid-.js";
 
 export var loadFluidEffectExample = function() {
@@ -67,38 +65,24 @@ export var loadFluidEffectExample = function() {
     async function onLoadObj(m) {
       // material: {type: 'mirror', share: true }, share: true if not defined it is false.
       let MYCUBE = loadObjFile.addMeshObj({
-        material: {type: 'mirror'},
-        position: {x: 0, y: 4, z: -10},
+        material: {type: 'standard'},
+        position: {x: 0, y: 1, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
-        scale: [3, 5, 3],
-        texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
+        scale: [1, 2, 1],
+        texturesPaths: ['./res/textures/floor1.webp'],
         name: 'cube',
         mesh: m.cube,
-        envMapParams: {
-          baseColorMix: 0.1,                // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1.0],     // Slight cool tint
-          reflectivity: 0.75,               // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1.0], // Soft cyan
-          illuminateStrength: 1.5,          // Gentle rim
-          illuminatePulse: 0.1,             // No pulse (static)
-          fresnelPower: 5,                  // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false,       // Must be false - WIP
-        },
         raycast: {enabled: true, radius: 1},
         physics: {
           enabled: false,
           mass: 0,
           geometry: "Cube"
         },
-        pointerEffect: {
-          enabled: true,
-          // flameEmitter: true,
-          // bloodBurst: true
-          flameEffect: true
-        }
+        pointerEffect: {enabled: true}
       })
+
+      MYCUBE.setBlend(0.001)
 
       loadObjFile.lightContainer[0].setIntensity(15);
       loadObjFile.activateBloomEffect();
@@ -176,26 +160,111 @@ export var loadFluidEffectExample = function() {
 
         // Kick off the animation loop
         // animateSpiralLasers();
-        MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile.device, "rgba16float", 20, loadObjFile.cameraBuffer);
+        MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile.device, "rgba16float", 10, loadObjFile.cameraBuffer);
 
-        // MYCUBE.effects.flameEmitter.rotSpeed = 1;
-        // Nice fire tourch effect, data from test case logs.
-        // MYCUBE.effects.flameEmitter.recreateVertexDataFromData([
-        //   -2.582509022040566, 0.21125441598805741, 0.4249951687253338,
-        //   0.4724163587305734, 2.381811753816671, 3.074841196886901, -2.3797025623904164, -3.4608908819087145]);
 
         MYCUBE.effects.fluid = new FluidEffect(app.device,
           {
-            simRes: 128, dyeRes: 512, splatRadius: 2,
-            localOffset: [0, 3, 0],
+            simRes: 128, dyeRes: 512, splatRadius: 1,
+            localOffset: [0, 1, 0],
             localRotation: [0, 0, 0],
             activeRotate: [0, 0, 0],
-            scale: 3
+            scale: 2
           });
-        MYCUBE.effects.fluid.attachPointer(app.canvas);   // mouse/touch, for fullscreen planes
-        MYCUBE.effects.fluid.randomSplats(5);             // demo
+
+        MYCUBE.effects.fluidSpiral = new FluidEffect(app.device,
+          {
+            simRes: 128, dyeRes: 512, splatRadius: 1,
+            localOffset: [-8, 1, 0],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 2
+          });
+
+        MYCUBE.effects.fluidSpiralRight = new FluidEffect(app.device,
+          {
+            simRes: 128, dyeRes: 512, splatRadius: 0.1,
+            localOffset: [8, 1, 0],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 2
+          });
 
 
+
+        MYCUBE.effects.fluid.attachPointer(app.canvas);
+
+        // MYCUBE.effects.fluid.randomSplats(5);
+        MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1.0, 0.1, 0.1]);
+        // Radial burst
+        // MYCUBE.effects.fluid.burst(0.1, 0.1, 1, 0.01);          // count, strength, optional color
+        // // Continuous source, e.g. a fire jet from the bottom
+        // const jet = MYCUBE.effects.fluid.addEmitter({
+        //   x: 0.5, y: 0.05, dx: 0, dy: 5,
+        //   color: [2.0, 0.6, 0.1],
+        //   jitter: 0.1
+        // });
+        const fire = MYCUBE.effects.fluid.addFire({x: 0.5, y: 0.05, height: 0.5});
+        MYCUBE.effects.fluid.addEmitter({
+          color: [1.6, 0.45, 0.08],
+          interval: 0.016,
+          jitter: 0.25,
+          sweep: {
+            from: [0.5, 0.05],   // bottom
+            to: [0.5, 0.55],   // up
+            duration: 0.6,       // seconds for one drag
+            pause: 1.6,          // rest before the next drag
+            strength: 60,       // low = gentle
+            spread: 0.02         // random x offset per drag
+          }
+        });
+
+
+        MYCUBE.effects.fluidSpiral.addSpiral({x: 0.5, y: 0.5});   // 2-arm galaxy, random colors
+        const emmiterSpiral = {
+          color: null,                // random colors; or [r,g,b]
+          interval: 0.016,
+          spiral: {
+            cx: 0.5, cy: 0.5,         // center
+            rStart: 0.02, rEnd: 0.35, // radius travels from rStart to rEnd (rEnd < rStart = inward)
+            speed: 3,                 // radians per second
+            duration: 3,              // seconds for one spiral
+            pause: 0,                 // rest between spirals
+            strength: 400,
+            radial: 0.3,              // 0 = pure swirl, >0 pushes outward, <0 pulls inward
+            arms: 2,                  // number of spiral arms
+            reverse: false            // flip the rotation direction
+          }
+        }
+        MYCUBE.effects.fluidSpiral.addEmitter(emmiterSpiral);
+
+ 
+        // MYCUBE.effects.fluidSpiralRight.removeEmitter(emmiterSpiral);
+        // MYCUBE.effects.fluidSpiralRight.clearEmitters();
+        const emmiterSpiralRight = {
+          color: null,                // random colors; or [r,g,b]
+          interval: 0.016,
+          spiral: {
+            cx: 0.5, cy: 0.5,         // center
+            rStart: 0.02, rEnd: 0.35, // radius travels from rStart to rEnd (rEnd < rStart = inward)
+            speed: 2,                 // radians per second
+            duration: 3,              // seconds for one spiral
+            pause: 0,                 // rest between spirals
+            strength: 200,
+            radial: 0.3,              // 0 = pure swirl, >0 pushes outward, <0 pulls inward
+            arms: 2,                  // number of spiral arms
+            reverse: false            // flip the rotation direction
+          }
+        }
+        MYCUBE.effects.fluidSpiralRight.addEmitter(emmiterSpiralRight)
+
+        // // Orbiting emitter that swirls on its own, with random colors
+        // MYCUBE.effects.fluid.addEmitter({
+        //   orbit: {cx: 0.5, cy: 0.5, r: 0.25, speed: 1, strength: 40},
+        //   color: null
+        // });
+        // MYCUBE.effects.fluid.removeEmitter(jet);
+        // MYCUBE.effects.fluid.clearEmitters();
         dispatchEvent(new CustomEvent('update-effects'));
 
         MYCUBE.setAmbient(2, 3, 0.5);

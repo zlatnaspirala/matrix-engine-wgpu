@@ -11662,19 +11662,15 @@ var MEConfig = {
   construct: function(options2 = {}) {
     if (urlQ["GRAVITY_Y_AXIS"]) {
       this.GRAVITY_Y_AXIS = parseInt(urlQ["GRAVITY_Y_AXIS"]);
-      console.log(`%cGRAVITY_Y_AXIS : ${this.GRAVITY_Y_AXIS}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["PHYSICS_GROUND_BYX"]) {
       this.PHYSICS_GROUND_BYX = parseInt(urlQ["PHYSICS_GROUND_BYX"]);
-      console.log(`%cPHYSICS_GROUND_BYX : ${this.PHYSICS_GROUND_BYX}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["PHYSICS_GROUND_BYZ"]) {
       this.PHYSICS_GROUND_BYZ = parseInt(urlQ["PHYSICS_GROUND_BYZ"]);
-      console.log(`%cPHYSICS_GROUND_BYZ : ${this.PHYSICS_GROUND_BYZ}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["SHADOW_RES"]) {
       this.SHADOW_RES = parseInt(urlQ["SHADOW_RES"]);
-      console.log(`%cSHADOW_RES : ${this.SHADOW_RES}`, LOG_FUNNY_ARCADE);
     }
     if (urlQ["MAX_SPOTLIGHTS"]) {
       this.MAX_SPOTLIGHTS = parseInt(urlQ["MAX_SPOTLIGHTS"]);
@@ -11682,42 +11678,36 @@ var MEConfig = {
     if (options2.MAX_SPOTLIGHTS) {
       this.MAX_SPOTLIGHTS = options2.MAX_SPOTLIGHTS;
     }
-    console.log(`%cMAX_SPOTLIGHTS : ${this.MAX_SPOTLIGHTS}`, LOG_FUNNY_ARCADE);
     if (urlQ["MAX_BONES"]) {
       this.MAX_BONES = parseInt(urlQ["MAX_BONES"]);
     }
     if (options2.MAX_BONES) {
       this.MAX_BONES = options2.MAX_BONES;
     }
-    console.log(`%cMAX_BONES : ${this.MAX_BONES}`, LOG_FUNNY_ARCADE);
     if (urlQ["GPUCullingRad"]) {
       this.GPUCullingRad = parseInt(urlQ["GPUCullingRad"]);
     }
     if (options2.GPUCullingRad) {
       this.GPUCullingRad = options2.GPUCullingRad;
     }
-    console.log(`%cGPUCullingRad : ${this.GPUCullingRad}`, LOG_FUNNY_ARCADE);
     if (urlQ["TOUCH_SENS"]) {
       this.TOUCH_SENS = parseInt(urlQ["TOUCH_SENS"]);
     }
     if (options2.TOUCH_SENS) {
       this.TOUCH_SENS = options2.TOUCH_SENS;
     }
-    console.log(`%cTOUCH_SENS : ${this.TOUCH_SENS}`, LOG_FUNNY_ARCADE);
     if (urlQ["MOUSE_SENS"]) {
       this.MOUSE_SENS = parseInt(urlQ["MOUSE_SENS"]);
     }
     if (options2.MOUSE_SENS) {
       this.MOUSE_SENS = options2.MOUSE_SENS;
     }
-    console.log(`%cMOUSE_SENS : ${this.MOUSE_SENS}`, LOG_FUNNY_ARCADE);
     if (urlQ["CAM_SPEED"]) {
       this.CAM_SPEED = parseInt(urlQ["CAM_SPEED"]);
     }
     if (options2.CAM_SPEED) {
       this.CAM_SPEED = options2.CAM_SPEED;
     }
-    console.log(`%cCAM_SPEED : ${this.CAM_SPEED}`, LOG_FUNNY_ARCADE);
     if (urlQ["LOAD_AFTER_CLICK_MOBILE"]) {
       this.LOAD_AFTER_CLICK_MOBILE = urlQ["LOAD_AFTER_CLICK_MOBILE"];
     }
@@ -11739,7 +11729,6 @@ var MEConfig = {
     }
     if (urlQ["PHYSICS_GROUND_Y"] != null) {
       this.PHYSICS_GROUND_Y = parseFloat(urlQ["PHYSICS_GROUND_Y"]);
-      console.log(`%cPHYSICS_GROUND_Y : ${this.PHYSICS_GROUND_Y}`, LOG_FUNNY_ARCADE);
     }
   },
   checkOffScreen: function() {
@@ -24553,7 +24542,7 @@ fn fsMain(input : VSOut) -> FragOut {
 // src/engine/effects/flame-emmiter.js
 var FlameEmitter = class _FlameEmitter {
   static _pipelineCache = /* @__PURE__ */ new WeakMap();
-  constructor(device2, format, maxParticles = 20, cameraBuffer) {
+  constructor(device2, format, maxParticles = 10, cameraBuffer) {
     this.device = device2;
     this.format = format;
     this.time = 0;
@@ -41524,13 +41513,13 @@ var FluxCodexVertex = class {
         }
         const fieldWrap = document.createElement("div");
         fieldWrap.className = "node-field";
-        fieldWrap.style.cssText = "display:flex;flex-direction:column;gap:2px;margin:3px 0;min-width:0;";
+        fieldWrap.style.cssText = "display:flex;flex-direction:column;gap:2px;margin:3px 4px;min-width:0;";
         const label = document.createElement("span");
         label.className = "field-label";
         label.textContent = field.key;
-        label.style.cssText = "font-size:10px;line-height:1.2;opacity:0.7;";
+        label.style.cssText = "font-size:9px;line-height:1;opacity:0.9;margin-top:-5px;text-align: left;";
         input.style.width = "100%";
-        label.title = field.key;
+        label.title = field.key + ":";
         fieldWrap.append(label, input);
         fieldsWrap.appendChild(fieldWrap);
       });
@@ -56323,8 +56312,10 @@ var MatrixEngineWGPU = class {
   updateLights() {
     for (let i2 = 0; i2 < this.MAX_SPOTLIGHTS; i2++) {
       const light = this.lightContainer[i2];
-      const vpDirty = light.update();
-      if (vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
+      if (light?.update) {
+        const vpDirty = light.update();
+        if (vpDirty) this.device.queue.writeBuffer(light.lightVPBuffer, 0, light.viewProjMatrix);
+      }
       this._lightsData.set(i2 < this.lightContainer.length ? light.getLightDataBuffer() : this._emptyLight, i2 * 36);
     }
     this.device.queue.writeBuffer(this.spotlightUniformBuffer, 0, this._lightsData.buffer, this._lightsData.byteOffset, this._lightsData.byteLength);
@@ -57989,6 +57980,7 @@ var FluidEffect = class _FluidEffect {
     this._pi = 0;
     this._last = performance.now();
     this._pending = [];
+    this._emitters = [];
     this._mvpScratch = mat4Impl.create();
     this._model = mat4Impl.identity();
     this._localMatrix = mat4Impl.create();
@@ -58005,10 +57997,170 @@ var FluidEffect = class _FluidEffect {
     this._createPipelines();
     this._createBindGroups();
   }
+  // ---------------------------------------------------------------- public API
   /** x,y in 0..1 (y up). dx,dy = movement delta (roughly -1..1). color = [r,g,b] */
   splat(x3, y3, dx, dy, color) {
     if (this._pending.length >= MAX_SPLATS) return;
     this._pending.push({ x: x3, y: y3, dx, dy, color });
+  }
+  /**
+   * Continuous code-driven source. Returns the emitter object (pass it to removeEmitter).
+   * cfg: {
+   *   x, y            position 0..1 (y up)
+   *   dx, dy          splat velocity (pointer drag gives roughly 30-300)
+   *   color           [r,g,b] or null for a new random color each splat
+   *   colorScale      multiplier for random colors (default 1)
+   *   interval        seconds between splats (default 0 = every frame)
+   *   jitter          random velocity spread 0..1 (default 0)
+   *   orbit           {cx, cy, r, speed, strength}  moves x,y on a circle and pushes tangentially
+   * }
+   */
+  addEmitter(cfg = {}) {
+    const e2 = {
+      x: 0.5,
+      y: 0.5,
+      dx: 0,
+      dy: 100,
+      color: null,
+      colorScale: 1,
+      interval: 0,
+      jitter: 0,
+      orbit: null,
+      _t: 0,
+      ...cfg
+    };
+    this._emitters.push(e2);
+    return e2;
+  }
+  /** Spiral / galaxy preset. Outward by default; rStart > rEnd for inward; arms for multiple arms. */
+  addSpiral(cfg = {}) {
+    return this.addEmitter({
+      color: cfg.color ?? null,
+      colorScale: cfg.colorScale ?? 1,
+      interval: cfg.interval ?? 0.016,
+      spiral: {
+        cx: cfg.x ?? 0.5,
+        cy: cfg.y ?? 0.5,
+        rStart: cfg.rStart ?? 0.02,
+        rEnd: cfg.rEnd ?? 0.35,
+        speed: cfg.speed ?? 3,
+        duration: cfg.duration ?? 3,
+        pause: cfg.pause ?? 0,
+        strength: cfg.strength ?? 400,
+        radial: cfg.radial ?? 0.3,
+        arms: cfg.arms ?? 2,
+        reverse: cfg.reverse ?? false
+      }
+    });
+  }
+  /** Fire preset: repeated gentle bottom-to-top drags with pauses. */
+  addFire(cfg = {}) {
+    const x3 = cfg.x ?? 0.5, y3 = cfg.y ?? 0.05, h2 = cfg.height ?? 0.5;
+    return this.addEmitter({
+      color: cfg.color ?? [1.6, 0.45, 0.08],
+      interval: cfg.interval ?? 0.016,
+      jitter: cfg.jitter ?? 0.25,
+      sweep: {
+        from: [x3, y3],
+        to: [x3, y3 + h2],
+        duration: cfg.duration ?? 0.6,
+        pause: cfg.pause ?? 0.3,
+        strength: cfg.strength ?? 120,
+        spread: cfg.spread ?? 0.03
+      }
+    });
+  }
+  removeEmitter(e2) {
+    const i2 = this._emitters.indexOf(e2);
+    if (i2 !== -1) this._emitters.splice(i2, 1);
+  }
+  clearEmitters() {
+    this._emitters.length = 0;
+  }
+  /** One-shot radial burst from a point. */
+  burst(x3 = 0.5, y3 = 0.5, count = 6, strength = 400, color = null) {
+    for (let i2 = 0; i2 < count; i2++) {
+      const a2 = i2 / count * Math.PI * 2;
+      const c2 = color ?? _FluidEffect.generateColor().map((v2) => v2 * 8);
+      this.splat(x3, y3, Math.cos(a2) * strength, Math.sin(a2) * strength, c2);
+    }
+  }
+  _runEmitters(dt2) {
+    for (const e2 of this._emitters) {
+      e2._t += dt2;
+      if (e2._t < e2.interval) continue;
+      e2._t = 0;
+      let x3 = e2.x, y3 = e2.y, dx = e2.dx, dy = e2.dy;
+      if (e2.sweep) {
+        const s2 = e2.sweep;
+        const dur = s2.duration ?? 0.6;
+        const cycle = dur + (s2.pause ?? 0.3);
+        if (e2._t0 === void 0) e2._t0 = this._time - Math.random() * cycle;
+        const st2 = this._time - e2._t0;
+        const ci2 = Math.floor(st2 / cycle);
+        if (ci2 !== e2._ci) {
+          e2._ci = ci2;
+          e2._ox = (Math.random() - 0.5) * 2 * (s2.spread ?? 0);
+        }
+        const phase = st2 - ci2 * cycle;
+        if (phase > dur) continue;
+        const t3 = phase / dur;
+        const vx = s2.to[0] - s2.from[0], vy = s2.to[1] - s2.from[1];
+        const len2 = Math.hypot(vx, vy) || 1;
+        const str2 = s2.strength ?? 120;
+        x3 = s2.from[0] + vx * t3 + e2._ox;
+        y3 = s2.from[1] + vy * t3;
+        dx = vx / len2 * str2;
+        dy = vy / len2 * str2;
+      } else if (e2.spiral) {
+        const s2 = e2.spiral;
+        const dur = s2.duration ?? 3;
+        const cycle = dur + (s2.pause ?? 0);
+        if (e2._t0 === void 0) e2._t0 = this._time;
+        const st2 = this._time - e2._t0;
+        const ci2 = Math.floor(st2 / cycle);
+        const phase = st2 - ci2 * cycle;
+        if (phase > dur) continue;
+        const t3 = phase / dur;
+        const r0 = s2.rStart ?? 0.02, r1 = s2.rEnd ?? 0.35;
+        const r3 = r0 + (r1 - r0) * t3;
+        const dir = s2.reverse ? -1 : 1;
+        const base = (s2.speed ?? 3) * phase * dir + (s2.angle ?? 0);
+        const str2 = s2.strength ?? 400;
+        const rad = s2.radial ?? 0.3;
+        const arms = Math.max(1, s2.arms ?? 1);
+        let col2 = e2.color ?? _FluidEffect.generateColor().map((v2) => v2 * 8 * e2.colorScale);
+        for (let k2 = 0; k2 < arms; k2++) {
+          const a2 = base + k2 / arms * Math.PI * 2;
+          const ca2 = Math.cos(a2), sa2 = Math.sin(a2);
+          const ax = (s2.cx ?? 0.5) + ca2 * r3, ay = (s2.cy ?? 0.5) + sa2 * r3;
+          const adx = (-sa2 * dir + ca2 * rad) * str2;
+          const ady = (ca2 * dir + sa2 * rad) * str2;
+          if (k2 === 0) {
+            x3 = ax;
+            y3 = ay;
+            dx = adx;
+            dy = ady;
+          } else this.splat(ax, ay, adx, ady, col2);
+        }
+        e2._colTmp = col2;
+      } else if (e2.orbit) {
+        const o3 = e2.orbit;
+        const a2 = this._time * (o3.speed ?? 1);
+        const s2 = o3.strength ?? 400;
+        x3 = o3.cx + Math.cos(a2) * o3.r;
+        y3 = o3.cy + Math.sin(a2) * o3.r;
+        dx = -Math.sin(a2) * s2;
+        dy = Math.cos(a2) * s2;
+      }
+      if (e2.jitter > 0) {
+        dx += (Math.random() - 0.5) * 2 * e2.jitter * Math.abs(dx || dy);
+        dy += (Math.random() - 0.5) * 2 * e2.jitter * Math.abs(dy || dx);
+      }
+      const col = e2._colTmp ?? e2.color ?? _FluidEffect.generateColor().map((v2) => v2 * 8 * e2.colorScale);
+      e2._colTmp = void 0;
+      this.splat(x3, y3, dx, dy, col);
+    }
   }
   randomSplats(n3 = 5) {
     for (let i2 = 0; i2 < n3; i2++) {
@@ -58112,6 +58264,7 @@ var FluidEffect = class _FluidEffect {
     const dt2 = Math.min((now - this._last) / 1e3, 0.016666);
     this._last = now;
     this._time += dt2;
+    if (this._emitters.length) this._runEmitters(dt2);
     const o3 = this.opt;
     const q2 = this.device.queue;
     this._f4.set([dt2, o3.velocityDissipation, 0, 0]);
@@ -83363,46 +83516,23 @@ var loadFluidEffectExample = function() {
     }
     async function onLoadObj(m2) {
       let MYCUBE = loadObjFile2.addMeshObj({
-        material: { type: "mirror" },
-        position: { x: 0, y: 4, z: -10 },
+        material: { type: "standard" },
+        position: { x: 0, y: 1, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
-        scale: [3, 5, 3],
-        texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
+        scale: [1, 2, 1],
+        texturesPaths: ["./res/textures/floor1.webp"],
         name: "cube",
         mesh: m2.cube,
-        envMapParams: {
-          baseColorMix: 0.1,
-          // CLEAR SKY
-          mirrorTint: [0.9, 0.95, 1],
-          // Slight cool tint
-          reflectivity: 0.75,
-          // 25% reflection blend
-          illuminateColor: [0.3, 0.7, 1],
-          // Soft cyan
-          illuminateStrength: 1.5,
-          // Gentle rim
-          illuminatePulse: 0.1,
-          // No pulse (static)
-          fresnelPower: 5,
-          // Medium-sharp edge
-          envLodBias: 1.5,
-          usePlanarReflection: false
-          // Must be false - WIP
-        },
         raycast: { enabled: true, radius: 1 },
         physics: {
           enabled: false,
           mass: 0,
           geometry: "Cube"
         },
-        pointerEffect: {
-          enabled: true,
-          // flameEmitter: true,
-          // bloodBurst: true
-          flameEffect: true
-        }
+        pointerEffect: { enabled: true }
       });
+      MYCUBE.setBlend(1e-3);
       loadObjFile2.lightContainer[0].setIntensity(15);
       loadObjFile2.activateBloomEffect();
       loadObjFile2.lightContainer[0].behavior.setOsc0(-2, 2, 0.01);
@@ -83456,21 +83586,120 @@ var loadFluidEffectExample = function() {
             animateSpiralLasers();
           }, 1e3);
         }
-        MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile2.device, "rgba16float", 20, loadObjFile2.cameraBuffer);
+        MYCUBE.effects.flameEmitterBlue = new FlameEmitter(loadObjFile2.device, "rgba16float", 10, loadObjFile2.cameraBuffer);
         MYCUBE.effects.fluid = new FluidEffect(
           app.device,
           {
             simRes: 128,
             dyeRes: 512,
-            splatRadius: 2,
-            localOffset: [0, 3, 0],
+            splatRadius: 1,
+            localOffset: [0, 1, 0],
             localRotation: [0, 0, 0],
             activeRotate: [0, 0, 0],
-            scale: 3
+            scale: 2
+          }
+        );
+        MYCUBE.effects.fluidSpiral = new FluidEffect(
+          app.device,
+          {
+            simRes: 128,
+            dyeRes: 512,
+            splatRadius: 1,
+            localOffset: [-8, 1, 0],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 2
+          }
+        );
+        MYCUBE.effects.fluidSpiralRight = new FluidEffect(
+          app.device,
+          {
+            simRes: 128,
+            dyeRes: 512,
+            splatRadius: 0.1,
+            localOffset: [8, 1, 0],
+            localRotation: [0, 0, 0],
+            activeRotate: [0, 0, 0],
+            scale: 2
           }
         );
         MYCUBE.effects.fluid.attachPointer(app.canvas);
-        MYCUBE.effects.fluid.randomSplats(5);
+        MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1, 0.1, 0.1]);
+        const fire = MYCUBE.effects.fluid.addFire({ x: 0.5, y: 0.05, height: 0.5 });
+        MYCUBE.effects.fluid.addEmitter({
+          color: [1.6, 0.45, 0.08],
+          interval: 0.016,
+          jitter: 0.25,
+          sweep: {
+            from: [0.5, 0.05],
+            // bottom
+            to: [0.5, 0.55],
+            // up
+            duration: 0.6,
+            // seconds for one drag
+            pause: 1.6,
+            // rest before the next drag
+            strength: 60,
+            // low = gentle
+            spread: 0.02
+            // random x offset per drag
+          }
+        });
+        MYCUBE.effects.fluidSpiral.addSpiral({ x: 0.5, y: 0.5 });
+        const emmiterSpiral = {
+          color: null,
+          // random colors; or [r,g,b]
+          interval: 0.016,
+          spiral: {
+            cx: 0.5,
+            cy: 0.5,
+            // center
+            rStart: 0.02,
+            rEnd: 0.35,
+            // radius travels from rStart to rEnd (rEnd < rStart = inward)
+            speed: 3,
+            // radians per second
+            duration: 3,
+            // seconds for one spiral
+            pause: 0,
+            // rest between spirals
+            strength: 400,
+            radial: 0.3,
+            // 0 = pure swirl, >0 pushes outward, <0 pulls inward
+            arms: 2,
+            // number of spiral arms
+            reverse: false
+            // flip the rotation direction
+          }
+        };
+        MYCUBE.effects.fluidSpiral.addEmitter(emmiterSpiral);
+        const emmiterSpiralRight = {
+          color: null,
+          // random colors; or [r,g,b]
+          interval: 0.016,
+          spiral: {
+            cx: 0.5,
+            cy: 0.5,
+            // center
+            rStart: 0.02,
+            rEnd: 0.35,
+            // radius travels from rStart to rEnd (rEnd < rStart = inward)
+            speed: 2,
+            // radians per second
+            duration: 3,
+            // seconds for one spiral
+            pause: 0,
+            // rest between spirals
+            strength: 200,
+            radial: 0.3,
+            // 0 = pure swirl, >0 pushes outward, <0 pulls inward
+            arms: 2,
+            // number of spiral arms
+            reverse: false
+            // flip the rotation direction
+          }
+        };
+        MYCUBE.effects.fluidSpiralRight.addEmitter(emmiterSpiralRight);
         dispatchEvent(new CustomEvent("update-effects"));
         MYCUBE.setAmbient(2, 3, 0.5);
         let cam2 = app.getCamera();

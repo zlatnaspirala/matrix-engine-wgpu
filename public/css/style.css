@@ -1542,7 +1542,7 @@ svg.connections {
 }
 
 .node .body {
-  padding: 8px 10px;
+  padding: 7px 9px;
   font-size: 13px;
   border-radius: 0 0 10px 10px;
 }
@@ -1582,7 +1582,7 @@ svg.connections {
 .pins-right {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .pin {
