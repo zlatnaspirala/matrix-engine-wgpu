@@ -83069,6 +83069,7 @@ var loadSlot = function() {
       if (isMobile()) slotMachine.lightContainer[0].setIntensity(8);
       else slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
+      slotMachine.activateFXAA();
       if (isMobile()) slotMachine.bloomPass.setBlurRadius(2);
       if (isMobile() === false) {
         slotMachine.activateVolumetricEffect({
@@ -83501,7 +83502,7 @@ var loadFluidEffectExample = function() {
           usePlanarReflection: false
           // Must be false - WIP
         },
-        position: { x: 0, y: -18, z: -10 },
+        position: { x: 0, y: -20, z: -10 },
         rotation: { x: 0, y: 0, z: 0 },
         rotationSpeed: { x: 0, y: 0, z: 0 },
         texturesPaths: ["./res/textures/floor1.webp", "./res/textures/env-maps/sky1_lod_mid.webp"],
@@ -83734,7 +83735,7 @@ var loadFluidEffectExample = function() {
     fluidEffectDemo.canvas.addEventListener("ray.hit.event", (e2) => {
       if (e2.detail.hitObject.name.startsWith("cube")) {
         console.log("ray.hit.event detected");
-        app.MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1, 0.1, 0.1]);
+        app.MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1, 10.1, 0.1]);
       }
     });
   });

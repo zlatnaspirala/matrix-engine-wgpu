@@ -191,6 +191,7 @@ export var loadSlot = function() {
       // postprocessing
       if(isMobile()) slotMachine.lightContainer[0].setIntensity(8); else slotMachine.lightContainer[0].setIntensity(15);
       slotMachine.activateBloomEffect();
+      slotMachine.activateFXAA();
       if(isMobile()) slotMachine.bloomPass.setBlurRadius(2);
       if(isMobile() === false) {
         slotMachine.activateVolumetricEffect({

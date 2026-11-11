@@ -44,7 +44,7 @@ export var loadFluidEffectExample = function() {
           envLodBias: 1.5,
           usePlanarReflection: false,       // Must be false - WIP
         },
-        position: {x: 0, y: -18, z: -10},
+        position: {x: 0, y: -20, z: -10},
         rotation: {x: 0, y: 0, z: 0},
         rotationSpeed: {x: 0, y: 0, z: 0},
         texturesPaths: ['./res/textures/floor1.webp', './res/textures/env-maps/sky1_lod_mid.webp'],
@@ -340,7 +340,7 @@ export var loadFluidEffectExample = function() {
   
       if(e.detail.hitObject.name.startsWith('cube')) {
             console.log('ray.hit.event detected');
-        app.MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1.0, 0.1, 0.1]);
+        app.MYCUBE.effects.fluid.splat(0.5, 0.2, 0, 300, [1.0, 10.1, 0.1]);
         // app.MYCUBE.effects.flameEmitter.instanceTargets.forEach((ins) => {
         //   ins.color[0] = randomIntFromTo(1, 10)
         //   ins.color[1] = randomIntFromTo(1, 10)
