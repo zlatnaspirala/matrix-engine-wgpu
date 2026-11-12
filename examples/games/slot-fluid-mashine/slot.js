@@ -43,8 +43,8 @@ const FLUID_SYMBOL_PALETTE = [
 ];
 
 function createSymbolEmitter(fluid, index) {
-  const palette = FLUID_SYMBOL_PALETTE[index % FLUID_SYMBOL_PALETTE.length];
-  const variant = index % 4;
+  const palette = FLUID_SYMBOL_PALETTE[Math.floor(Math.random() * FLUID_SYMBOL_PALETTE.length)];
+  const variant = Math.floor(Math.random() * 4);
   const common = {
     color: palette,
     colorScale: 1,
