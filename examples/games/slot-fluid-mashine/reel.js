@@ -65,20 +65,20 @@ export class SlotReel {
     return ((stop + offset) % this.cfg.length + this.cfg.length) % this.cfg.length;
   }
 
-  playWinAt(stripIndex, {duration = 2500} = {}) {
+  async playWinAt(stripIndex, {duration = 2500} = {}) {
     if(!Number.isInteger(stripIndex) || stripIndex < 0 || stripIndex >= this.cfg.length) {
       console.warn('[slot] Invalid winning fluid symbol index:', stripIndex);
-      return Promise.resolve();
+      return;
     }
 
     const fluid = this.mesh.effects?.[`fluidSymbol${stripIndex}`];
     if(!fluid) {
       console.warn('[slot] Missing fluid symbol:', stripIndex);
-      return Promise.resolve();
+      return;
     }
 
-    // A strong multi-color burst marks the exact physical symbol selected by
-    // the backend. Its own emitter keeps running after the win pulse.
+    // Several spaced bursts create a win pulse without flooding the GPU
+    // splat queue every animation frame.
     const colors = [
       [2.2, 0.35, 0.12],
       [0.2, 2.0, 0.55],
@@ -86,15 +86,11 @@ export class SlotReel {
       [2.0, 0.25, 1.8],
       [2.0, 1.7, 0.2]
     ];
-    const start = performance.now();
-    const pulse = () => {
-      const t = Math.min(1, (performance.now() - start) / duration);
-      const strength = 850 * (1 - t * 0.65);
-      fluid.burst(0.5, 0.5, 10, strength, colors[Math.floor(t * (colors.length - 1))]);
-      if(t < 1) requestAnimationFrame(pulse);
-    };
-    pulse();
-    return animateValue(duration, () => {});
+    const pulses = 4;
+    for(let i = 0; i < pulses; i++) {
+      fluid.burst(0.5, 0.5, 10, 850, colors[i % colors.length]);
+      if(i < pulses - 1) await sleep(duration / pulses);
+    }
   }
 
   angleForStop(s) {return this.angleOffset + this.dir * (s / this.cfg.length) * 360;}
