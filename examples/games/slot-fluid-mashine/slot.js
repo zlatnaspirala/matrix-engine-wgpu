@@ -98,20 +98,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
 
   for(let index = 0;index < count;index++) {
     const angle = (index / count) * Math.PI * 2;
-    // const angle = (index / count) * Math.PI * 2;
-
-    // localOffset: [
-    //   0,
-    //   Math.cos(angle) * radius,
-    //   Math.sin(angle) * radius
-    // ],
-
-    //   localRotation: [
-    //     angle - Math.PI / 2, 0, 0
-    //   ]
-
     const fluid = new FluidEffect(engine.device, {
-      // Intentionally compact: a reel can contain many independent symbols.
       simRes: 32,
       dyeRes: 96,
       pressureIterations: 4,

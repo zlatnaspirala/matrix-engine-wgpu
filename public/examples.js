@@ -83837,7 +83837,6 @@ var SlotReel2 = class {
   get fluidEffects() {
     return this.cfg.strip.map((_2, i2) => this.mesh.effects?.[`fluidSymbol${i2}`]).filter(Boolean);
   }
-  // ---- the one engine-specific part I could not verify ----
   getAngle() {
     return this.mesh.rotation.x;
   }
@@ -83846,7 +83845,6 @@ var SlotReel2 = class {
     this.mesh.rotation.x = deg;
   }
   // degrees, assumed writable
-  // ---------------------------------------------------------
   async layout(delayPerSprite = 0) {
     const N2 = this.cfg.length;
     const effects = this.fluidEffects;
@@ -83854,14 +83852,13 @@ var SlotReel2 = class {
     for (const [i2, effect] of effects.entries()) {
       const angle2 = i2 / N2 * Math.PI * 2;
       effect.localOffset = [
+        0,
         Math.cos(angle2) * 5.6,
-        Math.sin(angle2) * 5.6,
-        0
+        Math.sin(angle2) * 5.6
       ];
-      effect.localRotation = [0, Math.PI / 2, angle2];
+      effect.localRotation = [angle2 - Math.PI / 2, 0, 0];
       if (delayPerSprite) await sleep4(delayPerSprite);
     }
-    animateRotationY(this.mesh.rotation, 90, 1e3);
   }
   stripIndexForRow(stop, row2, topIsPrev = true) {
     const center = Math.floor(this.visibleRows / 2);
@@ -84262,7 +84259,6 @@ async function initializeSymbolReel2(mesh, engine, reelCfg) {
   for (let index = 0; index < count; index++) {
     const angle2 = index / count * Math.PI * 2;
     const fluid = new FluidEffect(engine.device, {
-      // Intentionally compact: a reel can contain many independent symbols.
       simRes: 32,
       dyeRes: 96,
       pressureIterations: 4,

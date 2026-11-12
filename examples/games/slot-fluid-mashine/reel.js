@@ -33,16 +33,13 @@ export class SlotReel {
 
   get fluidEffects() {return this.cfg.strip.map((_, i) => this.mesh.effects?.[`fluidSymbol${i}`]).filter(Boolean);}
 
-  // ---- the one engine-specific part I could not verify ----
   getAngle() {return this.mesh.rotation.x;}       // degrees, assumed readable
   setAngle(deg) {this.mesh.rotation.x = deg;}      // degrees, assumed writable
-  // ---------------------------------------------------------
 
   async layout(delayPerSprite = 0) {
     const N = this.cfg.length;
     const effects = this.fluidEffects;
     if(effects.length !== N) console.warn(`[slot] ${effects.length} fluid effects vs strip length ${N}`);
-
     // Effect transforms are local to the reel mesh. The mesh rotation therefore
     // rotates every symbol fluid plane exactly like the previous sprite ring.
     for(const [i, effect] of effects.entries()) {
@@ -57,8 +54,7 @@ export class SlotReel {
       effect.localRotation = [angle - Math.PI / 2, 0, 0];
       if(delayPerSprite) await sleep(delayPerSprite);
     }
-
-    animateRotationY(this.mesh.rotation, 90, 1000);
+    // animateRotationY(this.mesh.rotation, 90, 1000);
   }
 
   stripIndexForRow(stop, row, topIsPrev = true) {
