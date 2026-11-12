@@ -145,11 +145,11 @@ export class SlotGame {
           const actualSymbol = this.slot.reels[reel].strip[stripIndex];
           const expectedSymbol = cell.id ?? grid[reel]?.[row];
 
-          // Never animate a physical sprite unless it matches the winning cell.
+          // Never animate a physical symbol unless it matches the winning cell.
           if(!Number.isInteger(stripIndex) || stripIndex < 0 ||
              stripIndex >= this.slot.reels[reel].strip.length ||
              actualSymbol !== expectedSymbol) {
-            console.error('[slot] WINNING SPRITE MISMATCH', {
+            console.error('[slot] WINNING SYMBOL MISMATCH', {
               source, reel, row, stripIndex,
               expectedSymbol, actualSymbol, stop: stops[reel]
             });
