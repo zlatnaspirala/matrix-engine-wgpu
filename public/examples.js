@@ -55213,9 +55213,9 @@ var MatrixEngineWGPU = class {
           for (const effectName in mesh.effects) {
             const effect = mesh.effects[effectName];
             if (effect === null) continue;
-            const effectType2 = effect.constructor;
-            if (!this.effectsByType.has(effectType2)) this.effectsByType.set(effectType2, []);
-            this.effectsByType.get(effectType2).push({ effect, mesh });
+            const effectType3 = effect.constructor;
+            if (!this.effectsByType.has(effectType3)) this.effectsByType.set(effectType3, []);
+            this.effectsByType.get(effectType3).push({ effect, mesh });
           }
         }
       }
@@ -82462,11 +82462,11 @@ var loadPoseToGLB = function() {
 };
 
 // examples/games/slot-machine/networking.js
-async function fetchSlotConfig(baseUrl2, machineId2) {
+async function fetchSlotConfig(baseUrl3, machineId3) {
   const token2 = SLOT_SIMULATOR_CONFIG_TOKEN;
   const headers = token2 ? { "X-Local-Config-Token": token2 } : {};
   const res = await fetch(
-    `${baseUrl2}/slot-api/machines/${machineId2}/slot-config`,
+    `${baseUrl3}/slot-api/machines/${machineId3}/slot-config`,
     { credentials: "include", headers }
   );
   if (!res.ok) throw new Error(`slot-config HTTP ${res.status}`);
@@ -83743,6 +83743,866 @@ var loadFluidEffectExample = function() {
   window.app = fluidEffectDemo;
 };
 
+// examples/games/slot-fluid-mashine/networking.js
+async function fetchSlotConfig2(baseUrl3, machineId3) {
+  const token2 = SLOT_SIMULATOR_CONFIG_TOKEN2;
+  const headers = token2 ? { "X-Local-Config-Token": token2 } : {};
+  const res = await fetch(
+    `${baseUrl3}/slot-api/machines/${machineId3}/slot-config`,
+    { credentials: "include", headers }
+  );
+  if (!res.ok) throw new Error(`slot-config HTTP ${res.status}`);
+  return res.json();
+}
+function adaptSlotConfig2(raw) {
+  const warnings = [];
+  const errors = [];
+  if (!Array.isArray(raw?.reels) || !raw.reels.length) errors.push("No reels in config");
+  if (!Array.isArray(raw?.symbols) || !raw.symbols.length) errors.push("No symbols in config");
+  if (errors.length) throw new Error("Invalid slot config: " + errors.join("; "));
+  const symbols = new Map(raw.symbols.map((s2) => [s2.id, s2]));
+  const reelCount = raw.reels.length;
+  const reels = raw.reels.map((r3) => {
+    if (!Array.isArray(r3.strip) || !r3.strip.length) {
+      errors.push(`Reel ${r3.id}: empty or missing strip`);
+      return { id: r3.id, strip: [], length: 0 };
+    }
+    for (const id2 of r3.strip) {
+      if (!symbols.has(id2)) warnings.push(`Reel ${r3.id}: unknown symbol "${id2}" is not in the symbol registry`);
+    }
+    return { id: r3.id, strip: [...r3.strip], length: r3.strip.length };
+  });
+  if (errors.length) throw new Error("Invalid slot config: " + errors.join("; "));
+  const paylines = raw.paylines.filter((l2) => l2.enabled !== false).filter((l2) => {
+    if (l2.rows.length !== reelCount) {
+      warnings.push(`Payline ${l2.id}: ${l2.rows.length} rows vs ${reelCount} reels, skipped`);
+      return false;
+    }
+    return true;
+  }).map((l2) => ({ id: l2.id, rows: [...l2.rows] }));
+  const maxPaylineRow = paylines.length ? Math.max(...paylines.flatMap((l2) => l2.rows)) : 2;
+  const visibleRows = Math.max(1, Number(raw.visibleRows) || maxPaylineRow + 1);
+  const paytable = {};
+  for (const [sym, pays] of Object.entries(raw.paytable || {})) {
+    paytable[sym] = Object.fromEntries(Object.entries(pays).map(([k2, v2]) => [Number(k2), v2]));
+    if (!symbols.has(sym)) warnings.push(`Paytable symbol "${sym}" not in symbols`);
+  }
+  const byType = (t3) => raw.symbols.filter((s2) => s2.type === t3).map((s2) => s2.id);
+  return {
+    machineId: raw.machineId,
+    name: raw.name,
+    reelCount,
+    visibleRows,
+    reels,
+    symbols,
+    symbolRoles: { wild: byType("wild"), scatter: byType("scatter") },
+    paytable,
+    paylines,
+    freeSpins: raw.freeSpins ?? { enabled: false },
+    targetRtp: raw.targetRtp,
+    warnings
+  };
+}
+
+// examples/games/slot-fluid-mashine/reel.js
+var sleep4 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
+var easeOutCubic2 = (t3) => 1 - Math.pow(1 - t3, 3);
+var easeInOutCubic2 = (t3) => t3 < 0.5 ? 4 * t3 * t3 * t3 : 1 - Math.pow(-2 * t3 + 2, 3) / 2;
+var animateValue2 = (duration, update) => new Promise((resolve) => {
+  const start = performance.now();
+  const tick = (now) => {
+    const t3 = Math.min(1, (now - start) / duration);
+    update(t3);
+    if (t3 < 1) requestAnimationFrame(tick);
+    else resolve();
+  };
+  requestAnimationFrame(tick);
+});
+var SlotReel2 = class {
+  constructor(mesh, reelCfg, opts = {}) {
+    this.mesh = mesh;
+    this.cfg = reelCfg;
+    this.spinSpeed = opts.spinSpeed ?? 6;
+    this.angleOffset = opts.angleOffset ?? 0;
+    this.dir = opts.dir ?? -1;
+    this.extraTurns = opts.extraTurns ?? 1;
+    this.stopMs = opts.stopMs ?? 1050;
+    this.startKickSpeed = opts.startKickSpeed ?? 0.45;
+    this.startKickMs = opts.startKickMs ?? 100;
+    this.accelerationMs = opts.accelerationMs ?? 360;
+    this.overshootDegrees = opts.overshootDegrees ?? 1;
+    this.settleMs = opts.settleMs ?? 190;
+    this.visibleRows = opts.visibleRows ?? 3;
+  }
+  get fluidEffects() {
+    return this.cfg.strip.map((_2, i2) => this.mesh.effects?.[`fluidSymbol${i2}`]).filter(Boolean);
+  }
+  // ---- the one engine-specific part I could not verify ----
+  getAngle() {
+    return this.mesh.rotation.x;
+  }
+  // degrees, assumed readable
+  setAngle(deg) {
+    this.mesh.rotation.x = deg;
+  }
+  // degrees, assumed writable
+  // ---------------------------------------------------------
+  async layout(delayPerSprite = 0) {
+    const N2 = this.cfg.length;
+    const effects = this.fluidEffects;
+    if (effects.length !== N2) console.warn(`[slot] ${effects.length} fluid effects vs strip length ${N2}`);
+    for (const [i2, effect] of effects.entries()) {
+      const angle2 = i2 / N2 * Math.PI * 2;
+      effect.localOffset = [
+        Math.cos(angle2) * 5.6,
+        Math.sin(angle2) * 5.6,
+        0
+      ];
+      effect.localRotation = [0, Math.PI / 2, angle2];
+      if (delayPerSprite) await sleep4(delayPerSprite);
+    }
+    animateRotationY(this.mesh.rotation, 90, 1e3);
+  }
+  stripIndexForRow(stop, row2, topIsPrev = true) {
+    const center = Math.floor(this.visibleRows / 2);
+    const offset = (row2 - center) * (topIsPrev ? 1 : -1);
+    return ((stop + offset) % this.cfg.length + this.cfg.length) % this.cfg.length;
+  }
+  async playWinAt(stripIndex, { duration = 2500 } = {}) {
+    if (!Number.isInteger(stripIndex) || stripIndex < 0 || stripIndex >= this.cfg.length) {
+      console.warn("[slot] Invalid winning fluid symbol index:", stripIndex);
+      return;
+    }
+    const fluid = this.mesh.effects?.[`fluidSymbol${stripIndex}`];
+    if (!fluid) {
+      console.warn("[slot] Missing fluid symbol:", stripIndex);
+      return;
+    }
+    const colors = [
+      [2.2, 0.35, 0.12],
+      [0.2, 2, 0.55],
+      [0.25, 0.65, 2.2],
+      [2, 0.25, 1.8],
+      [2, 1.7, 0.2]
+    ];
+    const pulses = 4;
+    for (let i2 = 0; i2 < pulses; i2++) {
+      fluid.burst(0.5, 0.5, 10, 850, colors[i2 % colors.length]);
+      if (i2 < pulses - 1) await sleep4(duration / pulses);
+    }
+  }
+  angleForStop(s2) {
+    return this.angleOffset + this.dir * (s2 / this.cfg.length) * 360;
+  }
+  snapTo(s2) {
+    this.mesh.rotation.setRotateX(0);
+    this.setAngle(this.angleForStop(s2));
+  }
+  async startSpin() {
+    this.mesh.rotation.setRotateX(-this.startKickSpeed);
+    await sleep4(this.startKickMs);
+    const fromSpeed = -this.startKickSpeed;
+    await animateValue2(this.accelerationMs, (t3) => {
+      this.mesh.rotation.setRotateX(
+        fromSpeed + (this.spinSpeed - fromSpeed) * easeInOutCubic2(t3)
+      );
+    });
+    this.mesh.rotation.setRotateX(this.spinSpeed);
+  }
+  async stopAt(stop) {
+    this.mesh.rotation.setRotateX(0);
+    const from = this.getAngle();
+    const target = this.angleForStop(stop);
+    const travel = ((target - from) % 360 + 360) % 360 + 360 * this.extraTurns;
+    const landing = from + travel;
+    const overshoot = landing + this.overshootDegrees;
+    const settleMs = Math.min(this.settleMs, this.stopMs * 0.35);
+    const brakingMs = Math.max(1, this.stopMs - settleMs);
+    await animateValue2(brakingMs, (t3) => {
+      this.setAngle(from + (overshoot - from) * easeOutCubic2(t3));
+    });
+    await animateValue2(settleMs, (t3) => {
+      this.setAngle(overshoot + (landing - overshoot) * easeOutCubic2(t3));
+    });
+    this.setAngle(landing);
+  }
+};
+
+// examples/games/slot-fluid-mashine/math.js
+function getWindow2(slot, stops, { topIsPrev = true } = {}) {
+  const center = Math.floor(slot.visibleRows / 2);
+  return slot.reels.map((reel, i2) => {
+    const N2 = reel.length;
+    return Array.from({ length: slot.visibleRows }, (_2, row2) => {
+      const off = (row2 - center) * (topIsPrev ? 1 : -1);
+      const idx = ((stops[i2] + off) % N2 + N2) % N2;
+      return reel.strip[idx];
+    });
+  });
+}
+function localSpin2(slot, rng = Math.random) {
+  return slot.reels.map((r3) => Math.floor(rng() * r3.length));
+}
+function evaluateSpin2(slot, grid, { lineBet = 1, inFreeSpins = false } = {}) {
+  const { wild, scatter } = slot.symbolRoles;
+  const isWild = (id2) => wild.includes(id2);
+  const isScatter = (id2) => scatter.includes(id2);
+  const lineWins = [];
+  for (const line of slot.paylines) {
+    const cells = line.rows.map((row2, reel) => ({ reel, row: row2, id: grid[reel][row2] }));
+    let paySym = null;
+    for (const c2 of cells) {
+      if (isScatter(c2.id)) break;
+      if (!isWild(c2.id)) {
+        paySym = c2.id;
+        break;
+      }
+    }
+    let run = 0;
+    for (const c2 of cells) {
+      if (isScatter(c2.id)) break;
+      if (paySym === null || isWild(c2.id) || c2.id === paySym) run++;
+      else break;
+    }
+    const sym = paySym ?? wild[0];
+    const table = sym && slot.paytable[sym];
+    if (!table) continue;
+    const count = Object.keys(table).map(Number).filter((n3) => n3 <= run).sort((a2, b2) => b2 - a2)[0];
+    if (!count) continue;
+    const pay = table[count];
+    if (pay > 0) lineWins.push({ lineId: line.id, symbol: sym, count, pay, cells: cells.slice(0, count) });
+  }
+  const fs2 = slot.freeSpins;
+  const scatterCells = [];
+  grid.forEach((col, reel) => col.forEach((id2, row2) => {
+    if (fs2?.enabled && id2 === fs2.triggerSymbol) scatterCells.push({ reel, row: row2 });
+  }));
+  const freeSpinsAwarded = fs2?.enabled && scatterCells.length >= fs2.triggerCount && (!inFreeSpins || fs2.retrigger) ? fs2.spinsAwarded : 0;
+  const multiplier = inFreeSpins ? fs2?.multiplier ?? 1 : 1;
+  const payUnits = lineWins.reduce((s2, w2) => s2 + w2.pay, 0);
+  return {
+    lineWins,
+    scatterCells,
+    freeSpinsAwarded,
+    payUnits,
+    // sum of paytable values
+    totalWin: payUnits * lineBet * multiplier,
+    // currency
+    multiplier
+  };
+}
+function normalizeSpinResult2(raw, slot) {
+  const stops = raw?.stops ?? raw?.reelStops ?? raw?.positions;
+  if (!Array.isArray(stops) || stops.length !== slot.reelCount) {
+    throw new Error("Unknown spin result shape: " + JSON.stringify(raw));
+  }
+  stops.forEach((stop, reelIndex) => {
+    const length2 = slot.reels[reelIndex]?.strip?.length ?? 0;
+    if (!Number.isInteger(stop) || stop < 0 || stop >= length2) {
+      throw new Error(`Invalid stop index for reel ${reelIndex}: ${stop} (strip length ${length2})`);
+    }
+  });
+  return { stops, serverWin: raw.totalWin ?? raw.win ?? null };
+}
+
+// examples/games/slot-fluid-mashine/state.js
+var sleep5 = (ms2) => new Promise((r3) => setTimeout(r3, ms2));
+var SlotGame2 = class {
+  constructor(slot, reelViews, opts = {}) {
+    if (reelViews.length !== slot.reelCount) throw new Error("reelViews count != reelCount");
+    this.slot = slot;
+    this.views = reelViews;
+    this.lineBet = opts.lineBet ?? 1;
+    this.demoBalance = opts.demoBalance ?? 1e3;
+    this.betAmount = opts.betAmount ?? 1;
+    this.onDemoBalance = opts.onDemoBalance ?? (() => {
+    });
+    this.onDemoBalance(this.demoBalance);
+    this.minSpinMs = opts.minSpinMs ?? 800;
+    this.startStagger = opts.startStagger ?? 380;
+    this.stagger = opts.stagger ?? 300;
+    this.topIsPrev = opts.topIsPrev ?? true;
+    this.onPresentWin = opts.onPresentWin;
+    this.freeSpinsLeft = 0;
+    this.state = "IDLE";
+    this.queue = [];
+    this.listeners = {};
+  }
+  on(evt, fn2) {
+    (this.listeners[evt] ??= []).push(fn2);
+    return this;
+  }
+  emit(evt, data) {
+    (this.listeners[evt] || []).forEach((fn2) => fn2(data));
+  }
+  setState(s2) {
+    this.state = s2;
+    this.emit("state", s2);
+  }
+  spin() {
+    return this.playResult({
+      stops: localSpin2(this.slot),
+      isLocalDemo: true
+    });
+  }
+  async playResult(raw) {
+    if (this.state !== "IDLE") {
+      this.queue.push(raw);
+      return;
+    }
+    let demoBetCharged = false;
+    let demoWinningsCredited = false;
+    if (raw?.isLocalDemo) {
+      if (this.demoBalance < this.betAmount) {
+        this.emit("insufficientBalance", {
+          balance: this.demoBalance,
+          betAmount: this.betAmount
+        });
+        return;
+      }
+      this.demoBalance -= this.betAmount;
+      demoBetCharged = true;
+      this.onDemoBalance(this.demoBalance);
+      this.emit("balance", this.demoBalance);
+    }
+    try {
+      console.groupCollapsed("[slot-debug] incoming spin");
+      console.log("RAW SERVER RESULT:", raw);
+      console.log("CONFIG:", {
+        reelCount: this.slot.reelCount,
+        visibleRows: this.slot.visibleRows,
+        topIsPrev: this.topIsPrev,
+        stripLengths: this.slot.reels.map((reel) => reel.length)
+      });
+      console.groupEnd();
+      const { stops } = normalizeSpinResult2(raw, this.slot);
+      const inFree = typeof raw?.inFree === "boolean" ? raw.inFree : this.freeSpinsLeft > 0;
+      if (inFree) this.freeSpinsLeft--;
+      this.setState("SPINNING");
+      this.emit("spinStart", { inFree, freeSpinsLeft: this.freeSpinsLeft });
+      const starts = [];
+      for (let i2 = 0; i2 < this.views.length; i2++) {
+        starts.push(this.views[i2].startSpin());
+        if (i2 < this.views.length - 1) await sleep5(this.startStagger);
+      }
+      await Promise.all(starts);
+      await sleep5(this.minSpinMs);
+      this.setState("STOPPING");
+      await Promise.all(this.views.map(async (v2, i2) => {
+        await sleep5(i2 * this.stagger);
+        await v2.stopAt(stops[i2]);
+        this.emit("reelStop", { reel: i2, stop: stops[i2] });
+      }));
+      this.setState("EVALUATING");
+      const grid = Array.isArray(raw?.grid) ? raw.grid : getWindow2(this.slot, stops, { topIsPrev: this.topIsPrev });
+      const ev = Array.isArray(raw?.lineWins) ? {
+        lineWins: raw.lineWins,
+        scatterCells: Array.isArray(raw.scatterCells) ? raw.scatterCells : [],
+        freeSpinsAwarded: Number(raw.freeSpinsAwarded) || 0,
+        payUnits: Number(raw.payUnits) || 0,
+        totalWin: Number(raw.totalWin) || 0,
+        multiplier: Number(raw.multiplier) || 1
+      } : evaluateSpin2(this.slot, grid, { lineBet: this.lineBet, inFreeSpins: inFree });
+      if (typeof raw?.freeSpinsLeft === "number") {
+        this.freeSpinsLeft = raw.freeSpinsLeft;
+      } else {
+        this.freeSpinsLeft += ev.freeSpinsAwarded;
+      }
+      if (demoBetCharged) {
+        this.demoBalance += ev.totalWin;
+        demoWinningsCredited = true;
+        this.onDemoBalance(this.demoBalance);
+        this.emit("balance", this.demoBalance);
+      }
+      const result2 = { ...ev, grid, stops, inFree, freeSpinsLeft: this.freeSpinsLeft };
+      this.emit("result", result2);
+      if (ev.lineWins.length || ev.freeSpinsAwarded) {
+        this.setState("PRESENTING");
+        const winningByReel = this.views.map(() => /* @__PURE__ */ new Set());
+        const addWinningCell = (cell, source) => {
+          const { reel, row: row2 } = cell;
+          const view = this.views[reel];
+          if (!view || !Number.isInteger(row2) || row2 < 0 || row2 >= this.slot.visibleRows) {
+            console.warn("[slot] Ignoring invalid winning cell", { source, cell });
+            return;
+          }
+          const stripIndex = Number.isInteger(cell.stripIndex) ? cell.stripIndex : view.stripIndexForRow(stops[reel], row2, this.topIsPrev);
+          const actualSymbol = this.slot.reels[reel].strip[stripIndex];
+          const expectedSymbol = cell.id ?? grid[reel]?.[row2];
+          if (!Number.isInteger(stripIndex) || stripIndex < 0 || stripIndex >= this.slot.reels[reel].strip.length || actualSymbol !== expectedSymbol) {
+            console.error("[slot] WINNING SYMBOL MISMATCH", {
+              source,
+              reel,
+              row: row2,
+              stripIndex,
+              expectedSymbol,
+              actualSymbol,
+              stop: stops[reel]
+            });
+            return;
+          }
+          winningByReel[reel].add(stripIndex);
+        };
+        for (const win of ev.lineWins) {
+          for (const cell of win.cells ?? []) addWinningCell(cell, win.lineId);
+        }
+        if (ev.freeSpinsAwarded) {
+          for (const cell of ev.scatterCells) addWinningCell(cell, "scatter");
+        }
+        const animations = winningByReel.flatMap(
+          (indices, reelIndex) => [...indices].map((index) => this.views[reelIndex].playWinAt(index))
+        );
+        const presentation = this.onPresentWin ? this.onPresentWin(result2) : Promise.resolve();
+        await Promise.all([...animations, presentation]);
+      }
+    } catch (err) {
+      if (demoBetCharged && !demoWinningsCredited) {
+        this.demoBalance += this.betAmount;
+        this.onDemoBalance(this.demoBalance);
+        this.emit("balance", this.demoBalance);
+      }
+      console.error("[slot] spin failed", err);
+      this.emit("error", err);
+    } finally {
+      this.setState("IDLE");
+    }
+    if (this.queue.length) return this.playResult(this.queue.shift());
+  }
+};
+
+// examples/games/slot-fluid-mashine/slot.js
+var baseUrl2 = "https://slot-simulator.onrender.com";
+var machineId12 = new URLSearchParams(window.location.search).get("machineId");
+console.log("machineId1", machineId12);
+var machineId2 = machineId12 || "6ac80510c453c7d32ec5364a";
+var SLOT_SIMULATOR_CONFIG_TOKEN2 = "SHITHAPPENS";
+var game2;
+var ENABLE_REMOTE_SPIN_EVENTS2 = false;
+var SPACING2 = 6;
+var SCALE2 = 3.5;
+var reelX2 = (i2, n3) => ((n3 - 1) / 2 - i2) * SPACING2;
+var effectType2 = "default";
+var FLUID_SYMBOL_PALETTE = [
+  [1.8, 0.28, 0.12],
+  [0.18, 1.55, 0.62],
+  [0.18, 0.62, 1.8],
+  [1.45, 0.2, 1.55],
+  [1.5, 1.1, 0.16],
+  [0.15, 1.35, 1.55]
+];
+function createSymbolEmitter(fluid, index) {
+  const palette = FLUID_SYMBOL_PALETTE[Math.floor(Math.random() * FLUID_SYMBOL_PALETTE.length)];
+  const variant = Math.floor(Math.random() * 4);
+  const common = {
+    color: palette,
+    colorScale: 1,
+    interval: 0.055 + index % 3 * 0.012,
+    jitter: 0.18
+  };
+  if (variant === 0) {
+    fluid.addEmitter({
+      ...common,
+      spiral: {
+        cx: 0.5,
+        cy: 0.5,
+        rStart: 0.03,
+        rEnd: 0.31,
+        speed: 2.2 + index % 4 * 0.25,
+        duration: 2.2,
+        pause: 0.15,
+        strength: 230,
+        radial: 0.22,
+        arms: 2,
+        reverse: index % 2 === 0
+      }
+    });
+  } else if (variant === 1) {
+    fluid.addFire({
+      x: 0.32 + index % 4 * 0.12,
+      y: 0.08,
+      height: 0.55,
+      duration: 0.75,
+      pause: 0.25,
+      strength: 90,
+      spread: 0.08,
+      color: palette,
+      interval: common.interval,
+      jitter: 0.3
+    });
+  } else if (variant === 2) {
+    fluid.addEmitter({
+      ...common,
+      orbit: {
+        cx: 0.5,
+        cy: 0.5,
+        r: 0.22,
+        speed: 1.2 + index % 5 * 0.2,
+        strength: 260
+      }
+    });
+  } else {
+    fluid.addEmitter({
+      ...common,
+      sweep: {
+        from: [0.12, 0.18 + index % 3 * 0.08],
+        to: [0.88, 0.72 - index % 3 * 0.06],
+        duration: 0.85,
+        pause: 0.3,
+        strength: 110,
+        spread: 0.07
+      }
+    });
+  }
+}
+async function initializeSymbolReel2(mesh, engine, reelCfg) {
+  if (!mesh.effects) mesh.effects = {};
+  const effects = [];
+  const count = reelCfg.strip.length;
+  const radius = 5.6;
+  for (let index = 0; index < count; index++) {
+    const angle2 = index / count * Math.PI * 2;
+    const fluid = new FluidEffect(engine.device, {
+      // Intentionally compact: a reel can contain many independent symbols.
+      simRes: 32,
+      dyeRes: 96,
+      pressureIterations: 4,
+      curl: 14,
+      densityDissipation: 0.985,
+      velocityDissipation: 0.18,
+      splatRadius: 0.12,
+      splatForce: 1700,
+      localOffset: [
+        0,
+        Math.cos(angle2) * radius,
+        Math.sin(angle2) * radius
+      ],
+      // [Math.cos(angle) * radius, Math.sin(angle) * radius, 0],
+      // FluidEffect uses radians and its quad normal is +Z. Turn it outward
+      // from the reel cylinder, then let the reel mesh supply parent rotation.
+      localRotation: [angle2 - Math.PI / 2, 0, 0],
+      // [0, Math.PI / 2, angle],
+      scale: [0.78, 0.78, 1]
+    });
+    createSymbolEmitter(fluid, index);
+    fluid.burst(0.5, 0.5, 3, 170, FLUID_SYMBOL_PALETTE[index % FLUID_SYMBOL_PALETTE.length]);
+    mesh.effects[`fluidSymbol${index}`] = fluid;
+    effects.push(fluid);
+  }
+  return effects;
+}
+var loadFluidsSlot = function() {
+  mb.show("Please wait 10 sec to activate render.com hosted page.");
+  let slotMachine = new MatrixEngineWGPU({
+    canvasSize: "fullscreen",
+    fastRender: 0.9,
+    dontUsePhysics: true,
+    MAX_SPOTLIGHTS: 1,
+    MAX_BONES: 0,
+    mainCameraParams: {
+      // type: 'cinematicCamera',
+      type: "WASD",
+      responseCoef: 1e3
+    },
+    clearColor: { r: 0, b: 0.122, g: 0.122, a: 1 }
+  }, async () => {
+    let laser2, floor2, cam2, introPath, spinSpeed = 16, delayReel = 60;
+    if (urlQuery["reelSpeed"]) {
+      spinSpeed = parseInt(urlQuery["reelSpeed"]);
+    }
+    if (urlQuery["delayReel"]) {
+      delayReel = parseInt(urlQuery["delayReel"]);
+    }
+    if (urlQuery["effectType"]) {
+      effectType2 = urlQuery["effectType"];
+    }
+    const raw = await fetchSlotConfig2(baseUrl2, machineId2);
+    const slot = adaptSlotConfig2(raw);
+    slot.warnings.forEach((w2) => console.warn("[slot]", w2));
+    const n3 = slot.reelCount;
+    slotMachine.addLight();
+    downloadMeshes(
+      { ball: "./res/meshes/blender/sphere.obj", cube: "./res/meshes/blender/cube.obj", plane: "./res/meshes/blender/plane.obj" },
+      onLoadObj,
+      { scale: [1, 1, 1] }
+    );
+    downloadMeshes({ cube: "./res/meshes/blender/cube.obj" }, onGround, { scale: [35, 0.5, 35] });
+    addRaycastsAABBListener("canvas1", "click");
+    function onGround(m2) {
+      floor2 = slotMachine.addMeshObj({
+        material: { type: "standard", share: true },
+        position: { x: 0, y: 0, z: -10 },
+        rotation: { x: 0, y: 180, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [1, 1, 1],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "floor",
+        mesh: m2.cube,
+        physics: {
+          enabled: false,
+          mass: 0,
+          geometry: "Cube"
+        }
+      });
+      loadAtlasFONT(slotMachine.device).then((OUTPUT) => {
+        const checker2 = floor2.createCheckerboardTexture(256, 128, [0, 50, 50, 255], [20, 200, 200, 255]);
+        let samplerTest = slotMachine.device.createSampler({
+          magFilter: "nearest",
+          minFilter: "nearest",
+          addressModeU: "repeat",
+          addressModeV: "repeat"
+        });
+        floor2.changeTexture(checker2, samplerTest);
+        floor2.setUVScale(12, 12);
+        floor2.effects.gpuText = new MSDFTextEffect(
+          slotMachine.device,
+          "rgba16float",
+          OUTPUT.msdfTexture,
+          samplerTest,
+          slotMachine.cameraBuffer,
+          OUTPUT.font,
+          { scale: 0.05, localOffset: [isMobile() ? -9 : -8, 5, 17], localScale: isMobile() ? [0.6, 0.8, 0.8] : [0.5, 0.7, 0.7] }
+        );
+        floor2.effects.gpuText.typeText(slotMachine.demoBalanceText ?? "Demo balance: 1000", 120, () => {
+          floor2.position.translateByY(-4);
+        });
+        slotMachine.floor = floor2;
+      });
+    }
+    async function onLoadObj(m2) {
+      let inputArg = {
+        material: { type: "standard", share: true },
+        position: { x: 0, y: -1, z: -20 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: [30, 30, 30],
+        rotationSpeed: { x: 0, y: 0.1, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1-extra_low.png"],
+        name: "sky",
+        mesh: m2.ball,
+        physics: {
+          enabled: false,
+          geometry: "Sphere"
+        }
+      };
+      if (isMobile() === false) {
+        inputArg.isVideo = {
+          type: "video",
+          src: "res/videos/space.mp4"
+        };
+        slotMachine.addMeshObj(inputArg);
+      }
+      const reelMeshes = slot.reels.map((reel, i2) => slotMachine.addMeshObj({
+        material: { type: "standard" },
+        position: { x: reelX2(i2, n3), y: 15, z: -10 },
+        rotation: { x: 180, y: 0, z: 0 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [SCALE2, SCALE2, SCALE2],
+        texturesPaths: ["./res/textures/floor1.webp"],
+        name: "reel" + i2,
+        mesh: m2.cube,
+        raycast: { enabled: false, radius: 1 },
+        physics: { enabled: false, mass: 0, geometry: "Cube" },
+        pointerEffect: { enabled: true }
+      }));
+      if (isMobile()) slotMachine.lightContainer[0].setIntensity(8);
+      else slotMachine.lightContainer[0].setIntensity(15);
+      slotMachine.activateBloomEffect();
+      slotMachine.activateFXAA();
+      if (isMobile()) slotMachine.bloomPass.setBlurRadius(2);
+      if (isMobile() === false) {
+        slotMachine.activateVolumetricEffect({
+          density: 0.1,
+          steps: 30,
+          scatterStrength: 1,
+          heightFalloff: 0.2,
+          lightColor: [1, 1.8, 2]
+        });
+      }
+      slotMachine.lightContainer[0].setPosition(0, 35, -8);
+      slotMachine.lightContainer[0].setTarget(0, 0, -10);
+      const FX_MESH = slotMachine.addMeshObj({
+        material: { type: "standard" },
+        position: { x: 0, y: 15, z: -10 },
+        rotation: { x: 90, y: 0, z: 180 },
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        scale: [9 * Math.max(1, n3 / 3), 9, 9],
+        texturesPaths: ["./res/icons/512.webp"],
+        name: "cubeeffect",
+        mesh: m2.plane,
+        raycast: { enabled: true, radius: 1 },
+        physics: { enabled: false, mass: 0, geometry: "Cube" },
+        pointerEffect: { enabled: true }
+      });
+      await sleep(600);
+      laser2 = FX_MESH.effects.laser = new LaserProjectile(
+        slotMachine.device,
+        "rgba16float",
+        slotMachine.cameraBuffer,
+        {
+          maxBeams: 24,
+          width: 0.045,
+          intensity: 2.8,
+          colorA: [0.15, 0.95, 1, 1],
+          colorB: [0.05, 0.25, 1, 1]
+        }
+      );
+      slotMachine.floor.effects.gpuText.setColor(1, 11, 1);
+      slotMachine.laser = laser2;
+      const framePoint = (worldX, worldY) => [
+        -worldX / (9 * Math.max(1, n3 / 3)),
+        2.4,
+        (worldY - 15) / 9
+      ];
+      const fireFrameEdge = (a2, b2) => laser2.fireBeam(
+        framePoint(a2[0], a2[1]),
+        framePoint(b2[0], b2[1]),
+        0
+      );
+      for (let i2 = 0; i2 < n3; i2++) {
+        const cx = reelX2(i2, n3), halfW = 2.55, halfH = 7, cy = 15;
+        const corners = [
+          [cx - halfW, cy - halfH],
+          [cx + halfW, cy - halfH],
+          [cx + halfW, cy + halfH],
+          [cx - halfW, cy + halfH]
+        ];
+        for (let edge = 0; edge < 4; edge++) {
+          fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
+        }
+      }
+      FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
+      for (const [i2, mesh] of reelMeshes.entries()) {
+        await initializeSymbolReel2(mesh, slotMachine, slot.reels[i2]);
+      }
+      cam2 = slotMachine.getCamera();
+      cam2.setYaw(-3.119);
+      cam2.setPitch(-0.05);
+      const adaptedZ = isMobile() ? -53 * Math.max(1, n3 / 3) : -45;
+      cam2.setZ(adaptedZ);
+      cam2.setY(16);
+      introPath = new CameraPath([
+        { position: [0, 5, 20], target: [0, 0, 0] },
+        { position: [10, 10, 10], target: [0, 1, 0] },
+        { position: [0, 13, adaptedZ], target: [0, 12, 0] }
+      ], { parameterization: "arc" });
+      cam2._dirtyAngle = true;
+      reelMeshes.forEach((mesh) => mesh.setBlend(1e-3));
+      dispatchEvent(new Event("update-effects"));
+      reelMeshes[0].setupPipeline();
+      slotMachine.buildRenderBuckets();
+      slotMachine.reelMeshes = reelMeshes;
+      await sleep(400);
+      const views = reelMeshes.map((mesh, i2) => new SlotReel2(
+        mesh,
+        slot.reels[i2],
+        {
+          visibleRows: slot.visibleRows,
+          spinSpeed
+        }
+      ));
+      for (const v2 of views) await v2.layout(delayReel);
+      reelMeshes.forEach((r3) => r3.setAmbient(2, 0, 0));
+      slotMachine.demoBalanceText = "Demo balance: 100";
+      game2 = new SlotGame2(slot, views, {
+        lineBet: 5,
+        demoBalance: 100,
+        betAmount: 1,
+        onDemoBalance: (balance) => {
+          slotMachine.demoBalanceText = `Demo balance: ${balance}`;
+          slotMachine.floor?.effects?.gpuText?.setText(slotMachine.demoBalanceText);
+        },
+        onPresentWin: async (res) => {
+          const adaptedZ2 = isMobile() ? -53 * Math.max(1, n3 / 3) : -45;
+          const pulsingPath = new CameraPath([
+            { position: [0, 13, adaptedZ2], target: [0, 12, 0] },
+            { position: [0, 12, -25], target: [0, 12, 0] },
+            { position: [0, 11, -10], target: [0, 13, 0] },
+            { position: [5, 12, -8], target: [0, 15, 0] },
+            { position: [7, 14, -3], target: [0, 23, 0] },
+            { position: [2, 15, -6], target: [0, 32, 0] },
+            { position: [-6, 12, -7], target: [0, 12, 0] },
+            { position: [-5, 10, -3], target: [0, 13, 0] },
+            { position: [0, 13, -24], target: [0, 12, 0] },
+            { position: [0, 13, adaptedZ2], target: [0, 12, 0] }
+            // Use the default 0.5 tension: this engine's spline only interpolates
+            // through keyframes at 0.5, so a lower value misses the endpoints.
+          ], { parameterization: "arc" });
+          const winCamera = app.getCamera();
+          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(16, 26));
+          FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(10, 13));
+          app.lightContainer[0].setColorR(4011);
+          app.floor.rotation.rotationSpeed.y = 10;
+          await sleep(500);
+          app.floor.rotation.rotationSpeed.y = 20;
+          FX_MESH.rotation.rotationSpeed.x = 10;
+          await sleep(500);
+          app.floor.rotation.rotationSpeed.y = 30;
+          await sleep(2500);
+          FX_MESH.effects.keeffect.setIntensity(1);
+          FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
+          app.lightContainer[0].setColorR(1);
+          app.floor.rotation.rotationSpeed.y = 0;
+          app.floor.rotation.setRotation(0, 180, 0);
+          FX_MESH.rotation.rotationSpeed.x = 0;
+          FX_MESH.rotation.setRotation(90, 0, 180);
+        }
+      });
+      game2.on("result", (r3) => {
+        if (r3.totalWin > 0) {
+          const flashed = /* @__PURE__ */ new Set();
+          for (const win of r3.lineWins ?? []) {
+            for (const cell of win.cells ?? []) {
+              const key = `${cell.reel}:${cell.row}`;
+              if (flashed.has(key)) continue;
+              flashed.add(key);
+              const cx = reelX2(cell.reel, n3);
+              const cy = 15 + (1 - cell.row) * 3.2;
+              laser2.fireBeam(
+                framePoint(cx - 2.35, cy),
+                framePoint(cx + 2.35, cy),
+                0.9,
+                {
+                  colorA: [1, 0.95, 0.25, 1],
+                  colorB: [1, 0.12, 0.45, 1],
+                  width: 0.12,
+                  intensity: 7,
+                  mode: 1
+                }
+              );
+            }
+          }
+        }
+      });
+      window.slot = slot;
+      window.slotGame = game2;
+      window.slotViews = views;
+      window.addEventListener("keydown", (e2) => {
+        if (e2.code !== "Space") return;
+        e2.preventDefault();
+        if (e2.repeat || game2.state !== "IDLE") return;
+        game2.spin();
+        FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
+        FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 5));
+      });
+      if (ENABLE_REMOTE_SPIN_EVENTS2) {
+        const es2 = new EventSource(`${baseUrl2}/slot-api/machines/${machineId2}/events`);
+        es2.addEventListener("spin", (e2) => game2.playResult(JSON.parse(e2.data)));
+        slotMachine.slotEventSource = es2;
+      }
+      game2.on("insufficientBalance", ({ balance, betAmount }) => {
+        console.info(`[slot-demo] Not enough demo credits: balance=${balance}, bet=${betAmount}`);
+      });
+    }
+    slotMachine.canvas.addEventListener("ray.hit.event", (e2) => {
+      console.log("ray.hit.event detected");
+      if (e2.detail.hitObject.name.startsWith("cubeeffect")) {
+        if (game2.state !== "IDLE") return;
+        game2.spin();
+      }
+    });
+  });
+  window.app = slotMachine;
+};
+
 // examples.js
 var switchDemo = (id2) => {
   const url = new URL(window.location.href);
@@ -83813,6 +84673,7 @@ byId2("loadPoseBeast").addEventListener("click", () => switchDemo("48"));
 byId2("loadPoseToGLB").addEventListener("click", () => switchDemo("49"));
 byId2("loadSlot").addEventListener("click", () => switchDemo("50"));
 byId2("volumetrixTexProj").addEventListener("click", () => switchDemo("51"));
+byId2("loadFluidsSlot").addEventListener("click", () => switchDemo("52"));
 byId2("jamb").addEventListener("click", () => window.open("https://goldenspiral.itch.io/jamb-3d-deluxe", "_blank"));
 byId2("moba").addEventListener("click", () => window.open("https://maximumroulette.com/apps/fohb", "_blank"));
 if (urlQuery["demo"] === "1") {
@@ -83917,6 +84778,8 @@ if (urlQuery["demo"] === "1") {
   loadSlot();
 } else if (urlQuery["demo"] === "51") {
   volumetrixTexProj();
+} else if (urlQuery["demo"] === "52") {
+  loadFluidsSlot();
 } else {
   loadObjFile();
 }

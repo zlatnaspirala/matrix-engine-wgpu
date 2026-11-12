@@ -96,8 +96,20 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   const count = reelCfg.strip.length;
   const radius = 5.6;
 
-  for(let index = 0; index < count; index++) {
+  for(let index = 0;index < count;index++) {
     const angle = (index / count) * Math.PI * 2;
+    // const angle = (index / count) * Math.PI * 2;
+
+    // localOffset: [
+    //   0,
+    //   Math.cos(angle) * radius,
+    //   Math.sin(angle) * radius
+    // ],
+
+    //   localRotation: [
+    //     angle - Math.PI / 2, 0, 0
+    //   ]
+
     const fluid = new FluidEffect(engine.device, {
       // Intentionally compact: a reel can contain many independent symbols.
       simRes: 32,
@@ -108,10 +120,15 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
       velocityDissipation: 0.18,
       splatRadius: 0.12,
       splatForce: 1700,
-      localOffset: [Math.cos(angle) * radius, Math.sin(angle) * radius, 0],
+      localOffset: [
+        0,
+        Math.cos(angle) * radius,
+        Math.sin(angle) * radius
+      ],
+      // [Math.cos(angle) * radius, Math.sin(angle) * radius, 0],
       // FluidEffect uses radians and its quad normal is +Z. Turn it outward
       // from the reel cylinder, then let the reel mesh supply parent rotation.
-      localRotation: [0, Math.PI / 2, angle],
+      localRotation: [angle - Math.PI / 2, 0, 0], // [0, Math.PI / 2, angle],
       scale: [0.78, 0.78, 1]
     });
 
@@ -125,7 +142,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   return effects;
 }
 
-export var loadSlot = function() {
+export var loadFluidsSlot = function() {
 
   mb.show("Please wait 10 sec to activate render.com hosted page.")
 
@@ -136,7 +153,8 @@ export var loadSlot = function() {
     MAX_SPOTLIGHTS: 1,
     MAX_BONES: 0,
     mainCameraParams: {
-      type: 'cinematicCamera',
+      // type: 'cinematicCamera',
+      type: 'WASD',
       responseCoef: 1000
     },
     clearColor: {r: 0, b: 0.122, g: 0.122, a: 1}
@@ -262,12 +280,12 @@ export var loadSlot = function() {
         })
       }
 
-      slotMachine.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
-      slotMachine.lightContainer[0].behavior.value_ = -1;
-      slotMachine.lightContainer[0].updater.push((light) => {
-        light.setTargetX(light.behavior.setPath0());
-        light.setPosX(light.behavior.setPath0());
-      })
+      // slotMachine.lightContainer[0].behavior.setOsc0(-2, 2, 0.01)
+      // slotMachine.lightContainer[0].behavior.value_ = -1;
+      // slotMachine.lightContainer[0].updater.push((light) => {
+      //   light.setTargetX(light.behavior.setPath0());
+      //   light.setPosX(light.behavior.setPath0());
+      // })
       slotMachine.lightContainer[0].setPosition(0, 35, -8);
       slotMachine.lightContainer[0].setTarget(0, 0, -10);
 
@@ -337,10 +355,10 @@ export var loadSlot = function() {
         {position: [10, 10, 10], target: [0, 1, 0]},
         {position: [0, 13, adaptedZ], target: [0, 12, 0]},
       ], {parameterization: 'arc'});
-      cam.setPath(introPath).play({
-        speed: 0.1,
-        onEnd: () => console.log('done'),
-      });
+      // cam.setPath(introPath).play({
+      //   speed: 0.1,
+      //   onEnd: () => console.log('done'),
+      // });
       cam._dirtyAngle = true;
 
       reelMeshes.forEach(mesh => mesh.setBlend(0.001));
@@ -412,17 +430,17 @@ export var loadSlot = function() {
 
           await sleep(500);
 
-          winCamera.setPath(pulsingPath).play({
-            speed: 0.35,
-            onEnd: () => {
-              // Snap both position and look target to the exact intro pose.
-              // This also guards against future path edits leaving residual drift.
-              winCamera.setPosition(0, 13, -45);
-              winCamera.setTarget(0, 12, 0);
-              winCamera._dirtyAngle = true;
-              console.log('win camera restored to intro pose');
-            },
-          });
+          // winCamera.setPath(pulsingPath).play({
+          //   speed: 0.35,
+          //   onEnd: () => {
+          //     // Snap both position and look target to the exact intro pose.
+          //     // This also guards against future path edits leaving residual drift.
+          //     winCamera.setPosition(0, 13, -45);
+          //     winCamera.setTarget(0, 12, 0);
+          //     winCamera._dirtyAngle = true;
+          //     console.log('win camera restored to intro pose');
+          //   },
+          // });
           app.floor.rotation.rotationSpeed.y = 30;
 
           await sleep(2500);

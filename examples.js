@@ -56,6 +56,7 @@ import {loadPoseToGLB} from "./examples/games/nui/pose-to-glb.js";
 import {loadSlot} from "./examples/games/slot-machine/slot.js";
 import {volumetrixTexProj} from "./examples/volumetric-tex-projection.js";
 import {loadFluidEffectExample} from "./examples/fluid-effects.js";
+import {loadFluidsSlot} from "./examples/games/slot-fluid-mashine/slot.js";
 
 const switchDemo = (id) => {
   const url = new URL(window.location.href);
@@ -122,6 +123,8 @@ byId('loadPoseBeast').addEventListener("click", () => switchDemo('48'));
 byId('loadPoseToGLB').addEventListener("click", () => switchDemo('49'));
 byId('loadSlot').addEventListener("click", () => switchDemo('50'));
 byId('volumetrixTexProj').addEventListener("click", () => switchDemo('51'));
+byId('loadFluidsSlot').addEventListener("click", () => switchDemo('52'));
+
 byId('jamb').addEventListener("click", () => window.open('https://goldenspiral.itch.io/jamb-3d-deluxe', '_blank'));
 byId('moba').addEventListener("click", () => window.open('https://maximumroulette.com/apps/fohb', '_blank'));
 
@@ -227,6 +230,8 @@ if(urlQuery['demo'] === '1') {
   loadSlot();
 } else if(urlQuery['demo'] === '51') {
   volumetrixTexProj();
+} else if(urlQuery['demo'] === '52') {
+  loadFluidsSlot();
 } else {
   loadObjFile();
 }
