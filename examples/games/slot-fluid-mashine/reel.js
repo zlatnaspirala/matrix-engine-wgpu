@@ -40,18 +40,9 @@ export class SlotReel {
     const N = this.cfg.length;
     const effects = this.fluidEffects;
     if(effects.length !== N) console.warn(`[slot] ${effects.length} fluid effects vs strip length ${N}`);
-    // Effect transforms are local to the reel mesh. The mesh rotation therefore
-    // rotates every symbol fluid plane exactly like the previous sprite ring.
-    for(const [i, effect] of effects.entries()) {
-      const angle = (i / N) * Math.PI * 2;
-      // The reel rotates around X, so its symbol ring lies in the YZ plane.
-      // Face each fluid plane outward from the reel's X axis.
-      effect.localOffset = [
-        0,
-        Math.cos(angle) * 5.6,
-        Math.sin(angle) * 5.6
-      ];
-      effect.localRotation = [angle - Math.PI / 2, 0, 0];
+    // Symbol transforms are configured once in initializeSymbolReel().
+    // Keep layout() from overwriting their radius or orientation.
+    for(let i = 0; i < effects.length; i++) {
       if(delayPerSprite) await sleep(delayPerSprite);
     }
     // animateRotationY(this.mesh.rotation, 90, 1000);
