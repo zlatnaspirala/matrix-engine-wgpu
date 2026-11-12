@@ -94,7 +94,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   if(!mesh.effects) mesh.effects = {};
   const effects = [];
   const count = reelCfg.strip.length;
-  const radius = 5.6;
+  const radius = 4.3;
 
   for(let index = 0;index < count;index++) {
     const angle = (index / count) * Math.PI * 2;
@@ -213,7 +213,7 @@ export var loadFluidsSlot = function() {
 
         floor.effects.gpuText.typeText(slotMachine.demoBalanceText ?? 'Demo balance: 1000', 120, () => {
           // console.log('Demo balance display ready');
-          floor.position.translateByY(-4);
+          floor.position.translateByY(-3);
         });
         slotMachine.floor = floor;
       });

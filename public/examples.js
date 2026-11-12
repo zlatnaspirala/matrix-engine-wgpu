@@ -83849,14 +83849,7 @@ var SlotReel2 = class {
     const N2 = this.cfg.length;
     const effects = this.fluidEffects;
     if (effects.length !== N2) console.warn(`[slot] ${effects.length} fluid effects vs strip length ${N2}`);
-    for (const [i2, effect] of effects.entries()) {
-      const angle2 = i2 / N2 * Math.PI * 2;
-      effect.localOffset = [
-        0,
-        Math.cos(angle2) * 5.6,
-        Math.sin(angle2) * 5.6
-      ];
-      effect.localRotation = [angle2 - Math.PI / 2, 0, 0];
+    for (let i2 = 0; i2 < effects.length; i2++) {
       if (delayPerSprite) await sleep4(delayPerSprite);
     }
   }
@@ -84255,7 +84248,7 @@ async function initializeSymbolReel2(mesh, engine, reelCfg) {
   if (!mesh.effects) mesh.effects = {};
   const effects = [];
   const count = reelCfg.strip.length;
-  const radius = 5.6;
+  const radius = 4.3;
   for (let index = 0; index < count; index++) {
     const angle2 = index / count * Math.PI * 2;
     const fluid = new FluidEffect(engine.device, {
@@ -84359,7 +84352,7 @@ var loadFluidsSlot = function() {
           { scale: 0.05, localOffset: [isMobile() ? -9 : -8, 5, 17], localScale: isMobile() ? [0.6, 0.8, 0.8] : [0.5, 0.7, 0.7] }
         );
         floor2.effects.gpuText.typeText(slotMachine.demoBalanceText ?? "Demo balance: 1000", 120, () => {
-          floor2.position.translateByY(-4);
+          floor2.position.translateByY(-3);
         });
         slotMachine.floor = floor2;
       });
