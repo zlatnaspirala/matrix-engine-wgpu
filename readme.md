@@ -1440,7 +1440,7 @@ You may use, modify, and sell projects based on this code, provided that you kee
   One of buildin shaders use original source (material: {type: 'hell'})
   https://www.shadertoy.com/view/4ttGWM
 
-  FluidEffect class inspired by great job of Pavel (super fast solution):
+  Buildin FluidEffect class inspired by great job of Pavel (super fast solution):
   https://github.com/PavelDoGreat/WebGL-Fluid-Simulation
 
 ---

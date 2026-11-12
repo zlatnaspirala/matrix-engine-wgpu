@@ -82956,6 +82956,7 @@ async function initializeSymbolReel(mesh, engine, reelCfg) {
   return batch;
 }
 var loadSlot = function() {
+  mb.show("Please wait 10 sec to activate render.com hosted page.");
   let slotMachine = new MatrixEngineWGPU({
     canvasSize: "fullscreen",
     fastRender: 0.9,
