@@ -47,12 +47,14 @@ export class SlotReel {
     // rotates every symbol fluid plane exactly like the previous sprite ring.
     for(const [i, effect] of effects.entries()) {
       const angle = (i / N) * Math.PI * 2;
+      // The reel rotates around X, so its symbol ring lies in the YZ plane.
+      // Face each fluid plane outward from the reel's X axis.
       effect.localOffset = [
+        0,
         Math.cos(angle) * 5.6,
-        Math.sin(angle) * 5.6,
-        0
+        Math.sin(angle) * 5.6
       ];
-      effect.localRotation = [0, Math.PI / 2, angle];
+      effect.localRotation = [angle - Math.PI / 2, 0, 0];
       if(delayPerSprite) await sleep(delayPerSprite);
     }
 
