@@ -31,7 +31,7 @@ export class SlotReel {
     this.visibleRows = opts.visibleRows ?? 3;
   }
 
-  get sprites() {return [...this.mesh.effects.spriteBatch.sprites.values()];}
+  get fluidEffects() {return this.cfg.strip.map((_, i) => this.mesh.effects?.[`fluidSymbol${i}`]).filter(Boolean);}
 
   // ---- the one engine-specific part I could not verify ----
   getAngle() {return this.mesh.rotation.x;}       // degrees, assumed readable
@@ -39,19 +39,24 @@ export class SlotReel {
   // ---------------------------------------------------------
 
   async layout(delayPerSprite = 0) {
-    const FIX = 90, N = this.cfg.length;
-    const sprites = this.sprites;
-    if(sprites.length !== N) console.warn(`[slot] ${sprites.length} sprites vs strip length ${N}`);
-    for(const [i, sprite] of sprites.entries()) {
-      const yDeg = (i / N) * 360;
-      sprite.pause();
-      sprite.goToFrame(0);
-      sprite.setTargetRotation(90, yDeg - FIX, FIX);
-      if(i === sprites.length - 1) {
-        animateRotationY(this.mesh.rotation, 90, 1000);
-      }
+    const N = this.cfg.length;
+    const effects = this.fluidEffects;
+    if(effects.length !== N) console.warn(`[slot] ${effects.length} fluid effects vs strip length ${N}`);
+
+    // Effect transforms are local to the reel mesh. The mesh rotation therefore
+    // rotates every symbol fluid plane exactly like the previous sprite ring.
+    for(const [i, effect] of effects.entries()) {
+      const angle = (i / N) * Math.PI * 2;
+      effect.localOffset = [
+        Math.cos(angle) * 5.6,
+        Math.sin(angle) * 5.6,
+        0
+      ];
+      effect.localRotation = [0, Math.PI / 2, angle];
       if(delayPerSprite) await sleep(delayPerSprite);
     }
+
+    animateRotationY(this.mesh.rotation, 90, 1000);
   }
 
   stripIndexForRow(stop, row, topIsPrev = true) {
@@ -60,57 +65,36 @@ export class SlotReel {
     return ((stop + offset) % this.cfg.length + this.cfg.length) % this.cfg.length;
   }
 
-  playWinAt(stripIndex, {duration = 2500, speed = 12} = {}) {
+  playWinAt(stripIndex, {duration = 2500} = {}) {
     if(!Number.isInteger(stripIndex) || stripIndex < 0 || stripIndex >= this.cfg.length) {
-      console.warn('[slot] Invalid winning strip index:', stripIndex);
+      console.warn('[slot] Invalid winning fluid symbol index:', stripIndex);
       return Promise.resolve();
     }
 
-    // Resolve by the stable physical sprite name, never by Map iteration order.
-    const sprite = this.mesh.effects.spriteBatch.getSprite(`symbol-${stripIndex}`);
-    if(!sprite) {
-      console.warn('[slot] Missing winning sprite:', `symbol-${stripIndex}`);
+    const fluid = this.mesh.effects?.[`fluidSymbol${stripIndex}`];
+    if(!fluid) {
+      console.warn('[slot] Missing fluid symbol:', stripIndex);
       return Promise.resolve();
     }
 
-    // chatgpt SUGGESTION START
-    // Keep the reel's normal blue idle tint, while cycling vivid colors only
-    // on the winning physical symbol. The original tint is restored afterward.
-    const defaultTint = [1, 1, 11];
-    const winningColors = [
-      [11, 1, 1],   // red
-      [1, 11, 1],   // green
-      [1, 1, 11],   // blue
-      [11, 1, 11],  // magenta
-      [1, 11, 11]   // cyan
+    // A strong multi-color burst marks the exact physical symbol selected by
+    // the backend. Its own emitter keeps running after the win pulse.
+    const colors = [
+      [2.2, 0.35, 0.12],
+      [0.2, 2.0, 0.55],
+      [0.25, 0.65, 2.2],
+      [2.0, 0.25, 1.8],
+      [2.0, 1.7, 0.2]
     ];
-    const mixColor = (a, b, t) => [
-      a[0] + (b[0] - a[0]) * t,
-      a[1] + (b[1] - a[1]) * t,
-      a[2] + (b[2] - a[2]) * t
-    ];
-
-    sprite.playRange(0, 16, speed, true);
-    return animateValue(duration, t => {
-      const phase = t * (winningColors.length - 1);
-      const colorIndex = Math.min(winningColors.length - 2, Math.floor(phase));
-      const color = mixColor(
-        winningColors[colorIndex],
-        winningColors[colorIndex + 1],
-        phase - colorIndex
-      );
-      const pulse = 0.72 + 0.28 * Math.sin(t * Math.PI * 12);
-      sprite.tint = color.map(channel => channel * pulse);
-      sprite.tintStrength = 11.4;
-    }).then(() => {
-      sprite.pause();
-      sprite.goToFrame(0);
-      sprite.clearRange();
-      sprite.reset();
-      sprite.tint = defaultTint.slice();
-      sprite.tintStrength = 11.4;
-    });
-    // chatgpt SUGGESTION END
+    const start = performance.now();
+    const pulse = () => {
+      const t = Math.min(1, (performance.now() - start) / duration);
+      const strength = 850 * (1 - t * 0.65);
+      fluid.burst(0.5, 0.5, 10, strength, colors[Math.floor(t * (colors.length - 1))]);
+      if(t < 1) requestAnimationFrame(pulse);
+    };
+    pulse();
+    return animateValue(duration, () => {});
   }
 
   angleForStop(s) {return this.angleOffset + this.dir * (s / this.cfg.length) * 360;}
