@@ -26,8 +26,30 @@ export class NativeWebRTC {
     this.closed = false;
     this.multiPlayer = {
       root: this,
-      onFollowPath() {},
-      update: event => this._handleGameMessage(event),
+      onFollowPath(e) {},
+      update(e) {
+        e.data = JSON.parse(e.data);
+        try {
+          if(e.data.netPos) {
+            // console.log(app.getSceneObjectByName(e.data.sceneName) + ">>>>><<<<<<<><><><><><<>")
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).position.setPosition(e.data.netPos.x, e.data.netPos.y, e.data.netPos.z);
+          } else if(e.data.netRotY || e.data.netRotY == 0) {
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.y = e.data.netRotY;
+          } else if(e.data.netRotX || e.data.netRotX == 0) {
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.x = e.data.netRotX;
+          } else if(e.data.netRotZ || e.data.netRotZ == 0) {
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).rotation.z = e.data.netRotZ;
+          } else if(e.data.animationIndex || e.data.animationIndex == 0) {
+            console.log(`play animation from net , e.data.sceneName:${e.data.sceneName}  vs  e.data.remoteName: ${e.data.remoteName}
+                 e.data.animationIndex ${e.data.animationIndex}
+              
+              `);
+            app.getSceneObjectByName(e.data.remoteName ? e.data.remoteName : e.data.sceneName).playAnimationByIndex(e.data.animationIndex);
+          }
+        } catch(err) {
+          console.info('mmo-err:', err);
+        }
+      },
       leaveGamePlay() {}
     };
     this.domManipulation = { hideNetPanel() {} };
@@ -210,21 +232,6 @@ export class NativeWebRTC {
     channel.onerror = event => {
       console.error('[NativeWebRTC] DATA CHANNEL ERROR:', peerId, event);
     };
-  }
-
-  _handleGameMessage(event) {
-    let data = event.data;
-    try { if (typeof data === 'string') data = JSON.parse(data); } catch (_) { return; }
-    try {
-      const name = data.remoteName || data.sceneName;
-      const object = app.getSceneObjectByName(name);
-      if (!object) return;
-      if (data.netPos) object.position.setPosition(data.netPos.x, data.netPos.y, data.netPos.z);
-      else if (data.netRotY !== undefined) object.rotation.y = data.netRotY;
-      else if (data.netRotX !== undefined) object.rotation.x = data.netRotX;
-      else if (data.netRotZ !== undefined) object.rotation.z = data.netRotZ;
-      else if (data.animationIndex !== undefined) object.playAnimationByIndex(data.animationIndex);
-    } catch (error) { console.info('[NativeWebRTC] game message:', error); }
   }
 
   _dropPeer(peerId) {
