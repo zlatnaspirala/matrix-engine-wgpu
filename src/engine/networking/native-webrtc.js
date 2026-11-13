@@ -19,6 +19,7 @@ export class NativeWebRTC {
     };
     this.peers = new Map();
     this.channels = new Map();
+    this.pendingIce = new Map();
     this.localStream = null;
     this.socket = null;
     this.id = null;
@@ -102,7 +103,17 @@ export class NativeWebRTC {
       } else if (message.type === 'answer') {
         await peer.setRemoteDescription(message.description);
       } else if (message.type === 'ice-candidate' && message.candidate) {
-        await peer.addIceCandidate(message.candidate);
+        if (peer.remoteDescription) await peer.addIceCandidate(message.candidate);
+        else {
+          const pending = this.pendingIce.get(message.from) || [];
+          pending.push(message.candidate);
+          this.pendingIce.set(message.from, pending);
+        }
+      }
+      if (peer.remoteDescription && this.pendingIce.has(message.from)) {
+        const pending = this.pendingIce.get(message.from);
+        this.pendingIce.delete(message.from);
+        for (const candidate of pending) await peer.addIceCandidate(candidate);
       }
     } catch (error) {
       console.warn('[NativeWebRTC] signaling error:', error);
@@ -136,7 +147,7 @@ export class NativeWebRTC {
       dispatchEvent(new CustomEvent('streamPlaying', { detail: { peerId, stream: event.streams[0], track: event.track } }));
     };
     pc.onconnectionstatechange = () => {
-      if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) this._dropPeer(peerId);
+      if (['failed', 'closed'].includes(pc.connectionState)) this._dropPeer(peerId);
     };
     if (initiator) {
       const offer = await pc.createOffer();
@@ -182,6 +193,7 @@ export class NativeWebRTC {
     if (pc) pc.close();
     this.peers.delete(peerId);
     this.channels.delete(peerId);
+    this.pendingIce.delete(peerId);
   }
 
   getPeers() { return Array.from(this.peers.keys()); }
