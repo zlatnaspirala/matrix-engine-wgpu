@@ -341,7 +341,7 @@ export var loadFluidsSlot = function() {
           // Rotate the top/bottom symbol frames around WORLD X.
           // This keeps their projected width horizontal while adding the
           // correct depth change; the middle row remains unrotated.
-          const tiltX = rowOffset * rowStep;
+          const tiltX = -rowOffset * rowStep;
           const cosX = Math.cos(tiltX);
           const sinX = Math.sin(tiltX);
           const corners = [
