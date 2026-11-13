@@ -11,6 +11,7 @@ import {SlotReel} from "./reel.js";
 import {SlotGame} from "./state.js";
 import {LaserProjectile} from "../../../src/engine/effects/laser.js";
 import {loadAtlasFONT, MSDFTextEffect} from "../../../src/engine/effects/msdfText.js";
+import {MeshMorpher} from "../../../src/engine/procedural-mesh.js";
 
 /**
  * This example is open source.
@@ -223,6 +224,54 @@ export var loadFluidsSlot = function() {
 
     async function onLoadObj(m) {
 
+      slotMachine.cone = slotMachine.addProceduralMeshObj({
+        material: {type: 'standard'},
+        position: {x: 14, y: 14.5, z: -10},
+        rotation: {x: 0, y: 0, z: -90},
+        scale: [16, 6, 16],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_coneLeft`,
+        physics: {
+          enabled: false,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1,
+        },
+        raycast: {enabled: true, radius: 1}
+      });
+
+      app.cone.setAmbient(211,-1,-1)
+
+      slotMachine.cone2 = slotMachine.addProceduralMeshObj({
+        material: {type: 'standard'},
+        position: {x: -14, y: 14.5, z: -10},
+        rotation: {x: 0, y: 0, z: 90},
+        scale: [16, 6, 16],
+        rotationSpeed: {x: 0, y: 0, z: 0},
+        texturesPaths: ['./res/textures/cube-g1_low.webp'],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_coneLeft`,
+        physics: {
+          enabled: false,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1,
+        },
+        raycast: {enabled: true, radius: 1}
+      });
+
+      app.cone2.setAmbient(211,-1,-1)
+
       let inputArg = {
         material: {type: 'standard', share: true},
         position: {x: 0, y: -1, z: -20},
@@ -238,13 +287,13 @@ export var loadFluidsSlot = function() {
         }
       };
 
-      if(isMobile() === false) {
-        inputArg.isVideo = {
-          type: 'video',
-          src: 'res/videos/space.mp4'
-        };
-        slotMachine.addMeshObj(inputArg);
-      }
+      // if(isMobile() === false) {
+      //   inputArg.isVideo = {
+      //     type: 'video',
+      //     src: 'res/videos/space.mp4'
+      //   };
+      //   slotMachine.addMeshObj(inputArg);
+      // }
 
       const reelMeshes = slot.reels.map((reel, i) => slotMachine.addMeshObj({
         material: {type: 'standard'},
@@ -265,15 +314,15 @@ export var loadFluidsSlot = function() {
       if(isMobile()) slotMachine.bloomPass.setBlurRadius(2);
       if(isMobile() === false) {
         slotMachine.activateVolumetricEffect({
-          density: 0.1, steps: 30, scatterStrength: 1, heightFalloff: 0.2, lightColor: [1, 1.8, 2]
+          density: 0.01, steps: 30, scatterStrength: 0.2, heightFalloff: 0.2, lightColor: [2, 0, 1]
         })
       }
 
-      slotMachine.activateGrade({tonemap: 'agx', exposure: 1.1});
-      slotMachine.gradePass.setVignette(0.35, 1.0, 0.6);
-      slotMachine.gradePass.setChromatic(0.004);
-      slotMachine.gradePass.setGrain(0.03);
-      slotMachine.gradePass.setDistortion(0.08);
+      // slotMachine.activateGrade({tonemap: 'agx', exposure: 1.1});
+      // slotMachine.gradePass.setVignette(0.35, 1.0, 0.6);
+      // slotMachine.gradePass.setChromatic(0.004);
+      // slotMachine.gradePass.setGrain(0.03);
+      // slotMachine.gradePass.setDistortion(0.08);
       // slotMachine.gradePass.setLUT(await loadLUT(slotMachine.device, 'res/luts/teal-orange.cube'), 0.8);
 
       slotMachine.activateMotionBlur({strength: 0.6, samples: 12});
@@ -317,8 +366,8 @@ export var loadFluidsSlot = function() {
       // a 2/9 local-unit adjustment (not 2 full local units).
       const framePoint = (worldX, worldY, worldZ = 0) => [
         -worldX / (9 * Math.max(1, n / 3)),
-        2.4 - 2 / 9 + worldZ / 9,
-        (worldY - 15) / 9
+        2.4 - 5 / 9 + worldZ / 9,
+        (worldY - 17) / 9
       ];
       const fireFrameEdge = (a, b) => laser.fireBeam(
         framePoint(a[0], a[1], a[2]), framePoint(b[0], b[1], b[2]), 0
@@ -346,9 +395,9 @@ export var loadFluidsSlot = function() {
           const sinX = Math.sin(tiltX);
           const corners = [
             [-halfW, -halfH],
-            [ halfW, -halfH],
-            [ halfW,  halfH],
-            [-halfW,  halfH]
+            [halfW, -halfH],
+            [halfW, halfH],
+            [-halfW, halfH]
           ].map(([x, y]) => [
             cx + x,
             cy + y * cosX,
@@ -362,7 +411,7 @@ export var loadFluidsSlot = function() {
       }
 
       // FX_MESH.effects.circle = new GenGeoTexture2(slotMachine.device, 'rgba16float', 'circle2', './res/textures/star1.png', 3, slotMachine.cameraBuffer);
-      FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, 'rgba16float', 30, slotMachine.cameraBuffer);
+      FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, 'rgba16float', 3, slotMachine.cameraBuffer);
 
       for(const [i, mesh] of reelMeshes.entries()) {
         await initializeSymbolReel(mesh, slotMachine, slot.reels[i]);
@@ -451,6 +500,8 @@ export var loadFluidsSlot = function() {
 
           await sleep(500);
 
+
+
           app.floor.rotation.rotationSpeed.y = 20;
           FX_MESH.rotation.rotationSpeed.x = 10;
 
@@ -470,6 +521,9 @@ export var loadFluidsSlot = function() {
           app.floor.rotation.rotationSpeed.y = 30;
 
           await sleep(2500);
+
+          app.cone.morphTo(0, 5000)
+          app.cone2.morphTo(0, 5000)
 
           FX_MESH.effects.keeffect.setIntensity(1);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
@@ -522,6 +576,9 @@ export var loadFluidsSlot = function() {
         // Spin
         if(e.repeat || game.state !== 'IDLE') return;
         game.spin();
+
+        app.cone.morphTo(1, 5000)
+        app.cone2.morphTo(1, 5000)
 
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
         FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 4));

@@ -84896,6 +84896,50 @@ var loadFluidsSlot = function() {
       });
     }
     async function onLoadObj(m2) {
+      slotMachine.cone = slotMachine.addProceduralMeshObj({
+        material: { type: "standard" },
+        position: { x: 14, y: 14.5, z: -10 },
+        rotation: { x: 0, y: 0, z: -90 },
+        scale: [16, 6, 16],
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1_low.webp"],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_coneLeft`,
+        physics: {
+          enabled: false,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      app.cone.setAmbient(211, -1, -1);
+      slotMachine.cone2 = slotMachine.addProceduralMeshObj({
+        material: { type: "standard" },
+        position: { x: -14, y: 14.5, z: -10 },
+        rotation: { x: 0, y: 0, z: 90 },
+        scale: [16, 6, 16],
+        rotationSpeed: { x: 0, y: 0, z: 0 },
+        texturesPaths: ["./res/textures/cube-g1_low.webp"],
+        meshA: MeshMorpher.cone(1, 3, false),
+        meshB: MeshMorpher.cube(1),
+        name: `morph_coneLeft`,
+        physics: {
+          enabled: false,
+          geometry: "Cone",
+          mass: 1,
+          radius: 1,
+          height: 3,
+          group: 2,
+          mask: -1
+        },
+        raycast: { enabled: true, radius: 1 }
+      });
+      app.cone2.setAmbient(211, -1, -1);
       let inputArg = {
         material: { type: "standard", share: true },
         position: { x: 0, y: -1, z: -20 },
@@ -84910,13 +84954,6 @@ var loadFluidsSlot = function() {
           geometry: "Sphere"
         }
       };
-      if (isMobile() === false) {
-        inputArg.isVideo = {
-          type: "video",
-          src: "res/videos/space.mp4"
-        };
-        slotMachine.addMeshObj(inputArg);
-      }
       const reelMeshes = slot.reels.map((reel, i2) => slotMachine.addMeshObj({
         material: { type: "standard" },
         position: { x: reelX2(i2, n3), y: 15, z: -10 },
@@ -84937,18 +84974,13 @@ var loadFluidsSlot = function() {
       if (isMobile()) slotMachine.bloomPass.setBlurRadius(2);
       if (isMobile() === false) {
         slotMachine.activateVolumetricEffect({
-          density: 0.1,
+          density: 0.01,
           steps: 30,
-          scatterStrength: 1,
+          scatterStrength: 0.2,
           heightFalloff: 0.2,
-          lightColor: [1, 1.8, 2]
+          lightColor: [2, 0, 1]
         });
       }
-      slotMachine.activateGrade({ tonemap: "agx", exposure: 1.1 });
-      slotMachine.gradePass.setVignette(0.35, 1, 0.6);
-      slotMachine.gradePass.setChromatic(4e-3);
-      slotMachine.gradePass.setGrain(0.03);
-      slotMachine.gradePass.setDistortion(0.08);
       slotMachine.activateMotionBlur({ strength: 0.6, samples: 12 });
       slotMachine.lightContainer[0].setPosition(0, 35, -8);
       slotMachine.lightContainer[0].setTarget(0, 0, -10);
@@ -84981,14 +85013,14 @@ var loadFluidsSlot = function() {
       );
       slotMachine.floor.effects.gpuText.setColor(1, 11, 1);
       slotMachine.laser = laser2;
-      const framePoint = (worldX, worldY) => [
+      const framePoint = (worldX, worldY, worldZ = 0) => [
         -worldX / (9 * Math.max(1, n3 / 3)),
-        2.4,
-        (worldY - 15) / 9
+        2.4 - 5 / 9 + worldZ / 9,
+        (worldY - 17) / 9
       ];
       const fireFrameEdge = (a2, b2) => laser2.fireBeam(
-        framePoint(a2[0], a2[1]),
-        framePoint(b2[0], b2[1]),
+        framePoint(a2[0], a2[1], a2[2]),
+        framePoint(b2[0], b2[1], b2[2]),
         0
       );
       const halfW = SYMBOL_EFFECT_SCALE * SCALE2;
@@ -85000,18 +85032,25 @@ var loadFluidsSlot = function() {
         for (let row2 = 0; row2 < slot.visibleRows; row2++) {
           const rowOffset = row2 - Math.floor(slot.visibleRows / 2);
           const cy = 15 + Math.sin(rowOffset * rowStep) * SYMBOL_REEL_RADIUS * SCALE2;
+          const tiltX = -rowOffset * rowStep;
+          const cosX = Math.cos(tiltX);
+          const sinX = Math.sin(tiltX);
           const corners = [
-            [cx - halfW, cy - halfH],
-            [cx + halfW, cy - halfH],
-            [cx + halfW, cy + halfH],
-            [cx - halfW, cy + halfH]
-          ];
+            [-halfW, -halfH],
+            [halfW, -halfH],
+            [halfW, halfH],
+            [-halfW, halfH]
+          ].map(([x3, y3]) => [
+            cx + x3,
+            cy + y3 * cosX,
+            y3 * sinX
+          ]);
           for (let edge = 0; edge < 4; edge++) {
             fireFrameEdge(corners[edge], corners[(edge + 1) % 4]);
           }
         }
       }
-      FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 30, slotMachine.cameraBuffer);
+      FX_MESH.effects.keeffect = new KaleidoscopeEmitter(slotMachine.device, "rgba16float", 3, slotMachine.cameraBuffer);
       for (const [i2, mesh] of reelMeshes.entries()) {
         await initializeSymbolReel2(mesh, slotMachine, slot.reels[i2]);
       }
@@ -85079,6 +85118,8 @@ var loadFluidsSlot = function() {
           await sleep(500);
           app.floor.rotation.rotationSpeed.y = 30;
           await sleep(2500);
+          app.cone.morphTo(0, 5e3);
+          app.cone2.morphTo(0, 5e3);
           FX_MESH.effects.keeffect.setIntensity(1);
           FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(6, 8));
           app.lightContainer[0].setColorR(1);
@@ -85122,6 +85163,8 @@ var loadFluidsSlot = function() {
         e2.preventDefault();
         if (e2.repeat || game2.state !== "IDLE") return;
         game2.spin();
+        app.cone.morphTo(1, 5e3);
+        app.cone2.morphTo(1, 5e3);
         FX_MESH.effects.keeffect.recreateVertexDataCrazzy(randomIntFromTo(1, 2));
         FX_MESH.effects.keeffect.setIntensity(randomIntFromTo(2, 4));
       });
